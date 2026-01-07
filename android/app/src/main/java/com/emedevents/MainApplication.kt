@@ -1,4 +1,4 @@
-package com.emedevents
+package com.emedevents.newapp
 
 import android.app.Application
 import com.facebook.react.PackageList

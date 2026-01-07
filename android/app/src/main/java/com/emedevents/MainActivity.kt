@@ -1,4 +1,4 @@
-package com.emedevents
+package com.emedevents.newapp
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

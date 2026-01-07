@@ -1,5 +1,6 @@
 buildscript {
     ext {
+        REACT_NATIVE_NODE_EXECUTABLE = "/Users/emedevents/.nvm/versions/node/v20.19.6/bin/node"
         buildToolsVersion = "36.0.0"
         minSdkVersion = 24
         compileSdkVersion = 36
