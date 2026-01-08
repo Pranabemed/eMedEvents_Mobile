@@ -29,7 +29,6 @@ export async function getApiWithParam(url, param, header) {
     },
   });
 }
-
 export async function postApi(url, payload, header) {
   console.log('PostApi: ========= email', `${constants.BASE_URL}/${url}`, payload,header);
   return await axios.post(`${constants.BASE_URL}/${url}`, payload, {
@@ -38,6 +37,7 @@ export async function postApi(url, payload, header) {
       'Content-Type': header.contenttype,
       // 'x-access-token': `${header.authorization}`,
       eMedAuthorization:  header.authorization,
+      IPADDRESS:header.IPADDRESS
     },
   });
 }

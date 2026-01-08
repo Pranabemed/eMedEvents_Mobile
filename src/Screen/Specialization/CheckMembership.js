@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
         alignItems: "center",
-        marginTop: Platform.OS === 'ios' ? normalize(20) : normalize(40),
+        marginTop: Platform.OS === 'ios' ? normalize(20) : normalize(10),
         flexDirection: 'column'
     },
     headerText: {

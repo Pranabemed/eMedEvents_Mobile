@@ -217,6 +217,18 @@ const SignUp = (props) => {
     }
     return input;
   };
+  const formatIndianPhoneNumber = (input) => {
+    if (!input) return "";
+
+    const strInput = String(input);
+    const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+    if (cleaned.length == 10) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    }
+
+    return strInput;
+  };
   console.log(gettrue, "hgfgfgj----------", cellno)
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
@@ -272,8 +284,8 @@ const SignUp = (props) => {
   const passwordregex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;
   const isPasswordValid = password?.length > 0 && !passwordregex.test(password);
   useLayoutEffect(() => {
-          props.navigation.setOptions({ gestureEnabled: false });
-      }, []);
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
   return (
     <>
       <MyStatusBar
@@ -318,7 +330,7 @@ const SignUp = (props) => {
                     />
                   </View>
                 </View>
-                   {fname && fname?.length < 3 && (
+                {fname && fname?.length < 3 && (
                   <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
                     <Text
                       style={{
@@ -374,10 +386,17 @@ const SignUp = (props) => {
                       label="Cell Number*"
                       value={mobileHd}
                       onChangeText={(text) => {
-                        const formatted = formatPhoneNumber(text);
-                        setMobileHd(formatted);
-                        const rawDigits = formatted.replace(/\D/g, '');
-                        setMobileNo(rawDigits);
+                        if (props?.route?.params?.phoneCd?.phoneCd == "+1") {
+                          const formatted = formatPhoneNumber(text);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          setMobileNo(rawDigits);
+                        } else if (props?.route?.params?.phoneCd?.phoneCd == "+91") {
+                          const formatted = formatIndianPhoneNumber(text);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          setMobileNo(rawDigits);
+                        }
                       }}
                       placeholder=""
                       placeholderTextColor="#949494"
@@ -460,7 +479,7 @@ const SignUp = (props) => {
                   </View>}
               </View>
             </View>
-            <View style={{ paddingHorizontal:normalize(21) }}>
+            <View style={{ paddingHorizontal: normalize(21) }}>
               <View style={{ flexDirection: "row" }}>
                 <View style={{ flexDirection: "row", gap: normalize(10) }}>
                   <TouchableOpacity onPress={() => { setChecked(!checked) }}>
@@ -484,7 +503,7 @@ const SignUp = (props) => {
                       <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
                         {"and"}
                       </Text>
-                      <TouchableOpacity onPress={(() =>  props.navigation.navigate("PrivacyPolicy"))}>
+                      <TouchableOpacity onPress={(() => props.navigation.navigate("PrivacyPolicy"))}>
                         <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
                           {"Privacy Policy"}
                         </Text>

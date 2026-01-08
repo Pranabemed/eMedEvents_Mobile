@@ -123,7 +123,7 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
             {webcastdeatils?.buttonType &&
               webcastdeatils?.buttonType?.toLowerCase() === "register" &&
               webcastdeatils?.registered_allow === 1 ? <><View style={{ flexDirection: "column", marginLeft: normalize(10) }}>
-                {ticketSave?.tickets[0]?.itemamt > 0 ? (
+                {ticketSave?.tickets?.[0]?.itemamt > 0 ? (
                   <>
                   <View style={{marginLeft:normalize(5)}}>
                     <Text
@@ -143,7 +143,7 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                         width: normalize(80)
                       }}
                     >
-                      {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets[0]?.itemamt))}`}
+                      {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets?.[0]?.itemamt))}`}
                     </Text>
                   </View>
                   </>

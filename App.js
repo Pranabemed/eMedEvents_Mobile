@@ -7,6 +7,7 @@ import connectionrequest from './src/Utils/Helpers/NetInfo'
 import { boardcountRequest, countRequest } from './src/Redux/Reducers/DashboardReducer'
 import Orientation from 'react-native-orientation-locker';
 import { Platform } from 'react-native'
+import {initPublicIP} from './src/Utils/Helpers/IPServer'
 const App = () => {
   // const AuthReducer = useSelector(state => state.AuthReducer);
   const dispatch = useDispatch()
@@ -22,6 +23,9 @@ const App = () => {
       });
 
   }, [])
+  useEffect(() => {
+    initPublicIP(); // 🔥 runs once
+  }, []);
   useEffect(() => {
     if (Platform.OS === 'ios') {
       Orientation.lockToPortrait();

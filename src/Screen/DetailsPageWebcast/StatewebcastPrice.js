@@ -324,14 +324,14 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
                         paddingHorizontal: normalize(7),
                         paddingVertical: normalize(10),
                     }}>
-                    {ticketSave?.tickets[0]?.itemamt > 0 && <Text
+                    {ticketSave?.tickets?.[0]?.itemamt > 0 && <Text
                         style={{
                             fontFamily: Fonts.InterBold,
                             fontSize: 24,
                             color: '#000000',
                             fontWeight: 'bold',
                         }}>
-                        {` ${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets[0]?.itemamt))}`}
+                        {` ${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets?.[0]?.itemamt))}`}
                     </Text>}
                 </View>
             ) : null}

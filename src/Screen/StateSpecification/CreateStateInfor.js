@@ -559,7 +559,7 @@ const CreateStateInfor = (props) => {
                     ) : <>
                     <Loader
                         visible={AuthReducer?.status == 'Auth/stateInformSaveRequest' || noloadnew} />
-                    <View style={Platform?.OS === 'ios' ? { flexDirection: "row", marginBottom: normalize(35) } : { marginTop: normalize(60) }}>
+                    <View style={Platform?.OS === 'ios' ? { flexDirection: "row", marginBottom: normalize(35) } : { marginTop: normalize(10) }}>
                         {/* <Header
                             onPress={() => props.navigation.goBack()}
                             tintColor={Colorpath.black}
@@ -577,7 +577,7 @@ const CreateStateInfor = (props) => {
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     >
-                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(40) }}>
+                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
                             <View style={{ paddingHorizontal: normalize(14), paddingVertical: normalize(10) }}>
                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontWeight: "bold", fontSize: 22, color: '#000000' }}>
                                     {` ${result ? result : DashboardReducer?.mainprofileResponse?.user_address?.state_name || ""} State License \n Information`}

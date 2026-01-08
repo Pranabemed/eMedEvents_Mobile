@@ -18,10 +18,12 @@ import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import InputField from '../../Components/CellInput';
+import DeviceInfo from 'react-native-device-info';
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
-import {getCountryDid} from '../../Utils/Helpers/Locate';
+import { getCountryDid } from '../../Utils/Helpers/Locate';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -92,6 +94,18 @@ const Login = (props) => {
     }
     return input;
   };
+  const formatIndianPhoneNumber = (input) => {
+    if (!input) return "";
+
+    const strInput = String(input);
+    const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+    if (cleaned.length == 10) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    }
+
+    return strInput;
+  };
   useEffect(() => {
     if (props?.route?.params?.email) {
       setEmail(props?.route?.params?.email);
@@ -100,8 +114,15 @@ const Login = (props) => {
     }
   }, [props?.route?.params?.email])
   useEffect(() => {
-    if (props?.route?.params?.phone) {
+    if (props?.route?.params?.phone && phoneCountryCode == "+1") {
       const formatted = formatPhoneNumber(props?.route?.params?.phone?.phone);
+      setMobileHd(formatted);
+      setEmail(props?.route?.params?.phone?.phone);
+      setPhoneCountryCode(props?.route?.params?.phone?.countryCode)
+      setIsPasswordFieldVisible(false);
+      setMobile(true);
+    } else if (props?.route?.params?.phone && phoneCountryCode == "+91") {
+      const formatted = formatIndianPhoneNumber(props?.route?.params?.phone?.phone);
       setMobileHd(formatted);
       setEmail(props?.route?.params?.phone?.phone);
       setPhoneCountryCode(props?.route?.params?.phone?.countryCode)
@@ -196,7 +217,7 @@ const Login = (props) => {
   const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
   const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
   const mobileReg = /^\d{10}$/;
-  const isMobile = mobile && email.length > 0 && mobile && !mobileReg.test(email);
+  const isMobile = mobile && email?.length > 0 && mobile && !mobileReg.test(email);
   if (status == '' || AuthReducer.status != status) {
     console.log("status====")
     switch (AuthReducer.status) {
@@ -275,10 +296,10 @@ const Login = (props) => {
   }
 
   useEffect(() => {
-  getCountryDid(code => {
-    setPhoneCountryCode(code);
-  });
-}, [props?.navigation]);
+    getCountryDid(code => {
+      setPhoneCountryCode(code);
+    });
+  }, [props?.navigation]);
   const validHandles = useMemo(() => new Set([
     "Physician - MD",
     "Physician - DO",
@@ -328,7 +349,7 @@ const Login = (props) => {
 
   // Main navigation logic
   useEffect(() => {
-   
+
     if (!token) return;
 
     const isEmailNotVerified = loginResponse.is_verified == "0";
@@ -408,20 +429,20 @@ const Login = (props) => {
     phoneCountryCode,
     tokenObj
   ]);
-  useEffect(()=>{
-   if(DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 ){
+  useEffect(() => {
+    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {
       const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-          return index === self.findIndex((s) =>
-            s.state_id === state.state_id &&
-            s.board_id === state.board_id
-          );
-        });
-        dispatch(mainprofileRequest({}))
-        setFulldashbaord(uniqueStates);
-        props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
-   }
-  },[DashboardReducer?.dashboardResponse?.data])
-    if (status1 == '' || DashboardReducer.status != status1) {
+        return index === self.findIndex((s) =>
+          s.state_id === state.state_id &&
+          s.board_id === state.board_id
+        );
+      });
+      dispatch(mainprofileRequest({}))
+      setFulldashbaord(uniqueStates);
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    }
+  }, [DashboardReducer?.dashboardResponse?.data])
+  if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
         status1 = DashboardReducer.status;
@@ -479,9 +500,12 @@ const Login = (props) => {
   }, [mobile])
 
   useLayoutEffect(() => {
-          props.navigation.setOptions({ gestureEnabled: false });
-      }, []);
-      
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+  useEffect(() => {
+    const ipAddress = getPublicIP();
+    console.log(ipAddress, "ipAddress+======")
+  }, [])
   return (
     <>
       <MyStatusBar
@@ -507,7 +531,7 @@ const Login = (props) => {
             </View>
             <View>
               <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(15) }}>
-             
+
                 <View style={styles.content}>
                   <View style={styles.formContainer}>
                     {mobile ? <InputField
@@ -515,11 +539,19 @@ const Login = (props) => {
                       label="Email / Cell Number"
                       value={mobileHd}
                       onChangeText={(val) => {
-                        const formatted = formatPhoneNumber(val);
-                        setMobileHd(formatted);
-                        const rawDigits = formatted.replace(/\D/g, '');
-                        handleInputChange(rawDigits);
-                        setEmail(rawDigits);
+                        if (phoneCountryCode == "+91") {
+                          const formatted = formatIndianPhoneNumber(val);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          handleInputChange(rawDigits);
+                          setEmail(rawDigits);
+                        } else if (phoneCountryCode == "+1") {
+                          const formatted = formatPhoneNumber(val);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          handleInputChange(rawDigits);
+                          setEmail(rawDigits);
+                        }
                       }}
                       placeholder=""
                       placeholderTextColor="#949494"

@@ -2,6 +2,7 @@ import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 let getItem = state => state.AuthReducer;
 export function* webcastSearchSaga(action) {
@@ -28,11 +29,14 @@ export function* webcastSearchSaga(action) {
 
 export function* webcastDetailsSaga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
+    
   };
   try {
     let response = yield call(postApi, 'Conference/conferenceDetailPage', action.payload, header);
@@ -91,11 +95,13 @@ export function* webcastStateSaga(action) {
 }
 export function* saveTicketSaga(action) {
   console.log('hi',action);
+  const ipAddress = getPublicIP();
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -112,11 +118,13 @@ export function* saveTicketSaga(action) {
 }
 export function* saveTicketInpersonSaga(action) {
   console.log('hi',action);
+  const ipAddress = getPublicIP();
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -133,11 +141,13 @@ export function* saveTicketInpersonSaga(action) {
 }
 export function* saveRegistSaga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
   };
   try {
     let response = yield call(postApi, 'transaction/saveRegistration', action.payload, header);
@@ -154,11 +164,13 @@ export function* saveRegistSaga(action) {
 }
 export function* webcastPaymentSaga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
   };
   try {
     let response = yield call(postApi, 'Transaction/payment', action.payload, header);

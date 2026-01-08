@@ -108,11 +108,23 @@ const ForgotMPIN = (props) => {
         }
         return input;
     };
+    const formatIndianPhoneNumber = (input) => {
+        if (!input) return "";
+
+        const strInput = String(input);
+        const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+        if (cleaned.length == 10) {
+            return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+        }
+
+        return strInput;
+    };
     const cellNoRegexwpdd = /^\d{10}$/;
     const isValidWhatsappNodd = phoneno?.length > 0 && !cellNoRegexwpdd.test(phoneno);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -160,10 +172,17 @@ const ForgotMPIN = (props) => {
                                         label="Cell Number*"
                                         value={mobilhd}
                                         onChangeText={(val) => {
-                                            const formatted = formatPhoneNumber(val);
-                                            setMobilhd(formatted);
-                                            const rawDigits = formatted.replace(/\D/g, '');
-                                            setPhoneno(rawDigits);
+                                            if (props?.route?.params?.phoneCode == "+1") {
+                                                const formatted = formatPhoneNumber(val);
+                                                setMobilhd(formatted);
+                                                const rawDigits = formatted.replace(/\D/g, '');
+                                                setPhoneno(rawDigits);
+                                            } else if (props?.route?.params?.phoneCode == "+91") {
+                                                const formatted = formatIndianPhoneNumber(val);
+                                                setMobilhd(formatted);
+                                                const rawDigits = formatted.replace(/\D/g, '');
+                                                setPhoneno(rawDigits);
+                                            }
                                         }}
                                         placeholder=""
                                         placeholderTextColor="#949494"

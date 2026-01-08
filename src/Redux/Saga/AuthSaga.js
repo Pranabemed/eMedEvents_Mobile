@@ -70,6 +70,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { dashboardSuccess, dashMbSuccess, mainprofileSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 
 ///token
@@ -109,10 +110,12 @@ export function* allreducerFalse(action) {
 
 export function* signupSaga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
+    IPADDRESS:ipAddress ? ipAddress :""
     // authorization: items.token,
   };
   try {
@@ -382,10 +385,12 @@ export function* chnageMobilenoSaga(action) {
 
 export function* login_Saga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
+    IPADDRESS:ipAddress ? ipAddress :""
     // authorization: items.token,
   };
   try {

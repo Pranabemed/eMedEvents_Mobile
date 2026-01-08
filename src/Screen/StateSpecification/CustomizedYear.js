@@ -60,7 +60,7 @@ const CustomizedYear = ({ handleYearcust, yearRange, setCitypickeryear }) => {
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="Year" onClosePress={() => { setCitypickeryear(false) }} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="Year" onClosePress={() => { setCitypickeryear(false) }} />
                     </View>
                 )}

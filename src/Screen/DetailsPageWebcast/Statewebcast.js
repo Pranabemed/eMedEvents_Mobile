@@ -79,7 +79,7 @@ const Statewebcast = props => {
         } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
             props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
         } else {
-            props.navigation.goBack();
+            props.navigation.navigate("TabNav");
         }
     };
     const handleSnapToItem = (index) => {
@@ -235,6 +235,12 @@ const Statewebcast = props => {
             setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse);
         }
     }, [WebcastReducer?.webcastDeatilsResponse])
+    useEffect(() => {
+        if (WebcastReducer?.saveTicketResponse) {
+            setLoading(false);
+            setTicketSave(WebcastReducer?.saveTicketResponse);
+        }
+    }, [WebcastReducer?.saveTicketResponse])
     if (status == '' || WebcastReducer.status != status) {
         switch (WebcastReducer.status) {
             case 'WebCast/webcastDeatilsRequest':

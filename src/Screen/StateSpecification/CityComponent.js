@@ -76,7 +76,7 @@ const CityComponent = ({ handleCityName, citywiseallow, setCitypicker, searchCit
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="City*" onClosePress={() => { setCitypicker(false) }} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="City*" onClosePress={() => { setCitypicker(false) }} />
                     </View>
                 )}
