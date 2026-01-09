@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-const BASE_URL = 'https://newdev.emedevents.com';
+const BASE_URL = 'https://v2api.emedevents.com';
 
 export default {
   BASE_URL,

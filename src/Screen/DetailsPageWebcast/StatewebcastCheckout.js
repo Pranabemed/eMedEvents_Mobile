@@ -1,5 +1,5 @@
 import { View, Text, Linking, useWindowDimensions, Alert } from 'react-native'
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
@@ -8,15 +8,16 @@ import InPersonStatewebcast from '../InPersonWebcast/InPersonStatewebcast';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import RenderHTML from 'react-native-render-html';
-import { addtoCartWebcastRequest } from '../../Redux/Reducers/WebcastReducer';
+import { addtoCartWebcastRequest, checkoutTicketRequest } from '../../Redux/Reducers/WebcastReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 let status = "";
-const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, ticketSave, finalKey }) => {
+const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
-  console.log(webcastdeatils, creditData, "webcastdeatils=====11", finalKey, ticketSave, urlneed);
+  const [finalcheck, setFinalcheck] = useState("");
+  console.log(webcastdeatils, creditData, "webcastdeatils=====11", urlneed);
   const { width } = useWindowDimensions();
   const dispatch = useDispatch();
   const fullAction = (dataItem) => {
@@ -37,7 +38,7 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
 
     return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
   }
-  const handleAddtoCart = () => {
+  const handleAddtoCart = useCallback(() => {
     let obj = {
       "bundle_conference_id": bundle_conference_id,
       "conference_ids": conferenceIDs
@@ -49,15 +50,15 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
       .catch((err) => {
         showErrorAlert("Please connect to internet")
       })
-  }
+  }, [bundle_conference_id, conferenceIDs, dispatch]);
   const formatNumberWithCommas = (value) => {
-  if (value == null || value == undefined) return '';
-  const stringValue = value.toString().replace(/,/g, '');
-  const parts = stringValue.split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return parts.join('.');
-};
-  const singleAddtoCart = () => {
+    if (value == null || value == undefined) return '';
+    const stringValue = value.toString().replace(/,/g, '');
+    const parts = stringValue.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+  const singleAddtoCart = useCallback(() => {
     if (webcastdeatils) {
       const checkoutSpancart = webcastdeatils?.conferenceId;
       let obj = {
@@ -75,27 +76,106 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
           showErrorAlert("Please connect to internet", err)
         })
     }
-  }
-  if (status == '' || WebcastReducer.status != status) {
-    switch (WebcastReducer.status) {
-      case 'WebCast/addtoCartWebcastRequest':
-        status = WebcastReducer.status;
-        setAddtocartload(true);
-        break;
-      case 'WebCast/addtoCartWebcastSuccess':
-        status = WebcastReducer.status;
-        console.log("add to cart followed>>>>", WebcastReducer?.addtoCartWebcastResponse?.success == true, urlneed);
-        if (WebcastReducer?.addtoCartWebcastResponse?.success == true) {
-          setAddtocartload(false);
-          navigation.navigate("AddToCart", { addtocart: { addtocart: "startcallapi", coupon: ticketSave, webcast: webcastdeatils, urlneedTake: urlneed } });
-        }
-        break;
-      case 'WebCast/addtoCartWebcastFailure':
-        status = WebcastReducer.status;
-        setAddtocartload(false);
-        break;
+  }, [webcastdeatils, dispatch]);
+  const handleTicketsCheckout = useCallback(() => {
+    if (webcastdeatils?.registrationTickets?.length > 0) {
+      const checkoutSpan = webcastdeatils?.conferenceId;
+      let obj = {
+        "conference_id": checkoutSpan,
+        "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+          "id": ticket?.id,
+          "quantity": 1
+        }))
+      };
+      connectionrequest()
+        .then(() => {
+          dispatch(checkoutTicketRequest(obj));
+        })
+        .catch((err) => {
+          showErrorAlert("Please connect to internet", err)
+        })
     }
-  }
+  }, [webcastdeatils, dispatch]);
+  const checkoutNav = useCallback(() => {
+    navigation.navigate("Checkout", {
+      checkoutSpan: {
+        checkoutSpan: webcastdeatils,
+        finalTicket: WebcastReducer?.checkoutTicketResponse
+      }
+    });
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse]);
+
+  const inpersonNav = useCallback(() => {
+    navigation.navigate("InPersonStatewebcast", {
+      realData: {
+        realData: webcastdeatils,
+        ticketall: WebcastReducer?.checkoutTicketResponse?.tickets
+      }
+    });
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse?.tickets]);
+
+  const alreadyCart = useCallback(() => {
+    navigation.navigate("AddToCart", {
+      addtocart: {
+        addtocart: "startcallapi",
+        coupon: WebcastReducer?.checkoutTicketResponse,
+        webcast: webcastdeatils,
+        urlneedTake: urlneed
+      }
+    });
+  }, [navigation, WebcastReducer?.checkoutTicketResponse, webcastdeatils, urlneed]);
+  const registerCheck = useCallback(() => {
+    navigation.navigate("RegisterInterest", { checkoutSpan: { checkoutSpan: webcastdeatils, finalTicket: WebcastReducer?.checkoutTicketResponse } })
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse, urlneed])
+  useEffect(() => {
+    if (WebcastReducer.status == 'WebCast/checkoutTicketSuccess') {
+      switch (finalcheck) {
+        case "checkout":
+          checkoutNav();
+          break;
+        case "inperson":
+          inpersonNav();
+          break;
+        case "singlecart":
+          singleAddtoCart();
+          break;
+        case "doublecart":
+          alreadyCart();
+          break;
+        case "freshcart":
+          handleAddtoCart();
+          break;
+        case "textproceed":
+          registerCheck();
+          break;
+        default:
+          break;
+      }
+      // Reset finalcheck after handling
+      setFinalcheck("");
+    }
+  }, [WebcastReducer.status, finalcheck, singleAddtoCart, checkoutNav, inpersonNav, alreadyCart, handleAddtoCart]);
+  useEffect(() => {
+    if (WebcastReducer.status == 'WebCast/addtoCartWebcastSuccess') {
+      if (WebcastReducer?.addtoCartWebcastResponse?.success == true && WebcastReducer?.checkoutTicketResponse) {
+        setAddtocartload(false);
+        setFinalcheck("");
+        navigation.navigate("AddToCart", {
+          addtocart: {
+            addtocart: "startcallapi",
+            coupon: WebcastReducer?.checkoutTicketResponse,
+            webcast: webcastdeatils,
+            urlneedTake: urlneed
+          }
+        });
+      }
+    }
+
+    if (WebcastReducer.status == 'WebCast/addtoCartWebcastFailure') {
+      setAddtocartload(false);
+    }
+  }, [WebcastReducer.status, WebcastReducer?.addtoCartWebcastResponse, WebcastReducer?.checkoutTicketResponse, setAddtocartload, navigation, webcastdeatils, urlneed, finalcheck]);
+
   return (
     <View>
       {webcastdeatils?.conference_active !== 0 ? (
@@ -123,29 +203,29 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
             {webcastdeatils?.buttonType &&
               webcastdeatils?.buttonType?.toLowerCase() === "register" &&
               webcastdeatils?.registered_allow === 1 ? <><View style={{ flexDirection: "column", marginLeft: normalize(10) }}>
-                {ticketSave?.tickets?.[0]?.itemamt > 0 ? (
+                {webcastdeatils?.registrationTickets?.length > 0 ? (
                   <>
-                  <View style={{marginLeft:normalize(5)}}>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterMedium,
-                        fontSize: 14,
-                        color: "#333",
-                      }}
-                    >
-                      {"Total"}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterBold,
-                        fontSize: 18,
-                        color: "#333",
-                        width: normalize(80)
-                      }}
-                    >
-                      {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets?.[0]?.itemamt))}`}
-                    </Text>
-                  </View>
+                    <View style={{ marginLeft: normalize(5) }}>
+                      <Text
+                        style={{
+                          fontFamily: Fonts.InterMedium,
+                          fontSize: 14,
+                          color: "#333",
+                        }}
+                      >
+                        {"Total"}
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: Fonts.InterBold,
+                          fontSize: 18,
+                          color: "#333",
+                          width: normalize(80)
+                        }}
+                      >
+                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(takePrice || "0"))}`}
+                      </Text>
+                    </View>
                   </>
                 ) : (
                   <Text
@@ -167,13 +247,15 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                     webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
                     webcastdeatils?.conferenceTypeText == "Journal CME" ||
                     webcastdeatils?.conferenceTypeText == "Podcast"
-                  ) && ticketSave?.tickets?.length == 1 && webcastdeatils?.conferenceTypeId != "1" &&
+                  ) && webcastdeatils?.registrationTickets?.length == 1 && webcastdeatils?.conferenceTypeId != "1" &&
                     webcastdeatils?.conferenceTypeId != "6" &&
                     webcastdeatils?.conferenceTypeId != "34") {
-                    navigation.navigate("Checkout", { checkoutSpan: { checkoutSpan: webcastdeatils, finalTicket: finalKey } });
+                    handleTicketsCheckout();
+                    setFinalcheck("checkout")
                   } else {
+                    handleTicketsCheckout();
+                    setFinalcheck("inperson");
                     // navigation.navigate("InPersonStatewebcast", { realData: webcastdeatils });
-                    navigation.navigate("InPersonStatewebcast", { realData: { realData: webcastdeatils, ticketall: ticketSave?.tickets } });
                   }
                 }}
                 height={normalize(45)}
@@ -198,7 +280,7 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                     webcastdeatils?.conferenceTypeText == "Journal CME" ||
                     webcastdeatils?.conferenceTypeText == "Podcast"
                   ) &&
-                  ticketSave?.tickets?.length == 1 &&
+                  webcastdeatils?.registrationTickets?.length == 1 &&
                   webcastdeatils?.conferenceTypeId != "1" &&
                   webcastdeatils?.conferenceTypeId != "6" &&
                   webcastdeatils?.conferenceTypeId != "34"
@@ -247,7 +329,10 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                       webcastdeatils.interested_allow === 1 && AuthReducer?.loginResponse?.user && (AuthReducer?.loginResponse?.user?.subscription_user == "premium" || AuthReducer?.loginResponse?.user?.subscription_user == 'free') ? (
                       <>
                         <Buttons
-                          onPress={() => navigation.navigate("RegisterInterest",{checkoutSpan: { checkoutSpan: webcastdeatils, finalTicket: finalKey }})}
+                          onPress={() => {
+                            handleTicketsCheckout();
+                            setFinalcheck("textproceed");
+                          }}
                           height={normalize(45)}
                           width={normalize(140)}
                           backgroundColor={Colorpath.ButtonColr}
@@ -266,7 +351,10 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                         webcastdeatils.interested_allow === 1 ? (
                         <>
                           <Buttons
-                            onPress={()=>navigation.navigate("RegisterInterest",{checkoutSpan: { checkoutSpan: webcastdeatils, finalTicket: finalKey }})}
+                            onPress={() => {
+                              handleTicketsCheckout();
+                              setFinalcheck("textproceed");
+                            }}
                             height={normalize(45)}
                             width={normalize(140)}
                             backgroundColor={Colorpath.ButtonColr}
@@ -392,7 +480,8 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                   webcastdeatils.isHavingActivity !== 1 ? (
                   <Buttons
                     onPress={() => {
-                      singleAddtoCart();
+                      handleTicketsCheckout();
+                      setFinalcheck("singlecart")
                     }}
                     height={normalize(45)}
                     width={normalize(100)}
@@ -412,7 +501,8 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
                   webcastdeatils.isHavingActivity !== 1 ? (
                   <Buttons
                     onPress={() => {
-                      navigation.navigate("AddToCart", { addtocart: { addtocart: "startcallapi", coupon: ticketSave, webcast: webcastdeatils, urlneedTake: urlneed } })
+                      handleTicketsCheckout();
+                      setFinalcheck("doublecart");
                     }}
                     height={normalize(45)}
                     width={normalize(100)}
@@ -432,22 +522,22 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
         </View>
       ) : webcastdeatils?.conference_active == 0 &&
         webcastdeatils?.button_redirect_text == "revise_activity" ? (
-         <View style={{backgroundColor:"#FFFFFF"}}>
-            <Buttons
-              onPress={() => {
-                 navigation.navigate("VideoComponent", { RoleData: webcastdeatils });
-              }}
-              height={normalize(45)}
-              width={normalize(140)}
-              backgroundColor={Colorpath.ButtonColr}
-              borderRadius={normalize(5)}
-              text={"Revise Activity"}
-              color={Colorpath.white}
-              fontSize={14}
-              fontFamily={Fonts.InterSemiBold}
-              marginBottom={normalize(10)}
-            />
-            </View>
+        <View style={{ backgroundColor: "#FFFFFF" }}>
+          <Buttons
+            onPress={() => {
+              navigation.navigate("VideoComponent", { RoleData: webcastdeatils });
+            }}
+            height={normalize(45)}
+            width={normalize(140)}
+            backgroundColor={Colorpath.ButtonColr}
+            borderRadius={normalize(5)}
+            text={"Revise Activity"}
+            color={Colorpath.white}
+            fontSize={14}
+            fontFamily={Fonts.InterSemiBold}
+            marginBottom={normalize(10)}
+          />
+        </View>
       ) : webcastdeatils?.conference_active == 0 && webcastdeatils?.bundle_conf_taken_msg ? (
         <>
 
@@ -461,7 +551,8 @@ const StatewebcastCheckout = ({ urlneed, creditData, setAddtocartload, isBundleA
 
           {webcastdeatils?.bundle_add_cart == "1" && (<Buttons
             onPress={() => {
-              handleAddtoCart();
+              handleTicketsCheckout();
+              setFinalcheck("freshcart");
             }}
             height={normalize(45)}
             width={normalize(140)}

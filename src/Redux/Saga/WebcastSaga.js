@@ -1,6 +1,6 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess } from '../Reducers/WebcastReducer';
+import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -114,6 +114,75 @@ export function* saveTicketSaga(action) {
   } catch (error) {
     console.log('webcast error:', error);
     yield put(saveTicketFailure(error));
+  }
+}
+export function* saveTicketCartSaga(action) {
+  console.log('hi',action);
+  const ipAddress = getPublicIP();
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
+  };
+  try {
+    let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
+    console.log('save ticket response: ', response);
+    if (response?.data?.success == true) {
+      yield put(saveTicketCartSuccess(response?.data));
+    } else {
+      yield put(saveTicketCartFailure(response?.data));
+    }
+  } catch (error) {
+    console.log('webcast error:', error);
+    yield put(saveTicketCartFailure(error));
+  }
+}
+export function* saveTicketAddtoCartSaga(action) {
+  console.log('hi',action);
+  const ipAddress = getPublicIP();
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
+  };
+  try {
+    let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
+    console.log('save ticket response: ', response);
+    if (response?.data?.success == true) {
+      yield put(saveTicketAddSuccess(response?.data));
+    } else {
+      yield put(saveTicketAddFailure(response?.data));
+    }
+  } catch (error) {
+    console.log('webcast error:', error);
+    yield put(saveTicketAddFailure(error));
+  }
+}
+export function* checkoutTicketSaga(action) {
+  console.log('hi',action);
+  const ipAddress = getPublicIP();
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items.token,
+    IPADDRESS:ipAddress ? ipAddress :""
+  };
+  try {
+    let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
+    console.log('save ticket response: ', response);
+    if (response?.data?.success == true) {
+      yield put(checkoutTicketSuccess(response?.data));
+    } else {
+      yield put(checkoutTicketFailure(response?.data));
+    }
+  } catch (error) {
+    console.log('webcast error:', error);
+    yield put(checkoutTicketFailure(error));
   }
 }
 export function* saveTicketInpersonSaga(action) {
@@ -558,6 +627,15 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('WebCast/saveTicketRequest', saveTicketSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/saveTicketCartRequest', saveTicketCartSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/saveTicketAddRequest', saveTicketAddtoCartSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/checkoutTicketRequest', checkoutTicketSaga);
   })(),
   (function* () {
     yield takeLatest('WebCast/saveTicketInpersonRequest', saveTicketInpersonSaga);

@@ -28,7 +28,10 @@ const initialState = {
   PaymentCheckResponse: {},
   PrimePaymentResponse: {},
   PrimeCheckResponse: {},
-  RegisterIntResponse: {}
+  RegisterIntResponse: {},
+  saveTicketCartResponse: {},
+  saveTicketAddResponse: {},
+  checkoutTicketResponse:{}
 };
 
 const WebCastSlice = createSlice({
@@ -310,6 +313,39 @@ const WebCastSlice = createSlice({
       state.status = action.type;
       state.error = action.error;
     },
+    saveTicketCartRequest(state, action) {
+      state.status = action.type;
+    },
+    saveTicketCartSuccess(state, action) {
+      state.saveTicketCartResponse = action.payload;
+      state.status = action.type;
+    },
+    saveTicketCartFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+    saveTicketAddRequest(state, action) {
+      state.status = action.type;
+    },
+    saveTicketAddSuccess(state, action) {
+      state.saveTicketAddResponse = action.payload;
+      state.status = action.type;
+    },
+    saveTicketAddFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+     checkoutTicketRequest(state, action) {
+      state.status = action.type;
+    },
+    checkoutTicketSuccess(state, action) {
+      state.checkoutTicketResponse = action.payload;
+      state.status = action.type;
+    },
+    checkoutTicketFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
   },
 });
 
@@ -388,6 +424,15 @@ export const {
   PrimeCheckSuccess,
   RegisterIntFailure,
   RegisterIntRequest,
-  RegisterIntSuccess
+  RegisterIntSuccess,
+  saveTicketCartRequest,
+  saveTicketCartSuccess,
+  saveTicketCartFailure,
+  saveTicketAddRequest,
+  saveTicketAddSuccess,
+  saveTicketAddFailure,
+  checkoutTicketRequest,
+  checkoutTicketSuccess,
+  checkoutTicketFailure
 } = WebCastSlice.actions;
 export default WebCastSlice.reducer;

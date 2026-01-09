@@ -9,7 +9,33 @@ import moment from 'moment';
 import CalIcon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
-const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, ticketSave }) => {
+import { saveTicketRequest } from '../../Redux/Reducers/WebcastReducer';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import { useDispatch, useSelector } from 'react-redux';
+let status3 = "";
+const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, calculatePrice }) => {
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const dispatch = useDispatch();
+    const handleTickets = () => {
+        if (webcastdeatils?.registrationTickets?.length > 0) {
+            const checkoutSpan = webcastdeatils?.conferenceId;
+            let obj = {
+                "conference_id": checkoutSpan,
+                "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+                    "id": ticket?.id,
+                    "quantity": 1
+                }))
+            };
+            connectionrequest()
+                .then(() => {
+                    dispatch(saveTicketRequest(obj));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err)
+                })
+        }
+    }
     const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
@@ -26,17 +52,23 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
 
         return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
     }
-    const [tooltip, setTootip] = useState(false);
-    const formatDate = (dateStr) => {
-        const date = moment(dateStr, "DD MMM'YY");
-        return date.format("D  MMM").replace(' ', '');
-    };
-    const formattedDate = formatDate(webcastdeatils?.startdate);
-    console.log(formattedDate, "full item ===========", webcastdeatils);
-    const spaceNeed = webcastdeatils?.location == "" || !webcastdeatils?.conferenceTypeText
     let requiredStyle = webcastdeatils?.buttonType &&
         webcastdeatils?.buttonType?.toLowerCase() === "register" &&
         webcastdeatils?.registered_allow === 1 && webcastdeatils?.conference_active !== 0 && !webcastdeatils?.bundle_conf_taken_msg;
+    if (status3 == '' || WebcastReducer.status != status3) {
+        switch (WebcastReducer.status) {
+            case 'WebCast/saveTicketRequest':
+                status3 = WebcastReducer.status;
+                break;
+            case 'WebCast/saveTicketSuccess':
+                status3 = WebcastReducer.status;
+                nav.navigate("InPersonStatewebcast", { realData: { realData: webcastdeatils, ticketall: WebcastReducer?.saveTicketResponse?.tickets } });
+                break;
+            case 'WebCast/saveTicketFailure':
+                status3 = WebcastReducer.status;
+                break;
+        }
+    }
     const renderCmeCredits = () => {
         const credits = webcastdeatils?.cmeCreditsData;
 
@@ -197,7 +229,6 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
                         marginTop: normalize(6),
                     }}>
                     {`${FormatDateZone(webcastdeatils?.startdate, webcastdeatils?.enddate)}`}
-                    {/* {`${formattedDate} - ${webcastdeatils?.enddate}`} */}
                 </Text>
             </View> : null}
             {(webcastdeatils?.location == "" || !webcastdeatils?.conferenceTypeText) ? null : <View
@@ -280,9 +311,9 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
                                 marginTop: normalize(6),
                             }}>
                             {`${+(webcastdeatils?.cmeCreditsData?.[0]?.points || 0)} ${webcastdeatils?.cmeCreditsData?.[0]?.name &&
-                                    webcastdeatils?.cmeCreditsData?.[0]?.name?.toLowerCase() == "contact hour"
-                                    ? "Contact Hour(s)"
-                                    : webcastdeatils?.cmeCreditsData?.[0]?.name || ""
+                                webcastdeatils?.cmeCreditsData?.[0]?.name?.toLowerCase() == "contact hour"
+                                ? "Contact Hour(s)"
+                                : webcastdeatils?.cmeCreditsData?.[0]?.name || ""
                                 }`}
                         </Text>
                     </View>
@@ -324,14 +355,14 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
                         paddingHorizontal: normalize(7),
                         paddingVertical: normalize(10),
                     }}>
-                    {ticketSave?.tickets?.[0]?.itemamt > 0 && <Text
+                    {webcastdeatils?.registrationTickets?.length > 0 && <Text
                         style={{
                             fontFamily: Fonts.InterBold,
                             fontSize: 24,
                             color: '#000000',
                             fontWeight: 'bold',
                         }}>
-                        {` ${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketSave?.tickets?.[0]?.itemamt))}`}
+                        {` ${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(calculatePrice || "0"))}`}
                     </Text>}
                 </View>
             ) : null}
@@ -343,7 +374,7 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, t
                     <View style={{ marginTop: !requiredStyle ? normalize(10) : 0 }}>
                         <Buttons
                             onPress={() => {
-                                nav.navigate("InPersonStatewebcast", { realData: { realData: webcastdeatils, ticketall: ticketSave?.tickets } });
+                                handleTickets();
                             }}
                             height={normalize(45)}
                             width={normalize(286)}

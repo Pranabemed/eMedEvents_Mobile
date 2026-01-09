@@ -398,8 +398,8 @@ const CheckoutMain = ({
                                             ? spanroute.totalTicketPrice > 0
                                                 ? `US$${formatNumberWithCommas(formatPrice(spanroute.totalTicketPrice))}`
                                                 : null
-                                            : ticketSave?.tickets[0]?.itemamt > 0
-                                                ? `US$${formatNumberWithCommas(formatPrice(ticketSave.tickets[0].itemamt))}`
+                                            : ticketSave?.tickets?.[0]?.itemamt > 0
+                                                ? `US$${formatNumberWithCommas(formatPrice(ticketSave.tickets?.[0].itemamt))}`
                                                 : null}
                                     </Text>
                                 </View>

@@ -131,7 +131,22 @@ const AddToCart = (props) => {
                 showErrorAlert(err, "Please connect to internet");
             })
     }
+    useEffect(() => {
+        if (WebcastReducer?.cartdetailsWebcastResponse) {
+            setLoading(false);
+            setCart(WebcastReducer?.cartdetailsWebcastResponse);
+            const seen = new Set();
+            const uniqueWebcastReducer = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets && WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets.filter(item => {
+                if (seen.has(item.payment_ticket_id)) {
+                    return false;
+                }
+                seen.add(item.payment_ticket_id);
+                return true;
+            });
 
+            setCartdetails(uniqueWebcastReducer);
+        }
+    }, [WebcastReducer?.cartdetailsWebcastResponse])
     if (status == '' || WebcastReducer.status != status) {
         switch (WebcastReducer.status) {
             case 'WebCast/cartdetailsWebcastRequest':
@@ -223,7 +238,7 @@ const AddToCart = (props) => {
     useEffect(() => {
         setCartcount(takeCountde);
     }, [takeCountde]);
-    console.log(cart, "card>>>>>======>>>>>>>123", cartdetails, WebcastReducer?.couponWebcastResponse?.code == "Successfully applied.")
+    console.log(cart, "card>>>>>======>>>>>>>123", paginatedDatacart, cartdetails, WebcastReducer?.couponWebcastResponse?.code == "Successfully applied.")
     useEffect(() => {
         if (cartdetails) {
             const fullData = cartdetails;
@@ -342,8 +357,8 @@ const AddToCart = (props) => {
     const totalPaid = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount ?? 0;
     const totalValue = WebcastReducer?.couponWebcastResponse?.total_value ?? 0;
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar

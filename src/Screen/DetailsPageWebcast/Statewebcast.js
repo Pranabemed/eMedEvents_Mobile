@@ -6,7 +6,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import PageHeader from '../../Components/PageHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { cartcountWebcastRequest, saveTicketRequest, webcastDeatilsRequest } from '../../Redux/Reducers/WebcastReducer';
+import { cartcountWebcastRequest, saveTicketCartRequest, saveTicketRequest, webcastDeatilsRequest } from '../../Redux/Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import StatewebcastSpeciality from './StatewebcastSpeciality';
 import StatewebcastOverview from './StatewebcastOverview';
@@ -56,9 +56,9 @@ const Statewebcast = props => {
     const [val, setval] = useState(0);
     const [webcastdeatils, setWebcastdeatils] = useState(null);
     const [htmlContents, setHtmlContents] = useState("");
-    const [ticketSave, setTicketSave] = useState(null);
     const [topiccast, setTopiccast] = useState(false);
     const [sharetrue, setSharetrue] = useState(true);
+    const [finalprice, setFinalprice] = useState(0);
     const [ratingsall, setRatingsall] = useState({
         totalRatingsCount: 0,
         totalAverageRating: 0
@@ -145,25 +145,25 @@ const Statewebcast = props => {
         }
     }, [props?.route?.params])
 
-    useEffect(() => {
-        if (webcastdeatils) {
-            const checkoutSpan = webcastdeatils?.conferenceId;
-            let obj = {
-                "conference_id": checkoutSpan,
-                "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
-                    "id": ticket?.id,
-                    "quantity": 1
-                }))
-            };
-            connectionrequest()
-                .then(() => {
-                    dispatch(saveTicketRequest(obj));
-                })
-                .catch((err) => {
-                    showErrorAlert("Please connect to internet", err)
-                })
-        }
-    }, [webcastdeatils])
+    // useEffect(() => {
+    //     if (webcastdeatils) {
+    //         const checkoutSpan = webcastdeatils?.conferenceId;
+    //         let obj = {
+    //             "conference_id": checkoutSpan,
+    //             "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+    //                 "id": ticket?.id,
+    //                 "quantity": 1
+    //             }))
+    //         };
+    //         connectionrequest()
+    //             .then(() => {
+    //                 dispatch(saveTicketRequest(obj));
+    //             })
+    //             .catch((err) => {
+    //                 showErrorAlert("Please connect to internet", err)
+    //             })
+    //     }
+    // }, [webcastdeatils])
     useEffect(() => {
         if (webcastdeatils?.overView) {
             setHtmlContents(webcastdeatils?.overView);
@@ -235,45 +235,6 @@ const Statewebcast = props => {
             setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse);
         }
     }, [WebcastReducer?.webcastDeatilsResponse])
-    useEffect(() => {
-        if (WebcastReducer?.saveTicketResponse) {
-            setLoading(false);
-            setTicketSave(WebcastReducer?.saveTicketResponse);
-        }
-    }, [WebcastReducer?.saveTicketResponse])
-    if (status == '' || WebcastReducer.status != status) {
-        switch (WebcastReducer.status) {
-            case 'WebCast/webcastDeatilsRequest':
-                status = WebcastReducer.status;
-                setLoading(true);
-                break;
-            case 'WebCast/webcastDeatilsSuccess':
-                status = WebcastReducer.status;
-                console.log("webcastdeatilsfollowed>>>>", WebcastReducer?.webcastDeatilsResponse);
-                setLoading(false);
-                setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse);
-                break;
-            case 'WebCast/webcastDeatilsFailure':
-                status = WebcastReducer.status;
-                setLoading(false);
-                Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel", onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save", onPress: () => { props.navigation.goBack() }, style: "cancel" }])
-                break;
-            case 'WebCast/saveTicketRequest':
-                status = WebcastReducer.status;
-                setLoading(true);
-                break;
-            case 'WebCast/saveTicketSuccess':
-                status = WebcastReducer.status;
-                setLoading(false);
-                setTicketSave(WebcastReducer?.saveTicketResponse);
-                console.log("saveTicketfollowed>>>>", WebcastReducer?.saveTicketResponse);
-                break;
-            case 'WebCast/saveTicketFailure':
-                status = WebcastReducer.status;
-                setLoading(false);
-                break;
-        }
-    }
     console.log(webcastdeatils, "webcastdetails============");
     const [expanded, setExpanded] = useState(false);
     const [expandedtopic, setExpandedtopic] = useState(false);
@@ -366,16 +327,87 @@ const Statewebcast = props => {
     useEffect(() => {
         setCartcount(takeCount);
     }, [takeCount]);
-    const cartHand = () => {
-        if (cartcount !== 0) {
-            props.navigation.navigate("AddToCart", { addtocart: { addtocart: "startcallapi", coupon: ticketSave, webcast: webcastdeatils, urlneedTake: urltrack, "cart": "remove" } })
-        } else {
-            props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: ticketSave, webcast: webcastdeatils, urlneedTake: urltrack } })
+    const handleTicketsCart = () => {
+        if (webcastdeatils?.registrationTickets?.length > 0) {
+            const checkoutSpan = webcastdeatils?.conferenceId;
+            let obj = {
+                "conference_id": checkoutSpan,
+                "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+                    "id": ticket?.id,
+                    "quantity": 1
+                }))
+            };
+            connectionrequest()
+                .then(() => {
+                    dispatch(saveTicketCartRequest(obj));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err)
+                })
         }
+    }
+    const cartHand = () => {
+        handleTicketsCart()
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+
+    const calculatePrice = (price, commission) => {
+        const amount = Number(price);
+        const comm = Number(commission);
+        if (!comm) {
+            return Math.trunc(amount); // 34 (not 34.00)
+        }
+        const commissionAmount = (amount * comm) / 100;
+        const finalPrice = amount - commissionAmount;
+        return Number.isInteger(finalPrice)
+            ? finalPrice
+            : Number(finalPrice.toFixed(2));
+    };
+    useEffect(() => {
+        if (webcastdeatils?.registrationTickets?.length > 0) {
+            const ticket = webcastdeatils.registrationTickets?.[0];
+            const price = calculatePrice(
+                ticket?.amount,
+                ticket?.emed_commission
+            );
+            setFinalprice(price);
+        }
+    }, [webcastdeatils?.registrationTickets]);
+    if (status == '' || WebcastReducer.status != status) {
+        switch (WebcastReducer.status) {
+            case 'WebCast/webcastDeatilsRequest':
+                status = WebcastReducer.status;
+                setLoading(true);
+                break;
+            case 'WebCast/webcastDeatilsSuccess':
+                status = WebcastReducer.status;
+                console.log("webcastdeatilsfollowed>>>>", WebcastReducer?.webcastDeatilsResponse);
+                setLoading(false);
+                setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse);
+                break;
+            case 'WebCast/webcastDeatilsFailure':
+                status = WebcastReducer.status;
+                setLoading(false);
+                Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel", onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save", onPress: () => { props.navigation.goBack() }, style: "cancel" }])
+                break;
+            case 'WebCast/saveTicketCartRequest':
+                status = WebcastReducer.status;
+                break;
+            case 'WebCast/saveTicketCartSuccess':
+                status = WebcastReducer.status;
+                if (cartcount !== 0) {
+                    props.navigation.navigate("AddToCart", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse, webcast: webcastdeatils, urlneedTake: urltrack, "cart": "remove" } })
+                } else {
+                    props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse, webcast: webcastdeatils, urlneedTake: urltrack } })
+                }
+                break;
+            case 'WebCast/saveTicketCartFailure':
+                status = WebcastReducer.status;
+                break;
+        }
+    }
     return (
         <>
             <MyStatusBar
@@ -394,8 +426,8 @@ const Statewebcast = props => {
                     visible={loading || addtocartload || loadingdowndt} />
                 <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white }}>
                     <View style={{ backgroundColor: Colorpath.Pagebg, padding: 10 }}>
-                        <StatewebcastPrice nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} ticketSave={ticketSave} />
-                        <StatewebcastAddTocart urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} ticketSave={ticketSave} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
+                        <StatewebcastPrice calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
+                        <StatewebcastAddTocart urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
                     </View>
                     <StatewebcastOverview width={width} source={source} toggleExpansion={toggleExpansion} expanded={expanded} />
                     {(webcastdeatils?.conferenceTypeText === "In-Person Event" ||
@@ -509,7 +541,7 @@ const Statewebcast = props => {
                         <StatewebcastReviews setReviewsPosition={setReviewsPosition} webcastdeatils={webcastdeatils} ratingsall={ratingsall} reviewpost={reviewpost} expandreview={expandreview} reviewChange={reviewChange} />
                     </View>}
                 </ScrollView>
-                <StatewebcastCheckout urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} ticketSave={ticketSave} webcastdeatils={webcastdeatils} finalKey={WebcastReducer?.saveTicketResponse} />
+                <StatewebcastCheckout takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils}/>
                 <CatlogDownload
                     setDownlink={setDownlinkdt}
                     downlink={downlinkdt}
