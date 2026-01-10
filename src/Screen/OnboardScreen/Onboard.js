@@ -21,7 +21,7 @@ import Fonts from '../../Themes/Fonts';
 import Buttons from '../../Components/Button';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import { getCountryDid } from '../../Utils/Helpers/Locate';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 const Onboard = (props) => {
     const [codegt, setCodegt] = useState("");
     const sliderData = [
@@ -147,11 +147,41 @@ const Onboard = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    const COUNTRY_DIAL_CODES = {
+        IN: '+91',
+        US: '+1',
+        GB: '+44',
+        AU: '+61',
+        CA: '+1',
+        SG: '+65',
+    };
+    const getCountryFromIP = async (ip) => {
+        try {
+            const res = await fetch(`https://ipinfo.io/${ip}/json`);
+            const text = await res.text();
+            if (text.startsWith('<')) {
+                throw new Error('HTML response');
+            }
+            const data = JSON.parse(text);
+            return data?.country || null; // "IN"
+        } catch (e) {
+            console.log('Geo lookup failed:', e);
+            return null;
+        }
+    };
+    const ipAddress = getPublicIP(); // global value
     useEffect(() => {
-      getCountryDid(code => {
-        setCodegt(code);
-      });
-    }, [props?.navigation]);
+        if (!ipAddress) return; // ⛔ wait until IP exists
+        const fetchCountry = async () => {
+            const countryCode = await getCountryFromIP(ipAddress);
+            if (countryCode) {
+                const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
+                setCodegt(dialCode); // ✅ push dial code instead of country code
+            }
+        };
+        fetchCountry();
+    }, [ipAddress]);
+
     return (
         <>
             <MyStatusBar
@@ -203,7 +233,7 @@ const Onboard = (props) => {
                             if (codegt) {
                                 props.navigation.navigate("SignUp", {
                                     phoneCd: {
-                                        phoneCd:codegt,
+                                        phoneCd: codegt,
                                     }
                                 });
                             } else {

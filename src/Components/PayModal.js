@@ -117,7 +117,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                             const fullDta = fulldashbaord?.[0];
                             setAddit(fullDta);
                         }}
-                        style={[styles.button, { marginLeft: normalize(20) }]}
+                        style={[styles.button, { marginLeft: normalize(0) }]}
                     >
                         <Text style={styles.buttonText}>{"Print Ticket"}</Text>
                     </TouchableOpacity>}
@@ -196,7 +196,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                                 setAddit(fullDta);
 
                             }}
-                            style={[styles.button, { marginLeft: normalize(20) }]}
+                            style={[styles.button, { marginLeft: normalize(0) }]}
                         >
                             <Text style={styles.buttonText}>{"Print Ticket"}</Text>
                         </TouchableOpacity>}
@@ -228,7 +228,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                             const fullDta = fulldashbaord?.[0];
                             setAddit(fullDta);
                         }}
-                        style={[styles.button, { marginLeft: normalize(20) }]}
+                        style={[styles.button, { marginLeft: normalize(0) }]}
                     >
                         <Text style={styles.buttonText}>{"Print Ticket"}</Text>
                     </TouchableOpacity>}
@@ -302,7 +302,8 @@ const styles = StyleSheet.create({
         width: normalize(240),
         paddingVertical: normalize(10),
         marginTop: normalize(15),
-        gap: normalize(10)
+        gap: normalize(10),
+        marginRight:normalize(30)
     },
     button: {
         backgroundColor: Colorpath.white,

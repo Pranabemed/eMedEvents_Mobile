@@ -332,7 +332,7 @@ function TabScreen() {
       {[
         { name: "Home", component: nettrue == false ? MainInt : Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: DashoardVault, icon: Imagepath.DocVault, label: "CVault" },
+        { name: "Contact", component: DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
       ]
         .map((item, index) => (
           <Tab.Screen

@@ -22,7 +22,6 @@ import DeviceInfo from 'react-native-device-info';
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getCountryDid } from '../../Utils/Helpers/Locate';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 const Login = (props) => {
   const {
@@ -294,12 +293,40 @@ const Login = (props) => {
         break;
     }
   }
-
-  useEffect(() => {
-    getCountryDid(code => {
-      setPhoneCountryCode(code);
-    });
-  }, [props?.navigation]);
+   const COUNTRY_DIAL_CODES = {
+        IN: '+91',
+        US: '+1',
+        GB: '+44',
+        AU: '+61',
+        CA: '+1',
+        SG: '+65',
+    };
+    const getCountryFromIP = async (ip) => {
+        try {
+            const res = await fetch(`https://ipinfo.io/${ip}/json`);
+            const text = await res.text();
+            if (text.startsWith('<')) {
+                throw new Error('HTML response');
+            }
+            const data = JSON.parse(text);
+            return data?.country || null; // "IN"
+        } catch (e) {
+            console.log('Geo lookup failed:', e);
+            return null;
+        }
+    };
+    const ipAddress = getPublicIP(); // global value
+    useEffect(() => {
+        if (!ipAddress) return; // ⛔ wait until IP exists
+        const fetchCountry = async () => {
+            const countryCode = await getCountryFromIP(ipAddress);
+            if (countryCode) {
+                const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
+                setPhoneCountryCode(dialCode); // ✅ push dial code instead of country code
+            }
+        };
+        fetchCountry();
+    }, [ipAddress]);
   const validHandles = useMemo(() => new Set([
     "Physician - MD",
     "Physician - DO",
