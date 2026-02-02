@@ -27,24 +27,26 @@ const PreTest = (props) => {
     statepush,
     setStatepush,
     setFinddata,
-    isConnected
+    isConnected,
+    setAddit
   } = useContext(AppContext);
   const CMEReducer = useSelector(state => state.CMEReducer);
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const dispatch = useDispatch();
   const PrePress = () => {
+    setAddit(statepush);
     takeCoursepre();
     props.navigation.goBack();
   };
   console.log(props?.route?.params, "route==============");
-   const [conn, setConn] = useState("")
-    useEffect(() => {
-        const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
-            setConn(state.isConnected);
-        });
-        return () => unsubscribe();
-    }, [isConnected]);
+  const [conn, setConn] = useState("")
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      console.log('Connection State:', state.isConnected);
+      setConn(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, [isConnected]);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [testData, setTestData] = useState(null);
   const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
@@ -196,6 +198,11 @@ const PreTest = (props) => {
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err) })
   }, [isFocus])
+  useEffect(() => {
+    if (CMEReducer?.startTestResponse) {
+      setTestData(CMEReducer?.startTestResponse);
+    }
+  }, [CMEReducer?.startTestResponse])
   if (status === '' || CMEReducer.status !== status) {
     switch (CMEReducer.status) {
       case 'CME/startTestRequest':
@@ -457,8 +464,8 @@ const PreTest = (props) => {
     );
   };
 
- const renderItem = ({ item, index }) => {
-  console.log("question_type_id_text", item)
+  const renderItem = ({ item, index }) => {
+    console.log("question_type_id_text", item)
     estimatedTime((item?.estimated_time || 0) * (item?.question_options?.length + 1 || 0));
     const cleanStatement = cleanHTML(item?.statement);
     return (
@@ -481,10 +488,10 @@ const PreTest = (props) => {
               key={option.id}
               style={styles.optionContainer}
               activeOpacity={0.7}
-               hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             >
               <CustomRadioButton
-              onPress={() => handleOptionSelect(option.question_id, option.id)}
+                onPress={() => handleOptionSelect(option.question_id, option.id)}
                 selected={selectedOptions[option.question_id] === option.id}
               />
               <Text style={styles.optionText}>
@@ -499,7 +506,7 @@ const PreTest = (props) => {
               key={option.id}
               style={styles.optionContainer}
               activeOpacity={0.7}
-               hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             >
               <CustomCheckBox
                 selected={selectedOptions[option.question_id]?.includes(option.id)}
@@ -554,21 +561,21 @@ const PreTest = (props) => {
       questions: Array.isArray(questions) ? questions : [],
     }));
   }, [testData]);
-  console.log(allQuestions, "fgfgkhgg-----");
-const wholeTitle = useMemo(() => {
-  const title = CMEReducer?.startTestResponse?.testData?.[0]?.title;
-  const duplicateName = CMEReducer?.cmedulicateResponse?.conferenceName;
-  const nextName = CMEReducer?.nextactionagainResponse?.conferenceName;
-
-  return title || duplicateName || nextName;
-}, [
-  CMEReducer?.startTestResponse?.testData?.[0]?.title,
-  CMEReducer?.cmedulicateResponse?.conferenceName,
-  CMEReducer?.nextactionagainResponse?.conferenceName
-]);
-useLayoutEffect(() => {
-        props.navigation.setOptions({ gestureEnabled: false });
-    }, []);
+  const wholeTitle = useMemo(() => {
+    const title = CMEReducer?.startTestResponse?.testData?.[0]?.title;
+    const duplicateName = CMEReducer?.cmedulicateResponse?.conferenceName;
+    const nextName = CMEReducer?.nextactionagainResponse?.conferenceName;
+    
+    return title || duplicateName || nextName;
+  }, [
+    CMEReducer?.startTestResponse?.testData?.[0]?.title,
+    CMEReducer?.cmedulicateResponse?.conferenceName,
+    CMEReducer?.nextactionagainResponse?.conferenceName
+  ]);
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+  console.log(allQuestions, "fgfgkhgg-----",wholeTitle,headerText);
   return (
     <>
       <MyStatusBar
@@ -582,23 +589,25 @@ useLayoutEffect(() => {
           <PageHeader
             title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
             onBackPress={PrePress}
+            nol={"yes"}
           />
         ) : (
           <View>
             <PageHeader
               title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
               onBackPress={PrePress}
+              nol={"yes"}
             />
           </View>
         )}
-        {conn == false ? <IntOff/> :<ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
+        {conn == false ? <IntOff /> : <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
           <View>
             <View style={styles.container}>
               {showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
                 <View>
                   <View style={styles.headerRow}>
                     <View style={styles.headerContent}>
-                      <Text style={styles.subText}>{headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
+                      <Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text|| MEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
                       <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999" }}>{"Question"}</Text>
                       <View style={styles.scoreContainer}>
                         <Text style={styles.scoreText}>{lengthCheck}</Text>

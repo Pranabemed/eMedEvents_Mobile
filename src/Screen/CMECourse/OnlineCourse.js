@@ -53,12 +53,9 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     useEffect(() => {
         fetchHandle();
     }, [fetchname, isFocus]);
-
-    console.log(fetchname, needReview, "loading----------", crediwhole);
     const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
-        console.log(result, "webcast url=======", onlineName);
         if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
         }
@@ -66,7 +63,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
-        console.log(resulttitle, "webcast url=======", make);
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: crediwhole } })
         }
@@ -74,10 +70,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
-        console.log(result, "webcast url=======", dataItem);
-        // console.log(dataItem?.current_activity_api == "activitysession", "dataItem===============");
-        // console.log(dataItem?.current_activity_api == "introduction", "dataItem===============");
-        // console.log(dataItem?.current_activity_api == "startTest", "dataItem===============");
         if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
         } else if (dataItem?.current_activity_api == "introduction") {
@@ -118,7 +110,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
             setPageNum(pageNum + 1);
             fetchHandle();
         }
-        console.log("hello")
     }, [apiReq]);
 
     const fullDataRefresh = () => {
@@ -139,7 +130,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                 status = CMEReducer.status;
                 setApiReq(false);
                 setLoading(false);
-                console.log(CMEReducer?.cmeCourseResponse?.conferences?.length, "helooo========")
                 const newData = CMEReducer?.cmeCourseResponse?.conferences || [];
                 if (newData.length > 0) {
                     const modifiedData = [
@@ -159,19 +149,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                 break;
         }
     }
-
-    console.log(filteredItems, storeAlldata, "filteredItems");
-
-    // useEffect(() => {
-    //     if (storeAlldata?.length > 0) {
-    //         const filteredData = storeAlldata?.filter(item => {
-    //             const type = parseInt(item?.conference_type);
-    //             const targetTypes = [1, 6, 34];
-    //             return targetTypes?.includes(type);
-    //         });
-    //         setFilteredItems(filteredData);
-    //     }
-    // }, [storeAlldata]);
     useEffect(() => {
         if (storeAlldata?.length > 0) {
             const filteredData = storeAlldata?.filter(item => {
@@ -205,7 +182,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                     [];
         setDataAll(resultData);
     }, [fetchname, storeAlldata, pendingall, compltall]);
-    console.log(pendingall, "pendingall1111111", filteredItems, dataAll);
     const handleLinkst = (link) => {
         if (link) {
             const showPDF = async () => {
@@ -213,11 +189,8 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
                     const url = `https://static.emedevents.com/uploads/conferences/certificates/${cleanedPath}`;
-                    console.log(url, "url---------");
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-                    console.log('Downloading file from:', url);
-                    console.log('Saving file to:', localFile);
                     const options = {
                         fromUrl: url,
                         toFile: localFile,
@@ -225,7 +198,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                     const downloadResult = await RNFS.downloadFile(options).promise;
                     console.log('Download result:', downloadResult);
                     setPdfUrist(localFile);
-                    console.log('File downloaded successfully to:', localFile);
                 } catch (error) {
                     console.error('Error during file download:', error);
                 } finally {
@@ -240,7 +212,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
         if (pdfUrist) {
             const openFileViewerst = async () => {
                 try {
-                    console.log('Opening file viewer for:', pdfUrist);
                     await FileViewer.open(pdfUrist);
                     setPdfUrist(null);
                 } catch (error) {
@@ -259,8 +230,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
         return () => clearTimeout(timeout);
     }, []);
     const courserenderData = ({ item, index }) => {
-
-        console.log(item, "full item ===========", item?.certificate?.conference_id)
         return (
             <View>
                 <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
@@ -294,7 +263,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                             </TouchableOpacity>
                             {(item?.certificate?.certificate || item?.needReview) ? (
                                 <TouchableOpacity onPress={() => {
-                                    console.log(item?.needReview, "item?.needReview")
                                     setModalview(!modalview);
                                     setNeedReview(item?.needReview);
                                     setOnlineName(item);
@@ -370,10 +338,12 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
 
                             {item?.button_display_text ? <TouchableOpacity
                                 onPress={() => {
-                                    setStatepush(crediwhole);
+                                    setStatepush(statepush);
                                     if (item?.buttonText === "Revise Course") {
+                                        setStatepush(statepush);
                                         navigation.navigate("VideoComponent", { RoleData: item });
                                     } else {
+                                        setStatepush(statepush);
                                         fullAction(item);
                                     }
                                 }}
@@ -437,7 +407,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                 onEndReached={fetchMore}
                 onEndReachedThreshold={0.5}
                 contentContainerStyle={{ paddingBottom: normalize(280) }}
-                // onScroll={()=>{console.log("hello")}}
                 scrollEventThrottle={16}
                 ListFooterComponent={
                     showloader && loading && dataAll?.length > 1 ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null

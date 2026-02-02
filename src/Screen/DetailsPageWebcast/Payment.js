@@ -65,7 +65,6 @@ const Payment = (props) => {
     const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
@@ -87,7 +86,6 @@ const Payment = (props) => {
     ];
     const handleSelect = (option) => {
         setRemind(option);
-        console.log('Selected option:1122', option);
     };
     const [paymentcard, setPaymentcard] = useState(false);
     const [finalex, setFinalex] = useState("")
@@ -98,9 +96,6 @@ const Payment = (props) => {
     const toggleModalFailed = (vlk) => {
         setPaymentfd(vlk);
     };
-
-    console.log(paymentcard, remind, selectedOption == 2, "remind ==========1222", props?.route?.params);
-    console.log("remind ==========", props?.route?.params?.cartInvoice?.paymentprice?.cartData?.total_paid_amount);
     useEffect(() => {
         if (maskedEx && maskedEx.includes('/')) {
             const [month, year] = maskedEx.split('/');
@@ -113,22 +108,35 @@ const Payment = (props) => {
             if (apiFormattedDate) {
                 setFinalex(apiFormattedDate);
             }
-            console.log(apiFormattedDate);
         }
     }, [maskedEx])
     const takeStatus = () => {
-        const takeCourse = props?.route?.params?.invoiceTxt?.invoiceTxt ? props?.route?.params?.invoiceTxt?.invoiceTxt : WebcastReducer?.addtoCartWebcastResponse?.invoice;
-        if (takeCourse) {
-            let obj = { "invoice": takeCourse }
-            connectionrequest()
-                .then(() => {
-                    dispatch(PaymentCheckRequest(obj))
-                })
-                .catch((err) => {
-                    showErrorAlert("Please connect to internet", err)
-                })
-        }
-    }
+        const routeParams = props?.route?.params;
+
+        const takeCourse =
+            routeParams?.invoiceTxt?.invoiceTxt ||
+            WebcastReducer?.addtoCartWebcastResponse?.invoice;
+
+        const cartCourse =
+            routeParams?.cartInvoice?.cartInvoice ||
+            WebcastReducer?.cartCheckoutResponse?.invoiceNumber;
+
+        // choose first available invoice
+        const finalInvoice = takeCourse || cartCourse;
+
+        if (!finalInvoice) return;
+
+        const obj = { invoice: finalInvoice };
+
+        connectionrequest()
+            .then(() => {
+                dispatch(PaymentCheckRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+            });
+    };
+
     const walletpayemnthand = () => {
         if (checked) {
             showErrorAlert("Please accept terms and conditions");
@@ -152,7 +160,6 @@ const Payment = (props) => {
             "card_expiry": "",
             "accept_updates": 1,
         }
-        console.log(obj, "obj---------", props?.route?.params?.cartInvoice?.cartInvoice)
         connectionrequest()
             .then(() => {
                 if (props?.route?.params?.cartInvoice?.cartInvoice) {
@@ -257,9 +264,6 @@ const Payment = (props) => {
             "card_cvv": cvv,
             "card_expiry": finalex || finalex
         };
-
-        console.log(obj, "12333objs---single");
-
         connectionrequest()
             .then(() => {
                 if (props?.route?.params?.cartInvoice?.cartInvoice) {
@@ -267,7 +271,6 @@ const Payment = (props) => {
                 } else {
                     dispatch(webcastPaymentRequest(obj));
                 }
-                console.log('obj', obj);
             })
             .catch(() => {
                 showErrorAlert(errors.noInternet);
@@ -363,7 +366,6 @@ const Payment = (props) => {
             "card_expiry": finalex ? finalex : finalex,
             "accept_updates": 1
         };
-        console.log(walletobj, "12333objs---");
         connectionrequest()
             .then(() => {
                 if (props?.route?.params?.cartInvoice?.cartInvoice) {
@@ -371,7 +373,6 @@ const Payment = (props) => {
                 } else {
                     dispatch(webcastPaymentRequest(walletobj));
                 }
-                console.log('walletobj', walletobj);
             })
             .catch(() => {
                 showErrorAlert(errors.noInternet);
@@ -394,7 +395,6 @@ const Payment = (props) => {
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     takeStatus();
                 }
-                console.log("payment", WebcastReducer?.webcastPaymentResponse?.payment_status)
                 break;
             case 'WebCast/webcastPaymentFailure':
                 status1 = WebcastReducer.status;
@@ -413,7 +413,6 @@ const Payment = (props) => {
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     takeStatus();
                 }
-                console.log("payment", WebcastReducer?.cartPaymentResponse?.payment_status)
                 break;
             case 'WebCast/cartPaymentFailure':
                 status1 = WebcastReducer.status;
@@ -424,18 +423,14 @@ const Payment = (props) => {
             case 'WebCast/PaymentCheckSuccess':
                 status1 = WebcastReducer.status;
                 if (WebcastReducer?.PaymentCheckResponse?.payment_status == 'already paid') {
-                    console.log("payment12222=====1111", WebcastReducer?.PaymentCheckResponse?.payment_status)
                     toggleModalFailed(true);
                 } else if (WebcastReducer?.PaymentCheckResponse?.payment_status == "failed") {
-                    console.log("payment12222=====1222", WebcastReducer?.PaymentCheckResponse?.payment_status)
                     toggleModalFailed(true);
                 } else if (WebcastReducer?.PaymentCheckResponse?.payment_status == 'success') {
-                    console.log("payment12222=====1333", WebcastReducer?.PaymentCheckResponse?.payment_status)
                     const difGet = props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket?.billing_address?.state_id || props?.route?.params?.cartInvoice?.paymentprice?.user_billing_address?.state_id || props?.route?.params?.invoiceTxt?.ticketShow?.license_state_id;
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     toggleModalPayment(true);
                 }
-                console.log("payment12222=====", WebcastReducer?.PaymentCheckResponse)
                 break;
             case 'WebCast/PaymentCheckFailure':
                 status1 = WebcastReducer.status;
@@ -445,7 +440,6 @@ const Payment = (props) => {
                 break;
             case 'WebCast/walletCheckSuccess':
                 status1 = WebcastReducer.status;
-                console.log("payment12222=====", WebcastReducer?.walletCheckResponse?.balance)
                 break;
             case 'WebCast/walletCheckFailure':
                 status1 = WebcastReducer.status; t
@@ -483,7 +477,6 @@ const Payment = (props) => {
             }, 10000);
         }
     }, [printgo])
-    console.log(wallettrue, "wallet=======", selectedOption, printgo)
     function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
@@ -508,13 +501,6 @@ const Payment = (props) => {
         }
         return 0;
     };
-    // const totalPaidAmountsd = props?.route?.params?.invoiceTxt?.paymentprice?.totalTicketPrice != null
-    //     ? props?.route?.params?.invoiceTxt?.paymentprice?.totalTicketPrice > 0
-    //         ? `${props?.route?.params?.invoiceTxt?.paymentprice?.totalTicketPrice}`
-    //         : null
-    //     : props?.route?.params?.invoiceTxt?.ticketShow?.tickets[0]?.itemamt > 0
-    //         ? `${props?.route?.params?.invoiceTxt?.ticketShow.tickets[0].itemamt}`
-    //         : null || props?.route?.params?.cartInvoice?.paymentprice?.cartData?.total_paid_amount;
     const getTotalPaidAmount = () => {
         const invoiceTxt = props?.route?.params?.invoiceTxt;
         const cartInvoice = props?.route?.params?.cartInvoice;
@@ -536,10 +522,9 @@ const Payment = (props) => {
     const isWalletOptionAvailable = walletBalance > 0;
     const roundedTotalPaidAmount = Math.round(walletBalance);
     const isOnlyCardOption = walletBalance == 0
-    console.log(Number(walletBalance) == 0, Number(walletBalance) > Number(totalPaidAmount), Number(walletBalance) < Number(totalPaidAmount), isWalletOptionAvailable, walletBalance, totalPaidAmount, "njkgdfjkgjkjk====", props?.route?.params?.cartInvoice?.paymentprice?.cartData?.total_paid_amount);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar

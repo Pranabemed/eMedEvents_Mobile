@@ -23,13 +23,13 @@ const Course = (props) => {
     const {
         isConnected,
         fulldashbaord,
-        setAddit
+        setAddit,
+        statepush
     } = useContext(AppContext);
-    console.log(props?.route?.params?.taskData, "taskData====");
+    console.log(props?.route?.params?.taskData, "taskData====",statepush);
     const CMEReducer = useSelector(state => state.CMEReducer);
     const CMEPress = () => {
-        const getAda = fulldashbaord?.[0];
-        setAddit(getAda);
+        setAddit(statepush);
         props.navigation.replace("TabNav");
         // props.navigation.goBack();
     }

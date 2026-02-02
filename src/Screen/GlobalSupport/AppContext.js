@@ -22,16 +22,22 @@ const AppProvider = ({ children }) => {
   const [totalcard, setTotalCred] = useState();
   const [stateid, setStateid] = useState();
   const [renewal, setRenewal] = useState("");
-  const [cartcount,setCartcount] = useState("")
+  const [cartcount, setCartcount] = useState("")
   const [expireDate, setExpireDate] = useState(false);
-  const [finddata,setFinddata] = useState("");
-  const [statepush,setStatepush] = useState("");
-  const [pushnew,setPushnew] = useState(false);
-  const [addresssort,setAddresssort] = useState("");
-    const clearContextData = () => {
+  const [finddata, setFinddata] = useState("");
+  const [statepush, setStatepush] = useState("");
+  const [pushnew, setPushnew] = useState(false);
+  const [addresssort, setAddresssort] = useState("");
+  const [completedCount, setCompletedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const clearContextData = () => {
     setFinddata(null);
   };
   const values = {
+    completedCount,
+    setCompletedCount,
+    pendingCount,
+    setPendingCount,
     takestate,
     setTakestate,
     addit,

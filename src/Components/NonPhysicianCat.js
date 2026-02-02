@@ -11,9 +11,6 @@ import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
 import normalize from '../Utils/Helpers/Dimen';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import TextModal from './TextModal';
-import Cmemodal from './Cmemodal';
-import CreditValult from './CreditValult';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import { dashboardRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
@@ -22,14 +19,10 @@ import HomeShimmer from './DashBoardShimmer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
-import Dashboardmain from './Dashboardmain';
-import Dashboardmaintwo from './Dashboardmaintwo';
 import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
-import { current } from '@reduxjs/toolkit';
 import Nonphysicianprofile from './Nonphysicianprofile';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
-import RestProfession from './RestProfession';
 import Buttons from './Button';
 import Fonts from '../Themes/Fonts';
 import NetInfo from '@react-native-community/netinfo';
@@ -66,23 +59,11 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex]; // <-- Uses state-tracked index
     };
-    console.log(fulldashbaord, AuthReducer?.loginResponse?.user?.profession, "statelicesene=================", getCurrentItem())
-
-    const modalFalse = () => {
-        setDetailsmodal(true);
-    }
-    const cmeModalFalse = () => {
-        setCmemodal(true);
-    }
-    const cmeValult = () => {
-        setVaultmodal(!vaultModal);
-    }
     const isFocus = useIsFocused();
     useEffect(() => {
         const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
-                console.log(loginHandle, "statelicesene=================")
                 if (loginHandle) {
                     dashBoarData()
                 }
@@ -174,7 +155,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             : null;
     const allProfTake = validHandles.has(profFromDashboard);
     const allNoDetData = otherRestrict.has(profFromDashboard);
-    console.log("DashboardReducer", DashboardReducer);
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -182,8 +162,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 break;
             case 'Dashboard/dashboardSuccess':
                 status = DashboardReducer.status;
-                console.log("DashboardReducer9999", DashboardReducer?.dashboardResponse?.data?.licensures);
-                if (DashboardReducer.dashboardResponse.data?.licensures == 0) {
+                if (DashboardReducer?.dashboardResponse?.data?.licensures == 0) {
                     setWholeNo(true);
                 } else {
                     setWholeNo(false);
@@ -202,7 +181,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                     if (uniqueStates?.length > 0 || uniqueMainDatacheck?.length > 0) {
                         stateTake(uniqueStates, uniqueMainDatacheck);
                     }
-                    console.log(uniqueMainDatacheck, "duplicate removed ========");
                 }
                 setFulldashbaord(uniqueStates);
                 break;
@@ -215,8 +193,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             case 'Dashboard/stateDashboardSuccess':
                 status = DashboardReducer.status;
                 setFinddata(DashboardReducer?.stateDashboardResponse?.data);
-                console.log(DashboardReducer?.stateDashboardResponse?.data?.tasks_data, "stateDashboardRespons===========")
-                // props.navigation.navigate("Login");
                 break;
             case 'Dashboard/stateDashboardFailure':
                 status = DashboardReducer.status;
@@ -226,7 +202,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 break;
             case 'Dashboard/stateReportingSuccess':
                 status = DashboardReducer.status;
-                console.log(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link, "renwal link -----");
                 if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
                     setRenewal(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
                 } else {
@@ -238,7 +213,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 break;
         }
     }
-    console.log(fulldashbaord, "fulldata--------", DashboardReducer?.dashboardResponse?.data?.licensures)
     useEffect(() => {
         if (fulldashbaord?.length == 0) {
             setWholeNo(true);
@@ -260,68 +234,25 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 }
             }
         });
-        console.log(total, "toatl=========>>>>=======")
         setCompletedCount(completed);
         setPendingCount(total - completed);
 
     }, [DashboardReducer?.stateDashboardResponse?.data]);
-    // const tasksData = DashboardReducer?.stateDashboardResponse?.data?.tasks_data;
-    // const hasTasks = tasksData?.due_in_30_days?.length > 0 ||
-    //     tasksData?.due_in_60_days?.length > 0 ||
-    //     tasksData?.due_in_90_days?.length > 0;
-    // useEffect(() => {
-    //     if (val == currentIndex) {
-    //         const getDtaa = fulldashbaord?.[val];
-    //         if (getDtaa) {
-    //             stateDashboardData(getDtaa?.state_id);
-    //             stateReport(getDtaa?.state_id);
-    //             setAddit(getDtaa);
-    //             setTakedata(getDtaa);
-    //             setTakestate(getDtaa?.board_id)
-    //             setTotalCred(getDtaa?.credits_data?.topic_earned_credits + getDtaa?.credits_data?.total_general_earned_credits);
-    //             setStateid(getDtaa?.state_id);
-    //         }
-    //     }
-    // }, [val, currentIndex, fulldashbaord])
     const [nettrue, setNettrue] = useState("");
-    // const logger = (() => {
-    //     let oldConsole = {};
-    //     return {
-    //         disableLogger: () => {
-    //             if (oldConsole.log) return; // Already disabled
-    //             oldConsole.log = console.log;
-    //             oldConsole.info = console.info;
-    //             oldConsole.warn = console.warn;
-    //             oldConsole.error = console.error;
-    //             oldConsole.debug = console.debug;
-    //             console.log = () => { };
-    //             console.info = () => { };
-    //             console.warn = () => { };
-    //             console.error = () => { };
-    //             console.debug = () => { };
-    //         },
-    //     };
-    // })();
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setNettrue(state.isConnected);
-            // logger.disableLogger();
-            // console.log = function () { };
         });
 
         return () => unsubscribe();
     }, []);
     const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
             if (state.isConnected) {
                 navigation.navigate("TabNav")
-                // showErrorAlert("Internet is back!");
             }
         });
-
         return () => unsubscribe();
     }
      const cleanNumber = (value) => {
@@ -392,7 +323,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                                         // stateDashboardData(getDtaa.state_id);
                                         // stateReport(getDtaa.state_id);
                                         const responseData = DashboardReducer?.stateDashboardResponse?.data;
-                                        console.log(responseData, "responseData--------", DashboardReducer);
                                         setFinddata(responseData);
                                         setAddit(getDtaa);
                                         setTakedata(getDtaa);

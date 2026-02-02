@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, Platform, Text, ActivityIndicator, Image, Alert, FlatList, ScrollView, StatusBar, BackHandler, Pressable } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, Alert, ScrollView, StatusBar, BackHandler, Pressable } from 'react-native';
 import Video from 'react-native-video';
-// import Slider from '@react-native-community/slider';
 import PlayIcon from 'react-native-vector-icons/AntDesign';
 import FullIcon from 'react-native-vector-icons/Feather';
 import MyStatusBar from '../Utils/MyStatusBar';
@@ -10,22 +9,17 @@ import Colorpath from '../Themes/Colorpath';
 import PageHeader from './PageHeader';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
-import IconDot from 'react-native-vector-icons/Entypo';
 import Imagepath from '../Themes/Imagepath';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { cmeactivityRequest, cmenextactionRequest, nextactionagainRequest } from '../Redux/Reducers/CMEReducer';
+import { cmeactivityRequest, cmenextactionRequest } from '../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import Buttons from './Button';
 import { useIsFocused } from '@react-navigation/native';
 import RenderHTML from 'react-native-render-html';
-import { styles } from '../Screen/Specialization/SpecialStyle';
-import Loader from '../Utils/Helpers/Loader';
 import RNFS from "react-native-fs";
 import FileViewer from "react-native-file-viewer";
-import { Slider } from '@rneui/themed';
 import Sliders from './SliderRef';
-import { throttle } from 'lodash';
 import FlipbookComponent from './FlipbookComponent';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { stateDashboardRequest } from '../Redux/Reducers/DashboardReducer';
@@ -40,11 +34,9 @@ const VideoComponent = (props) => {
         statepush,
         setStatepush,
         setFinddata,
-        isConnected
+        isConnected,
+        setAddit
     } = useContext(AppContext);
-    console.log(props?.route?.params?.FullID, "props?.route?.params?.RoleData112", statepush)
-    console.log(props?.route?.params?.RoleData, "props?.route?.params?.FullID")
-    console.log(props?.route?.params?.activityID, props?.route?.params?.activityID?.conferenceId, "props?.route?.params?.activityID?.current_activity_id", props?.route?.params)
     const isFocus = useIsFocused();
     const CMEReducer = useSelector(state => state.CMEReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
@@ -55,7 +47,6 @@ const VideoComponent = (props) => {
     const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
@@ -120,7 +111,6 @@ const VideoComponent = (props) => {
                 || props?.route?.params?.postdata?.next_activity_id
                 || props?.route?.params?.activityID?.next_activity_id,
         }
-        console.log("mainpage-----Video.js", obj)
         connectionrequest()
             .then(() => {
                 dispatch(cmenextactionRequest(reviseText ? revisebj : obj));
@@ -140,11 +130,6 @@ const VideoComponent = (props) => {
     const [loadingdown, setLoadingdown] = useState(false);
     const [pdfUri, setPdfUri] = useState("");
     const { width, height } = Dimensions.get('window');
-    const throttledUpdate = throttle(setCurrentTime, 100);
-    console.log(props?.route?.params?.RoleData?.current_activity_id, props?.route?.params?.FullID?.previous_activity_id, props?.route?.params?.postdata?.next_activity_id, props?.route?.params?.activityID?.next_activity_id, "new take=======", props?.route?.params?.RoleData?.current_activity_id
-        || props?.route?.params?.FullID?.previous_activity_id
-        || props?.route?.params?.postdata?.next_activity_id
-        || props?.route?.params?.activityID?.next_activity_id)
     useEffect(() => {
         if (fullscreen) {
             Orientation.lockToLandscape();
@@ -356,7 +341,6 @@ const VideoComponent = (props) => {
     // Additional guard to ensure `videoDic?.video_play_time` is always prioritized
     useEffect(() => {
         if (videoDic && videoDic?.video_play_time) {
-            console.log(videoDic && videoDic?.video_play_time, "videoDic && videoDic?.video_play_time----")
             const playbackTime = parseFloat(videoDic.video_play_time);
 
             if (videoRef.current) {
@@ -386,6 +370,7 @@ const VideoComponent = (props) => {
     };
 
     const videoPress = () => {
+        setAddit(statepush);
         takeCourseVideo();
         props.navigation.goBack();
     };
@@ -395,6 +380,16 @@ const VideoComponent = (props) => {
         const seconds = Math.floor(time % 60);
         return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
+    useEffect(() => {
+        if (CMEReducer?.cmeactivityResponse) {
+            setVideoDic(CMEReducer?.cmeactivityResponse);
+        }
+    }, [CMEReducer?.cmeactivityResponse])
+    useEffect(() => {
+        if (CMEReducer?.cmenextactionResponse) {
+            setNextAction(CMEReducer?.cmenextactionResponse);
+        }
+    }, [CMEReducer?.cmenextactionResponse])
     if (status === '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/cmeactivityRequest':
@@ -402,17 +397,7 @@ const VideoComponent = (props) => {
                 break;
             case 'CME/cmeactivitySuccess':
                 status = CMEReducer.status;
-                console.log(CMEReducer?.cmeactivityResponse, "acyvuity ========");
                 setVideoDic(CMEReducer?.cmeactivityResponse);
-            // let obj = {
-            //     "conference_id": CMEReducer?.cmenextactionResponse?.conferenceId,
-            //     "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id,
-            // }
-            // connectionrequest()
-            //     .then(() => {
-            //         dispatch(cmenextactionRequest(obj));
-            //     })
-            //     .catch((err) => { showErrorAlert("Please connect to internet", err) })
             case 'CME/cmeactivityFailure':
                 status = CMEReducer.status;
                 break;
@@ -421,19 +406,7 @@ const VideoComponent = (props) => {
                 break;
             case 'CME/cmenextactionSuccess':
                 status = CMEReducer.status;
-                console.log(CMEReducer?.cmenextactionResponse?.next_activity_id, "next act1111===========")
                 setNextAction(CMEReducer?.cmenextactionResponse);
-            // let obj = {
-            //     "conference_id": CMEReducer?.cmenextactionResponse?.conferenceId,
-            //     "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id,
-            // };
-            // connectionrequest()
-            //     .then(() => {
-            //         dispatch(nextactionagainRequest(obj));
-            //     })
-            //     .catch((err) => {
-            //         showErrorAlert("Please connect to internet", err);
-            //     });
             case 'CME/cmenextactionFailure':
                 status = CMEReducer.status;
                 break;
@@ -442,7 +415,6 @@ const VideoComponent = (props) => {
                 break;
             case 'CME/nextactionagainSuccess':
                 status = CMEReducer.status;
-                console.log(CMEReducer?.nextactionagainResponse, "again next===========")
             case 'CME/nextactionagainFailure':
                 status = CMEReducer.status;
                 break;
@@ -518,10 +490,7 @@ const VideoComponent = (props) => {
             console.error('No video description found in videoDic.');
             return;
         }
-
         const videoId = videoDic.activityData[0]?.description;
-        console.log(videoId, "videoID12233334");
-
         if (videoId) {
             const extractedUrl = extractVideoUrl(videoId);
             if (extractedUrl) {
@@ -534,15 +503,9 @@ const VideoComponent = (props) => {
             console.error('Video description is null.');
         }
     }, [videoDic]);
-    const shouldDisplayCmePoints =
-        CMEReducer?.cmenextactionResponse?.conferenceCmePoints &&
-        // Remove ALL whitespace and check if it's NOT "-0"
-        CMEReducer.cmenextactionResponse.conferenceCmePoints.replace(/\s/g, "") !== "-0";
     function extractVideoUrl(htmlString) {
-        console.log(htmlString, "Extracting video URL");
         const videoUrlMatch = htmlString.match(/<iframe[^>]+src=["']([^"']+\.mp4)["']|<source[^>]+src=["']([^"']+\.(m4v|mp4))["']/i);
         if (videoUrlMatch) {
-            console.log("Matched URL:", videoUrlMatch[1] || videoUrlMatch[2]);
             return videoUrlMatch[1] || videoUrlMatch[2];
         } else {
             console.error('No video URL found in the provided HTML string.');
@@ -552,15 +515,9 @@ const VideoComponent = (props) => {
     const videoId = videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0
         ? videoDic?.activityData[0]?.youtube_video_id
         : null;
-
-    console.log(videoId, "videoID11111", videoUrl, nonVideoContent);
-    console.log(videoUrl, "videoID1233333", videoId);
-    console.log(videoDic?.activityData?.length > 0 && videoDic?.activityData?.map((d) => { return d?.type }), "vuideo", videoDic)
     const pdfAll = videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0
         ? videoDic?.activityData[0]?.document
         : null;
-
-    console.log(pdfAll, "videoID");
     const completedPercentage = props?.route?.params?.RoleData?.completed_percentage
     const fullIDPercentage = props?.route?.params?.FullID?.percentage;
     const postDataPer = props?.route?.params?.postdata?.completed_percentage;
@@ -574,7 +531,6 @@ const VideoComponent = (props) => {
         : `${validPercentage ?? 0}% Pending`;
     const { RoleData, FullID, activityID } = props?.route?.params || {};
     const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
-    console.log(conferenceIdAll, "conferenceIdAll===============", nextAction, fullscreen, showThumb);
     const handleLink = (link, path) => {
         if (link && path) {
             const showPDF = async () => {
@@ -584,13 +540,8 @@ const VideoComponent = (props) => {
                     const cleanedLink = link.replace(/\s+/g, '');
                     const cleanedPath = path.replace(/\s+/g, '');
                     const url = `${cleanedLink}${cleanedPath}`;
-                    console.log(url, "url---------");
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-
-                    console.log('Downloading file from:', url);
-                    console.log('Saving file to:', localFile);
-
                     const options = {
                         fromUrl: url,
                         toFile: localFile,
@@ -599,7 +550,6 @@ const VideoComponent = (props) => {
                     const downloadResult = await RNFS.downloadFile(options).promise;
                     console.log('Download result:', downloadResult);
                     setPdfUri(localFile);
-                    console.log('File downloaded successfully to:', localFile);
                 } catch (error) {
                     console.error('Error during file download:', error);
                 } finally {
@@ -614,7 +564,6 @@ const VideoComponent = (props) => {
         if (pdfUri) {
             const openFileViewer = async () => {
                 try {
-                    console.log('Opening file viewer for:', pdfUri);
                     await FileViewer.open(pdfUri);
                     setPdfUri(null);
                 } catch (error) {
@@ -781,17 +730,7 @@ const VideoComponent = (props) => {
                         </Pressable>
                         {!fullscreen && !loading ? (
                             <View style={styles.controls}>
-                                {/* <Slider
-                                    style={styles.slider}
-                                    value={currentTime}
-                                    minimumValue={0}
-                                    maximumValue={duration}
-                                    onValueChange={handleSliderChange}
-                                    onSlidingComplete={handleSlidingComplete}
-                                    thumbTintColor={pageViewPositionSlider.thumbColor}
-                                    maximumTrackTintColor={pageViewPositionSlider.trackColor}
-                                    minimumTrackTintColor={pageViewPositionSlider.trackColor}
-                                /> */}
+
                                 <Sliders
                                     value={currentTime}
                                     max={duration} valChange={handleSliderChange}
@@ -806,18 +745,6 @@ const VideoComponent = (props) => {
                                     handleSlidingComplete={handleSlidingComplete}
                                     fullscreen={true}
                                 />
-                                {/* <Slider
-                                    style={styles.slider}
-                                    value={currentTime}
-                                    minimumValue={0}
-                                    maximumValue={duration}
-                                    onValueChange={handleSliderChange}
-                                    onSlidingComplete={handleSlidingComplete}
-                                    minimumTrackTintColor="#DDDDDD"
-                                    maximumTrackTintColor="#000000"
-                                    thumbTintColor={showThumb ? "#000000" : "rgba(0, 0, 0, 0.5)"}
-                                    thumbImage={dotImage}
-                                /> */}
                             </View>
                         )}
                     </View> : nonVideoContent && !fullscreen ? <><RenderHTML
@@ -842,6 +769,8 @@ const VideoComponent = (props) => {
                         <View style={{ flexDirection: "row", justifyContent: "space-evenly", paddingVertical: finalText ? normalize(25) : normalize(10) }}>
                             <Buttons
                                 onPress={() => {
+                                    setAddit(statepush);
+                                    setStatepush(statepush);
                                     takeCourseVideo();
                                     setPaused(true);
                                     props.navigation.navigate("TabNav");
@@ -868,6 +797,8 @@ const VideoComponent = (props) => {
                                                 activityID: { activityID: nextAction?.next_activity_id, conference_id: conferenceIdAll, text: CMEReducer?.cmenextactionResponse?.next_activity_text }
                                             });
                                         } else {
+                                            setAddit(statepush);
+                                            setStatepush(statepush);
                                             takeCourseVideo();
                                             setPaused(true);
                                             props.navigation.navigate("TabNav");
@@ -888,7 +819,6 @@ const VideoComponent = (props) => {
                                         let objact = {
                                             "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id
                                         }
-                                        console.log(objact, "mainpage-----Video.js", obj, "mainpage---2233--Video.js", reviseTextagain)
                                         connectionrequest()
                                             .then(() => {
                                                 dispatch(cmenextactionRequest(reviseTextagain ? reviseobj : obj));
@@ -921,105 +851,6 @@ const VideoComponent = (props) => {
                                     >
                                         {"Click here to view the PDF Presentation"}
                                     </Text>
-                                    {/* {pdfAll ? (
-                                            <TouchableOpacity onPress={() => {
-                                                setPaused(true);
-                                                Alert.alert("eMedEvents", "Do you want to see PDF Presentation ?",
-                                                    [{ text: "No", onPress: () => { console.log("Hello"); }, style: "cancel" }, { text: "Yes", onPress: () => { handleLink(videoDic?.onlineDisplayPath, pdfAll) }, style: "default" }]);
-
-                                            }}>
-                                                <IconDot name="dots-three-vertical" size={25} color={"#848484"} />
-                                            </TouchableOpacity>
-                                        ) : <></>} */}
-                                    {/* <View style={{ marginTop: normalize(10), height: 1, width: normalize(270), backgroundColor: "#DDD" }} /> */}
-                                    {/* {(cmeValue) && (
-                                        <View style={{
-                                            paddingHorizontal: normalize(10),
-                                            paddingVertical: normalize(8),
-                                            borderRadius: normalize(20),
-                                            backgroundColor: "#FFF2E0",
-                                            marginTop: normalize(10),
-                                            alignSelf: 'flex-start'
-                                        }}>
-                                            <Text style={{
-                                                fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 14,
-                                                fontWeight: "bold",
-                                                color: "#666"
-                                            }}>
-                                                {cmeValue}
-                                            </Text>
-                                        </View>
-                                    )} */}
-
-                                    {/* <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
-                                        <View style={{ flexDirection: "column", alignItems: "flex-start" }}>
-                                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                                <Image source={props?.route?.params?.RoleData?.completed_percentage === 100 || props?.route?.params?.FullID?.percentage === 100 || props?.route?.params?.postdata?.percentage === 100 || props?.route?.params?.activityID?.percentage === 100 ? Imagepath.Complt : Imagepath.Pending} style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }} />
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 12,
-                                                        color: "#666",
-                                                        fontWeight: "bold",
-                                                        marginLeft: normalize(10),
-                                                    }}
-                                                >
-                                                    {`${statusMessage ? statusMessage : 0}`}
-                                                </Text>
-
-                                            </View>
-                                        </View>
-
-                                        <View style={{ flexDirection: "column", alignItems: "flex-start" }}>
-                                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 12,
-                                                        color: "#666",
-                                                        fontWeight: "bold",
-                                                        marginLeft: normalize(10),
-                                                        width: normalize(130)
-                                                    }}
-                                                >
-                                                    {`${shouldDisplayCmePoints ? CMEReducer?.cmenextactionResponse?.conferenceCmePoints : ""} ${CMEReducer?.cmenextactionResponse?.conferenceCmePointsMore}`}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        {props?.route?.params?.RoleData?.duration || props?.route?.params?.FullID?.conferenceDuration || props?.route?.params?.postdata?.conferenceDuration || props?.route?.params?.activityID?.conferenceDuration ? <View style={{ flexDirection: "column", alignItems: "flex-start", paddingVertical: normalize(5) }}>
-                                            <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 12,
-                                                        color: "#666",
-                                                        fontWeight: "bold",
-                                                        marginLeft: normalize(10),
-                                                        width: normalize(70)
-                                                    }}
-                                                >
-                                                    {`Time : ${props?.route?.params?.RoleData?.duration || props?.route?.params?.FullID?.conferenceDuration || props?.route?.params?.postdata?.conferenceDuration || props?.route?.params?.activityID?.conferenceDuration}`}
-                                                </Text>
-
-                                            </View>
-                                        </View> : null}
-                                    </View> */}
-                                    {/* {props?.route?.params?.RoleData?.completed_percentage != 100 || props?.route?.params?.FullID?.percentage != 100 || props?.route?.params?.postdata?.percentage != 100 && <View style={styles.details}>
-                                        <View style={[styles.column, { alignItems: "center", justifyContent: "space-around", flexDirection: "row" }]}>
-                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: CMEReducer?.cmenextactionResponse?.next_activity_text == "Post-Assessment" ? Colorpath.ButtonColr : "#CCC" }}>
-                                                {"Pre Assessment"}
-                                            </Text>
-                                            <View style={styles.separator} />
-                                            <Text style={styles.detailText}>
-                                                {"Post Assessment"}
-                                            </Text>
-                                            <View style={styles.separator} />
-                                            <Text style={styles.detailText}>
-                                                {"Survey & Feedback"}
-                                            </Text>
-                                        </View>
-                                    </View>} */}
                                 </Pressable>
                             </View>}
                         </View></>

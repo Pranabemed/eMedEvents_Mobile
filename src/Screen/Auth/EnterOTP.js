@@ -157,7 +157,7 @@ const EnterOTP = (props) => {
         }
     };
     const resendOTPNeed = () => {
-        let obj = {
+        let obj = props?.route?.params?.forgotPh?.phoneCode == "email" ? {"email":props?.route?.params?.forgotPh?.forgotPh}:{
             "phone": props?.route?.params?.forgotPh?.forgotPh ? `${props?.route?.params?.forgotPh?.phoneCode}${props?.route?.params?.forgotPh?.forgotPh}` : ''
         }
         connectionrequest()
@@ -217,10 +217,10 @@ const EnterOTP = (props) => {
                                 </Text>
                                 <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
                                     <Text style={styles.subHeaderText}>
-                                        {`cell number`}
+                                        {props?.route?.params?.forgotPh?.phoneCode == "email" ? "email": "cell number"}
                                     </Text>
                                     <Text style={styles.subHeaderphone}>
-                                        {` ${props?.route?.params?.forgotPh?.phoneCode} ${props?.route?.params?.forgotPh?.forgotPh}`}
+                                        {` ${props?.route?.params?.forgotPh?.phoneCode == "email" ? "": props?.route?.params?.forgotPh?.phoneCode} ${props?.route?.params?.forgotPh?.forgotPh}`}
                                     </Text>
                                 </View>
                             </View>

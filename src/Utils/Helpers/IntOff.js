@@ -18,11 +18,9 @@ const IntOff = (props) => {
     const navi = useNavigation();
     const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
             if (state.isConnected) {
                 <StackNav />
-                console.log("Internet is back!");
             }else{
               navi.navigate("TabNav");
             }

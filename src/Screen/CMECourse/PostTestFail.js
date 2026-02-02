@@ -70,6 +70,16 @@ const PostTestFail = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }
+    useEffect(()=>{
+        if(CMEReducer?.evaulatecalculateResponse){
+            setTestData(CMEReducer?.evaulatecalculateResponse);
+                let obj = {
+                    "ActivityId": CMEReducer?.evaulatecalculateResponse?.activityId,
+                    "conference_id": CMEReducer?.evaulatecalculateResponse?.conferenceId
+                }
+                dispatch(cmenextactionRequest(obj))
+        }
+    },[CMEReducer?.evaulatecalculateResponse])
     if (status === '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/evaulatecalculateRequest':

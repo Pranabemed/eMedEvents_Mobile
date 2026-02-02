@@ -1,12 +1,8 @@
-import { View, Text, Image, FlatList, TouchableOpacity, Pressable, Platform, Dimensions, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Pressable, Platform, Dimensions, StyleSheet } from 'react-native'
 import React, { useRef, useState } from 'react'
-import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
-import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
-import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import normalize from '../Utils/Helpers/Dimen';
-import TaskCardItem from './Taskcarditem';
 import { CommonActions } from '@react-navigation/native';
 import Buttons from './Button';
 import StateRequireditem from './StateRequired';
@@ -20,76 +16,9 @@ const Nonphysicianprofile = ({allNoDetData, addit, finddata, handleButtonPress, 
     const windowWidth = Dimensions.get('window').width;
     const windowHeight = Dimensions.get('window').height;
     const carouselReffind = useRef(null);
-    console.log(DashboardReducer?.dashboardResponse?.data?.my_recommendations?.length > 0, "DashboardReducer-----------");
     const finalData = DashboardReducer?.dashboardResponse?.data?.my_recommendations?.length > 0 && stateHit?.length == 0 && specHit?.length == 0;
     return (
         <View style={{ paddingVertical: normalize(15) }}>
-            {/* {DashboardReducer?.dashboardResponse?.data?.my_activities?.length > 0 && <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(0) }}>
-                <TouchableOpacity onPress={() => {
-                    navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [
-                                {
-                                    name: "NonMain",
-                                    params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_activities, creditData: handleButtonPress } },
-                                }
-                            ]
-                        })
-                    );
-                }}
-                    style={{
-                        flexDirection: "row",
-                        height: normalize(95),
-                        width: normalize(300),
-                        borderRadius: normalize(10),
-                        backgroundColor: "#FFFFFF",
-                        paddingHorizontal: normalize(10),
-                        // paddingVertical: normalize(10),
-                        alignItems: "center",
-                        borderWidth: 0.5,
-                        borderColor: "#DADADA"
-                    }}
-                >
-                    <View style={{ flex: 1, justifyContent: "center" }}>
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#000000",
-                                fontWeight: "bold",
-                            }}
-                        >
-                            {"Start or Resume the online courses you have registered."}
-                        </Text>
-                        <View style={{ marginTop: normalize(10) }}>
-                            <Buttons
-                                onPress={() => {
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [
-                                                {
-                                                    name: "NonMain",
-                                                    params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_activities, creditData: handleButtonPress } },
-                                                }
-                                            ]
-                                        })
-                                    );
-                                }}
-                                height={normalize(40)}
-                                width={normalize(270)}
-                                backgroundColor={Colorpath.ButtonColr}
-                                borderRadius={normalize(5)}
-                                text="My activities"
-                                color={Colorpath.white}
-                                fontSize={16}
-                                fontFamily={Fonts.InterSemiBold}
-                            />
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </View>} */}
             {finddata?.my_activities?.length > 0 ? <View style={{ paddingVertical: normalize(10) }}>
                 <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course", params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_activities, creditData: handleButtonPress } }, }] }))} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(13) }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000" }}>{"Start or Resume Courses"}</Text>

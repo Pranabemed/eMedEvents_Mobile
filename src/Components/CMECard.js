@@ -5,7 +5,6 @@ import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
 import Fonts from '../Themes/Fonts';
 const CMECard = ({expiryno, allProfTake, CMEcard, setCMECard, styles, item, windowWidth, manWrng,genWrng,finalSumCred }) => {
-    console.log(item, "item--------dgfdgjkjk",allProfTake);
  function formatRenewalYears(renewal_cycle, to_date) {
     const date = new Date(to_date);
     const endYear = date.getFullYear();

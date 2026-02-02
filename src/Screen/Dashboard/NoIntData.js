@@ -1,29 +1,16 @@
-import { View, Text, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Alert, Image, BackHandler } from 'react-native'
+import { View, ScrollView, Platform, KeyboardAvoidingView, Image, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import GradientButton from '../../Components/LinearButton';
-import StateLicense from '../../Components/StateLicense';
-import BoardCertificate from '../../Components/BoardCertificate';
-import { useDispatch, useSelector } from 'react-redux';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
-import showErrorAlert from '../../Utils/Helpers/Toast';
-import connectionrequest from '../../Utils/Helpers/NetInfo';
 import Imagepath from '../../Themes/Imagepath';
 import { AppContext } from '../GlobalSupport/AppContext';;
 import HandleTextInput from './HandleTextInput';
-import PrimeCard from '../../Components/PrimeCard';
-import moment from 'moment';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
 import NewProfession from '../../Components/NewProfession';
 import NonPhysicianCat from '../../Components/NonPhysicianCat';
 import StateIntData from '../../Components/StateInt';
-import HomeShimmer from '../../Components/DashBoardShimmer';
-import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 let status2 = "";
@@ -46,42 +33,11 @@ const MainInt = (props) => {
     setRenewal
   } = useContext(AppContext);
   const [focusedInput, setFocusedInput] = useState(null);
-  console.log("showLine122222----", fulldashbaord);
   const [showLine, setShowLine] = useState(false);
 
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
-  // const logger = (() => {
-  //   let oldConsole = {};
-  //   return {
-  //     disableLogger: () => {
-  //       if (oldConsole.log) return; // Already disabled
-  //       oldConsole.log = console.log;
-  //       oldConsole.info = console.info;
-  //       oldConsole.warn = console.warn;
-  //       oldConsole.error = console.error;
-  //       oldConsole.debug = console.debug;
-  //       console.log = () => { };
-  //       console.info = () => { };
-  //       console.warn = () => { };
-  //       console.error = () => { };
-  //       console.debug = () => { };
-  //     },
-  //   };
-  // })();
-
-  // useEffect(() => {
-  //   const unsubscribe = NetInfo.addEventListener(state => {
-  //     console.log('Connection State:', state.isConnected);
-  //     if (state.isConnected === false) {
-  //       logger.disableLogger();
-  //       console.log = function () { };
-  //     }
-  //   });
-
-  //   return () => unsubscribe();
-  // }, []);
   useEffect(() => {
     const resetState = () => {
       backPressCount.current = 0;

@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, ImageBackground, LogBox, StyleSheet, Text, View } from 'react-native';
-import Imagepath from '../../Themes/Imagepath';
+import { StyleSheet, View } from 'react-native';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -11,11 +10,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { dashboardRequest, mainprofileRequest, stateDashboardRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
-import normalize from '../../Utils/Helpers/Dimen';
-import Fonts from '../../Themes/Fonts';
 import { AppContext } from '../GlobalSupport/AppContext';
-import NetInfo from '@react-native-community/netinfo';
-import { retry } from 'redux-saga/effects';
 import LottieView from 'lottie-react-native';
 let status1 = "";
 export default function Splash(props) {
@@ -30,8 +25,7 @@ export default function Splash(props) {
     setTakedata,
     fulldashbaord,
     setStateCount,
-    stateCount,
-    isConnected
+    setFinddata
   } = useContext(AppContext);
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
@@ -40,7 +34,6 @@ export default function Splash(props) {
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [spalsh, setSplash] = useState("")
   const isFocus = useIsFocused();
-  const [nettrue, setNettrue] = useState("");
   const [emaiV, setEmaiV] = useState("");
   const [phoneV, setPhoneV] = useState("")
   useEffect(() => {
@@ -52,8 +45,6 @@ export default function Splash(props) {
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
-        console.log('Dashboard Data:111', emailEver);
-        console.log('Profile Data:', mobileEver);
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
       } catch (error) {
@@ -67,7 +58,6 @@ export default function Splash(props) {
       setTimeout(() => {
         AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
           if (loginHandleProccess) {
-            console.log(loginHandleProccess, "loginHandleProccess--------")
             let objToken = { "token": loginHandleProccess, "key": {} }
             connectionrequest()
               .then(() => {
@@ -93,12 +83,11 @@ export default function Splash(props) {
       console.log(error);
     }
   }, [isFocus]);
-  
+
   useEffect(() => {
     const token_handle = () => {
       setTimeout(async () => {
         const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
-        console.log(loginHandle_verify, "statelicesene=================");
         const jsonObject = JSON.parse(loginHandle_verify);
         setSplash(jsonObject);
       }, 100);
@@ -110,7 +99,6 @@ export default function Splash(props) {
       console.log(error);
     }
   }, [isFocus]);
-  console.log(nettrue, "netrur==========",spalsh)
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
@@ -181,7 +169,6 @@ export default function Splash(props) {
   }
   const licHandl = (profFromDashboard) => {
     let obj = profFromDashboard;
-    console.log(obj, "obj--------")
     connectionrequest()
       .then(() => {
         dispatch(licesensRequest(obj))
@@ -211,7 +198,6 @@ export default function Splash(props) {
   useEffect(() => {
     setStateCount(filteredStates);
   }, [filteredStates]);
-  console.log(stateCount, "ghfgnjgt===========", DashboardReducer)
   useEffect(() => {
     const loginResponse = AuthReducer?.loginResponse || {};
     const { is_verified, phone_verified, email, phone } = AuthReducer.verifyResponse || {};
@@ -224,9 +210,9 @@ export default function Splash(props) {
     const allProfTake = validHandles.has(profFromDashboard);
     const isVerified = is_verified == "1" || emaiV == "1";
     const isPhoneVerified = phone_verified == "1" || phoneV == "1";
-    const noPhoneDt = !phone ;
+    const noPhoneDt = !phone;
     const bothVerified = isVerified && isPhoneVerified;
-    const handleVerify = spalsh || bothVerified ;
+    const handleVerify = spalsh || bothVerified;
     const isValidDashboard = !loadingDashboard &&
       Array.isArray(dashboard) &&
       dashboard.some(item => String(item || "").trim() !== "");
@@ -234,7 +220,7 @@ export default function Splash(props) {
     if (loadingDashboard) return;
 
     // First check state licenses regardless of profession type
-    if (stateLicenses?.length > 0 && !isValidDashboard && bothVerified ) {
+    if (stateLicenses?.length > 0 && !isValidDashboard && bothVerified) {
       props.navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -249,7 +235,6 @@ export default function Splash(props) {
       );
       return;
     }
-    console.log(allProfTake, bothVerified, isValidDashboard, "fgdfgbfjdg--------", DashboardReducer, isVerified, isPhoneVerified)
     if (allProfTake) {
       if (bothVerified) {
         if (isValidDashboard) {
@@ -265,7 +250,7 @@ export default function Splash(props) {
             CommonActions.reset({
               index: 0,
               routes: [{
-                name: handleVerify ? "CreateStateInfor": fulldashbaord == 0 ? "TabNav" : "Onboard",
+                name: handleVerify ? "CreateStateInfor" : fulldashbaord == 0 ? "TabNav" : "Onboard",
                 params: handleVerify ? {
                   dataVerify: {
                     dataVerify: "Nodasta",
@@ -312,8 +297,8 @@ export default function Splash(props) {
             }]
           })
         );
-      }else if(noPhoneDt){
-         props.navigation.dispatch(
+      } else if (noPhoneDt) {
+        props.navigation.dispatch(
           CommonActions.reset({
             index: 0,
             routes: [{
@@ -327,7 +312,7 @@ export default function Splash(props) {
             index: 0,
             routes: [{
               name: "SplashMobile",
-              params: { newPh:AuthReducer?.verifyResponse?.phone || phone }
+              params: { newPh: AuthReducer?.verifyResponse?.phone || phone }
             }]
           })
         );
@@ -345,11 +330,16 @@ export default function Splash(props) {
     loadingDashboard,
     spalsh
   ]);
-const splashJson = require('../../Lottie/Splash-Screen-Intro.json');
+  useEffect(() => {
+    if (DashboardReducer?.stateDashboardResponse?.data) {
+      setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+    }
+  }, [DashboardReducer?.stateDashboardResponse])
+  const splashJson = require('../../Lottie/Splash-Screen-Intro.json');
   const animation = useRef(null);
   useLayoutEffect(() => {
-              props.navigation.setOptions({ gestureEnabled: false });
-          }, []);
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
   return (
     <>
       <MyStatusBar

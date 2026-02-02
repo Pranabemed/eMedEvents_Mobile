@@ -4,7 +4,6 @@ import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 const Dashboardmaintwo = ({ cmeModalFalse, modalFalse, DashboardReducer }) => {
-    console.log(DashboardReducer?.dashboardResponse?.data?.user_information?.documents_count,"limi11eet")
     return (
         <View>
             <View style={{ justifyContent: "center", alignItems: "center", margin: normalize(10) }}>
@@ -19,11 +18,6 @@ const Dashboardmaintwo = ({ cmeModalFalse, modalFalse, DashboardReducer }) => {
                         paddingVertical: normalize(10),
                         alignItems: "center",
                         justifyContent: "space-between",
-                        // shadowColor:"#000",
-                        // shadowOffset:{height:0,width:0},
-                        // elevation:5,
-                        // shadowOpacity:4,
-                        // shadowRadius:5,
                         borderWidth:0.5,
                         borderColor:"#DADADA"
                     }}
@@ -114,11 +108,6 @@ const Dashboardmaintwo = ({ cmeModalFalse, modalFalse, DashboardReducer }) => {
                         paddingHorizontal: normalize(10),
                         paddingVertical: normalize(10),
                         alignItems: "center",
-                        // shadowColor:"#000",
-                        // shadowOffset:{height:0,width:0},
-                        // elevation:5,
-                        // shadowOpacity:4,
-                        // shadowRadius:5,
                         position:"relative",
                         borderWidth:0.5,
                         borderColor:"#DADADA"

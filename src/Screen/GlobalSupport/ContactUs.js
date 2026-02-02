@@ -4,17 +4,11 @@ import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
 import normalize from '../../Utils/Helpers/Dimen';
-import CustomTextField from '../../Components/CustomTextfiled'
-import TextFieldIn from '../../Components/Textfield';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import Fonts from '../../Themes/Fonts';
-import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import CalenderIcon from 'react-native-vector-icons/Feather';
 import Buttons from '../../Components/Button';
-// import Geolocation from '@react-native-community/geolocation';
-// import Geocoder from 'react-native-geocoding';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect, useIsFocused } from '@react-navigation/native'
+import { useIsFocused } from '@react-navigation/native'
 import { getCountryCallingCode } from 'libphonenumber-js';
 import { cityRequest, countryRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
@@ -182,7 +176,6 @@ const ContactUs = (props) => {
     };
 
     const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
-        console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
         const uniqueIds = [...new Set(selectedIds)];
@@ -211,7 +204,6 @@ const ContactUs = (props) => {
                 id: String(index + 1),
                 name: name,
             }));
-            console.log(specialties, "specialties00000001222");
             const namesString = specialties.map(specialty => specialty.name).join(', ');
             const ids = specialties.map(specialty => specialty.id);
 
@@ -220,7 +212,6 @@ const ContactUs = (props) => {
             setPreviousSpec(specialties);
         }
     }, [props?.route?.params?.makeIt]);
-    console.log(speciality, "initialFormData----------", speciality_id, formData, props?.route?.params?.makeIt);
     const memoizedSetFormData = useCallback((data) => setFormData(data), [setFormData]);
     useEffect(() => {
         if (speciality && speciality_id) {
@@ -228,7 +219,6 @@ const ContactUs = (props) => {
                 speciality: speciality || '',
                 speciality_ids: Array.isArray(speciality_id) ? speciality_id : [],
             };
-            console.log(initialFormData, "initialFormData----------");
             memoizedSetFormData(initialFormData);
         }
     }, [speciality, speciality_id, memoizedSetFormData]);
@@ -238,7 +228,6 @@ const ContactUs = (props) => {
                 dispatch(cityRequest(itid));
             })
             .catch(err => {
-                // console.log(err);
                 showErrorAlert('Please connect to Internet', err);
             });
     }
@@ -301,65 +290,9 @@ const ContactUs = (props) => {
                 break;
         }
     }
-    console.log(countryall, countryshow, "sfdgdjsgdsj-------")
     useEffect(() => {
         getCurrentLocation();
     }, [countryall, countryshow])
-    // const getCurrentLocationd = async () => {
-    //     try {
-    //         const position = await new Promise((resolve, reject) => {
-    //             Geolocation.getCurrentPosition(resolve, reject, {
-    //                 enableHighAccuracy: true,
-    //                 timeout: 15000,
-    //                 maximumAge: 10000
-    //             });
-    //         });
-    //         const { latitude, longitude } = position.coords;
-    //         const geoData = await Geocoder.from(latitude, longitude);
-    //         if (geoData?.results?.length > 0) {
-    //             const address = geoData.results[0];
-    //             const components = address.address_components;
-
-    //             const getComponent = (types) => {
-    //                 const component = components.find(c => types.some(t => c.types.includes(t)));
-    //                 return component?.long_name || '';
-    //             };
-    //             const country = getComponent(['country']);
-    //             if (countryall) {
-    //                 const normalizedCountry = normalizeCountryName(country);
-    //                 const matchedCountry = countryall.find(c => {
-    //                     const countryName = c.name.trim().toLowerCase();
-    //                     return countryName == normalizedCountry.trim().toLowerCase();
-    //                 });
-    //                 if (matchedCountry) {
-    //                     setCountry_cont(matchedCountry.name);
-    //                     setCountry_id(matchedCountry.id);
-    //                     PraticingState(matchedCountry?.id);
-    //                 } else {
-    //                     console.warn(`Country "${country}" not found in country list`);
-    //                 }
-    //             }
-    //             const state = getComponent(['administrative_area_level_1']);
-    //             setStatenew(state);
-    //             const city = getComponent(['locality', 'administrative_area_level_2', 'postal_town']);
-    //             setCitynew(city);
-    //             const countryComponent = components.find(c => c.types.includes('country'));
-    //             const isoCountryCode = countryComponent?.short_name || '';
-    //             setCountryCode_cont(isoCountryCode);
-    //             if (isoCountryCode) {
-    //                 try {
-    //                     const phoneCode = `+${getCountryCallingCode(isoCountryCode)}`;
-    //                     setPhoneCountryCode(phoneCode);
-    //                 } catch (error) {
-    //                     console.warn('Phone code error:', error);
-    //                 }
-    //             }
-    //         }
-
-    //     } catch (error) {
-    //         console.error('Location Error:', error);
-    //     }
-    // };
     const getCurrentLocation = async () => {
         try {
             if (Platform.OS === 'android') {
@@ -468,7 +401,6 @@ const ContactUs = (props) => {
                     'postal_town',
                     'sublocality_level_1'
                 ]);
-                console.log(city, "dsfkdk---------", geoData)
                 setCitynew(city);
                 const countryComponent = components.find(c => c.types.includes('country'));
                 const isoCountryCode = countryComponent?.short_name || '';
@@ -482,7 +414,6 @@ const ContactUs = (props) => {
                     }
                 }
             }
-            console.log(geoData, "geoata----------")
             // 4. Handle Oppo Device Restrictions
             if (!geoData?.results?.length) {
                 if (Platform.OS === 'android') {
@@ -551,7 +482,6 @@ const ContactUs = (props) => {
         setCity_cont(ctshows?.name);
         setCity_id(ctshows?.id)
     }
-    console.log(countryNew, "helloooooo--------");
     useEffect(() => {
         if (countryNew) {
             setState_cont("");
@@ -579,7 +509,6 @@ const ContactUs = (props) => {
                 const cityName = c.name.trim().toLowerCase();
                 return cityName == citynew.trim().toLowerCase();
             });
-            console.log(matchedCity, "fgkjdfjgfjd----------")
             if (matchedCity) {
                 setCity_cont(matchedCity.name);
                 setCity_id(matchedCity.id);
@@ -615,7 +544,6 @@ const ContactUs = (props) => {
     useEffect(() => {
         const fullDisable = organ_name && contact_name && !isButtonEnabled && !emailDetect && speaker_cont;
         setGetAcc(fullDisable);
-        console.log(fullDisable, "fullDisable--------")
     }, [organ_name, contact_name, isButtonEnabled, emailDetect, speaker_cont])
     const submitContact = () => {
         let obj = {
@@ -635,7 +563,6 @@ const ContactUs = (props) => {
             "contact_number": mob_cont,
             "message": speaker_cont
         }
-        console.log("fhdshg==========", obj)
         connectionrequest()
             .then(() => {
                 dispatch(contactusSpeakerRequest(obj))
@@ -731,11 +658,6 @@ const ContactUs = (props) => {
                             </View>
                             <Loader
                                 visible={TransReducer?.status == 'Transaction/contactusSpeakerRequest'} />
-                            {/* <View style={{paddingHorizontal:normalize(10),paddingVertical:normalize(10),flexDirection:"row",width:normalize(240)}}>
-                                <Text style={{fontFamily:Fonts.InterMedium,fontSize:16,color:"#7885af"}}>{`I would like to invite`}</Text>
-                                <Text style={{fontFamily:Fonts.InterMedium,fontSize:18,color:"#263d7d"}}>{ props?.route?.params?.makeIt?.Name}</Text>
-                                <Text style={{fontFamily:Fonts.InterMedium,fontSize:16,color:"#7885af"}}>{" to speak at our upcoming conference"}</Text>
-                            </View> */}
                             {props?.route?.params?.makeIt?.Name && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                                 <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{props?.route?.params?.makeIt?.Name}</Text>
                             </View>}

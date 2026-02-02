@@ -575,7 +575,7 @@ const LoginMobile = (props) => {
                         <View style={{ flexDirection: "column", marginTop: normalize(15) }}>
                             <View>
                                 <Text style={styles.subHeaderText}>
-                                    {"An 6-digit code has been sent to"}
+                                    {"A 6-digit code has been sent to"}
                                 </Text>
                             </View>
 

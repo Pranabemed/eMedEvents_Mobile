@@ -2,11 +2,8 @@ import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import constants from '../../Utils/Helpers/constants';
 import { OCRCertificateFailure, OCRCertificateSuccess, addCreditVaultFailure, addCreditVaultSuccess, addCreditsFailure, addCreditsSuccess, boardSpecialityFailure, boardSpecialitySuccess, boardcertificateFailure, boardcertificateSuccess, boardcountFailure, boardcountSuccess, changePasswordFailure, changePasswordSuccess, countFailure, countSuccess, dashMbFailure, dashMbSuccess, dashPerFailure, dashPerSuccess, dashboardFailure, dashboardSuccess, mainprofileFailure, mainprofileSuccess, specailtyFailure, specailtySuccess, stateCourseFailure, stateCourseSuccess, stateDashboardFailure, stateDashboardSuccess, stateLicesenseFailure, stateLicesenseSuccess, stateMandatoryFailure, stateMandatorySuccess, stateReportingFailure, stateReportingSuccess } from '../Reducers/DashboardReducer';
 let getItem = state => state.AuthReducer;
-
-
 
 ////////Dashboard
 const wholeDatHo = async (data) => {
@@ -36,7 +33,6 @@ const profDatHo = async (data) => {
   }
 };
 export function* dashboardSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -45,7 +41,6 @@ export function* dashboardSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/dashboard', action?.payload?.key ? action?.payload?.key: action?.payload, header);
-    console.log('dashboardRequest response: ', response);
     if (response?.data?.success == true) {
       wholeDatHo(response?.data?.licensures?.[0]);
       profDatHo(response?.data?.user_information);
@@ -58,13 +53,12 @@ export function* dashboardSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(dashboardFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* dashMBSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -73,19 +67,17 @@ export function* dashMBSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/dashboard', action?.payload?.key ? action?.payload?.key: action?.payload, header);
-    console.log('dashboardRequest response: ', response);
     if (response?.data?.success == true) {
       yield put(dashMbSuccess(response));
     } else {
       yield put(dashMbFailure(response));
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(dashMbFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* dashPersonSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -94,19 +86,17 @@ export function* dashPersonSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/dashboard', action?.payload?.key ? action?.payload?.key: action?.payload, header);
-    console.log('dashboardRequest response: ', response);
     if (response?.data?.success == true) {
       yield put(dashPerSuccess(response));
     } else {
       yield put(dashPerFailure(response));
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(dashPerFailure(error));
+    // showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* stateDashboardSaga(action) {
-  console.log('hi state board',action.payload);
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -115,7 +105,6 @@ export function* stateDashboardSaga(action) {
   };
   try {
     let response = yield call(postApi, action?.payload?.board_id ?'user/boardDashboard' :'user/stateDashboard', action.payload, header);
-    console.log('dashboardRequest response: ', response);
     if (response?.data?.success == true) {
       yield put(stateDashboardSuccess(response));
     //   showErrorAlert(response?.data?.msg);
@@ -124,13 +113,12 @@ export function* stateDashboardSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(stateDashboardFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* stateCourseSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -139,7 +127,6 @@ export function* stateCourseSaga(action) {
   };
   try {
     let response = yield call(postApi, 'creditVault/complianceList', action.payload, header);
-    console.log('dashboardRequest response:123', response);
     if (response?.data?.success == true) {
       yield put(stateCourseSuccess(response));
     //   showErrorAlert(response?.data?.msg);
@@ -148,13 +135,12 @@ export function* stateCourseSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(stateCourseFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* creditTypeSaga(action) {
-  console.log('hi');
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -163,7 +149,6 @@ export function* creditTypeSaga(action) {
   };
   try {
     let response = yield call(getApi, `master/creditTypes?profession=${action.payload}`, header);
-    console.log('creditType response: ', response);
     if (response?.data?.success == true) {
       yield put(addCreditsSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -172,13 +157,12 @@ export function* creditTypeSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(addCreditsFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* AddCreditVaultSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -187,7 +171,6 @@ export function* AddCreditVaultSaga(action) {
   };
   try {
     let response = yield call(postApi, 'creditVault/addEdit',action.payload, header);
-    console.log('creditType response: ', response);
     if (response?.data?.success == true) {
       yield put(addCreditVaultSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -196,14 +179,13 @@ export function* AddCreditVaultSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(addCreditVaultFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 
 export function* addLicesenseSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -212,7 +194,6 @@ export function* addLicesenseSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/licensureInformation',action.payload, header);
-    console.log('licensure Information response: ', response);
     if (response?.data?.success == true) {
       yield put(stateLicesenseSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -221,13 +202,12 @@ export function* addLicesenseSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(stateLicesenseFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* stateMandatorySaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -236,7 +216,6 @@ export function* stateMandatorySaga(action) {
   };
   try {
     let response = yield call(postApi, 'creditVault/list',action.payload, header);
-    console.log('creditType response: ', response);
     if (response?.data?.success == true) {
       yield put(stateMandatorySuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -245,13 +224,12 @@ export function* stateMandatorySaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(stateMandatoryFailure(error));
+     showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* stateReportingSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -260,7 +238,6 @@ export function* stateReportingSaga(action) {
   };
   try {
     let response = yield call(postApi, 'creditVault/stateReporting',action.payload, header);
-    console.log('creditType response: ', response);
     if (response?.data?.success == true) {
       yield put(stateReportingSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -269,14 +246,12 @@ export function* stateReportingSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(stateReportingFailure(error));
+      showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* boardSpecialitySaga(action) {
-  // console.log('action?.payload?.specilityid========',action?.payload?.specilityid);
-  // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
@@ -284,7 +259,6 @@ export function* boardSpecialitySaga(action) {
   };
   try {
     let response = yield call(getApi, `master/certificationBoards?profession=${action?.payload?.profession}&speclities=${action?.payload?.specilityid}`, header);
-    console.log('creditType response: ', response);
     if (response?.data?.success == true) {
       yield put(boardSpecialitySuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -293,13 +267,11 @@ export function* boardSpecialitySaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(boardSpecialityFailure(error));
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* addboardcertificateSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -308,7 +280,6 @@ export function* addboardcertificateSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/certificationInformation',action.payload, header);
-    console.log('licensure Information response: ', response);
     if (response?.data?.success == true) {
       yield put(boardcertificateSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -317,13 +288,11 @@ export function* addboardcertificateSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(boardcertificateFailure(error));
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* OCRCertificateSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -332,7 +301,6 @@ export function* OCRCertificateSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/certificateOCR',action.payload, header);
-    console.log('certificateOCR>>>>>>>> Information response: ', response);
     if (response?.data?.success == true) {
       yield put(OCRCertificateSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -341,7 +309,6 @@ export function* OCRCertificateSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(OCRCertificateFailure(error));
     // showErrorAlert(error?.response?.data?.message);
   }
@@ -354,7 +321,6 @@ export function* countStateBoardSaga(action) {
       yield put(countFailure({}));
     }
   } catch (error) {
-    console.log(error,"errr")
     yield put(countFailure(error));
   }
 }
@@ -366,13 +332,11 @@ export function* BoardcountSaga(action) {
       yield put(boardcountFailure({}));
     }
   } catch (error) {
-    console.log(error,"errr")
     yield put(boardcountFailure(error));
   }
 }
 export function* mainProfileSaga(action) {
   let items = yield select(getItem);
-  console.log('himainprofile-------------',items,action);
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
@@ -380,7 +344,6 @@ export function* mainProfileSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/profile',action?.payload?.key ? action?.payload?.key: action?.payload, header);
-    console.log('user/profile=== response: ', response);
     if (response?.data?.success == true) {
       yield put(mainprofileSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -389,13 +352,12 @@ export function* mainProfileSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('profile main error:', error);
     yield put(mainprofileFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* mainSpecialtySaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -404,7 +366,6 @@ export function* mainSpecialtySaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/specialtyCourses',action.payload, header);
-    console.log('/user/specialtyCourses=== response: ', response);
     if (response?.data?.success == true) {
       yield put(specailtySuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -413,13 +374,12 @@ export function* mainSpecialtySaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('profile main error:', error);
     yield put(specailtyFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* changePassSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -428,7 +388,6 @@ export function* changePassSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/changePassword',action.payload, header);
-    console.log('/user/changePassword=== response: ', response);
     if (response?.data?.success == true) {
       yield put(changePasswordSuccess(response?.data));
     //   showErrorAlert(response?.data?.msg);
@@ -437,8 +396,8 @@ export function* changePassSaga(action) {
     //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('profile main error:', error);
     yield put(changePasswordFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }

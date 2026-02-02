@@ -150,7 +150,6 @@ const StackNav = props => {
   }, []);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       if (state.isConnected === false) {
         setConn(state.isConnected)
       }

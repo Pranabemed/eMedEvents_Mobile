@@ -9,14 +9,12 @@ import CloseIcon from 'react-native-vector-icons/AntDesign';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
 const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, navigation, name, setGocertificate, gocertificate }) => {
-    console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);
     const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
             if (!url || !url.startsWith("http")) {
-                console.log("Invalid URL:", url); // Debug the URL value
                 Alert.alert("Error", "Invoice URL is invalid or not available.");
                 return;
             }
@@ -27,16 +25,10 @@ const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, 
                 fromUrl: url,
                 toFile: localFile,
             };
-
             const downloadResult = await RNFS.downloadFile(options).promise;
-
             if (downloadResult.statusCode === 200) {
-                console.log("File downloaded successfully:", localFile);
-
-                // Open the downloaded file
                 await FileViewer.open(localFile);
             } else {
-                console.log("Download failed:", downloadResult);
                 Alert.alert("Error", "Failed to download the file.");
             }
         } catch (error) {

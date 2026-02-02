@@ -68,7 +68,7 @@ let getItem = state => state.AuthReducer;
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { dashboardSuccess, dashMbSuccess, mainprofileSuccess } from '../Reducers/DashboardReducer';
+import { dashboardSuccess, dashMbSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -78,7 +78,6 @@ import { getPublicIP } from '../../Utils/Helpers/IPServer';
 export function* gettokenSaga(action) {
   try {
     const response = yield call(AsyncStorage.getItem, constants.TOKEN);
-    console.log(response,"fgjdfghfk========",action);
     if (action?.payload?.token) {
       yield put(tokenSuccess(action?.payload?.token));
     } else if (response != null) {
@@ -88,6 +87,7 @@ export function* gettokenSaga(action) {
     }
   } catch (error) {
     yield put(tokenFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* allreducerFalse(action) {
@@ -104,12 +104,12 @@ export function* allreducerFalse(action) {
     }
   } catch (error) {
     yield put(allreducerFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 ////////signup
 
 export function* signupSaga(action) {
-  console.log('hi');
   const ipAddress = getPublicIP();
   // let items = yield select(getItem);
   let header = {
@@ -120,28 +120,23 @@ export function* signupSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/signup', action.payload, header);
-    console.log('sign up response: ========>============>', response);
-    console.log('sign up response: ', response?.data?.email_otp);
     if (response?.data?.success == true) {
       yield put(tokenSuccess(response?.data?.token));
       yield put(signupSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
-      // yield call(AsyncStorage.setItem, constants.EMAILSIGNUP, response?.data?.user?.email);
-      // yield call(AsyncStorage.setItem, constants.PHONESIGNUP, response?.data?.user?.phone);
       showErrorAlert(response?.data?.msg);
     } else {
       yield put(signupFailure(response.data));
       showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(signupFailure(error));
     showErrorAlert(error?.response?.data?.message);
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 
 export function* forgotSaga(action) {
-  console.log('hi');
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -150,7 +145,6 @@ export function* forgotSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/forgotPasswordPhone', action.payload, header);
-    console.log('user/forgotPasswordPhone: ', response);
     if (response?.data?.success == true) {
       yield put(forgotSuccess(response?.data));
       // showErrorAlert(response?.data?.msg);
@@ -159,13 +153,12 @@ export function* forgotSaga(action) {
       // showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('forgot error:', error);
     yield put(forgotFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* resetPassSaga(action) {
-  console.log('hi');
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -174,7 +167,6 @@ export function* resetPassSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/resetPassword', action.payload, header);
-    console.log('user/resetPassword: ', response);
     if (response?.data?.success == true) {
       yield put(resetSuccess(response?.data));
       // showErrorAlert(response?.data?.msg);
@@ -183,8 +175,8 @@ export function* resetPassSaga(action) {
       // showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    console.log('forgot error:', error);
     yield put(resetFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -195,7 +187,6 @@ export function* existEmailSaga(action) {
   };
   try {
     let response = yield call(postApi, action?.payload?.phone ? 'User/userPhoneExists' : 'user/userExists', action.payload, header);
-    console.log('email exist response: ', response);
     if (response?.status == 200) {
       yield put(emailexistSuccess(response?.data));
       // showErrorAlert(response.data.message);
@@ -204,7 +195,6 @@ export function* existEmailSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('email exist  error:', error);
     yield put(emailexistFailure(error));
     showErrorAlert("!Oops something went wrong ");
   }
@@ -216,12 +206,8 @@ export function* verifyEmalOTPSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify otp");
   try {
     let response = yield call(postApi, 'user/verifyOTP', action.payload, header);
-    console.log('verify otp response: ', response?.data);
-    console.log('verify otp response: ', response);
-
     if (response?.status == 200) {
       yield put(verifyemailSuccess(response?.data));
       // showErrorAlert(response.data.message);
@@ -230,8 +216,8 @@ export function* verifyEmalOTPSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(verifyemailFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -242,12 +228,8 @@ export function* resendEmalOTPSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify otp");
   try {
     let response = yield call(postApi, 'user/resendOTP', action.payload, header);
-    console.log('verify otp response:email/phone ', response?.data);
-    // console.log('verify otp response: ', response);
-
     if (response?.status == 200) {
       yield put(resendemailotpSuccess(response?.data));
       // yield call(AsyncStorage.setItem, constants.EMAILOTP, response?.data?.email_otp);
@@ -257,7 +239,6 @@ export function* resendEmalOTPSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(resendemailotpFailure(error));
     showErrorAlert(error?.response?.data?.msg);
   }
@@ -282,11 +263,8 @@ export function* verifyMobileOTPSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify otp");
   try {
     let response = yield call(postApi, 'user/verifyOTP', action.payload, header);
-    console.log('verify otp response: ', response?.data);
-    console.log('verify otp response: ', response);
     if (response?.data?.success == true) {
       storeVerifyStateData(response?.data?.user)
       yield put(verifymobileSuccess(response?.data));
@@ -296,8 +274,8 @@ export function* verifyMobileOTPSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(verifymobileFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -308,11 +286,8 @@ export function* resendMobileOTPSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify otp");
   try {
     let response = yield call(postApi, 'user/resendOTP', action.payload, header);
-    console.log('verify otp response:email/phone ', response?.data);
-    // console.log('verify otp response: ', response);
     if (response?.status == 200) {
       yield put(resendmobileotpSuccess(response?.data));
       // yield call(AsyncStorage.setItem, constants.PHONEOTP, response?.data?.phone_otp);
@@ -322,7 +297,6 @@ export function* resendMobileOTPSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(resendmobileotpFailure(error));
     showErrorAlert(error?.response?.data?.msg);
   }
@@ -335,11 +309,8 @@ export function* changeEmailSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======change email");
   try {
     let response = yield call(postApi, 'user/modifyEmailorPhone', action.payload, header);
-    console.log('change email response:email ', response?.data);
-    // console.log('verify otp response: ', response);
     if (response?.data?.success == true) {
       yield put(changeemailSuccess(response?.data));
       // yield call(AsyncStorage.setItem, constants.EMAILOTP, response?.data?.email_otp);
@@ -349,7 +320,6 @@ export function* changeEmailSaga(action) {
       showErrorAlert(response.data.msg);
     }
   } catch (error) {
-    console.log('change email:', error);
     yield put(changeemailFailure(error));
     showErrorAlert(error?.response?.data?.msg);
   }
@@ -362,11 +332,8 @@ export function* chnageMobilenoSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======chnage phone no response otp");
   try {
     let response = yield call(postApi, 'user/modifyEmailorPhone', action.payload, header);
-    console.log('chnage phone no response  ', response?.data);
-    // console.log('verify otp response: ', response);
     if (response?.data?.success == true) {
       yield put(changephoneSuccess(response?.data));
       // yield call(AsyncStorage.setItem, constants.PHONEOTP, response?.data?.phone_otp);
@@ -376,7 +343,6 @@ export function* chnageMobilenoSaga(action) {
       showErrorAlert(response.data.msg);
     }
   } catch (error) {
-    console.log('chnage phone no response:', error);
     yield put(changephoneFailure(error));
     showErrorAlert(error?.response?.data?.msg);
   }
@@ -384,7 +350,6 @@ export function* chnageMobilenoSaga(action) {
 /////////login
 
 export function* login_Saga(action) {
-  console.log('hi');
   const ipAddress = getPublicIP();
   // let items = yield select(getItem);
   let header = {
@@ -395,7 +360,6 @@ export function* login_Saga(action) {
   };
   try {
     let response = yield call(postApi, 'user/signin', action.payload, header);
-    console.log('Login response: ', response);
     if (response?.data?.success == true) {
       const userData = JSON.stringify(response?.data?.user);
       yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
@@ -414,8 +378,8 @@ export function* login_Saga(action) {
       showErrorAlert("Your email or password is incorrect.");
     }
   } catch (error) {
-    console.log('Login error:', error);
     yield put(loginFailure(error));
+    // showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -427,19 +391,17 @@ export function* ProfessionSaga() {
   };
   try {
     let response = yield call(getApi, 'master/professionCredentials', header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(professionSuccess(response?.data));
     } else {
       yield put(professionFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(professionFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* SpeciallizedSaga(action) {
-  console.log(action, "profession==========")
   const profession = action?.payload
   let header = {
     Accept: 'application/json',
@@ -447,15 +409,14 @@ export function* SpeciallizedSaga(action) {
   };
   try {
     let response = yield call(getApi, action?.payload?.master == "" ? 'master/specialities' : `master/specialities?profession=${profession}`, header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(specializationSuccess(response?.data));
     } else {
       yield put(specializationFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(specializationFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 
@@ -466,15 +427,14 @@ export function* ParticingStateSaga(action) {
   };
   try {
     let response = yield call(getApi, `master/states?country_id=${action.payload}`, header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(stateSuccess(response?.data));
     } else {
       yield put(stateFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(stateFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* CheckLicStateSaga(action) {
@@ -484,15 +444,14 @@ export function* CheckLicStateSaga(action) {
   };
   try {
     let response = yield call(getApi, `master/states?country_id=${action.payload}`, header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(checkstateSuccess(response?.data));
     } else {
       yield put(checkstateFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(checkstateFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* countrySaga(action) {
@@ -502,15 +461,14 @@ export function* countrySaga(action) {
   };
   try {
     let response = yield call(getApi, 'master/countries', header);
-    console.log('profession response: ', response);
     if (response?.data?.success == true) {
       yield put(countrySuccess(response?.data));
     } else {
       yield put(countryFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(countryFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* citySaga(action) {
@@ -520,15 +478,14 @@ export function* citySaga(action) {
   };
   try {
     let response = yield call(getApi, `master/cities?state_id=${action.payload}`, header);
-    console.log('profession response: ', response);
     if (response?.data?.success == true) {
       yield put(citySuccess(response?.data));
     } else {
       yield put(cityFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(cityFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* mobileLoginSaga(action) {
@@ -538,7 +495,6 @@ export function* mobileLoginSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/signinOTP', action.payload, header);
-    console.log('profession response: ', response);
     if (response?.data?.success == true || response?.status == 200) {
       yield put(loginsiginSuccess(response?.data));
       yield put(tokenSuccess(response?.data?.token));
@@ -552,8 +508,8 @@ export function* mobileLoginSaga(action) {
       showErrorAlert(response?.data?.msg)
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(loginsiginFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* againmobileLoginSaga(action) {
@@ -561,10 +517,8 @@ export function* againmobileLoginSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
   };
-  console.log(action.payload?.phone_otp, "actopn login mobile byy======")
   try {
     let response = yield call(postApi, action.payload?.phone_otp ? 'user/signinOTP' : 'user/signinOTP', action.payload, header);
-    console.log('profession response: ', response);
     if (response?.data?.success == true) {
       const userData = JSON.stringify(response?.data?.user);
       yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
@@ -579,12 +533,11 @@ export function* againmobileLoginSaga(action) {
       showErrorAlert(response?.data?.msg)
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(againloginsiginFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* stateLicsenseCardSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -593,7 +546,6 @@ export function* stateLicsenseCardSaga(action) {
   };
   try {
     let response = yield call(postApi, 'NpiLookup/search', action?.payload?.key ? action?.payload?.key : action?.payload, header);
-    console.log('NpiLookup/search response: ', response);
     if (response?.data?.success == true) {
       yield put(chooseStatecardSuccess(response?.data));
       // showErrorAlert(response?.data?.msg);
@@ -602,8 +554,8 @@ export function* stateLicsenseCardSaga(action) {
       // showErrorAlert("Your email or password is incorrect.");
     }
   } catch (error) {
-    console.log('Npi look  error:', error);
     yield put(chooseStatecardFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -614,15 +566,14 @@ export function* InformationCitySaga(action) {
   };
   try {
     let response = yield call(getApi, `master/cities?state_id=${action.payload}`, header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(cityWiseSuccess(response?.data));
     } else {
       yield put(cityWiseFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(cityWiseFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* LicesensureSaga(action) {
@@ -632,19 +583,17 @@ export function* LicesensureSaga(action) {
   };
   try {
     let response = yield call(getApi, `master/licensureStates?profession=${encodeURIComponent(action.payload)}`, header);
-    console.log('profession response: ', response);
     if (response?.status == 200) {
       yield put(licesensSuccess(response?.data));
     } else {
       yield put(licesensFailure(response?.data));
     }
   } catch (error) {
-    console.log('profile error:', error);
     yield put(licesensFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* stateLicsenseSaveSaga(action) {
-  console.log('hi');
   let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -653,7 +602,6 @@ export function* stateLicsenseSaveSaga(action) {
   };
   try {
     let response = yield call(postApi, 'NpiLookup/save', action.payload, header);
-    console.log('NpiLookup/save response: ', response);
     if (response?.data?.success == true) {
       yield put(stateInformSaveSuccess(response?.data));
       // showErrorAlert(response?.data?.msg);
@@ -662,20 +610,12 @@ export function* stateLicsenseSaveSaga(action) {
       // showErrorAlert("Your email or password is incorrect.");
     }
   } catch (error) {
-    console.log('Npi look  error:', error);
     yield put(stateInformSaveFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
 export function* logoutSaga() {
-  const items = yield select(getItem);
-  console.log(items?.token);
-  const header = {
-    Accept: 'application/json',
-    contenttype: 'application/json',
-    accesstoken: items.token,
-  };
-  // console.log(header);
   try {
     // yield call(AsyncStorage.removeItem, constants.CRED);
     yield call(AsyncStorage.removeItem, constants.VERIFYSTATEDATA);
@@ -690,10 +630,10 @@ export function* logoutSaga() {
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
     yield put(dashMbSuccess(null))
+    yield put(stateDashboardSuccess(null))
     yield put(logoutSuccess('logout'));
     showErrorAlert('Logged out Successfully');
   } catch (error) {
-    console.log(error);
     yield put(logoutFailure(error));
     showErrorAlert('Error to logout');
   }
@@ -731,11 +671,8 @@ export function* verifyTokenSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token || action?.payload?.token,
   };
-  console.log(header, "items======verify token");
   try {
     let response = yield call(postApi, 'user/verifyToken', action?.payload?.key ? action?.payload?.key : action?.payload, header);
-    console.log('verify token response: ', response?.data);
-    console.log('verify token response: ', response);
     if (response?.data?.success == true) {
       emailVerf(response?.data?.is_verified);
       mobileVer(response?.data?.phone_verified);
@@ -746,8 +683,8 @@ export function* verifyTokenSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(verifyFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -758,12 +695,8 @@ export function* PhoneOTPTokenSaga(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify token");
   try {
     let response = yield call(postApi, 'user/verifyToken', action.payload, header);
-    console.log('PhoneOTPToken token response: ', response?.data);
-    console.log('PhoneOTPToken token response: ', response);
-
     if (response?.data?.success == true) {
       yield put(phoneotpTokenSuccess(response?.data));
       // showErrorAlert(response.data.message);
@@ -772,8 +705,8 @@ export function* PhoneOTPTokenSaga(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(phoneotpTokenFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -785,12 +718,8 @@ export function* userPrimeCheck(action) {
     contenttype: 'application/json',
     authorization: items?.token,
   };
-  console.log(header, "items======verify token");
   try {
     let response = yield call(postApi, 'User/saveUserPrimeTrial', action.payload, header);
-    console.log('userPrimeCheck token response: ', response?.data);
-    console.log('userPrimeCheck token response: ', response);
-
     if (response?.data?.success == true) {
       yield put(primeTrailSuccess(response?.data));
       // showErrorAlert(response.data.message);
@@ -799,8 +728,8 @@ export function* userPrimeCheck(action) {
       // showErrorAlert(response.data);
     }
   } catch (error) {
-    console.log('userPrimeCheck:', error);
     yield put(primeTrailFailure(error));
+    showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }
 }
@@ -810,7 +739,6 @@ export function* staticSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
   };
-  console.log(header, "items======verify token");
   try {
     if (action?.payload) {
       yield put(staticdataSuccess(action?.payload));
@@ -818,8 +746,8 @@ export function* staticSaga(action) {
       yield put(staticdataFailure(action?.payload));
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(staticdataFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 export function* urlneedSaga(action) {
@@ -827,7 +755,6 @@ export function* urlneedSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
   };
-  console.log(header, "items======verify token");
   try {
     if (action?.payload) {
       yield put(urldataSuccess(action?.payload));
@@ -835,8 +762,8 @@ export function* urlneedSaga(action) {
       yield put(urldataFailure(action?.payload));
     }
   } catch (error) {
-    console.log('signup error:', error);
     yield put(urldataFailure(error));
+    showErrorAlert("!Oops something went wrong ");
   }
 }
 const watchFunction = [

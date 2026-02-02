@@ -12,8 +12,8 @@ import {
   Pressable,
   StyleSheet,
   Linking,
+  SafeAreaView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import propstype from 'prop-types';
 import normalize from '../Utils/Helpers/Dimen';
@@ -60,7 +60,6 @@ export default function DrawerModal(props) {
   const [nettruedr, setNettruedr] = useState("")
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setNettruedr(state.isConnected);
     });
 
@@ -74,7 +73,6 @@ export default function DrawerModal(props) {
       : null;
   const allProfTake = validHandles.has(profFromDashboard);
   if (status == '' || AuthReducer.status != status) {
-    console.log("status====")
     switch (AuthReducer.status) {
       case 'Auth/logoutRequest':
         status = AuthReducer.status;
@@ -90,7 +88,6 @@ export default function DrawerModal(props) {
   }
   useEffect(() => {
     if (props?.handel == "closeit") {
-      console.log(props?.handel, "dfsdjkh");
       connectionrequest()
         .then(() => {
           dispatch(mainprofileRequest({}))
@@ -98,7 +95,6 @@ export default function DrawerModal(props) {
         .catch((err) => showErrorAlert("Please connect to internet", err))
     }
   }, [props?.handel]);
-  console.log(props?.lastActiveTab, "jdfjkgfjk========")
   useEffect(() => {
     connectionrequest()
       .then(() => {
@@ -114,7 +110,6 @@ export default function DrawerModal(props) {
       case 'Dashboard/mainprofileSuccess':
         status1 = DashboardReducer.status;
         setAllHandled(DashboardReducer?.mainprofileResponse);
-        console.log(DashboardReducer?.mainprofileResponse, "log-----------modal");
         break;
       case 'Dashboard/mainprofileFailure':
         status1 = DashboardReducer.status;
@@ -126,8 +121,6 @@ export default function DrawerModal(props) {
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
-
-  console.log(subit, "subit=========", takedata, props?.route?.params)
   const modalKey = allProfTake ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
@@ -180,8 +173,6 @@ export default function DrawerModal(props) {
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           setFinalverifyvault(board_special_json);
           setFinalProfession(profession_data_json);
-          console.log(board_special_json, "statelicesene=================");
-          console.log(profession_data_json, "profession=================");
         } catch (error) {
           console.log('Error fetching data:', error);
         }
@@ -231,7 +222,6 @@ export default function DrawerModal(props) {
           return !WebcastReducer?.PrimeCheckResponse?.subscription;
       }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
   const takeSub =isPrimeTrial || finalProfession?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
-  console.log(takeSub, "yakegfjghjf-------", props?.handel,isPrimeTrial);
   const endDateStringTake =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfession?.subscriptions?.[0]?.end_date;
@@ -266,7 +256,6 @@ export default function DrawerModal(props) {
       setPrimeits(true);
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvault, finalProfession, takeSub, endDateStringTake]);
-  console.log(AuthReducer, "AuthReducer------", primeits)
   const [specialities, setSpecialities] = useState([]);
   const [text, setText] = useState('');
 
@@ -277,7 +266,6 @@ export default function DrawerModal(props) {
       setText(valuesArray.join(', '));
     }
   }, [allProfession, allHandled]);
-  console.log(expandedId, "expandedId");
   useEffect(() => {
     if (DashboardReducer?.mainprofileResponse || allProfession) {
       const firstName = DashboardReducer?.mainprofileResponse?.personal_information?.firstname || allProfession?.firstname;
@@ -286,7 +274,6 @@ export default function DrawerModal(props) {
       setAlphaimg(initials)
     }
   }, [DashboardReducer?.mainprofileResponse, allProfession])
-  console.log(allProfession, "allprofesss=========", specialities, alphaimg);
   const renderNestedItem = ({ item, index }) => {
     return (
       <>
@@ -463,11 +450,9 @@ export default function DrawerModal(props) {
   }
   const handleRot = () => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setIsConnected(state.isConnected);
       if (state.isConnected) {
         <StackNav />
-        console.log("Internet is back!");
       }
     });
 

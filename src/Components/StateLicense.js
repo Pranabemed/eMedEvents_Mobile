@@ -24,13 +24,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
 import Dashboardmain from './Dashboardmain';
-import Dashboardmaintwo from './Dashboardmaintwo';
 import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
-import { current } from '@reduxjs/toolkit';
-import Nonphysicianprofile from './Nonphysicianprofile';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
-import RestProfession from './RestProfession';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
@@ -42,7 +38,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         expireDate,
         setFinddata,
         finddata,
-        setStatepush
+        setStatepush,
+        statepush
     } = useContext(AppContext);
     const windowWidth = Dimensions.get('window').width;
     const windowHeight = Dimensions.get('window').height;
@@ -63,8 +60,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex];
     };
-    console.log(stateCount, fulldashbaord, AuthReducer?.loginResponse?.user, "122statelicesene=================", getCurrentItem(), propsData)
-
     const modalFalse = () => {
         setDetailsmodal(true);
     }
@@ -80,7 +75,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
-                console.log(loginHandle, "statelicesene=================")
                 if (loginHandle) {
                     dashBoarData()
                 }
@@ -164,15 +158,12 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             });
     }
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    // const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
     const profFromDashboard =
         DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
             DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : null;
     const allProfTake = validHandles.has(profFromDashboard);
-    // const allNoDetData = otherRestrict.has(profFromDashboard);
-    console.log("DashboardReducer", DashboardReducer);
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -180,8 +171,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 break;
             case 'Dashboard/dashboardSuccess':
                 status = DashboardReducer.status;
-                console.log("DashboardReducer9999", DashboardReducer.dashboardResponse.data?.licensures);
-                if (DashboardReducer.dashboardResponse.data?.licensures == 0) {
+                if (DashboardReducer?.dashboardResponse?.data?.licensures == 0) {
                     setWholeNo(true);
                 } else {
                     setWholeNo(false);
@@ -200,7 +190,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                     if (uniqueStates?.length > 0 || uniqueMainDatacheck?.length > 0) {
                         stateTake(uniqueStates, uniqueMainDatacheck);
                     }
-                    console.log(uniqueMainDatacheck, "duplicate removed ========");
                 }
                 setFulldashbaord(uniqueStates);
                 break;
@@ -212,9 +201,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 break;
             case 'Dashboard/stateDashboardSuccess':
                 status = DashboardReducer.status;
-                setFinddata(DashboardReducer?.stateDashboardResponse?.data);
-                console.log(DashboardReducer?.stateDashboardResponse?.data?.tasks_data, "stateDashboardRespons===========")
-                // props.navigation.navigate("Login");
+                // setFinddata(DashboardReducer?.stateDashboardResponse?.data);
                 break;
             case 'Dashboard/stateDashboardFailure':
                 status = DashboardReducer.status;
@@ -224,7 +211,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 break;
             case 'Dashboard/stateReportingSuccess':
                 status = DashboardReducer.status;
-                console.log(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link, "renwal link -----");
                 if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
                     setRenewal(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
                 } else {
@@ -236,7 +222,11 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 break;
         }
     }
-    console.log(fulldashbaord, !enables && !bothNoRequirement, enables, bothNoRequirement, DashboardReducer, "fulldata--------", DashboardReducer?.dashboardResponse?.data?.licensures)
+    useEffect(() => {
+        if (DashboardReducer?.stateDashboardResponse?.data) {
+            setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+        }
+    }, [DashboardReducer?.stateDashboardResponse])
     useEffect(() => {
         if (fulldashbaord?.length == 0) {
             setWholeNo(true);
@@ -245,10 +235,11 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     }, [fulldashbaord])
     useEffect(() => {
         if (propsData?.detectmain == "newadd") {
-            stateDashboardData(fulldashbaord?.[0]?.state_id);
-            stateReport(fulldashbaord?.[0]?.state_id)
+            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id || fulldashbaord?.[0]?.state_id;
+            stateDashboardData(takeIDST);
+            stateReport(takeIDST)
         }
-    }, [propsData?.detectmain])
+    }, [propsData?.detectmain, fulldashbaord, statepush])
     const stateDashboardData = (id) => {
         let obj = {
             "state_id": id
@@ -329,7 +320,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         generalEarned == 0 && generalTotal == 0
     );
     const hidetext = (!enables && !bothNoRequirement);
-    console.log("djok-----", bothNoRequirement, enables)
     const getDynamicHeight = () => {
         if (enables) {
             return normalize(325)
@@ -351,6 +341,42 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         }
         return normalize(220);
     };
+
+    const handleAllIndex = (index) => {
+        setval(index);
+        setCurrentIndex(index);
+        const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
+        if (getDtaa) {
+            dispatch(stateDashboardRequest({ "state_id": getDtaa.state_id }))
+            dispatch(stateReportingRequest({ "state_id": getDtaa.state_id }));
+            setStatepush(getDtaa);
+            const responseData = DashboardReducer?.stateDashboardResponse?.data;
+            setFinddata(responseData);
+            setAddit(getDtaa);
+            setTakedata(getDtaa);
+            setTakestate(getDtaa.board_id);
+            setStateid(getDtaa.state_id);
+            const { topic_earned_credits = 0, total_general_earned_credits = 0 } = getDtaa.credits_data || {};
+            setTotalCred(topic_earned_credits + total_general_earned_credits);
+        }
+    }
+    const resolvedStateId =
+        statepush?.creditID?.state_id ?? statepush?.state_id;
+
+    const matchedIndex =
+        resolvedStateId != null
+            ? fulldashbaord?.findIndex(item => item.state_id == resolvedStateId)
+            : -1;
+
+    const initialIndex = matchedIndex >= 0 ? matchedIndex : 0;
+
+    useEffect(() => {
+        if (matchedIndex >= 0 && carouselRef?.current) {
+            carouselRef.current.snapToItem(matchedIndex, false);
+            handleAllIndex(matchedIndex);
+        }
+    }, [matchedIndex]);
+    const finalDatCD =  statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     return (
         <>
 
@@ -365,8 +391,10 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                             {stateCount?.length > 0 && allProfTake && <TouchableOpacity
                                 onPress={() => {
                                     if (enables) {
+                                        setStatepush(addit);
                                         setPrimeadd(true);
                                     } else {
+                                        setStatepush(addit);
                                         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense" }] }));
                                     }
                                 }}
@@ -418,54 +446,11 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                 sliderHeight={windowHeight * 0.9}
                                 scrollAnimationDuration={1000}
                                 renderItem={({ item, index }) => <Carouselcarditem hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
-                                firstItem={0}
+                                firstItem={initialIndex || 0}
                                 onSnapToItem={(index) => {
-                                    setval(index);
-                                    setCurrentIndex(index);
-                                    const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
-                                    if (getDtaa) {
-                                        dispatch(stateDashboardRequest({ "state_id": getDtaa.state_id }))
-                                        dispatch(stateReportingRequest({ "state_id": getDtaa.state_id }));
-                                        setStatepush(getDtaa);
-                                        // stateDashboardData(getDtaa.state_id);
-                                        // stateReport(getDtaa.state_id);
-                                        const responseData = DashboardReducer?.stateDashboardResponse?.data;
-                                        console.log(responseData, "responseData--------", DashboardReducer);
-                                        setFinddata(responseData);
-                                        setAddit(getDtaa);
-                                        setTakedata(getDtaa);
-                                        setTakestate(getDtaa.board_id);
-                                        setStateid(getDtaa.state_id);
-                                        const { topic_earned_credits = 0, total_general_earned_credits = 0 } = getDtaa.credits_data || {};
-                                        setTotalCred(topic_earned_credits + total_general_earned_credits);
-                                    }
+                                    handleAllIndex(index);
                                 }}
                             />
-
-                            {/* <Pagination
-                                dotsLength={fulldashbaord?.length || 0}
-                                activeDotIndex={val}
-                                containerStyle={{ paddingVertical: 0, marginBottom: normalize(10) }}
-                                dotStyle={{
-                                    width: 25,
-                                    height: 7,
-                                    borderRadius: 10,
-                                    backgroundColor: Colorpath.white,
-                                    marginHorizontal: 0
-                                }}
-                                inactiveDotStyle={{
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: 10,
-                                    backgroundColor: Colorpath.ButtonColr,
-                                    borderColor: "#FFFFFF",
-                                    borderWidth: 3,
-                                    marginRight: 0
-                                }}
-                                inactiveDotScale={0.9}
-                                tappableDots={true} // ✅ Make dots clickable
-                                carouselRef={carouselRef}
-                            /> */}
                             <View style={styles.paginationContainer}>
                                 {fulldashbaord && fulldashbaord?.length >= 2 && fulldashbaord?.map((_, index) => (
                                     <View
@@ -483,6 +468,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                         if (enables) {
                                             setPrimeadd(true);
                                         } else {
+                                            setStatepush(addit);
                                             navigation.dispatch(
                                                 CommonActions.reset({
                                                     index: 0,
@@ -500,7 +486,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                     width={normalize(300)}
                                     backgroundColor={"#2896CD"}
                                     borderRadius={normalize(5)}
-                                    text={`View Courses for ${addit?.state_code} State Compliance`}
+                                    text={`View Courses for ${finalDatCD} State Compliance`}
                                     color={Colorpath.white}
                                     fontSize={16}
                                     fontFamily={Fonts.InterSemiBold}
@@ -536,6 +522,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                         if (enables) {
                                             setPrimeadd(true);
                                         } else {
+                                            setStatepush(addit);
                                             navigation.dispatch(
                                                 CommonActions.reset({
                                                     index: 0,
@@ -553,7 +540,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                     width={normalize(300)}
                                     backgroundColor={"#2896CD"}
                                     borderRadius={normalize(5)}
-                                    text={`View Courses for ${addit?.state_code} State Compliance`}
+                                    text={`View Courses for ${finalDatCD} State Compliance`}
                                     color={Colorpath.white}
                                     fontSize={16}
                                     fontFamily={Fonts.InterSemiBold}
@@ -590,7 +577,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                 width: normalize(320),
                                 alignSelf: 'center',
                             }}>
-                            <Dashboardmain allProfTake={allProfTake} finddata={finddata} setPrimeadd={setPrimeadd} enables={enables} handleButtonPress={getCurrentItem()} setAddit={setAddit} addit={addit} setTakestate={setTakestate} takestate={takestate} cmecourse={cmecourse} tasksData={tasksData} cmeValult={cmeValult} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} hasTasks={hasTasks} DashboardReducer={DashboardReducer} totalcard={totalcard} />
+                            <Dashboardmain statepush={statepush} allProfTake={allProfTake} finddata={finddata} setPrimeadd={setPrimeadd} enables={enables} handleButtonPress={getCurrentItem()} setAddit={setAddit} addit={addit} setTakestate={setTakestate} takestate={takestate} cmecourse={cmecourse} tasksData={tasksData} cmeValult={cmeValult} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} hasTasks={hasTasks} DashboardReducer={DashboardReducer} totalcard={totalcard} />
                         </View> : null}
 
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />

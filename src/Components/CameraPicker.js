@@ -12,7 +12,6 @@ import Imagepath from '../Themes/Imagepath';
 import CamIcn from 'react-native-vector-icons/Feather';
 import { ResizeMode } from 'react-native-video';
 export default function CameraPicker(props) {
-  console.log(props?.profilehit, "profilehit--------")
   // function to open gallery
   async function btnClick_galeryUpload() {
     if (props.btnClick_galeryUpload) {
@@ -40,7 +39,6 @@ export default function CameraPicker(props) {
     }
   }
   function btnClick_ImageUpload() {
-    console.log("Hello")
     if (props.btnClick_ImageUpload) {
       ImagePicker.openPicker({
         width: normalize(300),
@@ -51,7 +49,6 @@ export default function CameraPicker(props) {
         maxFiles: props.maxFiles
       })
         .then(response => {
-          console.log(response, "galerypload");
           let arr = [];
           if (props.multiple) {
             response.filter(data => {
@@ -66,13 +63,11 @@ export default function CameraPicker(props) {
             props.btnClick_ImageUpload(arr);
           } else {
             let imageObj = {};
-            console.log(response, "pranab======");
             imageObj.name = response.filename
               ? response.filename
               : response.path.replace(/^.*[\\\/]/, '');
             imageObj.type = response.mime;
             imageObj.uri = response.path;
-            console.log(imageObj, "eloo==========");
             props.btnClick_ImageUpload(imageObj);
           }
         })

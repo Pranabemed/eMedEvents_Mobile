@@ -17,19 +17,23 @@ import InputField from '../../Components/CellInput';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 const ForgotMPIN = (props) => {
-    const [phoneno, setPhoneno] = useState("");
     const [mobilhd, setMobilhd] = useState("");
+    const [cellCountry, setCellCountry] = useState("");
+    const [mobile, setMobile] = useState("");
+    const [showPassword, setShowPassword] = useState("");
+    const [email, setEmail] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const fogotHandle = () => {
-        const mobileLeng = /^\d{10}$/;
-        if (!phoneno) {
-            showErrorAlert("Cell no is required !")
-        } else if (!mobileLeng.test(phoneno)) {
-            showErrorAlert("Cell no should be 10 digit !")
+        const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
+        const mobileRegex = /^\d{10}$/;
+        if (!email) {
+            showErrorAlert("Please enter your email or cell number!");
+        } else if (!emailRegex.test(email) && !mobileRegex.test(email)) {
+            showErrorAlert("Please enter a valid email address or 10 digit cell number!");
         } else {
-            let obj = {
-                "phone": `${props?.route?.params?.phoneCode}${phoneno}`
+            let obj = showPassword ? { "email": email } : {
+                "phone": `${props?.route?.params?.phoneCode}${email}`
             }
             connectionrequest()
                 .then(() => {
@@ -40,15 +44,18 @@ const ForgotMPIN = (props) => {
                 })
         }
     }
-    const mobileRegex = /^\d{10}$/
-    const isButtonEnabled = mobileRegex.test(phoneno);
+    const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
+    const mobileRegex = /^\d{10}$/;
+    const cleanValue = email && email.trim().replace(/\s+/g, '');
+    const isButtonEnabled =
+        emailRegex.test(cleanValue) || mobileRegex.test(cleanValue);
     const animatedValuephone = useRef(new Animated.Value(1)).current;
     const scaleValuephone = useRef(new Animated.Value(0)).current;
     useEffect(() => {
-        const targetScales = phoneno ? 1 : 0.8;
+        const targetScales = email ? 1 : 0.8;
         Animated.parallel([
             Animated.timing(animatedValuephone, {
-                toValue: phoneno ? 1 : 0,
+                toValue: email ? 1 : 0,
                 duration: 600,
                 easing: Easing.out(Easing.quad),
                 useNativeDriver: true,
@@ -60,7 +67,7 @@ const ForgotMPIN = (props) => {
                 useNativeDriver: true,
             }),
         ]).start();
-    }, [phoneno]);
+    }, [email]);
     if (status == '' || AuthReducer.status != status) {
         switch (AuthReducer.status) {
             case 'Auth/forgotRequest':
@@ -68,7 +75,7 @@ const ForgotMPIN = (props) => {
                 break;
             case 'Auth/forgotSuccess':
                 status = AuthReducer.status;
-                props.navigation.navigate("EnterOTP", { forgotPh: { forgotPh: phoneno, phoneCode: props?.route?.params?.phoneCode } });
+                props.navigation.navigate("EnterOTP", { forgotPh: { forgotPh: email, phoneCode: !showPassword ? props?.route?.params?.phoneCode : "email" } });
                 break;
             case 'Auth/forgotFailure':
                 status = AuthReducer.status;
@@ -120,11 +127,68 @@ const ForgotMPIN = (props) => {
 
         return strInput;
     };
-    const cellNoRegexwpdd = /^\d{10}$/;
-    const isValidWhatsappNodd = phoneno?.length > 0 && !cellNoRegexwpdd.test(phoneno);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    useEffect(() => {
+        if (props?.route?.params?.phoneCode) {
+            setCellCountry(props?.route?.params?.phoneCode);
+        }
+    }, [props?.route?.params?.phoneCode])
+    useEffect(() => {
+        if (mobilhd && cellCountry == "+1") {
+            const formatted = formatPhoneNumber(mobilhd);
+            setMobilhd(formatted);
+            setEmail(mobilhd);
+            setCellCountry(cellCountry)
+            setShowPassword(false);
+            setMobile(true);
+        } else if (mobilhd && cellCountry == "+91") {
+            const formatted = formatIndianPhoneNumber(mobilhd);
+            setMobilhd(formatted);
+            setEmail(mobilhd);
+            setCellCountry(cellCountry)
+            setShowPassword(false);
+            setMobile(true);
+        }
+    }, [mobilhd, cellCountry])
+    const handleInputChange = (val) => {
+        const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
+        const mobileRegex = /^\d{10}$/;
+        setEmail(val);
+        if (mobile && val.length > 0) {
+            setEmail(val);
+        }
+        if (val.trim() === '') {
+            setMobile(false);
+            setShowPassword(false);
+            return;
+        }
+        if (emailRegex.test(val)) {
+            setShowPassword(true);
+        } else if (mobileRegex.test(val)) {
+            setShowPassword(false);
+        } else if (/^\d+$/.test(val)) {
+            setMobile(true);
+            setShowPassword(false);
+        } else if (/^[a-zA-Z]/.test(val)) {
+            setShowPassword(false);
+        } else {
+            setShowPassword(false);
+            setMobile(false);
+        }
+    };
+    const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
+    const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
+    const mobileReg = /^\d{10}$/;
+    const cleanMobile = email && email.replace(/\s+/g, '');
+    const isMobile = mobile && cleanMobile?.length > 0 && mobile && !mobileReg.test(cleanMobile);
+    const phoneInputRef = useRef(null);
+    useEffect(() => {
+        if (mobile && phoneInputRef.current) {
+            phoneInputRef.current.focus();
+        }
+    }, [mobile])
     return (
         <>
             <MyStatusBar
@@ -155,7 +219,7 @@ const ForgotMPIN = (props) => {
                         <View style={styles.headerContainer}>
                             <Text style={styles.headerText}>{"Forgot Password"}</Text>
                             <Text style={styles.subHeaderText}>
-                                {"Enter your registered cell number"}
+                                {"Enter your registered email or cell number"}
                             </Text>
                         </View>
 
@@ -168,43 +232,68 @@ const ForgotMPIN = (props) => {
                                     flex: 1,
                                     paddingRight: normalize(0)
                                 }}>
-                                    <InputField
-                                        label="Cell Number*"
+                                    {mobile ? <InputField
+                                        ref={phoneInputRef}
+                                        label="Email / Cell Number"
                                         value={mobilhd}
                                         onChangeText={(val) => {
-                                            if (props?.route?.params?.phoneCode == "+1") {
-                                                const formatted = formatPhoneNumber(val);
-                                                setMobilhd(formatted);
-                                                const rawDigits = formatted.replace(/\D/g, '');
-                                                setPhoneno(rawDigits);
-                                            } else if (props?.route?.params?.phoneCode == "+91") {
+                                            if (cellCountry == "+91") {
                                                 const formatted = formatIndianPhoneNumber(val);
                                                 setMobilhd(formatted);
                                                 const rawDigits = formatted.replace(/\D/g, '');
-                                                setPhoneno(rawDigits);
+                                                handleInputChange(rawDigits);
+                                                setEmail(rawDigits);
+                                            } else if (cellCountry == "+1") {
+                                                const formatted = formatPhoneNumber(val);
+                                                setMobilhd(formatted);
+                                                const rawDigits = formatted.replace(/\D/g, '');
+                                                handleInputChange(rawDigits);
+                                                setEmail(rawDigits);
                                             }
                                         }}
                                         placeholder=""
                                         placeholderTextColor="#949494"
-                                        keyboardType="phone-pad"
+                                        keyboardType="number-pad"
                                         showCountryCode={true}
-                                        countryCode={props?.route?.params?.phoneCode}
+                                        countryCode={cellCountry || "+91"}
                                         maxlength={14}
-                                    />
+                                        labelStyle={{ top: 10 }}
+                                    /> : <InputField
+                                        label="Email / Cell Number"
+                                        value={email}
+                                        onChangeText={handleInputChange}
+                                        placeholder=""
+                                        placeholderTextColor="#949494"
+                                        keyboardType="default"
+                                        showCountryCode={false}
+                                        maxlength={100}
+                                    />}
+                                    {isValidEmail && (
+                                        <View style={{ bottom: normalize(10) }}>
+                                            <Text
+                                                style={{
+                                                    fontFamily: Fonts.InterRegular,
+                                                    fontSize: 12,
+                                                    color: 'red',
+                                                }}>
+                                                {"Please enter a valid email address (e.g., abc@gmail.com)"}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    {isMobile && (
+                                        <View style={{ bottom: normalize(10) }}>
+                                            <Text
+                                                style={{
+                                                    fontFamily: Fonts.InterRegular,
+                                                    fontSize: 12,
+                                                    color: 'red',
+                                                }}>
+                                                {"Please enter a valid cell number"}
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
-                            {isValidWhatsappNodd && (
-                                <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterRegular,
-                                            fontSize: 12,
-                                            color: 'red',
-                                        }}>
-                                        {"Please enter a valid cell number"}
-                                    </Text>
-                                </View>
-                            )}
                         </View>
                         <Buttons
                             onPress={fogotHandle}

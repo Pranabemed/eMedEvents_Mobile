@@ -73,7 +73,6 @@ function TabScreen() {
       setTimeout(() => {
         AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
           if (loginHandleProccess && !DashboardReducer?.dashPerResponse?.data?.licensures) {
-            console.log(loginHandleProccess, "loginHandleProccess--------")
             let objToken = { "token": loginHandleProccess, "key": {} }
             connectionrequest()
               .then(() => {
@@ -101,7 +100,6 @@ function TabScreen() {
           if (profdatset) {
             const parsedData = JSON.parse(profdatset);
             setWholeProf(parsedData);
-            console.log(parsedData, "parsedData---------------")
           }
         });
       }, 500);
@@ -166,7 +164,6 @@ function TabScreen() {
   const licHandl = (profFromDashboard) => {
     if (!AuthReducer?.licesensResponse?.licensure_states) {
       let obj = profFromDashboard;
-      console.log(obj, "obj--------")
       connectionrequest()
         .then(() => {
           dispatch(licesensRequest(obj))
@@ -176,7 +173,6 @@ function TabScreen() {
         });
     }
   }
-  console.log(wholeProf, "dsfhsdfhjfdg=======")
   const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
   const profFromDashboard =
     DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
@@ -213,7 +209,6 @@ function TabScreen() {
       navigation.navigate(initialRoute);
     }
   }, [initialRoute, navigation]);
-  console.log(initialRoute, "tabName000000")
   useEffect(() => {
     connectionrequest()
       .then(() => {
@@ -223,13 +218,11 @@ function TabScreen() {
   }, [isFoucs])
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setNettrue(state.isConnected);
     });
 
     return () => unsubscribe();
   }, [isFoucs]);
-  console.log(nettrue, "fsdfhhhh==========")
   useEffect(() => {
     const token_handle_vault = () => {
       setTimeout(async () => {
@@ -242,8 +235,6 @@ function TabScreen() {
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           setFinalverifyvaulttab(board_special_json);
           setFinalProfessiontab(profession_data_json);
-          console.log(board_special_json, "statelicesene=================");
-          console.log(profession_data_json, "profession=================");
         } catch (error) {
           console.log('Error fetching data:', error);
         }
@@ -284,17 +275,14 @@ function TabScreen() {
   };
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setIsConnected(state.isConnected);
       if (state.isConnected) {
         <StackNav />
-        console.log("Internet is back!");
       }
     });
 
     return () => unsubscribe();
   }, [isConnected]);
-  console.log(lastActiveTab, "fdfdjfjjkl-----")
   return ((allProfTake && fulldashbaord?.length !== 0) ? <>
     <Tab.Navigator
       initialRouteName={lastActiveTab || initialRoute || "Home"}

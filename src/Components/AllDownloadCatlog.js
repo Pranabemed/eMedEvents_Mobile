@@ -18,7 +18,6 @@ const AllDownloadCatalog = (props) => {
     useEffect(() => {
         if (props?.route?.params?.mainPDF) {
             const finalPath = `${props?.route?.params?.mainPDF}`;
-            console.log('Received pDFPath:', finalPath); // Log to check the path
             setPDFPath(finalPath);
         }
     }, [props?.route?.params?.mainPDF]);
@@ -31,16 +30,11 @@ const AllDownloadCatalog = (props) => {
                     const url = pDFPath;
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-                    console.log('Downloading file from:', url);
-                    console.log('Saving file to:', localFile);
                     const options = {
                         fromUrl: url,
                         toFile: localFile,
                     };
-                    const downloadResult = await RNFS.downloadFile(options).promise;
-                    console.log('Download result:', downloadResult); // Log the result of the download
                     setPdfUri(localFile);
-                    console.log('File downloaded successfully to:', localFile);
                 } catch (error) {
                     console.error('Error during file download:', error); // Enhanced error logging
                 } finally {
@@ -55,7 +49,6 @@ const AllDownloadCatalog = (props) => {
         if (pdftrue) {
             const openFileViewer = async () => {
                 try {
-                    console.log('Opening file viewer for:', pdfUri);
                     await FileViewer.open(pdfUri);
                 } catch (error) {
                     console.error('Error opening file viewer:', error); // Enhanced error logging
@@ -125,7 +118,7 @@ const AllDownloadCatalog = (props) => {
                             </View>
                         ) : (
                             <Text style={styles.errorText}>
-                                Unable to load PDF.
+                                {"Unable to load PDF."}
                             </Text>
                         )}
                     </View>

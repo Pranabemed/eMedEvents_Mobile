@@ -301,19 +301,27 @@ const VerifyMobileOTP = (props) => {
                 break;
             case 'Auth/licesensSuccess':
                 status = AuthReducer.status;
-                const uniqueStates = AuthReducer?.licesensResponse?.licensure_states?.filter((state, index, self) =>
-                    index === self.findIndex((s) => s.id === state.id)
-                );
-                const filteredStates = uniqueStates?.filter((state) =>
-                    !fulldashbaord?.some((dash) => dash.state_id === state.id)
-                );
-                setStateCount(filteredStates);
                 break;
             case 'Auth/licesensFailure':
                 status = AuthReducer.status;
                 break;
         }
     }
+    const filteredStates = useMemo(() => {
+        if (!AuthReducer?.licesensResponse?.licensure_states) return [];
+        const existingStateIds = new Set(fulldashbaord?.map(dash => dash.state_id));
+        const stateMap = new Map();
+        AuthReducer.licesensResponse.licensure_states.forEach(state => {
+            if (!stateMap.has(state.id)) {
+                stateMap.set(state.id, state);
+            }
+        });
+        return Array.from(stateMap.values())
+            .filter(state => !existingStateIds.has(state.id));
+    }, [AuthReducer?.licesensResponse, fulldashbaord]);
+    useEffect(() => {
+        setStateCount(filteredStates);
+    }, [filteredStates]);
     console.log(mobiletrue, "mobilelogin-----", otpmobile)
     if (status1 == '' || DashboardReducer.status != status1) {
         switch (DashboardReducer.status) {
@@ -410,21 +418,6 @@ const VerifyMobileOTP = (props) => {
     useEffect(() => {
         setRenewal(renewalLink);
     }, [renewalLink]);
-    const filteredStates = useMemo(() => {
-        if (!AuthReducer?.licesensResponse?.licensure_states) return [];
-        const existingStateIds = new Set(fulldashbaord?.map(dash => dash.state_id));
-        const stateMap = new Map();
-        AuthReducer.licesensResponse.licensure_states.forEach(state => {
-            if (!stateMap.has(state.id)) {
-                stateMap.set(state.id, state);
-            }
-        });
-        return Array.from(stateMap.values())
-            .filter(state => !existingStateIds.has(state.id));
-    }, [AuthReducer?.licesensResponse, fulldashbaord]);
-    useEffect(() => {
-        setStateCount(filteredStates);
-    }, [filteredStates]);
     console.log("manually otp1222", props?.route?.params, AuthReducer);
     const verifyHandle = () => {
         console.log(props?.route?.params?.Newphone?.Verifycell, "manually otp1222", props?.route?.params);
@@ -518,7 +511,7 @@ const VerifyMobileOTP = (props) => {
                         <View style={{ flexDirection: "column", marginTop: normalize(15) }}>
                             <View>
                                 <Text style={styles.subHeaderText}>
-                                    {"An 6-digit code has been sent to"}
+                                    {"A 6-digit code has been sent to"}
                                 </Text>
                             </View>
 

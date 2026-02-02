@@ -51,12 +51,9 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     useEffect(() => {
         fetchHandle();
     }, [fetchnamelive, isFocus]);
-
-    console.log(fetchnamelive, "loading----------", creditwholelive, Fulldatalive?.length, dataAll?.length);
     const fullActionlive = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
-        console.log(result, "webcast url=======", dataItem);
         if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
         } else if (dataItem?.current_activity_api == "introduction") {
@@ -72,7 +69,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     const titlhandleUrllive = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
-        console.log(resulttitle, "webcast url=======", make);
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: creditwholelive } })
         }
@@ -84,11 +80,8 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
                     const url = `https://static.emedevents.com/uploads/conferences/certificates/${cleanedPath}`;
-                    console.log(url, "url---------");
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-                    console.log('Downloading file from:', url);
-                    console.log('Saving file to:', localFile);
                     const options = {
                         fromUrl: url,
                         toFile: localFile,
@@ -96,7 +89,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                     const downloadResult = await RNFS.downloadFile(options).promise;
                     console.log('Download result:', downloadResult);
                     setPdfUrist(localFile);
-                    console.log('File downloaded successfully to:', localFile);
                 } catch (error) {
                     console.error('Error during file download:', error);
                 } finally {
@@ -111,7 +103,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
         if (pdfUrist) {
             const openFileViewerst = async () => {
                 try {
-                    console.log('Opening file viewer for:', pdfUrist);
                     await FileViewer.open(pdfUrist);
                     setPdfUrist(null);
                 } catch (error) {
@@ -143,7 +134,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             setPageNum(pageNum + 1);
             fetchHandle();
         }
-        console.log("hello")
     }, [apiReq]);
 
     const fullDataRefresh = () => {
@@ -164,7 +154,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                 status = CMEReducer.status;
                 setApiReq(false);
                 setLoading(false);
-                console.log(CMEReducer?.cmeCourseResponse?.conferences?.length, "helooo========")
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
                     let modifiedData = [
                         ...storeAlldata,
@@ -213,7 +202,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             setPendingall(filteredDataPending);
         }
     }, [fetchnamelive])
-    console.log(pendingall, compltall, "pendingall1111111", filteredItems, dataAll);
     useEffect(() => {
         const resultData = fetchnamelive === "All" ? filteredItems :
             fetchnamelive === "Pending" ? pendingall :
@@ -338,7 +326,6 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                 onEndReached={fetchMore}
                 onEndReachedThreshold={0.5}
                 contentContainerStyle={{ paddingBottom: normalize(270) }}
-                // onScroll={()=>{console.log("hello")}}
                 scrollEventThrottle={16}
                 ListFooterComponent={
                     (loading && dataAll?.length > 1 || loading) ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null

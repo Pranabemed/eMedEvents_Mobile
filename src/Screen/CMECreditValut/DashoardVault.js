@@ -47,7 +47,6 @@ const DashoardVault = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
-    console.log(AuthReducer?.staticdataResponse, "staticdataResponse======")
     const [statewise, setStatewise] = useState("");
     const [clisttopic, setClisttopic] = useState('');
     const [selectCountrytopic, setSelectCountrytopic] = useState([]);
@@ -72,8 +71,6 @@ const DashoardVault = (props) => {
     const [renewalvault, setRenewalvault] = useState("");
     const [renewalCheck, setRenewalCheck] = useState(null);
     const [modalshow, setModalShow] = useState(false);
-    ////board ---- area /////
-    console.log(CreditVaultReducer?.boardvaultResponse?.board_data, "CreditVaultReducer===>>>>======:::::");
     const [statepickboard, setStatepickboard] = useState("");
     const [statewiseboard, setStatewiseboard] = useState("");
     const windowWidth = Dimensions.get('window').width;
@@ -101,7 +98,6 @@ const DashoardVault = (props) => {
     const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
@@ -120,18 +116,15 @@ const DashoardVault = (props) => {
             case 'CreditVault/boardvaultRequest':
                 status1 = CreditVaultReducer.status;
                 setLoadingStatewiseboard(true);
-                console.log("Helolo===============")
                 break;
             case 'CreditVault/boardvaultSuccess':
                 status1 = CreditVaultReducer.status;
                 setLoadingStatewiseboard(false);
-                console.log(CreditVaultReducer?.boardvaultResponse?.board_data, ">>>>>>>1111BoardVaultReducer");
                 const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
                 const takeFinalBoard = Object.keys(finalboard).map(key => ({
                     ...finalboard[key],
                     board_id: key,
                 }));
-                console.log(takeFinalBoard, "stateDataArray1111")
                 setSelectCountrytopicboard(takeFinalBoard);
                 setClisttopicboard(takeFinalBoard);
                 break;
@@ -141,12 +134,10 @@ const DashoardVault = (props) => {
                 break;
         }
     }
-    console.log(clisttopicboard, "clisttopicboard=====", clisttopic)
     useEffect(() => {
         if (clisttopicboard?.length > 0) {
             const defaultStated = clisttopicboard[0];
             setLengthcheck(defaultStated);
-            console.log(moment(defaultStated?.board_data?.expiry_date).format('MMMM DD, YYYY'), "clisttopic statttt=========")
             // setStatewise(defaultState?.board_data?.board_name); 
             setCertificatebaord(defaultStated);
             setBoardnameboard(defaultStated?.board_data?.board_name);
@@ -190,18 +181,14 @@ const DashoardVault = (props) => {
             }
         }
     }, [stateidboard])
-    console.log(clisttopicboard, stateidboard, boardexpiredate, selectCountrytopicboard, "clisttopic new =====>>>>>>>>")
     const searchTopicNameboard = text => {
-        console.log(text, 'text12333');
         if (text) {
             const listAllData = selectCountrytopicboard?.filter(function (item) {
-                console.log('item+++++++++++++++++++1111', item?.board_data.board_name);
                 const itemDataTopic = item?.board_data.board_name
                     ? item?.board_data.board_name?.toUpperCase()
                     : ''.toUpperCase();
                 const textDataTopic = text.trim().toUpperCase();
                 const AllDataFilter = itemDataTopic.indexOf(textDataTopic) > -1;
-                console.log('AllDataFilter', AllDataFilter);
                 return AllDataFilter;
             });
             setClisttopicboard(listAllData);
@@ -259,20 +246,6 @@ const DashoardVault = (props) => {
             case 'Dashboard/stateMandatorySuccess':
                 status = DashboardReducer.status;
                 setLoadingStatewise(false);
-                console.log(DashboardReducer?.stateMandatoryResponse?.state_data, ">>>>>>>DashboardReducer");
-                // const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
-                // const stateDataArray = Object.keys(stateData).map(key => ({
-                //     ...stateData[key],
-                //     state_id: key,
-                // }));
-                // setSelectCountrytopic(stateDataArray);
-                // setClisttopic(stateDataArray);
-                // console.log(selectCountrytopic,"selectCountrytopic=========");
-                // if (selectCountrytopic?.length > 0) {
-                //     const defaultState = selectCountrytopic[0];
-                //     setStatewise(defaultState?.state_name);
-                //     setStateid(defaultState?.state_id);
-                // }
                 break;
             case 'Dashboard/stateMandatoryFailure':
                 status = DashboardReducer.status;
@@ -285,7 +258,6 @@ const DashoardVault = (props) => {
             case 'Dashboard/stateCourseSuccess':
                 status = DashboardReducer.status;
                 setLoadingCreditwise(false);
-                console.log(DashboardReducer?.stateCourseResponse?.data?.state_data, ">>>>>>>statewisedata");
                 setCreditwise(DashboardReducer?.stateCourseResponse?.data?.state_data);
                 break;
             case 'Dashboard/stateCourseFailure':
@@ -316,7 +288,6 @@ const DashoardVault = (props) => {
                 break;
             case 'CreditVault/professionvaultSuccess':
                 status1 = CreditVaultReducer.status;
-                console.log(CreditVaultReducer?.professionvaultResponse, ">>>>>>>professioVaultResponse");
                 setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
                 break;
             case 'CreditVault/professionvaultFailure':
@@ -332,9 +303,6 @@ const DashoardVault = (props) => {
                 ...stateData[key],
                 state_id: key,
             }));
-
-            console.log("New stateDataArray:", stateDataArray);
-
             // Update state with the new data
             setSelectCountrytopic(stateDataArray);
             setClisttopic(stateDataArray);
@@ -373,8 +341,6 @@ const DashoardVault = (props) => {
                     const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
                     setFinalverifyvault(board_special_json);
                     setFinalProfession(profession_data_json);
-                    console.log(board_special_json, "statelicesene=================");
-                    console.log(profession_data_json, "profession=================");
                 } catch (error) {
                     console.log('Error fetching data:', error);
                 }
@@ -393,10 +359,6 @@ const DashoardVault = (props) => {
             dispatch(professionvaultRequest(obj))
         }
     }, [certificatedata])
-    console.log(CreditVaultReducer, creditwise, "defaultState===============", stateid, certificatedata, allProfessionData);
-    console.log(AuthReducer?.loginResponse?.user?.profession,
-        AuthReducer?.againloginsiginResponse?.user?.profession,
-        AuthReducer?.verifymobileResponse?.user?.profession, "data ===========")
     useEffect(() => {
         if (stateid) {
             let obj = {
@@ -418,13 +380,11 @@ const DashoardVault = (props) => {
                     const ninetyDaysBefore = new Date(targetDate);
                     ninetyDaysBefore.setDate(targetDate.getDate() - 90);
                     if (today > targetDate) {
-                        // setModalShow(true);
                         setExpireDatecredit(true);
                         setCountdownMessagecredit('');
                     } else {
                         const differenceMs = targetDate - today;
                         const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-                        console.log(differenceDays, "differenceDays0000=============");
                         if (differenceDays == 89) {
                             // setModalShow(true);
                             setExpireDatecredit(true);
@@ -472,19 +432,14 @@ const DashoardVault = (props) => {
         }
 
     }, [creditwise]);
-    console.log(creditwise, "item------allll")
-    console.log(selectCountrytopic?.length, DashboardReducer?.dashboardResponse?.data?.board_certifications?.length, "againState=====>>>>>>>>", DashboardReducer?.status, AuthReducer?.staticdataResponse?.state)
     const searchTopicName = text => {
-        console.log(text, 'text12333');
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
-                console.log('item+++++++++++++++++++1111', item?.state_name);
                 const itemDataTopic = item?.state_name
                     ? item?.state_name?.toUpperCase()
                     : ''.toUpperCase();
                 const textDataTopic = text.trim().toUpperCase();
                 const AllDataFilter = itemDataTopic.indexOf(textDataTopic) > -1;
-                console.log('AllDataFilter', AllDataFilter);
                 return AllDataFilter;
             });
             setClisttopic(listAllData);
@@ -545,11 +500,9 @@ const DashoardVault = (props) => {
     }
     const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
             if (state.isConnected) {
                 <StackNav />
-                console.log("Internet is back!");
             }
         });
 
@@ -697,14 +650,6 @@ const DashoardVault = (props) => {
                         </View>
                         <ScrollView contentContainerStyle={{ paddingBottom: normalize(0) }}>
                             <View>
-                                {/* <View style={{ zIndex: 999, position: "relative", top: 1, flexDirection: "row", justifyContent: "space-evenly", marginRight: valuttext ? normalize(100) : undefined, marginLeft: !valuttext ? normalize(100) : undefined }}>
-                                    <View>
-                                        {valuttext && <GradientButton width={width} />}
-                                    </View>
-                                    <View>
-                                        {!valuttext && <GradientButton />}
-                                    </View>
-                                </View> */}
                                 <View style={{ bottom: normalize(10) }}>
                                     {valuttext && <Statevault
                                         modalshow={modalshow}

@@ -13,12 +13,18 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { stateDashboardRequest, stateDashboardSuccess } from '../../Redux/Reducers/DashboardReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { useDispatch } from 'react-redux';
 const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
-        const { isConnected,fulldashbaord,setAddit } = useContext(AppContext);
+        const { isConnected,fulldashbaord,setAddit,statepush } = useContext(AppContext);
+        const dispatch = useDispatch();
     const taskPress = () => {
-        const getAda = fulldashbaord?.[0];
-        setAddit(getAda);
+        setAddit(statepush);
+        stateDashboardSuccess(null)
+        taskHandle();
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -29,6 +35,16 @@ const Mytasks = (props) => {
         );
         // props.navigation.goBack();
     };
+       const taskHandle = () => {
+            if (statepush) {
+                const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+                connectionrequest()
+                    .then(() => {
+                        dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+                    })
+                    .catch((err) => { showErrorAlert("Please connect to internet", err) })
+            }
+        }
      const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {

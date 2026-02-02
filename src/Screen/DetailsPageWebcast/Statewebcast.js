@@ -42,11 +42,14 @@ const Statewebcast = props => {
         cartcount,
         setCartcount,
         setStatepush,
-        isConnected
+        isConnected,
+        fulldashbaord,
+        setAddit,
+        statepush
     } = useContext(AppContext);
     const { width } = useWindowDimensions();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
-    console.log(props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
+    console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
     const dispatch = useDispatch();
     const [viewmore, setViewmore] = useState("");
     const [viewmoreac, setViewmoreac] = useState("");
@@ -79,6 +82,8 @@ const Statewebcast = props => {
         } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
             props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
         } else {
+            setAddit(statepush);
+            setAddit(props?.route?.params?.webCastURL?.creditData);
             props.navigation.navigate("TabNav");
         }
     };
@@ -366,6 +371,12 @@ const Statewebcast = props => {
             : Number(finalPrice.toFixed(2));
     };
     useEffect(() => {
+        if (WebcastReducer?.webcastDeatilsResponse) {
+            setLoading(false);
+            setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse)
+        }
+    }, [WebcastReducer?.webcastDeatilsResponse,loading])
+    useEffect(() => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const ticket = webcastdeatils.registrationTickets?.[0];
             const price = calculatePrice(
@@ -541,7 +552,7 @@ const Statewebcast = props => {
                         <StatewebcastReviews setReviewsPosition={setReviewsPosition} webcastdeatils={webcastdeatils} ratingsall={ratingsall} reviewpost={reviewpost} expandreview={expandreview} reviewChange={reviewChange} />
                     </View>}
                 </ScrollView>
-                <StatewebcastCheckout takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils}/>
+                <StatewebcastCheckout takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils} />
                 <CatlogDownload
                     setDownlink={setDownlinkdt}
                     downlink={downlinkdt}

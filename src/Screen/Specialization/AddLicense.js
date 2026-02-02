@@ -1,12 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, ImageBackground, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
+import { View, Text, Platform, ScrollView, KeyboardAvoidingView, Alert, Animated, Easing, BackHandler, Pressable } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import PageHeader from '../../Components/PageHeader'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
-import CustomTextField from '../../Components/CustomTextfiled';
-import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import CalenderIcon from 'react-native-vector-icons/Feather';
 import Buttons from '../../Components/Button';
 import DeleteIcon from 'react-native-vector-icons/MaterialIcons';
@@ -14,7 +12,7 @@ import ScanIcon from 'react-native-vector-icons/AntDesign';
 import CameraPicker from '../../Components/CameraPicker'
 import moment from 'moment'
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { licesensRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
+import { licesensRequest } from '../../Redux/Reducers/AuthReducer'
 import { useDispatch, useSelector } from 'react-redux'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast';
@@ -22,13 +20,11 @@ import { dashboardRequest, stateLicesenseRequest, stateReportingRequest } from '
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
 import { CommonActions, useIsFocused } from '@react-navigation/native'
-import DropdownInput from '../../Components/DropdownInput'
 import PraticingStateComponent from './PraticingStateComponent'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import constants from '../../Utils/Helpers/constants'
 import CustomizedYear from '../StateSpecification/CustomizedYear'
 import StateModa from '../../Components/StateModa'
-import TextInputSingle from '../../Components/SingleTextinput'
 import { AppContext } from '../GlobalSupport/AppContext'
 import CustomInputTouchable from '../../Components/IconTextIn'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
@@ -40,18 +36,19 @@ const AddLicense = (props) => {
     const {
         setFulldashbaord,
         fulldashbaord,
-        setAddit
+        setAddit,
+        statepush,
+        setStatepush,
+        addit
     } = useContext(AppContext);
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const [selectlicsense, setSelectlicsense] = useState(false);
     const [licsenseno, setlicsenseno] = useState(false);
-    // const [cdate, setCdate] = useState(false);
     const [isModalVisiblecred, setModalVisiblecred] = useState(false);
     const [cameraPickerlic, setCameraPickerlic] = useState(false);
     const [ProfilePicObjlic, setProfilePicObjlic] = useState('');
-    const [ProfilePicObjlic1, setProfilePicObjlic1] = useState('')
     const [ProfilePicUrilic, setProfilePicUrilic] = useState('');
     const [opendatelic, setOpendatelic] = useState(false);
     const [rdate, setRdate] = useState(
@@ -70,7 +67,6 @@ const AddLicense = (props) => {
                 : null
     );
     const [opendatelicy, setOpendatelicy] = useState(false);
-    const [countryid, setCountryid] = useState("1");
     const [selectStatepratice, setSelectStatepratice] = useState([]);
     const [slistpratice, setSlistpratice] = useState('');
     const [praticelic, setPraticelic] = useState(false);
@@ -104,8 +100,7 @@ const AddLicense = (props) => {
                 })
             );
         } else if (props?.route?.params?.myTaskask?.Back) {
-            const fullDta = fulldashbaord?.[0];
-            setAddit(fullDta);
+            setStatepush(addit);
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -126,8 +121,7 @@ const AddLicense = (props) => {
         } else if (props?.route?.params?.profiledet) {
             props.navigation.goBack();
         } else {
-            const fullDta = fulldashbaord?.[0];
-            setAddit(fullDta);
+            setStatepush(addit);
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -153,8 +147,6 @@ const AddLicense = (props) => {
                     const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
                     setFinalverifyvault(board_special_json);
                     setFinalProfession(profession_data_json);
-                    console.log(board_special_json, "statelicesene=================");
-                    console.log(profession_data_json, "profession=================");
                 } catch (error) {
                     console.log('Error fetching data:', error);
                 }
@@ -182,23 +174,17 @@ const AddLicense = (props) => {
         finalProfession,
         isFoucs
     ]);
-    // const allProfession = AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
-
-    console.log(props?.route?.params, allProfession, "Dashboard data >>>>>>>>>", DashboardReducer?.dashboardResponse?.data?.licensures, "selectStatepratice", selectStatepratice)
     const toggleModalcred = () => {
         setModalVisiblecred(!isModalVisiblecred);
     };
     const licesenseState = () => {
-        console.log(allProfession, "allprodfess---------")
         if (allProfession) {
             let obj = `${allProfession?.profession} - ${allProfession?.profession_type}`;
-            console.log(obj, "obj--------")
             connectionrequest()
                 .then(() => {
                     dispatch(licesensRequest(obj))
                 })
                 .catch(err => {
-                    // console.log(err);
                     showErrorAlert('Please connect to Internet', err);
                 });
         }
@@ -216,7 +202,6 @@ const AddLicense = (props) => {
     useEffect(() => {
         if (stateDateFetch) {
             const formattedDate = convertDate(stateDateFetch);
-            console.log(formattedDate);
             setFinalDate(formattedDate);
         }
     }, [stateDateFetch])
@@ -327,7 +312,6 @@ const AddLicense = (props) => {
             }),
         ]).start();
     }, [licsenseno]);
-    console.log(finalDate, "finalDate--------", rdate, props?.route?.params?.myTaskask?.addLic);
     useEffect(() => {
         const boardId = props?.route?.params?.myTaskask?.addLic?.board_data?.board_id;
         const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
@@ -336,13 +320,11 @@ const AddLicense = (props) => {
     }, [props?.route?.params?.myTaskask])
     useEffect(() => {
         const handleTakeIt = props?.route?.params?.profiledet || props?.route?.params?.myTaskask?.addLic;
-        console.log(handleTakeIt, "handleTakeIt0---------", targt)
         if (handleTakeIt && typeof stateDateFetch == "undefined" || !stateDateFetch) {
             const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
             if (finalget?.length > 0) {
-                console.log(finalget?.[0]?.state, "finalget==============", finalget);
                 setSelectlicsense(finalget?.[0]?.state);
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
@@ -369,7 +351,6 @@ const AddLicense = (props) => {
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
             if (finalget?.length > 0) {
-                console.log(finalget?.[0]?.state, "finalget===========1223===", finalget);
                 setSelectlicsense(finalget?.[0]?.state);
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
@@ -418,7 +399,6 @@ const AddLicense = (props) => {
                 const filteredStates = uniqueStates?.filter((state) =>
                     !fetchdata?.some((dash) => dash.state_id === state.id)
                 );
-                console.log(filteredStates, "filteredStates>>>>>>>>>>>", AuthReducer?.licesensResponse?.licensure_states)
                 setSelectStatepratice(filteredStates);
                 setSlistpratice(filteredStates);
                 break;
@@ -455,7 +435,6 @@ const AddLicense = (props) => {
                 break;
             case 'Dashboard/dashboardSuccess':
                 status1 = DashboardReducer.status;
-                console.log("DashboardReducer999912222", DashboardReducer.dashboardResponse.data?.licensures);
                 const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
                     return index === self.findIndex((s) =>
                         s.state_id === state.state_id &&
@@ -476,7 +455,6 @@ const AddLicense = (props) => {
         setCitypickeryear(false);
         setNewtake(don)
     }
-    console.log(stateDateFetch, "stateDateFetch=======", cdate)
     function directCameraUpload() {
         ImagePicker.openCamera({
             width: 300,
@@ -503,16 +481,13 @@ const AddLicense = (props) => {
     }
 
     const searchStateNamePratice = text => {
-        console.log(text, 'text12333');
         if (text) {
             const praticeState = selectStatepratice?.filter(function (item) {
-                console.log('item+++++++++++++++++++state', item);
                 const itemData = item?.state_name
                     ? item?.state_name.toUpperCase() + item?.state_name.toUpperCase()
                     : ''.toUpperCase();
                 const textDataPratice = text.trim().toUpperCase();
                 const praticeStateFiltered = itemData.indexOf(textDataPratice) > -1;
-                console.log('praticeStateFilteredState', praticeStateFiltered);
                 return praticeStateFiltered;
             });
             setSlistpratice(praticeState);
@@ -534,43 +509,6 @@ const AddLicense = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    // const addLicsenseHandled = () => {
-    //     const needWh = rdate && stateDateFetch ? "Licensure Expiry  Date*" : rdate ? "License Issue Date*" : stateDateFetch ? "License Expiry Date*" : "License Issue Date*"
-    //     const whole = cdate ? cdate : stateDateFetch ? "Select your license expiry year" : "Selct your license expiry date"
-    //     // if(!ProfilePicObjlic){
-    //     //   showErrorAlert("Please choose a image !")
-    //     // }else
-    //     if (!selectlicsense) {
-    //         showErrorAlert("Choose your practicing state")
-    //     } else if (!licsenseno) {
-    //         showErrorAlert("Enter your license number")
-    //     } else if (!needWh) {
-    //         showErrorAlert(needWh)
-    //     } else if (!whole) {
-    //         showErrorAlert(whole)
-    //     } else {
-    //         const val1 = stateDateFetch;
-    //         const val2 = cdate;
-    //         const dateString = `${val1}, ${val2}`;
-    //         const formattedDate = moment(dateString, "MMMMDD, YYYY").format("YYYY-MM-DD");
-    //         let obj = new FormData();
-    //         obj.append("id", props?.route?.params?.profiledet?.id ?? props?.route?.params?.myTaskask?.addLic?.id ?? 0);
-    //         obj.append("state_id", specialidpratice);
-    //         obj.append("from_date", newtake ? "" : stateDateFetch ? stateDateFetch : rdate);
-    //         obj.append("to_date", newtake ? formattedDate : cdate);
-    //         obj.append("license_number", licsenseno);
-    //         obj.append("license_file", ProfilePicObjlic ? ProfilePicObjlic : null);
-    //         obj.append("delete_file", ProfilePicObjlic ? 0 : 1)
-    //         console.log(obj, "obj-------");
-    //         connectionrequest()
-    //             .then(() => {
-    //                 dispatch(stateLicesenseRequest(obj));
-    //             })
-    //             .catch(err => {
-    //                 showErrorAlert("Please connect to internet", err)
-    //             })
-    //     }
-    // }
     const addLicsenseHandle = () => {
         if (!selectlicsense) {
             showErrorAlert("Please choose your practicing state");
@@ -613,9 +551,6 @@ const AddLicense = (props) => {
         obj.append("license_number", licsenseno);
         obj.append("license_file", ProfilePicObjlic ? ProfilePicObjlic : null);
         obj.append("delete_file", ProfilePicObjlic ? 0 : 1);
-
-        console.log(obj, "obj-------");
-
         connectionrequest()
             .then(() => {
                 dispatch(stateLicesenseRequest(obj));
@@ -629,7 +564,6 @@ const AddLicense = (props) => {
         { length: 5 },
         (_, index) => currentYear + index
     );
-    console.log("Try programiz.pro", yearRange, cdate, ProfilePicObjlic);
     const handleAddState = (itemmode) => {
         setSelectlicsense(itemmode?.state_name);
         setSpecailidpraticelic(itemmode.id)
@@ -717,28 +651,6 @@ const AddLicense = (props) => {
                                             marginleft={ProfilePicObjlic ? normalize(270) : normalize(265)}
                                             spaceneeded={true}
                                         />
-                                        {/* <CustomInputTouchable
-                                            label={"Upload Your License Certificate"}
-                                            value={ProfilePicObjlic
-                                                ? ProfilePicObjlic.uri
-                                                    ? ProfilePicObjlic.uri.split('/').pop().replace(/-/g, '').slice(-16)
-                                                    : ProfilePicObjlic.split('/').pop()
-                                                : ""}
-                                            placeholder={""}
-                                            placeholderTextColor="#949494"
-                                            rightIcon={ProfilePicObjlic ? <DeleteIcon name="delete" size={25} color="#949494" /> : <ScanIcon name="scan1" size={28} color="#949494" />}
-                                            onPress={() => {
-                                                setCameraPickerlic(true);
-                                            }}
-                                            onIconpres={() => {
-                                                if (ProfilePicObjlic) {
-                                                    Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes", onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
-                                                } else {
-                                                    directCameraUpload();
-                                                }
-                                            }}
-                                            textStyle={{ color: ProfilePicObjlic ? Colorpath.ButtonColr : "#949494" }}
-                                        /> */}
                                     </View>
                                 </View>
 
@@ -751,18 +663,6 @@ const AddLicense = (props) => {
                                             flex: 1,
                                             paddingRight: normalize(0)
                                         }}>
-                                            {/* <CustomInputTouchable
-                                                label={"Licensure State*"}
-                                                value={selectlicsense}
-                                                placeholder={""}
-                                                placeholderTextColor="#949494"
-                                                rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                onPress={() => {
-                                                    setPraticelic(!praticelic);
-                                                }}
-                                                onIconpres={() => { setPraticelic(!praticelic); }}
-                                                disabled={props?.route?.params?.profiledet || props?.route?.params?.myTaskask ? true : false}
-                                            /> */}
                                             <InputField
                                                 icondisable={props?.route?.params?.profiledet || props?.route?.params?.myTaskask ? true : false}
                                                 label={"Licensure State*"}
@@ -816,28 +716,6 @@ const AddLicense = (props) => {
                                             flex: 1,
                                             paddingRight: normalize(0)
                                         }}>
-                                            {/* <CustomInputTouchable
-                                                label={rdate && stateDateFetch ? "Licensure Expiry  Date*" : rdate ? "License Issue Date*" : stateDateFetch ? "License Expiry Date*" : "License Issue Date*"}
-                                                value={stateDateFetch ? stateDateFetch : rdate ? rdate : ""}
-                                                placeholder={""}
-                                                placeholderTextColor="#949494"
-                                                rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                                                onPress={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date ?? props?.route?.params?.myTaskask?.addLic?.from_date) {
-                                                        setOpendatelic(true);
-                                                    } else {
-                                                        setOpendatelic(true);
-                                                    }
-                                                }}
-                                                onIconpres={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date ?? props?.route?.params?.myTaskask?.addLic?.from_date) {
-                                                        setOpendatelic(true);
-                                                    } else {
-                                                        setOpendatelic(true);
-                                                    }
-                                                }}
-                                                disabled={stateDateFetch ? true : false}
-                                            /> */}
                                             <InputField
                                                 icondisable={stateDateFetch ? true : false}
                                                 label={rdate && stateDateFetch ? "Licensure Expiry  Date*" : rdate ? "License Issue Date*" : stateDateFetch ? "License Expiry Date*" : "License Issue Date*"}
@@ -1004,19 +882,16 @@ const AddLicense = (props) => {
                                 pickerVisible={cameraPickerlic}
                                 onBackdropPress={() => setCameraPickerlic(false)}
                                 btnClick_cameraUpload={imgObj => {
-                                    console.log(imgObj, "fgkrfglfd");
                                     setProfilePicObjlic(imgObj);
                                     setProfilePicUrilic(imgObj.uri);
                                     setCameraPickerlic(false);
                                 }}
                                 btnClick_ImageUpload={(imgObj) => {
-                                    console.log(imgObj, "dfgdf");
                                     setProfilePicObjlic(imgObj);
                                     setProfilePicUrilic(imgObj.uri);
                                     setCameraPickerlic(false);
                                 }}
                                 btnClick_galeryUpload={imgObj => {
-                                    console.log('imgObj:::::::::', imgObj);
                                     setProfilePicObjlic(imgObj);
                                     setProfilePicUrilic(imgObj.uri);
                                     setCameraPickerlic(false);
@@ -1048,73 +923,3 @@ const AddLicense = (props) => {
 }
 
 export default AddLicense
-const styles = StyleSheet.create({
-    imageBackground: {
-        height: normalize(65),
-        width: normalize(300),
-        resizeMode: "contain",
-        justifyContent: 'center',
-    },
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: normalize(10),
-    },
-    textContainer: {
-        paddingVertical: normalize(10),
-    },
-    uploadText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 14,
-    },
-    separatorLine: {
-        height: normalize(35),
-        width: 1,
-        marginLeft: normalize(160),
-        backgroundColor: "#DDDDDD",
-    },
-    iconContainer: {
-        paddingVertical: normalize(5),
-    },
-    headerText: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 18,
-        color: "#000000",
-    },
-    centered: {
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    image: {
-        height: normalize(65),
-        width: normalize(308),
-        resizeMode: 'contain',
-    },
-    dropDownItem: {
-        borderWidth: 1,
-        marginTop: normalize(10),
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: normalize(40),
-        width: '85%',
-        alignSelf: 'center',
-    },
-    dropDownItemText: {
-        fontSize: normalize(14),
-        lineHeight: normalize(14),
-        textAlign: 'center',
-        color: Colorpath.black,
-        textTransform: 'capitalize'
-    },
-    dropdown: {
-        height: normalize(45),
-        width: normalize(280),
-        alignSelf: 'center',
-        backgroundColor: Colorpath.textField,
-        // borderBottomColor: 'gray',
-        // borderBottomWidth: 0.5,
-        marginTop: normalize(9),
-        borderRadius: normalize(8),
-    },
-});

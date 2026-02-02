@@ -30,9 +30,16 @@ const StartTest = (props) => {
         statepush,
         setStatepush,
         setFinddata,
-        isConnected
+        isConnected,
+        fulldashbaord,
+        setAddit,
+        setFulldashbaord,
+        addit
     } = useContext(AppContext);
     const startPress = () => {
+        // const fullDta = fulldashbaord?.[0];
+        setAddit(statepush);
+        // setFulldashbaord(addit)
         takeCourse();
         props.navigation.goBack();
     }
@@ -283,8 +290,8 @@ const StartTest = (props) => {
     }, []);
     console.log(mainData, "maindata--------", actvityData, actvityDatas);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -386,31 +393,31 @@ const StartTest = (props) => {
                             </View>
                         </View> : null}
                         <View style={{ width: "100%" }}>
-                             <View style={{
-                                            paddingVertical: normalize(10),paddingHorizontal:normalize(10)
-                                        }}>
-                                            <Buttons
-                                                onPress={() => {
-                                                    if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession") {
-                                                        takeCourse();
-                                                        props.navigation.navigate("VideoComponent", { activityID: CMEReducer?.cmenextactionResponse })
-                                                    } else if (CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest") {
-                                                        takeCourse();
-                                                        props.navigation.navigate("PreTest", { FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
-                                                    }
-                                                }}
-                                                height={normalize(45)}
-                                                width={normalize(300)}
-                                                backgroundColor={Colorpath.ButtonColr}
-                                                borderRadius={normalize(9)}
-                                                text={CMEReducer?.actvityBreakupResponse?.button_text}
-                                                color={Colorpath.white}
-                                                fontSize={16}
-                                                fontFamily={Fonts.InterBold}
-                                                // marginTop={normalize(30)}
-                                                fontWeight={"bold"}
-                                            />
-                                        </View>
+                            <View style={{
+                                paddingVertical: normalize(10), paddingHorizontal: normalize(10)
+                            }}>
+                                <Buttons
+                                    onPress={() => {
+                                        if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession") {
+                                            takeCourse();
+                                            props.navigation.navigate("VideoComponent", { activityID: CMEReducer?.cmenextactionResponse })
+                                        } else if (CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest") {
+                                            takeCourse();
+                                            props.navigation.navigate("PreTest", { FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
+                                        }
+                                    }}
+                                    height={normalize(45)}
+                                    width={normalize(300)}
+                                    backgroundColor={Colorpath.ButtonColr}
+                                    borderRadius={normalize(9)}
+                                    text={CMEReducer?.actvityBreakupResponse?.button_text}
+                                    color={Colorpath.white}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterBold}
+                                    // marginTop={normalize(30)}
+                                    fontWeight={"bold"}
+                                />
+                            </View>
                             {/* <View style={{ paddingHorizontal: normalize(10), width: "100%" }}>
                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
                                     {"Course Modules"}

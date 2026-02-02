@@ -13,14 +13,12 @@ export function* AddExpensesSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/allowance', action.payload, header);
-    console.log('add expenses response: ', response);
     if (response?.status == 200) {
       yield put(AddExpensesSuccess(response?.data));
     } else {
       yield put(AddExpensesFailure(response?.data));
     }
   } catch (error) {
-    console.log('add expenses  error:', error);
     yield put(AddExpensesFailure(error));
   }
 }
@@ -31,34 +29,29 @@ export function* CMECEListSaga() {
   };
   try {
     let response = yield call(getApi,'master/user_documents?category=expenses', header);
-    console.log('add expenses response: ', response);
     if (response?.status == 200) {
       yield put(CMECEListSuccess(response?.data));
     } else {
       yield put(CMECEListFailure(response?.data));
     }
   } catch (error) {
-    console.log('list expenses  error:', error);
     yield put(CMECEListFailure(error));
   }
 }
 export function* againListSaga(action) {
   const taketype = action?.payload;
-  console.log(action?.payload,"action?.payload---rrrr---")
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
   };
   try {
     let response = yield call(getApi, `master/user_documents?type=${encodeURIComponent(taketype?.type)}&category=expenses`, header);
-    console.log('againListRequest: ', response);
     if (response?.status == 200) {
       yield put(againListSuccess(response?.data));
     } else {
       yield put(againListFailure(response?.data));
     }
   } catch (error) {
-    console.log('list expenses  error:', error);
     yield put(againListFailure(error));
   }
 }
@@ -71,14 +64,12 @@ export function* CMECEListWiseSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/documentList', action.payload, header);
-    console.log('add expenses response: ', response);
     if (response?.status == 200) {
       yield put(CMEListWiseSuccess(response?.data));
     } else {
       yield put(CMEListWiseFailure(response?.data));
     }
   } catch (error) {
-    console.log('add expenses  error:', error);
     yield put(CMEListWiseFailure(error));
   }
 }
@@ -111,14 +102,12 @@ export function* deleteExpensSaga(action) {
   };
   try {
     let response = yield call(deleteApi, 'user/allowanceDelete', action.payload, header);
-    console.log('add expenses response: ', response);
     if (response?.status == 200) {
       yield put(deleteExpensesSuccess(response?.data));
     } else {
       yield put(deleteExpensesFailure(response?.data));
     }
   } catch (error) {
-    console.log('add expenses  error:', error);
     yield put(deleteExpensesFailure(error));
   }
 }

@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from "../Utils/Helpers/Dimen";
 import Fonts from '../Themes/Fonts';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 import Colorpath from '../Themes/Colorpath';
 import { CommonActions } from '@react-navigation/native';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
 const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, index,setTakestate,takestate }) => {
-    console.log(index, "index=====",tasks,takestate,addit)
+    const {
+            setStatepush
+        } = useContext(AppContext);
     const tasks = item[tasksKey] || [];
     return (
-
         <View style={styles.container}>
             <View style={styles.textContainer}>
                 <Text style={styles.taskCountText}>
@@ -29,6 +31,7 @@ const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, ind
             {tasks.length > 0 && (
                 <TouchableOpacity
                 onPress={() => {
+                    setStatepush(addit);
                     navigation.dispatch(
                         CommonActions.navigate({
                           name: 'Mytasks',

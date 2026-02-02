@@ -1,5 +1,5 @@
-import { View, Text, Platform, KeyboardAvoidingView, ScrollView, PermissionsAndroid } from 'react-native'
-import React, { useEffect, useLayoutEffect, useState } from 'react'
+import { View, Text, Platform, KeyboardAvoidingView, ScrollView } from 'react-native'
+import React, {useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader';
 import Loader from '../../Utils/Helpers/Loader';
 import Colorpath from '../../Themes/Colorpath';
@@ -15,9 +15,6 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { allreducerRequest, logoutRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getCountryCallingCode } from 'libphonenumber-js';
-import Geolocation from 'react-native-geolocation-service';
-const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 let status1 = "";
 const ChangePassword = (props) => {
 
@@ -85,126 +82,6 @@ const ChangePassword = (props) => {
     const backTo = () => {
         props?.navigation.goBack();
     }
-    const getCurrentLocation = async () => {
-          try {
-              if (Platform.OS === 'ios') {
-                  const status = await Geolocation.requestAuthorization('whenInUse');
-                  if (status !== 'granted') {
-                      throw { code: 1, message: 'Location permission denied' };
-                  }
-              }
-              const position = await new Promise((resolve, reject) => {
-                  let timeoutFallback;
-                  Geolocation.getCurrentPosition(
-                      resolve,
-                      (error) => {
-                          // Fallback to network-based location on Wi-Fi
-                          if (error.code == 3 || error.code == 2) { // TIMEOUT or POSITION_UNAVAILABLE
-                              console.log('Trying network-based location...');
-                              Geolocation.getCurrentPosition(
-                                  resolve,
-                                  (fallbackError) => {
-                                      clearTimeout(timeoutFallback);
-                                      reject(fallbackError);
-                                  },
-                                  {
-                                      enableHighAccuracy: false,
-                                      timeout: 25000, // Longer timeout for network-based
-                                      maximumAge: 0
-                                  }
-                              );
-                          } else {
-                              reject(error);
-                          }
-                      },
-                      {
-                          enableHighAccuracy: true,
-                          timeout: 15000,
-                          maximumAge: 10000
-                      }
-                  );
-  
-                  // Additional timeout safety
-                  timeoutFallback = setTimeout(() => {
-                      reject({ code: 3, message: 'Final location timeout' });
-                  }, 40000);
-              });
-  
-              // 3. Direct Google Geocoding API Call (More Reliable)
-              const { latitude, longitude } = position.coords;
-              const API_KEY = GOOGLE_API_KEY;
-              const response = await fetch(
-                  `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${API_KEY}`
-              );
-  
-              if (!response.ok) throw new Error('Geocoding API failure');
-  
-              const geoData = await response.json();
-              if (geoData?.results?.length > 0) {
-                  const address = geoData.results[0];
-                  const components = address.address_components;
-                  const countryComponent = components.find(c => c.types.includes('country'));
-                  const isoCountryCode = countryComponent?.short_name || '';
-                  if (isoCountryCode) {
-                      try {
-                          const phoneCode = `+${getCountryCallingCode(isoCountryCode)}`;
-                          setCodegt(phoneCode);
-                      } catch (error) {
-                          console.warn('Phone code error:', error);
-                      }
-                  }
-              }
-              console.log(geoData, "geoata----------")
-              // 4. Handle Oppo Device Restrictions
-              if (!geoData?.results?.length) {
-                  if (Platform.OS === 'android') {
-                      Alert.alert(
-                          'Device Restrictions Detected',
-                          'Please ensure:\n1. Battery Optimization is disabled\n2. Background activity allowed\n3. Location set to "Always"',
-                          [
-                              {
-                                  text: 'Open Settings',
-                                  onPress: () => Linking.openSettings()
-                              },
-                              { text: 'Cancel' }
-                          ]
-                      );
-                  }
-                  throw new Error('No geocoding results');
-              }
-              // ... rest of your country code logic ...
-  
-          } catch (error) {
-              console.error('Full Error:', JSON.stringify(error, null, 2));
-  
-              // Special handling for Oppo timeout issues
-              if (error.code == 3 || error.message.includes('timeout')) {
-                  Alert.alert(
-                      'Connection Issue',
-                      'Wi-Fi location detection requires:\n' +
-                      '1. Strong network connection\n' +
-                      '2. Location enabled in device settings\n' +
-                      '3. Google Play Services updated'
-                  );
-              }
-              // Optional: Retry logic
-              if (error.code == 3) { // TIMEOUT
-                  setTimeout(() => {
-                      Alert.alert('Retry?', 'Would you like to try location detection again?', [
-                          { text: 'Yes', onPress: () => getCurrentLocation() },
-                          { text: 'No' }
-                      ]);
-                  }, 1000);
-              }
-          }
-      };
-  
-      useEffect(() => {
-          const unsubscribe = props.navigation.addListener('focus', () => {
-              getCurrentLocation();
-          });
-          return unsubscribe;
-      }, [props?.navigation]);
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);

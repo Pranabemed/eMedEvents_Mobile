@@ -1,39 +1,29 @@
-import { View, Text, StyleSheet, Dimensions, Platform, TouchableOpacity, Linking, Alert, Image, ImageBackground, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import Buttons from './Button';
 import Colorpath from '../Themes/Colorpath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import moment from 'moment';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
-import CircularProgress from './ProgressBar';
-import ErrorIcon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import { licesensRequest } from '../Redux/Reducers/AuthReducer';
 import connectionrequest from '../Utils/Helpers/NetInfo';
-import Imagepath from '../Themes/Imagepath';
 import Modal from 'react-native-modal'
-import LinearGradient from 'react-native-linear-gradient';
 import CMECard from './CMECard';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 let status = "";
-const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, item, navigation, stateid, renewal, val, index }) => {
-    console.log(item, "rwsejkdhfhdsd")
+const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
     const {
         expireDate,
         setExpireDate,
         setFinddata,
-        finddata,
         clearContextData
     } = useContext(AppContext);
     const windowWidth = Dimensions.get('window').width;
-    const windowHeight = Dimensions.get('window').height;
-    const calculatedHeight = Platform.OS === "ios" ? windowHeight * 0.84 : windowHeight * 0.73;
-    const calculatedWidth = windowWidth * 0.9;
     const [countdownMessage, setCountdownMessage] = useState('');
     const AuthReducer = useSelector(state => state.AuthReducer);
     const [finalverifyvault, setFinalverifyvault] = useState(null);
@@ -63,8 +53,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
                     const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
                     setFinalverifyvault(board_special_json);
                     setFinalProfession(profession_data_json);
-                    console.log(board_special_json, "statelicesene=================");
-                    console.log(profession_data_json, "profession=================");
                 } catch (error) {
                     console.log('Error fetching data:', error);
                 }
@@ -111,13 +99,11 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
         navigation,
         isFocus
     ]);
-    console.log(CMEcard, val, index, "AuthReducer?.licesensResponse?.licensure_states?.length", allProfession, fetcheddt)
     const fetchLicenses = useCallback(async () => {
         if (!allProfession || !fetcheddt || AuthReducer?.licesensResponse?.licensure_states?.length > 0) {
             return;
         }
         const professionString = `${allProfession.profession} - ${allProfession.profession_type}`;
-        console.log(professionString, "professionString--------");
         try {
             await connectionrequest();
             dispatch(licesensRequest(professionString));
@@ -175,7 +161,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
             fontFamily: Fonts.InterRegular,
             fontSize: 12,
             color: "#777777",
-            // fontWeight: "bold"
         },
         stateName: {
             fontFamily: Fonts.InterSemiBold,
@@ -197,7 +182,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
             fontFamily: Fonts.InterMedium,
             fontSize: 12,
             color: '#777',
-            // fontWeight: "bold"
         },
 
         valueText: {
@@ -320,7 +304,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
         progressBar: {
             height: 2,
             width: (windowWidth * 0.3 - 40) / 10,
-            // backgroundColor: "#DADADA",
         },
     });
     const handleOpenRenewalLink = (renewallink) => {
@@ -331,12 +314,10 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
             Alert.alert('Invalid URL', 'The renewal link is not available or is invalid.');
         }
     };
-    console.log("item------allll", expireDate,finddata)
     useEffect(() => {
         if (val == index) {
             const targetDate = item?.to_date ? new Date(item.to_date) : null;
             const today = new Date();
-            console.log(targetDate, today, "dfgrfghfh--------,", item, (moment(today).format("YYYY-MM-DD") > "2025-03-11"))
             if (targetDate) {
                 const ninetyDaysBefore = new Date(targetDate);
                 ninetyDaysBefore.setDate(targetDate.getDate() - 90);
@@ -351,30 +332,24 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
                     const differenceMs = targetDate - today;
                     const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
                     if (differenceDays == 89) {
-                        // setDashMod(true);
                         setTakeName(item?.board_name);
                         setExpireDate(true);
                         setCountdownMessage('Renew & Update');
                     } else if (differenceDays < 89) {
-                        // setDashMod(true);
                         setTakeName(item?.board_name);
                         setExpireDate(true);
                         setCountdownMessage(`${differenceDays}`);
                     } else {
-                        // setDashMod(false);
                         setExpireDate(false);
                         setCountdownMessage(`${differenceDays}`);
                     }
                 }
             } else {
-                // setDashMod(true);
                 setTakeName(item?.board_name);
-                // setExpireDate(false);
                 setCountdownMessage('');
             }
         }
     }, [item?.to_date, val, index]);
-    console.log(item, item?.credits_data?.total_general_credits, "item------allll", expireDate)
     return (
         <>
             <View style={styles.container}>
@@ -404,10 +379,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
                             <ArrowNeed name="arrow-right" color="#FFFFFF" size={12} />
                         </View>
                     </Pressable>}
-                    {/* {!expireDate ? <View style={[styles.expiryWarning, { marginLeft: bothNoRequirement ? normalize(198) : 0 }]}>
-                        <Image source={Imagepath.WarnImg} style={styles.warnIcon} />
-                        <Text style={styles.countdownText}>{`License Expires in ${countdownMessage} Days`}</Text>
-                    </View> : null} */}
                 </View>
                 {expireDate ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
                     <View style={styles.updateRenew}>
@@ -425,9 +396,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
                     <View style={styles.activebody}>
                         <Text style={styles.renew}>{"License Status"}</Text>
                         <Text style={styles.active}>{"Active"}</Text>
-                        {/* <View style={styles.arrowCircleBlack}>
-                                <ArrowNeed name={"arrow-up-right"} color={"#FFFFFF"} size={12} />
-                            </View> */}
                     </View>
                 </View>}
                 {expireDate ? <Modal
@@ -490,12 +458,6 @@ const Carouselcarditem = ({ hidetext, setPrimeadd, enables, setStateCount, fetch
                     </View>
                 </Modal> : null}
             </View>
-            {/* {bothNoRequirement ? <></> : <View style={{ justifyContent: "center", alignItems: "center", marginLeft: normalize(0) }}>
-                <TouchableOpacity onPress={() => setCMECard(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(41), width: normalize(250), backgroundColor: "#FFEDCA", borderBottomLeftRadius: normalize(20), borderBottomRightRadius: normalize(20) }}>
-                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold", alignItems: "center" }}>{allProfTake ? "Check CME Requirements" : "Check CE Requirements"}</Text>
-                    <Image source={Imagepath.WrongArrw} style={{ height: normalize(13), width: normalize(13), resizeMode: "contain", tintColor: Colorpath.ButtonColr }} />
-                </TouchableOpacity>
-            </View>} */}
             {CMEcard && <CMECard expiryno={expireDate} finalSumCred={finalSumCred} manWrng={manWrng} genWrng={genWrng} allProfTake={allProfTake} windowWidth={windowWidth} CMEcard={CMEcard} setCMECard={setCMECard} item={item} styles={styles} />}
         </>
     );

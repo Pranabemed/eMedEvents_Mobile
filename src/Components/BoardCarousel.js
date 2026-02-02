@@ -8,16 +8,11 @@ import normalize from '../Utils/Helpers/Dimen';
 import ErrorIcon from 'react-native-vector-icons/MaterialIcons'
 import moment from 'moment';
 import { CommonActions } from '@react-navigation/native';
-const  BoardCarousel = ({setBoardnamereal,setTotalboardname,totalboardname, item, index ,boardnamereal,navigation,stateid,boardtake}) =>{
+const  BoardCarousel = ({ item ,boardnamereal,navigation,stateid,boardtake}) =>{
     const windowWidth = Dimensions.get('window').width;
-    const windowHeight = Dimensions.get('window').height;
-    const calculatedHeight = Platform.OS === "ios" ? windowHeight * 0.84 : windowHeight * 0.75;
-    const calculatedWidth = windowWidth * 0.9;
-    console.log(item?.board_name)
     const text = item?.board_name;
     const abpmMatch = text.match(/\((.*?)\)/);
     const abpm = abpmMatch ? abpmMatch[1] : "";
-    console.log(abpm);
     function daysLeftCountdown(targetDate) {
         const today = new Date();
         const endDate = new Date(targetDate);
@@ -28,8 +23,6 @@ const  BoardCarousel = ({setBoardnamereal,setTotalboardname,totalboardname, item
     }
     const targetDate = item?.to_date;
     const countdownMessage = daysLeftCountdown(targetDate);
-    console.log(countdownMessage);
-    console.log(item?.state_id, "item------")
     const styles = StyleSheet.create({
         container: {
             paddingHorizontal: normalize(10),

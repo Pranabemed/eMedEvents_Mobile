@@ -10,32 +10,16 @@ import {
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
 import normalize from '../Utils/Helpers/Dimen';
-import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native';
-import TextModal from './TextModal';
-import Cmemodal from './Cmemodal';
-import CreditValult from './CreditValult';
-import { useDispatch, useSelector } from 'react-redux';
-import connectionrequest from '../Utils/Helpers/NetInfo';
-import { dashboardRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
-import showErrorAlert from '../Utils/Helpers/Toast';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
 import HomeShimmer from './DashBoardShimmer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
-import Dashboardmain from './Dashboardmain';
-import Dashboardmaintwo from './Dashboardmaintwo';
-import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
-import { current } from '@reduxjs/toolkit';
-import Nonphysicianprofile from './Nonphysicianprofile';
-import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
-import RestProfession from './RestProfession';
 import Imagepath from '../Themes/Imagepath';
 import NetInfo from '@react-native-community/netinfo';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
-let status = "";
 export default function StateIntData({ setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const dispatch = useDispatch();
     const {
@@ -50,41 +34,16 @@ export default function StateIntData({ setRenewal, renewal, setStateid, stateid,
 
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setNettrue(state.isConnected);
         });
 
         return () => unsubscribe();
     }, []);
-    //  const logger = (() => {
-    //         let oldConsole = {};
-    //         return {
-    //             disableLogger: () => {
-    //                 if (oldConsole.log) return; // Already disabled
-    //                 oldConsole.log = console.log;
-    //                 oldConsole.info = console.info;
-    //                 oldConsole.warn = console.warn;
-    //                 oldConsole.error = console.error;
-    //                 oldConsole.debug = console.debug;
-    //                 console.log = () => { };
-    //                 console.info = () => { };
-    //                 console.warn = () => { };
-    //                 console.error = () => { };
-    //                 console.debug = () => { };
-    //             },
-    //         };
-    //     })();
-    //     useEffect(()=>{
-    //         logger.disableLogger();
-    //         console.log = function() {};
-    //     },[])
       const handleRot =()=>{
          const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
             if (state.isConnected) {
                 <StackNav/>
-                // showErrorAlert("Internet is back!");
             }
         });
 

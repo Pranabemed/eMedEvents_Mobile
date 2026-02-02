@@ -305,7 +305,7 @@ const VerifyOTP = (props) => {
                         }>
                             <View>
                                 <Text style={styles.subHeaderText}>
-                                    {"An 6-digit code has been sent to"}
+                                    {"A 6-digit code has been sent to"}
                                 </Text>
                             </View>
 

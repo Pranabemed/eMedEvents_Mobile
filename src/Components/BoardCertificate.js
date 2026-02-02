@@ -35,8 +35,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     const navigation = useNavigation();
     const windowWidth = Dimensions.get('window').width;
     const windowHeight = Dimensions.get('window').height;
-    const calculatedHeight = Platform.OS === "ios" ? windowHeight * 0.84 : windowHeight * 0.75;
-    const calculatedWidth = windowWidth * 0.9;
     const [val, setval] = useState(0);
     const [detailsmodal, setDetailsmodal] = useState(false);
     const [cmemodal, setCmemodal] = useState(false);
@@ -71,8 +69,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     const data = DashboardReducer?.dashboardResponse?.data?.board_certifications
     useEffect(() => {
         if (data?.length > 0) {
-            console.log(data[val], "add ---------------")
-            console.log(Math.floor(data[val]?.credits_data?.total_general_earned_credits), "add ---------------")
             boardIDError(data[val].board_id);
             setTotalCred(data[val]?.credits_data?.topic_earned_credits + Math.floor(data[val]?.credits_data?.total_general_earned_credits));
             setStateid(data[val]?.board_id);
@@ -105,7 +101,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
                 }
             }
         });
-        console.log(total, "toatl=========>>>>=======")
         setCompletedCountboard(completed);
         setPendingCountboard(total - completed);
 
@@ -113,7 +108,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     const handleSnapToItem = (index) => {
         setval(index);
     };
-    console.log(completedCountboard, "DashboardReducer11111111", DashboardReducer.dashboardResponse.data?.board_certifications);
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -128,7 +122,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
                         (item, index, self) => index === self.findIndex((t) => t.board_id === item.board_id)
                     );
                     setFinalShow(uniqueMainData);
-                    console.log(uniqueMainData, "duplicate removed ========");
                 }
                 setLoadingstart(false);
                 const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
@@ -138,7 +131,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
                     );
                 });
                 setFulldashbaord(uniqueStates);
-                // props.navigation.navigate("Login");
                 break;
             case 'Dashboard/dashboardFailure':
                 status = DashboardReducer.status;
@@ -163,8 +155,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
                     const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
                     setFinalverifybaord(board_special_json);
                     setFinalProfession(profession_data_json);
-                    console.log(board_special_json, "statelicesene=================");
-                    console.log(profession_data_json, "profession=================");
                 } catch (error) {
                     console.log('Error fetching data:', error);
                 }
@@ -225,7 +215,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
             const dynamicData = transformData(allBoardData);
             if (JSON.stringify(boardspecial) !== JSON.stringify(dynamicData)) {
                 setBoardspecial(dynamicData);
-                console.log(dynamicData, "new json board=========");
             }
         }
     }, [
@@ -241,7 +230,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
             if (boardspecial?.length > 0) {
                 const AllId = boardspecial.map((d) => d?.id);
                 const finalId = AllId?.join(', ');
-                console.log(finalId, "finalId========");
                 let obj = {
                     "profession": AuthReducer?.verifymobileResponse?.user?.profession ||
                         AuthReducer?.loginResponse?.user?.profession ||
@@ -268,7 +256,6 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
         finalverifyboard?.specialities,
         finalProfession?.specialities
     ]);
-    console.log(boardnamereal?.length, "boardnamereal")
     return (
         <>
             <View>

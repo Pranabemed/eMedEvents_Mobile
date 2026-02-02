@@ -1,50 +1,29 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
-    Platform,
-    Dimensions,
-    TouchableOpacity,
 } from 'react-native';
-import Carousel, { Pagination } from 'react-native-snap-carousel';
-import Colorpath from '../Themes/Colorpath';
-import normalize from '../Utils/Helpers/Dimen';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import TextModal from './TextModal';
-import Cmemodal from './Cmemodal';
-import CreditValult from './CreditValult';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import { dashboardRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
-import HomeShimmer from './DashBoardShimmer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
-import Carouselcarditem from './Carouselcarditem';
-import Dashboardmain from './Dashboardmain';
-import Dashboardmaintwo from './Dashboardmaintwo';
 import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
-import { current } from '@reduxjs/toolkit';
-import Nonphysicianprofile from './Nonphysicianprofile';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import RestProfession from './RestProfession';
-import NetInfo from '@react-native-community/netinfo';
 let status = "";
 export default function NewProfession({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const dispatch = useDispatch();
     const {
         setTakedata
     } = useContext(AppContext);
-    const windowWidth = Dimensions.get('window').width;
-    const windowHeight = Dimensions.get('window').height;
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const CMEReducer = useSelector(state => state.CMEReducer);
     const navigation = useNavigation();
     const [val, setval] = useState(0);
-    const [detailsmodal, setDetailsmodal] = useState(false);
-    const [cmemodal, setCmemodal] = useState(false);
-    const [vaultModal, setVaultmodal] = useState(false);
     const [totalcard, setTotalCred] = useState();
     const [stateid, setStateid] = useState();
     const [renewal, setRenewal] = useState("");
@@ -53,57 +32,11 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
-    // Get the current item without scrolling
-    // const logger = (() => {
-    //     let oldConsole = {};
-    //     return {
-    //         disableLogger: () => {
-    //             if (oldConsole.log) return; // Already disabled
-    //             oldConsole.log = console.log;
-    //             oldConsole.info = console.info;
-    //             oldConsole.warn = console.warn;
-    //             oldConsole.error = console.error;
-    //             oldConsole.debug = console.debug;
-    //             console.log = () => { };
-    //             console.info = () => { };
-    //             console.warn = () => { };
-    //             console.error = () => { };
-    //             console.debug = () => { };
-    //         },
-    //     };
-    // })();
-    // useEffect(() => {
-    //     const unsubscribe = NetInfo.addEventListener(state => {
-    //         console.log('Connection State:', state.isConnected);
-    //         if (state.isConnected === false) {
-    //             logger.disableLogger();
-    //             console.log = function () { };
-    //         }
-    //     });
-
-    //     return () => unsubscribe();
-    // }, []);
-    const getCurrentItem = () => {
-        if (!fulldashbaord?.length) return null;
-        return fulldashbaord[currentIndex]; // <-- Uses state-tracked index
-    };
-    console.log(fulldashbaord, AuthReducer?.loginResponse?.user?.profession, "statelicesene=================", getCurrentItem())
-
-    const modalFalse = () => {
-        setDetailsmodal(true);
-    }
-    const cmeModalFalse = () => {
-        setCmemodal(true);
-    }
-    const cmeValult = () => {
-        setVaultmodal(!vaultModal);
-    }
     const isFocus = useIsFocused();
     useEffect(() => {
         const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
-                console.log(loginHandle, "statelicesene=================")
                 if (loginHandle) {
                     dashBoarData()
                 }
@@ -186,14 +119,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 showErrorAlert("Please connect to the internet", err);
             });
     }
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
-    const allProfTake = validHandles.has(profFromDashboard);
-    console.log("DashboardReducer", DashboardReducer);
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -201,7 +126,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 break;
             case 'Dashboard/dashboardSuccess':
                 status = DashboardReducer.status;
-                console.log("DashboardReducer9999", DashboardReducer.dashboardResponse.data?.licensures);
                 if (DashboardReducer.dashboardResponse.data?.licensures == 0) {
                     setWholeNo(true);
                 } else {
@@ -221,7 +145,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                     if (uniqueStates?.length > 0 || uniqueMainDatacheck?.length > 0) {
                         stateTake(uniqueStates, uniqueMainDatacheck);
                     }
-                    console.log(uniqueMainDatacheck, "duplicate removed ========");
                 }
                 setFulldashbaord(uniqueStates);
                 break;
@@ -233,8 +156,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 break;
             case 'Dashboard/stateDashboardSuccess':
                 status = DashboardReducer.status;
-                console.log(DashboardReducer?.stateDashboardResponse?.data?.tasks_data, "stateDashboardRespons===========")
-                // props.navigation.navigate("Login");
                 break;
             case 'Dashboard/stateDashboardFailure':
                 status = DashboardReducer.status;
@@ -244,7 +165,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 break;
             case 'Dashboard/stateReportingSuccess':
                 status = DashboardReducer.status;
-                console.log(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link, "renwal link -----");
                 if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
                     setRenewal(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
                 } else {
@@ -256,7 +176,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 break;
         }
     }
-    console.log(fulldashbaord, "fulldata--------", DashboardReducer.dashboardResponse.data?.licensures)
     useEffect(() => {
         if (fulldashbaord?.length == 0) {
             setWholeNo(true);
@@ -285,8 +204,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 showErrorAlert("Please connect to internet", err)
             })
     }
-
-    const data = DashboardReducer.dashboardResponse.data?.licensures;
     const [completedCount, setCompletedCount] = useState(0);
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -302,15 +219,10 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 }
             }
         });
-        console.log(total, "toatl=========>>>>=======")
         setCompletedCount(completed);
         setPendingCount(total - completed);
 
     }, [DashboardReducer?.stateDashboardResponse?.data]);
-    const tasksData = DashboardReducer?.stateDashboardResponse?.data?.tasks_data;
-    const hasTasks = tasksData?.due_in_30_days?.length > 0 ||
-        tasksData?.due_in_60_days?.length > 0 ||
-        tasksData?.due_in_90_days?.length > 0;
     useEffect(() => {
         if (val == currentIndex) {
             const getDtaa = fulldashbaord?.[val];

@@ -1,23 +1,19 @@
-import { View, Text, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Alert, Image, BackHandler, ActivityIndicator, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Image, BackHandler, ActivityIndicator, Pressable } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import GradientButton from '../../Components/LinearButton';
 import StateLicense from '../../Components/StateLicense';
-import BoardCertificate from '../../Components/BoardCertificate';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import Imagepath from '../../Themes/Imagepath';
 import { AppContext } from '../GlobalSupport/AppContext';;
 import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
-import moment from 'moment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -27,8 +23,6 @@ import NetInfo from '@react-native-community/netinfo';
 import { Freeze } from "react-freeze";
 import { enableFreeze } from "react-native-screens";
 import { SafeAreaView } from 'react-native-safe-area-context'
-
-let status2 = "";
 const Main = (props) => {
   const {
     takestate,
@@ -47,7 +41,9 @@ const Main = (props) => {
     renewal,
     setRenewal,
     setPushnew,
-    pushnew
+    pushnew,
+    pendingCount,
+    completedCount
   } = useContext(AppContext);
   const [focusedInput, setFocusedInput] = useState(null);
   const [linearText, setLinearText] = useState(true);
@@ -58,9 +54,6 @@ const Main = (props) => {
   const [cmecourse, setCmecourse] = useState(false);
   const [finalShow, setFinalShow] = useState(null);
   const [visible, setVisible] = useState(false);
-  const [boardnamereal, setBoardnamereal] = useState([]);
-  const [finalShowcheck, setFinalShowcheck] = useState("");
-  const [boardnamepick, setBoardnamepick] = useState(false);
   const [fetcheddt, setFetchdt] = useState(null);
   const [linedty, setLinedty] = useState();
   const [enables, setEnables] = useState(false);
@@ -75,15 +68,12 @@ const Main = (props) => {
   const [dynamicPadding, setDynamicPadding] = useState(0);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setNettruedr(state.isConnected);
     });
 
     return () => unsubscribe();
   }, []);
   const { detectmain } = props?.route?.params || {}
-  console.log(detectmain, "detectmain---------", props?.route?.params, WebcastReducer)
-  console.log(showLine, "showLine122222----", fulldashbaord, gtprof);
   const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
   const authHigh = AuthReducer?.loginResponse?.user?.profession != null &&
     AuthReducer?.loginResponse?.user?.profession_type != null
@@ -95,19 +85,6 @@ const Main = (props) => {
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
   const allProfTake = validHandles.has(authHigh) || validHandles.has(profFromDashboard);
-  // useEffect(() => {
-  //   connectionrequest()
-  //     .then(() => {
-  //       dispatch(PrimeCheckRequest({}))
-  //       dispatch(dashboardRequest({}))
-  //       setTimeout(() => {
-  //         dispatch(mainprofileRequest({}))
-  //       }, 1000);
-  //     })
-  //     .catch(err => {
-  //       showErrorAlert("Please connect to internet", err)
-  //     })
-  // }, [isFocus]);
   useEffect(() => {
     if (detectmain == "newadd") {
       connectionrequest()
@@ -123,41 +100,6 @@ const Main = (props) => {
         .catch((err) => showErrorAlert("Please connect to internet", err))
     }
   }, [detectmain, isFocus])
-  // useEffect(() => {
-  //   if (detectmain == "main" || !DashboardReducer?.dashboardResponse?.data) {
-  //     if (!detectmain) {
-  //       setLinearText(true);
-  //       dispatch(dashboardRequest({}))
-  //       dispatch(mainprofileRequest({}))
-  //     } else {
-  //       dispatch(dashboardRequest({}))
-  //       dispatch(mainprofileRequest({}))
-  //       setLinearText(false);
-  //     }
-
-  //   }
-  // }, [detectmain])
-  // if (status2 == '' || DashboardReducer.status != status2) {
-  //   switch (DashboardReducer.status) {
-  //     case 'Dashboard/dashboardRequest':
-  //       status2 = DashboardReducer.status;
-  //       break;
-  //     case 'Dashboard/dashboardSuccess':
-  //       status2 = DashboardReducer.status;
-  //       const mainDataCheck = DashboardReducer?.dashboardResponse?.data?.board_certifications;
-  //       setFetchdt(DashboardReducer?.dashboardResponse?.data?.licensures);
-  //       if (mainDataCheck) {
-  //         const uniqueMainDatacheck = mainDataCheck.filter(
-  //           (item, index, self) => index === self.findIndex((t) => t.board_id === item.board_id)
-  //         );
-  //         setFinalShowcheck(uniqueMainDatacheck);
-  //       }
-  //       break;
-  //     case 'Dashboard/dashboardFailure':
-  //       status2 = DashboardReducer.status;
-  //       break;
-  //   }
-  // }
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -214,7 +156,7 @@ const Main = (props) => {
       setShowLoader(true);
       setFreeze(false)
       enableFreeze(false)
-    }, 9000);
+    }, 500);
 
     return () => clearTimeout(timeout);
   }, []);
@@ -230,8 +172,6 @@ const Main = (props) => {
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           setFinalverifyvaultmain(board_special_json);
           setFinalProfessionmain(profession_data_json);
-          console.log(board_special_json, "statelicesene=================");
-          console.log(profession_data_json, "profession=================");
         } catch (error) {
           console.log('Error fetching data:', error);
         }
@@ -287,7 +227,6 @@ const Main = (props) => {
         }
       } catch (error) {
         console.error('Error parsing date:', error);
-        // Handle error case appropriately (maybe setEnables(false))
       }
     } else if (takeSub) {
       setFreeTrail(true);
@@ -301,16 +240,15 @@ const Main = (props) => {
       setDaysleft(daysDiff);
     }
   }, [allProfTake, WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessionmain, finalverifyvaultmain, takeSub]);
-  console.log(AuthReducer, freeTrail, gtprof, "lofinn-----", freeze, enables, takeSub, finalProfessionmain, endDateStringMain, endDateStringMain);
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
   return (
     <>
-      {/* <MyStatusBar
+      <MyStatusBar
         barStyle={'light-content'}
         backgroundColor={Colorpath.Pagebg}
-      /> */}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -323,7 +261,6 @@ const Main = (props) => {
           <View>
             <ScrollView contentContainerStyle={{ paddingBottom: dynamicPadding }}
               onContentSizeChange={(w, h) => {
-                // Automatically increase padding as content grows
                 const extraPadding = h * 0.18; // 15% of content height (can adjust)
                 setDynamicPadding(extraPadding);
               }} scrollEventThrottle={16}>

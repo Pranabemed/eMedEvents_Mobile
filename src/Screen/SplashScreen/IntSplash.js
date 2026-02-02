@@ -1,62 +1,20 @@
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Image, ImageBackground, LogBox, Text, View } from 'react-native';
 import Imagepath from '../../Themes/Imagepath';
-import { CommonActions, useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useDispatch, useSelector } from 'react-redux';
-import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
-import showErrorAlert from '../../Utils/Helpers/Toast';
-import { dashboardRequest, mainprofileRequest, stateDashboardRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
-import Fonts from '../../Themes/Fonts';
 import { AppContext } from '../GlobalSupport/AppContext';
-import NetInfo from '@react-native-community/netinfo';
-
-let status1 = "";
 export default function SplashInt(props) {
   const {
     setFulldashbaord,
     setGtprof,
-    setTakestate,
     setAddit,
-    setTotalCred,
-    setStateid,
-    setRenewal,
-    setTakedata,
-    fulldashbaord,
-    setStateCount,
-    stateCount
   } = useContext(AppContext);
-  const dispatch = useDispatch();
-  const AuthReducer = useSelector(state => state.AuthReducer);
-  const DashboardReducer = useSelector(state => state.DashboardReducer);
-  const [dashboard, setDashboard] = useState(null);
-  const [loadingDashboard, setLoadingDashboard] = useState(true);
-  const [spalsh, setSplash] = useState("")
   const isFocus = useIsFocused();
-  const [nettrue, setNettrue] = useState("");
-  // const logger = (() => {
-  //   let oldConsole = {};
-  //   return {
-  //     disableLogger: () => {
-  //       if (oldConsole.log) return; // Already disabled
-  //       oldConsole.log = console.log;
-  //       oldConsole.info = console.info;
-  //       oldConsole.warn = console.warn;
-  //       oldConsole.error = console.error;
-  //       oldConsole.debug = console.debug;
-  //       console.log = () => { };
-  //       console.info = () => { };
-  //       console.warn = () => { };
-  //       console.error = () => { };
-  //       console.debug = () => { };
-  //     },
-  //   };
-  // })();
   useEffect(() => {
     const handleNavigation = async () => {
       try {
@@ -66,8 +24,6 @@ export default function SplashInt(props) {
         ]);
         const parsedDashData = wholeDashData ? JSON.parse(wholeDashData) : null;
         const parsedProfData = profdatset ? JSON.parse(profdatset) : null;
-        console.log('Dashboard Data:111', parsedDashData);
-        console.log('Profile Data:', parsedProfData);
         const navigateTo = () => {
           if (parsedDashData !== null) {
             setAddit(wholeDashData);
@@ -97,9 +53,9 @@ export default function SplashInt(props) {
     handleNavigation();
   }, [isFocus]);
 
-useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
   return (
     <>
       <MyStatusBar

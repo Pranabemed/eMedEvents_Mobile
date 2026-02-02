@@ -29,11 +29,9 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     const Fulldata = (needReview == 1 && certificate) ? threeDotData :
         (needReview == 1 && !certificate) ? duplicateDataReview :
             (needReview == 0 && certificate) ? duplicateData : null;
-    console.log(needReview, "loading----------", addit, item);
     const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
-        console.log(result, "webcast url=======", onlineName);
         if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: addit } })
         }
@@ -41,7 +39,6 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
-        console.log(resulttitle, "webcast url=======", make);
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: addit } })
         }
@@ -49,7 +46,6 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
-        console.log(result, "webcast url=======", dataItem);
         if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
         } else if (dataItem?.current_activity_api == "introduction") {
@@ -69,11 +65,8 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
                     const url = `https://static.emedevents.com/uploads/conferences/certificates/${cleanedPath}`;
-                    console.log(url, "url---------");
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-                    console.log('Downloading file from:', url);
-                    console.log('Saving file to:', localFile);
                     const options = {
                         fromUrl: url,
                         toFile: localFile,
@@ -95,7 +88,6 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
         if (pdfUrist) {
             const openFileViewerst = async () => {
                 try {
-                    console.log('Opening file viewer for:', pdfUrist);
                     setTimeout(async () => {
                         await FileViewer.open(pdfUrist);
                     }, 2000);
@@ -222,7 +214,6 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
                         </TouchableOpacity>
                         {(item?.certificate?.certificate || item?.needReview) ? (
                             <TouchableOpacity onPress={() => {
-                                console.log(item?.needReview, "item?.needReview")
                                 setModalview(!modalview);
                                 setNeedReview(item?.needReview);
                                 setOnlineName(item);
@@ -254,8 +245,10 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
                             onPress={() => {
                                 setStatepush(addit);
                                 if (item?.buttonText === "Revise Course") {
+                                    setStatepush(addit);
                                     navigation.navigate("VideoComponent", { RoleData: item });
                                 } else {
+                                    setStatepush(addit);
                                     fullAction(item);
                                 }
                             }}

@@ -8,17 +8,14 @@ import Buttons from '../../Components/Button';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { chooseStatecardRequest, loginRequest, loginsiginRequest, resendemailotpRequest, resendmobileotpRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
+import { chooseStatecardRequest, loginRequest, loginsiginRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
-import TextFieldIn from '../../Components/Textfield';
 import { CommonActions } from '@react-navigation/native';
-import TextInputPlain from '../../Components/PlainyTextInput';
 import Imagepath from '../../Themes/Imagepath';
 import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import InputField from '../../Components/CellInput';
-import DeviceInfo from 'react-native-device-info';
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -57,29 +54,22 @@ const Login = (props) => {
     if (val.trim() === '') {
       setMobile(false);
       setIsPasswordFieldVisible(false);
-      console.log("Input cleared");
       return;
     }
     if (emailRegex.test(val)) {
-      console.log("Detected Email");
       setIsPasswordFieldVisible(true);
     } else if (mobileRegex.test(val)) {
-      console.log("Detected Mobile Number");
       setIsPasswordFieldVisible(false);
     } else if (/^\d+$/.test(val)) {
       setMobile(true);
-      console.log("User is typing numbers, might be a phone number");
       setIsPasswordFieldVisible(false);
     } else if (/^[a-zA-Z]/.test(val)) {
-      console.log("User is typing alphabets, might be an email");
       setIsPasswordFieldVisible(false);
     } else {
-      console.log("Invalid input");
       setIsPasswordFieldVisible(false);
       setMobile(false);
     }
   };
-  console.log(mobile, "hello=====", isPasswordFieldVisible, props?.route?.params);
   const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
@@ -155,7 +145,6 @@ const Login = (props) => {
       } : {
         "phone": phoneCountryCode == "+1" ? `+1${mobileHd}` : formattedEmail.trim()
       };
-      console.log(obj, "obj========", mobileHd);
       connectionrequest()
         .then(() => {
           dispatch(isPasswordFieldVisible ? loginRequest(obj) : loginsiginRequest(obj));
@@ -218,14 +207,12 @@ const Login = (props) => {
   const mobileReg = /^\d{10}$/;
   const isMobile = mobile && email?.length > 0 && mobile && !mobileReg.test(email);
   if (status == '' || AuthReducer.status != status) {
-    console.log("status====")
     switch (AuthReducer.status) {
       case 'Auth/loginRequest':
         status = AuthReducer.status;
         break;
       case 'Auth/loginSuccess':
         status = AuthReducer.status;
-        // props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
         break;
       case 'Auth/loginFailure':
         status = AuthReducer.status;
@@ -244,7 +231,6 @@ const Login = (props) => {
           } else if (AuthReducer?.loginsiginResponse?.phone_verified == "1") {
             props?.navigation.navigate("CreateStateInfor");
           } else if (AuthReducer?.loginsiginResponse?.success == true) {
-            console.log(AuthReducer?.loginsiginResponse, "data==========")
             props.navigation.navigate("MobileLoginOTP", { "mobileNo": { mobileNo: phoneCountryCode == "+1" ? mobileHd : email, phoneCode: phoneCountryCode } });
           } else {
             showErrorAlert(AuthReducer?.loginsiginResponse?.msg || "something went wrong !");
@@ -259,9 +245,7 @@ const Login = (props) => {
             dispatch(dashboardRequest(objToken));
             setNonloader(true);
             setGtprof(false);
-            // props?.navigation.navigate("TabNav");
           } else if (AuthReducer?.loginsiginResponse?.success == true) {
-            console.log(AuthReducer?.loginsiginResponse, "data==========")
             props.navigation.navigate("MobileLoginOTP", { "mobileNo": { mobileNo: phoneCountryCode == "+1" ? mobileHd : email, phoneCode: phoneCountryCode } });
           } else {
             showErrorAlert(AuthReducer?.loginsiginResponse?.msg || "something went wrong !");
@@ -277,9 +261,9 @@ const Login = (props) => {
         break;
       case 'Auth/verifySuccess':
         status = AuthReducer.status;
-        if (AuthReducer?.verifyResponse?.msg == "Valid Token") {
-          const wholeData = AuthReducer?.verifyResponse;
-          console.log(wholeData, "wholeData---------")
+        const wholeData = AuthReducer?.verifyResponse;
+        if (wholeData?.is_verified !== "1" && wholeData?.phone_verified !== "1") {
+          Alert.alert("fggf")
           props?.navigation.navigate("LoginEmail", {
             user: {
               emailid: wholeData?.email,
@@ -293,40 +277,40 @@ const Login = (props) => {
         break;
     }
   }
-   const COUNTRY_DIAL_CODES = {
-        IN: '+91',
-        US: '+1',
-        GB: '+44',
-        AU: '+61',
-        CA: '+1',
-        SG: '+65',
+  const COUNTRY_DIAL_CODES = {
+    IN: '+91',
+    US: '+1',
+    GB: '+44',
+    AU: '+61',
+    CA: '+1',
+    SG: '+65',
+  };
+  const getCountryFromIP = async (ip) => {
+    try {
+      const res = await fetch(`https://ipinfo.io/${ip}/json`);
+      const text = await res.text();
+      if (text.startsWith('<')) {
+        throw new Error('HTML response');
+      }
+      const data = JSON.parse(text);
+      return data?.country || null; // "IN"
+    } catch (e) {
+      console.log('Geo lookup failed:', e);
+      return null;
+    }
+  };
+  const ipAddress = getPublicIP(); // global value
+  useEffect(() => {
+    if (!ipAddress) return; // ⛔ wait until IP exists
+    const fetchCountry = async () => {
+      const countryCode = await getCountryFromIP(ipAddress);
+      if (countryCode) {
+        const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
+        setPhoneCountryCode(dialCode); // ✅ push dial code instead of country code
+      }
     };
-    const getCountryFromIP = async (ip) => {
-        try {
-            const res = await fetch(`https://ipinfo.io/${ip}/json`);
-            const text = await res.text();
-            if (text.startsWith('<')) {
-                throw new Error('HTML response');
-            }
-            const data = JSON.parse(text);
-            return data?.country || null; // "IN"
-        } catch (e) {
-            console.log('Geo lookup failed:', e);
-            return null;
-        }
-    };
-    const ipAddress = getPublicIP(); // global value
-    useEffect(() => {
-        if (!ipAddress) return; // ⛔ wait until IP exists
-        const fetchCountry = async () => {
-            const countryCode = await getCountryFromIP(ipAddress);
-            if (countryCode) {
-                const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
-                setPhoneCountryCode(dialCode); // ✅ push dial code instead of country code
-            }
-        };
-        fetchCountry();
-    }, [ipAddress]);
+    fetchCountry();
+  }, [ipAddress]);
   const validHandles = useMemo(() => new Set([
     "Physician - MD",
     "Physician - DO",
@@ -456,19 +440,7 @@ const Login = (props) => {
     phoneCountryCode,
     tokenObj
   ]);
-  useEffect(() => {
-    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {
-      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-        return index === self.findIndex((s) =>
-          s.state_id === state.state_id &&
-          s.board_id === state.board_id
-        );
-      });
-      dispatch(mainprofileRequest({}))
-      setFulldashbaord(uniqueStates);
-      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
-    }
-  }, [DashboardReducer?.dashboardResponse?.data])
+
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
@@ -478,7 +450,6 @@ const Login = (props) => {
       case 'Dashboard/dashboardSuccess':
         status1 = DashboardReducer.status;
         setNonloader(false);
-        console.log("DashboardReducer999912222", DashboardReducer.dashboardResponse.data?.licensures);
         const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
           return index === self.findIndex((s) =>
             s.state_id === state.state_id &&
