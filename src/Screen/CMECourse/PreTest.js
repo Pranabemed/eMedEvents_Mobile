@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, Alert, TextInput, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, TextInput, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import normalize from '../../Utils/Helpers/Dimen';
 import Imagepath from '../../Themes/Imagepath';
 import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import ProgressBarCircle from '../../Components/ProgressBarCircle';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { cmedulicateRequest, evaulateexamRequest, nextactionagainRequest, startTestRequest } from '../../Redux/Reducers/CMEReducer';
@@ -38,11 +37,9 @@ const PreTest = (props) => {
     takeCoursepre();
     props.navigation.goBack();
   };
-  console.log(props?.route?.params, "route==============");
   const [conn, setConn] = useState("")
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
       setConn(state.isConnected);
     });
     return () => unsubscribe();
@@ -51,7 +48,6 @@ const PreTest = (props) => {
   const [testData, setTestData] = useState(null);
   const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
   const [timeflex, setTimeflex] = useState(0);
-  const [timerStarted, setTimerStarted] = useState(false);
   const [lengthCheck, setLengthCheck] = useState(0);
   const [headerText, setHeaderText] = useState("");
   const [headerTexts, setHeaderTexts] = useState("");
@@ -80,29 +76,6 @@ const PreTest = (props) => {
   const handleOptionSelect = (questionId, optionId) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: optionId };
-      const selectedLength = Object.keys(updatedOptions).length;
-      const questionGroups = testData?.testData?.[0]?.questions || {};
-      const allQuestions = Object.entries(questionGroups).flatMap(([heading, questions]) =>
-        Array.isArray(questions)
-          ? questions.map(q => ({
-            heading: heading == "no_heading" ? null : heading,
-            ...q
-          }))
-          : []
-      );
-      // Total number of all questions
-      const questionsLength = allQuestions.length;
-      // const questionsLength = testData?.testData[0]?.questions?.length || 0;
-      const allAnswered = selectedLength === questionsLength;
-      console.log("Selected Length:", selectedLength, questionsLength);
-      // setLengthCheck(selectedLength);
-      console.log("Questions Length:", questionsLength);
-      console.log("All Answered:", allAnswered);
-      // checkIfAllAnswered(updatedOptions, answers);
-      // setIsSubmitEnabled(allAnswered);
-      // if (!timerStarted) {
-      //   setTimerStarted(true);
-      // }
       return updatedOptions;
     });
   };
@@ -115,34 +88,13 @@ const PreTest = (props) => {
       return { ...prev, [questionId]: updatedSelections };
     });
   };
-  // useEffect(() => {
-  //   if (timerStarted && timeflex === 0) {
-  //    Alert.alert("eMedEvents","You have cross your time",[{text:"Cancel",onPress:()=>{console.log("Hello")},style:"cancel"},{text:"Ok",onPress:()=>{
-  //      setIsSubmitEnabled(false);
-  //     setTimerStarted(false);
-  //     props.navigation.goBack();
-  //   },style:"default"}])
-  //     setIsSubmitEnabled(false);
-  //     setTimerStarted(false);
-  //   }
-  // }, [timeflex]);
 
-  // useEffect(() => {
-  //   if (timerStarted) {
-  //     const timer = setInterval(() => {
-  //       setTimeflex(prev => prev > 0 ? prev - 1 : 0);
-  //     }, 1000);
-
-  //     return () => clearInterval(timer);
-  //   }
-  // }, [timerStarted]);
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
     // Scroll to the top when the page is loaded or when coming back to this page
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   }, [isFocus]);
-  console.log(selectedOptions, "slected option", props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID)
   const allquestionHandle = () => {
     const normalizedExamAnswers = Object.fromEntries(
       Object.entries(selectedOptions || {}).map(([key, value]) => {
@@ -191,7 +143,6 @@ const PreTest = (props) => {
       "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.nodata?.conferenceId,
       "ActivityId": props?.route?.params?.FullID?.wholedata?.next_activity_id || props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID
     }
-    console.log("pretest-----checking======", obj)
     connectionrequest()
       .then(() => {
         dispatch(cmedulicateRequest(obj));
@@ -210,7 +161,6 @@ const PreTest = (props) => {
         break;
       case 'CME/startTestSuccess':
         status = CMEReducer.status;
-        console.log("TestData", CMEReducer?.startTestResponse)
         setTestData(CMEReducer?.startTestResponse);
         break;
       case 'CME/startTestFailure':
@@ -228,7 +178,6 @@ const PreTest = (props) => {
         } else {
           props.navigation.navigate("PostTestFail", { examID: CMEReducer?.evaulateexamResponse?.examId });
         }
-        console.log(CMEReducer?.evaulateexamResponse, "efdmdffjdEvail;l;")
         break;
       case 'CME/evaulateexamFailure':
         status = CMEReducer.status;
@@ -238,7 +187,6 @@ const PreTest = (props) => {
         break;
       case 'CME/cmedulicateSuccess':
         status = CMEReducer.status;
-        console.log(CMEReducer?.cmedulicateResponse, "next act============")
         setHeaderText(CMEReducer?.cmedulicateResponse?.current_activity_text);
         setLengthCheck(0);
         setSelectedOptions({});
@@ -271,7 +219,6 @@ const PreTest = (props) => {
           setSelectedOptions({});
           setTimeflex(0)
         }
-        console.log(CMEReducer?.nextactionagainResponse, "again next===========")
       case 'CME/nextactionagainFailure':
         status = CMEReducer.status;
         break;
@@ -291,13 +238,6 @@ const PreTest = (props) => {
         break;
     }
   }
-  console.log(headerText, "rfejnfgnerfgnhn", lengthCheck, testData)
-  // const handleTextChange = (questionId, text) => {
-  //   setAnswers((prevAnswers) => ({
-  //     ...prevAnswers,
-  //     [questionId]: text,
-  //   }));
-  // };
   const handleTextChange = (questionId, text) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: text };
@@ -305,22 +245,6 @@ const PreTest = (props) => {
       return updatedOptions;
     });
   };
-  // const checkIfAllAnswered = (selectedOptions, answers) => {
-  //   const questionsLength = testData?.testData[0]?.questions?.length || 0;
-  //   const answeredQuestions = {
-  //     ...selectedOptions,
-  //     ...Object.fromEntries(Object.entries(answers).filter(([, value]) => value.trim() !== ""))
-  //   };
-  //   const allAnswered = Object.keys(answeredQuestions).length === questionsLength;
-  //   setIsSubmitEnabled(allAnswered);
-  // };
-  // const checkIfAllAnswered = (options) => {
-  //   const totalQuestions = testData?.testData[0]?.questions?.length || 0;
-  //   const answeredCount = Object.keys(options).length;
-  //   const allAnswered = answeredCount === totalQuestions;
-  //   setIsSubmitEnabled(allAnswered);
-  //   setLengthCheck(answeredCount);
-  // };
   useEffect(() => {
     if (Object.keys(selectedOptions)?.length > 0) {
       const otpions_id = Object.keys(selectedOptions);
@@ -348,33 +272,15 @@ const PreTest = (props) => {
 
       // Now filter mandatory ones if needed
       const mandatoryQuestions = allQuestions.filter(q => q.mandatory == 1);
-      console.log(questionsObj, mandatoryQuestions, "dfsgdfjkgbk")
-      // const mandatoryQuestions = testData?.testData[0]?.questions?.filter(q => q.mandatory == 1) || [];
       const totalMandatoryQuestions = mandatoryQuestions?.length;
       const answeredMandatoryCount = mandatoryQuestions.filter(q => {
-        // Check if the question_id exists in the options array
         return otpions_id.includes(q.question_id);
       }).length;
-      console.log('Total Mandatory Questions:', totalMandatoryQuestions, mandatoryQuestions);
-      console.log('Answered Mandatory Questions:', answeredMandatoryCount);
       const allMandatoryAnswered = answeredMandatoryCount == totalMandatoryQuestions;
       setIsSubmitEnabled(allMandatoryAnswered);
       setLengthCheck(otpions_id?.length);
-      console.log(selectedOptions, "option---------", Object.keys(selectedOptions), answeredMandatoryCount, totalMandatoryQuestions)
     }
   }, [selectedOptions])
-  //   const checkIfAllAnswered = (options) => {
-  //     const mandatoryQuestions = testData?.testData[0]?.questions?.filter(q => q.mandatory == 1) || [];
-  //     const totalMandatoryQuestions = mandatoryQuestions?.length;
-  //     const answeredMandatoryCount = mandatoryQuestions.filter(q => 
-  //       options[q.question_id] !== undefined && options[q.question_id] !== ''
-  //     ).length;
-  //     console.log('Total Mandatory:', mandatoryQuestions, options,answeredMandatoryCount,selectedOptions);
-  //     console.log('Answered Mandatory:', answeredMandatoryCount);
-  //     const allMandatoryAnswered = answeredMandatoryCount == totalMandatoryQuestions;
-  //     setIsSubmitEnabled(allMandatoryAnswered);
-  //     setLengthCheck(answeredMandatoryCount);
-  // };
   useEffect(() => {
     const unsubscribe = props.navigation.addListener('focus', () => {
       setSelectedOptions({});
@@ -383,9 +289,7 @@ const PreTest = (props) => {
     });
     return unsubscribe;
   }, [props?.navigation]);
-  console.log(answers, "survey & id ")
   const estimatedTime = (val) => {
-    console.log("hello", val)
     if (val) {
       const convertedVal = val * 1000;
       setTimeflex(convertedVal);
@@ -398,7 +302,6 @@ const PreTest = (props) => {
     htmlString = htmlString.replace(/&nbsp;/g, " ");
     return htmlString.trim();
   };
-  console.log(timeflex, "timeflex=========", isSubmitEnabled, selectedOptions);
   let questionCounter = 0;
   const totalQuestionsCount = testData && testData?.testData?.[0]?.total_questions || "";
   const renderGroup = ({ item, index: groupIndex }) => {
@@ -465,7 +368,6 @@ const PreTest = (props) => {
   };
 
   const renderItem = ({ item, index }) => {
-    console.log("question_type_id_text", item)
     estimatedTime((item?.estimated_time || 0) * (item?.question_options?.length + 1 || 0));
     const cleanStatement = cleanHTML(item?.statement);
     return (
@@ -575,7 +477,6 @@ const PreTest = (props) => {
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
-  console.log(allQuestions, "fgfgkhgg-----",wholeTitle,headerText);
   return (
     <>
       <MyStatusBar

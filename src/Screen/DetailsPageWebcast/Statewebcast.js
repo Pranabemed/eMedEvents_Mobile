@@ -122,6 +122,7 @@ const Statewebcast = props => {
     console.log("webcastuser=====", webcastdeatils?.conferenceTypeText == "Webcast", viewmore);
     useEffect(() => {
         if (props?.route?.params?.webCastURL?.webCastURL) {
+            setLoading(true);
             let obj = {
                 "conference_url": props?.route?.params?.webCastURL?.webCastURL
             }
@@ -136,7 +137,7 @@ const Statewebcast = props => {
     }, [props?.route?.params?.webCastURL?.webCastURL])
     useEffect(() => {
         if (props?.route?.params?.newCast) {
-            // setLoading(true);
+            setLoading(true);
             let obj = {
                 "conference_url": props?.route?.params?.newCast
             }
@@ -375,7 +376,7 @@ const Statewebcast = props => {
             setLoading(false);
             setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse)
         }
-    }, [WebcastReducer?.webcastDeatilsResponse,loading])
+    }, [WebcastReducer?.webcastDeatilsResponse])
     useEffect(() => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const ticket = webcastdeatils.registrationTickets?.[0];
@@ -390,6 +391,7 @@ const Statewebcast = props => {
         switch (WebcastReducer.status) {
             case 'WebCast/webcastDeatilsRequest':
                 status = WebcastReducer.status;
+                Alert.alert("dfsdfgjhdfgh")
                 setLoading(true);
                 break;
             case 'WebCast/webcastDeatilsSuccess':
@@ -419,6 +421,14 @@ const Statewebcast = props => {
                 break;
         }
     }
+    const [showloaders, setShowLoaders] = useState(false);
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setShowLoaders(true);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -433,8 +443,10 @@ const Statewebcast = props => {
                         <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
                     </View>
                 )}
+                {/* <Loader
+                    visible={loading || addtocartload || loadingdowndt} /> */}
                 <Loader
-                    visible={loading || addtocartload || loadingdowndt} />
+                    visible={!showloaders || loading || addtocartload || loadingdowndt} />
                 <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white }}>
                     <View style={{ backgroundColor: Colorpath.Pagebg, padding: 10 }}>
                         <StatewebcastPrice calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />

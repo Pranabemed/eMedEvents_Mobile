@@ -10,7 +10,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { chooseStatecardRequest, loginRequest, loginsiginRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
 import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
@@ -20,6 +20,7 @@ let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { generateDeviceToken }from '../../Utils/Helpers/FirebaseToken';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -41,7 +42,9 @@ const Login = (props) => {
   const [locationPermission, setLocationPermission] = useState(false);
   const [inputBlocked, setInputBlocked] = useState(false);
   const [permissionRequested, setPermissionRequested] = useState(false);
-  const [choosePr, setChoosePr] = useState(false)
+  const [choosePr, setChoosePr] = useState(false);
+  const isFocus = useIsFocused();
+   const [fcm, setFcm] = useState(false);
   const handleInputChange = (val) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
@@ -440,7 +443,19 @@ const Login = (props) => {
     phoneCountryCode,
     tokenObj
   ]);
-
+  useEffect(() => {
+    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {
+      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+        return index === self.findIndex((s) =>
+          s.state_id === state.state_id &&
+          s.board_id === state.board_id
+        );
+      });
+      dispatch(mainprofileRequest({}))
+      setFulldashbaord(uniqueStates);
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    }
+  }, [DashboardReducer?.dashboardResponse?.data])
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
@@ -504,6 +519,17 @@ const Login = (props) => {
     const ipAddress = getPublicIP();
     console.log(ipAddress, "ipAddress+======")
   }, [])
+  useEffect(() => {
+    generateDeviceToken()
+      .then((res) => {
+        console.log("resd=====",res)
+        setFcm(res)
+      })
+      .catch((err) => {
+        showErrorAlert("Please connect to Interne11t", err)
+      })
+  }, [isFocus, fcm])
+  console.log("fcm=====",fcm)
   return (
     <>
       <MyStatusBar

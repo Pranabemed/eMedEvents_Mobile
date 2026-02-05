@@ -27,13 +27,16 @@ const ForgotMPIN = (props) => {
     const fogotHandle = () => {
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const mobileRegex = /^\d{10}$/;
+        const cleVal = email && email.trim().replace(/\D/g, '');
         if (!email) {
             showErrorAlert("Please enter your email or cell number!");
-        } else if (!emailRegex.test(email) && !mobileRegex.test(email)) {
+        } else if (!emailRegex.test(email) && !mobileRegex.test(cleVal)) {
             showErrorAlert("Please enter a valid email address or 10 digit cell number!");
         } else {
+            const phoneCode = props?.route?.params?.phoneCode;
+            const phoneValue = phoneCode == '+91' ? cleVal : email;
             let obj = showPassword ? { "email": email } : {
-                "phone": `${props?.route?.params?.phoneCode}${email}`
+                "phone": `${props?.route?.params?.phoneCode}${phoneValue}`
             }
             connectionrequest()
                 .then(() => {
@@ -46,7 +49,7 @@ const ForgotMPIN = (props) => {
     }
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
-    const cleanValue = email && email.trim().replace(/\s+/g, '');
+    const cleanValue = email && email.trim().replace(/\D/g, '');
     const isButtonEnabled =
         emailRegex.test(cleanValue) || mobileRegex.test(cleanValue);
     const animatedValuephone = useRef(new Animated.Value(1)).current;
@@ -181,7 +184,7 @@ const ForgotMPIN = (props) => {
     const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
     const mobileReg = /^\d{10}$/;
-    const cleanMobile = email && email.replace(/\s+/g, '');
+    const cleanMobile = email && email.replace(/\D/g, '');
     const isMobile = mobile && cleanMobile?.length > 0 && mobile && !mobileReg.test(cleanMobile);
     const phoneInputRef = useRef(null);
     useEffect(() => {

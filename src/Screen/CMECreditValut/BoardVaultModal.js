@@ -66,7 +66,7 @@ const BoardVaultModal = ({ handleBoardname, clisttopicboard, setStatepickboard, 
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
                     </View>
                 )}

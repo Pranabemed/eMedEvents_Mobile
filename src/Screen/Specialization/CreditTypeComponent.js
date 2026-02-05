@@ -72,7 +72,7 @@ const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, search
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
                     </View>
                 )}

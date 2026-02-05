@@ -27,7 +27,7 @@ useLayoutEffect(() => {
                         onBackPress={cartPressNo}
                     />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <PageHeader
                             title="Cart"
                             onBackPress={cartPressNo}

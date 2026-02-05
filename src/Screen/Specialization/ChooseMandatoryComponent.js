@@ -50,7 +50,7 @@ const ChooseMandatoryComponent = ({topicwiseStatehand, clisttopic,setStatetopicp
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
                     </View>
                 )}

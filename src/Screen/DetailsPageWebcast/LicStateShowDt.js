@@ -76,7 +76,7 @@ const handleBackPress = () => {
                     handleBackPress();
                 }} />
             ) : (
-                <View style={{ marginTop: normalize(40) }}>
+                <View>
                     <PageHeader title="Medical License State*" onBackPress={()=>{
                         handleBackPress();
                         }} />

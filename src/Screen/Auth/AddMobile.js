@@ -14,10 +14,12 @@ import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 let status = "";
 const AddMobile = (props) => {
     const [phone, setPhone] = useState("");
     const [mobileHd, setMobileHd] = useState("");
+    const [addCountry, setAddCountry] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const handleMobilNOchange = () => {
@@ -27,10 +29,13 @@ const AddMobile = (props) => {
         } else if (!mobilePattern.test(phone)) {
             showErrorAlert("Cell no should be 10 - 15 digit ");
         } else {
-            const getPhCd = "+91";
-            let obj = {
+            const getPhCd = addCountry;
+            let obj = addCountry == "+91" ? {
                 "verify_type": "phone",
                 "phone": `${getPhCd}${phone}`,
+            } : {
+                "verify_type": "phone",
+                "phone": `${getPhCd}${mobileHd}`
             }
             connectionrequest()
                 .then(() => {
@@ -69,7 +74,7 @@ const AddMobile = (props) => {
                 break;
             case 'Auth/changephoneSuccess':
                 status = AuthReducer.status;
-                const getPhCdSent = "+91";
+                const getPhCdSent = addCountry;
                 props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: `${getPhCdSent}${phone}` } });
                 break;
             case 'Auth/changephoneFailure':
@@ -90,6 +95,52 @@ const AddMobile = (props) => {
         }
         return input;
     };
+    const formatIndianPhoneNumber = (input) => {
+        if (!input) return "";
+
+        const strInput = String(input);
+        const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+        if (cleaned.length == 10) {
+            return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+        }
+
+        return strInput;
+    };
+    const COUNTRY_DIAL_CODES = {
+        IN: '+91',
+        US: '+1',
+        GB: '+44',
+        AU: '+61',
+        CA: '+1',
+        SG: '+65',
+    };
+    const getCountryFromIP = async (ip) => {
+        try {
+            const res = await fetch(`https://ipinfo.io/${ip}/json`);
+            const text = await res.text();
+            if (text.startsWith('<')) {
+                throw new Error('HTML response');
+            }
+            const data = JSON.parse(text);
+            return data?.country || null; // "IN"
+        } catch (e) {
+            console.log('Geo lookup failed:', e);
+            return null;
+        }
+    };
+    const ipAddress = getPublicIP(); // global value
+    useEffect(() => {
+        if (!ipAddress) return; // ⛔ wait until IP exists
+        const fetchCountry = async () => {
+            const countryCode = await getCountryFromIP(ipAddress);
+            if (countryCode) {
+                const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
+                setAddCountry(dialCode); // ✅ push dial code instead of country code
+            }
+        };
+        fetchCountry();
+    }, [ipAddress]);
     useEffect(() => {
         const onBackPress = () => {
             return true;
@@ -158,7 +209,7 @@ const AddMobile = (props) => {
                                 <TextInput
                                     editable={false}
                                     maxLength={5}
-                                    value={`${"+91"} -`}
+                                    value={`${addCountry ? `${addCountry} -` : ''}`}
                                     style={{ height: normalize(40), width: normalize(48), paddingVertical: 0, fontSize: 14, color: "#000000", fontFamily: Fonts.InterMedium }}
                                     keyboardType="default"
                                 />
@@ -166,10 +217,17 @@ const AddMobile = (props) => {
                                     editable
                                     maxLength={15}
                                     onChangeText={text => {
-                                        const formatted = formatPhoneNumber(text);
-                                        setMobileHd(formatted);
-                                        const rawDigits = formatted.replace(/\D/g, '');
-                                        setPhone(rawDigits);
+                                        if (addCountry == "+91") {
+                                            const formatted = formatIndianPhoneNumber(text);
+                                            setMobileHd(formatted);
+                                            const rawDigits = formatted.replace(/\D/g, '');
+                                            setPhone(rawDigits);
+                                        } else if (addCountry == "+1") {
+                                            const formatted = formatPhoneNumber(text);
+                                            setMobileHd(formatted);
+                                            const rawDigits = formatted.replace(/\D/g, '');
+                                            setPhone(rawDigits);
+                                        }
                                     }}
                                     value={mobileHd}
                                     style={{ height: normalize(40), width: normalize(228), paddingVertical: 0, fontSize: 14, color: "#000000", fontFamily: Fonts.InterMedium }}

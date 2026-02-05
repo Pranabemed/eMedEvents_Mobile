@@ -32,7 +32,6 @@ const PostTestFail = (props) => {
        const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
@@ -102,7 +101,6 @@ const PostTestFail = (props) => {
                 break;
             case 'CME/cmenextactionSuccess':
                 status = CMEReducer.status;
-                console.log("next action1222====", CMEReducer?.cmenextactionResponse)
                 break;
             case 'CME/cmenextactionFailure':
                 status = CMEReducer.status;
@@ -117,22 +115,12 @@ const PostTestFail = (props) => {
             case 'Dashboard/stateDashboardSuccess':
                 status1 = DashboardReducer.status;
                 setFinddata(DashboardReducer?.stateDashboardResponse?.data);
-                console.log("finddatapostfail====", DashboardReducer?.stateDashboardResponse?.data, finddata)
                 break;
             case 'Dashboard/stateDashboardFailure':
                 status1 = DashboardReducer.status;
                 break;
         }
     }
-    console.log(CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1 &&
-        (
-            CMEReducer?.cmenextactionResponse &&
-            (
-                CMEReducer?.cmenextactionResponse?.next_activity_text == "Post Assessment" ||
-                CMEReducer?.cmenextactionResponse?.next_activity_text == "Pre Assessment" ||
-                CMEReducer?.cmenextactionResponse?.next_activity_text == "Survey & Feedback"
-            )
-        ), CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1 && CMEReducer?.cmenextactionResponse && CMEReducer?.cmenextactionResponse?.next_activity_text == "Post Assessment" || CMEReducer?.cmenextactionResponse && CMEReducer?.cmenextactionResponse?.next_activity_text == "Pre Assessment" || CMEReducer?.cmenextactionResponse && CMEReducer?.cmenextactionResponse?.next_activity_text == "Survey & Feedback", CMEReducer?.cmenextactionResponse, "CMEReducer?.evaulatecalculateResponse", CMEReducer?.evaulatecalculateResponse)
     const getCorrectOptionIds = (options) => {
         return options
             .filter(option => option.correctness === "1")

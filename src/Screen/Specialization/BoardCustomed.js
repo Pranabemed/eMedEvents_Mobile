@@ -64,7 +64,7 @@ const BoardCustomed = ({setsearchboardname, handleBoardname, boardnamereal,setBo
                         }} />
                 </View>
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="Certification Board*" onClosePress={()=>{
                             setBoardnamepick(false);
                             setsearchboardname("");

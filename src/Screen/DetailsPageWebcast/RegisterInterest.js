@@ -559,7 +559,7 @@ const RegisterInterest = (props) => {
                     {Platform.OS === 'ios' ? (
                         <PageHeader title="Interest Checkout" onBackPress={intBack} />
                     ) : (
-                        <View style={{ marginTop: normalize(40) }}>
+                        <View>
                             <PageHeader title="Interest Checkout" onBackPress={intBack} />
                         </View>
                     )

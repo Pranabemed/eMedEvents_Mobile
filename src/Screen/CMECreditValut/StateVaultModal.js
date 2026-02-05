@@ -65,7 +65,7 @@ const StateVaultModal = ({ vaultState, clisttopic, setStatepick, searchTopicName
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader title="State*" onClosePress={() => { setStatepick(false) }} />
                 ) : (
-                    <View style={{ marginTop: normalize(40) }}>
+                    <View>
                         <DropDownHeader title="State*" onClosePress={() => { setStatepick(false) }} />
                     </View>
                 )}

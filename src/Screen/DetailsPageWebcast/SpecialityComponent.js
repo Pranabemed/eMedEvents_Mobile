@@ -21,7 +21,7 @@ const SpecialityComponent = ({handleSpecialitySelect,formData, setstatepicker, s
                     setSearchState("");
                 }} />
             ) : (
-                <View style={{ marginTop: normalize(40) }}>
+                <View>
                     <PageHeader title="Speciality" onBackPress={()=>{
                         setstatepicker(false);
                         setSearchState("");
