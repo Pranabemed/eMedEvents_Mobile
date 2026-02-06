@@ -10,6 +10,15 @@ PODS:
   - Firebase/Messaging (12.8.0):
     - Firebase/CoreOnly
     - FirebaseMessaging (~> 12.8.0)
+  - FirebaseAnalytics/Core (12.8.0):
+    - FirebaseCore (~> 12.8.0)
+    - FirebaseInstallations (~> 12.8.0)
+    - GoogleAppMeasurement/Core (= 12.8.0)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
   - FirebaseCore (12.8.0):
     - FirebaseCoreInternal (~> 12.8.0)
     - GoogleUtilities/Environment (~> 8.1)
@@ -34,6 +43,12 @@ PODS:
     - nanopb (~> 3.30910.0)
   - fmt (11.0.2)
   - glog (0.3.5)
+  - GoogleAppMeasurement/Core (12.8.0):
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/MethodSwizzler (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+    - nanopb (~> 3.30910.0)
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -3088,6 +3103,36 @@ PODS:
     - SDWebImageWebPCoder (~> 0.14)
     - SocketRocket
     - Yoga
+  - RNFBAnalytics (23.8.6):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - FirebaseAnalytics/Core (= 12.8.0)
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNFBApp
+    - SocketRocket
+    - Yoga
   - RNFBApp (23.8.6):
     - boost
     - DoubleConversion
@@ -3742,6 +3787,7 @@ DEPENDENCIES:
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFastImage (from `../node_modules/@d11/react-native-fast-image`)"
+  - "RNFBAnalytics (from `../node_modules/@react-native-firebase/analytics`)"
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - "RNFBMessaging (from `../node_modules/@react-native-firebase/messaging`)"
   - RNFileViewer (from `../node_modules/react-native-file-viewer`)
@@ -3762,11 +3808,13 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - Firebase
+    - FirebaseAnalytics
     - FirebaseCore
     - FirebaseCoreExtension
     - FirebaseCoreInternal
     - FirebaseInstallations
     - FirebaseMessaging
+    - GoogleAppMeasurement
     - GoogleDataTransport
     - GoogleUtilities
     - libavif
@@ -3975,6 +4023,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-device-info"
   RNFastImage:
     :path: "../node_modules/@d11/react-native-fast-image"
+  RNFBAnalytics:
+    :path: "../node_modules/@react-native-firebase/analytics"
   RNFBApp:
     :path: "../node_modules/@react-native-firebase/app"
   RNFBMessaging:
@@ -4013,6 +4063,7 @@ SPEC CHECKSUMS:
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
   FBLazyVector: 41b4dd99afd0aad861444ee141abdedaa6c3d238
   Firebase: 9a58fdbc9d8655ed7b79a19cf9690bb007d3d46d
+  FirebaseAnalytics: f20bbad8cb7f65d8a5eaefeb424ae8800a31bdfc
   FirebaseCore: 0dbad74bda10b8fb9ca34ad8f375fb9dd3ebef7c
   FirebaseCoreExtension: 6605938d51f765d8b18bfcafd2085276a252bee2
   FirebaseCoreInternal: fe5fa466aeb314787093a7dce9f0beeaad5a2a21
@@ -4020,6 +4071,7 @@ SPEC CHECKSUMS:
   FirebaseMessaging: 7f42cfd10ec64181db4e01b305a613791c8e782c
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
+  GoogleAppMeasurement: 72c9a682fec6290327ea5e3c4b829b247fcb2c17
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   hermes-engine: 8642d8f14a548ab718ec112e9bebdfdd154138b5
@@ -4116,6 +4168,7 @@ SPEC CHECKSUMS:
   RNDateTimePicker: 9d0df1bcce5eabbb670b0b0177fd43d0211bd86a
   RNDeviceInfo: 53f9c84e28e854a308d3e548e25ef120b4615531
   RNFastImage: e75f88269b52687d6907db4f04f50095a6b1c921
+  RNFBAnalytics: 1b7dce08e49fec56119a6b2278133cce86f6949f
   RNFBApp: a32d5d6bcd372ea6e995b7c8c7481106697b1d91
   RNFBMessaging: 3d014a8ac8a53eb0967de3e0eea2cd7e1d92784b
   RNFileViewer: ce7ca3ac370e18554d35d6355cffd7c30437c592
@@ -4139,6 +4192,6 @@ SPEC CHECKSUMS:
   TOCropViewController: 797deaf39c90e6e9ddd848d88817f6b9a8a09888
   Yoga: 93bc00d78638987f9ffd928f4a9f895d3e601bc3
 
-PODFILE CHECKSUM: 737bd160d3d84c5994e5943d0cf3cb7f1ae20c7c
+PODFILE CHECKSUM: f9959b9d3f41854d1743b1dd657fea1fa41c8f96
 
 COCOAPODS: 1.16.2

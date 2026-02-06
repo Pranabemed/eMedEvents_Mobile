@@ -22,6 +22,7 @@ import Buttons from '../../Components/Button';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import analytics from '@react-native-firebase/analytics';
 const Onboard = (props) => {
     const [codegt, setCodegt] = useState("");
     const sliderData = [
@@ -213,8 +214,14 @@ const Onboard = (props) => {
                 {/* Fixed Buttons */}
                 <View style={styles.buttonContainer}>
                     <Buttons
-                        onPress={() => {
-                            props.navigation.navigate("Login");
+                        onPress={async() => {
+                            await analytics().logEvent('emedevents', {
+                                id: 3745092,
+                                item: 'onboardingpage',
+                                description: "successfully join",
+                                size: 'L',
+                            }),
+                                props.navigation.navigate("Login")
                         }}
                         height={normalize(38)}
                         width={normalize(130)}

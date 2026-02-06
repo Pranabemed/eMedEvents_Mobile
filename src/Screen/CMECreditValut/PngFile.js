@@ -14,13 +14,13 @@ import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 const DownloadImage = (props) => {
-       const {
-            isConnected
-        } = useContext(AppContext);
-        const [conn, setConn] = useState("")
-        useEffect(() => {
-            const unsubscribe = NetInfo.addEventListener(state => {
-                console.log('Connection State:', state.isConnected);
+    const {
+        isConnected
+    } = useContext(AppContext);
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
@@ -36,7 +36,7 @@ const DownloadImage = (props) => {
             setImageshow(fileUrl_Image);
         }
     }, [props?.route?.params?.PngFIle])
-    console.log(props?.route?.params?.PngFIle, "pngfooooopooo=========", imageshow)
+    console.log(props?.route?.params, "pngfooooopooo=========", imageshow)
     const downloadImageJpg = async () => {
         const fileUrl = `${props?.route?.params?.PngFIle?.Path?.certificate_path}${props?.route?.params?.PngFIle?.PngFIle}`;
         const savefileName = props?.route?.params?.PngFIle?.Title || 'eMedEvents';
@@ -72,12 +72,12 @@ const DownloadImage = (props) => {
         try {
             const downloadDir = Platform.OS === 'ios' ? RNFS.DocumentDirectoryPath : RNFS.DownloadDirectoryPath;
             const fileDown = `${downloadDir}/${savefileName}.png`;
-    
+
             const getDown = await RNFS.downloadFile({
                 fromUrl: fileUrl,
                 toFile: fileDown,
             }).promise;
-    
+
             if (getDown && getDown.statusCode == 200) {
                 Alert.alert(
                     'Download Successful!',
@@ -97,7 +97,7 @@ const DownloadImage = (props) => {
             Alert.alert('eMedEvents', error.message);
         }
     };
-    
+
     const openFile = (filePath) => {
         FileViewer.open(filePath)
             .then(() => {
@@ -150,8 +150,8 @@ const DownloadImage = (props) => {
             console.error('Directory creation/download error:', error);
         }
     }
-const fileHandle = props?.route?.params?.PngFIle?.PngFIle;
-useLayoutEffect(() => {
+    const fileHandle = props?.route?.params?.PngFIle?.PngFIle;
+    useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
     return (
@@ -176,20 +176,20 @@ useLayoutEffect(() => {
                     </View>
                 )}
                 {/* <ScrollView contentContainerStyle={{paddingBottom:normalize(50)}}> */}
-                {conn == false ? <IntOff />:<View style={styles.container}>
+                {conn == false ? <IntOff /> : <View style={styles.container}>
                     {imageshow ?
                         <View style={styles.pdfContainer}>
                             <Image source={{ uri: imageshow }} style={styles.pdf} resizeMode="contain" />
                             {!props?.route?.params?.PngFIle?.notrq && <TouchableOpacity
                                 onPress={() => {
-                                    if(fileHandle.toLowerCase().endsWith('.png')){
+                                    if (fileHandle.toLowerCase().endsWith('.png')) {
                                         downloadImagePng();
-                                    }else if(fileHandle.toLowerCase().endsWith('.jpg')){
+                                    } else if (fileHandle.toLowerCase().endsWith('.jpg')) {
                                         downloadImageJpg();
-                                    }else{
+                                    } else {
                                         downloadImage();
                                     }
-                                     }}
+                                }}
                                 style={styles.button}
                             >
                                 <Text style={styles.buttonText}>
@@ -203,7 +203,11 @@ useLayoutEffect(() => {
                         />}
                     <Buttons
                         onPress={() => {
-                            props.navigation.navigate("TabNav", { initialRoute: "Contact" });
+                            if (props?.route?.params?.PngFIle?.notrq) {
+                                props.navigation.goBack();
+                            } else {
+                                props.navigation.navigate("TabNav", { initialRoute: "Contact" });
+                            }
                         }}
                         height={normalize(45)}
                         width={normalize(288)}
