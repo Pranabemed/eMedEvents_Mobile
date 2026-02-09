@@ -20,7 +20,7 @@ let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
-import { generateDeviceToken }from '../../Utils/Helpers/FirebaseToken';
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -44,7 +44,7 @@ const Login = (props) => {
   const [permissionRequested, setPermissionRequested] = useState(false);
   const [choosePr, setChoosePr] = useState(false);
   const isFocus = useIsFocused();
-   const [fcm, setFcm] = useState(false);
+  const [fcm, setFcm] = useState(false);
   const handleInputChange = (val) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
@@ -144,7 +144,9 @@ const Login = (props) => {
       let obj = isPasswordFieldVisible ? {
         "username": formattedEmail.trim(),
         "password": password.trim(),
-        "usa_user": 1
+        "usa_user": 1,
+        "deviceToken": fcm,
+        "deviceType": Platform.OS
       } : {
         "phone": phoneCountryCode == "+1" ? `+1${mobileHd}` : formattedEmail.trim()
       };
@@ -522,14 +524,12 @@ const Login = (props) => {
   useEffect(() => {
     generateDeviceToken()
       .then((res) => {
-        console.log("resd=====",res)
         setFcm(res)
       })
       .catch((err) => {
         showErrorAlert("Please connect to Interne11t", err)
       })
   }, [isFocus, fcm])
-  console.log("fcm=====",fcm)
   return (
     <>
       <MyStatusBar

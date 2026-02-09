@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890317845332",
+    "project_id": "emedevents-app",
+    "storage_bucket": "emedevents-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890317845332:android:f177a6ffc4bf1fec708ec1",
+        "android_client_info": {
+          "package_name": "com.emedevents.newapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVVxWpVWF8T6un4rz7W_BNcQUiKWTnlz0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
