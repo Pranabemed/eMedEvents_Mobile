@@ -285,7 +285,7 @@ const VideoComponent = (props) => {
         timeBalance: Platform.OS === 'ios' ? {
             position: 'absolute',
             bottom: 23,
-            right: showThumb ? normalize(85) : 5,
+            right: showThumb ? normalize(35) : 5,
             zIndex: 1000,
             color: Colorpath.black,
             fontFamily: Fonts.InterMedium,

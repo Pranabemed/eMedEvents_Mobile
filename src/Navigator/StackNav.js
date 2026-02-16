@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { NavigationContainer, DarkTheme, CommonActions, createNavigationContainerRef, StackActions, useIsFocused } from '@react-navigation/native';
 import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
 import Onboard from '../Screen/OnboardScreen/Onboard';
 import Splash from '../Screen/SplashScreen/Splash';
@@ -76,7 +76,7 @@ import DashboardTrans from '../Screen/Transcation/DashboardTrans';
 import Wallets from '../Screen/Transcation/Wallets';
 import HCPSub from '../Screen/Transcation/HCPSub';
 import Menu from '../Screen/Auth/Menu';
-import AppProvider from '../Screen/GlobalSupport/AppContext';
+import AppProvider, { AppContext } from '../Screen/GlobalSupport/AppContext';
 import PaymentSub from '../Screen/Transcation/PaymentSub';
 import SubTransaction from '../Screen/Transcation/SubTransaction'
 import BoardCourseSlide from '../Screen/StateRequiredCourse/BoardCourse';
@@ -101,7 +101,7 @@ import SpeakerProfile from '../Screen/GlobalSupport/SpeakerProfile';
 import ContactUs from '../Screen/GlobalSupport/ContactUs';
 import StickyFlatList from '../Screen/GlobalSupport/StickyFlatList';
 import NonMain from '../Screen/NonPhysician/NonMain';
-import { AppState } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import SplashInt from '../Screen/SplashScreen/IntSplash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -122,6 +122,8 @@ import LoginMobile from '../Screen/Auth/LoginMobile';
 import LoginMobileChange from '../Screen/Auth/LoginMobileChange';
 import AddMobile from '../Screen/Auth/AddMobile';
 import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
+import { setCurrentScreen } from '../Utils/Helpers/Analytics';
+import { navigationRef, getCurrentRoute } from "./RootNavigation";
 const StackNav = props => {
   const [conn, setConn] = useState("")
   const Stack = createStackNavigator();
@@ -264,16 +266,16 @@ const StackNav = props => {
     AddToCartNo: AddToCartNo,
     PrivacyPolicy: PrivacyPolicy,
     TermsAndConditions: TermsAndConditions,
-    VerifyOTPEmail:VerifyOTPEmail,
-    ChangeMailSplash:ChangeMailSplash,
-    LoginEmail:LoginEmail,
-    SplashMobile:SplashMobile,
-    LoginChangeMail:LoginChangeMail,
-    SplashMobileChange:SplashMobileChange,
-    LoginMobile:LoginMobile,
-    LoginMobileChange:LoginMobileChange,
-    AddMobile:AddMobile,
-    AddMobileLogin:AddMobileLogin
+    VerifyOTPEmail: VerifyOTPEmail,
+    ChangeMailSplash: ChangeMailSplash,
+    LoginEmail: LoginEmail,
+    SplashMobile: SplashMobile,
+    LoginChangeMail: LoginChangeMail,
+    SplashMobileChange: SplashMobileChange,
+    LoginMobile: LoginMobile,
+    LoginMobileChange: LoginMobileChange,
+    AddMobile: AddMobile,
+    AddMobileLogin: AddMobileLogin
   }
   const [appState, setAppState] = useState(AppState.currentState);
   const [isColdStart, setIsColdStart] = useState(true);
@@ -290,25 +292,132 @@ const StackNav = props => {
     const sub = AppState.addEventListener('change', handleAppStateChange);
     return () => sub.remove();
   }, [appState]);
-  const navigationRef = React.createRef();
+  const navigationRefs = React.createRef();
   const resetToSplashScreen = () => {
-    if (!navigationRef.current) return;
+    if (!navigationRefs.current) return;
 
-    navigationRef.current.dispatch(
+    navigationRefs.current.dispatch(
       CommonActions.reset({
         index: 0,
         routes: [{ name: 'Splash' }],
       })
     );
   };
+  const [tokenever, setTokenever] = useState("");
+  const [dashever, setDashever] = useState("");
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [pendingDeepLink, setPendingDeepLink] = useState(null);
+  useEffect(() => {
+    const loadAuthData = async () => {
+      try {
+        // Load both in parallel
+        const [dashboardData, token] = await Promise.all([
+          AsyncStorage.getItem(constants.WHOLEDATA),
+          AsyncStorage.getItem(constants.TOKEN),
+        ]);
+
+        if (dashboardData) setDashever(dashboardData);
+        if (token) setTokenever(true); // token exists
+      } catch (error) {
+        console.log('Error loading auth data:', error);
+      } finally {
+        setIsAuthReady(true);
+      }
+    };
+
+    loadAuthData();
+  }, []);
+  const navigateToScreen = async (screen, params) => {
+    const newKey = Date.now().toString();
+    navigationRef.current?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{
+          name: screen,
+          params: { ...params, key: newKey }
+        }]
+      })
+    );
+  };
+  const handleDeepLinkNavigation = (slug) => {
+    if (dashever && tokenever) {
+      navigateToScreen("Statewebcast", {
+        webCastURL: { webCastURL: slug, creditData: dashever }
+      });
+    } else {
+       navigateToScreen("Statewebcast", {
+        webCastURL: { webCastURL: slug, creditData: dashever }
+      });
+    }
+  };
+  const handleDeepLink = (url) => {
+    if (!url) {
+      console.log("Deep link URL is undefined");
+      return;
+    }
+    const slug = url.split('/').pop();
+    console.log('Slug from deep link:', slug);
+    if (!isAuthReady) {
+      console.log('Auth not ready, storing deep link');
+      setPendingDeepLink({ slug });
+      return;
+    }
+    handleDeepLinkNavigation(slug);
+  };
+  useEffect(() => {
+    const handleUrl = (event) => {
+      const { url } = event;
+      console.log('🌍 URL received:', url);
+      handleDeepLink(url);
+    };
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('Initial URL:', url);
+        handleDeepLink(url);
+      }
+    });
+    const subscription = Linking.addEventListener('url', handleUrl);
+    return () => subscription.remove();
+  }, [isAuthReady]);
+  useEffect(() => {
+    if (isAuthReady && pendingDeepLink) {
+      console.log('Auth ready, processing pending deep link:', pendingDeepLink);
+      handleDeepLinkNavigation(pendingDeepLink.slug);
+      setPendingDeepLink(null); // clear after processing
+    }
+  }, [isAuthReady, pendingDeepLink]);
+
+  const linking = {
+    prefixes: ['https://www.emedevents.com', 'https://v2.emedevents.com'],
+    config: {
+      screens: {
+        TabNavigator: "TabNav",   // ✅ dynamic parameter
+      },
+    },
+  };
+  const routeNameRef = useRef();
   return (
     <AppProvider>
-      <NavigationContainer theme={mytheme} onReady={() => setIsColdStart(false)}>
+      <NavigationContainer
+        ref={navigationRef}
+        linking={linking}
+        onStateChange={(state) => {
+          const currentRouteName = navigationRef.current.getCurrentRoute().name
+          const route = state.routes[state.index];
+          const screenName = route.name;
+          setCurrentScreen(screenName);
+          routeNameRef.current = currentRouteName
+        }}
+        theme={mytheme}
+        onReady={() => {
+          routeNameRef.current = navigationRef.current.getCurrentRoute().name;
+        }}
+      >
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {Object.entries({
             ...Screens,
           }).map(([name, component]) => {
-            return <Stack.Screen  name={name} component={component} />
+            return <Stack.Screen name={name} component={component} />
           })}
 
         </Stack.Navigator>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable } from 'react-native';
+import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import normalize from '../Utils/Helpers/Dimen';
@@ -93,6 +93,19 @@ function TabScreen() {
       console.log(error);
     }
   }, [lastActiveTab]);
+
+useEffect(() => {
+  const handleDeepLink = (event) => {
+    console.log("New URL received while app active:", event.url);
+    // Add your navigation logic here
+  };
+
+  const subscription = Linking.addEventListener('url', handleDeepLink);
+
+  return () => {
+    subscription.remove();
+  };
+}, []);
   useEffect(() => {
     const token_error = () => {
       setTimeout(() => {

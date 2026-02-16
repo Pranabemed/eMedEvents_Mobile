@@ -350,6 +350,8 @@ const Statewebcast = props => {
                 .catch((err) => {
                     showErrorAlert("Please connect to internet", err)
                 })
+        } else {
+            props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse || "", webcast: webcastdeatils, urlneedTake: urltrack } })
         }
     }
     const cartHand = () => {
@@ -391,7 +393,6 @@ const Statewebcast = props => {
         switch (WebcastReducer.status) {
             case 'WebCast/webcastDeatilsRequest':
                 status = WebcastReducer.status;
-                Alert.alert("dfsdfgjhdfgh")
                 setLoading(true);
                 break;
             case 'WebCast/webcastDeatilsSuccess':

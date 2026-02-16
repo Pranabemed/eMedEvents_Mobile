@@ -436,7 +436,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.emedevents.emedevents;
 				PRODUCT_NAME = eMedEvents;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = newemed;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = emedevents_ios_dev;
 				SWIFT_OBJC_BRIDGING_HEADER = "eMedEvents-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -471,7 +471,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.emedevents.emedevents;
 				PRODUCT_NAME = eMedEvents;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = newemed_iosconnect;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = emedevents_ios_live;
 				SWIFT_OBJC_BRIDGING_HEADER = "eMedEvents-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
