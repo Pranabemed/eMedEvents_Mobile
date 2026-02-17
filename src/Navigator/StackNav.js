@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { NavigationContainer, DarkTheme, CommonActions, createNavigationContainerRef, StackActions, useIsFocused } from '@react-navigation/native';
 import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
 import Onboard from '../Screen/OnboardScreen/Onboard';
@@ -101,7 +101,7 @@ import SpeakerProfile from '../Screen/GlobalSupport/SpeakerProfile';
 import ContactUs from '../Screen/GlobalSupport/ContactUs';
 import StickyFlatList from '../Screen/GlobalSupport/StickyFlatList';
 import NonMain from '../Screen/NonPhysician/NonMain';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, DeviceEventEmitter, Alert } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import SplashInt from '../Screen/SplashScreen/IntSplash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -307,26 +307,52 @@ const StackNav = props => {
   const [dashever, setDashever] = useState("");
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [pendingDeepLink, setPendingDeepLink] = useState(null);
-  useEffect(() => {
-    const loadAuthData = async () => {
-      try {
-        // Load both in parallel
-        const [dashboardData, token] = await Promise.all([
-          AsyncStorage.getItem(constants.WHOLEDATA),
-          AsyncStorage.getItem(constants.TOKEN),
-        ]);
 
-        if (dashboardData) setDashever(dashboardData);
-        if (token) setTokenever(true); // token exists
-      } catch (error) {
-        console.log('Error loading auth data:', error);
-      } finally {
-        setIsAuthReady(true);
-      }
+  // 1. Move logic to a useCallback so it's stable
+ const loadAuthData = useCallback(async () => {
+  try {
+    const [dashboardData, token] = await Promise.all([
+      AsyncStorage.getItem(constants.WHOLEDATA),
+      AsyncStorage.getItem(constants.TOKEN),
+    ]);
+
+    const authData = {
+      token: token || null,
+      dashboard: dashboardData || null,
     };
 
+    if (token) {
+      setTokenever(true);
+      if (dashboardData) setDashever(dashboardData);
+    }
+
+    return authData; // 🔥 return data directly
+  } catch (error) {
+    console.log('AsyncStorage Error:', error);
+    return { token: null, dashboard: null };
+  } finally {
+    setIsAuthReady(true);
+  }
+}, []);
+
+
+  useEffect(() => {
+    // 2. Initial trigger on mount
     loadAuthData();
-  }, []);
+
+    // 3. Listen for foreground events
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('App returned to foreground - re-syncing auth...');
+        loadAuthData();
+      } else {
+        loadAuthData();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [loadAuthData]);
+
   const navigateToScreen = async (screen, params) => {
     const newKey = Date.now().toString();
     navigationRef.current?.dispatch(
@@ -339,22 +365,10 @@ const StackNav = props => {
       })
     );
   };
-  const handleDeepLinkNavigation = (slug) => {
-    if (dashever && tokenever) {
-      navigateToScreen("Statewebcast", {
-        webCastURL: { webCastURL: slug, creditData: dashever }
-      });
-    } else {
-       navigateToScreen("Statewebcast", {
-        webCastURL: { webCastURL: slug, creditData: dashever }
-      });
-    }
-  };
-  const handleDeepLink = (url) => {
-    if (!url) {
-      console.log("Deep link URL is undefined");
-      return;
-    }
+
+  const handleDeepLink = async (url) => {
+    if (!url) return;
+
     const slug = url.split('/').pop();
     console.log('Slug from deep link:', slug);
     if (!isAuthReady) {
@@ -362,8 +376,32 @@ const StackNav = props => {
       setPendingDeepLink({ slug });
       return;
     }
-    handleDeepLinkNavigation(slug);
+    // 🔥 ALWAYS fetch latest auth directly
+    const { token, dashboard } = await loadAuthData();
+      console.log('Datareal=====', token, dashboard);
+    if (token && dashboard) {
+      navigateToScreen("Statewebcast", {
+        webCastURL: { webCastURL: slug, creditData: dashboard }
+      });
+    } else {
+      navigateToScreen("Onboard");
+    }
   };
+
+  // const handleDeepLink = (url) => {
+  //   if (!url) {
+  //     console.log("Deep link URL is undefined");
+  //     return;
+  //   }
+  //   const slug = url.split('/').pop();
+  //   console.log('Slug from deep link:', slug);
+  //   if (!isAuthReady) {
+  //     console.log('Auth not ready, storing deep link');
+  //     setPendingDeepLink({ slug });
+  //     return;
+  //   }
+  //   handleDeepLinkNavigation(slug);
+  // };
   useEffect(() => {
     const handleUrl = (event) => {
       const { url } = event;
@@ -382,7 +420,7 @@ const StackNav = props => {
   useEffect(() => {
     if (isAuthReady && pendingDeepLink) {
       console.log('Auth ready, processing pending deep link:', pendingDeepLink);
-      handleDeepLinkNavigation(pendingDeepLink.slug);
+      handleDeepLink(pendingDeepLink.slug);
       setPendingDeepLink(null); // clear after processing
     }
   }, [isAuthReady, pendingDeepLink]);
@@ -395,6 +433,15 @@ const StackNav = props => {
       },
     },
   };
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('url', (event) => {
+      console.log('Deep link received via DeviceEventEmitter:', event.url);
+      loadAuthData();
+    });
+
+    return () => subscription.remove();
+  }, []);
+  console.log(dashever, tokenever, "hfghjh====111", conn, DeviceEventEmitter)
   const routeNameRef = useRef();
   return (
     <AppProvider>

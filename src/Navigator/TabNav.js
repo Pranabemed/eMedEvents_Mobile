@@ -633,13 +633,14 @@ useEffect(() => {
                         height: normalize(23),
                         width: normalize(23),
                         tintColor: focused ? Colorpath.ButtonColr : "#999999",
+                        top:normalize(7),
                         resizeMode: "contain"
                       }}
                     />
                     <Text
                       style={{
                         color: focused ? Colorpath.ButtonColr : "#999999",
-                        marginTop: normalize(3),
+                        marginTop: normalize(10),
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center"
@@ -658,13 +659,14 @@ useEffect(() => {
                       height: normalize(23),
                       width: normalize(23),
                       tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                      resizeMode: "contain"
+                      resizeMode: "contain",
+                      top:normalize(10)
                     }}
                   />
                   <Text
                     style={{
                       color: focused ? Colorpath.ButtonColr : "#999999",
-                      marginTop: normalize(3),
+                      marginTop: normalize(12),
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
                       textAlign: "center"
@@ -692,13 +694,14 @@ useEffect(() => {
                   height: normalize(19),
                   width: normalize(19),
                   resizeMode: "contain",
-                  tintColor: focused ? Colorpath.ButtonColr : "#999999"
+                  tintColor: focused ? Colorpath.ButtonColr : "#999999",
+                  top:normalize(10)
                 }}
               />
               <Text
                 style={{
                   color: focused ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(3),
+                  marginTop: normalize(12),
                   fontSize: 10,
                   textAlign: "center"
                 }}

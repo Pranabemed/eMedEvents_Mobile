@@ -45,10 +45,12 @@ const Statewebcast = props => {
         isConnected,
         fulldashbaord,
         setAddit,
-        statepush
+        statepush,
+        setGtprof
     } = useContext(AppContext);
     const { width } = useWindowDimensions();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
     console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
     const dispatch = useDispatch();
     const [viewmore, setViewmore] = useState("");
@@ -81,7 +83,12 @@ const Statewebcast = props => {
             props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.webCastURL?.textHo, speaks: props?.route?.params?.webCastURL?.speaks, hitDat: props?.route?.params?.webCastURL?.highText, fullUrl: props?.route?.params?.webCastURL?.takeUrl, creditData: props?.route?.params?.webCastURL?.creditData } })
         } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
             props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
-        } else {
+        } else if(allProfTake){
+            setGtprof(true);
+            setAddit(statepush);
+            setAddit(props?.route?.params?.webCastURL?.creditData);
+            props.navigation.navigate("TabNav");
+        }else{
             setAddit(statepush);
             setAddit(props?.route?.params?.webCastURL?.creditData);
             props.navigation.navigate("TabNav");
@@ -430,6 +437,13 @@ const Statewebcast = props => {
 
         return () => clearTimeout(timeout);
     }, []);
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const profFromDashboard =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
+            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
+            : null;
+    const allProfTake = validHandles.has(profFromDashboard);
     return (
         <>
             <MyStatusBar

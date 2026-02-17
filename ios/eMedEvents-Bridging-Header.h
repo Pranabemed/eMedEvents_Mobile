@@ -14,3 +14,4 @@
 #import <React/RCTEventEmitter.h>
 #import <React/RCTLog.h>
 #import <React/RCTLinkingManager.h>
+#import "Orientation.h"
