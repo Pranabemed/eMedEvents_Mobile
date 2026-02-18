@@ -122,7 +122,7 @@ import LoginMobile from '../Screen/Auth/LoginMobile';
 import LoginMobileChange from '../Screen/Auth/LoginMobileChange';
 import AddMobile from '../Screen/Auth/AddMobile';
 import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
-import { setCurrentScreen } from '../Utils/Helpers/Analytics';
+import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Analytics';
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
 const StackNav = props => {
   const [conn, setConn] = useState("")
@@ -309,31 +309,31 @@ const StackNav = props => {
   const [pendingDeepLink, setPendingDeepLink] = useState(null);
 
   // 1. Move logic to a useCallback so it's stable
- const loadAuthData = useCallback(async () => {
-  try {
-    const [dashboardData, token] = await Promise.all([
-      AsyncStorage.getItem(constants.WHOLEDATA),
-      AsyncStorage.getItem(constants.TOKEN),
-    ]);
+  const loadAuthData = useCallback(async () => {
+    try {
+      const [dashboardData, token] = await Promise.all([
+        AsyncStorage.getItem(constants.WHOLEDATA),
+        AsyncStorage.getItem(constants.TOKEN),
+      ]);
 
-    const authData = {
-      token: token || null,
-      dashboard: dashboardData || null,
-    };
+      const authData = {
+        token: token || null,
+        dashboard: dashboardData || null,
+      };
 
-    if (token) {
-      setTokenever(true);
-      if (dashboardData) setDashever(dashboardData);
+      if (token) {
+        setTokenever(true);
+        if (dashboardData) setDashever(dashboardData);
+      }
+
+      return authData; // 🔥 return data directly
+    } catch (error) {
+      console.log('AsyncStorage Error:', error);
+      return { token: null, dashboard: null };
+    } finally {
+      setIsAuthReady(true);
     }
-
-    return authData; // 🔥 return data directly
-  } catch (error) {
-    console.log('AsyncStorage Error:', error);
-    return { token: null, dashboard: null };
-  } finally {
-    setIsAuthReady(true);
-  }
-}, []);
+  }, []);
 
 
   useEffect(() => {
@@ -378,7 +378,7 @@ const StackNav = props => {
     }
     // 🔥 ALWAYS fetch latest auth directly
     const { token, dashboard } = await loadAuthData();
-      console.log('Datareal=====', token, dashboard);
+    console.log('Datareal=====', token, dashboard);
     if (token && dashboard) {
       navigateToScreen("Statewebcast", {
         webCastURL: { webCastURL: slug, creditData: dashboard }
@@ -448,11 +448,29 @@ const StackNav = props => {
       <NavigationContainer
         ref={navigationRef}
         linking={linking}
-        onStateChange={(state) => {
-          const currentRouteName = navigationRef.current.getCurrentRoute().name
-          const route = state.routes[state.index];
-          const screenName = route.name;
+        onStateChange={async (state) => {
+          // Recursive function to get the leaf route name
+          const getActiveRouteName = (navigationState) => {
+            if (!navigationState) return null;
+            const route = navigationState.routes[navigationState.index];
+            if (route.state) {
+              return getActiveRouteName(route.state);
+            }
+            return route.name;
+          };
+
+          const currentRouteName = getActiveRouteName(state);
+          const previousRouteName = routeNameRef.current;
+
+          // Fallback if something goes wrong
+          const screenName = currentRouteName || 'Unknown';
+
           setCurrentScreen(screenName);
+
+          if (previousRouteName !== currentRouteName) {
+            await trackScreen(screenName);
+          }
+
           routeNameRef.current = currentRouteName
         }}
         theme={mytheme}
