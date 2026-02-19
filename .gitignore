@@ -74,6 +74,12 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
+# Android release build artifacts (large binaries - use CI/CD or manual upload)
+android/app/release/
+android/app/build/
+*.aab
+*.apk
+
 # Screen Names (auto-generated files)
 ScreenNames.csv
 ScreenNames.md
