@@ -11,6 +11,8 @@ console.log(`[Config] Environment: ${__DEV__ ? 'STAGING' : 'PRODUCTION'}`);
 console.log(`[Config] BASE_URL: ${BASE_URL}`);
 
 // const BASE_URL = 'https://newdev.emedevents.com'; // Production
+// const BASE_URL = 'https://v2api.emedevents.com'; // Production
+
 
 export default {
   BASE_URL,
