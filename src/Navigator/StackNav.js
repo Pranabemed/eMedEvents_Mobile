@@ -426,7 +426,7 @@ const StackNav = props => {
   }, [isAuthReady, pendingDeepLink]);
 
   const linking = {
-    prefixes: ['https://www.emedevents.com', 'https://v2.emedevents.com'],
+    prefixes: ['https://www.emedevents.com', 'https://v2api.emedevents.com'],
     config: {
       screens: {
         TabNavigator: "TabNav",   // ✅ dynamic parameter

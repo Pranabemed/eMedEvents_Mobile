@@ -151,20 +151,26 @@ const ContactProfile = (props) => {
     }, [address, isFieldFocused]);
 
     const getLabelStyle = () => {
+        const isActive = isFieldFocused || !!address;
         return {
             position: 'absolute',
             left: 0,
+            top: 0,
+            zIndex: 1,
             transform: [
                 {
                     translateY: animatedValue.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [20, -25],
+                        outputRange: [20, -2],
                     }),
                 },
             ],
             fontFamily: Fonts.InterRegular,
-            fontSize: 14,
-            color: '#999999',
+            fontSize: animatedValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [14, 11],
+            }),
+            color: isActive ? '#555555' : '#999999',
         };
     };
 
@@ -496,8 +502,8 @@ const ContactProfile = (props) => {
         return input;
     };
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -647,32 +653,51 @@ const ContactProfile = (props) => {
                                                 borderBottomColor: "#000000",
                                                 flexDirection: 'row',
                                                 alignItems: 'center',
-                                                paddingTop: normalize(25),
+                                                paddingTop: normalize(20),
                                                 position: 'relative',
                                             }}>
-                                                <Animated.Text style={getLabelStyle()}>
+                                                <Animated.Text
+                                                    pointerEvents="none"
+                                                    style={getLabelStyle()}>
                                                     {"Address*"}
                                                 </Animated.Text>
 
                                                 <GooglePlacesAutocomplete
-                                                    placeholder={isFieldFocused || address ? "" : "Address*"}
+                                                    placeholder=""
                                                     onPress={(data, details = null) => {
                                                         handlePlaceSelected(data, details);
                                                     }}
                                                     fetchDetails={true}
-                                                    styles={{ textInput: [{ paddingHorizontal: 2,backgroundColor:Colorpath.Pagebg }] }}
+                                                    styles={{
+                                                        textInput: {
+                                                            paddingHorizontal: 2,
+                                                            paddingVertical: 0,
+                                                            backgroundColor: Colorpath.Pagebg,
+                                                            height: normalize(40),
+                                                            fontSize: 14,
+                                                            fontFamily: Fonts.InterRegular,
+                                                            color: '#000000',
+                                                        },
+                                                        container: {
+                                                            flex: 1,
+                                                        },
+                                                        listView: {
+                                                            backgroundColor: '#fff',
+                                                        },
+                                                    }}
                                                     query={{
                                                         key: GOOGLE_API_KEY,
                                                         language: 'en',
                                                     }}
                                                     textInputProps={{
-                                                        multiline: true,
+                                                        multiline: false,
                                                         value: address || '',
                                                         onChangeText: (val) => {
                                                             setAddress(val);
                                                         },
                                                         onFocus: () => handleFocus(),
                                                         onBlur: () => handleBlur(),
+                                                        placeholder: '',
                                                         placeholderTextColor: '#999999',
                                                     }}
                                                     debounce={300}

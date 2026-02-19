@@ -7,7 +7,6 @@ import {
     StyleSheet,
     Animated,
     Easing,
-    Alert,
     Platform
 } from 'react-native';
 import Fonts from '../Themes/Fonts';
@@ -58,10 +57,12 @@ const InputField = ({
     const [secureTextEntry, setSecureTextEntry] = useState(isPassword);
     const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
 
+    const isActive = isFocused || !!value || !!countryCode;
+
     useEffect(() => {
         Animated.timing(animated, {
-            toValue: isFocused || value || countryCode ? 1 : 0,
-            duration: 100,
+            toValue: isActive ? 1 : 0,
+            duration: 180,
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,
         }).start();
@@ -71,198 +72,118 @@ const InputField = ({
         setSecureTextEntry(!secureTextEntry);
     };
 
+    // Floating label: starts at input level, moves UP when active, shrinks font
+    const labelTop = animated.interpolate({
+        inputRange: [0, 1],
+        outputRange: [normalize(22), normalize(0)],   // starts at input level, floats to top
+    });
+
+    const labelFontSize = animated.interpolate({
+        inputRange: [0, 1],
+        outputRange: [15, 12],   // shrinks when floating
+    });
+
+    const labelColor2 = animated.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#999999', '#333333'],
+    });
+
     const labelAnimatedStyle = {
         position: 'absolute',
-        left: 0,
-        transform: [
-            spaceneeded ? Platform.OS === 'android' ? {
-                translateY: animated.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, multiline ? -30 : -23],
-                }),
-            }:{
-                translateY: animated.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [10, multiline ? -27 : -29],
-                }),
-            } : {
-                translateY: animated.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, multiline ? -37 : -17],
-                }),
-            },
-        ],
+        left: showCountryCode && countryCode ? normalize(50) : 0,
+        top: labelTop,
+        fontSize: labelFontSize,
         fontFamily: Fonts.InterRegular,
-        fontSize: 14,
-        color: '#999999'
+        color: labelColor2,
+        zIndex: 1,
     };
 
     const styles = StyleSheet.create({
         inputGroup: {
-            marginBottom: 16,
+            marginBottom: normalize(16),
             width: '100%',
             position: 'relative',
         },
-        label: {
-            fontSize: 14,
-            fontFamily: Fonts.InterRegular,
-            color: '#999999',
-        },
         inputWrapper: {
-            borderBottomWidth: 0.5,
+            borderBottomWidth: 0.8,
             borderBottomColor: "#000000",
             flexDirection: 'row',
-            alignItems: 'center',
-            paddingTop: normalize(20),
+            alignItems: 'flex-end',
+            paddingTop: normalize(24),   // space for the floating label above
+            paddingBottom: normalize(6),
             position: 'relative',
         },
         countryCodeContainer: {
             paddingRight: 5,
-            paddingVertical: 10,
+            paddingBottom: 2,
         },
         countryCodeText: {
-            fontSize: 16,
+            fontSize: 15,
             fontFamily: Fonts.InterRegular,
             color: '#000000',
         },
         input: showCountryCode ? {
             flex: 1,
-            padding: 10,
-            fontSize: 16,
+            fontSize: 15,
             fontFamily: Fonts.InterRegular,
             color: '#000000',
+            padding: 0,
             paddingHorizontal: 5,
         } : {
             flex: 1,
-            padding: 10,
-            fontSize: icondisable && bgv ? 14:16,
+            fontSize: icondisable && bgv ? 14 : 15,
             fontFamily: Fonts.InterRegular,
             color: icondisable && bgv ? "#999" : '#000000',
-            paddingHorizontal: -10,
-        },
-        inputWithCountryCode: {
-            borderTopLeftRadius: 0,
-            borderBottomLeftRadius: 0,
-        },
-        inputWithRightIcon: {
-            paddingRight: 40,
-        },
-        disabledInput: {
-            opacity: 0.6,
+            padding: 0,
+            paddingHorizontal: 0,
         },
         iconContainer: {
             position: 'absolute',
-            right: 10,
-            bottom: 6,
-        },
-        eyeIcon: {
-            fontSize: 16,
-            fontFamily: Fonts.InterRegular,
-            color: '#000000',
+            right: 0,
+            bottom: normalize(8),
         },
         leftIconContainer: icondisable && bgv ? {
             position: 'absolute',
             marginLeft: marginleft || 0,
-            bottom:0,
-            backgroundColor:"#E6ECF2",
-            height:normalize(45),
-            width:normalize(20),
-        }:{ position: 'absolute',
+            bottom: 0,
+            backgroundColor: "#E6ECF2",
+            height: normalize(45),
+            width: normalize(20),
+        } : {
+            position: 'absolute',
             marginLeft: marginleft || 0,
-            bottom: 10,},
+            bottom: normalize(8),
+        },
     });
 
-    const InputContent = (
-        <View style={[styles.inputGroup]}>
-            <View style={[styles.inputWrapper, wrapperStyle]}>
-
-                {countryCode && (
-                    <TouchableOpacity
-                        style={styles.countryCodeContainer}
-                        onPress={onCountryCodePress}
-                        disabled={!onCountryCodePress}
-                    >
-                        {countryCode && <Text style={styles.countryCodeText}>{countryCode} {"-"}</Text>}
-                    </TouchableOpacity>
-                )}
-
-                <Animated.Text style={[labelAnimatedStyle, labelStyle, { bottom: 30 }]}>
-                    {label}
-                </Animated.Text>
-                <TouchableOpacity onPress={onLeftIconPress}
-                    disabled={icondisable}>
-                    <TextInput
-                        ref={ref}
-                        style={[styles.input, addnewtyle]}
-                        value={value}
-                        onChangeText={onChangeText}
-                        placeholder={placeholder}
-                        placeholderTextColor={placeholderTextColor}
-                        maxLength={maxlength}
-                        editable={editable}
-                        secureTextEntry={secureTextEntry}
-                        keyboardType={keyboardType}
-                        multiline={multiline}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        {...props}
-                    />
-                </TouchableOpacity>
-                {isPassword && (
-                    <TouchableOpacity
-                        style={styles.iconContainer}
-                        onPress={toggleSecureEntry}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                        <EyeIcon
-                            name={secureTextEntry ? 'eye-with-line' : 'eye'}
-                            color="#949494"
-                            size={25}
-                        />
-                    </TouchableOpacity>
-                )}
-
-                {leftIcon && (
-                    <View style={styles.leftIconContainer}>
-                        {leftIcon}
-                    </View>
-                )}
-            </View>
-        </View>
-    );
+    // ─── Simple input (no leftIcon) ────────────────────────────────────────────
     const InputContentTch = (
-        <View style={[styles.inputGroup]}>
+        <View style={[styles.inputGroup, containerStyle]}>
             <View style={[styles.inputWrapper, wrapperStyle]}>
 
+                {/* Floating label */}
+                <Animated.Text style={[labelAnimatedStyle, labelStyle]}>
+                    {label}
+                </Animated.Text>
+
+                {/* Country code prefix */}
                 {countryCode && (
                     <TouchableOpacity
                         style={styles.countryCodeContainer}
                         onPress={onCountryCodePress}
                         disabled={!onCountryCodePress}
                     >
-                        {countryCode && <Text style={styles.countryCodeText}>{countryCode} {"-"}</Text>}
+                        <Text style={styles.countryCodeText}>{countryCode} {"-"}</Text>
                     </TouchableOpacity>
                 )}
 
-                <Animated.Text style={[labelAnimatedStyle, labelStyle, { bottom: 30 }]}>
-                    {label}
-                </Animated.Text>
-                {leftIcon && (
-                    <TouchableOpacity
-                        onPress={onLeftIconPress}
-                        disabled={icondisable}
-                        style={styles.leftIconContainer}
-                    >
-                        {leftIcon}
-                    </TouchableOpacity>
-                )}
                 <TextInput
                     ref={ref}
                     style={[styles.input, addnewtyle]}
                     value={value}
                     onChangeText={onChangeText}
-                    placeholder={placeholder}
-                    placeholderTextColor={placeholderTextColor}
+                    placeholder={''}
+                    placeholderTextColor="transparent"
                     maxLength={maxlength}
                     editable={editable}
                     secureTextEntry={secureTrue ? secureTrue : secureTextEntry}
@@ -272,6 +193,7 @@ const InputField = ({
                     onBlur={() => setIsFocused(false)}
                     {...props}
                 />
+
                 {isPassword && (
                     <TouchableOpacity
                         style={styles.iconContainer}
@@ -281,26 +203,31 @@ const InputField = ({
                         <EyeIcon
                             name={secureTextEntry ? 'eye-with-line' : 'eye'}
                             color="#949494"
-                            size={25}
+                            size={22}
                         />
                     </TouchableOpacity>
                 )}
-
-
             </View>
         </View>
     );
-    // ✅ Wrap with TouchableOpacity when leftIcon exists
+
+    // ─── Input WITH leftIcon (wrapped in TouchableOpacity) ─────────────────────
     if (leftIcon) {
         return (
             <TouchableOpacity
                 activeOpacity={onwholePress ? 0.7 : 1}
                 onPress={onwholePress}
                 disabled={icondisable}
-                style={styles.inputGroup}
+                style={[styles.inputGroup, containerStyle]}
             >
                 <View style={[styles.inputWrapper, wrapperStyle]}>
 
+                    {/* Floating label */}
+                    <Animated.Text style={[labelAnimatedStyle, labelStyle]}>
+                        {icondisable && bgv ? "" : label}
+                    </Animated.Text>
+
+                    {/* Country code prefix */}
                     {countryCode && (
                         <TouchableOpacity
                             style={styles.countryCodeContainer}
@@ -311,31 +238,34 @@ const InputField = ({
                         </TouchableOpacity>
                     )}
 
-                    <Animated.Text style={[labelAnimatedStyle, labelStyle, { bottom: Platform.OS === "ios" ? 20 : 30 }]}>
-                        {icondisable && bgv ? "":label}
-                    </Animated.Text>
+                    {/* Left Icon */}
+                    <TouchableOpacity
+                        onPress={onLeftIconPress}
+                        disabled={icondisable}
+                        style={styles.leftIconContainer}
+                        activeOpacity={0.7}
+                    >
+                        {leftIcon}
+                    </TouchableOpacity>
 
-                    {/* ✅ Left Icon with its own press */}
-                    {leftIcon && (
-                        <TouchableOpacity
-                            onPress={onLeftIconPress}
-                            disabled={icondisable}
-                            style={styles.leftIconContainer}
-                            activeOpacity={0.7}
-                        >
-                            {leftIcon}
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity activeOpacity={onwholePress ? 0.7 : 1}
+                    <TouchableOpacity
+                        activeOpacity={onwholePress ? 0.7 : 1}
                         onPress={onwholePress}
-                        disabled={icondisable}>
+                        disabled={icondisable}
+                        style={{ flex: 1 }}
+                    >
                         <TextInput
                             ref={ref}
-                            style={[styles.input, addnewtyle, icondisable && bgv &&  { backgroundColor: "#E6ECF2", width: normalize(270),height:normalize(45) },onlyfor && {width:normalize(270)}]}
-                            value={icondisable && bgv ? notext :value}
+                            style={[
+                                styles.input,
+                                addnewtyle,
+                                icondisable && bgv && { backgroundColor: "#E6ECF2", width: normalize(270), height: normalize(45) },
+                                onlyfor && { width: normalize(270) }
+                            ]}
+                            value={icondisable && bgv ? notext : value}
                             onChangeText={onChangeText}
-                            placeholder={placeholder}
-                            placeholderTextColor={placeholderTextColor}
+                            placeholder={''}
+                            placeholderTextColor="transparent"
                             maxLength={maxlength}
                             editable={editable}
                             secureTextEntry={secureTextEntry}
@@ -356,7 +286,7 @@ const InputField = ({
                             <EyeIcon
                                 name={secureTextEntry ? 'eye-with-line' : 'eye'}
                                 color="#949494"
-                                size={25}
+                                size={22}
                             />
                         </TouchableOpacity>
                     )}

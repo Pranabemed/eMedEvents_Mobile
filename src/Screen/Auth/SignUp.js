@@ -1,5 +1,5 @@
-import { Animated, View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, StyleSheet, Linking, TextInput, Easing, Image, BackHandler } from 'react-native';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, StyleSheet, Image, BackHandler } from 'react-native';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -74,101 +74,7 @@ const SignUp = (props) => {
       setError(false);
     }
   };
-  const animatedValue = useRef(new Animated.Value(1)).current;
-  const scaleValue = useRef(new Animated.Value(0)).current;
-  const animatedValues = useRef(new Animated.Value(1)).current;
-  const scaleValues = useRef(new Animated.Value(0)).current;
-  const animatedValuecell = useRef(new Animated.Value(1)).current;
-  const scaleValuecell = useRef(new Animated.Value(0)).current;
-  const animatedValuesemail = useRef(new Animated.Value(1)).current;
-  const scaleValuesemail = useRef(new Animated.Value(0)).current;
-  const animatedValuespass = useRef(new Animated.Value(1)).current;
-  const scaleValuesespass = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const targetScales = lname ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValues, {
-        toValue: lname ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValues, {
-        toValue: targetScales,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [lname]);
-  useEffect(() => {
-    const targetScale = fname ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValue, {
-        toValue: fname ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValue, {
-        toValue: targetScale,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fname]);
-  useEffect(() => {
-    const targetScalecell = cellno ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValuecell, {
-        toValue: cellno ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValuecell, {
-        toValue: targetScalecell,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cellno]);
-  useEffect(() => {
-    const targetScaleemail = email ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValuesemail, {
-        toValue: email ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValuesemail, {
-        toValue: targetScaleemail,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [email]);
-  useEffect(() => {
-    const targetScalepass = password ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValuespass, {
-        toValue: password ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValuesespass, {
-        toValue: targetScalepass,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [password]);
+
   const setMobileNo = (text) => {
     setCellno(text);
     setGettrue(true);

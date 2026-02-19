@@ -4,13 +4,13 @@ import { Platform } from 'react-native';
 // __DEV__ = true  → Development/Staging build (metro bundler running)
 // __DEV__ = false → Production/Release build (AAB/APK)
 const BASE_URL = __DEV__
-  ? 'https://v2.emedevents.com'   // Staging
+  ? 'https://v2api.emedevents.com'   // Staging
   : 'https://newdev.emedevents.com'; // Production
 
 console.log(`[Config] Environment: ${__DEV__ ? 'STAGING' : 'PRODUCTION'}`);
 console.log(`[Config] BASE_URL: ${BASE_URL}`);
 
-
+// const BASE_URL = 'https://newdev.emedevents.com'; // Production
 
 export default {
   BASE_URL,

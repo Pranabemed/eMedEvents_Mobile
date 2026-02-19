@@ -24,6 +24,7 @@ import VoiceIcn from 'react-native-vector-icons/MaterialIcons'
 import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import VoiceSearchBar from '../GlobalSupport/Voice';
+import { trackScreen } from '../../Utils/Helpers/Analytics';
 let status = "";
 const HeaderSearch = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
@@ -33,7 +34,7 @@ const HeaderSearch = (props) => {
     const [searchText, setSearchText] = useState("")
     const [searchEn, setSearchEn] = useState(false);
     const [searchkey, setSearchkey] = useState("");
-    const [hadtr,setHadtr] = useState(false);
+    const [hadtr, setHadtr] = useState(false);
     console.log(props?.route?.params?.taskData, "fdmlsdklmg------1233344", searchText, WebcastReducer?.webcastsearchResponse)
     const placeholders = [
         "Search for CME/CE courses",
@@ -167,8 +168,21 @@ const HeaderSearch = (props) => {
         return () => backHandler.remove();
     }, []);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+
+    // ── Analytics: manually track VoiceSearchBar since it mounts
+    // ── as a component (not a screen), so onStateChange never fires for it.
+    useEffect(() => {
+        if (searchEn) {
+            // Voice screen is now visible → fire analytics
+            trackScreen('VoiceSearchBar');
+        } else {
+            // Voice screen closed → restore HeaderSearch as current screen
+            trackScreen('HeaderSearch');
+        }
+    }, [searchEn]);
+
     return (
         <>
             <MyStatusBar
@@ -202,7 +216,7 @@ const HeaderSearch = (props) => {
                                         leftIconName="keyboard-arrow-left"
                                         leftIconSize={35}
                                         leftIconColor="#63748b"
-                                        leftIconStyle={{ marginLeft: normalize(-4),top:normalize(7) }}
+                                        leftIconStyle={{ marginLeft: normalize(-4), top: normalize(7) }}
                                         onPressLeftIcon={() => { checkoutClear() }}
                                     />
                                 </View>
@@ -239,7 +253,7 @@ const HeaderSearch = (props) => {
                                         leftIconName="keyboard-arrow-left"
                                         leftIconSize={35}
                                         leftIconColor="#63748b"
-                                        leftIconStyle={{ marginLeft: normalize(0),top:normalize(5) }}
+                                        leftIconStyle={{ marginLeft: normalize(0), top: normalize(5) }}
                                         onPressLeftIcon={() => { checkoutClear() }}
                                     />
                                 </View>
