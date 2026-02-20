@@ -309,7 +309,7 @@ const VerifyMobileOTP = (props) => {
     }
     const filteredStates = useMemo(() => {
         if (!AuthReducer?.licesensResponse?.licensure_states) return [];
-        const existingStateIds = new Set(fulldashbaord?.map(dash => dash.state_id));
+        const existingStateIds = new Set(Array.isArray(fulldashbaord) ? fulldashbaord.map(dash => dash.state_id) : []);
         const stateMap = new Map();
         AuthReducer.licesensResponse.licensure_states.forEach(state => {
             if (!stateMap.has(state.id)) {
@@ -484,8 +484,8 @@ const VerifyMobileOTP = (props) => {
         return allProfTake ? "nochange" : "duplicate";
     }, [isPrimeTrial, hasWalletBalance, allProfTake]);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -71,7 +71,9 @@ export default function Splash(props) {
               .catch((err) => showErrorAlert("Please connect to internet", err))
           } else {
             setTimeout(() => {
-              props.navigation.navigate("Onboard");
+              props.navigation.dispatch(
+                CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
+              );
             }, 500);
           }
         });
@@ -113,10 +115,13 @@ export default function Splash(props) {
     }
   }
   useEffect(() => {
-    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {
-      const wholeLN = DashboardReducer?.dashboardResponse?.data?.licensures;
-      const finalPush = wholeLN?.length > 0 ? wholeLN.map((l) => l?.license_number) : [];
-      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+    const data = DashboardReducer?.dashboardResponse?.data;
+    if (!data) return; // API hasn't responded yet
+
+    if (data?.licensures?.length > 0) {
+      const wholeLN = data.licensures;
+      const finalPush = wholeLN.map((l) => l?.license_number);
+      const uniqueStates = data.licensures.filter((state, index, self) => {
         return index === self.findIndex((s) =>
           s.state_id === state.state_id &&
           s.board_id === state.board_id
@@ -138,14 +143,15 @@ export default function Splash(props) {
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
         const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
-        // Handle empty profession_type — bare "Physician" is still a valid physician.
-        const profFromDashboard = profInfo.profession
-          ? (profInfo.profession_type
-            ? `${profInfo.profession} - ${profInfo.profession_type}`
-            : profInfo.profession)
+        const profFromDashboard = profInfo.profession && profInfo.profession_type
+          ? `${profInfo.profession} - ${profInfo.profession_type}`
           : null;
         licHandl(profFromDashboard);
       }
+    } else {
+      // No licensures — still mark loading as done so navigation logic can proceed
+      setDashboard([]);
+      setLoadingDashboard(false);
     }
   }, [DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse]);
   const stateDashboardData = (id) => {
@@ -188,7 +194,7 @@ export default function Splash(props) {
   }, [renewalLink]);
   const filteredStates = useMemo(() => {
     if (!AuthReducer?.licesensResponse?.licensure_states) return [];
-    const existingStateIds = new Set(fulldashbaord?.map(dash => dash.state_id));
+    const existingStateIds = new Set(Array.isArray(fulldashbaord) ? fulldashbaord.map(dash => dash.state_id) : []);
     const stateMap = new Map();
     AuthReducer.licesensResponse.licensure_states.forEach(state => {
       if (!stateMap.has(state.id)) {
@@ -205,15 +211,12 @@ export default function Splash(props) {
     const loginResponse = AuthReducer?.loginResponse || {};
     const { is_verified, phone_verified, email, phone } = AuthReducer.verifyResponse || {};
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
-    const profFromDashboard = profInfo.profession
-      ? (profInfo.profession_type
-        ? `${profInfo.profession} - ${profInfo.profession_type}`
-        : profInfo.profession)   // bare "Physician" with no sub-type
+    const profFromDashboard = profInfo.profession && profInfo.profession_type
+      ? `${profInfo.profession} - ${profInfo.profession_type}`
       : null;
     const stateLicenses = AuthReducer?.chooseStatecardResponse?.state_licensures || [];
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    // Also treat bare "Physician" (empty profession_type) as a physician.
-    const allProfTake = validHandles.has(profFromDashboard) || profFromDashboard === 'Physician';
+    const allProfTake = validHandles.has(profFromDashboard);
     const isVerified = is_verified == "1" || emaiV == "1";
     const isPhoneVerified = phone_verified == "1" || phoneV == "1";
     const noPhoneDt = !phone;
@@ -224,6 +227,19 @@ export default function Splash(props) {
       dashboard.some(item => String(item || "").trim() !== "");
 
     if (loadingDashboard) return;
+
+    const isEmailVerifiedVR = AuthReducer?.verifyResponse?.is_verified == "1";
+    const isPhoneVerifiedVR = AuthReducer?.verifyResponse?.phone_verified == "1";
+    const isPhysician = profInfo?.profession == "Physician";
+    // Physician with no licensures but fully verified → go to TabNav with fulldashboard=0
+    if (isPhysician && isEmailVerifiedVR && isPhoneVerifiedVR && !isValidDashboard) {
+      setFulldashbaord(0);
+      dispatch(mainprofileRequest({}))
+      props.navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
+      );
+      return;
+    }
 
     // First check state licenses regardless of profession type
     if (stateLicenses?.length > 0 && !isValidDashboard && bothVerified) {
@@ -331,6 +347,7 @@ export default function Splash(props) {
     AuthReducer?.verifyResponse,
     AuthReducer?.chooseStatecardResponse?.state_licensures,
     DashboardReducer?.mainprofileResponse,
+    DashboardReducer?.dashboardResponse?.data,
     AuthReducer?.signupResponse,
     isFocus,
     loadingDashboard,

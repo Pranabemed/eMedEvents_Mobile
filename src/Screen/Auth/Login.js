@@ -21,6 +21,8 @@ let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -181,6 +183,11 @@ const Login = (props) => {
         break;
       case 'Auth/loginSuccess':
         status = AuthReducer.status;
+        // If profession is Physician, call verifyHandle to get fresh verify data
+        if (AuthReducer?.loginResponse?.user?.profession == "Physician" && AuthReducer?.loginResponse?.token) {
+          let objToken = { "token": AuthReducer?.loginResponse?.token, "key": {} }
+          dispatch(verifyRequest(objToken))
+        }
         break;
       case 'Auth/loginFailure':
         status = AuthReducer.status;
@@ -227,11 +234,10 @@ const Login = (props) => {
       case 'Auth/verifyRequest':
         status = AuthReducer.status;
         break;
-      case 'Auth/verifySuccess':
+      case 'Auth/verifySuccess': {
         status = AuthReducer.status;
         const wholeData = AuthReducer?.verifyResponse;
         if (wholeData?.is_verified !== "1" && wholeData?.phone_verified !== "1") {
-          Alert.alert("fggf")
           props?.navigation.navigate("LoginEmail", {
             user: {
               emailid: wholeData?.email,
@@ -240,6 +246,7 @@ const Login = (props) => {
           });
         }
         break;
+      }
       case 'Auth/verifyFailure':
         status = AuthReducer.status;
         break;
@@ -328,14 +335,14 @@ const Login = (props) => {
 
   // Main navigation logic
   useEffect(() => {
-
     if (!token) return;
-
     const isEmailNotVerified = loginResponse.is_verified == "0";
     const isPhoneNotVerified = loginResponse.phone_verified == "0";
     const isEmailVerified = loginResponse.is_verified == "1";
     const nophone = !loginResponse.phone
-    const hasLicense = !!user.license_number;
+    // hasLicense: true when license_number has a real value
+    const hasLicense = !!(user?.license_number && user.license_number.trim() !== "");
+    // noLicense: true when license_number is null or "" (API returns "" when not yet added)
     // Get state licenses only if we have valid data
     const stateLicenses = hasStateLicenseData.current
       ? chooseStatecardResponse?.state_licensures || []
@@ -371,9 +378,23 @@ const Login = (props) => {
       return;
     }
 
+    const isEmailVerifiedVR = AuthReducer?.verifyResponse?.is_verified == "1";
+    const isPhoneVerifiedVR = AuthReducer?.verifyResponse?.phone_verified == "1";
+    const isPhysician = user?.profession == "Physician";
+    // Physician with no state licensures but fully verified → go to TabNav with fulldashboard=0
+    if (isPhysician && !hasStateLicensures && isEmailVerifiedVR && isPhoneVerifiedVR) {
+      setFulldashbaord(0);
+      dispatch(mainprofileRequest({}))
+      props.navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
+      );
+      return;
+    }
+
     if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
       return;
     }
+
     if (allProfTake) {
       if (hasLicense) {
         setNonloader(true);
@@ -404,9 +425,10 @@ const Login = (props) => {
     allProfTake,
     loginResponse,
     user?.license_number,
-    chooseStatecardResponse, // Now watching the entire response object
+    chooseStatecardResponse,
     phoneCountryCode,
-    tokenObj
+    tokenObj,
+    AuthReducer?.verifyResponse
   ]);
   useEffect(() => {
     if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {

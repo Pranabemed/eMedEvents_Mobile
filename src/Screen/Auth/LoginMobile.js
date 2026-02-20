@@ -438,7 +438,7 @@ const LoginMobile = (props) => {
     }, [renewalLink]);
     const filteredStates = useMemo(() => {
         if (!AuthReducer?.licesensResponse?.licensure_states) return [];
-        const existingStateIds = new Set(fulldashbaord?.map(dash => dash.state_id));
+        const existingStateIds = new Set(Array.isArray(fulldashbaord) ? fulldashbaord.map(dash => dash.state_id) : []);
         const stateMap = new Map();
         AuthReducer.licesensResponse.licensure_states.forEach(state => {
             if (!stateMap.has(state.id)) {
@@ -536,10 +536,10 @@ const LoginMobile = (props) => {
     }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
 
     const hasWalletBalance = useMemo(() => {
-            const raw = WebcastReducer?.walletCheckResponse?.balance;
-            const numeric = Number(String(raw || '0').replace(/,/g, ''));
-            return numeric > 0;
-        }, [WebcastReducer?.walletCheckResponse?.balance]);
+        const raw = WebcastReducer?.walletCheckResponse?.balance;
+        const numeric = Number(String(raw || '0').replace(/,/g, ''));
+        return numeric > 0;
+    }, [WebcastReducer?.walletCheckResponse?.balance]);
     const profMerge = useMemo(() => {
         // If prime trial active OR wallet balance > 0
         if (isPrimeTrial || hasWalletBalance) {
@@ -548,8 +548,8 @@ const LoginMobile = (props) => {
         return allProfTake ? "nochange" : "duplicate";
     }, [isPrimeTrial, hasWalletBalance, allProfTake]);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar

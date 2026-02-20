@@ -94,18 +94,18 @@ function TabScreen() {
     }
   }, [lastActiveTab]);
 
-useEffect(() => {
-  const handleDeepLink = (event) => {
-    console.log("New URL received while app active:", event.url);
-    // Add your navigation logic here
-  };
+  useEffect(() => {
+    const handleDeepLink = (event) => {
+      console.log("New URL received while app active:", event.url);
+      // Add your navigation logic here
+    };
 
-  const subscription = Linking.addEventListener('url', handleDeepLink);
+    const subscription = Linking.addEventListener('url', handleDeepLink);
 
-  return () => {
-    subscription.remove();
-  };
-}, []);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
   useEffect(() => {
     const token_error = () => {
       setTimeout(() => {
@@ -277,14 +277,13 @@ useEffect(() => {
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
   const toggleDrawerModal = () => {
-    connectionrequest()
-      .then(() => {
-        dispatch(mainprofileRequest({}))
-      })
-      .catch((err) => {
-        showErrorAlert("Please connect to internet", err)
-      })
-    setVisible(!visible);
+    setVisible(true);
+    // Dispatch after drawer starts opening to avoid re-render during animation
+    setTimeout(() => {
+      connectionrequest()
+        .then(() => dispatch(mainprofileRequest({})))
+        .catch((err) => showErrorAlert("Please connect to internet", err));
+    }, 300);
   };
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -314,17 +313,17 @@ useEffect(() => {
       screenListeners={({ route }) => ({
         tabPress: (e) => {
           if (route.name == "Contact" && tabsub) {
-            e.preventDefault(); 
-            setTabmodal(true);  
-            return;             
+            e.preventDefault();
+            setTabmodal(true);
+            return;
           }
           handleTabPress(route.name);
         },
         focus: () => {
           if (route.name == "Contact" && tabsub) {
-            e.preventDefault(); 
-            setTabmodal(true);  
-            return;             
+            e.preventDefault();
+            setTabmodal(true);
+            return;
           }
           handleTabPress(route.name);
         },
@@ -378,7 +377,7 @@ useEffect(() => {
                         width: normalize(25),
                         tintColor: focused ? Colorpath.ButtonColr : "#999999",
                         resizeMode: "contain",
-                        top:normalize(7)
+                        top: normalize(7)
                       }}
                     />
                     <Text
@@ -388,7 +387,7 @@ useEffect(() => {
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center",
-                        width:normalize(30),
+                        width: normalize(30),
                       }}
                     >
                       {item?.label}
@@ -412,7 +411,7 @@ useEffect(() => {
                   width: normalize(19),
                   resizeMode: "contain",
                   tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                  top:normalize(7)
+                  top: normalize(7)
                 }}
               />
               <Text
@@ -633,7 +632,7 @@ useEffect(() => {
                         height: normalize(23),
                         width: normalize(23),
                         tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                        top:normalize(7),
+                        top: normalize(7),
                         resizeMode: "contain"
                       }}
                     />
@@ -660,7 +659,7 @@ useEffect(() => {
                       width: normalize(23),
                       tintColor: focused ? Colorpath.ButtonColr : "#999999",
                       resizeMode: "contain",
-                      top:normalize(10)
+                      top: normalize(10)
                     }}
                   />
                   <Text
@@ -695,7 +694,7 @@ useEffect(() => {
                   width: normalize(19),
                   resizeMode: "contain",
                   tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                  top:normalize(10)
+                  top: normalize(10)
                 }}
               />
               <Text

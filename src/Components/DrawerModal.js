@@ -219,9 +219,9 @@ export default function DrawerModal(props) {
     }
   }, [allHandled, allProfession])
   const isPrimeTrial = useMemo(() => {
-          return !WebcastReducer?.PrimeCheckResponse?.subscription;
-      }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
-  const takeSub =isPrimeTrial || finalProfession?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
+    return !WebcastReducer?.PrimeCheckResponse?.subscription;
+  }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
+  const takeSub = isPrimeTrial || finalProfession?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
   const endDateStringTake =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfession?.subscriptions?.[0]?.end_date;
@@ -498,16 +498,18 @@ export default function DrawerModal(props) {
       </View>
     )
   }
-  
+
   return (
     <>
       <Modal
-        backdropOpacity={1} // Add this for semi-transparent backdrop
+        backdropOpacity={0.5}
         backdropColor="rgba(0,0,0,0.5)"
         animationIn={'slideInLeft'}
         animationOut={'slideOutLeft'}
-        useNativeDriver={Platform.OS === "android"}
-        hideModalContentWhileAnimating
+        animationInTiming={250}
+        animationOutTiming={200}
+        useNativeDriver={true}
+        hideModalContentWhileAnimating={true}
         backdropTransitionOutTiming={0}
         onBackdropPress={() => {
           if (props?.lastActiveTab) {

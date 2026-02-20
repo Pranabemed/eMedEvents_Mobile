@@ -277,21 +277,26 @@ const StackNav = props => {
     AddMobile: AddMobile,
     AddMobileLogin: AddMobileLogin
   }
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [isColdStart, setIsColdStart] = useState(true);
+  const wasBackgrounded = useRef(false);
 
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // Always reset to splash screen when coming from background
+      if (nextAppState === 'background') {
+        // App was truly minimized
+        wasBackgrounded.current = true;
+      } else if (nextAppState === 'active' && wasBackgrounded.current) {
+        // Only reset to Splash when returning from a real background (app minimized)
+        // NOT on 'inactive' (keyboard dismiss, notification pull-down, alerts, etc.)
+        wasBackgrounded.current = false;
         resetToSplashScreen();
+      } else if (nextAppState === 'inactive') {
+        // Do NOT reset — this fires during keyboard dismiss, calls, etc.
       }
-      setAppState(nextAppState);
     };
 
     const sub = AppState.addEventListener('change', handleAppStateChange);
     return () => sub.remove();
-  }, [appState]);
+  }, []);
   const navigationRefs = React.createRef();
   const resetToSplashScreen = () => {
     if (!navigationRefs.current) return;
