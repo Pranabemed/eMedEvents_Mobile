@@ -729,7 +729,7 @@ const AddCredits = (props) => {
                     </View>}
                     <Loader
                         visible={DashboardReducer?.status == 'Dashboard/addCreditVaultRequest' || DashboardReducer?.status == 'Dashboard/OCRCertificateRequest'} />
-                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
                             <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), backgroundColor: "#FF6D68", justifyContent: "center", alignItems: "center" }}>
                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#FFFFFF" }}>{"Upload/Scan the document first to fill the form"}

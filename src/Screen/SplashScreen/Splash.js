@@ -138,8 +138,11 @@ export default function Splash(props) {
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
         const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
-        const profFromDashboard = profInfo.profession && profInfo.profession_type
-          ? `${profInfo.profession} - ${profInfo.profession_type}`
+        // Handle empty profession_type — bare "Physician" is still a valid physician.
+        const profFromDashboard = profInfo.profession
+          ? (profInfo.profession_type
+            ? `${profInfo.profession} - ${profInfo.profession_type}`
+            : profInfo.profession)
           : null;
         licHandl(profFromDashboard);
       }
@@ -202,12 +205,15 @@ export default function Splash(props) {
     const loginResponse = AuthReducer?.loginResponse || {};
     const { is_verified, phone_verified, email, phone } = AuthReducer.verifyResponse || {};
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
-    const profFromDashboard = profInfo.profession && profInfo.profession_type
-      ? `${profInfo.profession} - ${profInfo.profession_type}`
+    const profFromDashboard = profInfo.profession
+      ? (profInfo.profession_type
+        ? `${profInfo.profession} - ${profInfo.profession_type}`
+        : profInfo.profession)   // bare "Physician" with no sub-type
       : null;
     const stateLicenses = AuthReducer?.chooseStatecardResponse?.state_licensures || [];
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const allProfTake = validHandles.has(profFromDashboard);
+    // Also treat bare "Physician" (empty profession_type) as a physician.
+    const allProfTake = validHandles.has(profFromDashboard) || profFromDashboard === 'Physician';
     const isVerified = is_verified == "1" || emaiV == "1";
     const isPhoneVerified = phone_verified == "1" || phoneV == "1";
     const noPhoneDt = !phone;

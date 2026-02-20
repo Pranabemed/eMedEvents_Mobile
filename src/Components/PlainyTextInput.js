@@ -1,4 +1,3 @@
-
 import React, { useState, forwardRef, useEffect, useRef } from 'react';
 import {
   View,
@@ -13,66 +12,42 @@ import PropTypes from 'prop-types';
 import normalize from '../Utils/Helpers/Dimen';
 import EyeIcon from 'react-native-vector-icons/Entypo';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
-import Fonts from '../Themes/Fonts'; // Import Fonts if needed
+import Fonts from '../Themes/Fonts';
 
+// ---------------------------------------------------------------------------
+// TextInputPlain – a fully-controlled input with an animated label.
+//
+// Fix: removed the internal `textValue` shadow state.  When a parent passes
+// `value` (controlled mode) the component must NOT maintain its own copy or
+// clearing / pre-filling the field won't work.
+// ---------------------------------------------------------------------------
 const TextInputPlain = forwardRef((props, ref) => {
   const [eyeVisible, setEyeVisible] = useState(true);
-  const [textValue, setTextValue] = useState(props.value || ''); // Controlled input state
-  const animatedLabelValue = useRef(new Animated.Value(0)).current; // For label opacity
-  const scaleLabelValue = useRef(new Animated.Value(0.8)).current; // For label scale
+
+  // Animate based on the controlled `value` prop, not a local copy.
+  const animatedLabelValue = useRef(
+    new Animated.Value(props.value ? 1 : 0)
+  ).current;
 
   useEffect(() => {
-    // Focus the input if the ref is provided
-    if (ref && ref.current) {
-      ref.current.focus();
-    }
-
-    // Animate the label based on text value
-    Animated.parallel([
-      Animated.timing(animatedLabelValue, {
-        toValue: textValue ? 1 : 0,
-        duration: 300, // Duration for the fade effect
-        easing: Easing.out(Easing.quad), // Easing for smooth transition
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleLabelValue, {
-        toValue: textValue ? 1 : 0.8,
-        duration: 300,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [textValue]);
-
-  const onChangeText = (text) => {
-    setTextValue(text); // Update local state
-    if (props.onChangeText) {
-      props.onChangeText(text);
-    }
-  };
-
-  const onFocus = () => {
-    if (props.onFocus) {
-      props.onFocus();
-    }
-  };
-
-  const onBlur = () => {
-    if (props.onBlur) {
-      props.onBlur();
-    }
-  };
+    Animated.timing(animatedLabelValue, {
+      toValue: props.value ? 1 : 0,
+      duration: 200,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [props.value]);
 
   return (
-    <View style={{ flexDirection: 'column'}}>
-      {/* Label */}
-      <Animated.View style={{ opacity: animatedLabelValue, transform: [{ scale: scaleLabelValue }] }}>
-        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666666" }}>
-          {props.label} {/* Default to 'Label' if no label is provided */}
+    <View style={{ flexDirection: 'column' }}>
+      {/* Animated label above the field */}
+      <Animated.View style={{ opacity: animatedLabelValue }}>
+        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#666666' }}>
+          {props.label}
         </Text>
       </Animated.View>
 
-      {/* Text Input Container */}
+      {/* Input row */}
       <View
         style={{
           borderBottomColor: '#000000',
@@ -81,7 +56,7 @@ const TextInputPlain = forwardRef((props, ref) => {
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {/* Optional Left Icon */}
+          {/* Optional left icon */}
           {props.leftIcon && (
             <props.leftIcon
               name={props.leftIconName}
@@ -91,19 +66,19 @@ const TextInputPlain = forwardRef((props, ref) => {
             />
           )}
 
-          {/* Text Input */}
+          {/* Fully controlled TextInput */}
           <TextInput
             ref={ref}
             secureTextEntry={eyeVisible ? props.isSecure : !props.isSecure}
             keyboardType={props.keyboardType}
             autoCapitalize={props.autoCapitalize}
-            placeholder={props.placeholder || 'Enter text'}
+            placeholder={props.placeholder || ''}
             placeholderTextColor={props.placeholderTextColor || 'RGB(170, 170, 170)'}
             maxLength={props.maxLength || 50}
-            value={textValue} // Controlled input state
-            onChangeText={onChangeText}
-            onBlur={onBlur}
-            onFocus={onFocus}
+            value={props.value}
+            onChangeText={props.onChangeText}
+            onBlur={props.onBlur}
+            onFocus={props.onFocus}
             multiline={props.multiline}
             textAlignVertical={props.textAlignVertical}
             editable={props.editable}
@@ -114,15 +89,16 @@ const TextInputPlain = forwardRef((props, ref) => {
               fontSize: props.fontSize,
               color: props.color,
               fontFamily: props.fontFamily,
-              backgroundColor:props.backgroundColor
+              backgroundColor: props.backgroundColor,
             }}
           />
 
-          {/* Eye Icon for Password Visibility */}
+          {/* Eye icon for password visibility */}
           {props.eye && (
             <TouchableOpacity
               onPress={() => setEyeVisible(!eyeVisible)}
               style={{ paddingRight: normalize(12) }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <EyeIcon
                 name={eyeVisible ? 'eye-with-line' : 'eye'}
@@ -132,14 +108,13 @@ const TextInputPlain = forwardRef((props, ref) => {
             </TouchableOpacity>
           )}
 
-          {/* Optional Image */}
+          {/* Optional camera/image button */}
           {props.image2 && (
             <TouchableOpacity
               onPress={() => props.onPressCamera()}
               disabled={props.disabledCamera}
-              style={{
-                paddingRight: normalize(12),
-              }}
+              style={{ paddingRight: normalize(12) }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Image
                 source={props.source2}
@@ -153,10 +128,11 @@ const TextInputPlain = forwardRef((props, ref) => {
             </TouchableOpacity>
           )}
 
-          {/* Search Icon */}
+          {/* Search / voice icon */}
           {props.searchIcon && (
             <TouchableOpacity
               style={{ paddingRight: normalize(12) }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <VoiceIcon
                 name={props.searchIconName}
@@ -170,6 +146,8 @@ const TextInputPlain = forwardRef((props, ref) => {
     </View>
   );
 });
+
+TextInputPlain.displayName = 'TextInputPlain';
 
 TextInputPlain.propTypes = {
   height: PropTypes.number,
@@ -223,7 +201,9 @@ TextInputPlain.propTypes = {
   tintColor2: PropTypes.string,
   iheight2: PropTypes.number,
   iwidth2: PropTypes.number,
-  label: PropTypes.string, // New prop for label
+  label: PropTypes.string,
+  value: PropTypes.string,
+  onChangeText: PropTypes.func,
 };
 
 export default TextInputPlain;

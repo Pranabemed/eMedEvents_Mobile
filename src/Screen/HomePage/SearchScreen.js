@@ -145,7 +145,7 @@ const SearchScreen = (props) => {
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     {search ? <View style={{ flexDirection: "row", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40), marginLeft: normalize(5) }}>
                         <View style={{
                             borderBottomColor: '#000000',

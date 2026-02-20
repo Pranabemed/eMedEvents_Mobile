@@ -604,7 +604,7 @@ const AddLicense = (props) => {
                         visible={DashboardReducer?.status == 'Dashboard/stateLicesenseRequest'} />
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
                         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>

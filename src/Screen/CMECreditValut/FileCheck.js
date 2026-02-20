@@ -493,7 +493,7 @@ useLayoutEffect(() => {
             )}
             {conn == false ? <IntOff /> : <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
                 <Loader visible={CreditVaultReducer?.status == 'CreditVault/downloadTranscriptRequest'} />
                 <ScrollView contentContainerStyle={styles.scrollContent}>

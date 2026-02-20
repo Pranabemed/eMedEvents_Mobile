@@ -575,7 +575,7 @@ const CreateStateInfor = (props) => {
                     </View>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
                         <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
                             <View style={{ paddingHorizontal: normalize(14), paddingVertical: normalize(10) }}>

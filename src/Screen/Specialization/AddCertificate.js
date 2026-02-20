@@ -453,7 +453,7 @@ const AddCertificate = (props) => {
 
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     >
                         <Loader
                             visible={DashboardReducer?.status == 'Dashboard/boardcertificateRequest'} />

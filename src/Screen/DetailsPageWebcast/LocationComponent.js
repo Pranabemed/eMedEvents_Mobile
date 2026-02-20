@@ -54,7 +54,7 @@ const LocationComponent = ({setDownlink,Handlestate,setStatepick,searchtexttopic
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
                     <View style={{
                         flexDirection: "row",

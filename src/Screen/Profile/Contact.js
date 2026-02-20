@@ -168,9 +168,9 @@ const ContactProfile = (props) => {
             fontFamily: Fonts.InterRegular,
             fontSize: animatedValue.interpolate({
                 inputRange: [0, 1],
-                outputRange: [14, 11],
+                outputRange: [14, 14],
             }),
-            color: isActive ? '#555555' : '#999999',
+            color: isActive ? '#555555' : '#000000',
         };
     };
 

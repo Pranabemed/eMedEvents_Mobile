@@ -85,7 +85,7 @@ const CheckThreeCity = ({ cityPicker, cityAll, setSearchcity, activeIndex, searc
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
                     <View style={{
                         flexDirection: "row",

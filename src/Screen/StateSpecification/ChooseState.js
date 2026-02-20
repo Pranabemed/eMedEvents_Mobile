@@ -277,7 +277,7 @@ const ChooseState = (props) => {
       <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <Loader visible={AuthReducer?.status == 'Auth/chooseStatecardRequest'} />
           <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), marginRight: normalize(10), justifyContent: "center", alignContent: "center" }}>

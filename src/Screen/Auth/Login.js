@@ -1,4 +1,4 @@
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Animated, Easing, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
+import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -159,10 +159,6 @@ const Login = (props) => {
         });
     }
   };
-  const animatedValuesemail = useRef(new Animated.Value(1)).current;
-  const scaleValuesemail = useRef(new Animated.Value(0)).current;
-  const animatedValuespass = useRef(new Animated.Value(1)).current;
-  const scaleValuesespass = useRef(new Animated.Value(0)).current;
   const verifyHandle = () => {
     let obj = {};
     connectionrequest()
@@ -173,40 +169,7 @@ const Login = (props) => {
         showErrorAlert("Please connect to internet", err);
       });
   };
-  useEffect(() => {
-    const targetScales = email ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValuesemail, {
-        toValue: email ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValuesemail, {
-        toValue: targetScales,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [email]);
-  useEffect(() => {
-    const targetScale = password ? 1 : 0.8;
-    Animated.parallel([
-      Animated.timing(animatedValuespass, {
-        toValue: password ? 1 : 0,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValuesespass, {
-        toValue: targetScale,
-        duration: 600,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [password]);
+
   const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
   const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
   const mobileReg = /^\d{10}$/;
@@ -541,7 +504,8 @@ const Login = (props) => {
         {/* <Loader visible={AuthReducer?.status == 'Auth/loginRequest' || nonloader || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} /> */}
         <KeyboardAvoidingView
           style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
         >
           <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(80) }}>
             <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), justifyContent: "center", alignItems: "center" }}>
@@ -583,7 +547,6 @@ const Login = (props) => {
                       showCountryCode={true}
                       countryCode={phoneCountryCode || "+91"}
                       maxlength={14}
-                      labelStyle={{ top: 10 }}
                     /> : <InputField
                       label="Email / Cell Number"
                       value={email}
