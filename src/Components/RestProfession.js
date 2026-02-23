@@ -1,4 +1,4 @@
-import { View, Text, Image, FlatList, TouchableOpacity } from 'react-native'
+import { View, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import moment from 'moment';
 import Imagepath from '../Themes/Imagepath';
@@ -394,124 +394,126 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}</Text>
             </View>}
             <View>
-                {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
-                {loading ? (
-                    <ProfessionCourseShimmer count={3} />
-                ) : (
-                    <FlatList
-                        data={storeAlldata?.slice(0, 2)}
-                        renderItem={searchGlobalitem}
-                        keyExtractor={(item, index) => item.id}
-                        onEndReachedThreshold={0.5}
-                        contentContainerStyle={{ paddingBottom: normalize(10) }}
-                        scrollEventThrottle={16}
-                        ListEmptyComponent={
-                            hasReceivedResponse.current ? (
-                                <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                                    <View
-                                        style={{
-                                            flexDirection: "row",
-                                            width: normalize(290),
-                                            borderRadius: normalize(10),
-                                            backgroundColor: "#FFFFFF",
-                                            paddingHorizontal: normalize(10),
-                                            paddingVertical: normalize(10),
-                                            alignItems: "center",
-                                            borderStyle: 'dotted',
-                                            borderWidth: 1,
-                                        }}
-                                    >
-                                        <View style={{ flex: 1, justifyContent: "center" }}>
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterSemiBold,
-                                                    fontSize: 16,
-                                                    color: Colorpath.ButtonColr,
-                                                    fontWeight: "bold",
-                                                    alignSelf: "center"
-                                                }}
-                                            >
-                                                {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                            </Text>
+                <ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
+                    {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
+                    {loading ? (
+                        <ProfessionCourseShimmer count={3} />
+                    ) : (
+                        <FlatList
+                            data={storeAlldata?.slice(0, 2)}
+                            renderItem={searchGlobalitem}
+                            keyExtractor={(item, index) => item.id}
+                            onEndReachedThreshold={0.5}
+                            contentContainerStyle={{ paddingBottom: normalize(10) }}
+                            scrollEventThrottle={16}
+                            ListEmptyComponent={
+                                hasReceivedResponse.current ? (
+                                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
+                                        <View
+                                            style={{
+                                                flexDirection: "row",
+                                                width: normalize(290),
+                                                borderRadius: normalize(10),
+                                                backgroundColor: "#FFFFFF",
+                                                paddingHorizontal: normalize(10),
+                                                paddingVertical: normalize(10),
+                                                alignItems: "center",
+                                                borderStyle: 'dotted',
+                                                borderWidth: 1,
+                                            }}
+                                        >
+                                            <View style={{ flex: 1, justifyContent: "center" }}>
+                                                <Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 16,
+                                                        color: Colorpath.ButtonColr,
+                                                        fontWeight: "bold",
+                                                        alignSelf: "center"
+                                                    }}
+                                                >
+                                                    {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                            ) : null
-                        }
-                    />
-                )}
-                {/* Browse Courses button – hidden while shimmer is showing */}
-                {!loading && (
-                    <View>
-                        <TouchableOpacity onPress={() => {
-                            navigation.dispatch(
-                                CommonActions.reset({
-                                    index: 0,
-                                    routes: [
-                                        {
-                                            name: "Globalresult",
-                                            params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
-                                        }
-                                    ]
-                                })
-                            );
-                        }}
-                            style={{
-                                justifyContent: "center",
-                                alignItems: "center",
-                                height: normalize(95),
-                                width: normalize(300),
-                                borderRadius: normalize(10),
-                                backgroundColor: "#FFFFFF",
-                                borderWidth: 0.5,
-                                borderColor: "#DADADA"
+                                ) : null
+                            }
+                        />
+                    )}
+                    {/* Browse Courses button – hidden while shimmer is showing */}
+                    {!loading && (
+                        <View>
+                            <TouchableOpacity onPress={() => {
+                                navigation.dispatch(
+                                    CommonActions.reset({
+                                        index: 0,
+                                        routes: [
+                                            {
+                                                name: "Globalresult",
+                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
+                                            }
+                                        ]
+                                    })
+                                );
                             }}
-                        >
-                            <Buttons
-                                onPress={() => {
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [
-                                                {
-                                                    name: "Globalresult",
-                                                    params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
-                                                }
-                                            ]
-                                        })
-                                    );
+                                style={{
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    height: normalize(95),
+                                    width: normalize(300),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    borderWidth: 0.5,
+                                    borderColor: "#DADADA"
                                 }}
-                                height={normalize(40)}
-                                width={normalize(270)}
+                            >
+                                <Buttons
+                                    onPress={() => {
+                                        navigation.dispatch(
+                                            CommonActions.reset({
+                                                index: 0,
+                                                routes: [
+                                                    {
+                                                        name: "Globalresult",
+                                                        params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
+                                                    }
+                                                ]
+                                            })
+                                        );
+                                    }}
+                                    height={normalize(40)}
+                                    width={normalize(270)}
+                                    backgroundColor={Colorpath.ButtonColr}
+                                    borderRadius={normalize(5)}
+                                    text="Browse Courses"
+                                    color={Colorpath.white}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterSemiBold}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    {nettrue === false ?
+                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}</Text>
+                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000", marginTop: normalize(7) }}>{"Please check your internet connection \n                    and try again"}</Text>
+                            <Buttons
+                                onPress={handleRot}
+                                height={normalize(45)}
+                                width={normalize(240)}
                                 backgroundColor={Colorpath.ButtonColr}
                                 borderRadius={normalize(5)}
-                                text="Browse Courses"
+                                text="Retry"
                                 color={Colorpath.white}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
+                                fontWeight="bold"
+                                marginTop={normalize(25)}
                             />
-                        </TouchableOpacity>
-                    </View>
-                )}
-                {nettrue === false ?
-                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}</Text>
-                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000", marginTop: normalize(7) }}>{"Please check your internet connection \n                    and try again"}</Text>
-                        <Buttons
-                            onPress={handleRot}
-                            height={normalize(45)}
-                            width={normalize(240)}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            text="Retry"
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                            fontWeight="bold"
-                            marginTop={normalize(25)}
-                        />
-                    </View>
-                    : null}
+                        </View>
+                        : null}
+                </ScrollView>
             </View>
         </View>
     )

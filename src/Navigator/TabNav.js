@@ -668,7 +668,8 @@ function TabScreen() {
                       marginTop: normalize(12),
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
-                      textAlign: "center"
+                      textAlign: "center",
+                      width: normalize(30),
                     }}
                   >
                     {item?.label}
