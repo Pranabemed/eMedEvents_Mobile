@@ -23,6 +23,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { Freeze } from "react-freeze";
 import { enableFreeze } from "react-native-screens";
 import { SafeAreaView } from 'react-native-safe-area-context'
+import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 const Main = (props) => {
   const {
     takestate,
@@ -277,22 +278,11 @@ const Main = (props) => {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: 130,
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 9999
+                bottom: 0,
+                zIndex: 9999,
+                backgroundColor: Colorpath.Pagebg,
               }}>
-
-                <View style={{
-                  backgroundColor: "rgba(0,0,0,0.8)",
-                  height: normalize(40),
-                  width: normalize(40),
-                  borderRadius: normalize(40),
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}>
-                  <ActivityIndicator size={"large"} color={"white"} />
-                </View>
+                <DashboardMainShimmer />
               </View>
             )}
           </View>

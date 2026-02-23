@@ -31,7 +31,7 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
             setIsDataLoaded(false);
         }
     }, [DashboardReducer]);
-    const finalDstat =  statepush?.state_name || statepush?.creditID?.state_name  || addit?.state_name || fulldashbaord?.[0]?.state_name ;
+    const finalDstat = statepush?.state_name || statepush?.creditID?.state_name || addit?.state_name || fulldashbaord?.[0]?.state_name;
     const [showloader, setShowLoader] = useState(false);
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -40,15 +40,15 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
 
         return () => clearTimeout(timeout);
     }, [completedCount, pendingCount]);
-   
+
     return (
         <>
             <View style={{ paddingVertical: normalize(15) }}>
                 {!isDataLoaded ? (
-                    <ActivityIndicator color={"red"} size={"small"} />
+                    <ActivityIndicator color={"black"} size={"small"} />
                     // <HomeShimmer />
                 ) : (completedCount == 0 && pendingCount == 0 && !showloader) ? <ActivityIndicator color={Colorpath.ButtonColr} size={"small"} /> :
-                    (completedCount == 0 && pendingCount == 0 ? <></>: <View style={DashboardReducer?.dashboardResponse?.data?.licensures?.length == 1 ? { justifyContent: "center", alignItems: "center", marginTop: normalize(10) } : { justifyContent: "center", alignItems: "center" }}>
+                    (completedCount == 0 && pendingCount == 0 ? <></> : <View style={DashboardReducer?.dashboardResponse?.data?.licensures?.length == 1 ? { justifyContent: "center", alignItems: "center", marginTop: normalize(10) } : { justifyContent: "center", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => {
                             navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
                         }}

@@ -183,11 +183,6 @@ const Login = (props) => {
         break;
       case 'Auth/loginSuccess':
         status = AuthReducer.status;
-        // If profession is Physician, call verifyHandle to get fresh verify data
-        if (AuthReducer?.loginResponse?.user?.profession == "Physician" && AuthReducer?.loginResponse?.token) {
-          let objToken = { "token": AuthReducer?.loginResponse?.token, "key": {} }
-          dispatch(verifyRequest(objToken))
-        }
         break;
       case 'Auth/loginFailure':
         status = AuthReducer.status;
@@ -315,6 +310,8 @@ const Login = (props) => {
   const hasStateLicenseData = useRef(false);
   const stateLicenseCheckComplete = useRef(false);
 
+  // If Physician with no profession_type set, dispatch verifyRequest once on loginSucces
+
   // Dispatch license request on token change
   useEffect(() => {
     if (token && token !== prevToken.current) {
@@ -377,20 +374,6 @@ const Login = (props) => {
       handleNavigation("LoginMobile", { validPh: { cellno: loginResponse?.phone, phonecode: phoneCountryCode } });
       return;
     }
-
-    const isEmailVerifiedVR = AuthReducer?.verifyResponse?.is_verified == "1";
-    const isPhoneVerifiedVR = AuthReducer?.verifyResponse?.phone_verified == "1";
-    const isPhysician = user?.profession == "Physician";
-    // Physician with no state licensures but fully verified → go to TabNav with fulldashboard=0
-    if (isPhysician && !hasStateLicensures && isEmailVerifiedVR && isPhoneVerifiedVR) {
-      setFulldashbaord(0);
-      dispatch(mainprofileRequest({}))
-      props.navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
-      );
-      return;
-    }
-
     if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
       return;
     }
@@ -431,7 +414,7 @@ const Login = (props) => {
     AuthReducer?.verifyResponse
   ]);
   useEffect(() => {
-    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0) {
+    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 && allProfTake) {
       const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
         return index === self.findIndex((s) =>
           s.state_id === state.state_id &&
@@ -439,10 +422,29 @@ const Login = (props) => {
         );
       });
       dispatch(mainprofileRequest({}))
+      setGtprof(true);
       setFulldashbaord(uniqueStates);
       props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    } else if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 && !allProfTake) {
+      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+        return index === self.findIndex((s) =>
+          s.state_id === state.state_id &&
+          s.board_id === state.board_id
+        );
+      });
+      dispatch(mainprofileRequest({}))
+      setGtprof(false);
+      setNonloader(false);
+      setFulldashbaord(uniqueStates);
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    } else if (DashboardReducer?.dashboardResponse?.data?.licensures?.length == 0 && !allProfTake) {
+      setFulldashbaord(0);
+      setGtprof(false);
+      setNonloader(false);
+       dispatch(mainprofileRequest({}))
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
     }
-  }, [DashboardReducer?.dashboardResponse?.data])
+  }, [DashboardReducer?.dashboardResponse?.data, allProfTake])
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':

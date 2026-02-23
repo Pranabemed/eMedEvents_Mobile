@@ -33,6 +33,7 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
     const isFocus = useIsFocused();
+    console.log(fulldashbaord, "fulldashbaord====")
     useEffect(() => {
         const token_handle = () => {
             setTimeout(async () => {
@@ -177,7 +178,15 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
         }
     }
     useEffect(() => {
-        if (fulldashbaord?.length == 0) {
+        // fulldashbaord can be:
+        //   - 0 (number)     → set from Login.js when no licensures exist
+        //   - []  (array)    → empty array, also means no licensures
+        // Both cases must trigger cmeCourseRequest
+        const hasNoLicensures =
+            fulldashbaord == 0 ||
+            (Array.isArray(fulldashbaord) && fulldashbaord.length == 0);
+
+        if (hasNoLicensures) {
             setWholeNo(true);
             restOfProfession();
         }

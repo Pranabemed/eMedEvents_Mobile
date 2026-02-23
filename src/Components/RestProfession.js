@@ -1,4 +1,4 @@
-import { View, Text, Image, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, Image, FlatList, TouchableOpacity } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import moment from 'moment';
 import Imagepath from '../Themes/Imagepath';
@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Buttons from './Button';
 import { ConfActRequest } from '../Redux/Reducers/CMEReducer';
 import connectionrequest from '../Utils/Helpers/NetInfo';
+import ProfessionCourseShimmer from './ProfessionCourseShimmer';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
@@ -20,16 +21,20 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 let status = "";
 const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
-    const [loading, setLoading] = useState(false);
+    // Start as true so shimmer shows immediately on mount (before API fires)
+    const [loading, setLoading] = useState(true);
     const [wholeDa, setWholeDa] = useState("");
+    // Tracks whether at least one CME response has come back (success or failure)
+    // so we never show the empty-state text prematurely
+    const hasReceivedResponse = React.useRef(false);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const dispatch = useDispatch();
-     const {
-            setIsConnected,
-            isConnected
-        } = useContext(AppContext);
-        const [nettrue,setNettrue] = useState("");
-        console.log(isConnected,"isConnected=========")
+    const {
+        setIsConnected,
+        isConnected
+    } = useContext(AppContext);
+    const [nettrue, setNettrue] = useState("");
+    console.log(isConnected, "isConnected=========")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setNettrue(state.isConnected)
@@ -53,12 +58,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         });
         return () => unsubscribe();
     }, []);
-      const handleRot =()=>{
-         const unsubscribe = NetInfo.addEventListener(state => {
+    const handleRot = () => {
+        const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
             if (state.isConnected) {
-                <StackNav/>
+                <StackNav />
                 // showErrorAlert("Internet is back!");
             }
         });
@@ -231,6 +236,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 break;
             case 'CME/cmeCourseSuccess':
                 status = CMEReducer.status;
+                hasReceivedResponse.current = true;
                 setLoading(false);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
                     let modifiedData = [
@@ -241,12 +247,11 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             index === self.findIndex(t => t?.id === value?.id),
                     );
                     setStoreAlldata(modifiedData);
-                } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
-                    setLoading(false);
                 }
                 break;
             case 'CME/cmeCourseFailure':
                 status = CMEReducer.status;
+                hasReceivedResponse.current = true;
                 setLoading(false);
                 break;
         }
@@ -258,7 +263,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
     };
 
     const nameShow =
-        getFullName(wholeDa) ||  
+        getFullName(wholeDa) ||
         getFullName(finalProfessionmain?.user) ||
         getFullName(AuthReducer?.loginResponse?.user) ||
         getFullName(AuthReducer?.signupResponse?.user) ||
@@ -389,118 +394,124 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}</Text>
             </View>}
             <View>
-                <FlatList
-                    data={storeAlldata?.slice(0, 2)}
-                    renderItem={searchGlobalitem}
-                    keyExtractor={(item, index) => item.id}
-                    onEndReachedThreshold={0.5}
-                    contentContainerStyle={{ paddingBottom: normalize(10) }}
-                    scrollEventThrottle={16}
-                    ListFooterComponent={
-                        loading ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
-                    }
-                    ListEmptyComponent={!loading &&
-                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    // height: normalize(83),
-                                    width: normalize(290),
-                                    borderRadius: normalize(10),
-                                    backgroundColor: "#FFFFFF",
-                                    paddingHorizontal: normalize(10),
-                                    paddingVertical: normalize(10),
-                                    alignItems: "center",
-                                    borderStyle: 'dotted',
-                                    borderWidth: 1,
-                                }}
-                            >
-                                <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text
+                {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
+                {loading ? (
+                    <ProfessionCourseShimmer count={3} />
+                ) : (
+                    <FlatList
+                        data={storeAlldata?.slice(0, 2)}
+                        renderItem={searchGlobalitem}
+                        keyExtractor={(item, index) => item.id}
+                        onEndReachedThreshold={0.5}
+                        contentContainerStyle={{ paddingBottom: normalize(10) }}
+                        scrollEventThrottle={16}
+                        ListEmptyComponent={
+                            hasReceivedResponse.current ? (
+                                <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
+                                    <View
                                         style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 16,
-                                            color: Colorpath.ButtonColr,
-                                            fontWeight: "bold",
-                                            alignSelf: "center"
+                                            flexDirection: "row",
+                                            width: normalize(290),
+                                            borderRadius: normalize(10),
+                                            backgroundColor: "#FFFFFF",
+                                            paddingHorizontal: normalize(10),
+                                            paddingVertical: normalize(10),
+                                            alignItems: "center",
+                                            borderStyle: 'dotted',
+                                            borderWidth: 1,
                                         }}
                                     >
-                                        {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                    </Text>
+                                        <View style={{ flex: 1, justifyContent: "center" }}>
+                                            <Text
+                                                style={{
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 16,
+                                                    color: Colorpath.ButtonColr,
+                                                    fontWeight: "bold",
+                                                    alignSelf: "center"
+                                                }}
+                                            >
+                                                {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
-                            </View>
-                        </View>
-                    } />
-                <View>
-                    <TouchableOpacity onPress={() => {
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [
-                                    {
-                                        name: "Globalresult",
-                                        params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
-                                    }
-                                ]
-                            })
-                        );
-                    }}
-                        style={{
-                            justifyContent: "center",
-                            alignItems: "center",
-                            height: normalize(95),
-                            width: normalize(300),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            alignItems: "center",
-                            borderWidth: 0.5,
-                            borderColor: "#DADADA"
+                            ) : null
+                        }
+                    />
+                )}
+                {/* Browse Courses button – hidden while shimmer is showing */}
+                {!loading && (
+                    <View>
+                        <TouchableOpacity onPress={() => {
+                            navigation.dispatch(
+                                CommonActions.reset({
+                                    index: 0,
+                                    routes: [
+                                        {
+                                            name: "Globalresult",
+                                            params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
+                                        }
+                                    ]
+                                })
+                            );
                         }}
-                    >
-                        <Buttons
-                            onPress={() => {
-                                navigation.dispatch(
-                                    CommonActions.reset({
-                                        index: 0,
-                                        routes: [
-                                            {
-                                                name: "Globalresult",
-                                                params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
-                                            }
-                                        ]
-                                    })
-                                );
+                            style={{
+                                justifyContent: "center",
+                                alignItems: "center",
+                                height: normalize(95),
+                                width: normalize(300),
+                                borderRadius: normalize(10),
+                                backgroundColor: "#FFFFFF",
+                                borderWidth: 0.5,
+                                borderColor: "#DADADA"
                             }}
-                            height={normalize(40)}
-                            width={normalize(270)}
+                        >
+                            <Buttons
+                                onPress={() => {
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [
+                                                {
+                                                    name: "Globalresult",
+                                                    params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
+                                                }
+                                            ]
+                                        })
+                                    );
+                                }}
+                                height={normalize(40)}
+                                width={normalize(270)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text="Browse Courses"
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {nettrue === false ?
+                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
+                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}</Text>
+                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000", marginTop: normalize(7) }}>{"Please check your internet connection \n                    and try again"}</Text>
+                        <Buttons
+                            onPress={handleRot}
+                            height={normalize(45)}
+                            width={normalize(240)}
                             backgroundColor={Colorpath.ButtonColr}
                             borderRadius={normalize(5)}
-                            text="Browse Courses"
+                            text="Retry"
                             color={Colorpath.white}
                             fontSize={16}
                             fontFamily={Fonts.InterSemiBold}
+                            fontWeight="bold"
+                            marginTop={normalize(25)}
                         />
-                    </TouchableOpacity>
-                </View>
-                {nettrue === false ?
-                            <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}</Text>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000",marginTop:normalize(7) }}>{"Please check your internet connection \n                    and try again"}</Text>
-                                <Buttons
-                                    onPress={handleRot}
-                                    height={normalize(45)}
-                                    width={normalize(240)}
-                                    backgroundColor={Colorpath.ButtonColr}
-                                    borderRadius={normalize(5)}
-                                    text="Retry"
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterSemiBold}
-                                    fontWeight="bold"
-                                    marginTop={normalize(25)}
-                                />
-                            </View>
-                            : null}
+                    </View>
+                    : null}
             </View>
         </View>
     )
