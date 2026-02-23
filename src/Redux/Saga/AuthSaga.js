@@ -62,12 +62,15 @@ import {
   allreducerSuccess,
   primeTrailSuccess,
   primeTrailFailure,
+  refreshTokenSuccess,
+  refreshTokenFailure,
 } from '../Reducers/AuthReducer';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 let getItem = state => state.AuthReducer;
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+import { doRefreshToken } from '../../Utils/Helpers/TokenRefresh';
 import { dashboardSuccess, dashMbSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
@@ -115,7 +118,7 @@ export function* signupSaga(action) {
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
     // authorization: items.token,
   };
   try {
@@ -124,6 +127,9 @@ export function* signupSaga(action) {
       yield put(tokenSuccess(response?.data?.token));
       yield put(signupSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
       showErrorAlert(response?.data?.msg);
     } else {
       yield put(signupFailure(response.data));
@@ -355,7 +361,7 @@ export function* login_Saga(action) {
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
     // authorization: items.token,
   };
   try {
@@ -366,7 +372,9 @@ export function* login_Saga(action) {
       yield put(loginSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
       yield put(tokenSuccess(response?.data?.token));
-      // showErrorAlert(response?.data?.msg);
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
     } else if (response?.data?.success == false) {
       yield put(loginSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
@@ -495,10 +503,13 @@ export function* mobileLoginSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/signinOTP', action.payload, header);
-    if (response?.data?.success == true || response?.status == 200) {
+    if (response?.data?.success == true) {
       yield put(loginsiginSuccess(response?.data));
       yield put(tokenSuccess(response?.data?.token));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
     } else if (response?.data?.success == false) {
       yield put(loginsiginSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
@@ -525,6 +536,9 @@ export function* againmobileLoginSaga(action) {
       yield put(againloginsiginSuccess(response?.data));
       yield put(tokenSuccess(response?.data?.token));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
     } else if (response?.data?.success == false) {
       yield put(againloginsiginSuccess(null));
       yield put(tokenSuccess(null));
@@ -620,13 +634,14 @@ export function* logoutSaga() {
     // yield call(AsyncStorage.removeItem, constants.CRED);
     yield call(AsyncStorage.removeItem, constants.VERIFYSTATEDATA);
     yield call(AsyncStorage.removeItem, constants.PROFESSION);
-    yield call (AsyncStorage.removeItem, constants.EMAVER);
-    yield call (AsyncStorage.removeItem, constants.MOBVER);
-    yield call (AsyncStorage.removeItem,constants.WHOLEDATA);
-    yield call (AsyncStorage.removeItem, constants.PRODATA);
+    yield call(AsyncStorage.removeItem, constants.EMAVER);
+    yield call(AsyncStorage.removeItem, constants.MOBVER);
+    yield call(AsyncStorage.removeItem, constants.WHOLEDATA);
+    yield call(AsyncStorage.removeItem, constants.PRODATA);
     yield call(AsyncStorage.removeItem, constants.EMAIL);
     yield call(AsyncStorage.removeItem, constants.PHONE);
     yield call(AsyncStorage.removeItem, constants.TOKEN);
+    yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
     yield put(dashMbSuccess(null))
@@ -766,6 +781,65 @@ export function* urlneedSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+
+// ─── Refresh Token Saga ────────────────────────────────────────────────────
+
+export function* refreshTokenSaga(action) {
+  /**
+   * Manually dispatchable:  dispatch(refreshTokenRequest({ refresh_token: '...' }))
+   * Also invoked internally by doRefreshToken() inside TokenRefresh.js.
+   *
+   * ⚠️  Server returns HTTP 200 + { success:false, msg:"Missing or Invalid Token" }
+   *     when a token is expired — NOT a 401.
+   *
+   * 🛡  NO forced logout — seamless experience for the user.
+   */
+  try {
+    const header = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+    };
+
+    const payload = action?.payload || {};
+    const storedRefresh = yield call(AsyncStorage.getItem, constants.REFRESH_TOKEN);
+    const refresh_token = payload?.refresh_token || storedRefresh;
+
+    if (!refresh_token) {
+      console.warn('[refreshTokenSaga] No refresh_token available — skipping silently.');
+      yield put(refreshTokenFailure({ message: 'No refresh token available' }));
+      return;
+    }
+
+    console.log('[refreshTokenSaga] 🔄 Calling user/verifyRefreshToken…');
+    const response = yield call(postApi, 'user/verifyRefreshToken', { refresh_token }, header);
+
+    if (response?.data?.success && response?.data?.token) {
+      const newToken = response.data.token;
+      const newRefreshToken = response.data.refresh_token || refresh_token;
+
+      // ── Persist ──────────────────────────────────────────────────────────
+      yield call(AsyncStorage.setItem, constants.TOKEN, newToken);
+      yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, newRefreshToken);
+
+      // ── Update Redux ──────────────────────────────────────────────────────
+      yield put(tokenSuccess(newToken));
+      yield put(refreshTokenSuccess(response.data));
+
+      console.log('[refreshTokenSaga] ✅ Token refreshed successfully.');
+    } else {
+      // Refresh endpoint returned failure — do NOT show alert, do NOT logout
+      console.warn('[refreshTokenSaga] ❌ verifyRefreshToken failed:', response?.data?.msg);
+      yield put(refreshTokenFailure(response?.data));
+      // Seamless: caller saga will receive the original failed response and
+      // can decide whether to silently skip or show a minimal in-UI message.
+    }
+  } catch (error) {
+    // Network error during refresh — silent, no alert, no logout
+    console.error('[refreshTokenSaga] Network error:', error?.message || error);
+    yield put(refreshTokenFailure({ message: error?.message || 'Refresh network error' }));
+  }
+}
+
 const watchFunction = [
   (function* () {
     yield takeLatest('Auth/signupRequest', signupSaga);
@@ -857,8 +931,11 @@ const watchFunction = [
   (function* () {
     yield takeLatest('Auth/allreducerRequest', allreducerFalse);
   })(),
-   (function* () {
+  (function* () {
     yield takeLatest('Auth/primeTrailRequest', userPrimeCheck);
+  })(),
+  (function* () {
+    yield takeLatest('Auth/refreshTokenRequest', refreshTokenSaga);
   })()
 ];
 

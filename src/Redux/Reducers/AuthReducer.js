@@ -1,4 +1,4 @@
-import {createSlice} from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   status: '',
@@ -6,35 +6,37 @@ const initialState = {
   isLoading: true,
   page: 1,
   signupResponse: {},
-  verifyemailResponse:{},
-  verifymobileResponse:{},
-  resendemailotpResponse:{},
-  resendmobileotpResponse:{},
-  emailexistResponse:{},
+  verifyemailResponse: {},
+  verifymobileResponse: {},
+  resendemailotpResponse: {},
+  resendmobileotpResponse: {},
+  emailexistResponse: {},
   loginResponse: {},
-  forgotResponse:{},
-  resetResponse:{},
-  professionResponse:{},
-  specializationResponse:{},
-  stateResponse:{},
-  checkstateResponse:{},
-  countryResponse:{},
-  cityResponse:{},
-  changeemailResponse:{},
-  changephoneResponse:{},
-  loginsiginResponse:{},
-  againloginsiginResponse:{},
-  chooseStatecardResponse:{},
-  cityWiseResponse:{},
-  stateInformSaveResponse:{},
-  logoutResponse:{},
-  verifyResponse:{},
-  phoneotpTokenResponse:{},
-  staticdataResponse:{},
-  licesensResponse:{},
-  urldataResponse:{},
-  allreducerResponse:{},
-  primeTrailResponse:{}
+  forgotResponse: {},
+  resetResponse: {},
+  professionResponse: {},
+  specializationResponse: {},
+  stateResponse: {},
+  checkstateResponse: {},
+  countryResponse: {},
+  cityResponse: {},
+  changeemailResponse: {},
+  changephoneResponse: {},
+  loginsiginResponse: {},
+  againloginsiginResponse: {},
+  chooseStatecardResponse: {},
+  cityWiseResponse: {},
+  stateInformSaveResponse: {},
+  logoutResponse: {},
+  verifyResponse: {},
+  phoneotpTokenResponse: {},
+  staticdataResponse: {},
+  licesensResponse: {},
+  urldataResponse: {},
+  allreducerResponse: {},
+  primeTrailResponse: {},
+  refreshTokenResponse: {},
+  refreshToken: null
 };
 
 const AuthSlice = createSlice({
@@ -372,7 +374,7 @@ const AuthSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
-     primeTrailRequest(state, action) {
+    primeTrailRequest(state, action) {
       state.status = action.type;
     },
     primeTrailSuccess(state, action) {
@@ -380,6 +382,19 @@ const AuthSlice = createSlice({
       state.status = action.type;
     },
     primeTrailFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+    refreshTokenRequest(state, action) {
+      state.status = action.type;
+    },
+    refreshTokenSuccess(state, action) {
+      state.refreshTokenResponse = action.payload;
+      state.refreshToken = action.payload?.token || null;
+      state.token = action.payload?.token || state.token;
+      state.status = action.type;
+    },
+    refreshTokenFailure(state, action) {
       state.error = action.error;
       state.status = action.type;
     },
@@ -479,6 +494,9 @@ export const {
   allreducerSuccess,
   primeTrailFailure,
   primeTrailRequest,
-  primeTrailSuccess
+  primeTrailSuccess,
+  refreshTokenRequest,
+  refreshTokenSuccess,
+  refreshTokenFailure,
 } = AuthSlice.actions;
 export default AuthSlice.reducer;

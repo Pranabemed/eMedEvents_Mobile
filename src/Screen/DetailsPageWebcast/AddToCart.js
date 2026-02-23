@@ -17,7 +17,8 @@ import CartFd from '../../Components/CartFd';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AddToCartShimmer from '../../Components/AddToCartShimmer';
 
 let status = "";
 const AddToCart = (props) => {
@@ -147,91 +148,92 @@ const AddToCart = (props) => {
             setCartdetails(uniqueWebcastReducer);
         }
     }, [WebcastReducer?.cartdetailsWebcastResponse])
-    if (status == '' || WebcastReducer.status != status) {
-        switch (WebcastReducer.status) {
-            case 'WebCast/cartdetailsWebcastRequest':
-                status = WebcastReducer.status;
-                setLoading(true);
-                break;
-            case 'WebCast/cartdetailsWebcastSuccess':
-                status = WebcastReducer.status;
-                setLoading(false);
-                console.log("cartdetails followed>>>>", WebcastReducer?.cartdetailsWebcastResponse);
-                setCart(WebcastReducer?.cartdetailsWebcastResponse);
-                const seen = new Set();
-                const uniqueWebcastReducer = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets && WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets.filter(item => {
-                    if (seen.has(item.payment_ticket_id)) {
-                        return false;
+    // ── Move switch-case into useEffect to avoid setState during render ─────
+    useEffect(() => {
+        if (status == '' || WebcastReducer.status != status) {
+            switch (WebcastReducer.status) {
+                case 'WebCast/cartdetailsWebcastRequest':
+                    status = WebcastReducer.status;
+                    setLoading(true);
+                    break;
+                case 'WebCast/cartdetailsWebcastSuccess':
+                    status = WebcastReducer.status;
+                    setLoading(false);
+                    console.log("cartdetails followed>>>>", WebcastReducer?.cartdetailsWebcastResponse);
+                    setCart(WebcastReducer?.cartdetailsWebcastResponse);
+                    const seen = new Set();
+                    const uniqueWebcastReducer = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets &&
+                        WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets.filter(item => {
+                            if (seen.has(item.payment_ticket_id)) return false;
+                            seen.add(item.payment_ticket_id);
+                            return true;
+                        });
+                    setCartdetails(uniqueWebcastReducer || []);
+                    break;
+                case 'WebCast/cartdetailsWebcastFailure':
+                    status = WebcastReducer.status;
+                    setLoading(false);
+                    break;
+                case 'WebCast/cartdeleteWebcastRequest':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/cartdeleteWebcastSuccess':
+                    status = WebcastReducer.status;
+                    if (WebcastReducer?.cartdeleteWebcastResponse?.msg == "Item deleted in cart successfully.") {
+                        showErrorAlert("Item deleted from cart successfully.");
+                        dispatch(cartdetailsWebcastRequest({}));
+                        dispatch(cartcountWebcastRequest({}));
                     }
-                    seen.add(item.payment_ticket_id);
-                    return true;
-                });
-
-                setCartdetails(uniqueWebcastReducer);
-                break;
-            case 'WebCast/cartdetailsWebcastFailure':
-                status = WebcastReducer.status;
-                setLoading(false);
-                break;
-            case 'WebCast/cartdeleteWebcastRequest':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/cartdeleteWebcastSuccess':
-                status = WebcastReducer.status;
-                if (WebcastReducer?.cartdeleteWebcastResponse?.msg == "Item deleted in cart successfully.") {
-                    showErrorAlert("Item deleted from cart successfully.");
-                    dispatch(cartdetailsWebcastRequest({}));
-                    dispatch(cartcountWebcastRequest({}));
-                }
-                break;
-            case 'WebCast/cartdeleteWebcastFailure':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/couponWebcastRequest':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/couponWebcastSuccess':
-                status = WebcastReducer.status;
-                if (WebcastReducer?.couponWebcastResponse?.discount_value) {
-                    setCodeText(WebcastReducer?.couponWebcastResponse);
-                }
-                console.log(WebcastReducer?.couponWebcastResponse, "Item deleted from cart successfully.")
-                break;
-            case 'WebCast/couponWebcastFailure':
-                status = WebcastReducer.status;
-                setCodeText("Please check the code");
-                break;
-            case 'WebCast/cartCheckoutRequest':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/cartCheckoutSuccess':
-                status = WebcastReducer.status;
-                if (WebcastReducer?.cartCheckoutResponse?.invoiceNumber) {
-                    cartFreeTake(WebcastReducer?.cartCheckoutResponse?.invoiceNumber);
-                }
-                break;
-            case 'WebCast/cartCheckoutFailure':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/FreeCartRequest':
-                status = WebcastReducer.status;
-                break;
-            case 'WebCast/FreeCartSuccess':
-                status = WebcastReducer.status;
-                if (WebcastReducer?.FreeCartResponse?.payment_status == 'already paid') {
-                    toggleModalFailedfreecart(true);
-                } else if (WebcastReducer?.FreeCartResponse?.payment_status == "failed") {
-                    toggleModalFailedfreecart(true);
-                } else if (WebcastReducer?.FreeCartResponse?.payment_status == 'success') {
-                    toggleModalPaymentfreecart(true);
-                }
-                console.log("payment12222=====", WebcastReducer?.FreeCartResponse)
-                break;
-            case 'WebCast/FreeCartFailure':
-                status = WebcastReducer.status;
-                break;
+                    break;
+                case 'WebCast/cartdeleteWebcastFailure':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/couponWebcastRequest':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/couponWebcastSuccess':
+                    status = WebcastReducer.status;
+                    if (WebcastReducer?.couponWebcastResponse?.discount_value) {
+                        setCodeText(WebcastReducer?.couponWebcastResponse);
+                    }
+                    console.log(WebcastReducer?.couponWebcastResponse, "Item deleted from cart successfully.");
+                    break;
+                case 'WebCast/couponWebcastFailure':
+                    status = WebcastReducer.status;
+                    setCodeText("Please check the code");
+                    break;
+                case 'WebCast/cartCheckoutRequest':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/cartCheckoutSuccess':
+                    status = WebcastReducer.status;
+                    if (WebcastReducer?.cartCheckoutResponse?.invoiceNumber) {
+                        cartFreeTake(WebcastReducer?.cartCheckoutResponse?.invoiceNumber);
+                    }
+                    break;
+                case 'WebCast/cartCheckoutFailure':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/FreeCartRequest':
+                    status = WebcastReducer.status;
+                    break;
+                case 'WebCast/FreeCartSuccess':
+                    status = WebcastReducer.status;
+                    if (WebcastReducer?.FreeCartResponse?.payment_status == 'already paid') {
+                        toggleModalFailedfreecart(true);
+                    } else if (WebcastReducer?.FreeCartResponse?.payment_status == "failed") {
+                        toggleModalFailedfreecart(true);
+                    } else if (WebcastReducer?.FreeCartResponse?.payment_status == 'success') {
+                        toggleModalPaymentfreecart(true);
+                    }
+                    console.log("payment12222=====", WebcastReducer?.FreeCartResponse);
+                    break;
+                case 'WebCast/FreeCartFailure':
+                    status = WebcastReducer.status;
+                    break;
+            }
         }
-    }
+    }, [WebcastReducer.status]);
     const takeCountde = useMemo(() => (
         WebcastReducer?.cartcountWebcastResponse?.cartItemsCount || 0
     ), [WebcastReducer?.cartcountWebcastResponse?.cartItemsCount]);
@@ -270,12 +272,8 @@ const AddToCart = (props) => {
     };
     const [showLoader, setShowLoader] = useState(true);
     useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 4000);
-
-        return () => clearTimeout(timeout);
+        // Removed arbitrary 4s spinner — shimmer now handles initial load
+        setShowLoader(false);
     }, []);
     const handleDeletecart = (dataid) => {
         console.log('Data ID to delete:', dataid, 'Type:', typeof dataid);
@@ -356,6 +354,7 @@ const AddToCart = (props) => {
     const grossValue = WebcastReducer?.couponWebcastResponse?.gross_value ?? 0;
     const totalPaid = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount ?? 0;
     const totalValue = WebcastReducer?.couponWebcastResponse?.total_value ?? 0;
+    const totalQty = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_qty ?? 0;
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
@@ -382,205 +381,210 @@ const AddToCart = (props) => {
                 <Loader
                     visible={WebcastReducer?.status == 'WebCast/couponWebcastRequest' || WebcastReducer?.status == 'WebCast/cartCheckoutRequest' || WebcastReducer?.status == 'WebCast/FreeCartRequest'} />
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? "height" : undefined}>
-                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
-                        <View>
-                            {loading && !showLoader ? (
-                                <ActivityIndicator size="large" color="#0000ff" />
-                            ) : (<FlatList
-                                data={paginatedDatacart}
-                                renderItem={exploreCart}
-                                keyExtractor={item => item.id}
-                                ListFooterComponent={renderFooter}
-                                onEndReached={loadMoreData}
-                                onEndReachedThreshold={0.5}
-                                ListEmptyComponent={
-                                    <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
-                                        {showLoader ? <ActivityIndicator size={"small"} color={"green"} /> : <View
-                                            style={{
-                                                flexDirection: "row",
-                                                // height: normalize(83),
-                                                width: normalize(290),
-                                                borderRadius: normalize(10),
-                                                backgroundColor: Colorpath.Pagebg,
-                                                paddingHorizontal: normalize(10),
-                                                paddingVertical: normalize(10),
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <View style={{ flex: 1, justifyContent: "center" }}>
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 16,
-                                                        color: "#000000",
-                                                        fontWeight: "bold",
-                                                        alignSelf: "center"
-                                                    }}
-                                                >
-                                                    {"There are no records located."}
-                                                </Text>
-                                            </View>
-                                        </View>}
+                    {/* ── Shimmer while cart data loads ── */}
+                    {!cartdetails ? (
+                        <AddToCartShimmer />
+                    ) : (
+                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                            <View>
+                                {loading && !showLoader ? (
+                                    <ActivityIndicator size="large" color="#0000ff" />
+                                ) : (<FlatList
+                                    data={paginatedDatacart}
+                                    renderItem={exploreCart}
+                                    keyExtractor={item => item.id}
+                                    ListFooterComponent={renderFooter}
+                                    onEndReached={loadMoreData}
+                                    onEndReachedThreshold={0.5}
+                                    ListEmptyComponent={
+                                        <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
+                                            {showLoader ? <ActivityIndicator size={"small"} color={"green"} /> : <View
+                                                style={{
+                                                    flexDirection: "row",
+                                                    // height: normalize(83),
+                                                    width: normalize(290),
+                                                    borderRadius: normalize(10),
+                                                    backgroundColor: Colorpath.Pagebg,
+                                                    paddingHorizontal: normalize(10),
+                                                    paddingVertical: normalize(10),
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                                    <Text
+                                                        style={{
+                                                            fontFamily: Fonts.InterSemiBold,
+                                                            fontSize: 16,
+                                                            color: "#000000",
+                                                            fontWeight: "bold",
+                                                            alignSelf: "center"
+                                                        }}
+                                                    >
+                                                        {"There are no records located."}
+                                                    </Text>
+                                                </View>
+                                            </View>}
 
+                                        </View>
+                                    }
+                                />)}
+
+                            </View>
+                            {(props?.route?.params?.addtocart?.coupon?.discounts == true && props?.route?.params?.addtocart?.cart !== "remove") ? (
+                                <View style={{ flexDirection: "column", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                    <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
+                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666666" }}>{"Apply Coupon"}</Text>
                                     </View>
-                                }
-                            />)}
-
-                        </View>
-                        {(props?.route?.params?.addtocart?.coupon?.discounts == true && props?.route?.params?.addtocart?.cart !== "remove") ? (
-                            <View style={{ flexDirection: "column", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666666" }}>{"Apply Coupon"}</Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: "#666", borderRadius: normalize(10), width: normalize(250), height: normalize(45) }}>
-                                    <TextInput
-                                        maxLength={10}
-                                        value={couponapp}
-                                        placeholder='Enter Coupon'
-                                        placeholderTextColor={"#666"}
-                                        onChangeText={(val) => { setCouponapp(val) }}
-                                        keyboardType="visible-password"
-                                        style={{ height: normalize(55), width: normalize(180), paddingLeft: normalize(10) }}
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (WebcastReducer?.couponWebcastResponse?.code == "Successfully applied.") {
-                                                setCouponapp("");
-                                                applyCoupon();
-                                            } else {
-                                                applyCoupon();
-                                            }
-                                        }}
-                                        style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10) }}
-                                    >
-                                        {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? (
-                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
-                                                {"Apply"}
-                                            </Text>
-                                        ) : (
-                                            couponapp ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: "#666", borderRadius: normalize(10), width: normalize(250), height: normalize(45) }}>
+                                        <TextInput
+                                            maxLength={10}
+                                            value={couponapp}
+                                            placeholder='Enter Coupon'
+                                            placeholderTextColor={"#666"}
+                                            onChangeText={(val) => { setCouponapp(val) }}
+                                            keyboardType="visible-password"
+                                            style={{ height: normalize(55), width: normalize(180), paddingLeft: normalize(10) }}
+                                        />
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                if (WebcastReducer?.couponWebcastResponse?.code == "Successfully applied.") {
+                                                    setCouponapp("");
+                                                    applyCoupon();
+                                                } else {
+                                                    applyCoupon();
+                                                }
+                                            }}
+                                            style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10) }}
+                                        >
+                                            {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? (
                                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
                                                     {"Apply"}
                                                 </Text>
                                             ) : (
-                                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
-                                                    {"Cancel"}
-                                                </Text>
-                                            )
-                                        )}
-                                    </TouchableOpacity>
+                                                couponapp ? (
+                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
+                                                        {"Apply"}
+                                                    </Text>
+                                                ) : (
+                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
+                                                        {"Cancel"}
+                                                    </Text>
+                                                )
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                            </View>
-                        ) : null}
+                            ) : null}
 
-                        {couponapp ? (
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? '#009E38' : "red"
-                                }}>
-                                    {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied."
-                                        ? "Successfully applied."
-                                        : WebcastReducer?.couponWebcastResponse?.code === "Please check the code."
-                                            ? "Please check the code."
-                                            : "Please enter a valid coupon"
-                                    }
-                                </Text>
-                            </View>
-                        ) : null}
-
-                        {cartdetails?.length == 0 ? null : (
-                            <>
+                            {couponapp ? (
                                 <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                    <View style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        width: '100%',
-                                        paddingVertical: normalize(5)
+                                    <Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14,
+                                        color: WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? '#009E38' : "red"
                                     }}>
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            color: Colorpath.black,
-                                            fontWeight: "bold"
-                                        }}>
-                                            {`Cart Total (${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_qty})`}
-                                        </Text>
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            color: Colorpath.black,
-                                            fontWeight: "bold"
-                                        }}>
-                                            {WebcastReducer?.couponWebcastResponse?.discount_value
-                                                ? `US$${grossValue}`
-                                                : `US$${totalPaid}`}
-                                            {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.gross_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
-                                        </Text>
-                                    </View>
-                                    {WebcastReducer?.couponWebcastResponse?.discount_value ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                                            {"Discount (-)"}
-                                        </Text>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                                            {`US$${WebcastReducer?.couponWebcastResponse?.discount_value}`}
-                                        </Text>
-                                    </View>) : null}
-                                    <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
-                                    <View style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        width: '100%',
-                                        paddingVertical: normalize(5)
-                                    }}>
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 18,
-                                            color: Colorpath.black,
-                                            fontWeight: "bold"
-                                        }}>
-                                            {"Total Amount"}
-                                        </Text>
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 18,
-                                            color: Colorpath.black,
-                                            fontWeight: "bold"
-                                        }}>
-                                            {WebcastReducer?.couponWebcastResponse?.discount_value
-                                                ? `US$${totalValue}`
-                                                : `US$${totalPaid}`}
-                                            {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.total_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
-                                        </Text>
-                                    </View>
+                                        {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied."
+                                            ? "Successfully applied."
+                                            : WebcastReducer?.couponWebcastResponse?.code === "Please check the code."
+                                                ? "Please check the code."
+                                                : "Please enter a valid coupon"
+                                        }
+                                    </Text>
                                 </View>
-                                <View>
-                                    <Buttons
-                                        onPress={() => {
-                                            if (isFree) {
-                                                CheckCart();
-                                            } else {
-                                                props.navigation.navigate("Checkout", { checkoutSpan: cart });
-                                            }
-                                        }}
-                                        height={normalize(45)}
-                                        width={normalize(300)}
-                                        backgroundColor={Colorpath.ButtonColr}
-                                        borderRadius={normalize(9)}
-                                        text="Proceed"
-                                        color={Colorpath.white}
-                                        fontSize={18}
-                                        fontFamily={Fonts.InterSemiBold}
-                                        marginTop={normalize(30)}
-                                        disabled={false}
-                                    />
-                                </View>
-                            </>
-                        )}
-                    </ScrollView>
+                            ) : null}
+
+                            {cartdetails?.length == 0 ? null : (
+                                <>
+                                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                        <View style={{
+                                            flexDirection: "row",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            width: '100%',
+                                            paddingVertical: normalize(5)
+                                        }}>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 14,
+                                                color: Colorpath.black,
+                                                fontWeight: "bold"
+                                            }}>
+                                                {`Cart Total (${totalQty})`}
+                                            </Text>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 14,
+                                                color: Colorpath.black,
+                                                fontWeight: "bold"
+                                            }}>
+                                                {WebcastReducer?.couponWebcastResponse?.discount_value
+                                                    ? `US$${grossValue}`
+                                                    : `US$${totalPaid}`}
+                                                {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.gross_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
+                                            </Text>
+                                        </View>
+                                        {WebcastReducer?.couponWebcastResponse?.discount_value ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
+                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
+                                                {"Discount (-)"}
+                                            </Text>
+                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
+                                                {`US$${WebcastReducer?.couponWebcastResponse?.discount_value}`}
+                                            </Text>
+                                        </View>) : null}
+                                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
+                                        <View style={{
+                                            flexDirection: "row",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            width: '100%',
+                                            paddingVertical: normalize(5)
+                                        }}>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 18,
+                                                color: Colorpath.black,
+                                                fontWeight: "bold"
+                                            }}>
+                                                {"Total Amount"}
+                                            </Text>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 18,
+                                                color: Colorpath.black,
+                                                fontWeight: "bold"
+                                            }}>
+                                                {WebcastReducer?.couponWebcastResponse?.discount_value
+                                                    ? `US$${totalValue}`
+                                                    : `US$${totalPaid}`}
+                                                {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.total_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View>
+                                        <Buttons
+                                            onPress={() => {
+                                                if (isFree) {
+                                                    CheckCart();
+                                                } else {
+                                                    props.navigation.navigate("Checkout", { checkoutSpan: cart });
+                                                }
+                                            }}
+                                            height={normalize(45)}
+                                            width={normalize(300)}
+                                            backgroundColor={Colorpath.ButtonColr}
+                                            borderRadius={normalize(9)}
+                                            text="Proceed"
+                                            color={Colorpath.white}
+                                            fontSize={18}
+                                            fontFamily={Fonts.InterSemiBold}
+                                            marginTop={normalize(30)}
+                                            disabled={false}
+                                        />
+                                    </View>
+                                </>
+                            )}
+                        </ScrollView>
+                    )}
                 </KeyboardAvoidingView>
             </SafeAreaView>}
             <CartPay

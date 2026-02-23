@@ -92,7 +92,7 @@ const InputField = forwardRef((
     // ── Animated interpolations ───────────────────────────────────────────────
     const labelTop = animated.interpolate({
         inputRange: [0, 1],
-        outputRange: [normalize(22), normalize(0)],
+        outputRange: [Platform.OS === 'android' ? normalize(25) : normalize(22), normalize(0)],
     });
     const labelFontSize = animated.interpolate({
         inputRange: [0, 1],
@@ -341,7 +341,6 @@ const staticStyles = StyleSheet.create({
         color: '#000000',
         padding: 0,
         paddingHorizontal: 0,
-        minHeight: Platform.OS === 'android' ? normalize(24) : undefined,
     },
     inputDisabled: {
         flex: 1,
