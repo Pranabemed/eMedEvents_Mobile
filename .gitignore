@@ -79,6 +79,11 @@ android/app/release/
 android/app/build/
 *.aab
 *.apk
+**/*.apk
+**/*.aab
+app-release.apk
+app-debug.apk
+app-release.aab
 
 # Screen Names (auto-generated files)
 ScreenNames.csv

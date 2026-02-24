@@ -41,7 +41,6 @@ const AppUpdateHandler = () => {
   const checkUpdate = useCallback(async () => {
     const currentVersion = DeviceInfo.getVersion();
     console.log('AppUpdate: Current installed version:', currentVersion);
-
     // Skip update check in development/debug builds.
     // The Play Store In-App Updates API requires the app to be installed
     // from the Play Store (not sideloaded/debug). Running it in dev mode
@@ -54,7 +53,8 @@ const AppUpdateHandler = () => {
     // Automatic Store Check (Release builds only)
     try {
       console.log('AppUpdate: Checking store versions...');
-      const result = await inAppUpdates.checkNeedsUpdate();
+      const result = await inAppUpdates.checkNeedsUpdate({ curVersion: currentVersion });
+      console.log(result, '1222AppUpdate: Current installed version:', currentVersion);
 
       if (result?.shouldUpdate) {
         console.log('AppUpdate: Update available:', result);
@@ -73,6 +73,7 @@ const AppUpdateHandler = () => {
       }
     } catch (error) {
       console.log('AppUpdate: check error:', error);
+      console.error("Update Check Error", error?.message || "Unknown error occurred while checking Play Store version.");
     }
   }, [inAppUpdates]);
 

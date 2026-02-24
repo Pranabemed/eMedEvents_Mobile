@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.emedevents.newapp">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" 
+          xmlns:tools="http://schemas.android.com/tools" 
+          package="com.emedevents.newapp">
 
 <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -13,6 +15,9 @@
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+
+<!-- Explicitly remove Advertising ID permission added by 3rd party SDKs to avoid Play Console errors -->
+<uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -41,6 +46,7 @@
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
             <data android:scheme="https" />
             <data android:host="www.emedevents.com" />
         </intent-filter>
