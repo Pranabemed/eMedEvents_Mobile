@@ -88,3 +88,6 @@ app-release.aab
 # Screen Names (auto-generated files)
 ScreenNames.csv
 ScreenNames.md
+
+# Deep Linking Configurations
+deeplinkingAndroid.json

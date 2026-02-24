@@ -22,56 +22,66 @@ import Buttons from '../../Components/Button';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { useIsFocused } from '@react-navigation/native';
 import analytics from '@react-native-firebase/analytics';
+
+const sliderData = [
+    {
+        hText: 'Your Gateway to\n CME/CE Opportunities',
+        id: 0,
+        img: Imagepath.OneOnboard
+    },
+    {
+        hText: 'Meet State CME/CE Requirements — Stress-Free',
+        id: 1,
+        img: Imagepath.TwoOnboard
+    },
+    {
+        hText: 'Your Personal Digital Vault for All Certificates',
+        id: 2,
+        img: Imagepath.ThreeOnboard
+    },
+    {
+        hText: 'Build Your Medical Network,Expand Your Impact',
+        id: 3,
+        img: Imagepath.FourOnboard
+    },
+    {
+        hText: 'Your CME/CE, Tailored to Your Specialty',
+        id: 4,
+        img: Imagepath.FiveOnboard
+    },
+];
+
 const Onboard = (props) => {
     const [codegt, setCodegt] = useState("");
-    const sliderData = [
-        {
-            hText: 'Your Gateway to\n CME/CE Opportunities',
-            id: 0,
-            img: Imagepath.OneOnboard
-        },
-        {
-            hText: 'Meet State CME/CE Requirements — Stress-Free',
-            id: 1,
-            img: Imagepath.TwoOnboard
-        },
-        {
-            hText: 'Your Personal Digital Vault for All Certificates',
-            id: 2,
-            img: Imagepath.ThreeOnboard
-        },
-        {
-            hText: 'Build Your Medical Network,Expand Your Impact',
-            id: 3,
-            img: Imagepath.FourOnboard
-        },
-        {
-            hText: 'Your CME/CE, Tailored to Your Specialty',
-            id: 4,
-            img: Imagepath.FiveOnboard
-        },
-    ];
     const [currentIndex, setCurrentIndex] = useState(0);
     const sliderRef = useRef(null);
     const timerRef = useRef(null);
     const fadeAnim = useRef(new Animated.Value(1)).current;
+    const isFocused = useIsFocused();
+
     useEffect(() => {
-        startAutoScroll();
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
-    }, [sliderData]);
-    useEffect(() => {
-        startAutoScroll();
+        if (isFocused) {
+            startAutoScroll();
+        } else {
+            clearTimer();
+        }
         return () => clearTimer();
-    }, []);
+    }, [isFocused, currentIndex]);
+
     const handleSlideChange = (index) => {
         setCurrentIndex(index);
         startAutoScroll(); // Reset timer on manual slide change
     };
+
+    const clearTimer = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+    };
+
     const startAutoScroll = () => {
         clearTimer();
         timerRef.current = setInterval(() => {
@@ -139,12 +149,7 @@ const Onboard = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const clearTimer = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    };
+
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
@@ -214,14 +219,15 @@ const Onboard = (props) => {
                 {/* Fixed Buttons */}
                 <View style={styles.buttonContainer}>
                     <Buttons
-                        onPress={async() => {
-                            await analytics().logEvent('emedevents', {
+                        onPress={() => {
+                            // Don't wrap in await, so navigation is immediate
+                            analytics().logEvent('emedevents', {
                                 id: 3745092,
                                 item: 'onboardingpage',
                                 description: "successfully join",
                                 size: 'L',
-                            }),
-                                props.navigation.navigate("Login")
+                            });
+                            props.navigation.navigate("Login");
                         }}
                         height={normalize(38)}
                         width={normalize(130)}

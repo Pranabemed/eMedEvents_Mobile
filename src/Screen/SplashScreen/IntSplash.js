@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Image, ImageBackground, LogBox, Text, View } from 'react-native';
 import Imagepath from '../../Themes/Imagepath';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import constants from '../../Utils/Helpers/constants';
+import constants from '../../Utils/Helpers/constants.js';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -15,8 +15,11 @@ export default function SplashInt(props) {
     setAddit,
   } = useContext(AppContext);
   const isFocus = useIsFocused();
+
   useEffect(() => {
+    let timeoutId;
     const handleNavigation = async () => {
+      if (!isFocus) return; // Only run when actively in focus
       try {
         const [wholeDashData, profdatset] = await Promise.all([
           AsyncStorage.getItem(constants.WHOLEDATA),
@@ -24,33 +27,41 @@ export default function SplashInt(props) {
         ]);
         const parsedDashData = wholeDashData ? JSON.parse(wholeDashData) : null;
         const parsedProfData = profdatset ? JSON.parse(profdatset) : null;
+
         const navigateTo = () => {
           if (parsedDashData !== null) {
             setAddit(wholeDashData);
             setFulldashbaord([parsedDashData]);
             setGtprof(true);
-            // logger.disableLogger();
-            // console.log = function () { };
             return "TabNav";
           } else if (parsedProfData !== null) {
             setFulldashbaord(0);
-            // logger.disableLogger();
-            // console.log = function () { };
             return "TabNav";
           } else {
-            // logger.disableLogger();
-            // console.log = function () { };
             return "Onboard";
           }
         };
-        setTimeout(() => {
-          props.navigation.navigate(navigateTo());
+
+        timeoutId = setTimeout(() => {
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: navigateTo() }],
+            })
+          );
         }, 5000);
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
     };
+
     handleNavigation();
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [isFocus]);
 
   useLayoutEffect(() => {
