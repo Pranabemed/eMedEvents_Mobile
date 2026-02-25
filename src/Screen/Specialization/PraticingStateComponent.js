@@ -91,7 +91,7 @@ const PraticingStateComponent = ({ handlePratcing, slistpratice, setPratice, sea
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
                     <View style={{
                         flexDirection: "row",

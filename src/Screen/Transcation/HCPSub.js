@@ -64,16 +64,16 @@ const HCPSub = (props) => {
     }, []);
     console.log(storeAlldatas, "storeAlldata-----hcp", Object.keys(storeAlldatas).length);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff/>:<SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title="My Subscriptions"

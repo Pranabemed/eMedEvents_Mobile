@@ -51,7 +51,7 @@ const SepcialityComponent = ({ handleStateSelect, formData, setstatepicker, setS
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
                     <View style={{
                         flexDirection: "row",

@@ -13,13 +13,13 @@ const DashboardTrans = (props) => {
     const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
-              index: 0,
-              routes: [
-                { name: "TabNav" }
-              ],
+                index: 0,
+                routes: [
+                    { name: "TabNav" }
+                ],
             }))
     }
-    const transData =[{id:0,name:"Registration"},{id:1,name:"Subscriptions Transaction"},{id:2,name:"Wallet Transactions"},{id:3,name:"Subscription"}]
+    const transData = [{ id: 0, name: "Registration" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscription" }]
     const tarnsListing = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -55,12 +55,12 @@ const DashboardTrans = (props) => {
                         </Text>
                     </View>
                     <TouchableOpacity onPress={() => {
-                        if(item?.id == 2 ){
-                           props.navigation.navigate("Wallets",{name:item?.name})
-                        }else if(item?.id == 3){
+                        if (item?.id == 2) {
+                            props.navigation.navigate("Wallets", { name: item?.name })
+                        } else if (item?.id == 3) {
                             props.navigation.navigate("HCPSub");
                         } else {
-                            props.navigation.navigate("Registration",{name:item?.name});
+                            props.navigation.navigate("Registration", { name: item?.name });
                         }
                     }} style={{ width: normalize(40) }}>
                         <ShareIcn name="right" color={"#000000"} size={25} />
@@ -71,8 +71,8 @@ const DashboardTrans = (props) => {
         )
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -80,7 +80,7 @@ const DashboardTrans = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title="Transaction"
@@ -94,14 +94,14 @@ const DashboardTrans = (props) => {
 
                     )}
                 </View>
-                <View style={{justifyContent:"center",alignItems:"center",paddingVertical:normalize(10)}}>
-                <Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212) }} resizeMode="contain" />
+                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                    <Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212) }} resizeMode="contain" />
                 </View>
                 <View>
-                    <FlatList 
-                    data={transData} 
-                    renderItem={tarnsListing} 
-                    keyExtractor={(item, index) => index.toString()} />
+                    <FlatList
+                        data={transData}
+                        renderItem={tarnsListing}
+                        keyExtractor={(item, index) => index.toString()} />
                 </View>
             </SafeAreaView>
         </>

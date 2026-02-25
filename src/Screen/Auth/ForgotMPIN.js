@@ -201,7 +201,7 @@ const ForgotMPIN = (props) => {
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
                     <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(60) }}>
                         <Loader

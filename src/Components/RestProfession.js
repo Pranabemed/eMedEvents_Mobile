@@ -400,6 +400,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                         <ProfessionCourseShimmer count={3} />
                     ) : (
                         <FlatList
+                            scrollEnabled={false}
                             data={storeAlldata?.slice(0, 2)}
                             renderItem={searchGlobalitem}
                             keyExtractor={(item, index) => item.id}

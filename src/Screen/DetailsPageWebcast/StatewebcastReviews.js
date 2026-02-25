@@ -4,7 +4,7 @@ import Imagepath from '../../Themes/Imagepath';
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
-import { AirbnbRating } from 'react-native-ratings';
+import StarRating from 'react-native-star-rating-widget';
 const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, reviewpost, expandreview, reviewChange }) => {
     console.log(reviewpost, "expandreview-------")
     const reviewsShows = ({ item, index }) => {
@@ -12,7 +12,7 @@ const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, r
             <View
                 style={{
                     marginBottom: normalize(10),
-                    marginLeft:normalize(6)
+                    marginLeft: normalize(6)
                 }}
             >
                 <View
@@ -36,15 +36,15 @@ const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, r
                         paddingHorizontal: normalize(6),
                         paddingVertical: normalize(0),
                     }}>
-                    <AirbnbRating
-                        count={5}
-                        reviews={[]}
-                        defaultRating={item?.averageRating}
-                        size={15}
-                        showRating={false}
-                        isDisabled={true}
-                        starStyle={{ tintColor: "#FF773D" }}
-                    />
+                    <View pointerEvents="none">
+                        <StarRating
+                            rating={Number(item?.averageRating) || 0}
+                            onChange={() => { }}
+                            starSize={15}
+                            color="#FF773D"
+                            starStyle={{ marginHorizontal: 1 }}
+                        />
+                    </View>
                     {/* <Text
                         style={{
                             fontFamily: Fonts.InterMedium,
@@ -88,7 +88,7 @@ const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, r
                     <Text
                         style={{
                             fontFamily: Fonts.InterBold,
-                            fontWeight:"bold",
+                            fontWeight: "bold",
                             fontSize: 18,
                             color: '#000000',
                         }}>
@@ -137,11 +137,13 @@ const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, r
                     {reviewpost?.length > 2 ? (
                         <>
                             <FlatList
+                                scrollEnabled={false}
                                 data={reviewpost?.slice(0, 1)}
                                 renderItem={reviewsShows}
                                 keyExtractor={(item, index) => index.toString()}
                             />
                             <FlatList
+                                scrollEnabled={false}
                                 data={expandreview ? reviewpost?.slice(1) : []}
                                 renderItem={reviewsShows}
                                 keyExtractor={(item, index) => index.toString()}

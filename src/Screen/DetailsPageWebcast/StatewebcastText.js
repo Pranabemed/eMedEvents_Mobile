@@ -7,8 +7,8 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
     console.log(allSpecailities?.length, "allSpecailities-----", webcastdeatils?.targetAudience);
     const specialityShow = ({ index, item }) => {
         return (
-            <View style={{paddingVertical:normalize(3)}}>
-               <View style={{ padding: 10, borderWidth: 0.5, borderColor: "#DDDDDD", paddingVertical: normalize(7), marginLeft: normalize(8), backgroundColor: "#F5FAFF", borderRadius: normalize(5) }}>
+            <View style={{ paddingVertical: normalize(3) }}>
+                <View style={{ padding: 10, borderWidth: 0.5, borderColor: "#DDDDDD", paddingVertical: normalize(7), marginLeft: normalize(8), backgroundColor: "#F5FAFF", borderRadius: normalize(5) }}>
                     <Text
                         style={{
                             fontFamily: Fonts.InterMedium,
@@ -32,22 +32,23 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
                 <Text
                     style={{
                         fontFamily: Fonts.InterBold,
-                        fontWeight:"bold",
+                        fontWeight: "bold",
                         fontSize: 18,
                         color: '#000000',
                     }}>
                     {'Target Audience'}
                 </Text>
             </View>
-                <View style={{marginLeft:normalize(6)}}>
+                <View style={{ marginLeft: normalize(6) }}>
                     {!expandspecailtar && <FlatList
+                        scrollEnabled={false}
                         data={webcastdeatils?.targetAudience?.slice(0, 3)}
                         horizontal
                         renderItem={specialityShow}
                         keyExtractor={(item, index) => index.toString()}
                         showsHorizontalScrollIndicator={false}
                         ListFooterComponent={
-                            webcastdeatils?.targetAudience?.length > 4 &&<TouchableOpacity onPress={targetChange}>
+                            webcastdeatils?.targetAudience?.length > 4 && <TouchableOpacity onPress={targetChange}>
                                 <View style={{
                                     paddingHorizontal: normalize(10),
                                     paddingVertical: normalize(10),
@@ -100,7 +101,7 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
                 <Text
                     style={{
                         fontFamily: Fonts.InterBold,
-                        fontWeight:"bold",
+                        fontWeight: "bold",
                         fontSize: 18,
                         color: '#000000',
                     }}>

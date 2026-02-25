@@ -189,7 +189,7 @@ const EnterOTP = (props) => {
             />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                     <Loader

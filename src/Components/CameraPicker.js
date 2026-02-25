@@ -126,7 +126,7 @@ export default function CameraPicker(props) {
           borderTopLeftRadius: normalize(20),
           paddingVertical: normalize(10),
         }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={{ justifyContent: "center", alignItems: "center" }}>
           <View style={{ height: 7, width: normalize(100), backgroundColor: "#DDDDDD", borderRadius: normalize(5) }} />

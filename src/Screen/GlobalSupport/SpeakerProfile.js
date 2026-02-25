@@ -274,8 +274,8 @@ const SpeakerProfile = (props) => {
         }
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -429,46 +429,43 @@ const SpeakerProfile = (props) => {
                         {(props?.route?.params?.fullUrl?.speaks == "organ" || props?.route?.params?.fullUrl?.showtext == "organ") ? <Text style={{ fontFamily: Fonts.InterBold, fontWeight: "bold", fontSize: 18, color: "#000000" }}>{"CONFERENCES & COURSES"}</Text> : <Text style={{ fontFamily: Fonts.InterBold, fontWeight: "bold", fontSize: 18, color: "#000000" }}>{"EVENTS & ACTIVITIES "}</Text>}
                         {(props?.route?.params?.fullUrl?.speaks == "organ" || props?.route?.params?.fullUrl?.showtext == "organ") ? "" : <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#000000" }}>{"(Speaking, Spoken, and Authored)"}</Text>}
                     </View>}
-                    {TransReducer?.speakerProfileResponse?.conferences?.length > 0 && <View>
-                        <FlatList
-                            data={TransReducer?.speakerProfileResponse?.conferences && TransReducer?.speakerProfileResponse?.conferences?.slice(0, 6)}
-                            renderItem={SpeakerConfItem}
-                            keyExtractor={(item) => item?.id}
-                            onEndReachedThreshold={0.1}
-                            contentContainerStyle={{ paddingBottom: normalize(50) }}
-                            ListEmptyComponent={
-                                <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                                    <View
+                    {TransReducer?.speakerProfileResponse?.conferences?.length > 0 ? (
+                        <View style={{ paddingBottom: normalize(50) }}>
+                            {TransReducer?.speakerProfileResponse?.conferences?.slice(0, 6).map((item, index) => (
+                                <SpeakerConfItem key={item?.id || index} item={item} index={index} />
+                            ))}
+                        </View>
+                    ) : (
+                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25), paddingBottom: normalize(50) }}>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    width: normalize(290),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    paddingHorizontal: normalize(10),
+                                    paddingVertical: normalize(10),
+                                    alignItems: "center",
+                                    borderStyle: 'dotted',
+                                    borderWidth: 1,
+                                }}
+                            >
+                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                    <Text
                                         style={{
-                                            flexDirection: "row",
-                                            // height: normalize(83),
-                                            width: normalize(290),
-                                            borderRadius: normalize(10),
-                                            backgroundColor: "#FFFFFF",
-                                            paddingHorizontal: normalize(10),
-                                            paddingVertical: normalize(10),
-                                            alignItems: "center",
-                                            borderStyle: 'dotted',
-                                            borderWidth: 1,
+                                            fontFamily: Fonts.InterSemiBold,
+                                            fontSize: 16,
+                                            color: Colorpath.ButtonColr,
+                                            fontWeight: "bold",
+                                            alignSelf: "center"
                                         }}
                                     >
-                                        <View style={{ flex: 1, justifyContent: "center" }}>
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterSemiBold,
-                                                    fontSize: 16,
-                                                    color: Colorpath.ButtonColr,
-                                                    fontWeight: "bold",
-                                                    alignSelf: "center"
-                                                }}
-                                            >
-                                                {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                            </Text>
-                                        </View>
-                                    </View>
+                                        {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                    </Text>
                                 </View>
-                            } />
-                    </View>}
+                            </View>
+                        </View>
+                    )}
 
                     {TransReducer?.speakerProfileResponse?.total_conferences > 6 && <TouchableOpacity onPress={() => props.navigation.navigate("Globalresult", { trig: { speaker: props?.route?.params?.fullUrl?.speaks == "speaker" ? [TransReducer?.speakerProfileResponse?.name] : "", newAdd: "user_url", trig: props?.route?.params?.fullUrl?.fullUrl, beforetake: "1", rqstType: "normallist", mainKey: "need_past_conferences", creditAll: props?.route?.params?.fullUrl?.creditData, organ: props?.route?.params?.fullUrl?.speaks == "speaker" ? "" : [TransReducer?.speakerProfileResponse?.name], speaks: props?.route?.params?.fullUrl?.speaks == "speaker" ? "speaker" : "organ", highText: props?.route?.params?.fullUrl?.hitDat, textHo: props?.route?.params?.fullUrl?.textHo, "back": "goBack", refreshKey: Date.now(), Realback: props?.route?.params?.fullUrl?.Realback } })} style={{ justifyContent: "center", alignItems: "center", marginBottom: normalize(50) }}>
                         <Text style={{ fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>{`View All (${TransReducer?.speakerProfileResponse?.total_conferences})`}</Text>

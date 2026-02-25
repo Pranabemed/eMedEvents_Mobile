@@ -136,7 +136,7 @@ const InterestedChekout = (props) => {
         setRefreshing(false);
         fetchHandle();
     };
-    
+
     if (status == '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/cmeCourseRequest':
@@ -172,8 +172,8 @@ const InterestedChekout = (props) => {
         }
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     const CMEExclusive = ({ item, index }) => {
         console.log(item, "item---------")
         const formatDate = (dateStr) => {
@@ -323,7 +323,7 @@ const InterestedChekout = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title="Interested Conferences"

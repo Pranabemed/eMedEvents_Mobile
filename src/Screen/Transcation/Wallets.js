@@ -431,14 +431,14 @@ const Wallets = (props) => {
         return () => clearTimeout(timeout);
     }, []);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg} />
             <SafeAreaView style={{ backgroundColor: Colorpath.Pagebg, flex: 1 }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title={props?.route?.params?.name ? props?.route?.params?.name : props?.route?.params?.name}

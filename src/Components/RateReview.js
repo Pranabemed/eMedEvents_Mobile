@@ -6,7 +6,7 @@ import PageHeader from './PageHeader'
 import Imagepath from '../Themes/Imagepath'
 import Fonts from '../Themes/Fonts'
 import normalize from '../Utils/Helpers/Dimen'
-import { AirbnbRating, Rating } from 'react-native-ratings'
+import StarRating from 'react-native-star-rating-widget';
 import TextFieldIn from './Textfield'
 import Loader from '../Utils/Helpers/Loader'
 import Buttons from './Button'
@@ -183,13 +183,11 @@ const RateReview = (props) => {
                                                 </Text>
 
                                                 <View style={{ alignItems: 'center', paddingHorizontal: normalize(5) }}>
-                                                    <AirbnbRating
-                                                        count={5}
-                                                        reviews={[]}
-                                                        defaultRating={ratingex}
-                                                        size={15}
-                                                        showRating={false}
-                                                        onFinishRating={(val) => setRatingex(val)}
+                                                    <StarRating
+                                                        rating={ratingex}
+                                                        onChange={setRatingex}
+                                                        starSize={25}
+                                                        starStyle={{ marginHorizontal: 2 }}
                                                     />
                                                 </View>
                                             </View>
@@ -246,13 +244,11 @@ const RateReview = (props) => {
                                                 </Text>
 
                                                 <View style={{ alignItems: 'center', paddingHorizontal: normalize(5) }}>
-                                                    <AirbnbRating
-                                                        count={5}
-                                                        reviews={[]}
-                                                        defaultRating={ratingct}
-                                                        size={15}
-                                                        showRating={false}
-                                                        onFinishRating={(val) => setRatingct(val)}
+                                                    <StarRating
+                                                        rating={ratingct}
+                                                        onChange={setRatingct}
+                                                        starSize={25}
+                                                        starStyle={{ marginHorizontal: 2 }}
                                                     />
                                                 </View>
                                             </View>
@@ -309,13 +305,11 @@ const RateReview = (props) => {
                                                 </Text>
 
                                                 <View style={{ alignItems: 'center', paddingHorizontal: normalize(5) }}>
-                                                    <AirbnbRating
-                                                        count={5}
-                                                        reviews={[]}
-                                                        defaultRating={rating}
-                                                        size={15}
-                                                        showRating={false}
-                                                        onFinishRating={(val) => setRating(val)}
+                                                    <StarRating
+                                                        rating={rating}
+                                                        onChange={setRating}
+                                                        starSize={25}
+                                                        starStyle={{ marginHorizontal: 2 }}
                                                     />
                                                 </View>
                                             </View>

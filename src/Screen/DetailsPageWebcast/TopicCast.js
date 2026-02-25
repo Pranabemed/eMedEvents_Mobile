@@ -22,8 +22,9 @@ const TopicCast = ({ topics, expandedtopic, toggleTopic, topiccast }) => {
       <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(5) }}>
         <Text numberOfLines={3} style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: "#000000", flexWrap: "wrap" }}>{"This course fulfills the state-required mandatory topic(s) credit requirements for license renewal."}</Text>
       </View>
-      <View style={{ paddingVertical: normalize(10),paddingHorizontal:normalize(10) }}>
+      <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
         <FlatList
+          scrollEnabled={false}
           data={topics?.slice(0, 3)}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
@@ -50,6 +51,7 @@ const TopicCast = ({ topics, expandedtopic, toggleTopic, topiccast }) => {
           showsHorizontalScrollIndicator={false}
         />
         {topics?.length > 4 && <FlatList
+          scrollEnabled={false}
           data={expandedtopic ? topics?.slice(3) : []}
           renderItem={({ item }) => (
             <View style={styles.topicContainer}>

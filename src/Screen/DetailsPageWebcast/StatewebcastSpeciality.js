@@ -6,7 +6,7 @@ import Fonts from '../../Themes/Fonts';
 const StatewebcastSpeciality = ({ allSpecailities, specailityChange, expandspecail }) => {
     const specialityShow = ({ index, item }) => {
         return (
-            <View style={{paddingVertical:normalize(5)}}>
+            <View style={{ paddingVertical: normalize(5) }}>
                 <View style={{ padding: 10, borderWidth: 0.5, borderColor: "#DDDDDD", paddingVertical: normalize(7), marginLeft: normalize(8), backgroundColor: "#F5FAFF", borderRadius: normalize(5) }}>
                     <Text
                         style={{
@@ -22,15 +22,16 @@ const StatewebcastSpeciality = ({ allSpecailities, specailityChange, expandspeca
         )
     }
     return (
-        <View style={{ paddingVertical: normalize(0),marginLeft:normalize(6) }}>
+        <View style={{ paddingVertical: normalize(0), marginLeft: normalize(6) }}>
             {!expandspecail && <FlatList
+                scrollEnabled={false}
                 horizontal
                 data={allSpecailities?.slice(0, 3)}
                 renderItem={specialityShow}
                 keyExtractor={(item, index) => index.toString()}
                 showsHorizontalScrollIndicator={false}
                 ListFooterComponent={
-                    allSpecailities?.length > 4 &&<TouchableOpacity onPress={specailityChange}>
+                    allSpecailities?.length > 4 && <TouchableOpacity onPress={specailityChange}>
                         <View style={{
                             paddingHorizontal: normalize(10),
                             paddingVertical: normalize(10),

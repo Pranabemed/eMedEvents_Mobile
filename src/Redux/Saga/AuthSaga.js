@@ -229,20 +229,21 @@ export function* verifyEmalOTPSaga(action) {
 }
 export function* resendEmalOTPSaga(action) {
   let items = yield select(getItem);
+  // items.token may be null right after login (Redux hasn't propagated yet)
+  // → fall back to reading the latest token directly from AsyncStorage
+  const token = items?.token || (yield call(AsyncStorage.getItem, constants.TOKEN));
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    authorization: items?.token,
+    authorization: token,
   };
   try {
     let response = yield call(postApi, 'user/resendOTP', action.payload, header);
     if (response?.status == 200) {
       yield put(resendemailotpSuccess(response?.data));
-      // yield call(AsyncStorage.setItem, constants.EMAILOTP, response?.data?.email_otp);
       showErrorAlert(response.data.msg);
     } else {
       yield put(resendemailotpFailure(response.data));
-      // showErrorAlert(response.data);
     }
   } catch (error) {
     yield put(resendemailotpFailure(error));
@@ -381,6 +382,9 @@ export function* login_Saga(action) {
       yield call(AsyncStorage.setItem, constants.EMAIL, response?.data?.email);
       yield call(AsyncStorage.setItem, constants.PHONE, response?.data?.phone);
       yield put(tokenSuccess(response?.data?.token));
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
     } else {
       yield put(loginFailure(response?.data));
       showErrorAlert("Your email or password is incorrect.");
@@ -514,6 +518,9 @@ export function* mobileLoginSaga(action) {
       yield put(loginsiginSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
       yield put(tokenSuccess(response?.data?.token));
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
     } else {
       yield put(loginsiginFailure(response?.data));
       showErrorAlert(response?.data?.msg)
@@ -786,55 +793,56 @@ export function* urlneedSaga(action) {
 
 export function* refreshTokenSaga(action) {
   /**
-   * Manually dispatchable:  dispatch(refreshTokenRequest({ refresh_token: '...' }))
-   * Also invoked internally by doRefreshToken() inside TokenRefresh.js.
-   *
-   * ⚠️  Server returns HTTP 200 + { success:false, msg:"Missing or Invalid Token" }
-   *     when a token is expired — NOT a 401.
-   *
-   * 🛡  NO forced logout — seamless experience for the user.
+   * ⚠️  Uses plain axios.post (NOT postApi / axiosInstance) so this call is
+   *     completely outside the interceptor chain.
+   *     If we used postApi here and verifyRefreshToken returned
+   *     "Missing or Invalid Token", Interceptor B would try to refresh again,
+   *     creating an infinite loop.
    */
   try {
-    const header = {
-      Accept: 'application/json',
-      contenttype: 'application/json',
-    };
-
     const payload = action?.payload || {};
     const storedRefresh = yield call(AsyncStorage.getItem, constants.REFRESH_TOKEN);
     const refresh_token = payload?.refresh_token || storedRefresh;
 
     if (!refresh_token) {
-      console.warn('[refreshTokenSaga] No refresh_token available — skipping silently.');
+      console.warn('[refreshTokenSaga] ❌ No refresh_token in storage — cannot refresh.');
       yield put(refreshTokenFailure({ message: 'No refresh token available' }));
       return;
     }
 
-    console.log('[refreshTokenSaga] 🔄 Calling user/verifyRefreshToken…');
-    const response = yield call(postApi, 'user/verifyRefreshToken', { refresh_token }, header);
+    console.log('[refreshTokenSaga] 🔄 Calling user/verifyRefreshToken (plain axios)…');
 
-    if (response?.data?.success && response?.data?.token) {
-      const newToken = response.data.token;
-      const newRefreshToken = response.data.refresh_token || refresh_token;
+    // ── PLAIN axios — NOT postApi — avoids interceptor loop ──────────────────
+    const { default: axios } = require('axios');
+    const res = yield call(() =>
+      axios.post(
+        `${constants.BASE_URL}/user/verifyRefreshToken`,
+        { refresh_token },
+        {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        },
+      )
+    );
 
-      // ── Persist ──────────────────────────────────────────────────────────
+    if (res?.data?.success && res?.data?.token) {
+      const newToken = res.data.token;
+      const newRefreshToken = res.data.refresh_token || refresh_token;
+
       yield call(AsyncStorage.setItem, constants.TOKEN, newToken);
       yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, newRefreshToken);
-
-      // ── Update Redux ──────────────────────────────────────────────────────
       yield put(tokenSuccess(newToken));
-      yield put(refreshTokenSuccess(response.data));
+      yield put(refreshTokenSuccess(res.data));
 
       console.log('[refreshTokenSaga] ✅ Token refreshed successfully.');
     } else {
-      // Refresh endpoint returned failure — do NOT show alert, do NOT logout
-      console.warn('[refreshTokenSaga] ❌ verifyRefreshToken failed:', response?.data?.msg);
-      yield put(refreshTokenFailure(response?.data));
-      // Seamless: caller saga will receive the original failed response and
-      // can decide whether to silently skip or show a minimal in-UI message.
+      console.warn('[refreshTokenSaga] ❌ verifyRefreshToken failed:', res?.data?.msg);
+      yield put(refreshTokenFailure(res?.data));
     }
   } catch (error) {
-    // Network error during refresh — silent, no alert, no logout
     console.error('[refreshTokenSaga] Network error:', error?.message || error);
     yield put(refreshTokenFailure({ message: error?.message || 'Refresh network error' }));
   }

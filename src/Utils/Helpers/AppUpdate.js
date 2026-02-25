@@ -1,3 +1,25 @@
+/**
+ * AppUpdate.js
+ *
+ * Shows an update popup whenever the installed version is older than the store version.
+ * No static version numbers are hardcoded — all checks are fully dynamic.
+ *
+ * ┌──────────────────────┬─────────────────────────────────────────────────────┐
+ * │ Platform + Install   │ How version is fetched                              │
+ * ├──────────────────────┼─────────────────────────────────────────────────────┤
+ * │ iOS (any install)    │ Apple iTunes Lookup API → always works              │
+ * │ iOS App Store        │ ✅ Popup shown if store > installed                 │
+ * │ iOS sideloaded IPA   │ ✅ Popup shown if store > installed (API unrestricted)│
+ * ├──────────────────────┼─────────────────────────────────────────────────────┤
+ * │ Android Play Store   │ sp-react-native-in-app-updates (primary)            │
+ * │                      │ ✅ Popup + native in-app download flow               │
+ * │ Android release APK  │ Library throws APP_NOT_OWNED → Play Store scrape    │
+ * │ (sideloaded)         │ ✅ Popup shown, opens Play Store link to update     │
+ * │ Android DEV build    │ Scrape fallback only (library always fails in dev)  │
+ * │                      │ ✅ Popup shown for UI testing                       │
+ * └──────────────────────┴─────────────────────────────────────────────────────┘
+ */
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Modal,
@@ -21,11 +43,109 @@ import SpInAppUpdates, {
 import DeviceInfo from 'react-native-device-info';
 import Colorpath from '../../Themes/Colorpath';
 
+// ─── App identifiers — only change if you rename/republish the app ─────────────
+const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/app/emedevents/id1540770118
+const ANDROID_PACKAGE = 'com.emedevents.newapp';
+const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
+const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Strict semver comparison.
+ * Returns true only when storeVer is strictly greater than installedVer.
+ * e.g. isNewerVersion("1.0.7", "1.0.8") → true
+ *      isNewerVersion("1.0.8", "1.0.8") → false
+ *      isNewerVersion("1.0.9", "1.0.8") → false
+ */
+const isNewerVersion = (installedVer, storeVer) => {
+  if (!installedVer || !storeVer) return false;
+  const clean = (v) => String(v).replace(/[^0-9.]/g, '');
+  const a = clean(installedVer).split('.').map(Number);
+  const b = clean(storeVer).split('.').map(Number);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (bv > av) return true;
+    if (bv < av) return false;
+  }
+  return false;
+};
+
+/**
+ * iOS — Fetch latest version from Apple's iTunes Lookup API.
+ * This is 100% dynamic; no version numbers are hardcoded.
+ */
+const fetchLatestIOSVersion = async () => {
+  try {
+    const res = await fetch(
+      `https://itunes.apple.com/lookup?id=${IOS_APP_STORE_ID}&country=us`,
+    );
+    const json = await res.json();
+    const ver = json?.results?.[0]?.version ?? null;
+    console.log('AppUpdate [iOS]: iTunes store version:', ver);
+    return ver;
+  } catch (err) {
+    console.log('AppUpdate [iOS]: iTunes lookup error:', err?.message);
+    return null;
+  }
+};
+
+/**
+ * Android fallback — fetches the latest version from the Play Store page.
+ *
+ * Works for:
+ *  ✅ Sideloaded release APKs  (sp-react-native-in-app-updates throws APP_NOT_OWNED)
+ *  ✅ DEV / debug builds       (library always fails in debug)
+ *
+ * Google changes their HTML structure occasionally, so we try multiple patterns
+ * to maximise reliability.
+ */
+const fetchLatestAndroidVersion = async () => {
+  try {
+    const res = await fetch(
+      // Use the ?hl=en to force English and avoid locale-specific page differences
+      `${ANDROID_STORE_URL}&hl=en`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } },
+    );
+    const html = await res.text();
+
+    // Pattern 1: modern Play Store JSON embedding  [["1.0.8"]]
+    const p1 = html.match(/\[\["(\d+\.\d+(?:\.\d+)*)"\]/);
+    if (p1?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p1):', p1[1]);
+      return p1[1];
+    }
+
+    // Pattern 2: older layout  ,"1.0.8",
+    const p2 = html.match(/,"(\d+\.\d+(?:\.\d+)*)",/);
+    if (p2?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p2):', p2[1]);
+      return p2[1];
+    }
+
+    // Pattern 3: itemprop="softwareVersion">1.0.8<
+    const p3 = html.match(/itemprop=["']softwareVersion["'][^>]*>([\d.]+)</);
+    if (p3?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p3):', p3[1]);
+      return p3[1];
+    }
+
+    console.log('AppUpdate [Android]: Could not extract version from Play Store page.');
+    return null;
+  } catch (err) {
+    console.log('AppUpdate [Android]: Play Store scrape error:', err?.message);
+    return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AppUpdateHandler = () => {
-  // Use debug mode in development to ensure checkNeedsUpdate doesn't fail silently or works with debug builds
-  // Passing true to constructor enables internal debug logging/mocking for the library if supported, 
-  // or simply helps differentiate environments.
-  const inAppUpdates = useRef(new SpInAppUpdates(__DEV__)).current;
+  // Pass `false` always — dev-mode guard is handled manually below
+  const inAppUpdates = useRef(new SpInAppUpdates(false)).current;
 
   const [showModal, setShowModal] = useState(false);
   const [isMandatory, setIsMandatory] = useState(false);
@@ -35,159 +155,266 @@ const AppUpdateHandler = () => {
   const [latestVersion, setLatestVersion] = useState('');
   const [storeUrl, setStoreUrl] = useState('');
 
+  const listenerAdded = useRef(false);  // Android download listener guard
+  const isChecking = useRef(false);  // Debounce simultaneous checks
+  const modalShown = useRef(false);  // Track shown state without closure issues
 
+  // ─── Open update modal ───────────────────────────────────────────────────────
+  const openUpdateModal = useCallback((version, mandatory, url) => {
+    if (modalShown.current) return; // already visible, don't stack
+    modalShown.current = true;
+    setLatestVersion(version ?? '');
+    setIsMandatory(!!mandatory);
+    setStoreUrl(url ?? (Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL));
+    setShowModal(true);
+  }, []);
 
-  // 🔹 Check update logic
-  const checkUpdate = useCallback(async () => {
-    const currentVersion = DeviceInfo.getVersion();
-    console.log('AppUpdate: Current installed version:', currentVersion);
-    // Skip update check in development/debug builds.
-    // The Play Store In-App Updates API requires the app to be installed
-    // from the Play Store (not sideloaded/debug). Running it in dev mode
-    // will always throw APP_NOT_OWNED (-10) error.
-    if (__DEV__) {
-      console.log('AppUpdate: Skipping update check in development mode.');
+  const closeModal = useCallback(() => {
+    modalShown.current = false;
+    setShowModal(false);
+    setShowProgress(false);
+    setProgress(0);
+    setStatusText('');
+  }, []);
+
+  // ─── iOS check ───────────────────────────────────────────────────────────────
+  const checkIOS = useCallback(async (currentVersion) => {
+    console.log(`AppUpdate [iOS]: installed=${currentVersion}`);
+    const storeVersion = await fetchLatestIOSVersion();
+    if (!storeVersion) {
+      console.log('AppUpdate [iOS]: Could not fetch store version.');
       return;
     }
+    if (isNewerVersion(currentVersion, storeVersion)) {
+      console.log(`AppUpdate [iOS]: Update available → ${storeVersion}`);
+      openUpdateModal(storeVersion, false, IOS_STORE_URL);
+    } else {
+      console.log('AppUpdate [iOS]: Up to date.');
+    }
+  }, [openUpdateModal]);
 
-    // Automatic Store Check (Release builds only)
+  // ─── Android check ────────────────────────────────────────────────────────
+  const checkAndroid = useCallback(async (currentVersion) => {
+    console.log(`AppUpdate [Android]: installed=${currentVersion}`);
+
+    let libraryStoreVersion = null;
+    let libraryMandatory = false;
+    let libraryStoreUrl = ANDROID_STORE_URL;
+    let libraryFailed = false;
+
+    // ── Step 1: Try sp-react-native-in-app-updates (works for Play Store installs) ──
     try {
-      console.log('AppUpdate: Checking store versions...');
       const result = await inAppUpdates.checkNeedsUpdate({ curVersion: currentVersion });
-      console.log(result, '1222AppUpdate: Current installed version:', currentVersion);
+      console.log('AppUpdate [Android]: library result:', JSON.stringify(result));
 
       if (result?.shouldUpdate) {
-        console.log('AppUpdate: Update available:', result);
-        setLatestVersion(result.storeVersion);
-        setStoreUrl(result.storeUrl);
-
-        // Android: Check update priority if available (0-5)
-        // 4 or 5 usually implies high priority/mandatory
-        if (Platform.OS === 'android' && result.updatePriority >= 4) {
-          setIsMandatory(true);
-        }
-
-        setShowModal(true);
+        libraryStoreVersion = result.storeVersion;
+        libraryMandatory = (result.updatePriority ?? 0) >= 4;
+        libraryStoreUrl = result.storeUrl || ANDROID_STORE_URL;
+        console.log(`AppUpdate [Android]: Library says update available → ${libraryStoreVersion}`);
       } else {
-        console.log('AppUpdate: No update needed');
+        // Library says "no update" — but we still run a scrape check below
+        // because the library can occasionally return false negatives
+        // (e.g. Play Store cache not yet refreshed on the device).
+        console.log('AppUpdate [Android]: Library says up to date. Running scrape to verify...');
       }
-    } catch (error) {
-      console.log('AppUpdate: check error:', error);
-      console.error("Update Check Error", error?.message || "Unknown error occurred while checking Play Store version.");
+    } catch (libErr) {
+      libraryFailed = true;
+      console.log('AppUpdate [Android]: Library threw error (e.g. APP_NOT_OWNED):', libErr?.message);
+      console.log('AppUpdate [Android]: Running scrape fallback...');
     }
-  }, [inAppUpdates]);
 
-  // 🔹 Handle Hardware Back Button
+    // ── Step 2: Always scrape Play Store as a second opinion ──────────────────
+    //   - If library already confirmed update → scrape gives us the exact version string
+    //   - If library said "no update" or failed → scrape is the final authority
+    const scrapeVersion = await fetchLatestAndroidVersion();
+    console.log(`AppUpdate [Android]: Scrape version=${scrapeVersion}`);
+
+    // ── Step 3: Decide which version to trust ─────────────────────────────────
+    //   Priority: library result (most reliable for Play Store) > scrape
+    const updateVersion =
+      isNewerVersion(currentVersion, libraryStoreVersion ?? '') ? libraryStoreVersion
+        : isNewerVersion(currentVersion, scrapeVersion ?? '') ? scrapeVersion
+          : null;
+
+    if (updateVersion) {
+      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${updateVersion}`);
+      openUpdateModal(
+        updateVersion,
+        libraryMandatory,
+        libraryFailed ? ANDROID_STORE_URL : libraryStoreUrl,
+      );
+    } else {
+      console.log('AppUpdate [Android]: ✅ App is up to date (library + scrape agree).');
+    }
+  }, [inAppUpdates, openUpdateModal]);
+
+  // ─── Main entry point ────────────────────────────────────────────────────────
+  const checkUpdate = useCallback(async () => {
+    if (modalShown.current || isChecking.current) return;
+    isChecking.current = true;
+
+    try {
+      const currentVersion = DeviceInfo.getVersion();
+      console.log('AppUpdate: Checking update. Installed:', currentVersion);
+
+      if (Platform.OS === 'ios') {
+        // ✅ iOS: iTunes Lookup API works for ALL install types:
+        //    - App Store official download
+        //    - Sideloaded IPA (Ad Hoc / Enterprise / TestFlight)
+        //    - DEV builds (for UI testing)
+        await checkIOS(currentVersion);
+      } else {
+        // Android strategy:
+        //
+        // __DEV__ = true  → debug APK/Metro: library always throws APP_NOT_OWNED
+        //                     → skip library, go straight to scrape fallback
+        //
+        // __DEV__ = false → release build:
+        //   - Play Store install     → library works, full in-app update flow ✅
+        //   - Sideloaded release APK → library throws APP_NOT_OWNED,
+        //                              checkAndroid() catches it and runs scrape ✅
+        if (__DEV__) {
+          console.log('AppUpdate [Android]: DEV mode — scrape fallback only.');
+          const storeVersion = await fetchLatestAndroidVersion();
+          if (storeVersion && isNewerVersion(currentVersion, storeVersion)) {
+            openUpdateModal(storeVersion, false, ANDROID_STORE_URL);
+          } else {
+            console.log('AppUpdate [Android]: DEV — up to date or scrape returned null.');
+          }
+        } else {
+          // checkAndroid tries library first, then automatically falls back to
+          // scrape if library fails (handles sideloaded release APKs transparently)
+          await checkAndroid(currentVersion);
+        }
+      }
+    } catch (err) {
+      console.log('AppUpdate: Unexpected error in checkUpdate:', err?.message);
+    } finally {
+      isChecking.current = false;
+    }
+  }, [checkIOS, checkAndroid, openUpdateModal]);
+
+  // ─── Hardware back button — block when mandatory ──────────────────────────────
   useEffect(() => {
-    if (isMandatory && showModal) {
-      const backAction = () => {
-        // If mandatory update, block back button
-        return isMandatory;
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', backAction);
-
-      return () => {
-        subscription.remove();
-      };
-    }
+    if (!isMandatory || !showModal) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
   }, [isMandatory, showModal]);
 
-  // 🔹 Lifecycle & AppState checks
+  // ─── Run on mount + every time app comes to foreground ───────────────────────
   useEffect(() => {
     checkUpdate();
 
-    const handleAppStateChange = (nextAppState) => {
-      if (nextAppState === 'active') {
-        checkUpdate();
-      }
-    };
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkUpdate();
+    });
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
+    return () => sub.remove();
   }, [checkUpdate]);
 
+  // ─── Android download-status listener (registered once) ──────────────────────
+  useEffect(() => {
+    if (Platform.OS !== 'android' || listenerAdded.current) return;
+    listenerAdded.current = true;
 
-  // 🔹 Start Update Flow
+    inAppUpdates.addStatusUpdateListener((status) => {
+      console.log('AppUpdate: status event →', status?.status);
+      switch (status.status) {
+        case IAUInstallStatus.DOWNLOADING:
+          setStatusText('Downloading update…');
+          setProgress(
+            status.totalBytesToDownload > 0
+              ? status.bytesDownloaded / status.totalBytesToDownload
+              : 0,
+          );
+          break;
+        case IAUInstallStatus.DOWNLOADED:
+          setStatusText('Installing update…');
+          inAppUpdates.installUpdate();
+          break;
+        case IAUInstallStatus.INSTALLING:
+          setStatusText('Installing…');
+          break;
+        case IAUInstallStatus.FAILED:
+          setStatusText('Update failed');
+          setShowProgress(false);
+          Alert.alert('Update Failed', 'Please update manually from the Play Store.');
+          break;
+        default:
+          break;
+      }
+    });
+
+    return () => {
+      try { inAppUpdates.removeStatusUpdateListener(); } catch (_) { }
+    };
+  }, [inAppUpdates]);
+
+  // ─── Start update ─────────────────────────────────────────────────────────────
   const startUpdate = async () => {
     try {
-      // iOS Handling
       if (Platform.OS === 'ios') {
-        if (storeUrl) {
-          Linking.openURL(storeUrl);
-        } else {
-          // Attempt asking lib to handle it (usually opens store)
-          await inAppUpdates.startUpdate({ updateType: IAUUpdateKind.IMMEDIATE });
-        }
+        await Linking.openURL(storeUrl || IOS_STORE_URL);
+        closeModal();
         return;
       }
 
-      // Android Handling
+      // Android in-app update flow
       const updateType = isMandatory
         ? IAUUpdateKind.IMMEDIATE
         : IAUUpdateKind.FLEXIBLE;
 
       if (updateType === IAUUpdateKind.FLEXIBLE) {
         setShowProgress(true);
-        setStatusText('Preparing update...');
+        setStatusText('Preparing update…');
       }
-
-      // Add Listener
-      inAppUpdates.addStatusUpdateListener(status => {
-        console.log('AppUpdate Status:', status);
-        if (status.status === IAUInstallStatus.DOWNLOADING) {
-          setStatusText('Downloading update...');
-          const p =
-            status.totalBytesToDownload > 0
-              ? status.bytesDownloaded / status.totalBytesToDownload
-              : 0;
-          setProgress(p);
-        } else if (status.status === IAUInstallStatus.DOWNLOADED) {
-          setStatusText('Installing update...');
-          inAppUpdates.installUpdate();
-        } else if (status.status === IAUInstallStatus.INSTALLING) {
-          setStatusText('Installing...');
-        } else if (status.status === IAUInstallStatus.FAILED) {
-          setStatusText('Update failed');
-          setShowProgress(false);
-          Alert.alert('Update Failed', 'Please update from the Play Store.');
-        }
-      });
 
       await inAppUpdates.startUpdate({ updateType });
-
     } catch (e) {
-      console.log('AppUpdate: startUpdate error:', e);
+      console.log('AppUpdate: startUpdate error:', e?.message);
       setShowProgress(false);
-      // Fallback
-      if (storeUrl) {
-        Linking.openURL(storeUrl);
-      } else {
-        Alert.alert('Update Error', 'Could not start update.');
-      }
+      // Always fallback to opening the store page
+      const url = storeUrl || (Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL);
+      await Linking.openURL(url).catch(() =>
+        Alert.alert('Error', 'Could not open the store. Please update manually.'),
+      );
     }
   };
 
+  // ─── Nothing to render until there's an update ───────────────────────────────
   if (!showModal) return null;
+
   return (
     <Modal
       transparent
       animationType="fade"
       visible={showModal}
+      statusBarTranslucent
       onRequestClose={() => {
-        // Block closing if mandatory
-        if (!isMandatory) setShowModal(false);
+        if (!isMandatory) closeModal();
       }}
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
+
+          {/* Badge */}
+          <View style={styles.iconBadge}>
+            <Text style={styles.iconText}>🚀</Text>
+          </View>
+
           <Text style={styles.title}>Update Available</Text>
-          <Text style={styles.version}>
-            A new version {latestVersion ? `(${latestVersion})` : ''} is available.
-            {isMandatory ? ' You must update to continue.' : ' Would you like to update now?'}
+
+          {!!latestVersion && (
+            <Text style={styles.subtitle}>
+              Version {latestVersion} is now available!
+            </Text>
+          )}
+
+          <Text style={styles.body}>
+            {isMandatory
+              ? 'This update is required to continue using the app.'
+              : 'A new version of the app is available. Update now to enjoy the latest features and improvements.'}
           </Text>
 
           {showProgress ? (
@@ -197,31 +424,36 @@ const AppUpdateHandler = () => {
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${progress * 100}%` },
+                    { width: `${Math.round(progress * 100)}%` },
                   ]}
                 />
               </View>
-              <ActivityIndicator style={{ marginTop: 16 }} color={Colorpath.ButtonColr || '#2C4DB9'} />
+              <ActivityIndicator
+                style={{ marginTop: 16 }}
+                color={Colorpath.ButtonColr || '#2C4DB9'}
+              />
             </View>
           ) : (
             <View style={styles.actions}>
               {!isMandatory && (
                 <TouchableOpacity
                   style={styles.laterBtn}
-                  onPress={() => setShowModal(false)}
+                  onPress={closeModal}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.laterText}>Later</Text>
                 </TouchableOpacity>
               )}
-
               <TouchableOpacity
                 style={[styles.updateBtn, isMandatory && styles.updateBtnFull]}
                 onPress={startUpdate}
+                activeOpacity={0.85}
               >
                 <Text style={styles.updateText}>Update Now</Text>
               </TouchableOpacity>
             </View>
           )}
+
         </View>
       </View>
     </Modal>
@@ -230,40 +462,58 @@ const AppUpdateHandler = () => {
 
 export default AppUpdateHandler;
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   card: {
     backgroundColor: '#fff',
     width: '100%',
     maxWidth: 340,
-    borderRadius: 20,
-    padding: 24,
-    // Shadow
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EEF1FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconText: { fontSize: 28 },
   title: {
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 10,
-    color: '#000',
+    marginBottom: 6,
+    color: '#111',
   },
-  version: {
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colorpath.ButtonColr || '#2C4DB9',
+    marginBottom: 10,
     textAlign: 'center',
-    color: '#555',
+  },
+  body: {
+    textAlign: 'center',
+    color: '#666',
     marginBottom: 24,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 21,
   },
   progressContainer: {
     alignItems: 'center',
@@ -272,8 +522,9 @@ const styles = StyleSheet.create({
   status: {
     textAlign: 'center',
     marginBottom: 12,
-    color: '#666',
+    color: '#555',
     fontWeight: '500',
+    fontSize: 14,
   },
   progressBar: {
     height: 6,
@@ -285,37 +536,42 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     backgroundColor: Colorpath.ButtonColr || '#2C4DB9',
+    borderRadius: 3,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    width: '100%',
   },
   laterBtn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#F2F2F7',
     alignItems: 'center',
   },
   laterText: {
-    color: '#000',
+    color: '#333',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 15,
   },
   updateBtn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: Colorpath.ButtonColr || '#2C4DB9',
     alignItems: 'center',
+    shadowColor: Colorpath.ButtonColr || '#2C4DB9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  updateBtnFull: {
-    flex: 1,
-  },
+  updateBtnFull: { flex: 1 },
   updateText: {
     color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

@@ -10,7 +10,7 @@ import IconDot from 'react-native-vector-icons/Entypo';
 import FilterModal from '../../Components/Filter';
 import CloseIcon from 'react-native-vector-icons/EvilIcons';
 import { CommonActions, useNavigation } from '@react-navigation/native'
-import { AirbnbRating } from 'react-native-ratings'
+import StarRating from 'react-native-star-rating-widget';
 import { useDispatch, useSelector } from 'react-redux'
 import { object } from 'prop-types'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
@@ -193,14 +193,14 @@ const StateCourse = (props) => {
                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
                   {"Ratings:"}
                 </Text>
-                <AirbnbRating
-                  count={5}
-                  reviews={[]}
-                  defaultRating={item?.average_rating}
-                  size={15}
-                  showRating={false}
-                  isDisabled={true}
-                />
+                <View pointerEvents="none">
+                  <StarRating
+                    rating={Number(item?.average_rating) || 0}
+                    onChange={() => { }}
+                    starSize={15}
+                    starStyle={{ marginHorizontal: 1 }}
+                  />
+                </View>
               </View>
               {item?.bundle_sub_conf_count && <View style={{ flexDirection: "row", marginTop: normalize(10), alignItems: "center" }}>
                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
@@ -325,8 +325,8 @@ const StateCourse = (props) => {
     )
   }
   useLayoutEffect(() => {
-              props.navigation.setOptions({ gestureEnabled: false });
-          }, []);
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
   return (
     <>
       <MyStatusBar

@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import { AirbnbRating } from 'react-native-ratings';
+import StarRating from 'react-native-star-rating-widget';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
-const ExplorecastComponent = ({ item,index, setAllSpecial,setTootip,handleUrl }) => {
+const ExplorecastComponent = ({ item, index, setAllSpecial, setTootip, handleUrl }) => {
     function customRound(price) {
         price = price.replace(/[^0-9.]/g, '');
         price = Number(price);
@@ -13,7 +13,7 @@ const ExplorecastComponent = ({ item,index, setAllSpecial,setTootip,handleUrl })
         return price % 1 >= 0.50 ? Math.ceil(price) : Math.floor(price);
     }
     return (
-        <View style={{ paddingVertical: normalize(0), alignItems: "center",margin:normalize(5)}}>
+        <View style={{ paddingVertical: normalize(0), alignItems: "center", margin: normalize(5) }}>
             <View style={{
                 flexDirection: "column",
                 width: normalize(290),
@@ -22,22 +22,22 @@ const ExplorecastComponent = ({ item,index, setAllSpecial,setTootip,handleUrl })
                 paddingHorizontal: normalize(10),
                 paddingVertical: normalize(10),
                 alignItems: "flex-start",
-                borderColor:"#DADADA",
-                borderWidth:0.5
+                borderColor: "#DADADA",
+                borderWidth: 0.5
             }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                    <TouchableOpacity onPress={()=>{handleUrl(item)}}>
-                    <Text numberOfLines={1}
-                        style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: "#000000",
-                            fontWeight: "bold",
-                            flexShrink: 1,
-                            flexWrap: 'wrap',
-                        }}>
-                        {item?.title}
-                    </Text>
+                    <TouchableOpacity onPress={() => { handleUrl(item) }}>
+                        <Text numberOfLines={1}
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: "#000000",
+                                fontWeight: "bold",
+                                flexShrink: 1,
+                                flexWrap: 'wrap',
+                            }}>
+                            {item?.title}
+                        </Text>
                     </TouchableOpacity>
                 </View>
                 <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
@@ -51,14 +51,14 @@ const ExplorecastComponent = ({ item,index, setAllSpecial,setTootip,handleUrl })
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
                         {"Ratings:"}
                     </Text>
-                    <AirbnbRating
-                        count={5}
-                        reviews={[]}
-                        defaultRating={item?.average_rating}
-                        size={15}
-                        showRating={false}
-                        isDisabled={true}
-                    />
+                    <View pointerEvents="none">
+                        <StarRating
+                            rating={Number(item?.average_rating) || 0}
+                            onChange={() => { }}
+                            starSize={15}
+                            starStyle={{ marginHorizontal: 1 }}
+                        />
+                    </View>
                 </View>
                 {/* <TouchableOpacity onPress={() => {
                     setAllSpecial(item?.specialities);

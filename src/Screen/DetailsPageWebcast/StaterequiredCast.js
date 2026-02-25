@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import { AirbnbRating } from 'react-native-ratings';
+import StarRating from 'react-native-star-rating-widget';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
-const StateRequiredCast = ({tooltip, item, index, setAllSpecial, setTootip, handleUrl }) => {
+const StateRequiredCast = ({ tooltip, item, index, setAllSpecial, setTootip, handleUrl }) => {
     function customRound(price) {
         price = price.replace(/[^0-9.]/g, '');
         price = Number(price);
@@ -15,7 +15,7 @@ const StateRequiredCast = ({tooltip, item, index, setAllSpecial, setTootip, hand
     const topics = item?.topics;
     const topicsArray = topics.split(',');
     const firstTopic = topicsArray[0]; // Show only the first topic initially
-    console.log(firstTopic,"firstTopic",firstTopic?.length,topicsArray?.length)
+    console.log(firstTopic, "firstTopic", firstTopic?.length, topicsArray?.length)
     const remainingTopics = topicsArray.slice(1);
     const stateTake = item?.states;
     const stateArray = stateTake.split(',');
@@ -50,7 +50,7 @@ const StateRequiredCast = ({tooltip, item, index, setAllSpecial, setTootip, hand
                     </TouchableOpacity>
                 </View>
                 <View style={{ marginTop: normalize(5), height: 1, width: '100%', backgroundColor: "#DDD" }} />
-                {item?.credits?.length > 0  &&<View style={{ padding: normalize(7), borderRadius: normalize(25), backgroundColor: "#FFF2E0", marginTop: normalize(5), alignSelf: 'flex-start' }}>
+                {item?.credits?.length > 0 && <View style={{ padding: normalize(7), borderRadius: normalize(25), backgroundColor: "#FFF2E0", marginTop: normalize(5), alignSelf: 'flex-start' }}>
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, fontWeight: "bold", color: "#666" }}>
                         {`${item?.credits[0]?.points} ${item?.credits[0]?.name}`}
                     </Text>
@@ -59,26 +59,26 @@ const StateRequiredCast = ({tooltip, item, index, setAllSpecial, setTootip, hand
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
                         {"Ratings:"}
                     </Text>
-                    <AirbnbRating
-                        count={5}
-                        reviews={[]}
-                        defaultRating={item?.average_rating}
-                        size={15}
-                        showRating={false}
-                        isDisabled={true}
-                    />
+                    <View pointerEvents="none">
+                        <StarRating
+                            rating={Number(item?.average_rating) || 0}
+                            onChange={() => { }}
+                            starSize={15}
+                            starStyle={{ marginHorizontal: 1 }}
+                        />
+                    </View>
                 </View>
 
                 {item?.topics && <TouchableOpacity onPress={() => {
                     setAllSpecial(remainingTopics);
-                    console.log(item?.topics,"topics-------------")
+                    console.log(item?.topics, "topics-------------")
                     setTootip(!tooltip);
                 }} style={{ flexDirection: "row", marginTop: normalize(5), alignItems: "center" }}>
                     <Text numberOfLines={1} style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
                         {"Topics:"}
                     </Text>
                     <Text numberOfLines={1} style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold" }}>
-                        {topicsArray?.length > 2  ?`${firstTopic}...`:firstTopic}
+                        {topicsArray?.length > 2 ? `${firstTopic}...` : firstTopic}
                     </Text>
                 </TouchableOpacity>}
                 {item?.states && <TouchableOpacity onPress={() => {
@@ -89,7 +89,7 @@ const StateRequiredCast = ({tooltip, item, index, setAllSpecial, setTootip, hand
                         {"States:"}
                     </Text>
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold" }}>
-                        {stateArray?.length > 2 ?`${flashState}...`:flashState}
+                        {stateArray?.length > 2 ? `${flashState}...` : flashState}
                     </Text>
                 </TouchableOpacity>}
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(5), width: '100%' }}>

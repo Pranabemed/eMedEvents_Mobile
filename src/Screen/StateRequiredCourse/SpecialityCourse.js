@@ -10,7 +10,7 @@ import IconDot from 'react-native-vector-icons/Entypo';
 import FilterModal from '../../Components/Filter';
 import CloseIcon from 'react-native-vector-icons/EvilIcons';
 import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native'
-import { AirbnbRating } from 'react-native-ratings'
+import StarRating from 'react-native-star-rating-widget';
 import { useDispatch, useSelector } from 'react-redux'
 import { object } from 'prop-types'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
@@ -67,7 +67,7 @@ const SpecialityCourseSlide = (props) => {
     };
     const addCreditBack = () => {
         const getAda = fulldashbaord?.[0];
-            setAddit(getAda);
+        setAddit(getAda);
         if (props?.route?.params?.back == "tabnav") {
             navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
         } else {
@@ -154,8 +154,8 @@ const SpecialityCourseSlide = (props) => {
         return () => backHandler.remove();
     }, []);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     const RequiredCourses = ({ item, index }) => {
         const getActualPrice = (percent, discountPrice) => {
             let price = parseFloat(discountPrice);
@@ -206,14 +206,14 @@ const SpecialityCourseSlide = (props) => {
                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
                                     {"Ratings:"}
                                 </Text>
-                                <AirbnbRating
-                                    count={5}
-                                    reviews={[]}
-                                    defaultRating={item?.average_rating}
-                                    size={15}
-                                    showRating={false}
-                                    isDisabled={true}
-                                />
+                                <View pointerEvents="none">
+                                    <StarRating
+                                        rating={Number(item?.average_rating) || 0}
+                                        onChange={() => { }}
+                                        starSize={15}
+                                        starStyle={{ marginHorizontal: 1 }}
+                                    />
+                                </View>
                             </View>
                             {item?.bundle_sub_conf_count && <View style={{ flexDirection: "row", marginTop: normalize(10), alignItems: "center" }}>
                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
@@ -355,7 +355,7 @@ const SpecialityCourseSlide = (props) => {
                         onBackPress={addCreditBack}
                     />
                 </View>}
-                {conn == false ? <IntOff/> :<ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
                     {filterstate?.length > 0 && <View>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                             {!filterName ? <View>
@@ -395,6 +395,7 @@ const SpecialityCourseSlide = (props) => {
                     </View>}
                     <View>
                         <FlatList
+                            scrollEnabled={false}
                             data={finalData?.slice(0, 3)}
                             renderItem={RequiredCourses}
                             keyExtractor={(item, index) => index.toString()}
@@ -432,6 +433,7 @@ const SpecialityCourseSlide = (props) => {
                             showsHorizontalScrollIndicator={false}
                         />
                         {finalData?.length > 3 && <FlatList
+                            scrollEnabled={false}
                             data={viewmore ? finalData?.slice(3) : []}
                             renderItem={RequiredCourses}
                             keyExtractor={(item, index) => index.toString()}

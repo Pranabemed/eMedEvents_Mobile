@@ -1,20 +1,37 @@
 /**
- * ApiRequest.js
+ * ApiRequest.js  — v3 (definitive)
  * ─────────────────────────────────────────────────────────────────────────────
- * All HTTP helpers used by Redux-Saga.
  *
- * 🔄  AUTOMATIC TOKEN REFRESH (applies to EVERY API call globally)
+ * ARCHITECTURE
+ * ─────────────────────────────────────────────────────────────────────────────
  *
- *  The server signals token expiry as:
- *    HTTP 200  +  { success: false, msg: "Missing or Invalid Token" }
+ * axiosInstance handles ALL app API calls.
+ * plain `axios` is used ONLY for the refresh call itself (avoids interceptor loop).
  *
- *  The Axios response interceptor catches this on EVERY request, calls
- *  `user/verifyRefreshToken`, replaces the token in AsyncStorage + Redux store,
- *  and transparently retries the original request — zero changes needed in any saga.
+ * Interceptors (registered in this order, run in REVERSE for responses — LIFO):
  *
- *  • NO automatic logout
- *  • NO user-visible disruption
- *  • Only ONE refresh runs at a time (queue prevents parallel refresh storms)
+ *   Request  [R1]  — always inject the FRESHEST token from AsyncStorage
+ *                    before every outgoing request (overrides stale Redux token)
+ *
+ *   Response [A]   — registered FIRST → runs LAST
+ *                    Token Auto-Saver: persists any token/refresh_token the
+ *                    server returns to AsyncStorage + Redux
+ *
+ *   Response [B]   — registered SECOND → runs FIRST (LIFO)
+ *                    Expiry Detector: detects the server's custom expiry signal,
+ *                    silently refreshes, and retries ONCE
+ *
+ * Token-expiry detection — STRICT matching only:
+ *   We only intercept responses whose msg is EXACTLY the server's known error
+ *   string ("missing or invalid token"). Broad words like "unauthorized" are NOT
+ *   matched to avoid false-positives on business-logic errors.
+ *
+ * Refresh loop prevention:
+ *   • The `user/verifyRefreshToken` call uses plain `axios`, NOT axiosInstance,
+ *     so it is completely outside the interceptor chain.
+ *   • `_retried` flag on the original config prevents double retries.
+ *   • `isRefreshing` flag + queue prevents parallel refresh storms.
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -22,46 +39,79 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 
-// ─── Detect token expiry from response body ────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Token-expiry detection — STRICT
+//
+// ❗ Do NOT add broad words like 'unauthorized' or 'unauthenticated' here.
+//    Those words appear in ordinary business-logic responses (e.g.
+//    "User not authorized to access this content") and would wrongly trigger
+//    a refresh loop on valid API failures.
+//
+// Only match the server's EXACT known token-expiry messages.
+// ─────────────────────────────────────────────────────────────────────────────
+const TOKEN_EXPIRY_MESSAGES = [
+  'missing or invalid token',
+  'token is missing or invalid',
+  'token is expired',
+  'token expired',
+  'invalid token',
+  'missing token',
+];
+
 function isTokenExpiredResponse(response) {
   if (!response) return false;
-  // Standard HTTP 401
+
+  // Standard HTTP 401 (some endpoints may still use this)
   if (response.status === 401) return true;
-  // Server always returns HTTP 200 + success:false + msg
-  if (response.data?.success === false) {
-    const msg = (response.data.msg || response.data.message || '').toLowerCase();
-    return (
-      msg === 'missing or invalid token' ||
-      msg.includes('missing or invalid token') ||
-      msg.includes('invalid token') ||
-      msg.includes('missing token') ||
-      msg.includes('token expired') ||
-      msg.includes('token is expired') ||
-      msg.includes('unauthorized') ||
-      msg.includes('unauthenticated')
-    );
+
+  // Server's custom format: HTTP 200 + { success: false, msg: "..." }
+  if (response?.data?.success === false) {
+    const msg = (
+      response.data.msg ||
+      response.data.message ||
+      response.data.error ||
+      ''
+    ).toLowerCase().trim();
+
+    return TOKEN_EXPIRY_MESSAGES.some(pattern => msg === pattern || msg.startsWith(pattern));
   }
+
   return false;
 }
 
-// ─── Refresh token queue (prevents multiple parallel refreshes) ────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Refresh-token queue — prevents parallel refresh storms
+// ─────────────────────────────────────────────────────────────────────────────
 let isRefreshing = false;
-let pendingQueue = []; // [{ resolve, reject }]
+let pendingQueue = [];
 
 function processQueue(error, token = null) {
   pendingQueue.forEach(p => (error ? p.reject(error) : p.resolve(token)));
   pendingQueue = [];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Core token refresher
+//
+// ⚠️  Uses plain `axios` (NOT axiosInstance) so this call is 100% outside
+//     the interceptor chain — zero chance of an infinite refresh loop.
+// ─────────────────────────────────────────────────────────────────────────────
 async function refreshAccessToken() {
   const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
+
+  // ── Diagnostic log — visible in Metro/device logs ──────────────────────────
+  console.log(
+    '[TokenRefresh] 🔍 refresh_token in storage:',
+    refreshToken ? `"${refreshToken.substring(0, 20)}…"` : 'NULL ← THIS IS THE PROBLEM'
+  );
+
   if (!refreshToken) {
-    throw new Error('No refresh_token stored');
+    throw new Error('NO_REFRESH_TOKEN');
   }
 
-  console.log('[ApiRequest] 🔄 Refreshing token via user/verifyRefreshToken…');
+  console.log('[TokenRefresh] 🔄 Calling user/verifyRefreshToken with plain axios…');
 
-  const res = await axios.post(
+  const res = await axios.post(                        // ← plain axios, NOT axiosInstance
     `${constants.BASE_URL}/user/verifyRefreshToken`,
     { refresh_token: refreshToken },
     {
@@ -69,95 +119,194 @@ async function refreshAccessToken() {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      timeout: 15000,
     },
   );
 
+  console.log('[TokenRefresh] verifyRefreshToken response:', JSON.stringify(res?.data)?.substring(0, 200));
+
   if (res.data?.success && res.data?.token) {
     const newToken = res.data.token;
+    // Server may rotate the refresh token; keep current one if it doesn't
     const newRefresh = res.data.refresh_token || refreshToken;
 
-    // ── Persist ──────────────────────────────────────────────────────────────
     await AsyncStorage.setItem(constants.TOKEN, newToken);
     await AsyncStorage.setItem(constants.REFRESH_TOKEN, newRefresh);
 
-    // ── Update Redux store silently ───────────────────────────────────────────
     try {
-      // Import lazily to avoid circular dependency
       const Store = require('../../Redux/Store').default;
       const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
       Store.dispatch(tokenSuccess(newToken));
       Store.dispatch(refreshTokenSuccess(res.data));
-    } catch (storeErr) {
-      console.warn('[ApiRequest] Could not update Redux store:', storeErr?.message);
-    }
+    } catch (_) { }
 
-    console.log('[ApiRequest] ✅ Token refreshed successfully.');
+    console.log('[TokenRefresh] ✅ Access token refreshed successfully.');
     return newToken;
   }
 
-  throw new Error(res.data?.msg || 'Token refresh failed');
+  // Refresh token itself is expired or invalid
+  console.error(
+    '[TokenRefresh] ❌ verifyRefreshToken FAILED. Server said:',
+    JSON.stringify(res?.data)
+  );
+  throw new Error(`REFRESH_FAILED: ${res?.data?.msg || 'server rejected refresh'}`);
 }
 
-// ─── Axios instance with interceptor ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// handleTokenExpiry — called from BOTH the success and error interceptor paths
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleTokenExpiry(originalConfig, originalResponse) {
+  // Guard: don't retry the same request twice
+  if (originalConfig._retried) {
+    console.warn('[TokenRefresh] ⚠️  Request already retried — returning original response.');
+    return originalResponse;
+  }
+  originalConfig._retried = true;
+
+  // If a refresh is already in progress, queue this request
+  if (isRefreshing) {
+    console.log('[TokenRefresh] ⏳ Refresh in progress — queuing request:', originalConfig.url);
+    return new Promise((resolve, reject) => {
+      pendingQueue.push({ resolve, reject });
+    })
+      .then(newToken => {
+        originalConfig.headers['eMedAuthorization'] = newToken;
+        return axiosInstance(originalConfig);
+      })
+      .catch(() => originalResponse);
+  }
+
+  isRefreshing = true;
+  try {
+    const newToken = await refreshAccessToken();
+    processQueue(null, newToken);
+
+    originalConfig.headers['eMedAuthorization'] = newToken;
+    console.log('[TokenRefresh] 🔁 Retrying:', originalConfig.url);
+    return axiosInstance(originalConfig);   // retry with fresh token
+
+  } catch (refreshErr) {
+    processQueue(refreshErr, null);
+
+    if (refreshErr?.message === 'NO_REFRESH_TOKEN') {
+      console.error(
+        '[TokenRefresh] ❌ FATAL: No refresh_token stored.\n' +
+        'This means the login/signup response did not include a refresh_token,\n' +
+        'or it was never saved to AsyncStorage.\n' +
+        'Check that the server returns refresh_token and that signupSaga /\n' +
+        'login_Saga / mobileLoginSaga are storing it correctly.'
+      );
+    } else {
+      console.error('[TokenRefresh] ❌ Refresh failed:', refreshErr?.message);
+    }
+
+    // Return original response — saga decides what to do (show error, re-login, etc.)
+    return originalResponse;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Axios instance — all app API calls go through this
+// ─────────────────────────────────────────────────────────────────────────────
 const axiosInstance = axios.create();
 
+// ─── [R1] Request interceptor ─────────────────────────────────────────────────
+// Always injects the FRESHEST token from AsyncStorage before each request.
+// This means:
+//   • Sagas that build headers from (possibly stale) Redux state still send the right token.
+//   • After a proactive refresh, the new token is used automatically.
+// ─────────────────────────────────────────────────────────────────────────────
+axiosInstance.interceptors.request.use(
+  async (config) => {
+    try {
+      const freshToken = await AsyncStorage.getItem(constants.TOKEN);
+      if (freshToken) {
+        config.headers['eMedAuthorization'] = freshToken;
+      }
+    } catch (_) {
+      // Never block the request
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// ─── [A] Response interceptor — Token Auto-Saver ─────────────────────────────
+// Registered FIRST → runs LAST (Axios LIFO for response interceptors).
+// Persists ANY token/refresh_token the server returns.
+// Note: we save even when success:false (unverified-user temporary tokens).
+// Also reschedules the proactive refresh timer via TokenManager.
+// ─────────────────────────────────────────────────────────────────────────────
 axiosInstance.interceptors.response.use(
   async (response) => {
-    // Check if this response signals token expiry
-    if (!isTokenExpiredResponse(response)) {
-      return response; // Normal path — pass through untouched
-    }
-
-    const originalRequest = response.config;
-
-    // Prevent infinite retry loop
-    if (originalRequest._retried) {
-      console.warn('[ApiRequest] ⚠️  Token still invalid after refresh — returning original response.');
-      return response;
-    }
-    originalRequest._retried = true;
-
-    if (isRefreshing) {
-      // Another refresh is already in progress — queue this retry
-      return new Promise((resolve, reject) => {
-        pendingQueue.push({ resolve, reject });
-      })
-        .then(newToken => {
-          originalRequest.headers['eMedAuthorization'] = newToken;
-          return axiosInstance(originalRequest);
-        })
-        .catch(err => {
-          console.error('[ApiRequest] Queued retry failed:', err?.message);
-          return response; // Return original expired response — no user disruption
-        });
-    }
-
-    isRefreshing = true;
     try {
-      const newToken = await refreshAccessToken();
-      processQueue(null, newToken);
+      const data = response?.data;
+      if (data && typeof data === 'object' && data.token) {
+        await AsyncStorage.setItem(constants.TOKEN, data.token);
 
-      // Retry original request with new token
-      originalRequest.headers['eMedAuthorization'] = newToken;
-      console.log('[ApiRequest] 🔁 Retrying original request with fresh token…');
-      return axiosInstance(originalRequest);
-    } catch (refreshError) {
-      processQueue(refreshError, null);
-      console.error('[ApiRequest] ❌ Token refresh failed:', refreshError?.message);
-      // Return the original expired response — NO logout, NO alert
-      return response;
-    } finally {
-      isRefreshing = false;
-    }
+        if (data.refresh_token) {
+          await AsyncStorage.setItem(constants.REFRESH_TOKEN, data.refresh_token);
+          console.log('[TokenAutoSave] ✅ token + refresh_token from:', response.config?.url?.split('/').pop());
+        } else {
+          console.log('[TokenAutoSave] ✅ token only (no refresh_token) from:', response.config?.url?.split('/').pop());
+        }
+
+        // Push to Redux
+        try {
+          const Store = require('../../Redux/Store').default;
+          const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
+          Store.dispatch(tokenSuccess(data.token));
+          if (data.refresh_token) {
+            Store.dispatch(refreshTokenSuccess({ token: data.token, refresh_token: data.refresh_token }));
+          }
+        } catch (_) { }
+
+        // ── Reschedule the proactive refresh timer for the new token ──────────
+        // This ensures that if the user stays idle on a screen for 10+ minutes,
+        // the timer fires 1 minute before expiry and refreshes silently.
+        try {
+          const TokenManager = require('./TokenManager').default;
+          TokenManager.onNewToken(data.token);
+        } catch (_) { }
+      }
+    } catch (_) { }
+    return response;
   },
-  (error) => {
-    // Network error / 5xx etc. — pass through
+  (error) => Promise.reject(error),
+);
+
+// ─── [B] Response interceptor — Expiry Detector + Refresh + Retry ─────────────
+// Registered SECOND → runs FIRST (Axios LIFO).
+// Catches: body-based expiry (HTTP 200 + success:false) AND HTTP 401.
+// ─────────────────────────────────────────────────────────────────────────────
+axiosInstance.interceptors.response.use(
+  // HTTP 2xx path
+  async (response) => {
+    if (!isTokenExpiredResponse(response)) {
+      return response;
+    }
+    console.log('[TokenRefresh] 🔑 Token expiry detected (body) on:', response.config?.url?.split('/').pop());
+    return handleTokenExpiry(response.config, response);
+  },
+
+  // HTTP 4xx/5xx/network error path
+  async (error) => {
+    const response = error?.response;
+    const config = error?.config;
+
+    if (response?.status === 401 && config) {
+      console.log('[TokenRefresh] 🔑 HTTP 401 on:', config?.url?.split('/').pop());
+      return handleTokenExpiry(config, response);
+    }
+
+    // All other errors — pass through unchanged
     return Promise.reject(error);
   },
 );
 
-// ─── Public API functions (same signature as before) ─────────────────────────
-
+// ─── Public API functions ──────────────────────────────────────────────────────
 export async function getApi(url, header) {
   return axiosInstance.get(`${constants.BASE_URL}/${url}`, {
     headers: {
@@ -194,8 +343,6 @@ export async function postApi(url, payload, header) {
 
 export async function deleteApi(url, payload, header) {
   const cleanUrl = `${constants.BASE_URL}/${url}`.replace(/\/\/+/g, '/').trim();
-  console.log('Full URL:', cleanUrl, `${constants.BASE_URL}/${url}`);
-
   try {
     return await axiosInstance.delete(cleanUrl, {
       headers: {
@@ -206,7 +353,7 @@ export async function deleteApi(url, payload, header) {
       data: payload,
     });
   } catch (error) {
-    console.error('Error with DELETE request:', error.response?.data || error.message);
+    console.error('[ApiRequest] DELETE error:', error.response?.data || error.message);
     throw error;
   }
 }

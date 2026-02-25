@@ -1,5 +1,10 @@
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, StyleSheet, Image, Alert, BackHandler } from 'react-native';
-import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
+import {
+    View, Text, Platform, KeyboardAvoidingView,
+    TouchableOpacity, TextInput, StyleSheet, BackHandler,
+} from 'react-native';
+import React, {
+    useEffect, useRef, useState, useCallback, useLayoutEffect,
+} from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -14,132 +19,76 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
-import Imagepath from '../../Themes/Imagepath';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
-let status = "";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// ─── Module-level OTP send guard ─────────────────────────────────────────────
+// Stored OUTSIDE the component so it:
+//  • Survives React StrictMode's intentional unmount → remount cycle
+//  • Is checked and set in the same synchronous tick (zero async race condition)
+//  • Tracks which email the OTP was last sent for, so a new email always works
+//
+// Reset on: Resend button tap, successful verification.
+let _loginOTPSentForEmail = null;
+// ─────────────────────────────────────────────────────────────────────────────
+
 const LoginEmail = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
-    console.log(props?.route?.params, AuthReducer?.signupResponse?.email_otp, "AuthReducer======", AuthReducer?.resendemailotpResponse?.email_otp, props?.route?.params?.verifyemail?.verifyemail, "props?.route?.params?.verifyemail?.phone")
     const isFocus = useIsFocused();
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    const [otp, setOtp] = useState(new Array(6).fill(''));
     const [allotpcheck, setAllotpcheck] = useState();
     const [resendtrue, setResendtrue] = useState(false);
-    const [otp, setOtp] = useState(new Array(6).fill(''));
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [countdown, setCountdown] = useState(300);
+
+    // ─── Refs ─────────────────────────────────────────────────────────────────
     const inputs = useRef([]);
-    const [loginemail, setLoginemail] = useState("");
-    useEffect(() => {
-        connectionrequest()
-            .then(() => {
-                dispatch(mainprofileRequest({}))
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }, [])
-    const handleChange = (text, index) => {
-        if (text.length > 1) {
-            const pastedText = text.replace(/[^0-9]/g, '');
-            const newOtp = [...otp];
-            let lastFilledIndex = index;
-            for (let i = 0; i < pastedText.length && index + i < 6; i++) {
-                newOtp[index + i] = pastedText[i];
-                lastFilledIndex = index + i;
-            }
-            setOtp(newOtp);
-            if (lastFilledIndex < 5) {
-                inputs.current[lastFilledIndex + 1]?.focus();
-            } else {
-                inputs.current[lastFilledIndex]?.focus();
-            }
-            return;
-        }
+    const timerRef = useRef(null);
+    const startTimeRef = useRef(0);
+    const initialDurationRef = useRef(0);
+    // Tracks last handled auth status to avoid double-opening the modal
+    const prevAuthStatus = useRef('');
 
-        const updatedOtp = [...otp];
-        updatedOtp[index] = text;
-        setOtp(updatedOtp);
-
-        if (text && index < 5) {
-            inputs.current[index + 1].focus();
-        }
-    };
-
-    const handleKeyPress = ({ nativeEvent }, index) => {
-        if (nativeEvent.key === 'Backspace') {
-            if (otp[index] === '') {
-                if (index > 0) inputs.current[index - 1].focus();
-            } else {
-                const updatedOtp = [...otp];
-                updatedOtp[index] = '';
-                setOtp(updatedOtp);
-            }
-        }
-    };
-    console.log(otp, "otp--------------", props?.route?.params)
+    // ─── Fetch email from AsyncStorage on focus ───────────────────────────────
     useEffect(() => {
         const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.EMAIL);
-                setAllotpcheck(loginHandle)
+                setAllotpcheck(loginHandle);
             }, 100);
         };
-        try {
-            token_handle();
-        } catch (error) {
-            console.log(error);
-        }
+        try { token_handle(); } catch (e) { console.log(e); }
     }, [isFocus]);
-    console.log(allotpcheck, "statelicesene=================", otp)
-    const [countdown, setCountdown] = useState(300);
-    const timerRef = useRef(null);
-    const startTimeRef = useRef(0);
-    const initialDurationRef = useRef(0);
 
+    // ─── Fetch main profile once on mount ────────────────────────────────────
     useEffect(() => {
-        const storedStartTime = AsyncStorage.getItem('otpStartTime');
-        const storedDuration = AsyncStorage.getItem('otpInitialDuration');
-
-        if (storedStartTime && storedDuration) {
-            const parsedStartTime = parseInt(storedStartTime, 10);
-            const parsedDuration = parseInt(storedDuration, 10);
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - parsedStartTime) / 1000);
-            const remaining = Math.max(parsedDuration - elapsedSeconds, 0);
-
-            if (remaining > 0) {
-                startTimeRef.current = parsedStartTime;
-                initialDurationRef.current = parsedDuration;
-                setCountdown(remaining);
-                startTimer();
-            } else {
-                AsyncStorage.removeItem('otpStartTime');
-                AsyncStorage.removeItem('otpInitialDuration');
-            }
-        }
-
-        return () => clearInterval(timerRef.current);
+        connectionrequest()
+            .then(() => { dispatch(mainprofileRequest({})); })
+            .catch(err => { showErrorAlert('Please connect to internet', err); });
     }, []);
 
+    // ─── Block hardware back button ───────────────────────────────────────────
     useEffect(() => {
-        startTimer();
-        return () => clearInterval(timerRef.current);
+        const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+        return () => sub.remove();
     }, []);
 
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+
+    // ─── Timer ────────────────────────────────────────────────────────────────
+    // startTimer has NO deps — reads refs directly so it never recreates,
+    // eliminating the "timer restarts every second" loop.
     const startTimer = useCallback(() => {
         clearInterval(timerRef.current);
-        if (!startTimeRef.current) {
-            startTimeRef.current = Date.now();
-            initialDurationRef.current = countdown;
-            AsyncStorage.setItem('otpStartTime', startTimeRef.current.toString());
-            AsyncStorage.setItem('otpInitialDuration', initialDurationRef.current.toString());
-        }
-
         timerRef.current = setInterval(() => {
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - startTimeRef.current) / 1000);
-            const remaining = initialDurationRef.current - elapsedSeconds;
-
+            const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+            const remaining = initialDurationRef.current - elapsed;
             if (remaining <= 0) {
                 clearInterval(timerRef.current);
                 setCountdown(0);
@@ -150,7 +99,8 @@ const LoginEmail = (props) => {
                 setCountdown(remaining);
             }
         }, 1000);
-    }, [countdown]);
+    }, []);
+
     const startNewTimer = useCallback((duration) => {
         clearInterval(timerRef.current);
         AsyncStorage.removeItem('otpStartTime');
@@ -158,154 +108,190 @@ const LoginEmail = (props) => {
         startTimeRef.current = Date.now();
         initialDurationRef.current = duration;
         setCountdown(duration);
-
-        // Save to AsyncStorage
-        AsyncStorage.setItem('otpStartTime', startTimeRef.current.toString());
-        AsyncStorage.setItem('otpInitialDuration', initialDurationRef.current.toString());
-
-        // Start the timer
-        startTimer();
-    }, []);
-    useEffect(() => {
-        if (countdown > 0 && !timerRef.current) {
+        if (duration > 0) {
+            AsyncStorage.setItem('otpStartTime', startTimeRef.current.toString());
+            AsyncStorage.setItem('otpInitialDuration', initialDurationRef.current.toString());
             startTimer();
         }
-    }, [countdown, startTimer]);
+    }, [startTimer]);
 
+    // Restore persisted timer on mount (handles back-navigation scenario)
     useEffect(() => {
+        const restore = async () => {
+            const storedStart = await AsyncStorage.getItem('otpStartTime');
+            const storedDuration = await AsyncStorage.getItem('otpInitialDuration');
+            if (storedStart && storedDuration) {
+                const parsedStart = parseInt(storedStart, 10);
+                const parsedDuration = parseInt(storedDuration, 10);
+                const elapsed = Math.floor((Date.now() - parsedStart) / 1000);
+                const remaining = Math.max(parsedDuration - elapsed, 0);
+                if (remaining > 0) {
+                    startTimeRef.current = parsedStart;
+                    initialDurationRef.current = parsedDuration;
+                    setCountdown(remaining);
+                    startTimer();
+                } else {
+                    AsyncStorage.removeItem('otpStartTime');
+                    AsyncStorage.removeItem('otpInitialDuration');
+                }
+            } else {
+                startNewTimer(300);
+            }
+        };
+        restore();
         return () => clearInterval(timerRef.current);
     }, []);
-    useEffect(() => {
-        resendOTP();
-    }, [props?.route?.params?.NewEmail?.verifyotp])
+
     const resendOTP = useCallback(() => {
         startNewTimer(300);
     }, [startNewTimer]);
 
-    console.log("enteredOTP === allotpcheck", AuthReducer?.resendemailotpResponse?.email_otp);
+    // ─── Single shared resend-OTP API dispatcher ──────────────────────────────
+    const dispatchResendEmailOTP = useCallback(() => {
+        const obj = { verify_type: 'email' };
+        connectionrequest()
+            .then(() => { dispatch(resendemailotpRequest(obj)); })
+            .catch(err => { showErrorAlert('Please connect to internet', err); });
+    }, [dispatch]);
+
+    // ─── Auto-trigger OTP ONCE when user?.emailid param is present ───────────
+    //
+    // Uses a module-level variable (_loginOTPSentForEmail) as the guard.
+    // This is synchronous and lives outside React, so it is immune to:
+    //   • React StrictMode double-invoke
+    //   • Rapid unmount → remount from navigator
+    //   • Async race conditions (no AsyncStorage read needed)
+    //
+    // The guard stores the exact email string so a genuinely new email
+    // (different user?.emailid param) will always trigger correctly.
+    //
+    useEffect(() => {
+        const emailId = props?.route?.params?.user?.emailid;
+        if (!emailId) return;
+
+        // Synchronous check + set — no await, no race condition possible
+        if (_loginOTPSentForEmail === emailId) return;
+        _loginOTPSentForEmail = emailId; // locked before any async work
+
+        setResendtrue(true);
+        dispatchResendEmailOTP();
+        resendOTP();
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props?.route?.params?.user?.emailid]);
+
+    // ─── Open success modal after verifyemailSuccess (safe, not during render) ─
+    useEffect(() => {
+        if (
+            AuthReducer.status === 'Auth/verifyemailSuccess' &&
+            prevAuthStatus.current !== 'Auth/verifyemailSuccess'
+        ) {
+            // Reset the module-level guard so a future login email flow works correctly
+            _loginOTPSentForEmail = null;
+            setModalVisible(true);
+        }
+        prevAuthStatus.current = AuthReducer.status;
+    }, [AuthReducer.status]);
+
+    // ─── OTP input handlers ───────────────────────────────────────────────────
+    const handleChange = (text, index) => {
+        if (text.length > 1) {
+            const pasted = text.replace(/[^0-9]/g, '');
+            const newOtp = [...otp];
+            let lastIndex = index;
+            for (let i = 0; i < pasted.length && index + i < 6; i++) {
+                newOtp[index + i] = pasted[i];
+                lastIndex = index + i;
+            }
+            setOtp(newOtp);
+            inputs.current[lastIndex < 5 ? lastIndex + 1 : lastIndex]?.focus();
+            return;
+        }
+        const updated = [...otp];
+        updated[index] = text;
+        setOtp(updated);
+        if (text && index < 5) inputs.current[index + 1]?.focus();
+    };
+
+    const handleKeyPress = ({ nativeEvent }, index) => {
+        if (nativeEvent.key === 'Backspace') {
+            if (otp[index] === '') {
+                if (index > 0) inputs.current[index - 1]?.focus();
+            } else {
+                const updated = [...otp];
+                updated[index] = '';
+                setOtp(updated);
+            }
+        }
+    };
+
+    const clearAllOTPFields = () => {
+        setOtp(new Array(6).fill(''));
+        inputs.current[0]?.focus();
+    };
+
+    // ─── Verify ───────────────────────────────────────────────────────────────
     const verifyHandle = () => {
-        const enteredOTP = otp && otp.join('');
-        console.log(enteredOTP, typeof enteredOTP, "manually otp");
+        const enteredOTP = otp.join('');
         let serverOTP;
         if (resendtrue && AuthReducer?.resendemailotpResponse?.email_otp) {
-            serverOTP = AuthReducer?.resendemailotpResponse?.email_otp;
+            serverOTP = AuthReducer.resendemailotpResponse.email_otp;
         } else if (props?.route?.params?.NewEmail?.verifyotp) {
             serverOTP = props.route.params.NewEmail.verifyotp;
         } else {
             serverOTP = AuthReducer?.resendemailotpResponse?.email_otp;
         }
-        console.log(serverOTP, "serverOTP", enteredOTP);
+
         if (enteredOTP == serverOTP) {
-            verifyHandlevalid();
+            const obj = { verify_type: 'email' };
+            connectionrequest()
+                .then(() => { dispatch(verifyemailRequest(obj)); })
+                .catch(err => { showErrorAlert('Please connect to internet', err); });
         } else {
-            // setCountdown(0);
             setResendtrue(false);
-            showErrorAlert("Invalid OTP. Please try again.");
+            showErrorAlert('Invalid OTP. Please try again.');
         }
     };
-    const [isModalVisible, setModalVisible] = useState(false);
-    const toggleModal = () => {
-        setModalVisible(!isModalVisible);
-    };
-    const verifyHandlevalid = () => {
-        let obj = {
-            "verify_type": "email"
-        }
-        connectionrequest()
-            .then(() => {
-                dispatch(verifyemailRequest(obj))
-            })
-            .catch(err => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }
-    const resendEmailOTPA = () => {
-        let obj = { "verify_type": "email" };
-        connectionrequest()
-            .then(() => {
-                dispatch(resendemailotpRequest(obj));
-            })
-            .catch(err => {
-                showErrorAlert("Please connect to internet", err);
-            })
-    };
-    const resendEmailOTP = () => {
-        let obj = {
-            "verify_type": "email"
-        }
-        connectionrequest()
-            .then(() => {
-                dispatch(resendemailotpRequest(obj));
-            })
-            .catch(err => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }
-    useEffect(() => {
-        if (props?.route?.params?.user?.emailid && !AuthReducer?.resendemailotpResponse?.email_otp) {
-            setTimeout(() => {
-                setLoginemail("didtext");
-            }, 2000);
-        }
-    }, [props?.route?.params?.user?.emailid, AuthReducer?.resendemailotpResponse?.email_otp]);
-    useEffect(() => {
-        if (loginemail == "didtext") {
-            Alert.alert("eMedEvents", "Successfully fetched your existing data !", [{
-                text: "Continue", onPress: () => {
-                    setLoginemail("");
-                    resendEmailOTPA();
-                    setResendtrue(true);
-                    resendOTP();
-                }
-            }])
-        }
-    }, [loginemail])
-    if (status == '' || AuthReducer.status != status) {
-        switch (AuthReducer.status) {
-            case 'Auth/verifyemailRequest':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/verifyemailSuccess':
-                status = AuthReducer.status;
-                toggleModal();
-                // props.navigation.navigate("VerifyMobileOTP");
-                break;
-            case 'Auth/verifyemailFailure':
-                status = AuthReducer.status;
-                break;
-        }
-    }
+
+    const toggleModal = () => setModalVisible(v => !v);
+
+    // ─── Derived values ───────────────────────────────────────────────────────
     const isEnabled = countdown > 0;
-    const email = props?.route?.params?.NewEmail?.email || props?.route?.params?.NewEmail || props?.route?.params?.user?.emailid || props?.route?.params?.mobileNo || props?.route?.params?.user?.emailid || AuthReducer?.verifyResponse?.email || allotpcheck;
-    const phoneTake = props?.route?.params?.user?.phoneData || props?.route?.params?.mobileNo?.phone || props?.route?.params?.verifyemail?.verifyemail?.phone || props?.route?.params?.NewEmail?.phoneNo || props?.route?.params?.NewEmail?.phone || props?.route?.params?.NewEmail?.returnDat?.phone || props?.route?.params?.NewEmail?.returnDat?.phoneNo;
-    const countryCode = props?.route?.params?.verifyemail?.verifyemail?.countryCode || props?.route?.params?.NewEmail?.returnDat?.countryCode
-    console.log(phoneTake, "phoneTake")
-    const clearAllOTPFields = () => {
-        setOtp(new Array(6).fill(''));
-        if (inputs.current[0]) {
-            inputs.current[0].focus();
-        }
-    };
-    const finalPush = props?.route?.params?.verifyemail?.profession ||
+
+    const email =
+        props?.route?.params?.NewEmail?.email ||
+        props?.route?.params?.NewEmail ||
+        props?.route?.params?.user?.emailid ||
+        props?.route?.params?.mobileNo ||
+        AuthReducer?.verifyResponse?.email ||
+        allotpcheck;
+
+    const phoneTake =
+        props?.route?.params?.user?.phoneData ||
+        props?.route?.params?.mobileNo?.phone ||
+        props?.route?.params?.verifyemail?.verifyemail?.phone ||
+        props?.route?.params?.NewEmail?.phoneNo ||
+        props?.route?.params?.NewEmail?.phone ||
+        props?.route?.params?.NewEmail?.returnDat?.phone ||
+        props?.route?.params?.NewEmail?.returnDat?.phoneNo;
+
+    const countryCode =
+        props?.route?.params?.verifyemail?.verifyemail?.countryCode ||
+        props?.route?.params?.NewEmail?.returnDat?.countryCode;
+
+    const finalPush =
+        props?.route?.params?.verifyemail?.profession ||
         (DashboardReducer?.mainprofileResponse?.professional_information?.profession &&
             DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
             ? `${DashboardReducer.mainprofileResponse.professional_information.profession} - ${DashboardReducer.mainprofileResponse.professional_information.profession_type}`
             : null);
-    useEffect(() => {
-        const onBackPress = () => {
-            return true;
-        };
-        const backHandler = BackHandler.addEventListener(
-            'hardwareBackPress',
-            onBackPress
-        );
-        return () => backHandler.remove();
-    }, []);
-    const high = props?.route?.params?.NewEmail?.email ? props?.route?.params?.NewEmail?.email : props?.route?.params?.NewEmail ? props?.route?.params?.NewEmail : props?.route?.params?.user?.emailid;
-    console.log(high, "hight==========");
-    useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+
+    const high =
+        props?.route?.params?.NewEmail?.email ||
+        props?.route?.params?.NewEmail ||
+        props?.route?.params?.user?.emailid;
+
+    // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <>
             <MyStatusBar
@@ -314,88 +300,81 @@ const LoginEmail = (props) => {
             />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                     <Loader
-                        visible={AuthReducer?.status == 'Auth/verifyemailRequest' || AuthReducer?.status == 'Auth/resendemailotpRequest'} />
-
-                    {/* <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), marginRight: normalize(10), justifyContent: "center", alignContent: "center" }}>
-                        <Image
-                            source={Imagepath.eMedfulllogo}
-                            style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }}
-                        />
-                    </View> */}
+                        visible={
+                            AuthReducer?.status === 'Auth/verifyemailRequest' ||
+                            AuthReducer?.status === 'Auth/resendemailotpRequest'
+                        }
+                    />
 
                     <View style={styles.headerContainer}>
-                        <Text style={styles.headerText}>{"Verify Your Email"}</Text>
-                        <View style={{ flexDirection: "column", marginTop: normalize(15) }}>
-                            <View>
-                                <Text style={styles.subHeaderText}>
-                                    {"A 6-digit code has been sent to"}
-                                </Text>
-                            </View>
+                        <Text style={styles.headerText}>{'Verify Your Email'}</Text>
+                        <View style={{ flexDirection: 'column', marginTop: normalize(15) }}>
+                            <Text style={styles.subHeaderText}>
+                                {'A 6-digit code has been sent to'}
+                            </Text>
 
-                            {email?.length < 15 ? <View style={{ flexDirection: "row", gap: 5 }}>
-                                <View>
-                                    <Text style={[styles.subHeaderText, { fontWeight: "bold", width: normalize(170) }]}>
-                                        {email}
-                                    </Text>
-                                </View>
-                                <TouchableOpacity disabled={countdown == 0 ? false : true} onPress={() => {
-                                    props.navigation.navigate("LoginChangeMail", {
-                                        wholeData: high,
-                                    });
-                                    startNewTimer(0);
-                                    clearAllOTPFields();
-                                    // AsyncStorage.removeItem(constants.EMAILOTP);
-                                }}>
-                                    <Text style={[styles.subHeaderText, { textDecorationLine: "underline", color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA" }]}>
-                                        {"Change"}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View> : <View style={{ gap: 5 }}>
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <Text
-                                        style={[
-                                            styles.subHeaderText,
-                                            { fontWeight: "bold", width: normalize(320) }
-                                        ]}
-                                        numberOfLines={2}
-                                        ellipsizeMode="tail"
+                            {email?.length < 15 ? (
+                                <View style={{ flexDirection: 'row', gap: 5 }}>
+                                    <View>
+                                        <Text style={[styles.subHeaderText, { fontWeight: 'bold', width: normalize(170) }]}>
+                                            {email}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        disabled={countdown !== 0}
+                                        onPress={() => {
+                                            props.navigation.navigate('LoginChangeMail', { wholeData: high });
+                                            startNewTimer(0);
+                                            clearAllOTPFields();
+                                        }}
                                     >
-                                        {email}
-                                    </Text>
+                                        <Text style={[styles.subHeaderText, {
+                                            textDecorationLine: 'underline',
+                                            color: countdown === 0 ? Colorpath.ButtonColr : '#DADADA',
+                                        }]}>
+                                            {'Change'}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
-                                <TouchableOpacity disabled={countdown == 0 ? false : true}
-                                    style={{ alignSelf: "center" }}
-                                    onPress={() => {
-                                        props.navigation.navigate("LoginChangeMail", {
-                                            wholeData: high,
-                                        });
-                                        startNewTimer(0);
-                                        clearAllOTPFields();
-                                    }}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.subHeaderText,
-                                            {
-                                                textDecorationLine: "underline",
-                                                color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA",
-                                            },
-                                        ]}
+                            ) : (
+                                <View style={{ gap: 5 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Text
+                                            style={[styles.subHeaderText, { fontWeight: 'bold', width: normalize(320) }]}
+                                            numberOfLines={2}
+                                            ellipsizeMode="tail"
+                                        >
+                                            {email}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        disabled={countdown !== 0}
+                                        style={{ alignSelf: 'center' }}
+                                        onPress={() => {
+                                            props.navigation.navigate('LoginChangeMail', { wholeData: high });
+                                            startNewTimer(0);
+                                            clearAllOTPFields();
+                                        }}
                                     >
-                                        Change
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>}
+                                        <Text style={[styles.subHeaderText, {
+                                            textDecorationLine: 'underline',
+                                            color: countdown === 0 ? Colorpath.ButtonColr : '#DADADA',
+                                        }]}>
+                                            Change
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
-
                     </View>
-                    <View style={{ flexDirection: "column", flex: 0.3 }}>
+
+                    <View style={{ flexDirection: 'column', flex: 0.3 }}>
                         <View style={styles.inputContainer}>
-                            {otp && otp.map((digit, index) => (
+                            {otp.map((digit, index) => (
                                 <TextInput
                                     key={index}
                                     placeholder="0"
@@ -403,52 +382,53 @@ const LoginEmail = (props) => {
                                     ref={(ref) => (inputs.current[index] = ref)}
                                     value={digit}
                                     onChangeText={(text) => {
-                                        const filteredText = text.replace(/[^0-9]/g, '');
-                                        handleChange(filteredText, index);
+                                        handleChange(text.replace(/[^0-9]/g, ''), index);
                                     }}
                                     onKeyPress={(e) => handleKeyPress(e, index)}
                                     keyboardType="number-pad"
-                                    maxLength={6} // Allow paste
+                                    maxLength={6}
                                     style={styles.input}
                                     autoFocus={index === 0}
                                     textAlign="center"
                                 />
                             ))}
                         </View>
-                        <View style={{ flexDirection: "row", marginLeft: normalize(17), gap: 5, marginTop: normalize(10) }}>
-                            <View>
-                                {countdown === 0 ? <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#FF5E62" }}>
-                                    {"Verification code expired!"}
-                                </Text> :
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#FF5E62" }}>
-                                        {`The code will be expired in ${countdown} seconds`}
-                                    </Text>}
-                            </View>
 
+                        <View style={{ flexDirection: 'row', marginLeft: normalize(17), gap: 5, marginTop: normalize(10) }}>
+                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: '#FF5E62' }}>
+                                {countdown === 0
+                                    ? 'Verification code expired!'
+                                    : `The code will be expired in ${countdown} seconds`}
+                            </Text>
                         </View>
-                        <View style={{ flexDirection: "row", marginLeft: normalize(17), gap: 5, marginTop: normalize(10) }}>
-                            <View>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666666" }}>
-                                    {"Didn’t receive the code?"}
-                                </Text>
-                            </View>
-                            <TouchableOpacity disabled={countdown == 0 ? false : true} onPress={() => {
-                                resendEmailOTP();
-                                resendOTP()
-                                setResendtrue(true);
-                                clearAllOTPFields();
-                            }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA" }}>
-                                    {"Resend"}
+
+                        <View style={{ flexDirection: 'row', marginLeft: normalize(17), gap: 5, marginTop: normalize(10) }}>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: '#666666' }}>
+                                {"Didn't receive the code?"}
+                            </Text>
+                            <TouchableOpacity
+                                disabled={countdown !== 0}
+                                onPress={() => {
+                                    // Reset the module-level guard so user can resend manually
+                                    _loginOTPSentForEmail = null;
+                                    dispatchResendEmailOTP();
+                                    resendOTP();
+                                    setResendtrue(true);
+                                    clearAllOTPFields();
+                                }}
+                            >
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: countdown === 0 ? Colorpath.ButtonColr : '#DADADA' }}>
+                                    {'Resend'}
                                 </Text>
                             </TouchableOpacity>
                         </View>
+
                         <View>
                             <Buttons
                                 onPress={verifyHandle}
                                 height={normalize(45)}
                                 width={normalize(288)}
-                                backgroundColor={isEnabled ? Colorpath.ButtonColr : "#CCC"}
+                                backgroundColor={isEnabled ? Colorpath.ButtonColr : '#CCC'}
                                 borderRadius={normalize(9)}
                                 text="Verify"
                                 color={Colorpath.white}
@@ -460,11 +440,11 @@ const LoginEmail = (props) => {
                             <CustomModal
                                 isVisible={isModalVisible}
                                 onClose={toggleModal}
-                                content={"Your email has been \n successfully verified."}
+                                content={'Your email has been \n successfully verified.'}
                                 navigation={props.navigation}
                                 phoneno={phoneTake}
                                 countrycode={countryCode}
-                                norq={props?.route?.params?.user?.phoneData ? "call" : ""}
+                                norq={props?.route?.params?.user?.phoneData ? 'call' : ''}
                                 profession={finalPush}
                             />
                         </View>
@@ -477,19 +457,18 @@ const LoginEmail = (props) => {
 
 const styles = StyleSheet.create({
     headerContainer: {
-        justifyContent: "center",
-        alignItems: "center",
-        flex: 0.4
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 0.4,
     },
     headerText: {
         fontFamily: Fonts.InterSemiBold,
         fontSize: 32,
-        color: "#000000",
-        marginTop: normalize(10)
+        color: '#000000',
+        marginTop: normalize(10),
     },
     subHeaderText: {
-        // marginTop: normalize(10),
-        color: "#666666",
+        color: '#666666',
         fontSize: 18,
         fontFamily: Fonts.InterRegular,
         textAlign: 'center',
@@ -497,14 +476,14 @@ const styles = StyleSheet.create({
     inputContainer: {
         marginBottom: normalize(15),
         alignItems: 'center',
-        flexDirection: "row",
-        justifyContent: "center",
-        gap: normalize(8)
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: normalize(8),
     },
     forgotContainer: {
         marginTop: normalize(10),
-        alignSelf: 'center', // Align it with the input fields
-        width: normalize(280), // Ensure it matches the width of the Textfield
+        alignSelf: 'center',
+        width: normalize(280),
         flexDirection: 'row',
         justifyContent: 'flex-end',
     },
@@ -519,9 +498,9 @@ const styles = StyleSheet.create({
         borderBottomWidth: 2,
         borderColor: '#ccc',
         fontSize: 20,
-        color: "#000000",
+        color: '#000000',
         fontFamily: Fonts.InterMedium,
-    }
+    },
 });
 
 export default LoginEmail;
