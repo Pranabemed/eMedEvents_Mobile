@@ -1,4 +1,5 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
+import { Platform } from 'react-native';
 import {
   signupSuccess,
   signupFailure,
@@ -800,6 +801,14 @@ export function* refreshTokenSaga(action) {
    *     creating an infinite loop.
    */
   try {
+    if (Platform.OS === 'ios') {
+      const newToken = yield call(doRefreshToken);
+      if (!newToken) {
+        yield put(refreshTokenFailure({ message: 'Refresh failed' }));
+      }
+      return;
+    }
+
     const payload = action?.payload || {};
     const storedRefresh = yield call(AsyncStorage.getItem, constants.REFRESH_TOKEN);
     const refresh_token = payload?.refresh_token || storedRefresh;

@@ -42,12 +42,14 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { call, put, select } from 'redux-saga/effects';
 import {
     tokenSuccess,
     refreshTokenSuccess,
 } from '../../Redux/Reducers/AuthReducer';
 import constants from './constants';
+import TokenManager from './TokenManager';
 
 // ─── Selector ────────────────────────────────────────────────────────────────
 
@@ -109,64 +111,14 @@ function isTokenExpired(response) {
  */
 export function* doRefreshToken() {
     try {
-        const refreshToken = yield call(AsyncStorage.getItem, constants.REFRESH_TOKEN);
-
-        if (!refreshToken) {
-            // No refresh token = user is a guest or not logged in. This is normal.
-            // ✅ Do NOT dispatch refreshTokenFailure — that can cascade into logout UI.
-            console.warn('[TokenRefresh] No refresh_token in storage — user not logged in, skipping.');
-            return null;
-        }
-
-        console.log('[TokenRefresh] 🔄 Access token expired — refreshing via verifyRefreshToken…');
-
-        // ── Use plain axios (NOT postApi/axiosInstance) ────────────────────────
-        // This keeps the call 100% outside the interceptor chain.
-        const { default: plainAxios } = require('axios');
-        const refreshResponse = yield call(
-            () => plainAxios.post(
-                `${constants.BASE_URL}/user/verifyRefreshToken`,
-                { refresh_token: refreshToken },
-                {
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                    timeout: 15000,
-                },
-            )
-        );
-
-        if (refreshResponse?.data?.success && refreshResponse?.data?.token) {
-            const newToken = refreshResponse.data.token;
-            const newRefreshToken = refreshResponse.data.refresh_token || refreshToken;
-
-            // ── Persist ──────────────────────────────────────────────────────────
-            yield call(AsyncStorage.setItem, constants.TOKEN, newToken);
-            yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, newRefreshToken);
-
-            // ── Update Redux ─────────────────────────────────────────────────────
-            yield put(tokenSuccess(newToken));
-            yield put(refreshTokenSuccess(refreshResponse.data));
-
-            console.log('[TokenRefresh] ✅ Token refreshed successfully.');
-            return newToken;
-        }
-
-        // Server rejected the refresh token (may be expired, invalid, etc.)
-        // ✅ Return null — user stays logged in. No forced logout.
-        // The calling saga will return the original failed response to the screen.
-        console.warn(
-            '[TokenRefresh] ⚠️  verifyRefreshToken rejected (non-fatal):',
-            refreshResponse?.data?.msg,
-            '— user remains logged in.',
-        );
-        return null;
-
+        console.log('[TokenRefresh] 🔄 Redux Saga detected expired token. Delegating to TokenManager shared lock...');
+        // Delegate directly to the TokenManager Promise lock. BOTH iOS and Android MUST share
+        // this single lock, otherwise Redux Sagas and Axios Interceptors will fire duplicate
+        // refresh token requests when the app wakes up.
+        const lockedToken = yield call(() => TokenManager.forceRefresh());
+        return lockedToken || null;
     } catch (err) {
-        // Network error, timeout, etc.
-        // ✅ Return null — user stays logged in.
-        console.warn('[TokenRefresh] ⚠️  Network error during refresh (non-fatal):', err?.message || err);
+        console.warn('[TokenRefresh] ⚠️  Shared TokenManager refresh failed via saga (non-fatal):', err?.message || err);
         return null;
     }
 }

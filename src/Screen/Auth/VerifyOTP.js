@@ -276,8 +276,8 @@ const VerifyOTP = (props) => {
         resendOTP();
     }, [props?.route?.params?.NewEmail?.verifyotp])
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -285,7 +285,7 @@ const VerifyOTP = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>

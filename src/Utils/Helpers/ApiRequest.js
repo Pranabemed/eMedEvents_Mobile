@@ -1,12 +1,12 @@
 /**
- * ApiRequest.js  — v4 (SAFE — never force-logout)
+ * ApiRequest.js  — v5 (SINGLE REFRESH LOCK — delegates to TokenManager)
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * ARCHITECTURE
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * axiosInstance handles ALL app API calls.
- * plain `axios` is used ONLY for the refresh call itself (avoids interceptor loop).
+ * plain `axios` is used ONLY for the refresh call itself (inside TokenManager).
  *
  * Interceptors (registered in this order, run in REVERSE for responses — LIFO):
  *
@@ -18,26 +18,21 @@
  *                    server returns to AsyncStorage + Redux
  *
  *   Response [B]   — registered SECOND → runs FIRST (LIFO)
- *                    Expiry Detector: detects the server's custom expiry signal,
- *                    silently refreshes, and retries ONCE
+ *                    Expiry Detector: delegates refresh to TokenManager.forceRefresh().
+ *                    TokenManager uses a shared _refreshPromise so ALL callers
+ *                    (AppState, timer, this interceptor) share ONE HTTP call.
  *
  * GOLDEN RULE — NO FORCED LOGOUT
  * ────────────────────────────────
  * Neither the refresh logic nor any interceptor ever calls logoutSuccess or
- * clears AsyncStorage. If a refresh fails, the original response is returned
- * and the saga/screen decides what to show (a normal error message, NOT a
- * logout). Only the explicit Logout button dispatches logoutRequest.
+ * clears AsyncStorage. If a refresh fails, the original response is returned.
  *
- * Token-expiry detection — STRICT matching only:
- *   We only intercept responses whose msg matches the server's known error
- *   strings. Broad words like "unauthorized" appearing in business-logic
- *   error messages will NOT trigger a refresh to avoid false-positives.
- *
- * Refresh loop prevention:
- *   • The `user/verifyRefreshToken` call uses plain `axios`, NOT axiosInstance,
- *     so it is completely outside the interceptor chain.
- *   • `_retried` flag on the original config prevents double retries.
- *   • `isRefreshing` flag + queue prevents parallel refresh storms.
+ * SINGLE REFRESH LOCK
+ * ───────────────────
+ * Token refresh is handled EXCLUSIVELY by TokenManager._refreshPromise.
+ * This prevents the race condition where two concurrent verifyRefreshToken
+ * calls are made with the same (single-use) refresh token — the server would
+ * accept the first and reject the second with "token expired".
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -45,6 +40,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
+import TokenManager from './TokenManager';
+import getUserAgentJSON from './UserAgent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-expiry detection — STRICT
@@ -69,7 +66,7 @@ function isTokenExpiredResponse(response) {
   if (!response) return false;
 
   // Standard HTTP 401 (some endpoints may still use this)
-  if (response.status === 401) return true;
+  // if (response.status === 401) return true; // Disabled strictly, let's only use body match
 
   // Server's custom format: HTTP 200 + { success: false, msg: "..." }
   if (response?.data?.success === false) {
@@ -87,80 +84,7 @@ function isTokenExpiredResponse(response) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Refresh-token queue — prevents parallel refresh storms
-// ─────────────────────────────────────────────────────────────────────────────
-let isRefreshing = false;
-let pendingQueue = [];
-
-function processQueue(error, token = null) {
-  pendingQueue.forEach(p => (error ? p.reject(error) : p.resolve(token)));
-  pendingQueue = [];
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Core token refresher
-//
-// ⚠️  Uses plain `axios` (NOT axiosInstance) so this call is 100% outside
-//     the interceptor chain — zero chance of an infinite refresh loop.
-// ─────────────────────────────────────────────────────────────────────────────
-async function refreshAccessToken() {
-  const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
-
-  // ── Diagnostic log — visible in Metro/device logs ──────────────────────────
-  console.log(
-    '[TokenRefresh] 🔍 refresh_token in storage:',
-    refreshToken ? `"${refreshToken.substring(0, 20)}…"` : 'NULL ← THIS IS THE PROBLEM'
-  );
-
-  if (!refreshToken) {
-    throw new Error('NO_REFRESH_TOKEN');
-  }
-
-  console.log('[TokenRefresh] 🔄 Calling user/verifyRefreshToken with plain axios…');
-
-  const res = await axios.post(                        // ← plain axios, NOT axiosInstance
-    `${constants.BASE_URL}/user/verifyRefreshToken`,
-    { refresh_token: refreshToken },
-    {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      timeout: 15000,
-    },
-  );
-
-  console.log('[TokenRefresh] verifyRefreshToken response:', JSON.stringify(res?.data)?.substring(0, 200));
-
-  if (res.data?.success && res.data?.token) {
-    const newToken = res.data.token;
-    // Server may rotate the refresh token; keep current one if it doesn't
-    const newRefresh = res.data.refresh_token || refreshToken;
-
-    await AsyncStorage.setItem(constants.TOKEN, newToken);
-    await AsyncStorage.setItem(constants.REFRESH_TOKEN, newRefresh);
-
-    try {
-      const Store = require('../../Redux/Store').default;
-      const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
-      Store.dispatch(tokenSuccess(newToken));
-      Store.dispatch(refreshTokenSuccess(res.data));
-    } catch (_) { }
-
-    console.log('[TokenRefresh] ✅ Access token refreshed successfully.');
-    return newToken;
-  }
-
-  // Refresh token itself is expired or invalid
-  console.error(
-    '[TokenRefresh] ❌ verifyRefreshToken FAILED. Server said:',
-    JSON.stringify(res?.data)
-  );
-  throw new Error(`REFRESH_FAILED: ${res?.data?.msg || 'server rejected refresh'}`);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// handleTokenExpiry — called from BOTH the success and error interceptor paths
+// handleTokenExpiry — delegates token refresh to the SINGLE LOCK TokenManager
 // ─────────────────────────────────────────────────────────────────────────────
 async function handleTokenExpiry(originalConfig, originalResponse) {
   // Guard: don't retry the same request twice
@@ -170,39 +94,23 @@ async function handleTokenExpiry(originalConfig, originalResponse) {
   }
   originalConfig._retried = true;
 
-  // If a refresh is already in progress, queue this request
-  if (isRefreshing) {
-    console.log('[TokenRefresh] ⏳ Refresh in progress — queuing request:', originalConfig.url);
-    return new Promise((resolve, reject) => {
-      pendingQueue.push({ resolve, reject });
-    })
-      .then(newToken => {
-        originalConfig.headers['eMedAuthorization'] = newToken;
-        return axiosInstance(originalConfig);
-      })
-      .catch(() => originalResponse);
-  }
-
-  isRefreshing = true;
   try {
-    const newToken = await refreshAccessToken();
-    processQueue(null, newToken);
+    // 🔗 DELEGATION: use TokenManager's single shared promise.
+    // If a refresh is already in progress, this simply waits for it.
+    // If not, it starts one HTTP call.
+    const newToken = await TokenManager.forceRefresh();
 
-    originalConfig.headers['eMedAuthorization'] = newToken;
-    console.log('[TokenRefresh] 🔁 Retrying:', originalConfig.url);
-    return axiosInstance(originalConfig);   // retry with fresh token
+    if (newToken) {
+      originalConfig.headers['eMedAuthorization'] = newToken;
+      console.log('[TokenRefresh] 🔁 Retrying original request:', originalConfig.url);
+      return axiosInstance(originalConfig);   // retry with fresh token
+    } else {
+      console.warn('[TokenRefresh] ⚠️  Refresh rejected/failed — returning original response.');
+      return originalResponse;
+    }
 
   } catch (refreshErr) {
-    processQueue(refreshErr, null);
-
-    if (refreshErr?.message === 'NO_REFRESH_TOKEN') {
-      console.warn(
-        '[TokenRefresh] ⚠️  No refresh_token stored. User likely not logged in yet.\n' +
-        'Check that login/signup saves refresh_token to AsyncStorage.'
-      );
-    } else {
-      console.warn('[TokenRefresh] ⚠️  Refresh attempt failed (non-fatal):', refreshErr?.message);
-    }
+    console.warn('[TokenRefresh] ⚠️  Refresh attempt failed (non-fatal):', refreshErr?.message);
 
     // ✅ IMPORTANT: Return the original response — DO NOT force logout.
     // The saga/screen will receive this response and show a normal error
@@ -210,8 +118,6 @@ async function handleTokenExpiry(originalConfig, originalResponse) {
     // The user stays on their current screen.
     // ⛔ Never call logoutSuccess or clear AsyncStorage here.
     return originalResponse;
-  } finally {
-    isRefreshing = false;
   }
 }
 
@@ -233,6 +139,10 @@ axiosInstance.interceptors.request.use(
       if (freshToken) {
         config.headers['eMedAuthorization'] = freshToken;
       }
+
+      // ── Always inject userAgent for the PHP backend tracking ──
+      config.headers['userAgent'] = getUserAgentJSON();
+
     } catch (_) {
       // Never block the request
     }
@@ -256,9 +166,6 @@ axiosInstance.interceptors.response.use(
 
         if (data.refresh_token) {
           await AsyncStorage.setItem(constants.REFRESH_TOKEN, data.refresh_token);
-          console.log('[TokenAutoSave] ✅ token + refresh_token from:', response.config?.url?.split('/').pop());
-        } else {
-          console.log('[TokenAutoSave] ✅ token only (no refresh_token) from:', response.config?.url?.split('/').pop());
         }
 
         // Push to Redux
@@ -275,7 +182,6 @@ axiosInstance.interceptors.response.use(
         // This ensures that if the user stays idle on a screen for 10+ minutes,
         // the timer fires 1 minute before expiry and refreshes silently.
         try {
-          const TokenManager = require('./TokenManager').default;
           TokenManager.onNewToken(data.token);
         } catch (_) { }
       }
@@ -316,48 +222,57 @@ axiosInstance.interceptors.response.use(
 
 // ─── Public API functions ──────────────────────────────────────────────────────
 export async function getApi(url, header) {
+  const reqHeaders = {
+    Accept: header.Accept,
+    'Content-type': header.contenttype,
+    eMedAuthorization: header.authorization,
+    userAgent: getUserAgentJSON(),
+  };
   return axiosInstance.get(`${constants.BASE_URL}/${url}`, {
-    headers: {
-      Accept: header.Accept,
-      'Content-type': header.contenttype,
-      eMedAuthorization: header.authorization,
-    },
+    headers: reqHeaders,
   });
 }
 
 export async function getApiWithParam(url, param, header) {
+  const reqHeaders = {
+    Accept: header.Accept,
+    'Content-type': header.contenttype,
+    userAgent: getUserAgentJSON(),
+  };
   return axiosInstance({
     method: 'GET',
     baseURL: constants.BASE_URL,
     url: url,
     params: param,
-    headers: {
-      Accept: header.Accept,
-      'Content-type': header.contenttype,
-    },
+    headers: reqHeaders,
   });
 }
 
 export async function postApi(url, payload, header) {
+  const reqHeaders = {
+    Accept: header.Accept,
+    'Content-Type': header.contenttype,
+    eMedAuthorization: header.authorization,
+    IPADDRESS: header.IPADDRESS,
+    userAgent: getUserAgentJSON(),
+  };
+  console.log("header==========", reqHeaders);
   return axiosInstance.post(`${constants.BASE_URL}/${url}`, payload, {
-    headers: {
-      Accept: header.Accept,
-      'Content-Type': header.contenttype,
-      eMedAuthorization: header.authorization,
-      IPADDRESS: header.IPADDRESS,
-    },
+    headers: reqHeaders,
   });
 }
 
 export async function deleteApi(url, payload, header) {
   const cleanUrl = `${constants.BASE_URL}/${url}`.replace(/\/\/+/g, '/').trim();
+  const reqHeaders = {
+    Accept: header.Accept,
+    'Content-Type': header.contenttype,
+    eMedAuthorization: header.authorization,
+    userAgent: getUserAgentJSON(),
+  };
   try {
     return await axiosInstance.delete(cleanUrl, {
-      headers: {
-        Accept: header.Accept,
-        'Content-Type': header.contenttype,
-        eMedAuthorization: header.authorization,
-      },
+      headers: reqHeaders,
       data: payload,
     });
   } catch (error) {

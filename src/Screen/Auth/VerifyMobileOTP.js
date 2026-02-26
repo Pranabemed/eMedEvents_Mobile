@@ -493,7 +493,7 @@ const VerifyMobileOTP = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>

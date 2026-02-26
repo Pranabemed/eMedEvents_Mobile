@@ -157,7 +157,7 @@ const EnterOTP = (props) => {
         }
     };
     const resendOTPNeed = () => {
-        let obj = props?.route?.params?.forgotPh?.phoneCode == "email" ? {"email":props?.route?.params?.forgotPh?.forgotPh}:{
+        let obj = props?.route?.params?.forgotPh?.phoneCode == "email" ? { "email": props?.route?.params?.forgotPh?.forgotPh } : {
             "phone": props?.route?.params?.forgotPh?.forgotPh ? `${props?.route?.params?.forgotPh?.phoneCode}${props?.route?.params?.forgotPh?.forgotPh}` : ''
         }
         connectionrequest()
@@ -168,19 +168,19 @@ const EnterOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     };
-      useEffect(() => {
-            const onBackPress = () => {
-                return true;
-            };
-            const backHandler = BackHandler.addEventListener(
-                'hardwareBackPress',
-                onBackPress
-            );
-            return () => backHandler.remove();
-        }, []);
-        useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+    useEffect(() => {
+        const onBackPress = () => {
+            return true;
+        };
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+        return () => backHandler.remove();
+    }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -188,13 +188,13 @@ const EnterOTP = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                     <Loader
                         visible={AuthReducer?.status == 'Auth/forgotRequest'} />
-                    <View style={{marginTop:normalize(80)}}>
+                    <View style={{ marginTop: normalize(80) }}>
                         {/* <Header
                             onPress={() => props.navigation.goBack()}
                             tintColor={Colorpath.black}
@@ -217,10 +217,10 @@ const EnterOTP = (props) => {
                                 </Text>
                                 <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
                                     <Text style={styles.subHeaderText}>
-                                        {props?.route?.params?.forgotPh?.phoneCode == "email" ? "email": "cell number"}
+                                        {props?.route?.params?.forgotPh?.phoneCode == "email" ? "email" : "cell number"}
                                     </Text>
                                     <Text style={styles.subHeaderphone}>
-                                        {` ${props?.route?.params?.forgotPh?.phoneCode == "email" ? "": props?.route?.params?.forgotPh?.phoneCode} ${props?.route?.params?.forgotPh?.forgotPh}`}
+                                        {` ${props?.route?.params?.forgotPh?.phoneCode == "email" ? "" : props?.route?.params?.forgotPh?.phoneCode} ${props?.route?.params?.forgotPh?.forgotPh}`}
                                     </Text>
                                 </View>
                             </View>
@@ -246,7 +246,7 @@ const EnterOTP = (props) => {
                                     style={styles.input}
                                     autoFocus={index === 0}
                                     textAlign="center"
-                                    textContentType="oneTimeCode" 
+                                    textContentType="oneTimeCode"
                                     autoComplete="sms-otp"
                                 />
                             ))}
@@ -268,12 +268,12 @@ const EnterOTP = (props) => {
                                     {"Didn't get verification code? "}
                                 </Text>
                             </View>
-                            <TouchableOpacity disabled={countdown == 0 ? false :true} onPress={() => {
+                            <TouchableOpacity disabled={countdown == 0 ? false : true} onPress={() => {
                                 resendOTP();
                                 clearAllOTPFieldsPhone();
                                 resendOTPNeed();
                             }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color:countdown == 0 ? Colorpath.ButtonColr:"#DADADA" }}>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA" }}>
                                     {"Resend?"}
                                 </Text>
                             </TouchableOpacity>

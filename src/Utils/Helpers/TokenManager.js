@@ -1,5 +1,5 @@
 /**
- * TokenManager.js  — v3 (SAFE — never force-logout)
+ * TokenManager.js  — v4 (SINGLE REFRESH LOCK — shared promise pattern)
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * WHY THIS EXISTS
@@ -15,11 +15,16 @@
  * dispatches logoutSuccess. The ONLY thing that may log a user out is when the
  * user explicitly taps the "Logout" button (logoutSaga).
  *
- * If a proactive refresh fails (network error, server down, token expired):
- *   → We silently log the failure and do NOTHING.
- *   → The user stays on whichever screen they are on.
- *   → The next API call from the Axios interceptor (ApiRequest.js) will
- *     transparently retry the refresh at that point.
+ * SINGLE REFRESH LOCK (Key Design)
+ * ─────────────────────────────────
+ * There is ONE shared _refreshPromise. If a refresh is already in progress
+ * from ANY source (AppState handler, timer, ApiRequest interceptor), every
+ * other caller JOINS the same promise instead of making a second HTTP call.
+ *
+ * ⚠️  Refresh tokens are SINGLE-USE on the server. Two concurrent
+ *     verifyRefreshToken calls with the same refresh_token means the server
+ *     accepts the first and REJECTS the second → "token expired" shown to user.
+ *     This shared-promise pattern prevents that race condition entirely.
  *
  * PROACTIVE TIMER STRATEGY
  * ────────────────────────
@@ -31,12 +36,12 @@
  *
  * APP BACKGROUND HANDLING
  * ───────────────────────
+ * On AppState → background/inactive:  clear any pending timer.
  * On AppState → 'active':
  *   • If token is still valid  → reschedule timer (OS may have killed it).
- *   • If token is near expiry  → attempt proactive refresh silently.
- *   • If token is expired      → attempt proactive refresh silently.
+ *   • If token is near expiry  → attempt proactive refresh immediately.
+ *   • If token is expired      → attempt proactive refresh immediately.
  *                                If refresh fails → DO NOTHING. User stays in.
- *                                The next API call interceptor will handle it.
  *
  * USAGE — call once from App.js:
  *
@@ -47,10 +52,8 @@
  *     return cleanup;
  *   }, []);
  *
- * When a new token arrives anywhere (from any saga/interceptor):
- *
- *   TokenManager.onNewToken(newTokenString);
- *
+ * ApiRequest.js delegates its refresh to TokenManager.forceRefresh() so ALL
+ * refresh attempts share the same lock and single HTTP call.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -58,20 +61,24 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import constants from './constants';
+import getUserAgentJSON from './UserAgent';
 
 // ─── How many ms before expiry we proactively refresh ─────────────────────────
 // 90 seconds → fires at T+8m30s when token expires at T+10min.
-// This gives us a comfortable window to complete the refresh call.
 const REFRESH_BUFFER_MS = 90 * 1000;
 
 // ─── Minimum ms before we bother scheduling a timer ───────────────────────────
-// If the token has less than 5 seconds left, refresh immediately instead.
 const MIN_SCHEDULE_MS = 5 * 1000;
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 let _refreshTimerId = null;
-let _isRefreshing = false;
 let _appStateSubscription = null;
+
+// ─── Single shared refresh promise ────────────────────────────────────────────
+// KEY: All callers (timer, AppState handler, ApiRequest interceptor) share this
+// ONE promise. When a refresh is already running, new callers join it instead
+// of making a duplicate HTTP call. Refresh tokens are single-use on the server.
+let _refreshPromise = null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JWT decoder — pure JS, no external library required
@@ -89,6 +96,7 @@ function decodeJWTPayload(token) {
         if (typeof atob === 'function') {
             decoded = atob(b64);
         } else {
+            // Manual Base64 decode for React Native Release builds
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
             let str = '';
             let i = 0;
@@ -97,117 +105,162 @@ function decodeJWTPayload(token) {
                 const e2 = chars.indexOf(b64[i++]);
                 const e3 = chars.indexOf(b64[i++]);
                 const e4 = chars.indexOf(b64[i++]);
-                str += String.fromCharCode(
-                    (e1 << 2) | (e2 >> 4),
-                    ((e2 & 15) << 4) | (e3 >> 2),
-                    ((e3 & 3) << 6) | e4,
-                );
+
+                const b1 = (e1 << 2) | (e2 >> 4);
+                const b2 = ((e2 & 15) << 4) | (e3 >> 2);
+                const b3 = ((e3 & 3) << 6) | e4;
+
+                str += String.fromCharCode(b1);
+                if (e3 !== 64) str += String.fromCharCode(b2);
+                if (e4 !== 64) str += String.fromCharCode(b3);
             }
             decoded = str;
         }
 
-        return JSON.parse(decoded);
+        return decoded; // Return RAW byte string
     } catch (e) {
-        console.warn('[TokenManager] JWT decode failed:', e?.message);
+        console.warn('[TokenManager] JWT extract failed:', e?.message);
         return null;
     }
 }
 
 // Returns expiry timestamp in ms, or null if undecodable
 function getTokenExpiryMs(token) {
-    const payload = decodeJWTPayload(token);
-    if (!payload?.exp) return null;
-    return payload.exp * 1000; // JWT exp is in seconds
+    const rawPayload = decodeJWTPayload(token);
+    if (!rawPayload) return null;
+
+    try {
+        // Try elegant JSON decode first (only works perfectly on ASCII payloads)
+        const parsed = JSON.parse(rawPayload);
+        if (parsed?.exp) return parsed.exp * 1000;
+    } catch (_) {
+        // UTF-8 names inside JWTs break pure JS JSON.parse on Native Release builds.
+        // Fallback: strictly Regex out the 'exp' integer since it's purely ASCII.
+    }
+
+    // RegEx fallback for the exact `"exp": 1234567` block
+    const match = /"exp"\s*:\s*(\d+)/.exec(rawPayload);
+    if (match && match[1]) {
+        return parseInt(match[1], 10) * 1000;
+    }
+
+    return null; // JWT exp is in seconds
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Core proactive refresh
+// _doActualRefresh — the ONLY function that calls verifyRefreshToken HTTP API.
 //
 // ⚠️  Uses plain axios (NOT axiosInstance) so it is COMPLETELY outside the
 //     Axios interceptor chain. No infinite-loop risk.
 //
-// ✅  NEVER throws. NEVER forces logout. Returns true/false only.
+// ✅  Returns new token string on success.
+// ✅  Returns null on failure. NEVER throws. NEVER forces logout.
 // ─────────────────────────────────────────────────────────────────────────────
-async function performRefresh(reason) {
-    if (_isRefreshing) {
-        console.log('[TokenManager] Already refreshing — skipping:', reason);
-        return false;
-    }
-
+async function _doActualRefresh(reason) {
     const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
     if (!refreshToken) {
-        // No refresh token stored. This is a guest/not-logged-in state.
-        // Do nothing — this is perfectly normal.
         console.log('[TokenManager] No refresh_token — user not logged in, skipping:', reason);
-        return false;
+        return null;
     }
 
-    _isRefreshing = true;
-    console.log(`[TokenManager] 🔄 Proactive refresh (${reason})…`);
+    console.log(`[TokenManager] 🔄 Calling verifyRefreshToken (${reason})…`);
 
-    try {
-        const res = await axios.post(
-            `${constants.BASE_URL}/user/verifyRefreshToken`,
-            { refresh_token: refreshToken },
-            {
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt < maxAttempts) {
+        attempt++;
+        try {
+            const res = await axios.post(
+                `${constants.BASE_URL}/user/verifyRefreshToken`,
+                { refresh_token: refreshToken },
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        userAgent: getUserAgentJSON(),
+                    },
+                    timeout: 15000,
                 },
-                timeout: 15000,
-            },
-        );
-
-        if (res.data?.success && res.data?.token) {
-            const newToken = res.data.token;
-            const newRefreshToken = res.data.refresh_token || refreshToken;
-
-            // ── Persist ──────────────────────────────────────────────────────────
-            await AsyncStorage.setItem(constants.TOKEN, newToken);
-            await AsyncStorage.setItem(constants.REFRESH_TOKEN, newRefreshToken);
-
-            // ── Push to Redux ─────────────────────────────────────────────────────
-            try {
-                const Store = require('../../Redux/Store').default;
-                const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
-                Store.dispatch(tokenSuccess(newToken));
-                Store.dispatch(refreshTokenSuccess(res.data));
-            } catch (_) { }
-
-            console.log('[TokenManager] ✅ Proactive refresh succeeded:', reason);
-
-            // ── Schedule the NEXT proactive refresh for the new token ─────────────
-            _scheduleTimer(newToken);
-            return true;
-
-        } else {
-            // ✅ IMPORTANT: Server rejected the refresh token (it may be expired).
-            // We do NOT log the user out. The user will simply get a fresh
-            // token error on their NEXT API call, and the Axios interceptor
-            // will handle it gracefully at that point.
-            console.warn(
-                '[TokenManager] ⚠️  verifyRefreshToken rejected:',
-                res?.data?.msg,
-                '| Reason:', reason,
-                '| User remains logged in — will retry on next API call.',
             );
-            return false;
+
+            if (res.data?.success && res.data?.token) {
+                const newToken = res.data.token;
+                const newRefreshToken = res.data.refresh_token || refreshToken;
+
+                // ── Persist ──────────────────────────────────────────────────────
+                await AsyncStorage.setItem(constants.TOKEN, newToken);
+                await AsyncStorage.setItem(constants.REFRESH_TOKEN, newRefreshToken);
+
+                // ── Push to Redux ─────────────────────────────────────────────────
+                try {
+                    const Store = require('../../Redux/Store').default;
+                    const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
+                    Store.dispatch(tokenSuccess(newToken));
+                    Store.dispatch(refreshTokenSuccess(res.data));
+                } catch (_) { }
+
+                console.log('[TokenManager] ✅ Token refreshed successfully:', reason);
+
+                // ── Schedule NEXT proactive refresh for the new token ─────────────
+                _scheduleTimer(newToken);
+                return newToken;
+
+            } else {
+                // If it's an explicit rejection (e.g. 401 or success:false) from the server,
+                // do NOT retry. The server has legitimately rejected the token.
+                console.warn(
+                    '[TokenManager] ⚠️  verifyRefreshToken rejected by server:',
+                    res?.data?.msg,
+                    '| Reason:', reason,
+                    '| User remains logged in.',
+                );
+                return null;
+            }
+        } catch (err) {
+            // It is a true Network/OS Error (or 5xx timeout).
+            // This happens instantly on iOS Native when waking from deep sleep
+            // because the OS network stack is temporarily unavailable for ~1 second.
+            if (attempt < maxAttempts) {
+                console.warn(
+                    `[TokenManager] ⚠️ Network error on attempt ${attempt}. Retrying in 1.5s...`
+                );
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } else {
+                console.warn(
+                    '[TokenManager] ⚠️  Network error during refresh (final):',
+                    err?.message,
+                    '| Reason:', reason,
+                    '| User remains logged in.',
+                );
+                return null;
+            }
         }
-    } catch (err) {
-        // ✅ IMPORTANT: Network failure (offline, timeout, server down).
-        // We do NOT log the user out. The user is still authenticated from
-        // their last successful session. When they come back online and make
-        // an API call, the Axios interceptor will handle the refresh then.
-        console.warn(
-            '[TokenManager] ⚠️  Network error during proactive refresh:',
-            err?.message,
-            '| Reason:', reason,
-            '| User remains logged in.',
-        );
-        return false;
-    } finally {
-        _isRefreshing = false;
     }
+    return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// performRefresh — shared-promise deduplication wrapper
+//
+// If a refresh is already in progress from ANY caller (AppState, timer,
+// ApiRequest interceptor), new callers JOIN the existing promise instead of
+// making a duplicate HTTP call.
+//
+// Refresh tokens are single-use — two concurrent calls = server rejects the
+// second one with "token expired". This function prevents that entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+function performRefresh(reason) {
+    if (_refreshPromise) {
+        console.log('[TokenManager] 🔗 Joining existing refresh in progress:', reason);
+        return _refreshPromise;
+    }
+
+    _refreshPromise = _doActualRefresh(reason).finally(() => {
+        _refreshPromise = null;
+    });
+
+    return _refreshPromise;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,7 +268,6 @@ async function performRefresh(reason) {
 // REFRESH_BUFFER_MS before expiry.
 // ─────────────────────────────────────────────────────────────────────────────
 function _scheduleTimer(token) {
-    // Clear any existing timer first
     if (_refreshTimerId !== null) {
         clearTimeout(_refreshTimerId);
         _refreshTimerId = null;
@@ -225,8 +277,6 @@ function _scheduleTimer(token) {
 
     const expiryMs = getTokenExpiryMs(token);
     if (!expiryMs) {
-        // Non-JWT token or opaque token — can't decode expiry.
-        // Don't schedule anything; the interceptor handles reactive refresh.
         console.warn('[TokenManager] Cannot decode token expiry — no proactive timer scheduled.');
         return;
     }
@@ -236,8 +286,6 @@ function _scheduleTimer(token) {
     const msUntilRefresh = msUntilExpiry - REFRESH_BUFFER_MS;
 
     if (msUntilRefresh <= MIN_SCHEDULE_MS) {
-        // Token is already within the buffer window or expired.
-        // Attempt immediate refresh — but if it fails, user stays logged in.
         console.log(`[TokenManager] Token expires in ${Math.round(msUntilExpiry / 1000)}s — refreshing immediately.`);
         performRefresh('immediate-near-expiry');
     } else {
@@ -255,25 +303,28 @@ function _scheduleTimer(token) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppState handler — fires when app returns from background / becomes active
-//
-// KEY PRINCIPLE: We always attempt a refresh if the token is expired or near
-// expiry. But if the refresh fails for any reason, we do NOTHING. The user
-// stays on their current screen. Logout only happens via explicit user action.
 // ─────────────────────────────────────────────────────────────────────────────
 async function _onAppStateChange(nextState) {
-    if (nextState !== 'active') return;
+    // When app goes to background ('inactive' or 'background')
+    if (nextState !== 'active') {
+        if (_refreshTimerId !== null) {
+            clearTimeout(_refreshTimerId);
+            _refreshTimerId = null;
+        }
+        return;
+    }
+
+    // When app returns to 'active'
+    // Give JS a tiny window to completely unfreeze on Android Release builds
+    // before we recalculate the exact token timestamp delta.
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
         const token = await AsyncStorage.getItem(constants.TOKEN);
-        if (!token) {
-            // No token = user is not logged in. Nothing to do.
-            return;
-        }
+        if (!token) return; // Guest / not logged in
 
         const expiryMs = getTokenExpiryMs(token);
         if (!expiryMs) {
-            // Non-decodable token — attempt a proactive refresh as a safety measure.
-            // If it fails, user stays where they are.
             console.log('[TokenManager] 🟡 Foreground: unknown token expiry — attempting proactive refresh…');
             performRefresh('foreground-unknown-expiry');
             return;
@@ -282,17 +333,14 @@ async function _onAppStateChange(nextState) {
         const now = Date.now();
 
         if (now >= expiryMs) {
-            // Token is already expired. Attempt refresh silently.
-            // ✅ If refresh FAILS → do nothing. User stays logged in.
-            //    The next API call will trigger the Axios interceptor refresh.
+            // Token already expired — refresh immediately.
+            // performRefresh uses shared promise so won't duplicate with ApiRequest.
             console.log(
-                `[TokenManager] 🔴 Foreground: token expired ${Math.round((now - expiryMs) / 1000)}s ago — attempting silent refresh…`
+                `[TokenManager] 🔴 Foreground: token expired ${Math.round((now - expiryMs) / 1000)}s ago — refreshing now…`
             );
             performRefresh('foreground-expired');
-            // ⛔ NO _forceLogout() call here. EVER.
 
         } else if (now >= expiryMs - REFRESH_BUFFER_MS) {
-            // Token is about to expire within buffer window — refresh proactively.
             console.log(
                 `[TokenManager] 🟡 Foreground: token expires in ${Math.round((expiryMs - now) / 1000)}s — proactive refresh…`
             );
@@ -306,14 +354,12 @@ async function _onAppStateChange(nextState) {
             _scheduleTimer(token);
         }
     } catch (e) {
-        // Error reading AsyncStorage or decoding — do nothing. User stays logged in.
         console.warn('[TokenManager] AppState handler error (non-fatal):', e?.message);
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Async startup logic — called from init() in the background.
-// Reads AsyncStorage (async) and schedules the proactive timer.
 // ─────────────────────────────────────────────────────────────────────────────
 async function _initAsync() {
     try {
@@ -326,23 +372,15 @@ async function _initAsync() {
         const expiryMs = getTokenExpiryMs(token);
 
         if (!expiryMs) {
-            // Non-decodable token — try a refresh just to be safe.
             console.log('[TokenManager] Cold start: non-JWT token — attempting proactive refresh…');
             performRefresh('cold-start-non-jwt');
             return;
         }
 
         if (Date.now() >= expiryMs) {
-            // Token already expired on cold start — attempt emergency refresh silently.
-            // ✅ If this fails, do nothing. Splash.js will handle navigation normally.
-            //    The verifyToken call in Splash will fail and the Axios interceptor
-            //    will attempt a refresh at that point.
             console.log('[TokenManager] Cold start: token expired — attempting silent refresh…');
             performRefresh('cold-start-expired');
-            // ⛔ NO _forceLogout() call if this fails.
-
         } else {
-            // Token still valid — schedule proactive timer.
             console.log('[TokenManager] Cold start: token valid — scheduling proactive refresh timer.');
             _scheduleTimer(token);
         }
@@ -361,16 +399,12 @@ const TokenManager = {
      * Returns a SYNCHRONOUS cleanup function (never a Promise).
      */
     init() {
-        // ── Register AppState listener immediately (synchronous) ──────────────────
         if (_appStateSubscription) {
             _appStateSubscription.remove();
         }
         _appStateSubscription = AppState.addEventListener('change', _onAppStateChange);
-
-        // ── Async startup work runs in background — does NOT block ────────────────
         _initAsync();
 
-        // ── Return a plain cleanup function — NEVER a Promise ─────────────────────
         return () => {
             if (_refreshTimerId !== null) {
                 clearTimeout(_refreshTimerId);
@@ -387,9 +421,6 @@ const TokenManager = {
      * Call this whenever a new token is received (login, signup, any API response).
      * Resets and reschedules the proactive refresh timer.
      *
-     * The TokenAutoSave interceptor in ApiRequest.js calls this automatically.
-     * You can also call it manually after any saga that receives a new token.
-     *
      * @param {string} newToken — the fresh JWT access token
      */
     onNewToken(newToken) {
@@ -398,11 +429,17 @@ const TokenManager = {
     },
 
     /**
-     * Attempt an immediate proactive refresh.
-     * Never throws. Never forces logout.
+     * Attempt an immediate token refresh.
+     *
+     * KEY: Uses the shared _refreshPromise deduplication — if a refresh is
+     * already running from any source, this joins it rather than starting a
+     * second HTTP call. Safe to call from ApiRequest.js interceptor.
+     *
+     * @returns {Promise<string|null>}  new token string on success, null on failure.
+     *                                  Never throws. Never forces logout.
      */
     forceRefresh() {
-        return performRefresh('manual-force');
+        return performRefresh('force-refresh');
     },
 };
 
