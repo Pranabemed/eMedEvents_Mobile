@@ -6,12 +6,15 @@ import Login from '../src/Screen/Auth/Login';
 import { AppContext } from '../src/Screen/GlobalSupport/AppContext';
 import * as netInfoHelper from '../src/Utils/Helpers/NetInfo';
 import * as firebaseTokenHelper from '../src/Utils/Helpers/FirebaseToken';
+import showErrorAlert from '../src/Utils/Helpers/Toast';
 
-// Jest fake timers
-jest.useFakeTimers();
+// No fake timers to prevent blocking waitFor
 
-// Mocks
-jest.mock('../src/Utils/Helpers/NetInfo', () => jest.fn(() => Promise.resolve()));
+jest.mock('../src/Utils/Helpers/NetInfo', () => ({
+    __esModule: true,
+    default: jest.fn(() => Promise.resolve())
+}));
+jest.mock('../src/Utils/Helpers/Toast', () => jest.fn());
 jest.mock('../src/Utils/Helpers/FirebaseToken', () => ({
     generateDeviceToken: jest.fn(() => Promise.resolve('fake-device-token')),
 }));
@@ -58,8 +61,8 @@ describe('Login Component', () => {
 
     afterEach(async () => {
         // Flush any pending promises/microtasks so background useEffects don't carry over
-        await waitFor(() => Promise.resolve());
-        jest.runOnlyPendingTimers();
+        // No pending timers to flush manually
+
     });
 
     const renderComponent = (props = {}) => {
@@ -123,6 +126,77 @@ describe('Login Component', () => {
         await waitFor(() => {
             expect(getByText("Proceed")).toBeTruthy();
             expect(queryByText("Sign In")).toBeNull();
+        });
+    });
+    test('shows validation alert when entering valid email but missing password', async () => {
+        const { getByText, UNSAFE_getAllByType } = renderComponent();
+        await waitFor(() => expect(getByText('Hello Again!')).toBeTruthy());
+
+        const textInputs = UNSAFE_getAllByType(require('react-native').TextInput);
+        fireEvent.changeText(textInputs[0], 'test@example.com');
+
+        await waitFor(() => expect(getByText("Sign In")).toBeTruthy());
+
+        const signInButton = getByText("Sign In");
+
+        // Clear mock before firing
+        showErrorAlert.mockClear();
+        fireEvent.press(signInButton);
+
+        expect(showErrorAlert).toHaveBeenCalledWith("Please enter your password to continue");
+    });
+
+    test('dispatches loginRequest on valid email and password submit', async () => {
+        const { getByText, UNSAFE_getAllByType } = renderComponent();
+        await waitFor(() => expect(getByText('Hello Again!')).toBeTruthy());
+
+        const textInputs = UNSAFE_getAllByType(require('react-native').TextInput);
+        fireEvent.changeText(textInputs[0], 'test@example.com');
+
+        await waitFor(() => expect(getByText("Sign In")).toBeTruthy());
+
+        // Second input should be password
+        const passwordInputs = UNSAFE_getAllByType(require('react-native').TextInput);
+        fireEvent.changeText(passwordInputs[1], 'password123');
+
+        const signInButton = getByText("Sign In");
+        fireEvent.press(signInButton);
+
+        await waitFor(() => {
+            expect(store.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'Auth/loginRequest' })
+            );
+        });
+    });
+
+    test('dispatches loginsiginRequest on valid phone submit', async () => {
+        const { getByText, UNSAFE_getAllByType } = renderComponent();
+        await waitFor(() => expect(getByText('Hello Again!')).toBeTruthy());
+
+        const textInputs = UNSAFE_getAllByType(require('react-native').TextInput);
+        fireEvent.changeText(textInputs[0], '1234567890');
+
+        await waitFor(() => expect(getByText("Proceed")).toBeTruthy());
+
+        // Fire button press to trigger login via phone 
+        // Note: proceed button only renders when isPasswordFieldVisibile is false.
+        const proceedButton = getByText("Proceed");
+        fireEvent.press(proceedButton);
+
+        await waitFor(() => {
+            expect(store.dispatch).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'Auth/loginsiginRequest' })
+            );
+        });
+    });
+
+    test('initializes with route params if provided', async () => {
+        const routeMock = { params: { email: 'preset@example.com' } };
+        const { getByDisplayValue, getByText } = renderComponent({ route: routeMock });
+
+        await waitFor(() => {
+            expect(getByDisplayValue('preset@example.com')).toBeTruthy();
+            expect(getByText("Sign In")).toBeTruthy(); // Proves isPasswordFieldVisible became true automatically
         });
     });
 });

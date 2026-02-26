@@ -1,5 +1,5 @@
 /**
- * ApiRequest.js  — v3 (definitive)
+ * ApiRequest.js  — v4 (SAFE — never force-logout)
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * ARCHITECTURE
@@ -21,10 +21,17 @@
  *                    Expiry Detector: detects the server's custom expiry signal,
  *                    silently refreshes, and retries ONCE
  *
+ * GOLDEN RULE — NO FORCED LOGOUT
+ * ────────────────────────────────
+ * Neither the refresh logic nor any interceptor ever calls logoutSuccess or
+ * clears AsyncStorage. If a refresh fails, the original response is returned
+ * and the saga/screen decides what to show (a normal error message, NOT a
+ * logout). Only the explicit Logout button dispatches logoutRequest.
+ *
  * Token-expiry detection — STRICT matching only:
- *   We only intercept responses whose msg is EXACTLY the server's known error
- *   string ("missing or invalid token"). Broad words like "unauthorized" are NOT
- *   matched to avoid false-positives on business-logic errors.
+ *   We only intercept responses whose msg matches the server's known error
+ *   strings. Broad words like "unauthorized" appearing in business-logic
+ *   error messages will NOT trigger a refresh to avoid false-positives.
  *
  * Refresh loop prevention:
  *   • The `user/verifyRefreshToken` call uses plain `axios`, NOT axiosInstance,
@@ -189,18 +196,19 @@ async function handleTokenExpiry(originalConfig, originalResponse) {
     processQueue(refreshErr, null);
 
     if (refreshErr?.message === 'NO_REFRESH_TOKEN') {
-      console.error(
-        '[TokenRefresh] ❌ FATAL: No refresh_token stored.\n' +
-        'This means the login/signup response did not include a refresh_token,\n' +
-        'or it was never saved to AsyncStorage.\n' +
-        'Check that the server returns refresh_token and that signupSaga /\n' +
-        'login_Saga / mobileLoginSaga are storing it correctly.'
+      console.warn(
+        '[TokenRefresh] ⚠️  No refresh_token stored. User likely not logged in yet.\n' +
+        'Check that login/signup saves refresh_token to AsyncStorage.'
       );
     } else {
-      console.error('[TokenRefresh] ❌ Refresh failed:', refreshErr?.message);
+      console.warn('[TokenRefresh] ⚠️  Refresh attempt failed (non-fatal):', refreshErr?.message);
     }
 
-    // Return original response — saga decides what to do (show error, re-login, etc.)
+    // ✅ IMPORTANT: Return the original response — DO NOT force logout.
+    // The saga/screen will receive this response and show a normal error
+    // message (e.g. "Session expired, please try again") if needed.
+    // The user stays on their current screen.
+    // ⛔ Never call logoutSuccess or clear AsyncStorage here.
     return originalResponse;
   } finally {
     isRefreshing = false;
