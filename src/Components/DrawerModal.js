@@ -12,7 +12,8 @@ import {
   Pressable,
   StyleSheet,
   Linking,
-  SafeAreaView
+  SafeAreaView,
+  InteractionManager
 } from 'react-native';
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import propstype from 'prop-types';
@@ -58,6 +59,20 @@ export default function DrawerModal(props) {
   const [subit, setSubit] = useState(false);
   const [allProfDr, setAllProfDr] = useState("");
   const [nettruedr, setNettruedr] = useState("")
+  const navigateSmooth = (name, params) => {
+    props.drawerPress?.();
+    props.onBackdropPress?.();
+    requestAnimationFrame(() => {
+      InteractionManager.runAfterInteractions(() => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name, params }]
+          })
+        );
+      });
+    });
+  };
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -280,55 +295,13 @@ export default function DrawerModal(props) {
         <View style={{ paddingHorizontal: normalize(51), paddingVertical: normalize(5) }}>
           <Pressable onPress={() => {
             if (item?.id == 2) {
-              props.interestedNav();
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "Wallets",
-                      params: { name: item?.name }
-                    }
-                  ],
-                }));
+              navigateSmooth("Wallets", { name: item?.name });
             } else if (item?.id == 3) {
-              props.interestedNav();
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "HCPSub",
-                      params: { name: item?.name }
-                    }
-                  ],
-                }));
+              navigateSmooth("HCPSub", { name: item?.name });
             } else if (item?.id == 0) {
-              props.interestedNav();
-              //  navigation.navigate("Registration",{name:item?.name})
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "Registration",
-                      params: { name: item?.name }
-                    }
-                  ],
-                }));
+              navigateSmooth("Registration", { name: item?.name });
             } else {
-              props.interestedNav();
-              //  navigation.navigate("Registration",{name:item?.name})
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "SubTransaction",
-                      params: { name: item?.name }
-                    }
-                  ],
-                }));
+              navigateSmooth("SubTransaction", { name: item?.name });
 
             }
           }}>
@@ -348,75 +321,39 @@ export default function DrawerModal(props) {
           if (item?.id == 0) {
             const getAda = fulldashbaord?.[0];
             setAddit(getAda);
-            props.drawerPress();
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  { name: "TabNav" }
-                ],
-              }))
+            navigateSmooth("TabNav");
           } else if (item?.id == 1) {
-            props.drawerPress();
-            navigation.dispatch(CommonActions.reset({
-              index: 0, routes: [{
-                name: "Course", params: {
-                  taskData: { statid: takedata?.board_id, creditID: takedata },
-                }
-              }]
-            }));
+            navigateSmooth("Course", {
+              taskData: { statid: takedata?.board_id, creditID: takedata },
+            });
           } else if (item?.id == 2) {
             if (primeit) {
               setSubit(true);
               // props.expensesNav();
             } else {
               // props.expensesNav();
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    { name: "StateCourse" }
-                  ],
-                }))
+              navigateSmooth("StateCourse");
             }
           } else if (item?.id == 3) {
             // props.expensesNav();
             if (primeit) {
               setSubit(true);
             } else {
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    { name: "BoardCourseSlide" }
-                  ],
-                }))
+              navigateSmooth("BoardCourseSlide");
             }
           } else if (item?.id == 4) {
             // props.expensesNav();
             if (primeit) {
               setSubit(true);
             } else {
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    { name: "SpecialityCourseSlide" }
-                  ],
-                }))
+              navigateSmooth("SpecialityCourseSlide");
             }
           } else if (item?.id == 5 && expandedId == 5) {
             setExpandedId(0);
           } else if (item?.id == 5 && expandedId == 0) {
             item?.nestedItems && handleToggle(item?.id);
           } else if (item?.id == 6) {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  { name: "InterestedChekout" }
-                ],
-              }))
+            navigateSmooth("InterestedChekout");
           }
         }} style={{ flexDirection: "row", paddingHorizontal: normalize(15), paddingVertical: normalize(5), gap: 8 }}>
           <Image source={item.img} style={{ height: item?.id == 6 ? normalize(18) : normalize(20), width: item?.id == 6 ? normalize(18) : normalize(20), resizeMode: "contain", tintColor: "#000000" }} />
@@ -516,38 +453,17 @@ export default function DrawerModal(props) {
             const getAda = fulldashbaord?.[0];
             setAddit(getAda);
             props.onBackdropPress();
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: "TabNav",
-                    params: { initialRoute: props?.lastActiveTab }
-                  }
-                ],
-              }))
+            navigation.navigate("TabNav", { initialRoute: props?.lastActiveTab });
           } else if (props?.handel == 'drawerclose') {
             const getAda = fulldashbaord?.[0];
             setAddit(getAda);
             props.onBackdropPress();
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  { name: "TabNav" }
-                ],
-              }))
+            navigation.navigate("TabNav");
           } else if (props?.handel == "closeit") {
             const getAda = fulldashbaord?.[0];
             setAddit(getAda);
             props.onBackdropPress();
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [
-                  { name: "TabNav" }
-                ],
-              }))
+            navigation.navigate("TabNav");
           } else {
             props.onBackdropPress();
           }
@@ -578,17 +494,7 @@ export default function DrawerModal(props) {
                 gap: 10
               }}>
               <Pressable onPress={() => {
-                props.expensesNav();
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [
-                      {
-                        name: "TabNav",
-                        params: { initialRoute: "Profiles" }
-                      }
-                    ],
-                  }))
+                navigateSmooth("TabNav", { initialRoute: "Profiles" });
               }}>
                 {DashboardReducer?.mainprofileResponse?.personal_information?.image_name && DashboardReducer?.mainprofileResponse?.personal_information?.image_path ? <ImageBackground source={DashboardReducer?.mainprofileResponse?.personal_information?.image_name == null || DashboardReducer?.mainprofileResponse?.personal_information?.image_name == "" || !DashboardReducer?.mainprofileResponse?.personal_information?.image_name ||
                   DashboardReducer?.mainprofileResponse?.personal_information?.image_path == null || !DashboardReducer?.mainprofileResponse?.personal_information?.image_path || DashboardReducer?.mainprofileResponse?.personal_information?.image_path == ""
@@ -740,13 +646,7 @@ export default function DrawerModal(props) {
               <Buttons
                 onPress={() => {
                   props.onBackdropPress();
-                  navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [
-                        { name: "TabNav" }
-                      ],
-                    }))
+                  navigation.navigate("TabNav");
                   handleRot();
                 }}
                 height={normalize(45)}

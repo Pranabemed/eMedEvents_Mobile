@@ -101,7 +101,7 @@ import SpeakerProfile from '../Screen/GlobalSupport/SpeakerProfile';
 import ContactUs from '../Screen/GlobalSupport/ContactUs';
 import StickyFlatList from '../Screen/GlobalSupport/StickyFlatList';
 import NonMain from '../Screen/NonPhysician/NonMain';
-import { AppState, Linking, DeviceEventEmitter, Alert } from 'react-native';
+import { AppState, Linking, DeviceEventEmitter, Alert, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import SplashInt from '../Screen/SplashScreen/IntSplash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -483,7 +483,17 @@ const StackNav = props => {
           routeNameRef.current = navigationRef.current.getCurrentRoute().name;
         }}
       >
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animationEnabled: true,
+            gestureEnabled: true,
+            cardStyleInterpolator:
+              Platform.OS === 'ios'
+                ? CardStyleInterpolators.forHorizontalIOS
+                : CardStyleInterpolators.forFadeFromBottomAndroid,
+          }}
+        >
           {Object.entries({
             ...Screens,
           }).map(([name, component]) => {

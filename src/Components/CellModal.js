@@ -8,6 +8,16 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
     console.log(profMerge, "profiletake=====", key)
+    const resetToTabHome = () => {
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd", refreshLicensesAt: Date.now() } }]
+            })
+        );
+        onClose();
+    };
+
     return (
         <Modal
             isVisible={isVisible}
@@ -25,14 +35,13 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
                 </View>
                 <TouchableOpacity onPress={() => {
                     if (profMerge == "freetrail") {
-                        navigation.navigate("TabNav");
-                        onClose();
+                        resetToTabHome();
+                    } else if (profMerge == "nochange") {
+                        resetToTabHome();
                     } else if (profMerge == "duplicate") {
-                        navigation.navigate("TabNav", { initialRoute: "Profiles" });
-                        onClose();
+                        resetToTabHome();
                     } else if (name == "TabNav" && key == "stateno") {
-                        navigation.navigate("TabNav");
-                        onClose();
+                        resetToTabHome();
                     } else if (name == "text") {
                         navigation.dispatch(
                             CommonActions.reset({
@@ -52,8 +61,7 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
                         navigation.navigate("TabNav", { initialRoute: "Contact" });
                         onClose();
                     } else if (name == "TabNav") {
-                        navigation.navigate("TabNav", { detectmain: "main" });
-                        onClose();
+                        resetToTabHome();
                     } else {
                         navigation?.navigate(name);
                         onClose();

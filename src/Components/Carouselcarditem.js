@@ -16,23 +16,23 @@ import CMECard from './CMECard';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 let status = "";
-const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
+const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
     const {
-        expireDate,
         setExpireDate,
         setFinddata,
         clearContextData
     } = useContext(AppContext);
     const windowWidth = Dimensions.get('window').width;
-    const [countdownMessage, setCountdownMessage] = useState('');
     const AuthReducer = useSelector(state => state.AuthReducer);
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
-    const [dashMod, setDashMod] = useState(false);
-    const [takeName, setTakeName] = useState("");
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const [CMEcard, setCMECard] = useState(false)
+    const [isItemExpired, setIsItemExpired] = useState(false);
+    const [dashMod, setDashMod] = useState(false);
+    const [countdownMessage, setCountdownMessage] = useState('');
+    const [takeName, setTakeName] = useState("");
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const profFromDashboard =
@@ -61,6 +61,10 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
 
         token_handle_vault();
     }, [navigation, isFocus]);
+    // Reset status on focus so licesensSuccess is re-processed after tab switch
+    useEffect(() => {
+        status = "";
+    }, [isFocus]);
     const [allProfession, setAllProfession] = useState(null);
 
     const cleanNumber = (value) => {
@@ -314,42 +318,54 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
             Alert.alert('Invalid URL', 'The renewal link is not available or is invalid.');
         }
     };
+    // --- Derived expiry logic (no useEffect timing issues) ---
+    const parsedExpiry = moment(item?.to_date, ["YYYY-MM-DD", moment.ISO_8601], true);
+    const isExpiryValid = parsedExpiry.isValid();
+    const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
     useEffect(() => {
         if (val == index) {
-            const targetDate = item?.to_date ? new Date(item.to_date) : null;
             const today = new Date();
-            if (targetDate) {
-                const ninetyDaysBefore = new Date(targetDate);
-                ninetyDaysBefore.setDate(targetDate.getDate() - 90);
-                if (moment(today).format("YYYY-MM-DD") > item.to_date) {
-                    setDashMod(true);
-                }
-                if (today > targetDate) {
-                    setTakeName(item?.board_name);
-                    setExpireDate(true);
-                    setCountdownMessage('');
-                } else {
-                    const differenceMs = targetDate - today;
-                    const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-                    if (differenceDays == 89) {
-                        setTakeName(item?.board_name);
-                        setExpireDate(true);
-                        setCountdownMessage('Renew & Update');
-                    } else if (differenceDays < 89) {
-                        setTakeName(item?.board_name);
-                        setExpireDate(true);
-                        setCountdownMessage(`${differenceDays}`);
-                    } else {
-                        setExpireDate(false);
-                        setCountdownMessage(`${differenceDays}`);
-                    }
-                }
-            } else {
+            if (!item?.to_date || !isExpiryValid) {
                 setTakeName(item?.board_name);
+                setIsItemExpired(true);
+                setExpireDate(true);
                 setCountdownMessage('');
+                setDashMod(true);
+                return;
             }
+            const targetDate = parsedExpiry.toDate();
+            if (moment(today).format("YYYY-MM-DD") > parsedExpiry.format("YYYY-MM-DD")) {
+                setDashMod(true);
+            }
+            if (today > targetDate) {
+                setTakeName(item?.board_name);
+                setIsItemExpired(true);
+                setExpireDate(true);
+                setCountdownMessage('');
+            } else {
+                const differenceMs = targetDate - today;
+                const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
+                if (differenceDays == 89) {
+                    setTakeName(item?.board_name);
+                    setIsItemExpired(true);
+                    setExpireDate(true);
+                    setCountdownMessage('Renew & Update');
+                } else if (differenceDays < 89) {
+                    setTakeName(item?.board_name);
+                    setIsItemExpired(true);
+                    setExpireDate(true);
+                    setCountdownMessage(`${differenceDays}`);
+                } else {
+                    setIsItemExpired(false);
+                    setExpireDate(false);
+                    setDashMod(false);
+                    setCountdownMessage(`${differenceDays}`);
+                }
+            }
+        } else {
+            setDashMod(false);
         }
-    }, [item?.to_date, val, index]);
+    }, [item?.to_date, val, index, isExpiryValid]);
     return (
         <>
             <View style={styles.container}>
@@ -366,11 +382,11 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                 <View style={styles.divider} />
                 <View style={styles.infoRow}>
                     <Text style={styles.labelText}>{"License #"}</Text>
-                    <Text style={[styles.labelText, { marginRight:Platform.OS === 'ios'?normalize(25):normalize(20) }]}>{"Expiration"}</Text>
+                    <Text style={[styles.labelText, { marginRight: Platform.OS === 'ios' ? normalize(25) : normalize(20) }]}>{"Expiration"}</Text>
                 </View>
                 <View style={styles.infoRow}>
                     <Text style={[styles.valueText, { textTransform: "uppercase" }]}>{item?.license_number}</Text>
-                    <Text style={styles.valueText}>{moment(item?.to_date).format('MMM DD, YYYY')}</Text>
+                    <Text style={styles.valueText}>{formattedExpiry}</Text>
                 </View>
                 <View style={styles.bottomRow}>
                     {bothNoRequirement ? <></> : <Pressable onPress={() => setCMECard(true)} style={styles.cmeButton}>
@@ -380,7 +396,7 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                         </View>
                     </Pressable>}
                 </View>
-                {expireDate ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                {isItemExpired ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
                     <View style={styles.updateRenew}>
                         <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }))}>
                             <Text style={styles.update}>{"Update"}</Text>
@@ -398,8 +414,8 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                         <Text style={styles.active}>{"Active"}</Text>
                     </View>
                 </View>}
-                {expireDate ? <Modal
-                    isVisible={dashMod}
+                <Modal
+                    isVisible={dashMod && isItemExpired && val == index}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                     backdropTransitionOutTiming={0}
@@ -430,7 +446,8 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                                     onPress={() => {
                                         clearContextData();
                                         setFinddata("");
-                                        setExpireDate(!expireDate);
+                                        setExpireDate(false);
+                                        setIsItemExpired(false);
                                         setDashMod(false);
                                         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }));
                                     }}
@@ -445,7 +462,8 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                                 <Text
                                     style={stylesmodal.underct}
                                     onPress={() => {
-                                        setExpireDate(!expireDate);
+                                        setExpireDate(false);
+                                        setIsItemExpired(false);
                                         setDashMod(false);
                                         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }));
                                     }}
@@ -456,9 +474,10 @@ const Carouselcarditem = ({setStateCount, fetcheddt, item, navigation, renewal, 
                             </Text>
                         </View>}
                     </View>
-                </Modal> : null}
+                </Modal>
+
             </View>
-            {CMEcard && <CMECard expiryno={expireDate} finalSumCred={finalSumCred} manWrng={manWrng} genWrng={genWrng} allProfTake={allProfTake} windowWidth={windowWidth} CMEcard={CMEcard} setCMECard={setCMECard} item={item} styles={styles} />}
+            {CMEcard && <CMECard expiryno={isItemExpired} finalSumCred={finalSumCred} manWrng={manWrng} genWrng={genWrng} allProfTake={allProfTake} windowWidth={windowWidth} CMEcard={CMEcard} setCMECard={setCMECard} item={item} styles={styles} />}
         </>
     );
 }

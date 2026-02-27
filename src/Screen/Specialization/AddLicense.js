@@ -30,8 +30,6 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput'
 import { SafeAreaView } from 'react-native-safe-area-context'
-let status = "";
-let status1 = "";
 const AddLicense = (props) => {
     const {
         setFulldashbaord,
@@ -79,6 +77,16 @@ const AddLicense = (props) => {
     const [newtake, setNewtake] = useState("");
     const [targt, setTargt] = useState(null)
     const isFoucs = useIsFocused();
+    const resetToTab = (initialRoute = "Home") => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [
+                    { name: "TabNav", params: { initialRoute, detectmain: "newadd", refreshLicensesAt: Date.now() } }
+                ],
+            })
+        );
+    };
     const addCreditBack = () => {
         if (props?.route?.params?.profile) {
             props.navigation.goBack();
@@ -101,35 +109,14 @@ const AddLicense = (props) => {
             );
         } else if (props?.route?.params?.myTaskask?.Back) {
             setStatepush(addit);
-            props.navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        { name: "TabNav", params: { initialRoute: "Home" } }
-                    ],
-                })
-            );
+            resetToTab("Home");
         } else if (props?.route?.params?.myTaskask?.creditvault) {
-            props.navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        { name: "TabNav", params: { initialRoute: "Contact" } }
-                    ],
-                })
-            );
+            resetToTab("Contact");
         } else if (props?.route?.params?.profiledet) {
             props.navigation.goBack();
         } else {
             setStatepush(addit);
-            props.navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        { name: "TabNav", params: { initialRoute: "Home" } }
-                    ],
-                })
-            );
+            resetToTab("Home");
         }
     }
 
@@ -386,78 +373,38 @@ const AddLicense = (props) => {
         setOpendatelicy(false);
     };
 
-    if (status == '' || AuthReducer.status != status) {
-        switch (AuthReducer.status) {
-            case 'Auth/licesensRequest':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/licesensSuccess':
-                status = AuthReducer.status;
-                const uniqueStates = AuthReducer?.licesensResponse?.licensure_states?.filter((state, index, self) =>
-                    index === self.findIndex((s) => s.id === state.id)
-                );
-                const filteredStates = uniqueStates?.filter((state) =>
-                    !fetchdata?.some((dash) => dash.state_id === state.id)
-                );
-                setTimeout(() => {
-                    setSelectStatepratice(filteredStates);
-                    setSlistpratice(filteredStates);
-                }, 0);
-                break;
-            case 'Auth/licesensFailure':
-                status = AuthReducer.status;
-                break;
+    useEffect(() => {
+        if (AuthReducer.status == 'Auth/licesensSuccess') {
+            const uniqueStates = AuthReducer?.licesensResponse?.licensure_states?.filter((state, index, self) =>
+                index === self.findIndex((s) => s.id === state.id)
+            );
+            const filteredStates = uniqueStates?.filter((state) =>
+                !fetchdata?.some((dash) => dash.state_id === state.id)
+            );
+            setSelectStatepratice(filteredStates || []);
+            setSlistpratice(filteredStates || []);
         }
-    }
-    if (status1 == '' || DashboardReducer.status != status1) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/stateReportingRequest':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateReportingSuccess':
-                status1 = DashboardReducer.status;
-                setTimeout(() => {
-                    setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
-                }, 0);
-                break;
-            case 'Dashboard/stateReportingFailure':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateLicesenseRequest':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateLicesenseSuccess':
-                status1 = DashboardReducer.status;
-                setTimeout(() => {
-                    dispatch(dashboardRequest({}));
-                    setModalVisiblecred(true)
-                }, 0);
-                break;
-            case 'Dashboard/stateLicesenseFailure':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/dashboardRequest':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/dashboardSuccess':
-                status1 = DashboardReducer.status;
-                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
-                setTimeout(() => {
-                    setFulldashbaord(uniqueStates);
-                    // Use uniqueStates[0] — fulldashbaord inside setTimeout is stale closure (old value)
-                    setAddit(uniqueStates?.[0] ?? null);
-                }, 0);
-                break;
-            case 'Dashboard/dashboardFailure':
-                status1 = DashboardReducer.status;
-                break;
+    }, [AuthReducer.status, AuthReducer?.licesensResponse?.licensure_states, fetchdata]);
+
+    useEffect(() => {
+        if (DashboardReducer.status == 'Dashboard/stateReportingSuccess') {
+            setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
         }
-    }
+        if (DashboardReducer.status == 'Dashboard/stateLicesenseSuccess') {
+            dispatch(dashboardRequest({}));
+            setModalVisiblecred(true);
+        }
+        if (DashboardReducer.status == 'Dashboard/dashboardSuccess') {
+            const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+                return index === self.findIndex((s) =>
+                    s.state_id === state.state_id &&
+                    s.board_id === state.board_id
+                );
+            });
+            setFulldashbaord(uniqueStates || []);
+            setAddit(uniqueStates?.[0] ?? null);
+        }
+    }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord]);
     const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
@@ -845,27 +792,13 @@ const AddLicense = (props) => {
                                             })
                                         );
                                     } else if (props?.route?.params?.myTaskask?.Back) {
-                                        props.navigation.dispatch(
-                                            CommonActions.reset({
-                                                index: 0,
-                                                routes: [
-                                                    { name: "TabNav", params: { initialRoute: "Home" } }
-                                                ],
-                                            })
-                                        );
+                                        resetToTab("Home");
                                     } else if (props?.route?.params?.myTaskask?.creditvault) {
-                                        props.navigation.dispatch(
-                                            CommonActions.reset({
-                                                index: 0,
-                                                routes: [
-                                                    { name: "TabNav", params: { initialRoute: "Contact" } }
-                                                ],
-                                            })
-                                        );
+                                        resetToTab("Contact");
                                     } else if (props?.route?.params?.profiledet) {
                                         props.navigation.goBack();
                                     } else {
-                                        props.navigation.navigate("TabNav");
+                                        resetToTab("Home");
                                     }
                                 }}
                                 height={normalize(45)}

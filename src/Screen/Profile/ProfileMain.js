@@ -25,7 +25,6 @@ import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-let status1 = "";
 const ProfileMain = (props) => {
     const {
         setFulldashbaord,
@@ -46,23 +45,33 @@ const ProfileMain = (props) => {
     const [subitprof, setSubitprof] = useState(false);
     const [allProf, setAllProf] = useState("");
     const [nettrue, setNettrue] = useState("");
+    const read = (value) => (value == null ? "" : String(value).trim());
+    const getDisplayName = (source) => {
+        if (!source) return { firstname: "", lastname: "" };
+        const firstname = read(source?.personal_information?.firstname || source?.firstname);
+        const lastname = read(source?.personal_information?.lastname || source?.lastname);
+        return { firstname, lastname };
+    };
+    const getDisplayProfession = (source) => {
+        if (!source) return "";
+        const profession = read(source?.professional_information?.profession || source?.profession);
+        const professionType = read(source?.professional_information?.profession_type || source?.profession_type);
+        return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
+    };
     useEffect(() => {
         const token_error = () => {
-            setTimeout(() => {
-                AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-                    if (loginHandleProccess) {
-                        console.log(loginHandleProccess, "loginHandleProccess--------")
-                        let objToken = { "token": loginHandleProccess, "key": {} }
-                        connectionrequest()
-                            .then(() => {
-                                dispatch(tokenRequest(objToken))
-                                dispatch(mainprofileRequest(objToken))
-                                dispatch(dashPerRequest(objToken))
-                            })
-                            .catch((err) => showErrorAlert("Please connect to internet", err))
-                    }
-                });
-            }, 500);
+            AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+                if (loginHandleProccess) {
+                    let objToken = { "token": loginHandleProccess, "key": {} }
+                    connectionrequest()
+                        .then(() => {
+                            dispatch(tokenRequest(objToken))
+                            dispatch(mainprofileRequest(objToken))
+                            dispatch(dashPerRequest(objToken))
+                        })
+                        .catch((err) => showErrorAlert("Please connect to internet", err))
+                }
+            });
         };
         try {
             token_error();
@@ -90,28 +99,29 @@ const ProfileMain = (props) => {
         );
 
     }
-    if (status1 == '' || DashboardReducer.status != status1) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/mainprofileRequest':
-                status1 = DashboardReducer.status;
-                break;
-            case 'Dashboard/mainprofileSuccess':
-                status1 = DashboardReducer.status;
-                setAllHandle(DashboardReducer?.mainprofileResponse);
-                console.log(DashboardReducer?.mainprofileResponse, "log-----------");
-                break;
-            case 'Dashboard/mainprofileFailure':
-                status1 = DashboardReducer.status;
-                break;
+    useEffect(() => {
+        const fallbackProfile =
+            DashboardReducer?.mainprofileResponse ||
+            AuthReducer?.loginResponse?.user ||
+            AuthReducer?.againloginsiginResponse?.user ||
+            AuthReducer?.verifymobileResponse?.user ||
+            finalverifyvaultprof ||
+            finalProfessionprof ||
+            null;
+        if (fallbackProfile) {
+            setAllHandle(fallbackProfile);
         }
-    }
+    }, [
+        DashboardReducer?.mainprofileResponse,
+        AuthReducer?.loginResponse?.user,
+        AuthReducer?.againloginsiginResponse?.user,
+        AuthReducer?.verifymobileResponse?.user,
+        finalverifyvaultprof,
+        finalProfessionprof
+    ]);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
-    const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
+    const profFromDashboard = getDisplayProfession(allHandle);
     const allProfTake = validHandles.has(profFromDashboard);
     const allNoDetData = otherRestrict.has(profFromDashboard);
     const profileData = allProfTake ? [
@@ -194,22 +204,7 @@ const ProfileMain = (props) => {
             .catch((err) => showErrorAlert("Please connect to internet", err))
     }, [isFoucs])
     useEffect(() => {
-        if (allHandle) {
-            const profession = allHandle?.professional_information?.profession;
-            const profession_type = allHandle?.professional_information?.profession_type;
-            const clean = (value) => {
-                if (value == null) return '';
-                return String(value).trim();
-            };
-            const cleanedProfession = clean(profession);
-            const cleanedProfessionType = clean(profession_type);
-            const combinedValue =
-                cleanedProfession && cleanedProfessionType
-                    ? `${cleanedProfession} - ${cleanedProfessionType}`
-                    : cleanedProfession || cleanedProfessionType;
-
-            setAllProf(combinedValue || '');
-        }
+        setAllProf(getDisplayProfession(allHandle));
     }, [allHandle])
     const isPrimeTrial = useMemo(() => {
             return !WebcastReducer?.PrimeCheckResponse?.subscription;
@@ -363,7 +358,7 @@ const ProfileMain = (props) => {
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);
-    console.log(allHandle?.personal_information?.firstname, "allHandle?.personal_information?.firstname-----")
+    const displayName = getDisplayName(allHandle);
     return (
         <>
             <MyStatusBar
@@ -412,8 +407,8 @@ const ProfileMain = (props) => {
                 <ScrollView>
                     <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(10) }}>
                         <CircleLoader allProfTake={allProfTake} percentage={DashboardReducer?.mainprofileResponse?.profile_complete_percentage} mainData={DashboardReducer?.mainprofileResponse} />
-                        {(allHandle?.personal_information?.firstname && allHandle?.personal_information?.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF",fontWeight:"bold" }}>{`${allHandle?.personal_information?.firstname} ${allHandle?.personal_information?.lastname}`}</Text>
+                        {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
+                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF",fontWeight:"bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
                             <View style={{
                                 width: "60%",
                                 justifyContent: "center",

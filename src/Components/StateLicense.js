@@ -52,6 +52,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const [cmemodal, setCmemodal] = useState(false);
     const [vaultModal, setVaultmodal] = useState(false);
     const carouselRef = useRef(null);
+    const initialSyncDoneRef = useRef(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
@@ -234,10 +235,13 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         }
     }, [fulldashbaord])
     useEffect(() => {
-        if (propsData?.detectmain == "newadd") {
+        const shouldInitFromRoute = propsData?.detectmain == "newadd" || !propsData?.detectmain;
+        if (shouldInitFromRoute) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id || fulldashbaord?.[0]?.state_id;
-            stateDashboardData(takeIDST);
-            stateReport(takeIDST)
+            if (takeIDST) {
+                stateDashboardData(takeIDST);
+                stateReport(takeIDST);
+            }
         }
     }, [propsData?.detectmain, fulldashbaord, statepush])
     const stateDashboardData = (id) => {
@@ -376,6 +380,20 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             handleAllIndex(matchedIndex);
         }
     }, [matchedIndex]);
+    useEffect(() => {
+        if (!fulldashbaord?.length) {
+            initialSyncDoneRef.current = false;
+            return;
+        }
+        if (initialSyncDoneRef.current) return;
+        initialSyncDoneRef.current = true;
+        handleAllIndex(initialIndex);
+        if (carouselRef?.current) {
+            setTimeout(() => {
+                carouselRef.current?.snapToItem(initialIndex, false);
+            }, 0);
+        }
+    }, [fulldashbaord?.length, initialIndex]);
     const finalDatCD =  statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     return (
         <>

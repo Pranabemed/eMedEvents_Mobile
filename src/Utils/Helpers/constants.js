@@ -10,8 +10,8 @@ import { Platform } from 'react-native';
 // console.log(`[Config] Environment: ${__DEV__ ? 'STAGING' : 'PRODUCTION'}`);
 // console.log(`[Config] BASE_URL: ${BASE_URL}`);
 
-const BASE_URL = 'https://newdev.emedevents.com'; // Production
-// const BASE_URL = 'https://v2api.emedevents.com'; // Staging
+// const BASE_URL = 'https://newdev.emedevents.com'; // Production
+const BASE_URL = 'https://v2api.emedevents.com'; // Staging
 
 
 export default {

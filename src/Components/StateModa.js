@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import normalize from '../Utils/Helpers/Dimen';
@@ -9,6 +9,12 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
     const pressed = useRef(false);
+    useEffect(() => {
+        if (isVisible) {
+            pressed.current = false;
+        }
+    }, [isVisible]);
+
     const handleDone = () => {
         if (pressed.current) return;   // block double-tap
         pressed.current = true;
@@ -16,7 +22,12 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
         if (profile == "text") {
             navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "StateProfile", params: { state: "nodata" } }] }));
         } else {
-            navigation.navigate("TabNav");   // original navigation — keeps existing screens mounted
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd", refreshLicensesAt: Date.now() } }]
+                })
+            );
         }
     };
     return (

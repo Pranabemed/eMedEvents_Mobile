@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
@@ -57,7 +57,7 @@ function TabScreen() {
   const navigation = useNavigation();
   const isFoucs = useIsFocused();
   const route = useRoute();
-  const { detectmain, initialRoute } = route.params || {};
+  const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const [lastActiveTab, setLastActiveTab] = useState(null);
   const dispatch = useDispatch();
@@ -68,6 +68,8 @@ function TabScreen() {
   const [tabsub, setTabsub] = useState(false);
   const [tabmodal, setTabmodal] = useState(false);
   const [wholeProf, setWholeProf] = useState()
+  const hydratedStateIdRef = useRef(null);
+  const processedRefreshAtRef = useRef(null);
   useEffect(() => {
     const token_error = () => {
       setTimeout(() => {
@@ -93,6 +95,17 @@ function TabScreen() {
       console.log(error);
     }
   }, [lastActiveTab]);
+  useEffect(() => {
+    if (!refreshLicensesAt) return;
+    if (processedRefreshAtRef.current === refreshLicensesAt) return;
+    processedRefreshAtRef.current = refreshLicensesAt;
+    connectionrequest()
+      .then(() => {
+        dispatch(dashPerRequest({}));
+        dispatch(mainprofileRequest({}));
+      })
+      .catch((err) => showErrorAlert("Please connect to internet", err));
+  }, [refreshLicensesAt, dispatch]);
 
   useEffect(() => {
     const handleDeepLink = (event) => {
@@ -124,34 +137,37 @@ function TabScreen() {
     }
   }, []);
   useEffect(() => {
-    if (DashboardReducer.status === 'Dashboard/dashPerSuccess') {
-      const uniqueStates = DashboardReducer?.dashPerResponse?.data?.licensures?.filter((state, index, self) => {
-        return index === self.findIndex((s) =>
-          s.state_id === state.state_id &&
-          s.board_id === state.board_id
-        );
-      });
-      setFulldashbaord(uniqueStates);
-      if (uniqueStates?.length > 0) {
-        const firstState = uniqueStates[0];
-        setAddit(firstState);
-        setTakedata(firstState);
-        setTakestate(firstState.board_id);
-        setStateid(firstState.state_id);
-        const credits = firstState.credits_data || {};
-        const total = (credits.topic_earned_credits || 0) +
-          (credits.total_general_earned_credits || 0);
-        setTotalCred(total);
+    const licensures = DashboardReducer?.dashPerResponse?.data?.licensures;
+    if (!licensures?.length) return;
+    const uniqueStates = licensures.filter((state, index, self) => {
+      return index === self.findIndex((s) =>
+        s.state_id === state.state_id &&
+        s.board_id === state.board_id
+      );
+    });
+    setFulldashbaord(uniqueStates);
+    if (uniqueStates?.length > 0) {
+      const firstState = uniqueStates[0];
+      setAddit(firstState);
+      setTakedata(firstState);
+      setTakestate(firstState.board_id);
+      setStateid(firstState.state_id);
+      const credits = firstState.credits_data || {};
+      const total = (credits.topic_earned_credits || 0) +
+        (credits.total_general_earned_credits || 0);
+      setTotalCred(total);
+      if (hydratedStateIdRef.current !== firstState.state_id) {
+        hydratedStateIdRef.current = firstState.state_id;
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
-        const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
-        const profFromDashboard = profInfo.profession && profInfo.profession_type
-          ? `${profInfo.profession} - ${profInfo.profession_type}`
-          : null;
-        licHandl(profFromDashboard);
       }
+      const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
+      const profFromDashboard = profInfo.profession && profInfo.profession_type
+        ? `${profInfo.profession} - ${profInfo.profession_type}`
+        : null;
+      licHandl(profFromDashboard);
     }
-  }, [DashboardReducer.status]);
+  }, [DashboardReducer?.status, DashboardReducer?.dashPerResponse?.data?.licensures, DashboardReducer?.mainprofileResponse?.professional_information, AuthReducer?.signupResponse?.user]);
   const stateDashboardData = (id) => {
     let obj = {
       "state_id": id
@@ -297,9 +313,10 @@ function TabScreen() {
   }, [isConnected]);
   return ((allProfTake && fulldashbaord?.length !== 0) ? <>
     <Tab.Navigator
-      initialRouteName={lastActiveTab || initialRoute || "Home"}
+      initialRouteName={initialRoute || lastActiveTab || "Home"}
       screenOptions={{
-        unmountOnBlur: true,
+        unmountOnBlur: false,
+        freezeOnBlur: true,
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
@@ -449,9 +466,10 @@ function TabScreen() {
     />
   </> : nettrue == false ? <>
     <Tab.Navigator
-      initialRouteName={lastActiveTab || initialRoute || "Home"}
+      initialRouteName={initialRoute || lastActiveTab || "Home"}
       screenOptions={{
-        unmountOnBlur: true,
+        unmountOnBlur: false,
+        freezeOnBlur: true,
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
@@ -589,9 +607,10 @@ function TabScreen() {
     />
   </> : <>
     <Tab.Navigator
-      initialRouteName={lastActiveTab || initialRoute || "Home"}
+      initialRouteName={initialRoute || lastActiveTab || "Home"}
       screenOptions={{
-        unmountOnBlur: true,
+        unmountOnBlur: false,
+        freezeOnBlur: true,
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,

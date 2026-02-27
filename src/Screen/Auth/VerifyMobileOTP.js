@@ -480,7 +480,6 @@ const VerifyMobileOTP = (props) => {
         if (isPrimeTrial || hasWalletBalance) {
             return "freetrail";
         }
-
         return allProfTake ? "nochange" : "duplicate";
     }, [isPrimeTrial, hasWalletBalance, allProfTake]);
     useLayoutEffect(() => {
