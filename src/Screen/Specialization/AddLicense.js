@@ -399,8 +399,10 @@ const AddLicense = (props) => {
                 const filteredStates = uniqueStates?.filter((state) =>
                     !fetchdata?.some((dash) => dash.state_id === state.id)
                 );
-                setSelectStatepratice(filteredStates);
-                setSlistpratice(filteredStates);
+                setTimeout(() => {
+                    setSelectStatepratice(filteredStates);
+                    setSlistpratice(filteredStates);
+                }, 0);
                 break;
             case 'Auth/licesensFailure':
                 status = AuthReducer.status;
@@ -414,7 +416,9 @@ const AddLicense = (props) => {
                 break;
             case 'Dashboard/stateReportingSuccess':
                 status1 = DashboardReducer.status;
-                setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
+                setTimeout(() => {
+                    setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
+                }, 0);
                 break;
             case 'Dashboard/stateReportingFailure':
                 status1 = DashboardReducer.status;
@@ -424,8 +428,10 @@ const AddLicense = (props) => {
                 break;
             case 'Dashboard/stateLicesenseSuccess':
                 status1 = DashboardReducer.status;
-                dispatch(dashboardRequest({}));
-                toggleModalcred();
+                setTimeout(() => {
+                    dispatch(dashboardRequest({}));
+                    setModalVisiblecred(true)
+                }, 0);
                 break;
             case 'Dashboard/stateLicesenseFailure':
                 status1 = DashboardReducer.status;
@@ -441,9 +447,11 @@ const AddLicense = (props) => {
                         s.board_id === state.board_id
                     );
                 });
-                setFulldashbaord(uniqueStates);
-                const getAda = fulldashbaord?.[0];
-                setAddit(getAda);
+                setTimeout(() => {
+                    setFulldashbaord(uniqueStates);
+                    // Use uniqueStates[0] — fulldashbaord inside setTimeout is stale closure (old value)
+                    setAddit(uniqueStates?.[0] ?? null);
+                }, 0);
                 break;
             case 'Dashboard/dashboardFailure':
                 status1 = DashboardReducer.status;
@@ -571,8 +579,8 @@ const AddLicense = (props) => {
         dispatch(stateReportingRequest({ "state_id": itemmode?.id }))
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -587,10 +595,10 @@ const AddLicense = (props) => {
                     searchpratice={serachpraticelic}
                     searchStateNamePratice={searchStateNamePratice}
                     setSearchpratice={setSearchpraticelic}
-                     />
+                />
                 ) : citypickeryear ? (
-                        <CustomizedYear yearRange={yearRange} setCitypickeryear={setCitypickeryear} handleYearcust={handleYearcust} />
-                    ) : <>
+                    <CustomizedYear yearRange={yearRange} setCitypickeryear={setCitypickeryear} handleYearcust={handleYearcust} />
+                ) : <>
                     {Platform.OS === 'ios' ? <PageHeader
                         title={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ? "Edit License" : "Add License"}
                         onBackPress={addCreditBack}
@@ -873,7 +881,7 @@ const AddLicense = (props) => {
                             <StateModa
                                 isVisible={isModalVisiblecred}
                                 onClose={toggleModalcred}
-                                content={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ?"State license information \n updated successfully.": "State license information \n added successfully."}
+                                content={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ? "State license information \n updated successfully." : "State license information \n added successfully."}
                                 navigation={props.navigation}
                                 profile={props?.route?.params?.myTaskask?.BackMyTask ? "" : props?.route?.params?.myTaskask?.Back ? "" : props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile ? "text" : ""}
                             />

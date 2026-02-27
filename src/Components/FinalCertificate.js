@@ -190,7 +190,7 @@ const DownloadCertificate = (props) => {
                     </View>
                 )}
                 {/* <ScrollView contentContainerStyle={{paddingBottom:normalize(50)}}> */}
-                {conn == false ? <IntOff />:<View style={styles.container}>
+                {conn == false ? <IntOff /> : <View style={styles.container}>
                     {pdfUri ?
                         <View style={styles.pdfContainer}>
                             <Pdf
@@ -226,7 +226,8 @@ const DownloadCertificate = (props) => {
                         onPress={() => {
                             if (props?.route?.params?.PngFIle) {
                                 finalTakePer();
-                                props.navigation.navigate("TabNav", { initialRoute: "Contact" });
+                                props.navigation.goBack();
+                                // props.navigation.navigate("TabNav", { initialRoute: "Contact" });
                                 // props.navigation.goBack();
                             } else {
                                 finalTakePer();

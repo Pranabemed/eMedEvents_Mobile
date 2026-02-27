@@ -9,7 +9,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const AddToCartNo = (props) => {
 
     const cartPressNo = () => {
-        props.navigation.navigate("Statewebcast", { newCast: props?.route?.params?.addtocart?.urlneedTake });
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+            return;
+        }
+        const returnConferenceUrl = props?.route?.params?.addtocart?.urlneedTake || "";
+        if (returnConferenceUrl) {
+            props.navigation.navigate("Statewebcast", { newCast: returnConferenceUrl });
+            return;
+        }
+        props.navigation.goBack();
     }
 useLayoutEffect(() => {
             props.navigation.setOptions({ gestureEnabled: false });

@@ -206,7 +206,8 @@ const DownloadImage = (props) => {
                             if (props?.route?.params?.PngFIle?.notrq) {
                                 props.navigation.goBack();
                             } else {
-                                props.navigation.navigate("TabNav", { initialRoute: "Contact" });
+                                props.navigation.goBack();
+                                // props.navigation.navigate("TabNav", { initialRoute: "Contact" });
                             }
                         }}
                         height={normalize(45)}

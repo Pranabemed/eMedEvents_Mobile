@@ -19,6 +19,7 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AddToCartShimmer from '../../Components/AddToCartShimmer';
+import { useFocusEffect } from '@react-navigation/native';
 
 let status = "";
 const AddToCart = (props) => {
@@ -42,6 +43,7 @@ const AddToCart = (props) => {
     const [cart, setCart] = useState("");
     const [paymentcardfreecart, setPaymentcardfreecart] = useState(false);
     const [paymentfdfreecart, setPaymentfdfreecart] = useState(false);
+    const returnConferenceUrl = props?.route?.params?.addtocart?.urlneedTake || props?.route?.params?.newCast || "";
     const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
@@ -57,32 +59,29 @@ const AddToCart = (props) => {
         setPaymentfdfreecart(tikg);
     };
     const cartPress = () => {
-        props.navigation.navigate("Statewebcast", { newCast: props?.route?.params?.addtocart?.urlneedTake });
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+            return;
+        }
+        if (returnConferenceUrl) {
+            props.navigation.navigate("Statewebcast", { newCast: returnConferenceUrl });
+            return;
+        }
+        props.navigation.goBack();
     }
-    useEffect(() => {
-        if (props?.route?.params?.addtocart?.addtocart == "startcallapi") {
+    useFocusEffect(
+        React.useCallback(() => {
             let obj = {};
             connectionrequest()
                 .then(() => {
-                    dispatch(cartcountWebcastRequest(obj))
+                    dispatch(cartcountWebcastRequest(obj));
+                    dispatch(cartdetailsWebcastRequest(obj));
                 })
                 .catch((err) => {
                     showErrorAlert("Please connect to internet", err)
-                })
-        }
-    }, [props?.route?.params?.addtocart?.addtocart])
-    useEffect(() => {
-        if (props?.route?.params?.addtocart?.addtocart == "startcallapi") {
-            let obj = {};
-            connectionrequest()
-                .then(() => {
-                    dispatch(cartdetailsWebcastRequest(obj))
-                })
-                .catch((err) => {
-                    showErrorAlert("Please connect to internet", err)
-                })
-        }
-    }, [props?.route?.params?.addtocart])
+                });
+        }, [dispatch])
+    );
     const applyCoupon = () => {
         if (!couponapp) {
             showErrorAlert("Please enter a valid coupon ")

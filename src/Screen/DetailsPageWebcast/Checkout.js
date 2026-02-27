@@ -164,6 +164,10 @@ const Checkout = (props) => {
     }, [props?.route?.params?.checkoutSpan?.cartData?.tickets])
     console.log(ticketSave, props?.route?.params?.checkoutSpan?.cartData?.tickets, "ticketSave========", props?.route?.params?.checkoutSpan?.finalTicket)
     const checkoutClear = () => {
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+        }
         if (props?.route?.params?.checkoutSpan?.cartData) {
             navigation.navigate("AddToCart");
         } else {

@@ -9,6 +9,7 @@ import IntIcn from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Internet from './Internet';
+import { useSelector } from 'react-redux';
 
 export const AppContext = createContext();
 const AppProvider = ({ children }) => {
@@ -30,6 +31,31 @@ const AppProvider = ({ children }) => {
   const [addresssort, setAddresssort] = useState("");
   const [completedCount, setCompletedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const dashboardLicensures = useSelector(
+    state => state?.DashboardReducer?.dashboardResponse?.data?.licensures
+  );
+
+  useEffect(() => {
+    if (dashboardLicensures === undefined || dashboardLicensures === null) return;
+
+    if (dashboardLicensures === 0) {
+      setFulldashbaord(0);
+      return;
+    }
+
+    if (!Array.isArray(dashboardLicensures)) {
+      setFulldashbaord([]);
+      return;
+    }
+
+    const uniqueStates = dashboardLicensures.filter((state, index, self) => {
+      return index === self.findIndex((s) =>
+        s.state_id === state.state_id &&
+        s.board_id === state.board_id
+      );
+    });
+    setFulldashbaord(uniqueStates);
+  }, [dashboardLicensures]);
   const clearContextData = () => {
     setFinddata(null);
   };
@@ -91,7 +117,6 @@ const AppProvider = ({ children }) => {
 };
 
 export default AppProvider;
-
 
 
 

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, ImageBackground, Animated, Alert, Linking, KeyboardAvoidingView } from 'react-native';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -27,6 +27,7 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native';
 let status = "";
 const dommyData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }, { id: 1, name: "View & Download", Icon: "eye" }]
 const fakedata = [{ id: 1, name: "View & Download", Icon: "eye" }]
@@ -54,13 +55,16 @@ const CertficateHandle = (props) => {
         }
         return [[]];
     };
-    useEffect(() => {
+    const fetchCreditVaultData = useCallback(() => {
         let obj = {
             "board_id": props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_id : props?.route?.params?.boardCert?.board_id,
             "type": "certificate"
-        }
+        };
         let objState = {
             "state_id": props?.route?.params?.boardID?.state_id
+        };
+        if (!props?.route?.params?.boardID && !props?.route?.params?.boardCert) {
+            return;
         }
         connectionrequest()
             .then(() => {
@@ -68,8 +72,15 @@ const CertficateHandle = (props) => {
             })
             .catch((err) => {
                 showErrorAlert("Please connect to ineternet", err)
-            })
-    }, [props?.route?.params?.boardID, props?.route?.params?.boardCert])
+            });
+    }, [dispatch, props?.route?.params?.boardID, props?.route?.params?.boardCert]);
+
+    useFocusEffect(
+        useCallback(() => {
+            status = "";  // reset so the render-time switch re-processes on return
+            fetchCreditVaultData();
+        }, [fetchCreditVaultData])
+    );
     const certificatpress = () => {
         props.navigation.goBack();
     }
@@ -479,7 +490,7 @@ const CertficateHandle = (props) => {
             }));
         });
     }, [stateget]);
-useLayoutEffect(() => {
+    useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
     return (

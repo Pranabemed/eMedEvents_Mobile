@@ -1,19 +1,24 @@
 
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
-import { AppContext } from '../Screen/GlobalSupport/AppContext';
 const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
-       const {
-            fulldashbaord,
-            setAddit
-        } = useContext(AppContext);
-        console.log("oktested------",fulldashbaord,setAddit);
+    const pressed = useRef(false);
+    const handleDone = () => {
+        if (pressed.current) return;   // block double-tap
+        pressed.current = true;
+        onClose();                     // close modal
+        if (profile == "text") {
+            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "StateProfile", params: { state: "nodata" } }] }));
+        } else {
+            navigation.navigate("TabNav");   // original navigation — keeps existing screens mounted
+        }
+    };
     return (
         <Modal
             isVisible={isVisible}
@@ -29,27 +34,7 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
                 <View style={{ marginTop: normalize(20) }}>
                     <Text style={styles.content}>{content}</Text>
                 </View>
-                <TouchableOpacity onPress={() => {
-                    if (profile == "text") {
-                       navigation.dispatch(
-                            CommonActions.reset({
-                              index: 0,
-                              routes: [
-                                {
-                                  name: "StateProfile",
-                                  params: {
-                                    state:"nodata",
-                                  }
-                                }
-                              ]
-                            })
-                          );
-                        onClose();
-                    } else {
-                        navigation.navigate("TabNav");
-                        onClose();
-                    }
-                }} style={{ justifyContent: "center", alignItems: "center", height: normalize(50), width: normalize(120), borderRadius: normalize(10), borderWidth: 1, borderColor: "#DDDDDD" }}>
+                <TouchableOpacity onPress={handleDone} style={{ justifyContent: "center", alignItems: "center", height: normalize(50), width: normalize(120), borderRadius: normalize(10), borderWidth: 1, borderColor: "#DDDDDD" }}>
                     <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(18), color: "#999999" }}>{"Done"}</Text>
                 </TouchableOpacity>
             </View>
