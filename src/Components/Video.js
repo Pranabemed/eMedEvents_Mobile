@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, Alert, ScrollView, StatusBar, BackHandler, Pressable } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, ScrollView, StatusBar, BackHandler, Pressable, Linking } from 'react-native';
 import Video from 'react-native-video';
 import PlayIcon from 'react-native-vector-icons/AntDesign';
 import FullIcon from 'react-native-vector-icons/Feather';
@@ -29,6 +29,35 @@ let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+const normalizeVideoSource = (url) => {
+    if (!url) return null;
+    return url.trim().replace(/&amp;/g, '&');
+};
+
+const getExternalVideoUrl = (source) => {
+    if (!source) return null;
+    const normalized = normalizeVideoSource(source);
+    if (/^https?:\/\//i.test(normalized)) return normalized;
+    if (/^[\w-]{11}$/.test(normalized)) {
+        return `https://www.youtube.com/watch?v=${normalized}`;
+    }
+    return null;
+};
+
+const isPlayableVideoSource = (source) => {
+    const normalized = normalizeVideoSource(source);
+    return /\.(mp4|m4v|mov|webm|m3u8)(\?|$)/i.test(normalized);
+};
+
+const extractVideoUrl = (htmlString) => {
+    if (!htmlString) return null;
+    const videoUrlMatch = htmlString.match(/<iframe[^>]+src=["']([^"']+\.(m3u8|mp4|m4v|mov|webm)[^"']*)["']|<source[^>]+src=["']([^"']+\.(m4v|mp4|mov|webm|m3u8)[^"']*)["']/i);
+    if (videoUrlMatch) {
+        return videoUrlMatch[1] || videoUrlMatch[3];
+    }
+    return null;
+};
+
 const VideoComponent = (props) => {
     const {
         statepush,
@@ -42,9 +71,28 @@ const VideoComponent = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const dispatch = useDispatch();
     const [nextAction, setNextAction] = useState(null);
-    const sliderValueRef = useRef(currentTime);
+    const [paused, setPaused] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const sliderValueRef = useRef(0);
     const [showLoader, setShowLoader] = useState(true);
     const [conn, setConn] = useState("")
+    const [showThumb, setShowThumb] = useState(true);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [videoHeight, setVideoHeight] = useState(normalize(200));
+    const [videoAspectRatio, setVideoAspectRatio] = useState(16 / 9);
+    const [videoDic, setVideoDic] = useState([]);
+    const [videoUrl, setVideoUrl] = useState(null);
+    const [externalVideoUrl, setExternalVideoUrl] = useState(null);
+    const [loadingdown, setLoadingdown] = useState(false);
+    const [pdfUri, setPdfUri] = useState("");
+    const [nonVideoContent, setNonVideoContent] = useState(null);
+    const controlsTimerRef = useRef(null);
+    const wasPausedBeforeSeekRef = useRef(false);
+    const [isSeeking, setIsSeeking] = useState(false);
+    const didSetInitialFullscreenRef = useRef(false);
+    const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -118,17 +166,6 @@ const VideoComponent = (props) => {
             .catch((err) => { showErrorAlert("Please connect to internet", err) })
     }, [isFocus])
     const videoRef = useRef(null);
-    const [paused, setPaused] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [showThumb, setShowThumb] = useState(false);
-    const [fullscreen, setFullscreen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [videoHeight, setVideoHeight] = useState(normalize(200));
-    const [videoDic, setVideoDic] = useState([]);
-    const [videoUrl, setVideoUrl] = useState(null);
-    const [loadingdown, setLoadingdown] = useState(false);
-    const [pdfUri, setPdfUri] = useState("");
     const { width, height } = Dimensions.get('window');
     useEffect(() => {
         if (fullscreen) {
@@ -136,9 +173,17 @@ const VideoComponent = (props) => {
             setVideoHeight(height);
         } else {
             Orientation.lockToPortrait();
-            setVideoHeight(normalize(200));
+            const calculatedHeight = width / (videoAspectRatio || (16 / 9));
+            const minHeight = normalize(180);
+            const maxHeight = height * 0.62;
+            setVideoHeight(Math.max(minHeight, Math.min(calculatedHeight, maxHeight)));
         }
-    }, [fullscreen]);
+    }, [fullscreen, height, width, videoAspectRatio]);
+    useEffect(() => {
+        return () => {
+            Orientation.lockToPortrait();
+        };
+    }, []);
     const styles = StyleSheet.create({
         details: {
             flexDirection: 'row',
@@ -180,7 +225,8 @@ const VideoComponent = (props) => {
             borderRadius: normalize(15)
         },
         container: {
-            // flex: 1,
+            borderRadius: normalize(10),
+            overflow: 'hidden',
         },
         fullscreenContainer: {
             position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
@@ -203,7 +249,6 @@ const VideoComponent = (props) => {
         fullscreenVideo: {
             width: "100%",
             height: "100%",
-            backgroundColor: "#211c16",
         },
         playText: {
             position: 'absolute',
@@ -212,19 +257,31 @@ const VideoComponent = (props) => {
             height: fullscreen ? 60 : 40,
             width: fullscreen ? 60 : 40,
             zIndex: 999,
+            justifyContent: 'center',
+            alignItems: 'center',
         },
         fullscreencontrols: {
-            width: "80%",
-            top: Platform.OS === 'ios' ? normalize(273) : 340,
+            width: "100%",
+            position: 'absolute',
+            bottom: Platform.OS === 'ios' ? normalize(18) : normalize(12),
             flexDirection: 'row',
             alignItems: 'center',
-            marginLeft: Platform.OS === 'ios' ? normalize(70) : normalize(90)
+            paddingHorizontal: normalize(10),
+            zIndex: 1000,
         },
         controls: {
             width: "100%",
-            top: Platform.OS === 'ios' ? -30 : -21,
             flexDirection: 'row',
             alignItems: 'center',
+            paddingHorizontal: normalize(10),
+            paddingTop: normalize(4),
+            paddingBottom: normalize(8),
+        },
+        sliderWrap: {
+            flex: 1,
+            paddingHorizontal: normalize(4),
+            paddingVertical: 0,
+            bottom: 0,
         },
         // controlsandroid: {
         //     width: "100%",
@@ -261,81 +318,95 @@ const VideoComponent = (props) => {
         },
         nfullmode: Platform.OS === 'ios' ? {
             position: 'absolute',
-            // backgroundColor:  "rgba(0, 0, 0, 0.5)",
-            bottom: fullscreen ? 5 : 12,
-            right: fullscreen ? 17 : 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            bottom: fullscreen ? normalize(48) : normalize(10),
+            right: fullscreen ? 17 : 10,
             zIndex: 1000,
             height: normalize(35),
             width: normalize(35),
-            // borderRadius:normalize(5),
+            borderRadius: normalize(35),
             justifyContent: "center",
             alignItems: "center"
         } : {
             position: 'absolute',
-            // backgroundColor: "rgba(0, 0, 0, 0.5)",
-            bottom: fullscreen ? 40 : 12,
-            right: fullscreen ? 17 : 4,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            bottom: fullscreen ? normalize(48) : normalize(10),
+            right: fullscreen ? 17 : 10,
             zIndex: 1000,
             height: normalize(35),
             width: normalize(35),
-            // borderRadius:normalize(35),
+            borderRadius: normalize(35),
             justifyContent: "center",
             alignItems: "center"
         },
-        timeBalance: Platform.OS === 'ios' ? {
-            position: 'absolute',
-            bottom: 23,
-            right: showThumb ? normalize(35) : 5,
-            zIndex: 1000,
-            color: Colorpath.black,
+        timeLabel: {
+            color: '#111111',
             fontFamily: Fonts.InterMedium,
-            fontSize: 14,
-        } : {
-            position: 'absolute',
-            bottom: 18,
-            right: showThumb ? normalize(65) : 5,
-            zIndex: 1000,
-            color: Colorpath.black,
-            fontFamily: Fonts.InterMedium,
-            fontSize: 14,
+            fontSize: 13,
+            textAlignVertical: 'center',
         },
-        fulltimeBalance: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'absolute',
-            bottom: Platform.OS === 'ios' ? 54 : 54,
-            right: Platform.OS === 'ios' ? normalize(123) : normalize(120),
-            zIndex: 1000,
-            color: Colorpath.black,
-            fontFamily: Fonts.InterMedium,
-            fontSize: 14,
-            height: normalize(20),
-            width: normalize(155),
-            overflow: 'hidden',
-            textAlign: 'center',
-            includeFontPadding: false,
+        leftTime: {
+            minWidth: normalize(46),
+            textAlign: 'left',
+            marginRight: normalize(6),
+        },
+        rightTime: {
+            minWidth: normalize(46),
+            textAlign: 'right',
+            marginLeft: normalize(6),
+        },
+        fullscreenTimeLabel: {
+            fontWeight: '600',
+        },
+        fullscreenTimeBlack: {
+            color: '#000000',
+            textShadowColor: 'rgba(255,255,255,0.9)',
+            textShadowRadius: 3,
+            textShadowOffset: { width: 0, height: 0 },
+        },
+        fullscreenTimeWhite: {
+            color: '#FFFFFF',
+            textShadowColor: 'rgba(0,0,0,0.9)',
+            textShadowRadius: 3,
+            textShadowOffset: { width: 0, height: 0 },
         },
         timer: {
             color: '#000000',
             marginLeft: 10,
         },
+        openExternalButton: {
+            marginTop: normalize(12),
+            marginHorizontal: normalize(12),
+            backgroundColor: '#E53935',
+            borderRadius: normalize(8),
+            paddingVertical: normalize(11),
+            paddingHorizontal: normalize(12),
+            alignItems: 'center',
+        },
+        openExternalButtonText: {
+            color: '#FFFFFF',
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 14,
+        },
     });
     const onLoad = (data) => {
-        setDuration(data.duration); // Set video duration
+        setDuration(data.duration || 0);
+        const naturalWidth = Number(data?.naturalSize?.width) || 0;
+        const naturalHeight = Number(data?.naturalSize?.height) || 0;
+        if (naturalWidth > 0 && naturalHeight > 0) {
+            setVideoAspectRatio(naturalWidth / naturalHeight);
+        }
 
-        // Determine the initial time
         const initialTime = videoDic && videoDic?.video_play_time ? parseFloat(videoDic.video_play_time) : 0;
 
         if (videoRef.current) {
-            // Use a timeout or wait for the video to be fully loaded before seeking
             setTimeout(() => {
                 videoRef.current.seek(initialTime);
-                setCurrentTime(initialTime); // Update current time to last played time
-            }, 100); // Adjust the delay if necessary
+                setCurrentTime(initialTime);
+            }, 100);
         }
 
-        setLoading(false); // Stop loading
+        setLoading(false);
     };
 
     // Additional guard to ensure `videoDic?.video_play_time` is always prioritized
@@ -353,12 +424,15 @@ const VideoComponent = (props) => {
 
 
     const onProgress = (data) => {
+        if (isSeeking) return;
         setCurrentTime(data.currentTime);
     };
 
     const onEnd = () => {
         setPaused(true);
-        videoRef.current.seek(0);
+        setCurrentTime(0);
+        videoRef.current?.seek(0);
+        setShowThumb(true);
     };
 
     const onReadyForDisplay = () => {
@@ -369,6 +443,33 @@ const VideoComponent = (props) => {
         setFullscreen(!fullscreen);
     };
 
+    const clearControlsTimer = useCallback(() => {
+        if (controlsTimerRef.current) {
+            clearTimeout(controlsTimerRef.current);
+            controlsTimerRef.current = null;
+        }
+    }, []);
+
+    const showControlsBriefly = useCallback(() => {
+        setShowThumb(true);
+        clearControlsTimer();
+        if (!paused && !loading) {
+            controlsTimerRef.current = setTimeout(() => {
+                setShowThumb(false);
+            }, 2600);
+        }
+    }, [clearControlsTimer, paused, loading]);
+
+    useEffect(() => {
+        if (showThumb) {
+            showControlsBriefly();
+        } else {
+            clearControlsTimer();
+        }
+    }, [showThumb, paused, loading, showControlsBriefly, clearControlsTimer]);
+
+    useEffect(() => () => clearControlsTimer(), [clearControlsTimer]);
+
     const videoPress = () => {
         setAddit(statepush);
         takeCourseVideo();
@@ -378,7 +479,7 @@ const VideoComponent = (props) => {
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
-        return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        return `${minutes < 10 ? '0' : ''}${minutes}.${seconds < 10 ? '0' : ''}${seconds}`;
     };
     useEffect(() => {
         if (CMEReducer?.cmeactivityResponse) {
@@ -434,43 +535,39 @@ const VideoComponent = (props) => {
                 break;
         }
     }
-    const [nonVideoContent, setNonVideoContent] = useState(null);
     const handleSliderChange = (value) => {
-        setPaused(true);
-        const currentTime = videoRef.current.currentTime;
-        const threshold = 2; // Seconds
-        if (Math.abs(value - currentTime) > threshold) {
-            sliderValueRef.current = value;
-            setPaused(true);
-            setCurrentTime(value);
-            videoRef.current.seek(value);
-        }
+        sliderValueRef.current = value;
+        setCurrentTime(value);
     };
-    const handleSeek = useCallback((time) => {
+    const handleSlidingStart = useCallback(() => {
+        showControlsBriefly();
+        wasPausedBeforeSeekRef.current = paused;
+        setIsSeeking(true);
         setPaused(true);
+    }, [paused, showControlsBriefly]);
+    const handleSeek = useCallback((time) => {
+        showControlsBriefly();
         if (!videoRef.current) {
             console.warn('Video reference not available');
             return;
         }
-        const seekMethods = [
-            () => videoRef.current?.seek?.(time),
-            () => videoRef.current?.seek(time),
-            () => videoRef.current?.player?.seek(time)
-        ];
-        for (const method of seekMethods) {
-            try {
-                if (typeof method() === 'function') {
-                    method();
-                    break;
-                }
-            } catch (e) {
-                console.warn('Seek attempt failed:', e);
+        try {
+            if (typeof videoRef.current?.seek === 'function') {
+                videoRef.current.seek(time);
+            } else if (typeof videoRef.current?.player?.seek === 'function') {
+                videoRef.current.player.seek(time);
             }
+            setCurrentTime(time);
+        } catch (e) {
+            console.warn('Seek attempt failed:', e);
         }
-        setTimeout(() => setPaused(false), 100);
-    }, []);
+    }, [showControlsBriefly]);
     const handleSlidingComplete = useCallback((value) => {
         handleSeek(value);
+        setIsSeeking(false);
+        if (!wasPausedBeforeSeekRef.current) {
+            setPaused(false);
+        }
     }, [handleSeek]);
     useEffect(() => {
         if (Platform.OS === 'android') {
@@ -487,34 +584,36 @@ const VideoComponent = (props) => {
 
     useEffect(() => {
         if (!videoDic || !videoDic.activityData || videoDic.activityData.length === 0) {
-            console.error('No video description found in videoDic.');
+            setVideoUrl(null);
+            setExternalVideoUrl(null);
             return;
         }
-        const videoId = videoDic.activityData[0]?.description;
-        if (videoId) {
-            const extractedUrl = extractVideoUrl(videoId);
-            if (extractedUrl) {
-                setVideoUrl(extractedUrl);
-            } else {
-                console.warn('No valid video URL found. Pushing content to non-video state.');
-                setNonVideoContent(videoId); // Push content to non-video state
-            }
-        } else {
-            console.error('Video description is null.');
+
+        const descriptionHtml = videoDic?.activityData?.[0]?.description || '';
+        const descriptionUrl = extractVideoUrl(descriptionHtml);
+        const rawVideoId = videoDic?.activityData?.[0]?.youtube_video_id || '';
+        const candidateSource = descriptionUrl || rawVideoId;
+
+        if (candidateSource && isPlayableVideoSource(candidateSource)) {
+            setVideoUrl(normalizeVideoSource(candidateSource));
+            setExternalVideoUrl(null);
+            setNonVideoContent(null);
+            return;
         }
+
+        setVideoUrl(null);
+        setNonVideoContent(descriptionHtml || null);
+        setExternalVideoUrl(getExternalVideoUrl(candidateSource));
     }, [videoDic]);
-    function extractVideoUrl(htmlString) {
-        const videoUrlMatch = htmlString.match(/<iframe[^>]+src=["']([^"']+\.mp4)["']|<source[^>]+src=["']([^"']+\.(m4v|mp4))["']/i);
-        if (videoUrlMatch) {
-            return videoUrlMatch[1] || videoUrlMatch[2];
-        } else {
-            console.error('No video URL found in the provided HTML string.');
-            return null;
+
+    const hasVideoSource = !!videoUrl;
+    useEffect(() => {
+        if (hasVideoSource && !didSetInitialFullscreenRef.current) {
+            didSetInitialFullscreenRef.current = true;
+            setFullscreen(true);
+            setShowThumb(true);
         }
-    }
-    const videoId = videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0
-        ? videoDic?.activityData[0]?.youtube_video_id
-        : null;
+    }, [hasVideoSource]);
     const pdfAll = videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0
         ? videoDic?.activityData[0]?.document
         : null;
@@ -589,11 +688,6 @@ const VideoComponent = (props) => {
         return () => backHandler.remove();
     }, [fullscreen]);
     useEffect(() => {
-        if (videoId) {
-            setFullscreen(!fullscreen);
-        }
-    }, [videoId])
-    useEffect(() => {
         // Simulate 2-second loading time
         const timeout = setTimeout(() => {
             setShowLoader(false);
@@ -656,12 +750,17 @@ const VideoComponent = (props) => {
                 </View>}
 
                 {conn == false ? <IntOff /> : <ScrollView scrollEnabled={!fullscreen} contentContainerStyle={{ paddingBottom: fullscreen ? normalize(320) : normalize(120) }}>
-                    {videoId ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
+                    {hasVideoSource ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
                         <Pressable
                             style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
-                            onPress={() => setShowThumb(!showThumb)}
+                            onPress={() => {
+                                setShowThumb((prev) => !prev);
+                                if (!showThumb) {
+                                    showControlsBriefly();
+                                }
+                            }}
                         >
-                            {videoUrl ? <Video
+                            <Video
                                 ref={videoRef}
                                 source={{ uri: videoUrl }}
                                 style={fullscreen ? styles.fullscreenVideo : styles.video}
@@ -678,24 +777,7 @@ const VideoComponent = (props) => {
                                 }}
                                 resizeMode="contain"
                                 onVideoLoadStart={() => setLoading(true)}
-                            /> : <Video
-                                ref={videoRef}
-                                source={{ uri: videoId }}
-                                style={fullscreen ? styles.fullscreenVideo : styles.video}
-                                paused={paused}
-                                onLoad={onLoad}
-                                onProgress={onProgress}
-                                onEnd={onEnd}
-                                onReadyForDisplay={onReadyForDisplay}
-                                bufferConfig={{
-                                    minBufferMs: 15000,
-                                    maxBufferMs: 50000,
-                                    bufferForPlaybackMs: 2500,
-                                    bufferForPlaybackAfterRebufferMs: 5000,
-                                }}
-                                resizeMode="contain"
-                                onVideoLoadStart={() => setLoading(true)}
-                            />}
+                            />
                             {loading && (
                                 <ActivityIndicator
                                     style={styles.playText}
@@ -704,47 +786,74 @@ const VideoComponent = (props) => {
                                 />
                             )}
                             {showThumb && !loading && (
-                                <>
-                                    <Pressable onPress={() => setPaused(!paused)} style={styles.playText}>
-                                        <PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
-                                    </Pressable>
-                                    <Pressable style={fullscreen ? styles.fullscreenButton : styles.nfullmode} onPress={toggleFullscreen}>
-                                        <FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={25} color={fullscreen ? "#FFFFFF" : "#000000"} />
-                                    </Pressable>
-                                </>
+                                <Pressable onPress={() => {
+                                    setPaused(!paused);
+                                    showControlsBriefly();
+                                }} style={styles.playText}>
+                                    <PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
+                                </Pressable>
                             )}
-                            <View style={{
-                                justifyContent: "flex-start", alignContent: "flex-start", position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                zIndex: 10
-                            }}>
-                                {showThumb && !loading && <Text style={fullscreen ? styles.fulltimeBalance : styles.timeBalance}>
-                                    {formatTime(currentTime)} / {formatTime(duration)}
-                                </Text>}
-                            </View>
+                            {!loading && (
+                                <Pressable style={fullscreen ? styles.fullscreenButton : styles.nfullmode} onPress={toggleFullscreen}>
+                                    <FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={22} color="#FFFFFF" />
+                                </Pressable>
+                            )}
                         </Pressable>
                         {!fullscreen && !loading ? (
                             <View style={styles.controls}>
-
+                                <Text style={[styles.timeLabel, styles.leftTime]}>
+                                    {formatTime(currentTime)}
+                                </Text>
                                 <Sliders
                                     value={currentTime}
-                                    max={duration} valChange={handleSliderChange}
+                                    max={duration}
+                                    valChange={handleSliderChange}
+                                    onSlidingStart={handleSlidingStart}
                                     handleSlidingComplete={handleSlidingComplete}
+                                    containerStyle={styles.sliderWrap}
+                                    thumbStyle={{
+                                        height: 14,
+                                        width: 14,
+                                        backgroundColor: '#1F1F1F',
+                                        borderWidth: 1,
+                                        borderColor: '#1F1F1F',
+                                    }}
                                 />
+                                <Text style={[styles.timeLabel, styles.rightTime]}>
+                                    {formatTime(duration)}
+                                </Text>
                             </View>
                         ) : !loading && showThumb && (
                             <View style={styles.fullscreencontrols}>
+                                <Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
+                                    <Text style={[
+                                        styles.timeLabel,
+                                        styles.fullscreenTimeLabel,
+                                        styles.leftTime,
+                                        useBlackFullscreenTimer ? styles.fullscreenTimeBlack : styles.fullscreenTimeWhite
+                                    ]}>
+                                        {formatTime(currentTime)}
+                                    </Text>
+                                </Pressable>
                                 <Sliders
                                     value={currentTime}
-                                    max={duration} valChange={handleSliderChange}
+                                    max={duration}
+                                    valChange={handleSliderChange}
+                                    onSlidingStart={handleSlidingStart}
                                     handleSlidingComplete={handleSlidingComplete}
                                     fullscreen={true}
+                                    containerStyle={styles.sliderWrap}
                                 />
+                                <Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
+                                    <Text style={[
+                                        styles.timeLabel,
+                                        styles.fullscreenTimeLabel,
+                                        styles.rightTime,
+                                        useBlackFullscreenTimer ? styles.fullscreenTimeBlack : styles.fullscreenTimeWhite
+                                    ]}>
+                                        {formatTime(duration)}
+                                    </Text>
+                                </Pressable>
                             </View>
                         )}
                     </View> : nonVideoContent && !fullscreen ? <><RenderHTML
@@ -759,6 +868,14 @@ const VideoComponent = (props) => {
                         }}
                     />
 
+                        {externalVideoUrl ? (
+                            <Pressable
+                                onPress={() => Linking.openURL(externalVideoUrl)}
+                                style={styles.openExternalButton}
+                            >
+                                <Text style={styles.openExternalButtonText}>Open Video in Browser</Text>
+                            </Pressable>
+                        ) : null}
                     </> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen ? (<View>
                         <FlipbookComponent path={CMEReducer?.cmeactivityResponse?.onlineDisplayPath} link={CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook} />
                     </View>

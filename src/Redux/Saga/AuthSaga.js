@@ -508,23 +508,40 @@ export function* mobileLoginSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/signinOTP', action.payload, header);
-    if (response?.data?.success == true) {
-      yield put(loginsiginSuccess(response?.data));
-      yield put(tokenSuccess(response?.data?.token));
-      yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
-      if (response?.data?.refresh_token) {
-        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+    const apiData = response?.data || {};
+    const nestedData = apiData?.data && typeof apiData.data === 'object' ? apiData.data : {};
+    const normalizedData = { ...apiData, ...nestedData };
+    const token = normalizedData?.token;
+    const refreshToken = normalizedData?.refresh_token;
+    if (normalizedData?.success == true) {
+      yield put(loginsiginSuccess(normalizedData));
+      yield put(tokenSuccess(token || null));
+      if (token) {
+        yield call(AsyncStorage.setItem, constants.TOKEN, token);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.TOKEN);
       }
-    } else if (response?.data?.success == false) {
-      yield put(loginsiginSuccess(response?.data));
-      yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
-      yield put(tokenSuccess(response?.data?.token));
-      if (response?.data?.refresh_token) {
-        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      if (refreshToken) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, refreshToken);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
+      }
+    } else if (normalizedData?.success == false) {
+      yield put(loginsiginSuccess(normalizedData));
+      yield put(tokenSuccess(token || null));
+      if (token) {
+        yield call(AsyncStorage.setItem, constants.TOKEN, token);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.TOKEN);
+      }
+      if (refreshToken) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, refreshToken);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
       }
     } else {
-      yield put(loginsiginFailure(response?.data));
-      showErrorAlert(response?.data?.msg)
+      yield put(loginsiginFailure(normalizedData));
+      showErrorAlert(normalizedData?.msg)
     }
   } catch (error) {
     yield put(loginsiginFailure(error));
@@ -538,21 +555,34 @@ export function* againmobileLoginSaga(action) {
   };
   try {
     let response = yield call(postApi, action.payload?.phone_otp ? 'user/signinOTP' : 'user/signinOTP', action.payload, header);
-    if (response?.data?.success == true) {
-      const userData = JSON.stringify(response?.data?.user);
+    const apiData = response?.data || {};
+    const nestedData = apiData?.data && typeof apiData.data === 'object' ? apiData.data : {};
+    const normalizedData = { ...apiData, ...nestedData };
+    const token = normalizedData?.token;
+    const refreshToken = normalizedData?.refresh_token;
+    if (normalizedData?.success == true) {
+      const userData = JSON.stringify(normalizedData?.user);
       yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
-      yield put(againloginsiginSuccess(response?.data));
-      yield put(tokenSuccess(response?.data?.token));
-      yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
-      if (response?.data?.refresh_token) {
-        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      yield put(againloginsiginSuccess(normalizedData));
+      yield put(tokenSuccess(token || null));
+      if (token) {
+        yield call(AsyncStorage.setItem, constants.TOKEN, token);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.TOKEN);
       }
-    } else if (response?.data?.success == false) {
-      yield put(againloginsiginSuccess(null));
+      if (refreshToken) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, refreshToken);
+      } else {
+        yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
+      }
+    } else if (normalizedData?.success == false) {
+      yield put(againloginsiginSuccess(normalizedData));
       yield put(tokenSuccess(null));
+      yield call(AsyncStorage.removeItem, constants.TOKEN);
+      yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
     } else {
-      yield put(againloginsiginFailure(response?.data));
-      showErrorAlert(response?.data?.msg)
+      yield put(againloginsiginFailure(normalizedData));
+      showErrorAlert(normalizedData?.msg)
     }
   } catch (error) {
     yield put(againloginsiginFailure(error));

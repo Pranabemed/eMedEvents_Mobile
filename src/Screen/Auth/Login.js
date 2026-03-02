@@ -176,6 +176,9 @@ const Login = (props) => {
   const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
   const mobileReg = /^\d{10}$/;
   const isMobile = mobile && email?.length > 0 && mobile && !mobileReg.test(email);
+  const isTrueFlag = (value) => value == true || value == 1 || value == "1" || value == "true";
+  const isFalseFlag = (value) => value == false || value == 0 || value == "0" || value == "false";
+  const lastHandledSigninResponseRef = useRef(null);
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
       case 'Auth/loginRequest':
@@ -193,34 +196,6 @@ const Login = (props) => {
         break;
       case 'Auth/loginsiginSuccess':
         status = AuthReducer.status;
-        if (phoneCountryCode !== "+1") {
-          if (AuthReducer?.loginsiginResponse?.is_verified == "0" && AuthReducer?.loginsiginResponse?.phone_verified == "0") {
-            verifyHandle();
-          } else if (AuthReducer?.loginsiginResponse?.is_verified == "1") {
-            props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: phoneCountryCode } });
-          } else if (AuthReducer?.loginsiginResponse?.phone_verified == "1") {
-            props?.navigation.navigate("CreateStateInfor");
-          } else if (AuthReducer?.loginsiginResponse?.success == true) {
-            props.navigation.navigate("MobileLoginOTP", { "mobileNo": { mobileNo: phoneCountryCode == "+1" ? mobileHd : email, phoneCode: phoneCountryCode } });
-          } else {
-            showErrorAlert(AuthReducer?.loginsiginResponse?.msg || "something went wrong !");
-          }
-        } else {
-          if (AuthReducer?.loginsiginResponse?.is_verified == "0" && AuthReducer?.loginsiginResponse?.phone_verified == "0") {
-            verifyHandle();
-          } else if (AuthReducer?.loginsiginResponse?.is_verified == "1") {
-            props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: phoneCountryCode } });
-          } else if (AuthReducer?.loginsiginResponse?.phone_verified == "1") {
-            let objToken = { "token": AuthReducer?.loginsiginResponse?.token, "key": {} }
-            dispatch(dashboardRequest(objToken));
-            setNonloader(true);
-            setGtprof(false);
-          } else if (AuthReducer?.loginsiginResponse?.success == true) {
-            props.navigation.navigate("MobileLoginOTP", { "mobileNo": { mobileNo: phoneCountryCode == "+1" ? mobileHd : email, phoneCode: phoneCountryCode } });
-          } else {
-            showErrorAlert(AuthReducer?.loginsiginResponse?.msg || "something went wrong !");
-          }
-        }
         break;
       case 'Auth/loginsiginFailure':
         status = AuthReducer.status;
@@ -247,6 +222,61 @@ const Login = (props) => {
         break;
     }
   }
+  useEffect(() => {
+    const loginSignInResponse = AuthReducer?.loginsiginResponse;
+    if (!loginSignInResponse || Object.keys(loginSignInResponse).length == 0) return;
+    if (lastHandledSigninResponseRef.current == loginSignInResponse) return;
+    lastHandledSigninResponseRef.current = loginSignInResponse;
+    
+    const normalizedPhoneCode = String(phoneCountryCode || "").trim();
+    const isUSUser = normalizedPhoneCode == "+1";
+    const isEmailVerified = isTrueFlag(loginSignInResponse?.is_verified);
+    const isPhoneVerified = isTrueFlag(loginSignInResponse?.phone_verified);
+    const isEmailNotVerified = isFalseFlag(loginSignInResponse?.is_verified);
+    const isPhoneNotVerified = isFalseFlag(loginSignInResponse?.phone_verified);
+    const isSuccess = isTrueFlag(loginSignInResponse?.success);
+    const hasPhoneOtp = !!loginSignInResponse?.phone_otp;
+    // OTP generation response often only has success/msg/phone_otp.
+    // Handle this first so it always navigates to OTP screen.
+    if (isSuccess && hasPhoneOtp) {
+      props.navigation.navigate("MobileLoginOTP", {
+        "mobileNo": {
+          mobileNo: isUSUser ? mobileHd : email,
+          phoneCode: normalizedPhoneCode
+        }
+      });
+      return;
+    }
+    if (isEmailNotVerified && isPhoneNotVerified) {
+      verifyHandle();
+      return;
+    }
+    if (isEmailVerified && isPhoneNotVerified) {
+      props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: normalizedPhoneCode } });
+      return;
+    }
+    if (isPhoneVerified) {
+      if (isUSUser) {
+        let objToken = { "token": loginSignInResponse?.token, "key": {} }
+        dispatch(dashboardRequest(objToken));
+        setNonloader(true);
+        setGtprof(false);
+      } else {
+        props?.navigation.navigate("CreateStateInfor");
+      }
+      return;
+    }
+    if (isSuccess) {
+      props.navigation.navigate("MobileLoginOTP", {
+        "mobileNo": {
+          mobileNo: isUSUser ? mobileHd : email,
+          phoneCode: normalizedPhoneCode
+        }
+      });
+      return;
+    }
+    showErrorAlert(loginSignInResponse?.msg || "something went wrong !");
+  }, [AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
   const COUNTRY_DIAL_CODES = {
     IN: '+91',
     US: '+1',

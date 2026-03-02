@@ -24,27 +24,6 @@ const SCREEN_NAME_MAP = {
   // ── Onboarding ────────────────────────────────────────────────────────────
   Splash: 'Splash Screen',
   Onboard: 'Onboard Screen',
-
-  // ── OTP / Mobile / Email flows ────────────────────────────────────────────
-  MobileLoginOTP: 'Mobile Login OTP',
-  VerifyOTP: 'Verify OTP',
-  ChangeMail: 'Change Mail',
-  VerifyMobileOTP: 'Verify Mobile OTP',
-  ChangeMobileNo: 'Change Mobile Number',
-  EnterOTP: 'Enter OTP',
-  ResetMPIN: 'Reset MPIN',
-  PrivacyPolicy: 'Privacy Policy',
-  TermsAndConditions: 'Terms And Conditions',
-  VerifyOTPEmail: 'Verify OTP Email',
-  ChangeMailSplash: 'Change Mail Splash',
-  LoginEmail: 'Login Email',
-  SplashMobile: 'Splash Mobile',
-  LoginChangeMail: 'Login Change Mail',
-  SplashMobileChange: 'Splash Mobile Change',
-  LoginMobile: 'Login Mobile',
-  LoginMobileChange: 'Login Mobile Change',
-  AddMobile: 'Add Mobile',
-  AddMobileLogin: 'Add Mobile Login',
   // ── Tab Navigator ─────────────────────────────────────────────────────────
   TabNav: 'Task Bar',
   Home: 'Dashboard',              // Tab: Home

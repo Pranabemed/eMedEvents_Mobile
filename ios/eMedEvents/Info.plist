@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FirebaseAutomaticScreenReportingEnabled</key>
+	<false/>
 	<key>GMSApiKey</key>
 	<string>AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk</string>
 	<key>LSApplicationQueriesSchemes</key>

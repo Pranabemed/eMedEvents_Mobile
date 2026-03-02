@@ -32,6 +32,7 @@ import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
 let status = "";
 export default function StateLicense({ propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
+    const DASHBOARD_REFRESH_MS = 60000;
     const dispatch = useDispatch();
     const {
         setTakedata,
@@ -57,6 +58,9 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
+    const lastDashboardSyncRef = useRef(0);
+    const lastStateSyncRef = useRef(null);
+    const dashboardFetchInFlightRef = useRef(false);
     const getCurrentItem = () => {
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex];
@@ -73,26 +77,41 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const firstData = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || AuthReducer?.loginResponse?.user?.lastname || DashboardReducer?.dashboardResponse?.data?.user_information?.lastname || DashboardReducer?.dashPerResponse?.data?.user_information?.lastname;
     const isFocus = useIsFocused();
     useEffect(() => {
-        const token_handle = () => {
-            setTimeout(async () => {
+        const tokenHandle = async () => {
+            try {
+                if (!isFocus) return;
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
-                if (loginHandle) {
-                    dashBoarData()
+                if (!loginHandle) return;
+                const hasDashboardData = Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures);
+                const isStale = (Date.now() - lastDashboardSyncRef.current) > DASHBOARD_REFRESH_MS;
+                if (!hasDashboardData || isStale) {
+                    dashBoarData();
                 }
-            }, 100);
+            } catch (error) {
+                console.log(error);
+            }
         };
-        try {
-            token_handle();
-        } catch (error) {
-            console.log(error);
+        tokenHandle();
+    }, [isFocus, DashboardReducer?.dashboardResponse?.data?.licensures?.length]);
+    useEffect(() => {
+        if (DashboardReducer?.dashboardResponse?.data) {
+            lastDashboardSyncRef.current = Date.now();
         }
-    }, [isFocus]);
+    }, [DashboardReducer?.dashboardResponse?.data]);
+    useEffect(() => {
+        if (DashboardReducer.status === 'Dashboard/dashboardSuccess' || DashboardReducer.status === 'Dashboard/dashboardFailure') {
+            dashboardFetchInFlightRef.current = false;
+        }
+    }, [DashboardReducer.status]);
     const dashBoarData = () => {
+        if (dashboardFetchInFlightRef.current) return;
+        dashboardFetchInFlightRef.current = true;
         connectionrequest()
             .then(() => {
                 dispatch(dashboardRequest({}))
             })
             .catch(err => {
+                dashboardFetchInFlightRef.current = false;
                 showErrorAlert("Please connect to internet", err)
             })
 
@@ -234,38 +253,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             restOfProfession();
         }
     }, [fulldashbaord])
-    useEffect(() => {
-        const shouldInitFromRoute = propsData?.detectmain == "newadd" || !propsData?.detectmain;
-        if (shouldInitFromRoute) {
-            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id || fulldashbaord?.[0]?.state_id;
-            if (takeIDST) {
-                stateDashboardData(takeIDST);
-                stateReport(takeIDST);
-            }
-        }
-    }, [propsData?.detectmain, fulldashbaord, statepush])
-    const stateDashboardData = (id) => {
-        let obj = {
-            "state_id": id
-        }
-        connectionrequest()
-            .then(() => {
-                dispatch(stateDashboardRequest(obj));
-            })
-            .catch(err => { showErrorAlert("Please connect to internet", err) })
-    }
-    const stateReport = (did) => {
-        let obj = {
-            "state_id": did
-        }
-        connectionrequest()
-            .then(() => {
-                dispatch(stateReportingRequest(obj))
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }
     const useActivityCounts = () => {
         const responseData = DashboardReducer?.stateDashboardResponse?.data;
 
@@ -347,12 +334,17 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     };
 
     const handleAllIndex = (index) => {
-        setval(index);
-        setCurrentIndex(index);
         const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
         if (getDtaa) {
-            dispatch(stateDashboardRequest({ "state_id": getDtaa.state_id }))
-            dispatch(stateReportingRequest({ "state_id": getDtaa.state_id }));
+            const nextStateId = getDtaa.state_id;
+            const hasStateChanged = lastStateSyncRef.current !== nextStateId;
+            setval(index);
+            setCurrentIndex(index);
+            if (hasStateChanged) {
+                dispatch(stateDashboardRequest({ "state_id": getDtaa.state_id }))
+                dispatch(stateReportingRequest({ "state_id": getDtaa.state_id }));
+                lastStateSyncRef.current = nextStateId;
+            }
             setStatepush(getDtaa);
             const responseData = DashboardReducer?.stateDashboardResponse?.data;
             setFinddata(responseData);
@@ -377,22 +369,17 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     useEffect(() => {
         if (matchedIndex >= 0 && carouselRef?.current) {
             carouselRef.current.snapToItem(matchedIndex, false);
-            handleAllIndex(matchedIndex);
         }
     }, [matchedIndex]);
     useEffect(() => {
         if (!fulldashbaord?.length) {
             initialSyncDoneRef.current = false;
+            lastStateSyncRef.current = null;
             return;
         }
         if (initialSyncDoneRef.current) return;
         initialSyncDoneRef.current = true;
         handleAllIndex(initialIndex);
-        if (carouselRef?.current) {
-            setTimeout(() => {
-                carouselRef.current?.snapToItem(initialIndex, false);
-            }, 0);
-        }
     }, [fulldashbaord?.length, initialIndex]);
     const finalDatCD =  statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     return (

@@ -40,27 +40,38 @@ const MobileLoginOTP = (props) => {
     const inputsphone = useRef([]);
     const [nonloader, setNonloader] = useState(false);
     useEffect(() => {
-        const storedStartTime = AsyncStorage.getItem('otpStartTime');
-        const storedDuration = AsyncStorage.getItem('otpInitialDuration');
-
-        if (storedStartTime && storedDuration) {
-            const parsedStartTime = parseInt(storedStartTime, 10);
-            const parsedDuration = parseInt(storedDuration, 10);
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - parsedStartTime) / 1000);
-            const remaining = Math.max(parsedDuration - elapsedSeconds, 0);
-
-            if (remaining > 0) {
-                startTimeRef.current = parsedStartTime;
-                initialDurationRef.current = parsedDuration;
-                setCountdown(remaining);
-                startTimer();
-            } else {
-                AsyncStorage.removeItem('otpStartTime');
-                AsyncStorage.removeItem('otpInitialDuration');
+        let mounted = true;
+        const restoreTimerState = async () => {
+            try {
+                const [storedStartTime, storedDuration] = await Promise.all([
+                    AsyncStorage.getItem('otpStartTime'),
+                    AsyncStorage.getItem('otpInitialDuration')
+                ]);
+                if (!mounted || !storedStartTime || !storedDuration) return;
+                const parsedStartTime = parseInt(storedStartTime, 10);
+                const parsedDuration = parseInt(storedDuration, 10);
+                if (Number.isNaN(parsedStartTime) || Number.isNaN(parsedDuration)) {
+                    await AsyncStorage.removeItem('otpStartTime');
+                    await AsyncStorage.removeItem('otpInitialDuration');
+                    return;
+                }
+                const currentTime = Date.now();
+                const elapsedSeconds = Math.floor((currentTime - parsedStartTime) / 1000);
+                const remaining = Math.max(parsedDuration - elapsedSeconds, 0);
+                if (remaining > 0) {
+                    startTimeRef.current = parsedStartTime;
+                    initialDurationRef.current = parsedDuration;
+                    setCountdown(remaining);
+                    startTimer();
+                } else {
+                    await AsyncStorage.removeItem('otpStartTime');
+                    await AsyncStorage.removeItem('otpInitialDuration');
+                }
+            } catch (error) {
+                console.log('Failed to restore OTP timer:', error);
             }
-        }
-
+        };
+        restoreTimerState();
         return () => clearInterval(timerRef.current);
     }, []);
     const VeirfyUserByMobile = (otpdata) => {
@@ -140,22 +151,13 @@ const MobileLoginOTP = (props) => {
     console.log(props?.route?.params, "enteredOTP === allotpcheck", isEnabledMobile, AuthReducer?.againloginsiginResponse?.phone_otp);
     const verifyHandle = () => {
         const enteredOTP = otpphone && otpphone.join('');
-        console.log(enteredOTP, typeof enteredOTP, "manually otp123");
-        let serverOTP;
-        if (resendtrue && AuthReducer?.againloginsiginResponse?.phone_otp) {
-            serverOTP = AuthReducer?.againloginsiginResponse?.phone_otp;
-        } else if (!resendtrue && AuthReducer?.loginsiginResponse?.phone_otp) {
-            serverOTP = AuthReducer?.loginsiginResponse?.phone_otp;
-        } else {
-            serverOTP = '';
+        if (!enteredOTP || enteredOTP.length !== 6) {
+            showErrorAlert("Please enter a valid 6-digit OTP.");
+            return;
         }
-        console.log(serverOTP, "serverOTP111111111");
-        if (enteredOTP == serverOTP) {
-            VeirfyUserByMobile(enteredOTP);
-        } else {
-            setResendtrue(false);
-            showErrorAlert("Invalid OTP. Please try again.");
-        }
+        // Do not compare OTP on client side; production APIs may not return phone_otp.
+        // Backend verification decides validity and returns next auth state.
+        VeirfyUserByMobile(enteredOTP);
     };
     console.log(props?.route?.params, "fdsgjkdfhkh----------")
     const resendMobileOTP = () => {
@@ -220,6 +222,11 @@ const MobileLoginOTP = (props) => {
         "Physician - DO",
         "Physician - DPM"
     ]), []);
+    const normalizeFlag = (value) => {
+        if (value === true || value === 1 || value === "1" || value === "true") return true;
+        if (value === false || value === 0 || value === "0" || value === "false") return false;
+        return null;
+    };
 
     const loginResponse = AuthReducer?.againloginsiginResponse || {};
     const user = loginResponse?.user || {};
@@ -264,11 +271,12 @@ const MobileLoginOTP = (props) => {
 
     // Main navigation logic
     useEffect(() => {
-        if (!token) return;
-
-        const isEmailNotVerified = loginResponse.is_verified == "0";
-        const isPhoneNotVerified = loginResponse.phone_verified == "0";
-        const isEmailVerified = loginResponse.is_verified == "1";
+        const emailVerifiedFlag = normalizeFlag(loginResponse?.is_verified);
+        const phoneVerifiedFlag = normalizeFlag(loginResponse?.phone_verified);
+        const isEmailNotVerified = emailVerifiedFlag === false;
+        const isPhoneNotVerified = phoneVerifiedFlag === false;
+        const isEmailVerified = emailVerifiedFlag === true;
+        const isSuccess = normalizeFlag(loginResponse?.success) === true || loginResponse?.success === true;
         const hasLicense = !!user.license_number;
 
         // Get state licenses only if we have valid data
@@ -294,7 +302,12 @@ const MobileLoginOTP = (props) => {
         }
 
         if (isEmailVerified && isPhoneNotVerified) {
-            handleNavigation("VerifyMobileOTP", { validPh: { phonecode: phoneCountryCode } });
+            handleNavigation("VerifyMobileOTP", { validPh: { phonecode: props?.route?.params?.mobileNo?.phoneCode } });
+            return;
+        }
+        if (!token) {
+            // OTP verify responses without token should not force dashboard flow.
+            // Keep user on current screen unless verification routes above are applicable.
             return;
         }
 
@@ -318,7 +331,7 @@ const MobileLoginOTP = (props) => {
                 handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
             }
         }
-        else if (loginResponse.success) {
+        else if (isSuccess) {
             setNonloader(true);
             dispatch(dashboardRequest(tokenObj));
             setGtprof(false);
@@ -334,31 +347,19 @@ const MobileLoginOTP = (props) => {
         chooseStatecardResponse, // Now watching the entire response object
         tokenObj
     ]);
-    if (status == '' || DashboardReducer.status != status) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/dashboardRequest':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/dashboardSuccess':
-                status = DashboardReducer.status;
-                console.log("DashboardReducer999912222", DashboardReducer.dashboardResponse.data?.licensures);
-                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
-                dispatch(mainprofileRequest({}))
-                setFulldashbaord(uniqueStates);
-                props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
-                break;
-            case 'Dashboard/dashboardFailure':
-                status = DashboardReducer.status;
-                break;
-        }
-    }
     useEffect(() => {
-        if (DashboardReducer.dashboardResponse.data) {
+        if (DashboardReducer?.status === 'Dashboard/dashboardSuccess') {
+            const dashboardData = DashboardReducer?.dashboardResponse?.data;
+            const uniqueStates = dashboardData?.licensures?.filter((state, index, self) =>
+                index === self.findIndex((s) => s.state_id === state.state_id && s.board_id === state.board_id)
+            );
+            dispatch(mainprofileRequest({}));
+            setFulldashbaord(uniqueStates || []);
+            props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+        }
+    }, [DashboardReducer?.status, DashboardReducer?.dashboardResponse?.data, dispatch, props.navigation, setFulldashbaord]);
+    useEffect(() => {
+        if (DashboardReducer?.dashboardResponse?.data) {
             setNonloadermb(false);
         }
     }, [DashboardReducer?.dashboardResponse])

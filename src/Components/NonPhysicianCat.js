@@ -28,6 +28,7 @@ import Fonts from '../Themes/Fonts';
 import NetInfo from '@react-native-community/netinfo';
 let status = "";
 export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
+    const DASHBOARD_REFRESH_MS = 60000;
     const dispatch = useDispatch();
     const {
         setTakedata,
@@ -54,6 +55,9 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
+    const lastDashboardSyncRef = useRef(0);
+    const lastStateSyncRef = useRef(null);
+    const dashboardFetchInFlightRef = useRef(false);
     // Get the current item without scrolling
     const getCurrentItem = () => {
         if (!fulldashbaord?.length) return null;
@@ -61,26 +65,41 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     };
     const isFocus = useIsFocused();
     useEffect(() => {
-        const token_handle = () => {
-            setTimeout(async () => {
+        const tokenHandle = async () => {
+            try {
+                if (!isFocus) return;
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
-                if (loginHandle) {
-                    dashBoarData()
+                if (!loginHandle) return;
+                const hasDashboardData = Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures);
+                const isStale = (Date.now() - lastDashboardSyncRef.current) > DASHBOARD_REFRESH_MS;
+                if (!hasDashboardData || isStale) {
+                    dashBoarData();
                 }
-            }, 100);
+            } catch (error) {
+                console.log(error);
+            }
         };
-        try {
-            token_handle();
-        } catch (error) {
-            console.log(error);
+        tokenHandle();
+    }, [isFocus, DashboardReducer?.dashboardResponse?.data?.licensures?.length]);
+    useEffect(() => {
+        if (DashboardReducer?.dashboardResponse?.data) {
+            lastDashboardSyncRef.current = Date.now();
         }
-    }, [isFocus]);
+    }, [DashboardReducer?.dashboardResponse?.data]);
+    useEffect(() => {
+        if (DashboardReducer.status === 'Dashboard/dashboardSuccess' || DashboardReducer.status === 'Dashboard/dashboardFailure') {
+            dashboardFetchInFlightRef.current = false;
+        }
+    }, [DashboardReducer.status]);
     const dashBoarData = () => {
+        if (dashboardFetchInFlightRef.current) return;
+        dashboardFetchInFlightRef.current = true;
         connectionrequest()
             .then(() => {
                 dispatch(dashboardRequest({}))
             })
             .catch(err => {
+                dashboardFetchInFlightRef.current = false;
                 showErrorAlert("Please connect to internet", err)
             })
 
@@ -215,6 +234,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     }
     useEffect(() => {
         if (fulldashbaord?.length == 0) {
+            lastStateSyncRef.current = null;
             setWholeNo(true);
             restOfProfession();
         }
@@ -318,8 +338,12 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                                     setCurrentIndex(index);
                                     const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
                                     if (getDtaa) {
-                                        dispatch(stateDashboardRequest({ "state_id": getDtaa.state_id }))
-                                        dispatch(stateReportingRequest({ "state_id": getDtaa.state_id }))
+                                        const nextStateId = getDtaa.state_id;
+                                        if (lastStateSyncRef.current !== nextStateId) {
+                                            dispatch(stateDashboardRequest({ "state_id": nextStateId }))
+                                            dispatch(stateReportingRequest({ "state_id": nextStateId }))
+                                            lastStateSyncRef.current = nextStateId;
+                                        }
                                         // stateDashboardData(getDtaa.state_id);
                                         // stateReport(getDtaa.state_id);
                                         const responseData = DashboardReducer?.stateDashboardResponse?.data;

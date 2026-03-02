@@ -1,5 +1,5 @@
 import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, Platform, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useContext, useMemo, useRef, useState } from 'react'
 import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
@@ -23,23 +23,9 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
     const carouselReffind = useRef(null);
     const stateHit = finddata?.my_recommendations?.mandatory_courses;
     const specHit = finddata?.my_recommendations?.speciality_courses;
-    const [isDataLoaded, setIsDataLoaded] = useState(false);
-    useEffect(() => {
-        if (DashboardReducer?.dashboardResponse?.data?.licensures !== undefined) {
-            setIsDataLoaded(true);
-        } else {
-            setIsDataLoaded(false);
-        }
-    }, [DashboardReducer]);
+    const isDataLoaded = DashboardReducer?.dashboardResponse?.data?.licensures !== undefined;
     const finalDstat = statepush?.state_name || statepush?.creditID?.state_name || addit?.state_name || fulldashbaord?.[0]?.state_name;
-    const [showloader, setShowLoader] = useState(false);
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            setShowLoader(true);
-        }, 3000);
-
-        return () => clearTimeout(timeout);
-    }, [completedCount, pendingCount]);
+    const hasCourseStats = useMemo(() => (completedCount + pendingCount) > 0, [completedCount, pendingCount]);
 
     return (
         <>
@@ -47,8 +33,7 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                 {!isDataLoaded ? (
                     <ActivityIndicator color={"black"} size={"small"} />
                     // <HomeShimmer />
-                ) : (completedCount == 0 && pendingCount == 0 && !showloader) ? <ActivityIndicator color={Colorpath.ButtonColr} size={"small"} /> :
-                    (completedCount == 0 && pendingCount == 0 ? <></> : <View style={DashboardReducer?.dashboardResponse?.data?.licensures?.length == 1 ? { justifyContent: "center", alignItems: "center", marginTop: normalize(10) } : { justifyContent: "center", alignItems: "center" }}>
+                ) : (!hasCourseStats ? <></> : <View style={DashboardReducer?.dashboardResponse?.data?.licensures?.length == 1 ? { justifyContent: "center", alignItems: "center", marginTop: normalize(10) } : { justifyContent: "center", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => {
                             navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
                         }}
