@@ -108,6 +108,8 @@ export const setCurrentScreen = (screenName) => {
   CURRENT_SCREEN = screenName;
 };
 
+export const getCurrentScreenName = () => CURRENT_SCREEN;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: resolve the analytics-friendly name from the SCREEN_NAME_MAP.
 // Returns null if the screen has no mapping (should NOT log analytics event).

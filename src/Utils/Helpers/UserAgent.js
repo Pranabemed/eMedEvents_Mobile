@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 
 // Memoized userAgent JSON string to avoid recalculating on every API call
 let _cachedUserAgentJSON = null;
+let _hasSentUserAgent = false;
+const _userAgentScopeMap = new Set();
 
 export default function getUserAgentJSON() {
     if (_cachedUserAgentJSON) {
@@ -43,4 +45,19 @@ export default function getUserAgentJSON() {
             browser: 'eMedEvents App',
         });
     }
+}
+
+// Returns userAgent only once per app process; next calls return null.
+export function getUserAgentJSONOnce() {
+    if (_hasSentUserAgent) return null;
+    _hasSentUserAgent = true;
+    return getUserAgentJSON();
+}
+
+// Returns userAgent once per provided scope (example: "Dashboard|user/dashboard").
+export function getUserAgentJSONByScope(scopeKey) {
+    const key = String(scopeKey || 'global');
+    if (_userAgentScopeMap.has(key)) return null;
+    _userAgentScopeMap.add(key);
+    return getUserAgentJSON();
 }

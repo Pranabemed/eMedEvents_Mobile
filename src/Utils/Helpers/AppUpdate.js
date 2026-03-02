@@ -48,6 +48,7 @@ const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/ap
 const ANDROID_PACKAGE = 'com.emedevents.newapp';
 const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
 const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+const UPDATE_RECHECK_MS = 30 * 60 * 1000; // 30 min periodic check while app is open
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -79,16 +80,32 @@ const isNewerVersion = (installedVer, storeVer) => {
  * This is 100% dynamic; no version numbers are hardcoded.
  */
 const fetchLatestIOSVersion = async () => {
+  const bundleId = DeviceInfo.getBundleId();
   try {
-    const res = await fetch(
+    const resById = await fetch(
       `https://itunes.apple.com/lookup?id=${IOS_APP_STORE_ID}&country=us`,
     );
-    const json = await res.json();
-    const ver = json?.results?.[0]?.version ?? null;
-    console.log('AppUpdate [iOS]: iTunes store version:', ver);
-    return ver;
+    const jsonById = await resById.json();
+    const verById = jsonById?.results?.[0]?.version ?? null;
+    if (verById) {
+      console.log('AppUpdate [iOS]: iTunes store version (app id):', verById);
+      return verById;
+    }
   } catch (err) {
-    console.log('AppUpdate [iOS]: iTunes lookup error:', err?.message);
+    console.log('AppUpdate [iOS]: iTunes lookup by id error:', err?.message);
+  }
+
+  // Fallback: lookup by bundleId (helps when id response is empty/cached unexpectedly)
+  try {
+    const resByBundle = await fetch(
+      `https://itunes.apple.com/lookup?bundleId=${bundleId}&country=us`,
+    );
+    const jsonByBundle = await resByBundle.json();
+    const verByBundle = jsonByBundle?.results?.[0]?.version ?? null;
+    console.log('AppUpdate [iOS]: iTunes store version (bundle id):', verByBundle);
+    return verByBundle;
+  } catch (err) {
+    console.log('AppUpdate [iOS]: iTunes lookup by bundle id error:', err?.message);
     return null;
   }
 };
@@ -309,8 +326,14 @@ const AppUpdateHandler = () => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') checkUpdate();
     });
+    const intervalId = setInterval(() => {
+      checkUpdate();
+    }, UPDATE_RECHECK_MS);
 
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      clearInterval(intervalId);
+    };
   }, [checkUpdate]);
 
   // ─── Android download-status listener (registered once) ──────────────────────

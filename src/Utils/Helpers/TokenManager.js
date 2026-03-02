@@ -61,7 +61,7 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import constants from './constants';
-import getUserAgentJSON from './UserAgent';
+import { getUserAgentJSONOnce } from './UserAgent';
 
 // ─── How many ms before expiry we proactively refresh ─────────────────────────
 // 90 seconds → fires at T+8m30s when token expires at T+10min.
@@ -69,6 +69,7 @@ const REFRESH_BUFFER_MS = 90 * 1000;
 
 // ─── Minimum ms before we bother scheduling a timer ───────────────────────────
 const MIN_SCHEDULE_MS = 5 * 1000;
+const APPSTATE_ACTIVE_DEBOUNCE_MS = 5000;
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 let _refreshTimerId = null;
@@ -79,6 +80,7 @@ let _appStateSubscription = null;
 // ONE promise. When a refresh is already running, new callers join it instead
 // of making a duplicate HTTP call. Refresh tokens are single-use on the server.
 let _refreshPromise = null;
+let _lastActiveCheckAt = 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JWT decoder — pure JS, no external library required
@@ -171,6 +173,7 @@ async function _doActualRefresh(reason) {
     while (attempt < maxAttempts) {
         attempt++;
         try {
+            const userAgentHeader = getUserAgentJSONOnce();
             const res = await axios.post(
                 `${constants.BASE_URL}/user/verifyRefreshToken`,
                 { refresh_token: refreshToken },
@@ -178,7 +181,7 @@ async function _doActualRefresh(reason) {
                     headers: {
                         Accept: 'application/json',
                         'Content-Type': 'application/json',
-                        userAgent: getUserAgentJSON(),
+                        ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
                     },
                     timeout: 15000,
                 },
@@ -315,6 +318,12 @@ async function _onAppStateChange(nextState) {
     }
 
     // When app returns to 'active'
+    const now = Date.now();
+    if (now - _lastActiveCheckAt < APPSTATE_ACTIVE_DEBOUNCE_MS) {
+        return;
+    }
+    _lastActiveCheckAt = now;
+
     // Give JS a tiny window to completely unfreeze on Android Release builds
     // before we recalculate the exact token timestamp delta.
     await new Promise(resolve => setTimeout(resolve, 300));

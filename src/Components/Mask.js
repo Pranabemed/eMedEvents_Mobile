@@ -45,16 +45,23 @@ const MaskField = ({
 }) => {
     const [isFocused, setIsFocused] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(isPassword);
-    const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
+    const hasMeaningfulValue = (() => {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'number') return true;
+        if (typeof value !== 'string') return Boolean(value);
+        // Ignore mask separators/whitespace so label does not float on empty masked value.
+        return value.replace(/[\s/\\_-]/g, '').length > 0;
+    })();
+    const animated = useRef(new Animated.Value(hasMeaningfulValue ? 1 : 0)).current;
 
     useEffect(() => {
         Animated.timing(animated, {
-            toValue: isFocused || value || countryCode ? 1 : 0,
+            toValue: isFocused || hasMeaningfulValue || countryCode ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,
         }).start();
-    }, [isFocused, value, countryCode]);
+    }, [isFocused, hasMeaningfulValue, countryCode]);
 
     const toggleSecureEntry = () => {
         setSecureTextEntry(!secureTextEntry);

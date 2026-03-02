@@ -41,7 +41,33 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 import TokenManager from './TokenManager';
-import getUserAgentJSON from './UserAgent';
+import { getUserAgentJSONByScope } from './UserAgent';
+import { getCurrentScreenName } from './Analytics';
+const DASHBOARD_ENDPOINTS = new Set(['user/dashboard', '/user/dashboard']);
+const DASHBOARD_COOLDOWN_MS = 3000;
+let dashboardInFlightPromise = null;
+let dashboardInFlightKey = '';
+let lastDashboardResponse = null;
+let lastDashboardHitAt = 0;
+let lastDashboardRequestKey = '';
+
+const normalizeEndpoint = (url = '') => String(url).trim().toLowerCase();
+const isDashboardEndpoint = (url = '') => DASHBOARD_ENDPOINTS.has(normalizeEndpoint(url));
+const getDashboardRequestKey = (payload) => {
+  try {
+    return JSON.stringify(payload ?? {});
+  } catch (_) {
+    return '__unserializable_dashboard_payload__';
+  }
+};
+const shouldBypassDashboardCache = (payload) =>
+  Boolean(payload?.force_dashboard_refresh || payload?._forceDashboardRefresh || payload?.bypass_cache);
+const getEndpointKeyFromUrl = (url = '') => {
+  const raw = String(url || '').split('?')[0].trim();
+  const base = `${constants.BASE_URL}/`;
+  if (raw.startsWith(base)) return raw.slice(base.length).replace(/^\/+/, '');
+  return raw.replace(/^\/+/, '');
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-expiry detection — STRICT
@@ -140,8 +166,15 @@ axiosInstance.interceptors.request.use(
         config.headers['eMedAuthorization'] = freshToken;
       }
 
-      // ── Always inject userAgent for the PHP backend tracking ──
-      config.headers['userAgent'] = getUserAgentJSON();
+      // Inject exactly once from a single place to avoid header duplication paths.
+      if (!config.headers?.userAgent) {
+        const screenName = getCurrentScreenName() || 'unknown_screen';
+        const endpoint = getEndpointKeyFromUrl(config?.url);
+        const userAgentHeader = getUserAgentJSONByScope(`${screenName}|${endpoint}`);
+        if (userAgentHeader) {
+          config.headers['userAgent'] = userAgentHeader;
+        }
+      }
 
     } catch (_) {
       // Never block the request
@@ -226,7 +259,6 @@ export async function getApi(url, header) {
     Accept: header.Accept,
     'Content-type': header.contenttype,
     eMedAuthorization: header.authorization,
-    userAgent: getUserAgentJSON(),
   };
   return axiosInstance.get(`${constants.BASE_URL}/${url}`, {
     headers: reqHeaders,
@@ -237,7 +269,6 @@ export async function getApiWithParam(url, param, header) {
   const reqHeaders = {
     Accept: header.Accept,
     'Content-type': header.contenttype,
-    userAgent: getUserAgentJSON(),
   };
   return axiosInstance({
     method: 'GET',
@@ -249,17 +280,52 @@ export async function getApiWithParam(url, param, header) {
 }
 
 export async function postApi(url, payload, header) {
+  if (isDashboardEndpoint(url)) {
+    const bypassCache = shouldBypassDashboardCache(payload);
+    const requestKey = getDashboardRequestKey(payload);
+    if (dashboardInFlightPromise && dashboardInFlightKey === requestKey) {
+      return dashboardInFlightPromise;
+    }
+    const now = Date.now();
+    if (
+      !bypassCache &&
+      lastDashboardResponse &&
+      lastDashboardRequestKey === requestKey &&
+      (now - lastDashboardHitAt) < DASHBOARD_COOLDOWN_MS
+    ) {
+      return Promise.resolve(lastDashboardResponse);
+    }
+  }
+
   const reqHeaders = {
     Accept: header.Accept,
     'Content-Type': header.contenttype,
     eMedAuthorization: header.authorization,
     IPADDRESS: header.IPADDRESS,
-    userAgent: getUserAgentJSON(),
   };
   console.log("header==========", reqHeaders);
-  return axiosInstance.post(`${constants.BASE_URL}/${url}`, payload, {
+  const requestPromise = axiosInstance.post(`${constants.BASE_URL}/${url}`, payload, {
     headers: reqHeaders,
   });
+
+  if (isDashboardEndpoint(url)) {
+    const requestKey = getDashboardRequestKey(payload);
+    dashboardInFlightKey = requestKey;
+    dashboardInFlightPromise = requestPromise
+      .then((response) => {
+        lastDashboardResponse = response;
+        lastDashboardHitAt = Date.now();
+        lastDashboardRequestKey = requestKey;
+        return response;
+      })
+      .finally(() => {
+        dashboardInFlightPromise = null;
+        dashboardInFlightKey = '';
+      });
+    return dashboardInFlightPromise;
+  }
+
+  return requestPromise;
 }
 
 export async function deleteApi(url, payload, header) {
@@ -268,7 +334,6 @@ export async function deleteApi(url, payload, header) {
     Accept: header.Accept,
     'Content-Type': header.contenttype,
     eMedAuthorization: header.authorization,
-    userAgent: getUserAgentJSON(),
   };
   try {
     return await axiosInstance.delete(cleanUrl, {
