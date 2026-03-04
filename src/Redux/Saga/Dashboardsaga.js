@@ -33,6 +33,15 @@ const profDatHo = async (data) => {
     console.error('Error saving data:', error);
   }
 };
+const dashboardCacheStore = async (data) => {
+  try {
+    const safeData = Array.isArray(data) ? data : [];
+    const jsonData = JSON.stringify(safeData);
+    await AsyncStorage.setItem(constants.DASHBOARD_CACHE, jsonData);
+  } catch (error) {
+    console.error('Error saving dashboard cache:', error);
+  }
+};
 export function* dashboardSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -43,11 +52,14 @@ export function* dashboardSaga(action) {
   try {
     let response = yield call(postApi, 'user/dashboard', action?.payload?.key ? action?.payload?.key : action?.payload, header);
     if (response?.data?.success == true) {
-      wholeDatHo(response?.data?.licensures?.[0]);
+      const licensures = Array.isArray(response?.data?.licensures) ? response.data.licensures : [];
+      const boardCertifications = Array.isArray(response?.data?.board_certifications) ? response.data.board_certifications : [];
+      wholeDatHo(licensures?.[0]);
       profDatHo(response?.data?.user_information);
+      dashboardCacheStore(licensures);
       yield put(dashboardSuccess(response));
-      yield put(countSuccess(response?.data?.licensures?.length));
-      yield put(boardcountSuccess(response?.data?.board_certifications?.length));
+      yield put(countSuccess(licensures.length));
+      yield put(boardcountSuccess(boardCertifications.length));
       //   showErrorAlert(response?.data?.msg);
     } else {
       yield put(dashboardFailure(response));

@@ -72,22 +72,21 @@ function TabScreen() {
   const processedRefreshAtRef = useRef(null);
   useEffect(() => {
     const token_error = () => {
-      setTimeout(() => {
-        AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-          if (loginHandleProccess && !DashboardReducer?.dashPerResponse?.data?.licensures) {
-            let objToken = { "token": loginHandleProccess, "key": {} }
-            connectionrequest()
-              .then(() => {
-                dispatch(tokenRequest(objToken))
-                dispatch(mainprofileRequest(objToken))
-                dispatch(dashPerRequest(objToken))
-                dispatch(chooseStatecardRequest(objToken));
-                dispatch(verifyRequest(objToken))
-              })
-              .catch((err) => showErrorAlert("Please connect to internet", err))
-          }
-        });
-      }, 500);
+      AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+        if (loginHandleProccess) {
+          hydratedStateIdRef.current = null; // ensure state dashboard fetch re-hydrates for new account
+          let objToken = { "token": loginHandleProccess, "key": {} }
+          connectionrequest()
+            .then(() => {
+              dispatch(tokenRequest(objToken))
+              dispatch(mainprofileRequest(objToken))
+              dispatch(dashPerRequest(objToken))
+              dispatch(chooseStatecardRequest(objToken));
+              dispatch(verifyRequest(objToken))
+            })
+            .catch((err) => showErrorAlert("Please connect to internet", err))
+        }
+      });
     };
     try {
       token_error();
@@ -121,14 +120,12 @@ function TabScreen() {
   }, []);
   useEffect(() => {
     const token_error = () => {
-      setTimeout(() => {
-        AsyncStorage.getItem(constants.PRODATA).then((profdatset) => {
-          if (profdatset) {
-            const parsedData = JSON.parse(profdatset);
-            setWholeProf(parsedData);
-          }
-        });
-      }, 500);
+      AsyncStorage.getItem(constants.PRODATA).then((profdatset) => {
+        if (profdatset) {
+          const parsedData = JSON.parse(profdatset);
+          setWholeProf(parsedData);
+        }
+      });
     };
     try {
       token_error();
@@ -254,7 +251,7 @@ function TabScreen() {
   }, [isFoucs]);
   useEffect(() => {
     const token_handle_vault = () => {
-      setTimeout(async () => {
+      (async () => {
         try {
           const [board_special, profession_data] = await Promise.all([
             AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -267,7 +264,7 @@ function TabScreen() {
         } catch (error) {
           console.log('Error fetching data:', error);
         }
-      }, 100);
+      })();
     };
 
     token_handle_vault();

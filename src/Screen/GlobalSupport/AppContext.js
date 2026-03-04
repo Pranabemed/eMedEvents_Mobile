@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import Colorpath from '../../Themes/Colorpath';
@@ -31,9 +31,31 @@ const AppProvider = ({ children }) => {
   const [addresssort, setAddresssort] = useState("");
   const [completedCount, setCompletedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const authToken = useSelector(state => state?.AuthReducer?.token);
   const dashboardLicensures = useSelector(
     state => state?.DashboardReducer?.dashboardResponse?.data?.licensures
   );
+  const prevAuthTokenRef = useRef(authToken);
+
+  const resetSessionContext = () => {
+    setTakestate('');
+    setAddit('');
+    setFulldashbaord(null);
+    setStateCount(null);
+    setTakedata(null);
+    setGtprof(false);
+    setTotalCred(undefined);
+    setStateid(undefined);
+    setRenewal("");
+    setCartcount("");
+    setExpireDate(false);
+    setFinddata(null);
+    setStatepush("");
+    setPushnew(false);
+    setAddresssort("");
+    setCompletedCount(0);
+    setPendingCount(0);
+  };
 
   useEffect(() => {
     if (dashboardLicensures === undefined || dashboardLicensures === null) return;
@@ -56,6 +78,14 @@ const AppProvider = ({ children }) => {
     });
     setFulldashbaord(uniqueStates);
   }, [dashboardLicensures]);
+
+  useEffect(() => {
+    // Clear all stale in-memory dashboard/session data when account token changes.
+    if (prevAuthTokenRef.current !== authToken) {
+      resetSessionContext();
+      prevAuthTokenRef.current = authToken;
+    }
+  }, [authToken]);
   const clearContextData = () => {
     setFinddata(null);
   };
@@ -117,6 +147,5 @@ const AppProvider = ({ children }) => {
 };
 
 export default AppProvider;
-
 
 

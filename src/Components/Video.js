@@ -25,6 +25,7 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { stateDashboardRequest } from '../Redux/Reducers/DashboardReducer';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../Utils/Helpers/IntOff';
+import { extractVttCandidates, findCueForTime, parseThumbnailVtt, resolveUrl } from '../Utils/Helpers/VttPreview';
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -33,6 +34,7 @@ const normalizeVideoSource = (url) => {
     if (!url) return null;
     return url.trim().replace(/&amp;/g, '&');
 };
+
 
 const getExternalVideoUrl = (source) => {
     if (!source) return null;
@@ -70,9 +72,11 @@ const VideoComponent = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const dispatch = useDispatch();
+    const routeVttParam = props?.route?.params?.vttUrl;
     const [nextAction, setNextAction] = useState(null);
     const [paused, setPaused] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
+    const [sliderDragTime, setSliderDragTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const sliderValueRef = useRef(0);
     const [showLoader, setShowLoader] = useState(true);
@@ -88,8 +92,28 @@ const VideoComponent = (props) => {
     const [loadingdown, setLoadingdown] = useState(false);
     const [pdfUri, setPdfUri] = useState("");
     const [nonVideoContent, setNonVideoContent] = useState(null);
+    const [thumbnailVttCandidates, setThumbnailVttCandidates] = useState([]);
+    const [thumbnailCues, setThumbnailCues] = useState([]);
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewTime, setPreviewTime] = useState(0);
+    const [previewFrame, setPreviewFrame] = useState(null);
+    const [previewVideoReady, setPreviewVideoReady] = useState(false);
+    const [initialVideoThumbnail, setInitialVideoThumbnail] = useState(null);
+    const [showTransitionCover, setShowTransitionCover] = useState(false);
+    const [transitionCoverFrame, setTransitionCoverFrame] = useState(null);
     const controlsTimerRef = useRef(null);
     const wasPausedBeforeSeekRef = useRef(false);
+    const lastPreviewCueIndexRef = useRef(-1);
+    const previewTokenRef = useRef(0);
+    const spriteSizeCacheRef = useRef({});
+    const cueFrameCacheRef = useRef({});
+    const previewVideoRef = useRef(null);
+    const pendingPreviewSeekRef = useRef(null);
+    const previewSeekRafRef = useRef(null);
+    const latestPreviewTargetRef = useRef(0);
+    const fullscreenTransitionRef = useRef(false);
+    const fullscreenTransitionTimerRef = useRef(null);
+    const hideTransitionCoverTimerRef = useRef(null);
     const [isSeeking, setIsSeeking] = useState(false);
     const didSetInitialFullscreenRef = useRef(false);
     const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
@@ -250,6 +274,39 @@ const VideoComponent = (props) => {
             width: "100%",
             height: "100%",
         },
+        loadingThumbWrap: {
+            ...StyleSheet.absoluteFillObject,
+            zIndex: 890,
+            backgroundColor: 'transparent',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingThumbImage: {
+            width: '100%',
+            height: '100%',
+        },
+        transitionCoverWrap: {
+            ...StyleSheet.absoluteFillObject,
+            zIndex: 980,
+            backgroundColor: '#101010',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        transitionCoverImage: {
+            width: '100%',
+            height: '100%',
+        },
+        transitionCoverCropWrap: {
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: '#101010',
+        },
+        transitionCoverCropImage: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+        },
         playText: {
             position: 'absolute',
             backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -282,6 +339,50 @@ const VideoComponent = (props) => {
             paddingHorizontal: normalize(4),
             paddingVertical: 0,
             bottom: 0,
+        },
+        sliderWithPreview: {
+            flex: 1,
+            position: 'relative',
+            justifyContent: 'center',
+        },
+        previewBubble: {
+            position: 'absolute',
+            bottom: normalize(28),
+            width: normalize(120),
+            borderRadius: normalize(8),
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            padding: normalize(4),
+            overflow: 'hidden',
+            zIndex: 2000,
+        },
+        fullscreenPreviewBubble: {
+            bottom: normalize(32),
+            width: normalize(138),
+        },
+        previewImage: {
+            width: '100%',
+            height: normalize(68),
+            borderRadius: normalize(6),
+            backgroundColor: '#222222',
+        },
+        previewCropWrap: {
+            width: '100%',
+            height: normalize(68),
+            borderRadius: normalize(6),
+            backgroundColor: '#222222',
+            overflow: 'hidden',
+        },
+        previewCropImage: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+        },
+        previewTimeText: {
+            marginTop: normalize(4),
+            color: '#FFFFFF',
+            textAlign: 'center',
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 11,
         },
         // controlsandroid: {
         //     width: "100%",
@@ -426,6 +527,7 @@ const VideoComponent = (props) => {
     const onProgress = (data) => {
         if (isSeeking) return;
         setCurrentTime(data.currentTime);
+        setSliderDragTime(data.currentTime);
     };
 
     const onEnd = () => {
@@ -437,9 +539,59 @@ const VideoComponent = (props) => {
 
     const onReadyForDisplay = () => {
         setLoading(false);
+        if (fullscreenTransitionRef.current && showTransitionCover) {
+            if (hideTransitionCoverTimerRef.current) {
+                clearTimeout(hideTransitionCoverTimerRef.current);
+            }
+            hideTransitionCoverTimerRef.current = setTimeout(() => {
+                setShowTransitionCover(false);
+            }, 160);
+        }
     };
 
+    const getTransitionCoverFrame = useCallback(() => {
+        if (previewFrame?.uri) {
+            return previewFrame;
+        }
+        const cueHit = findCueForTime(thumbnailCues, currentTime);
+        if (cueHit?.cue?.uri) {
+            const cue = cueHit.cue;
+            return {
+                ...cue,
+                spriteSize: cue?.uri ? spriteSizeCacheRef.current[cue.uri] : null,
+            };
+        }
+        const activity = videoDic?.activityData?.[0] || {};
+        const posterUri = activity?.poster
+            || activity?.thumbnail
+            || activity?.thumb
+            || activity?.video_thumbnail
+            || activity?.image
+            || null;
+        if (!posterUri) return null;
+        return {
+            uri: resolveUrl(videoDic?.onlineDisplayPath || videoUrl, posterUri),
+            crop: null,
+            spriteSize: null,
+        };
+    }, [previewFrame, thumbnailCues, currentTime, videoDic, videoUrl]);
+
     const toggleFullscreen = () => {
+        const cover = getTransitionCoverFrame();
+        if (cover?.uri) {
+            setTransitionCoverFrame(cover);
+            setShowTransitionCover(true);
+        } else if (transitionCoverFrame?.uri) {
+            setShowTransitionCover(true);
+        }
+        fullscreenTransitionRef.current = true;
+        if (fullscreenTransitionTimerRef.current) {
+            clearTimeout(fullscreenTransitionTimerRef.current);
+        }
+        fullscreenTransitionTimerRef.current = setTimeout(() => {
+            fullscreenTransitionRef.current = false;
+            setShowTransitionCover(false);
+        }, 700);
         setFullscreen(!fullscreen);
     };
 
@@ -469,6 +621,18 @@ const VideoComponent = (props) => {
     }, [showThumb, paused, loading, showControlsBriefly, clearControlsTimer]);
 
     useEffect(() => () => clearControlsTimer(), [clearControlsTimer]);
+    useEffect(() => {
+        return () => {
+            if (fullscreenTransitionTimerRef.current) {
+                clearTimeout(fullscreenTransitionTimerRef.current);
+                fullscreenTransitionTimerRef.current = null;
+            }
+            if (hideTransitionCoverTimerRef.current) {
+                clearTimeout(hideTransitionCoverTimerRef.current);
+                hideTransitionCoverTimerRef.current = null;
+            }
+        };
+    }, []);
 
     const videoPress = () => {
         setAddit(statepush);
@@ -499,6 +663,7 @@ const VideoComponent = (props) => {
             case 'CME/cmeactivitySuccess':
                 status = CMEReducer.status;
                 setVideoDic(CMEReducer?.cmeactivityResponse);
+                break; // ← fixed fall-through
             case 'CME/cmeactivityFailure':
                 status = CMEReducer.status;
                 break;
@@ -508,6 +673,7 @@ const VideoComponent = (props) => {
             case 'CME/cmenextactionSuccess':
                 status = CMEReducer.status;
                 setNextAction(CMEReducer?.cmenextactionResponse);
+                break; // ← fixed fall-through
             case 'CME/cmenextactionFailure':
                 status = CMEReducer.status;
                 break;
@@ -516,6 +682,7 @@ const VideoComponent = (props) => {
                 break;
             case 'CME/nextactionagainSuccess':
                 status = CMEReducer.status;
+                break; // ← fixed fall-through
             case 'CME/nextactionagainFailure':
                 status = CMEReducer.status;
                 break;
@@ -535,16 +702,148 @@ const VideoComponent = (props) => {
                 break;
         }
     }
+    const schedulePreviewSeek = useCallback((targetValue) => {
+        if (!previewVideoRef.current || !previewVideoReady) return;
+        latestPreviewTargetRef.current = targetValue;
+        if (previewSeekRafRef.current) return;
+        previewSeekRafRef.current = requestAnimationFrame(() => {
+            previewSeekRafRef.current = null;
+            const target = Math.max(0, Number(latestPreviewTargetRef.current) || 0);
+            pendingPreviewSeekRef.current = target;
+            try {
+                previewVideoRef.current?.seek(target);
+            } catch (err) {
+                // no-op: preview seek is best effort only
+            }
+        });
+    }, [previewVideoReady]);
+
+    const warmCueAsset = useCallback((cue) => {
+        if (!cue?.uri) return;
+        const uri = cue.uri;
+        if (/^https?:\/\//i.test(uri)) {
+            Image.prefetch(uri).catch(() => { });
+        }
+        if (cue?.crop && !spriteSizeCacheRef.current[uri]) {
+            Image.getSize(
+                uri,
+                (w, h) => {
+                    spriteSizeCacheRef.current[uri] = { width: w, height: h };
+                },
+                () => { },
+            );
+        }
+    }, []);
+
+    const setTwoCueCache = useCallback((currentIndex, currentCue, nextCue) => {
+        const nextIndex = currentIndex + 1;
+        const nextCache = {};
+        if (currentCue) {
+            nextCache[currentIndex] = currentCue;
+        }
+        if (nextCue) {
+            nextCache[nextIndex] = nextCue;
+        }
+        cueFrameCacheRef.current = nextCache;
+    }, []);
+
     const handleSliderChange = (value) => {
         sliderValueRef.current = value;
-        setCurrentTime(value);
+        setSliderDragTime(value);
+        setPreviewTime(value);
+        // Some slider implementations may skip onSlidingStart during quick drags.
+        // This keeps preview visible and seek-state stable.
+        if (!isSeeking) {
+            wasPausedBeforeSeekRef.current = paused;
+            setIsSeeking(true);
+            setPaused(true);
+        }
+        if (!previewVisible) {
+            setPreviewVisible(true);
+        }
+        if (!previewFrame?.uri && videoUrl && (previewVisible || isSeeking)) {
+            schedulePreviewSeek(value);
+        }
     };
+
+    const syncPreviewForTime = useCallback((timeValue) => {
+        if (!thumbnailCues.length) {
+            setPreviewFrame(null);
+            return;
+        }
+        const found = findCueForTime(thumbnailCues, timeValue);
+        if (!found) {
+            setPreviewFrame(null);
+            return;
+        }
+
+        const currentCue = found.cue;
+        const currentIndex = found.index;
+        const nextCue = thumbnailCues[currentIndex + 1] || null;
+
+        // Keep a tiny persistent cache of the current + next cue.
+        setTwoCueCache(currentIndex, currentCue, nextCue);
+        warmCueAsset(currentCue);
+        warmCueAsset(nextCue);
+
+        if (found.index === lastPreviewCueIndexRef.current) return;
+        lastPreviewCueIndexRef.current = found.index;
+        const cue = cueFrameCacheRef.current[currentIndex] || currentCue;
+        const thisToken = previewTokenRef.current + 1;
+        previewTokenRef.current = thisToken;
+        const applyCue = (spriteSize = null) => {
+            if (previewTokenRef.current !== thisToken) return;
+            setPreviewFrame({ ...cue, spriteSize });
+        };
+        const cachedSize = cue?.uri ? spriteSizeCacheRef.current[cue.uri] : null;
+        // Show frame immediately for responsive scrubbing; loading continues in background.
+        applyCue(cachedSize || null);
+
+        if (cue?.crop && cue?.uri && !cachedSize) {
+            Image.getSize(
+                cue.uri,
+                (imgWidth, imgHeight) => {
+                    const size = { width: imgWidth, height: imgHeight };
+                    spriteSizeCacheRef.current[cue.uri] = size;
+                    applyCue(size);
+                },
+                () => { },
+            );
+        }
+        if (cue?.uri && /^https?:\/\//i.test(cue.uri)) {
+            Image.prefetch(cue.uri).catch(() => { });
+        }
+    }, [thumbnailCues, setTwoCueCache, warmCueAsset]);
+
+    useEffect(() => {
+        if (isSeeking) {
+            syncPreviewForTime(previewTime);
+        }
+    }, [previewTime, isSeeking, syncPreviewForTime]);
+
+    useEffect(() => {
+        if (!videoUrl) return;
+        pendingPreviewSeekRef.current = currentTime || 0;
+        latestPreviewTargetRef.current = currentTime || 0;
+    }, [videoUrl, currentTime]);
+
+    useEffect(() => {
+        if (!previewVisible || !isSeeking) return;
+        if (!!previewFrame?.uri || !videoUrl) return;
+        if (!previewVideoRef.current || !previewVideoReady) return;
+        schedulePreviewSeek(previewTime);
+    }, [previewTime, previewVisible, isSeeking, previewFrame, videoUrl, previewVideoReady, schedulePreviewSeek]);
+
     const handleSlidingStart = useCallback(() => {
         showControlsBriefly();
         wasPausedBeforeSeekRef.current = paused;
         setIsSeeking(true);
         setPaused(true);
-    }, [paused, showControlsBriefly]);
+        setPreviewVisible(true);
+        setPreviewTime(currentTime);
+        setSliderDragTime(currentTime);
+        syncPreviewForTime(currentTime);
+    }, [paused, showControlsBriefly, currentTime, syncPreviewForTime]);
     const handleSeek = useCallback((time) => {
         showControlsBriefly();
         if (!videoRef.current) {
@@ -564,11 +863,21 @@ const VideoComponent = (props) => {
     }, [showControlsBriefly]);
     const handleSlidingComplete = useCallback((value) => {
         handleSeek(value);
+        setSliderDragTime(value);
         setIsSeeking(false);
+        setPreviewVisible(false);
         if (!wasPausedBeforeSeekRef.current) {
             setPaused(false);
         }
     }, [handleSeek]);
+    useEffect(() => {
+        return () => {
+            if (previewSeekRafRef.current) {
+                cancelAnimationFrame(previewSeekRafRef.current);
+                previewSeekRafRef.current = null;
+            }
+        };
+    }, []);
     useEffect(() => {
         if (Platform.OS === 'android') {
             setTimeout(() => {
@@ -586,6 +895,10 @@ const VideoComponent = (props) => {
         if (!videoDic || !videoDic.activityData || videoDic.activityData.length === 0) {
             setVideoUrl(null);
             setExternalVideoUrl(null);
+            setThumbnailVttCandidates([]);
+            setThumbnailCues([]);
+            setPreviewVideoReady(false);
+            setInitialVideoThumbnail(null);
             return;
         }
 
@@ -594,17 +907,123 @@ const VideoComponent = (props) => {
         const rawVideoId = videoDic?.activityData?.[0]?.youtube_video_id || '';
         const candidateSource = descriptionUrl || rawVideoId;
 
+        // The baseUrl for VTT resolution: prefer a real HTTP URL (from description
+        // or onlineDisplayPath) so that relative VTT paths can be resolved.
+        // A bare YouTube video ID is NOT a valid base URL, so we skip it.
+        const onlineBase = videoDic?.onlineDisplayPath || '';
+        const isYouTubeId = candidateSource && /^[\w-]{11}$/.test(candidateSource.trim());
+        const vttBaseUrl = /^https?:\/\//i.test(onlineBase)
+            ? onlineBase
+            : !isYouTubeId && /^https?:\/\//i.test(candidateSource)
+                ? candidateSource
+                : '';
+
+        let resolvedVideoUrl = null;
         if (candidateSource && isPlayableVideoSource(candidateSource)) {
-            setVideoUrl(normalizeVideoSource(candidateSource));
+            resolvedVideoUrl = normalizeVideoSource(candidateSource);
+            setVideoUrl(resolvedVideoUrl);
             setExternalVideoUrl(null);
             setNonVideoContent(null);
-            return;
+        } else {
+            setVideoUrl(null);
+            resolvedVideoUrl = null;
+            setNonVideoContent(descriptionHtml || null);
+            setExternalVideoUrl(getExternalVideoUrl(candidateSource));
         }
 
-        setVideoUrl(null);
-        setNonVideoContent(descriptionHtml || null);
-        setExternalVideoUrl(getExternalVideoUrl(candidateSource));
-    }, [videoDic]);
+        const activityData = videoDic?.activityData?.[0] || {};
+        const posterUri = activityData?.poster
+            || activityData?.thumbnail
+            || activityData?.thumb
+            || activityData?.video_thumbnail
+            || activityData?.image
+            || null;
+        if (posterUri) {
+            setInitialVideoThumbnail(resolveUrl(videoDic?.onlineDisplayPath || resolvedVideoUrl || candidateSource, posterUri));
+        } else {
+            setInitialVideoThumbnail(null);
+        }
+        const vttCandidates = extractVttCandidates({
+            routeVtt: routeVttParam,
+            activityData,
+            descriptionHtml,
+            baseUrl: vttBaseUrl,
+            videoUrl: resolvedVideoUrl || (!isYouTubeId ? candidateSource : null),
+        });
+        setThumbnailVttCandidates(vttCandidates);
+        setPreviewVideoReady(false);
+    }, [videoDic, routeVttParam]);
+
+    useEffect(() => {
+        let isActive = true;
+        if (!thumbnailVttCandidates?.length) {
+            setThumbnailCues([]);
+            setPreviewFrame(null);
+            lastPreviewCueIndexRef.current = -1;
+            return () => { };
+        }
+
+        const loadVtt = async () => {
+            for (let idx = 0; idx < thumbnailVttCandidates.length; idx += 1) {
+                const candidateUrl = thumbnailVttCandidates[idx];
+                try {
+                    const response = await fetch(candidateUrl);
+                    const text = await response.text();
+                    if (!isActive) return;
+                    const cues = parseThumbnailVtt(text, candidateUrl);
+                    if (cues.length > 0) {
+                        setThumbnailCues(cues);
+                        lastPreviewCueIndexRef.current = -1;
+                        return;
+                    }
+                } catch (err) {
+                    if (!isActive) return;
+                }
+            }
+
+            if (!isActive) return;
+            console.log('Thumbnail VTT load failed for all candidates.');
+            setThumbnailCues([]);
+            setPreviewFrame(null);
+            lastPreviewCueIndexRef.current = -1;
+        };
+
+        loadVtt();
+        return () => {
+            isActive = false;
+        };
+    }, [thumbnailVttCandidates]);
+
+    useEffect(() => {
+        if (!thumbnailCues?.length) return;
+        const uniqueUris = [...new Set(thumbnailCues.map((c) => c?.uri).filter(Boolean))];
+
+        uniqueUris.forEach((uri) => {
+            if (/^https?:\/\//i.test(uri)) {
+                Image.prefetch(uri).catch(() => { });
+            }
+            if (!spriteSizeCacheRef.current[uri]) {
+                Image.getSize(
+                    uri,
+                    (w, h) => {
+                        spriteSizeCacheRef.current[uri] = { width: w, height: h };
+                    },
+                    () => { },
+                );
+            }
+        });
+    }, [thumbnailCues]);
+
+    useEffect(() => {
+        if (!thumbnailCues?.length || !isSeeking) return;
+        const found = findCueForTime(thumbnailCues, previewTime);
+        if (!found) return;
+        const curr = found.cue;
+        const next = thumbnailCues[found.index + 1] || null;
+        setTwoCueCache(found.index, curr, next);
+        warmCueAsset(curr);
+        warmCueAsset(next);
+    }, [thumbnailCues, isSeeking, previewTime, setTwoCueCache, warmCueAsset]);
 
     const hasVideoSource = !!videoUrl;
     useEffect(() => {
@@ -630,6 +1049,7 @@ const VideoComponent = (props) => {
         : `${validPercentage ?? 0}% Pending`;
     const { RoleData, FullID, activityID } = props?.route?.params || {};
     const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
+    const displayedTime = isSeeking ? sliderDragTime : currentTime;
     const handleLink = (link, path) => {
         if (link && path) {
             const showPDF = async () => {
@@ -711,6 +1131,89 @@ const VideoComponent = (props) => {
                     : isValidCme(props?.route?.params?.activityID?.conferenceCmePoints)
                         ? props.route.params.activityID.conferenceCmePoints
                         : null;
+    const renderThumbnailPreview = (isFullscreen = false) => {
+        if (!duration) return null;
+        const ratio = Math.max(0, Math.min(1, (duration > 0 ? previewTime / duration : 0)));
+        const previewWidth = isFullscreen ? normalize(138) : normalize(120);
+        const left = ratio * 100;
+        const crop = previewFrame?.crop;
+        const spriteSize = previewFrame?.spriteSize;
+        const hasImageFrame = !!(previewFrame?.uri);
+        // Only use the video mini-player fallback when we have a valid playable URL
+        const shouldUseVideoFallback = !hasImageFrame && !!videoUrl && typeof videoUrl === 'string' && videoUrl.length > 0;
+
+        if (!hasImageFrame && !shouldUseVideoFallback) return null;
+
+        return (
+            <View
+                pointerEvents="none"
+                style={[
+                    styles.previewBubble,
+                    isFullscreen && styles.fullscreenPreviewBubble,
+                    {
+                        left: `${left}%`,
+                        marginLeft: -(previewWidth / 2),
+                        opacity: previewVisible ? 1 : 0,
+                    }
+                ]}
+            >
+                {hasImageFrame && crop && spriteSize?.width && spriteSize?.height ? (
+                    <View style={styles.previewCropWrap}>
+                        <Image
+                            source={{ uri: previewFrame.uri }}
+                            style={[
+                                styles.previewCropImage,
+                                {
+                                    width: spriteSize.width,
+                                    height: spriteSize.height,
+                                    transform: [{ translateX: -(crop.x || 0) }, { translateY: -(crop.y || 0) }],
+                                }
+                            ]}
+                        />
+                    </View>
+                ) : hasImageFrame ? (
+                    <Image
+                        source={{ uri: previewFrame.uri }}
+                        style={styles.previewImage}
+                        resizeMode="cover"
+                        onError={() => { /* silently ignore broken VTT thumbnail images */ }}
+                    />
+                ) : shouldUseVideoFallback ? (
+                    <Video
+                        ref={previewVideoRef}
+                        source={{ uri: videoUrl }}
+                        style={styles.previewImage}
+                        paused={!isSeeking}
+                        muted={true}
+                        repeat={false}
+                        resizeMode="cover"
+                        onLoad={() => {
+                            setPreviewVideoReady(true);
+                            const target = pendingPreviewSeekRef.current;
+                            if (typeof target === 'number' && isFinite(target)) {
+                                try { previewVideoRef.current?.seek(target); } catch (_) { }
+                            }
+                        }}
+                        onReadyForDisplay={() => {
+                            setPreviewVideoReady(true);
+                            const target = pendingPreviewSeekRef.current;
+                            if (typeof target === 'number' && isFinite(target)) {
+                                try { previewVideoRef.current?.seek(target); } catch (_) { }
+                            }
+                        }}
+                        onError={() => {
+                            // Preview video failed; reset so we don't keep retrying
+                            setPreviewVideoReady(false);
+                        }}
+                        onProgress={() => {
+                            // Keep decoder warm while scrubbing.
+                        }}
+                    />
+                ) : null}
+                <Text style={styles.previewTimeText}>{formatTime(previewTime)}</Text>
+            </View>
+        );
+    };
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
@@ -776,8 +1279,51 @@ const VideoComponent = (props) => {
                                     bufferForPlaybackAfterRebufferMs: 5000,
                                 }}
                                 resizeMode="contain"
-                                onVideoLoadStart={() => setLoading(true)}
+                                shutterColor="transparent"
+                                hideShutterView={true}
+                                onVideoLoadStart={() => {
+                                    if (!fullscreenTransitionRef.current) {
+                                        setLoading(true);
+                                    }
+                                }}
                             />
+                            {loading && initialVideoThumbnail && (
+                                <View pointerEvents="none" style={styles.loadingThumbWrap}>
+                                    <Image
+                                        source={{ uri: initialVideoThumbnail }}
+                                        style={styles.loadingThumbImage}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            )}
+                            {showTransitionCover && transitionCoverFrame?.uri && (
+                                <View pointerEvents="none" style={styles.transitionCoverWrap}>
+                                    {transitionCoverFrame?.crop && transitionCoverFrame?.spriteSize?.width && transitionCoverFrame?.spriteSize?.height ? (
+                                        <View style={styles.transitionCoverCropWrap}>
+                                            <Image
+                                                source={{ uri: transitionCoverFrame.uri }}
+                                                style={[
+                                                    styles.transitionCoverCropImage,
+                                                    {
+                                                        width: transitionCoverFrame.spriteSize.width,
+                                                        height: transitionCoverFrame.spriteSize.height,
+                                                        transform: [
+                                                            { translateX: -(transitionCoverFrame.crop.x || 0) },
+                                                            { translateY: -(transitionCoverFrame.crop.y || 0) },
+                                                        ],
+                                                    },
+                                                ]}
+                                            />
+                                        </View>
+                                    ) : (
+                                        <Image
+                                            source={{ uri: transitionCoverFrame.uri }}
+                                            style={styles.transitionCoverImage}
+                                            resizeMode="contain"
+                                        />
+                                    )}
+                                </View>
+                            )}
                             {loading && (
                                 <ActivityIndicator
                                     style={styles.playText}
@@ -802,23 +1348,26 @@ const VideoComponent = (props) => {
                         {!fullscreen && !loading ? (
                             <View style={styles.controls}>
                                 <Text style={[styles.timeLabel, styles.leftTime]}>
-                                    {formatTime(currentTime)}
+                                    {formatTime(displayedTime)}
                                 </Text>
-                                <Sliders
-                                    value={currentTime}
-                                    max={duration}
-                                    valChange={handleSliderChange}
-                                    onSlidingStart={handleSlidingStart}
-                                    handleSlidingComplete={handleSlidingComplete}
-                                    containerStyle={styles.sliderWrap}
-                                    thumbStyle={{
-                                        height: 14,
-                                        width: 14,
-                                        backgroundColor: '#1F1F1F',
-                                        borderWidth: 1,
-                                        borderColor: '#1F1F1F',
-                                    }}
-                                />
+                                <View style={styles.sliderWithPreview}>
+                                    {renderThumbnailPreview(false)}
+                                    <Sliders
+                                        value={displayedTime}
+                                        max={duration}
+                                        valChange={handleSliderChange}
+                                        onSlidingStart={handleSlidingStart}
+                                        handleSlidingComplete={handleSlidingComplete}
+                                        containerStyle={styles.sliderWrap}
+                                        thumbStyle={{
+                                            height: 14,
+                                            width: 14,
+                                            backgroundColor: '#1F1F1F',
+                                            borderWidth: 1,
+                                            borderColor: '#1F1F1F',
+                                        }}
+                                    />
+                                </View>
                                 <Text style={[styles.timeLabel, styles.rightTime]}>
                                     {formatTime(duration)}
                                 </Text>
@@ -832,18 +1381,21 @@ const VideoComponent = (props) => {
                                         styles.leftTime,
                                         useBlackFullscreenTimer ? styles.fullscreenTimeBlack : styles.fullscreenTimeWhite
                                     ]}>
-                                        {formatTime(currentTime)}
+                                        {formatTime(displayedTime)}
                                     </Text>
                                 </Pressable>
-                                <Sliders
-                                    value={currentTime}
-                                    max={duration}
-                                    valChange={handleSliderChange}
-                                    onSlidingStart={handleSlidingStart}
-                                    handleSlidingComplete={handleSlidingComplete}
-                                    fullscreen={true}
-                                    containerStyle={styles.sliderWrap}
-                                />
+                                <View style={styles.sliderWithPreview}>
+                                    {renderThumbnailPreview(true)}
+                                    <Sliders
+                                        value={displayedTime}
+                                        max={duration}
+                                        valChange={handleSliderChange}
+                                        onSlidingStart={handleSlidingStart}
+                                        handleSlidingComplete={handleSlidingComplete}
+                                        fullscreen={true}
+                                        containerStyle={styles.sliderWrap}
+                                    />
+                                </View>
                                 <Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
                                     <Text style={[
                                         styles.timeLabel,

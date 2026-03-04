@@ -85,6 +85,25 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         (topicEarned === 0 && topicTotal === 0 &&
             generalEarned === 0 && generalTotal === 0);
     const finalSumCred = topicEarned + generalEarned
+    const isEmptyLike = (value) => {
+        if (value == null) return true;
+        if (typeof value == 'string') {
+            const cleaned = value.trim().toLowerCase();
+            if (cleaned == '') return true;
+            if (['null', 'undefined', 'n/a', 'na', '-', '--', '0'].includes(cleaned)) return true;
+            // Treat strings with no alphanumeric content as empty placeholders.
+            if (!/[a-z0-9]/i.test(cleaned)) return true;
+        }
+        return false;
+    };
+    const isInvalidExpireDays = (value) => {
+        if (isEmptyLike(value)) return true;
+        const parsed = Number(value);
+        return Number.isNaN(parsed) || parsed <= 0;
+    };
+    const isMissingLicenseData =
+        isEmptyLike(item?.license_number) || isInvalidExpireDays(item?.license_expire_days);
+    const isActiveCard = val == index;
     useEffect(() => {
         const professionData =
             AuthReducer?.loginResponse?.user ||
@@ -323,7 +342,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     const isExpiryValid = parsedExpiry.isValid();
     const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
     useEffect(() => {
-        if (val == index) {
+        if (isActiveCard) {
             const today = new Date();
             if (!item?.to_date || !isExpiryValid) {
                 setTakeName(item?.board_name);
@@ -365,7 +384,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         } else {
             setDashMod(false);
         }
-    }, [item?.to_date, val, index, isExpiryValid]);
+    }, [item?.to_date, isActiveCard, isExpiryValid]);
     return (
         <>
             <View style={styles.container}>
@@ -402,7 +421,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
                             <Text style={styles.update}>{"Update"}</Text>
                         </Pressable>
                         <Pressable style={styles.renewRow} onPress={() => handleOpenRenewalLink(renewal)}>
-                            <Text style={styles.renew}>{"Renew State License"}</Text>
+                            <Text style={styles.renew}>{"Renew State Licenses"}</Text>
                             <View style={styles.arrowCircleBlack}>
                                 <ArrowNeed name={"arrow-up-right"} color={"#FFFFFF"} size={12} />
                             </View>
@@ -415,7 +434,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
                     </View>
                 </View>}
                 <Modal
-                    isVisible={dashMod && isItemExpired && val == index}
+                    isVisible={dashMod && isItemExpired && isActiveCard}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                     backdropTransitionOutTiming={0}
@@ -438,7 +457,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
                         <View style={{ marginTop: normalize(5) }}>
                             <View style={{ height: Platform.OS === "ios" ? 1 : 0.4, width: normalize(280), backgroundColor: Colorpath.ButtonColr }} />
                         </View>
-                        {allProfTake ? <View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
+                        {!isMissingLicenseData && allProfTake ? <View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
                             <Text style={stylesmodal.content}>
                                 {"Your state license has expired. To maintain access and meet state board credit requirements, please update your license. "}
                                 <Text

@@ -78,7 +78,7 @@ const Main = (props) => {
   const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
   const authHigh = AuthReducer?.loginResponse?.user?.profession != null &&
     AuthReducer?.loginResponse?.user?.profession_type != null
-    ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_typ}`
+    ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
     : null;
   const profFromDashboard =
     DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
@@ -86,6 +86,13 @@ const Main = (props) => {
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
   const allProfTake = validHandles.has(authHigh) || validHandles.has(profFromDashboard);
+  const cachedProfessionHandle =
+    finalProfessionmain?.profession && finalProfessionmain?.profession_type
+      ? `${finalProfessionmain.profession} - ${finalProfessionmain.profession_type}`
+      : null;
+  const isPhysicianFlow = gtprof || allProfTake || validHandles.has(cachedProfessionHandle);
+  const hasDashboardLicenses = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
+  const shouldRenderStateLicense = hasDashboardLicenses || isPhysicianFlow;
   useEffect(() => {
     if (detectmain == "newadd") {
       connectionrequest()
@@ -149,21 +156,16 @@ const Main = (props) => {
       resetState();
     };
   }, []);
-  const [showloader, setShowLoader] = useState(false);
+  const [showloader, setShowLoader] = useState(true);
   const [freeze, setFreeze] = useState(false);
   useEffect(() => {
-    // Simulate 2-second loading time
-    const timeout = setTimeout(() => {
-      setShowLoader(true);
-      setFreeze(false)
-      enableFreeze(false)
-    }, 500);
-
-    return () => clearTimeout(timeout);
+    setShowLoader(true);
+    setFreeze(false);
+    enableFreeze(false);
   }, []);
   useEffect(() => {
     const token_handle_vault = () => {
-      setTimeout(async () => {
+      (async () => {
         try {
           const [board_special, profession_data] = await Promise.all([
             AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -176,7 +178,7 @@ const Main = (props) => {
         } catch (error) {
           console.log('Error fetching data:', error);
         }
-      }, 100);
+      })();
     };
 
     token_handle_vault();
@@ -267,7 +269,7 @@ const Main = (props) => {
               }} scrollEventThrottle={16}>
               <View>
                 <View style={{ bottom: normalize(10) }}>
-                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : gtprof ?
+                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : shouldRenderStateLicense ?
                     <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
                 </View>
               </View>
@@ -378,7 +380,7 @@ const Main = (props) => {
             : null}
           {primeadd && <PrimeCard primeadd={primeadd} setPrimeadd={setPrimeadd} />}
         </SafeAreaView>
-        <Freeze freeze={showloader} />
+        <Freeze freeze={freeze} />
       </KeyboardAvoidingView>
     </>
 

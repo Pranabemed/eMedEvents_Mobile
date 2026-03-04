@@ -72,7 +72,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { doRefreshToken } from '../../Utils/Helpers/TokenRefresh';
-import { dashboardSuccess, dashMbSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
+import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -675,6 +675,7 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, constants.EMAVER);
     yield call(AsyncStorage.removeItem, constants.MOBVER);
     yield call(AsyncStorage.removeItem, constants.WHOLEDATA);
+    yield call(AsyncStorage.removeItem, constants.DASHBOARD_CACHE);
     yield call(AsyncStorage.removeItem, constants.PRODATA);
     yield call(AsyncStorage.removeItem, constants.EMAIL);
     yield call(AsyncStorage.removeItem, constants.PHONE);
@@ -682,8 +683,10 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
-    yield put(dashMbSuccess(null))
-    yield put(stateDashboardSuccess(null))
+    yield put(dashMbSuccess(null));
+    yield put(dashPerSuccess(null));
+    yield put(mainprofileSuccess(null));
+    yield put(stateDashboardSuccess(null));
     yield put(logoutSuccess('logout'));
     showErrorAlert('Logged out Successfully');
   } catch (error) {

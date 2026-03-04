@@ -136,13 +136,11 @@ const StackNav = props => {
 
   useEffect(() => {
     const token_error = () => {
-      setTimeout(() => {
-        AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-          if (loginHandleProccess) {
-            setConn(true);
-          }
-        });
-      }, 500);
+      AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+        if (loginHandleProccess) {
+          setConn(true);
+        }
+      });
     };
     try {
       token_error();
@@ -288,7 +286,11 @@ const StackNav = props => {
         // Only reset to Splash when returning from a real background (app minimized)
         // NOT on 'inactive' (keyboard dismiss, notification pull-down, alerts, etc.)
         wasBackgrounded.current = false;
-        resetToSplashScreen();
+        AsyncStorage.getItem(constants.TOKEN).then((token) => {
+          if (!token) {
+            resetToSplashScreen();
+          }
+        });
       } else if (nextAppState === 'inactive') {
         // Do NOT reset — this fires during keyboard dismiss, calls, etc.
       }

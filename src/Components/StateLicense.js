@@ -30,6 +30,7 @@ import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
+import moment from 'moment';
 let status = "";
 export default function StateLicense({ propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
@@ -40,7 +41,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         setFinddata,
         finddata,
         setStatepush,
-        statepush
+        statepush,
+        gtprof
     } = useContext(AppContext);
     const windowWidth = Dimensions.get('window').width;
     const windowHeight = Dimensions.get('window').height;
@@ -58,6 +60,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
+    const [cachedLastName, setCachedLastName] = useState('');
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
@@ -74,8 +77,23 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const cmeValult = () => {
         setVaultmodal(!vaultModal);
     }
-    const firstData = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || AuthReducer?.loginResponse?.user?.lastname || DashboardReducer?.dashboardResponse?.data?.user_information?.lastname || DashboardReducer?.dashPerResponse?.data?.user_information?.lastname;
+    const firstData = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || AuthReducer?.loginResponse?.user?.lastname || DashboardReducer?.dashboardResponse?.data?.user_information?.lastname || DashboardReducer?.dashPerResponse?.data?.user_information?.lastname || cachedLastName;
     const isFocus = useIsFocused();
+    useEffect(() => {
+        const hydrateCachedName = async () => {
+            try {
+                const raw = await AsyncStorage.getItem(constants.PRODATA);
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (parsed?.lastname) {
+                    setCachedLastName(parsed.lastname);
+                }
+            } catch (error) {
+                // ignore cache parse issues; live API data will still render
+            }
+        };
+        hydrateCachedName();
+    }, [isFocus]);
     useEffect(() => {
         const tokenHandle = async () => {
             try {
@@ -178,12 +196,79 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             });
     }
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const authProfession =
+        AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
+            ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
+            : AuthReducer?.againloginsiginResponse?.user?.profession && AuthReducer?.againloginsiginResponse?.user?.profession_type
+                ? `${AuthReducer?.againloginsiginResponse?.user?.profession} - ${AuthReducer?.againloginsiginResponse?.user?.profession_type}`
+                : AuthReducer?.signupResponse?.user?.profession && AuthReducer?.signupResponse?.user?.profession_type
+                    ? `${AuthReducer?.signupResponse?.user?.profession} - ${AuthReducer?.signupResponse?.user?.profession_type}`
+                    : finalProfessionmain?.profession && finalProfessionmain?.profession_type
+                        ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
+                        : null;
     const profFromDashboard =
         DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
             DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : null;
-    const allProfTake = validHandles.has(profFromDashboard);
+    const allProfTake = gtprof || validHandles.has(profFromDashboard) || validHandles.has(authProfession);
+    const derivedRemainingStates = useMemo(() => {
+        const licensureStates = AuthReducer?.licesensResponse?.licensure_states;
+        if (!Array.isArray(licensureStates) || !licensureStates.length) return [];
+
+        const existingStateIds = new Set(
+            Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
+        );
+        const stateMap = new Map();
+        licensureStates.forEach((state) => {
+            if (state?.id != null && !stateMap.has(state.id)) {
+                stateMap.set(state.id, state);
+            }
+        });
+        return Array.from(stateMap.values()).filter((state) => !existingStateIds.has(state.id));
+    }, [AuthReducer?.licesensResponse?.licensure_states, fulldashbaord]);
+
+    const canAddLicenses =
+        allProfTake &&
+        (() => {
+            const contextHasRemaining = Array.isArray(stateCount) && stateCount.length > 0;
+            const licensureHasRemaining = derivedRemainingStates.length > 0;
+
+            // Secondary source available earlier in many flows.
+            const existingStateIds = new Set(
+                Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
+            );
+            const chooseStateLicensures = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures)
+                ? AuthReducer.chooseStatecardResponse.state_licensures
+                : [];
+            const chooseStateRemaining = chooseStateLicensures.filter((item) => {
+                const stateId = item?.id ?? item?.state_id;
+                return stateId != null && !existingStateIds.has(stateId);
+            });
+            const chooseStateHasRemaining = chooseStateRemaining.length > 0;
+
+            const contextLoaded = Array.isArray(stateCount);
+            const licensureLoaded = Array.isArray(AuthReducer?.licesensResponse?.licensure_states);
+            const chooseStateLoaded = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures);
+
+            const hasRemaining =
+                contextHasRemaining || licensureHasRemaining || chooseStateHasRemaining;
+
+            // Keep CTA visible during partial loading; hide only when all sources are loaded
+            // and all of them confirm there are no remaining states.
+            const allSourcesLoaded = contextLoaded && licensureLoaded && chooseStateLoaded;
+            const confirmedNoRemaining = allSourcesLoaded && !hasRemaining;
+
+            return !confirmedNoRemaining;
+        })();
+
+    useEffect(() => {
+        // Keep context in sync even when Splash hasn't populated stateCount yet.
+        if ((!Array.isArray(stateCount) || stateCount.length == 0) && derivedRemainingStates.length > 0) {
+            setStateCount(derivedRemainingStates);
+        }
+    }, [stateCount, derivedRemainingStates, setStateCount]);
+
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -392,8 +477,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 {fulldashbaord?.length > 0 ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
                         <View style={{ height: getDynamicHeight(), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
-
-                            {stateCount?.length > 0 && allProfTake && <TouchableOpacity
+                            {canAddLicenses && <TouchableOpacity
                                 onPress={() => {
                                     if (enables) {
                                         setStatepush(addit);
@@ -415,7 +499,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                 <Text style={Platform.OS === 'ios' ? {
                                     justifyContent: "flex-end",
                                     alignItems: "flex-end",
-                                    // marginTop: normalize(8),
                                     bottom: normalize(1),
                                     flexDirection: "row",
                                     gap: normalize(3),
@@ -428,7 +511,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                     justifyContent: "flex-end",
                                     alignItems: "flex-end",
                                     marginTop: normalize(10),
-                                    // bottom:normalize(1),
                                     flexDirection: "row",
                                     gap: normalize(3),
                                     marginRight: normalize(12),
