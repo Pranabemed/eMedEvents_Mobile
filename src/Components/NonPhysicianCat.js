@@ -275,7 +275,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         });
         return () => unsubscribe();
     }
-     const cleanNumber = (value) => {
+    const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -308,7 +308,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         topicEarned == 0 && topicTotal == 0 &&
         generalEarned == 0 && generalTotal == 0
     );
-    const firstData = AuthReducer?.loginResponse?.user?.firstname || DashboardReducer?.dashboardResponse?.data?.user_information?.firstname || DashboardReducer?.dashPerResponse?.data?.user_information?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
+    const firstData = AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || AuthReducer?.signupResponse?.user?.firstname || DashboardReducer?.dashboardResponse?.data?.user_information?.firstname || DashboardReducer?.dashPerResponse?.data?.user_information?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
 
     return (
         <>

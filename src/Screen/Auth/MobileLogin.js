@@ -155,6 +155,7 @@ const MobileLoginOTP = (props) => {
             showErrorAlert("Please enter a valid 6-digit OTP.");
             return;
         }
+        setNonloader(true);
         // Do not compare OTP on client side; production APIs may not return phone_otp.
         // Backend verification decides validity and returns next auth state.
         VeirfyUserByMobile(enteredOTP);
@@ -213,6 +214,7 @@ const MobileLoginOTP = (props) => {
                 break;
             case 'Auth/againloginsiginFailure':
                 status1 = AuthReducer.status;
+                setNonloader(false);
                 break;
         }
     }
@@ -297,11 +299,13 @@ const MobileLoginOTP = (props) => {
             }
         };
         if (isEmailNotVerified && isPhoneNotVerified) {
+            setNonloader(false);
             handleNavigation("VerifyOTP");
             return;
         }
 
         if (isEmailVerified && isPhoneNotVerified) {
+            setNonloader(false);
             handleNavigation("VerifyMobileOTP", { validPh: { phonecode: props?.route?.params?.mobileNo?.phoneCode } });
             return;
         }
@@ -337,6 +341,7 @@ const MobileLoginOTP = (props) => {
             setGtprof(false);
         }
         else {
+            setNonloader(false);
             showErrorAlert(loginResponse.msg || "Something went wrong!");
         }
     }, [
@@ -367,27 +372,32 @@ const MobileLoginOTP = (props) => {
 
     const handleChange = (text, index) => {
         if (text?.length > 1) {
-            const pastedText = text.replace(/[^0-9]/g, '');
-            const newOtp = [...otpphone];
-            let lastFilledIndex = index;
-            for (let i = 0; i < pastedText.length && index + i < 6; i++) {
-                newOtp[index + i] = pastedText[i];
-                lastFilledIndex = index + i;
-            }
-            setOtpphone(newOtp);
-            if (lastFilledIndex < 5) {
-                inputsphone.current[lastFilledIndex + 1]?.focus();
-            } else {
-                inputsphone.current[lastFilledIndex]?.focus();
-            }
+            setOtpphone(prevOtp => {
+                const newOtp = [...prevOtp];
+                const pastedText = text.replace(/[^0-9]/g, '');
+                const startIndex = pastedText.length === 6 ? 0 : index;
+                let lastFilledIndex = startIndex;
+                for (let i = 0; i < pastedText.length && startIndex + i < 6; i++) {
+                    newOtp[startIndex + i] = pastedText[i];
+                    lastFilledIndex = startIndex + i;
+                }
+                setTimeout(() => {
+                    const focusIndex = lastFilledIndex < 5 ? lastFilledIndex + 1 : 5;
+                    inputsphone.current[focusIndex]?.focus();
+                }, 10);
+                return newOtp;
+            });
             return;
         }
-        const updatedOtp = [...otpphone];
-        updatedOtp[index] = text;
-        setOtpphone(updatedOtp);
+
+        setOtpphone(prevOtp => {
+            const updatedOtp = [...prevOtp];
+            updatedOtp[index] = text;
+            return updatedOtp;
+        });
 
         if (text && index < 5) {
-            inputsphone.current[index + 1].focus();
+            inputsphone.current[index + 1]?.focus();
         }
     };
     const clearAllOTPFieldsPhone = () => {
@@ -424,8 +434,8 @@ const MobileLoginOTP = (props) => {
         return () => backHandler.remove();
     }, []);
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -520,7 +530,7 @@ const MobileLoginOTP = (props) => {
                                 setResendtrue(true);
                                 clearAllOTPFieldsPhone();
                             }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA"}}>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: countdown == 0 ? Colorpath.ButtonColr : "#DADADA" }}>
                                     {"Resend"}
                                 </Text>
                             </TouchableOpacity>

@@ -266,6 +266,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         getFullName(wholeDa) ||
         getFullName(finalProfessionmain?.user) ||
         getFullName(AuthReducer?.loginResponse?.user) ||
+        getFullName(AuthReducer?.againloginsiginResponse?.user) ||
         getFullName(AuthReducer?.signupResponse?.user) ||
         getFullName(DashboardReducer?.mainprofileResponse?.personal_information) ||
         '';

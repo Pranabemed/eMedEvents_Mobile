@@ -87,28 +87,32 @@ const VerifyMobileOTP = (props) => {
     console.log(DashboardReducer?.mainprofileResponse, "mainprofile---------", props?.route?.params)
     const handleChange = (text, index) => {
         if (text?.length > 1) {
-            const pastedText = text.replace(/[^0-9]/g, '');
-            const newOtp = [...otpmobile];
-            let lastFilledIndex = index;
-            for (let i = 0; i < pastedText.length && index + i < 6; i++) {
-                newOtp[index + i] = pastedText[i];
-                lastFilledIndex = index + i;
-            }
-            setOtpmobile(newOtp);
-            if (lastFilledIndex < 5) {
-                inputsmobile.current[lastFilledIndex + 1]?.focus();
-            } else {
-                inputsmobile.current[lastFilledIndex]?.focus();
-            }
+            setOtpmobile(prevOtp => {
+                const newOtp = [...prevOtp];
+                const pastedText = text.replace(/[^0-9]/g, '');
+                const startIndex = pastedText.length === 6 ? 0 : index;
+                let lastFilledIndex = startIndex;
+                for (let i = 0; i < pastedText.length && startIndex + i < 6; i++) {
+                    newOtp[startIndex + i] = pastedText[i];
+                    lastFilledIndex = startIndex + i;
+                }
+                setTimeout(() => {
+                    const focusIndex = lastFilledIndex < 5 ? lastFilledIndex + 1 : 5;
+                    inputsmobile.current[focusIndex]?.focus();
+                }, 10);
+                return newOtp;
+            });
             return;
         }
 
-        const updatedOtp = [...otpmobile];
-        updatedOtp[index] = text;
-        setOtpmobile(updatedOtp);
+        setOtpmobile(prevOtp => {
+            const updatedOtp = [...prevOtp];
+            updatedOtp[index] = text;
+            return updatedOtp;
+        });
 
         if (text && index < 5) {
-            inputsmobile.current[index + 1].focus();
+            inputsmobile.current[index + 1]?.focus();
         }
     };
 
@@ -272,6 +276,7 @@ const VerifyMobileOTP = (props) => {
             case 'Auth/verifymobileSuccess':
                 status = AuthReducer.status;
                 if (allProfTake) {
+                    setNoload(false);
                     toggleModal();
                     dispatch(chooseStatecardRequest({}))
                 } else {
@@ -286,6 +291,7 @@ const VerifyMobileOTP = (props) => {
                 break;
             case 'Auth/verifymobileFailure':
                 status = AuthReducer.status;
+                setNoload(false);
                 break;
             case 'Auth/chooseStatecardRequest':
                 status = AuthReducer.status;
@@ -433,6 +439,7 @@ const VerifyMobileOTP = (props) => {
         }
         console.log(serverOTP, "frghjktfgk------");
         if (enteredOTP == serverOTP) {
+            setNoload(true);
             verifyHandlevalid();
         } else {
             showErrorAlert("Invalid OTP. Please try again.");

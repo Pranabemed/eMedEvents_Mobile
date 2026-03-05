@@ -61,6 +61,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
     const [cachedLastName, setCachedLastName] = useState('');
+    const stableNameRef = useRef({ first: '', last: '' });
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
@@ -77,7 +78,34 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const cmeValult = () => {
         setVaultmodal(!vaultModal);
     }
-    const firstData = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || AuthReducer?.loginResponse?.user?.lastname || DashboardReducer?.dashboardResponse?.data?.user_information?.lastname || DashboardReducer?.dashPerResponse?.data?.user_information?.lastname || cachedLastName;
+    const cleanText = (val) => (typeof val == "string" ? val.trim() : "");
+    const resolvedLastName = cleanText(
+        DashboardReducer?.mainprofileResponse?.personal_information?.lastname,
+    );
+    const fallbackLastName = cleanText(
+        AuthReducer?.loginResponse?.user?.lastname ||
+        AuthReducer?.againloginsiginResponse?.user?.lastname ||
+        AuthReducer?.signupResponse?.user?.lastname ||
+        DashboardReducer?.dashboardResponse?.data?.user_information?.lastname ||
+        DashboardReducer?.dashPerResponse?.data?.user_information?.lastname ||
+        finalProfessionmain?.lastname ||
+        cachedLastName
+    );
+    const resolvedFirstName = cleanText(
+        DashboardReducer?.mainprofileResponse?.personal_information?.firstname,
+    );
+    const fallbackFirstName = cleanText(
+        AuthReducer?.loginResponse?.user?.firstname ||
+        AuthReducer?.againloginsiginResponse?.user?.firstname ||
+        AuthReducer?.signupResponse?.user?.firstname ||
+        DashboardReducer?.dashboardResponse?.data?.user_information?.firstname ||
+        DashboardReducer?.dashPerResponse?.data?.user_information?.firstname ||
+        finalProfessionmain?.firstname
+    );
+    const nextLastName = resolvedLastName || fallbackLastName;
+    const nextFirstName = resolvedFirstName || fallbackFirstName;
+    if (nextLastName) stableNameRef.current.last = nextLastName;
+    if (nextFirstName) stableNameRef.current.first = nextFirstName;
     const isFocus = useIsFocused();
     useEffect(() => {
         const hydrateCachedName = async () => {
@@ -179,7 +207,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
             });
     }
     const stateTake = (toklen, anoth) => {
@@ -212,6 +239,12 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : null;
     const allProfTake = gtprof || validHandles.has(profFromDashboard) || validHandles.has(authProfession);
+    const isPhysicianGreeting = Boolean(gtprof || allProfTake);
+    const displayLastName = stableNameRef.current.last || nextLastName;
+    const displayFirstName = stableNameRef.current.first || nextFirstName;
+    const greetingText = isPhysicianGreeting
+        ? `Hello, Dr.${displayLastName ? ` ${displayLastName}` : ""}`
+        : `Hello, ${displayFirstName}`;
     const derivedRemainingStates = useMemo(() => {
         const licensureStates = AuthReducer?.licesensResponse?.licensure_states;
         if (!Array.isArray(licensureStates) || !licensureStates.length) return [];
@@ -466,13 +499,13 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         initialSyncDoneRef.current = true;
         handleAllIndex(initialIndex);
     }, [fulldashbaord?.length, initialIndex]);
-    const finalDatCD =  statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
+    const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     return (
         <>
 
             <View>
                 <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10), fontWeight: "bold" }}>{`Hello, Dr. ${firstData || ''}`}</Text>
+                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10), fontWeight: "bold" }}>{greetingText}</Text>
                 </View>
                 {fulldashbaord?.length > 0 ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
