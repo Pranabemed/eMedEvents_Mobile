@@ -61,7 +61,7 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import constants from './constants';
-import { getUserAgentJSONOnce } from './UserAgent';
+import getUserAgentJSON from './UserAgent';
 
 // ─── How many ms before expiry we proactively refresh ─────────────────────────
 // 90 seconds → fires at T+8m30s when token expires at T+10min.
@@ -173,7 +173,7 @@ async function _doActualRefresh(reason) {
     while (attempt < maxAttempts) {
         attempt++;
         try {
-            const userAgentHeader = getUserAgentJSONOnce();
+            const userAgentHeader = getUserAgentJSON();
             const res = await axios.post(
                 `${constants.BASE_URL}/user/verifyRefreshToken`,
                 { refresh_token: refreshToken },
@@ -181,7 +181,7 @@ async function _doActualRefresh(reason) {
                     headers: {
                         Accept: 'application/json',
                         'Content-Type': 'application/json',
-                        ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
+                        ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
                     },
                     timeout: 15000,
                 },

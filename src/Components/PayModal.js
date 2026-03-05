@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
         paddingVertical: normalize(10),
         marginTop: normalize(15),
         gap: normalize(10),
-        marginRight:normalize(30)
+        marginRight: normalize(30)
     },
     button: {
         backgroundColor: Colorpath.white,

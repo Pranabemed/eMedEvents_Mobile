@@ -8,7 +8,7 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import CloseIcon from 'react-native-vector-icons/AntDesign';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
-const CellModalPayemnt = ({setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, setGocertificate, gocertificate }) => {
+const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, setGocertificate, gocertificate }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);
     const onPress = async () => {
@@ -93,20 +93,20 @@ const CellModalPayemnt = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,
                             {"Start Course Now"}
                         </Text>
                     </TouchableOpacity>
-                    <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
+                    <View style={dataPayemnt?.invoice ? [styles.buttonContainer, { marginTop: normalize(7) }] : [styles.buttonContainerg, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
                                 navigation?.navigate(name);
                                 setPaymentcardfree(false);
                             }}
-                            style={dataPayemnt?.invoice ? styles.button:styles.singlebutton}
+                            style={dataPayemnt?.invoice ? styles.button : styles.singlebutton}
                         >
-                            <Text style={dataPayemnt?.invoice ?styles.buttonText:{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: Colorpath.white,
-                            alignSelf: "center"
-                        }}>{"Start Course Later"}</Text>
+                            <Text style={dataPayemnt?.invoice ? styles.buttonText : {
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: Colorpath.white,
+                                alignSelf: "center"
+                            }}>{"Start Course Later"}</Text>
                         </TouchableOpacity>
                         {dataPayemnt?.invoice && <TouchableOpacity
                             onPress={() => {
@@ -205,7 +205,15 @@ const styles = StyleSheet.create({
         width: normalize(240),
         paddingVertical: normalize(10),
         marginTop: normalize(15),
-        gap:normalize(10)
+        gap: normalize(10)
+    },
+    buttonContainerg: {
+        flexDirection: 'row',
+        justifyContent: "center",
+        width: normalize(240),
+        paddingVertical: normalize(10),
+        marginTop: normalize(15),
+        gap: normalize(10)
     },
     button: {
         backgroundColor: Colorpath.white,

@@ -355,7 +355,7 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, c
                         paddingHorizontal: normalize(7),
                         paddingVertical: normalize(10),
                     }}>
-                    {webcastdeatils?.registrationTickets?.length > 0 && <Text
+                    {webcastdeatils?.registrationTickets?.length > 0 && parseFloat(calculatePrice || "0") > 0 && <Text
                         style={{
                             fontFamily: Fonts.InterBold,
                             fontSize: 24,

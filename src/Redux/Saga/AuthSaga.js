@@ -72,6 +72,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { doRefreshToken } from '../../Utils/Helpers/TokenRefresh';
+import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
@@ -853,6 +854,7 @@ export function* refreshTokenSaga(action) {
     }
 
     console.log('[refreshTokenSaga] 🔄 Calling user/verifyRefreshToken (plain axios)…');
+    const userAgentHeader = getUserAgentJSON();
 
     // ── PLAIN axios — NOT postApi — avoids interceptor loop ──────────────────
     const { default: axios } = require('axios');
@@ -864,6 +866,7 @@ export function* refreshTokenSaga(action) {
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
           },
           timeout: 15000,
         },

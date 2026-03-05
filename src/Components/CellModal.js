@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, InteractionManager } from 'react-native';
 import Modal from 'react-native-modal';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
@@ -8,6 +8,13 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
     console.log(profMerge, "profiletake=====", key)
+    const pressed = useRef(false);
+    useEffect(() => {
+        if (isVisible) {
+            pressed.current = false;
+        }
+    }, [isVisible]);
+
     const resetToTabHome = () => {
         navigation.dispatch(
             CommonActions.reset({
@@ -15,7 +22,46 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
                 routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd", refreshLicensesAt: Date.now() } }]
             })
         );
-        onClose();
+    };
+
+    const handleDone = () => {
+        if (pressed.current) return;
+        pressed.current = true;
+
+        if (profMerge == "freetrail" || profMerge == "nochange" || profMerge == "duplicate") {
+            resetToTabHome();
+        } else if (name == "TabNav" && key == "stateno") {
+            resetToTabHome();
+        } else if (name == "text") {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "BoardProfile", params: { board: "nodata" } }]
+                })
+            );
+        } else if (name == "Contact") {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav", params: { initialRoute: "Contact" } }]
+                })
+            );
+        } else if (name == "TabNav") {
+            resetToTabHome();
+        } else {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name }]
+                })
+            );
+        }
+
+        // Delay closing the modal internally so it remains visible over the parent screen just long enough 
+        // to securely cover the native React Navigation animation transition rendering execution!
+        setTimeout(() => {
+            onClose();
+        }, 450);
     };
 
     return (
@@ -33,40 +79,7 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
                 <View style={{ marginTop: normalize(20) }}>
                     <Text style={styles.content}>{content}</Text>
                 </View>
-                <TouchableOpacity onPress={() => {
-                    if (profMerge == "freetrail") {
-                        resetToTabHome();
-                    } else if (profMerge == "nochange") {
-                        resetToTabHome();
-                    } else if (profMerge == "duplicate") {
-                        resetToTabHome();
-                    } else if (name == "TabNav" && key == "stateno") {
-                        resetToTabHome();
-                    } else if (name == "text") {
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [
-                                    {
-                                        name: "BoardProfile",
-                                        params: {
-                                            board: "nodata",
-                                        }
-                                    }
-                                ]
-                            })
-                        );
-                        onClose();
-                    } else if (name == "Contact") {
-                        navigation.navigate("TabNav", { initialRoute: "Contact" });
-                        onClose();
-                    } else if (name == "TabNav") {
-                        resetToTabHome();
-                    } else {
-                        navigation?.navigate(name);
-                        onClose();
-                    }
-                }} style={{ justifyContent: "center", alignItems: "center", height: normalize(50), width: normalize(120), borderRadius: normalize(10), borderWidth: 1, borderColor: "#DDDDDD" }}>
+                <TouchableOpacity onPress={handleDone} style={{ justifyContent: "center", alignItems: "center", height: normalize(50), width: normalize(120), borderRadius: normalize(10), borderWidth: 1, borderColor: "#DDDDDD" }}>
                     <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(18), color: "#999999" }}>{"Done"}</Text>
                 </TouchableOpacity>
             </View>

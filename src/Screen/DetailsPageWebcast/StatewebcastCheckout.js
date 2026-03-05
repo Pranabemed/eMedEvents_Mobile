@@ -203,7 +203,7 @@ const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload
             {webcastdeatils?.buttonType &&
               webcastdeatils?.buttonType?.toLowerCase() === "register" &&
               webcastdeatils?.registered_allow === 1 ? <><View style={{ flexDirection: "column", marginLeft: normalize(10) }}>
-                {webcastdeatils?.registrationTickets?.length > 0 ? (
+                {webcastdeatils?.registrationTickets?.length > 0 && parseFloat(takePrice || "0") > 0 ? (
                   <>
                     <View style={{ marginLeft: normalize(5) }}>
                       <Text

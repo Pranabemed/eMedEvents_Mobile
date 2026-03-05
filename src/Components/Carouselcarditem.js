@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable, InteractionManager } from 'react-native'
+import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import Colorpath from '../Themes/Colorpath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
@@ -101,8 +101,13 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         const parsed = Number(value);
         return Number.isNaN(parsed) || parsed <= 0;
     };
+    const isZeroDate = (value) =>
+        typeof value == 'string' && (value.trim() == '0000-00-00' || value.trim() == '0000-00-00 00:00:00');
+
     const isMissingLicenseData =
-        isEmptyLike(item?.license_number) || isInvalidExpireDays(item?.license_expire_days);
+        isEmptyLike(item?.license_number) &&
+        (isZeroDate(item?.to_date) || !item?.to_date);
+
     const isActiveCard = val == index;
     useEffect(() => {
         const professionData =
@@ -342,49 +347,68 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     const isExpiryValid = parsedExpiry.isValid();
     const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
     useEffect(() => {
+        let interactionPromise = null;
+        let timeoutId = null;
+
         if (isActiveCard) {
             const today = new Date();
-            if (!item?.to_date || !isExpiryValid) {
-                setTakeName(item?.board_name);
-                setIsItemExpired(true);
-                setExpireDate(true);
-                setCountdownMessage('');
-                setDashMod(true);
-                return;
-            }
-            const targetDate = parsedExpiry.toDate();
-            if (moment(today).format("YYYY-MM-DD") > parsedExpiry.format("YYYY-MM-DD")) {
-                setDashMod(true);
-            }
-            if (today > targetDate) {
-                setTakeName(item?.board_name);
-                setIsItemExpired(true);
-                setExpireDate(true);
-                setCountdownMessage('');
+            let isExpired = false;
+            let message = '';
+
+            if (isMissingLicenseData || !item?.to_date || !isExpiryValid) {
+                isExpired = true;
             } else {
-                const differenceMs = targetDate - today;
-                const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-                if (differenceDays == 89) {
-                    setTakeName(item?.board_name);
-                    setIsItemExpired(true);
-                    setExpireDate(true);
-                    setCountdownMessage('Renew & Update');
-                } else if (differenceDays < 89) {
-                    setTakeName(item?.board_name);
-                    setIsItemExpired(true);
-                    setExpireDate(true);
-                    setCountdownMessage(`${differenceDays}`);
-                } else {
-                    setIsItemExpired(false);
-                    setExpireDate(false);
-                    setDashMod(false);
-                    setCountdownMessage(`${differenceDays}`);
+                const targetDate = parsedExpiry.toDate();
+                if (moment(today).format("YYYY-MM-DD") > parsedExpiry.format("YYYY-MM-DD")) {
+                    isExpired = true;
                 }
+                if (today > targetDate) {
+                    isExpired = true;
+                } else {
+                    const differenceMs = targetDate - today;
+                    const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
+                    if (differenceDays == 89) {
+                        isExpired = true;
+                        message = 'Renew & Update';
+                    } else if (differenceDays < 89) {
+                        isExpired = true;
+                        message = `${differenceDays}`;
+                    } else {
+                        isExpired = false;
+                        message = `${differenceDays}`;
+                    }
+                }
+            }
+
+            setTakeName(item?.board_name || '');
+            setIsItemExpired(isExpired);
+            setExpireDate(isExpired);
+            setCountdownMessage(message);
+
+            if (isExpired) {
+                if (isFocus) {
+                    interactionPromise = InteractionManager.runAfterInteractions(() => {
+                        timeoutId = setTimeout(() => {
+                            setDashMod(true);
+                        }, Platform.OS === 'ios' ? 800 : 300);
+                    });
+                }
+            } else {
+                setDashMod(false);
             }
         } else {
             setDashMod(false);
         }
-    }, [item?.to_date, isActiveCard, isExpiryValid]);
+
+        return () => {
+            if (interactionPromise) {
+                interactionPromise.cancel();
+            }
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [item?.to_date, item?.from_date, item?.expiry_date, item?.license_number, item?.license_expire_days, item?.board_name, isActiveCard, isExpiryValid, isMissingLicenseData, isFocus, parsedExpiry, setExpireDate]);
     return (
         <>
             <View style={styles.container}>

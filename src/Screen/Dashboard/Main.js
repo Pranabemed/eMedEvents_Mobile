@@ -86,13 +86,13 @@ const Main = (props) => {
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
   const allProfTake = validHandles.has(authHigh) || validHandles.has(profFromDashboard);
-  const cachedProfessionHandle =
-    finalProfessionmain?.profession && finalProfessionmain?.profession_type
-      ? `${finalProfessionmain.profession} - ${finalProfessionmain.profession_type}`
-      : null;
-  const isPhysicianFlow = gtprof || allProfTake || validHandles.has(cachedProfessionHandle);
-  const hasDashboardLicenses = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
-  const shouldRenderStateLicense = hasDashboardLicenses || isPhysicianFlow;
+  // const cachedProfessionHandle =
+  //   finalProfessionmain?.profession && finalProfessionmain?.profession_type
+  //     ? `${finalProfessionmain.profession} - ${finalProfessionmain.profession_type}`
+  //     : null;
+  // const isPhysicianFlow = gtprof || allProfTake || validHandles.has(cachedProfessionHandle);
+  // const hasDashboardLicenses = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
+  // const shouldRenderStateLicense = isPhysicianFlow || hasDashboardLicenses;
   useEffect(() => {
     if (detectmain == "newadd") {
       connectionrequest()
@@ -269,7 +269,7 @@ const Main = (props) => {
               }} scrollEventThrottle={16}>
               <View>
                 <View style={{ bottom: normalize(10) }}>
-                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : shouldRenderStateLicense ?
+                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : gtprof ?
                     <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
                 </View>
               </View>

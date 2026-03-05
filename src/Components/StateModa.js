@@ -18,7 +18,7 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
     const handleDone = () => {
         if (pressed.current) return;   // block double-tap
         pressed.current = true;
-        onClose();                     // close modal
+
         if (profile == "text") {
             navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "StateProfile", params: { state: "nodata" } }] }));
         } else {
@@ -29,6 +29,12 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
                 })
             );
         }
+
+        // Delay closing the modal internally so it remains visible over the parent screen just long enough 
+        // to cover the native React Navigation animation transition, preventing the under-screen flash!
+        setTimeout(() => {
+            onClose();
+        }, 400);
     };
     return (
         <Modal

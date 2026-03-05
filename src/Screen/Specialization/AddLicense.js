@@ -42,6 +42,19 @@ const AddLicense = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const routeParams = props?.route?.params || {};
+    const profiledet = routeParams?.profiledet;
+    const addLicParam = routeParams?.myTaskask?.addLic;
+    const isZeroDate = (value) =>
+        typeof value == "string" && (value.trim() == "0000-00-00" || value.trim() == "0000-00-00 00:00:00");
+    const isEmptyLike = (value) => value == null || (typeof value == "string" && value.trim() == "");
+    const isMissingAddLicenseData = Boolean(addLicParam) && (
+        isEmptyLike(addLicParam?.license_number) &&
+        (isZeroDate(addLicParam?.to_date) || !addLicParam?.to_date)
+    );
+    const shouldPrefillFromAddLic = Boolean(addLicParam) && !isMissingAddLicenseData;
+    const prefillSource = profiledet || (shouldPrefillFromAddLic ? addLicParam : null);
+    const isEditLicenseFlow = Boolean(prefillSource);
     const [selectlicsense, setSelectlicsense] = useState(false);
     const [licsenseno, setlicsenseno] = useState(false);
     const [isModalVisiblecred, setModalVisiblecred] = useState(false);
@@ -50,19 +63,15 @@ const AddLicense = (props) => {
     const [ProfilePicUrilic, setProfilePicUrilic] = useState('');
     const [opendatelic, setOpendatelic] = useState(false);
     const [rdate, setRdate] = useState(
-        props?.route?.params?.profiledet?.from_date && props?.route?.params?.profiledet?.from_date !== "0000-00-00"
-            ? props?.route?.params?.profiledet?.from_date
-            : props?.route?.params?.myTaskask?.addLic?.from_date && props?.route?.params?.myTaskask?.addLic?.from_date !== "0000-00-00"
-                ? props?.route?.params?.myTaskask?.addLic?.from_date
-                : null
+        prefillSource?.from_date && prefillSource?.from_date !== "0000-00-00"
+            ? prefillSource?.from_date
+            : null
     );
 
     const [cdate, setCdate] = useState(
-        props?.route?.params?.profiledet?.to_date
-            ? props?.route?.params?.profiledet?.to_date
-            : props?.route?.params?.myTaskask?.addLic?.to_date
-                ? props?.route?.params?.myTaskask?.addLic?.to_date
-                : null
+        prefillSource?.to_date
+            ? prefillSource?.to_date
+            : null
     );
     const [opendatelicy, setOpendatelicy] = useState(false);
     const [selectStatepratice, setSelectStatepratice] = useState([]);
@@ -76,6 +85,8 @@ const AddLicense = (props) => {
     const [citypickeryear, setCitypickeryear] = useState(false);
     const [newtake, setNewtake] = useState("");
     const [targt, setTargt] = useState(null)
+    const [isSaving, setIsSaving] = useState(false);
+    const initialPrefillDone = useRef(false);
     const isFoucs = useIsFocused();
     const resetToTab = (initialRoute = "Home") => {
         props.navigation.dispatch(
@@ -300,14 +311,18 @@ const AddLicense = (props) => {
         ]).start();
     }, [licsenseno]);
     useEffect(() => {
-        const boardId = props?.route?.params?.myTaskask?.addLic?.board_data?.board_id;
+        if (!prefillSource) {
+            setTargt(null);
+            return;
+        }
+        const boardId = prefillSource?.board_data?.board_id || prefillSource?.board_id;
         const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
         const finalget = takeState?.filter(item => item?.board_id == boardId);
         setTargt(finalget);
-    }, [props?.route?.params?.myTaskask])
+    }, [prefillSource, DashboardReducer?.dashboardResponse?.data?.licensures])
     useEffect(() => {
-        const handleTakeIt = props?.route?.params?.profiledet || props?.route?.params?.myTaskask?.addLic;
-        if (handleTakeIt && typeof stateDateFetch == "undefined" || !stateDateFetch) {
+        const handleTakeIt = prefillSource;
+        if (handleTakeIt && (typeof stateDateFetch == "undefined" || !stateDateFetch)) {
             const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
@@ -316,24 +331,29 @@ const AddLicense = (props) => {
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
                 dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+            } else {
+                setSelectlicsense(handleTakeIt?.state || handleTakeIt?.state_name || "");
+                setlicsenseno(handleTakeIt?.license_number || "");
+                setSpecailidpraticelic(handleTakeIt?.state_id || "");
+                if (handleTakeIt?.state_id) dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
             }
             const fromDate =
                 handleTakeIt?.from_date && handleTakeIt?.from_date !== "0000-00-00"
                     ? handleTakeIt?.from_date
-                    : targt?.[0]?.from_date && targt?.[0]?.from_date !== "0000-00-00"
+                    : shouldPrefillFromAddLic && targt?.[0]?.from_date && targt?.[0]?.from_date !== "0000-00-00"
                         ? targt?.[0]?.from_date
                         : null;
             setRdate(fromDate);
             const toDate = handleTakeIt?.to_date && handleTakeIt?.to_date !== "0000-00-00"
-                ? handleTakeIt?.to_date : targt?.[0]?.to_date && targt?.[0]?.to_date !== "0000-00-00"
+                ? handleTakeIt?.to_date : shouldPrefillFromAddLic && targt?.[0]?.to_date && targt?.[0]?.to_date !== "0000-00-00"
                     ? targt?.[0]?.to_date : null
             setCdate(toDate);
-            const handleFile = handleTakeIt?.license_file ? handleTakeIt?.license_file : targt?.[0]?.license_file
+            const handleFile = handleTakeIt?.license_file ? handleTakeIt?.license_file : (shouldPrefillFromAddLic ? targt?.[0]?.license_file : null)
             if (handleFile) {
                 setProfilePicObjlic(handleFile);
             }
 
-        } else {
+        } else if (handleTakeIt) {
             const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
@@ -342,25 +362,53 @@ const AddLicense = (props) => {
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
                 dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+            } else {
+                setSelectlicsense(handleTakeIt?.state || handleTakeIt?.state_name || "");
+                setlicsenseno(handleTakeIt?.license_number || "");
+                setSpecailidpraticelic(handleTakeIt?.state_id || "");
+                if (handleTakeIt?.state_id) dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
             }
             const fromDate =
                 handleTakeIt?.from_date && handleTakeIt?.from_date !== "0000-00-00"
                     ? handleTakeIt?.from_date
-                    : targt?.[0]?.from_date && targt?.[0]?.from_date !== "0000-00-00"
+                    : shouldPrefillFromAddLic && targt?.[0]?.from_date && targt?.[0]?.from_date !== "0000-00-00"
                         ? targt?.[0]?.from_date
                         : null;
             setRdate(fromDate);
             const toDate = handleTakeIt?.to_date && handleTakeIt?.to_date !== "0000-00-00"
-                ? moment(handleTakeIt?.to_date, "YYYY-MM-DD").format("YYYY") : targt?.[0]?.to_date && targt?.[0]?.to_date !== "0000-00-00"
+                ? moment(handleTakeIt?.to_date, "YYYY-MM-DD").format("YYYY") : shouldPrefillFromAddLic && targt?.[0]?.to_date && targt?.[0]?.to_date !== "0000-00-00"
                     ? moment(targt?.[0]?.to_date, "YYYY-MM-DD").format("YYYY") : null
             setCdate(toDate);
-            const handleFile = handleTakeIt?.license_file ? handleTakeIt?.license_file : targt?.[0]?.license_file;
+            const handleFile = handleTakeIt?.license_file ? handleTakeIt?.license_file : (shouldPrefillFromAddLic ? targt?.[0]?.license_file : null);
             if (handleFile) {
                 setProfilePicObjlic(handleFile);
             }
             setNewtake(toDate);
+        } else {
+            if (!initialPrefillDone.current) {
+                initialPrefillDone.current = true;
+                if (addLicParam && !isEditLicenseFlow) {
+                    setSelectlicsense(addLicParam?.state || addLicParam?.state_name || "");
+                    setSpecailidpraticelic(addLicParam?.state_id || "");
+                    setlicsenseno("");
+                    setRdate(null);
+                    setCdate(null);
+                    setStateDateFetch(null);
+                    setNewtake("");
+                    setProfilePicObjlic("");
+                } else if (!isEditLicenseFlow) {
+                    setSelectlicsense("");
+                    setSpecailidpraticelic("");
+                    setlicsenseno("");
+                    setRdate(null);
+                    setCdate(null);
+                    setStateDateFetch(null);
+                    setNewtake("");
+                    setProfilePicObjlic("");
+                }
+            }
         }
-    }, [props?.route?.params?.profiledet, stateDateFetch, props?.route?.params?.myTaskask, targt]);
+    }, [prefillSource, addLicParam, stateDateFetch, targt, DashboardReducer?.dashboardResponse?.data?.licensures, shouldPrefillFromAddLic, dispatch, isEditLicenseFlow]);
     const handleFromDateConfirm = (val) => {
         const formattedDate = moment(val).format('YYYY-MM-DD');
         setRdate(formattedDate);
@@ -390,7 +438,8 @@ const AddLicense = (props) => {
         if (DashboardReducer.status == 'Dashboard/stateReportingSuccess') {
             setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
         }
-        if (DashboardReducer.status == 'Dashboard/stateLicesenseSuccess') {
+        if (DashboardReducer.status == 'Dashboard/stateLicesenseSuccess' && isSaving) {
+            setIsSaving(false);
             dispatch(dashboardRequest({}));
             setModalVisiblecred(true);
         }
@@ -404,7 +453,7 @@ const AddLicense = (props) => {
             setFulldashbaord(uniqueStates || []);
             setAddit(uniqueStates?.[0] ?? null);
         }
-    }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord]);
+    }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord, isSaving]);
     const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
@@ -506,11 +555,13 @@ const AddLicense = (props) => {
         obj.append("license_number", licsenseno);
         obj.append("license_file", ProfilePicObjlic ? ProfilePicObjlic : null);
         obj.append("delete_file", ProfilePicObjlic ? 0 : 1);
+        setIsSaving(true);
         connectionrequest()
             .then(() => {
                 dispatch(stateLicesenseRequest(obj));
             })
             .catch(err => {
+                setIsSaving(false);
                 showErrorAlert("Please connect to internet", err);
             });
     }
@@ -547,11 +598,11 @@ const AddLicense = (props) => {
                     <CustomizedYear yearRange={yearRange} setCitypickeryear={setCitypickeryear} handleYearcust={handleYearcust} />
                 ) : <>
                     {Platform.OS === 'ios' ? <PageHeader
-                        title={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ? "Edit License" : "Add License"}
+                        title={isEditLicenseFlow ? "Edit License" : "Add License"}
                         onBackPress={addCreditBack}
                     /> : <View>
                         <PageHeader
-                            title={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ? "Edit License" : "Add License"}
+                            title={isEditLicenseFlow ? "Edit License" : "Add License"}
                             onBackPress={addCreditBack}
                         />
                     </View>}
@@ -564,7 +615,7 @@ const AddLicense = (props) => {
                         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
                                 <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#000000" }}>
-                                    {props?.route?.params?.profiledet || props?.route?.params?.myTaskask ? "Edit State license" : "Add Your New State License"}
+                                    {isEditLicenseFlow ? "Edit State license" : "Add Your New State License"}
                                 </Text>
                             </View>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
@@ -609,7 +660,7 @@ const AddLicense = (props) => {
                                     </View>
                                 </View>
 
-                                <Pressable onPress={() => setPraticelic(!praticelic)} disabled={props?.route?.params?.profiledet || props?.route?.params?.myTaskask ? true : false}>
+                                <Pressable onPress={() => setPraticelic(!praticelic)} disabled={isEditLicenseFlow ? true : false}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -619,7 +670,7 @@ const AddLicense = (props) => {
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField
-                                                icondisable={props?.route?.params?.profiledet || props?.route?.params?.myTaskask ? true : false}
+                                                icondisable={isEditLicenseFlow ? true : false}
                                                 label={"Licensure State*"}
                                                 value={selectlicsense}
                                                 placeholder=""
@@ -814,7 +865,7 @@ const AddLicense = (props) => {
                             <StateModa
                                 isVisible={isModalVisiblecred}
                                 onClose={toggleModalcred}
-                                content={props?.route?.params?.profiledet ?? props?.route?.params?.myTaskask ? "State license information \n updated successfully." : "State license information \n added successfully."}
+                                content={isEditLicenseFlow ? "State license information \n updated successfully." : "State license information \n added successfully."}
                                 navigation={props.navigation}
                                 profile={props?.route?.params?.myTaskask?.BackMyTask ? "" : props?.route?.params?.myTaskask?.Back ? "" : props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile ? "text" : ""}
                             />
