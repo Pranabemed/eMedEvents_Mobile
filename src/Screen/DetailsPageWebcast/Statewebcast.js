@@ -1,12 +1,13 @@
 import { Image, Text, View, Platform, TouchableOpacity, ScrollView, Dimensions, useWindowDimensions, Alert, StyleSheet, TextInput, BackHandler } from 'react-native';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import PageHeader from '../../Components/PageHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { cartcountWebcastRequest, saveTicketCartRequest, saveTicketRequest, webcastDeatilsRequest } from '../../Redux/Reducers/WebcastReducer';
+import { cartcountWebcastRequest, saveTicketCartRequest, saveTicketRequest, webcastDeatilsRequest, refIDRequest } from '../../Redux/Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import StatewebcastSpeciality from './StatewebcastSpeciality';
 import StatewebcastOverview from './StatewebcastOverview';
@@ -53,6 +54,7 @@ const Statewebcast = props => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
     const dispatch = useDispatch();
+    const [refID, setRefID] = useState(props?.route?.params?.webCastURL?.refID || null);
     const [viewmore, setViewmore] = useState("");
     const [viewmoreac, setViewmoreac] = useState("");
     const [viewmorepolicy, setViewmorepolicy] = useState("");
@@ -135,6 +137,12 @@ const Statewebcast = props => {
         let obj = {
             "conference_url": requestedConferenceUrl
         };
+        // Also grab a persisted refID from AsyncStorage if not available in route (e.g. app was cold-started)
+        if (!refID) {
+            AsyncStorage.getItem('REFID').then(storedRefID => {
+                if (storedRefID) setRefID(storedRefID);
+            }).catch(() => { });
+        }
         connectionrequest()
             .then(() => {
                 dispatch(webcastDeatilsRequest(obj));
@@ -349,24 +357,62 @@ const Statewebcast = props => {
     const handleTicketsCart = () => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const checkoutSpan = webcastdeatils?.conferenceId;
-            let obj = {
+            const obj = {
                 "conference_id": checkoutSpan,
                 "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
                     "id": ticket?.id,
                     "quantity": 1
                 }))
             };
+
             connectionrequest()
                 .then(() => {
                     dispatch(saveTicketCartRequest(obj));
                 })
-                .catch((err) => {
-                    showErrorAlert("Please connect to internet", err)
-                })
+                .catch((err) => showErrorAlert("Please connect to internet", err));
         } else {
-            props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse || "", webcast: webcastdeatils, urlneedTake: urltrack } })
+            props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse || "", webcast: webcastdeatils, urlneedTake: urltrack } });
         }
-    }
+    };
+
+    useEffect(() => {
+        const handleRefIDCheckout = async () => {
+            if (webcastdeatils?.registrationTickets?.length > 0 && refID) {
+                const checkoutSpan = webcastdeatils?.conferenceId;
+                const obj = {
+                    "conference_id": checkoutSpan,
+                    "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+                        "id": ticket?.id,
+                        "quantity": 1
+                    }))
+                };
+
+                // Resolve refID: from state first, then AsyncStorage fallback
+                let resolvedRefID = refID;
+                if (!resolvedRefID) {
+                    try {
+                        resolvedRefID = await AsyncStorage.getItem('REFID');
+                        if (resolvedRefID) setRefID(resolvedRefID);
+                    } catch (e) {
+                        console.log('[handleRefIDCheckout] RefID read error:', e);
+                    }
+                }
+
+                if (resolvedRefID) {
+                    obj["refer_params"] = resolvedRefID;
+                }
+
+                console.log('[refIDRequest] Payload:', obj);
+
+                connectionrequest()
+                    .then(() => {
+                        dispatch(refIDRequest(obj));
+                    })
+                    .catch((err) => console.log("Internet Error", err));
+            }
+        };
+        handleRefIDCheckout();
+    }, [refID, webcastdeatils?.registrationTickets, webcastdeatils]);
     const cartHand = () => {
         const latestCartCount = Number(
             WebcastReducer?.cartcountWebcastResponse?.cartItemsCount ?? cartcount ?? 0

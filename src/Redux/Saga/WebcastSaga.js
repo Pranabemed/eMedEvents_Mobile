@@ -1,6 +1,6 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess } from '../Reducers/WebcastReducer';
+import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -31,8 +31,8 @@ export function* webcastDetailsSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
-    
+    IPADDRESS: ipAddress ? ipAddress : ""
+
   };
   try {
     let response = yield call(postApi, 'Conference/conferenceDetailPage', action.payload, header);
@@ -88,7 +88,7 @@ export function* saveTicketSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -108,7 +108,7 @@ export function* saveTicketCartSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -128,7 +128,7 @@ export function* saveTicketAddtoCartSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -148,7 +148,7 @@ export function* checkoutTicketSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -168,7 +168,7 @@ export function* saveTicketInpersonSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
@@ -188,7 +188,7 @@ export function* saveRegistSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'transaction/saveRegistration', action.payload, header);
@@ -208,7 +208,7 @@ export function* webcastPaymentSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS:ipAddress ? ipAddress :""
+    IPADDRESS: ipAddress ? ipAddress : ""
   };
   try {
     let response = yield call(postApi, 'Transaction/payment', action.payload, header);
@@ -265,7 +265,7 @@ export function* addtoCartWebcastSaga(action) {
     authorization: items.token,
   };
   try {
-    let response = yield call(postApi, action?.payload?.bundle_conference_id ? 'transaction/addBundleToCart':'transaction/addToCart', action.payload, header);
+    let response = yield call(postApi, action?.payload?.bundle_conference_id ? 'transaction/addBundleToCart' : 'transaction/addToCart', action.payload, header);
     if (response?.data?.success == true) {
       yield put(addtoCartWebcastSuccess(response?.data));
     } else {
@@ -528,6 +528,26 @@ export function* RegisterIntPrSaga(action) {
     yield put(RegisterIntFailure(error));
   }
 }
+export function* refIDSaga(action) {
+  const ipAddress = getPublicIP();
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items.token,
+    IPADDRESS: ipAddress ? ipAddress : ''
+  };
+  try {
+    let response = yield call(postApi, 'transaction/saveTickets', action.payload, header);
+    if (response?.data?.success == true) {
+      yield put(refIDSuccess(response?.data));
+    } else {
+      yield put(refIDFailure(response?.data));
+    }
+  } catch (error) {
+    yield put(refIDFailure(error));
+  }
+}
 const watchFunction = [
   (function* () {
     yield takeLatest('WebCast/webcastDeatilsRequest', webcastDetailsSaga);
@@ -587,31 +607,34 @@ const watchFunction = [
     yield takeLatest('WebCast/cartPaymentRequest', cartPaymentSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/TransemailcheckRequest',TransEmailCheckSaga);
+    yield takeLatest('WebCast/TransemailcheckRequest', TransEmailCheckSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/StatusPaymentRequest',StatusPaymentSaga);
+    yield takeLatest('WebCast/StatusPaymentRequest', StatusPaymentSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/PaymentCheckRequest',PaymentCheckSaga);
+    yield takeLatest('WebCast/PaymentCheckRequest', PaymentCheckSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/walletCheckRequest',walletCheckSaga);
+    yield takeLatest('WebCast/walletCheckRequest', walletCheckSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/FreeTransRequest',FreeCheckSaga);
+    yield takeLatest('WebCast/FreeTransRequest', FreeCheckSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/FreeCartRequest',FreeCartSaga);
+    yield takeLatest('WebCast/FreeCartRequest', FreeCartSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/PrimePaymentRequest',PrimePayemntSaga);
+    yield takeLatest('WebCast/PrimePaymentRequest', PrimePayemntSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/PrimeCheckRequest',PrimeCheckSaga);
+    yield takeLatest('WebCast/PrimeCheckRequest', PrimeCheckSaga);
   })(),
   (function* () {
-    yield takeLatest('WebCast/RegisterIntRequest',RegisterIntPrSaga);
+    yield takeLatest('WebCast/RegisterIntRequest', RegisterIntPrSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/refIDRequest', refIDSaga);
   })()
 ];
 

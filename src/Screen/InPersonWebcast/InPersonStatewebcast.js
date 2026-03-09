@@ -1,5 +1,6 @@
 import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler } from 'react-native'
 import React, { useEffect, useLayoutEffect, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Buttons from '../../Components/Button'
@@ -20,10 +21,10 @@ const InPersonStatewebcast = (props) => {
     function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
-            return price; 
+            return price;
         }
         let truncated = Math.floor(num * 100) / 100;
-        
+
         return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
     }
     console.log(props?.route?.params?.realData?.ticketall, "props===============");
@@ -41,18 +42,18 @@ const InPersonStatewebcast = (props) => {
     }, [props?.route?.params?.realData?.realData])
     useEffect(() => {
         const registrationTickets = props?.route?.params?.realData?.ticketall || [];
-        const baseHeight = 400; 
-        const heightPerTicket = 300; 
-        const calculatedHeight = registrationTickets.length > 0 
-            ? baseHeight + (registrationTickets.length - 1) * heightPerTicket 
+        const baseHeight = 400;
+        const heightPerTicket = 300;
+        const calculatedHeight = registrationTickets.length > 0
+            ? baseHeight + (registrationTickets.length - 1) * heightPerTicket
             : baseHeight;
-    
+
         setModalHeight(calculatedHeight);
-    }, [props?.route?.params?.realData?.registrationTickets,isfilterVisible]);
-    
+    }, [props?.route?.params?.realData?.registrationTickets, isfilterVisible]);
+
     const { ticketall } = props?.route?.params?.realData || { ticketall: [] };
-    console.log(ticketall,"ticketall-----------")
-    const inPersonSaveTicket = () => {
+    console.log(ticketall, "ticketall-----------")
+    const inPersonSaveTicket = async () => {
         if (clickHistory?.length > 0) {
             console.log("Hello", clickHistory)
             const checkoutSpan = props?.route?.params?.realData?.realData?.conferenceId;
@@ -65,6 +66,16 @@ const InPersonStatewebcast = (props) => {
                     }))
                     ?.filter(ticket => ticket.quantity >= 1) // Ensure tickets with quantity >= 1 are added
             };
+
+            // Include refer_params if RefID was captured from a deep link
+            try {
+                const storedRefID = await AsyncStorage.getItem('REFID');
+                if (storedRefID) {
+                    obj["refer_params"] = storedRefID;
+                }
+            } catch (e) {
+                console.log('[inPersonSaveTicket] Error reading RefID:', e);
+            }
 
             connectionrequest()
                 .then(() => {
@@ -142,20 +153,20 @@ const InPersonStatewebcast = (props) => {
     };
 
     console.log(totalAmounts, "Total Amounts=====", clickHistory);
-const formatNumberWithCommas = (value) => {
-  if (value == null || value == undefined) return '';
-  const stringValue = value.toString().replace(/,/g, '');
-  const parts = stringValue.split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return parts.join('.');
-};
+    const formatNumberWithCommas = (value) => {
+        if (value == null || value == undefined) return '';
+        const stringValue = value.toString().replace(/,/g, '');
+        const parts = stringValue.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+    };
     const stateDataFilter = ({ item, index }) => {
-        const minTickets =  0;
+        const minTickets = 0;
         const maxTickets = 10;
         const clickCount = clickHistory[index]?.length || 0;
         return (
             <>
-             
+
 
                 <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: normalize(10) }}>
                     <View
@@ -171,7 +182,7 @@ const formatNumberWithCommas = (value) => {
                             borderColor: '#DDDDDD',
                         }}
                     >
-                        <View style={{ flex: 1}}>
+                        <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                                 <Text
                                     style={{
@@ -187,9 +198,9 @@ const formatNumberWithCommas = (value) => {
                                 </Text>
                             </View>
 
-                            {item?.key_value ?<View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(5), alignSelf: 'flex-start' }}>
+                            {item?.key_value ? <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(5), alignSelf: 'flex-start' }}>
                                 <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: '#333' }}>{item?.key_value}</Text>
-                            </View>:null}
+                            </View> : null}
 
                             {/* {item?.enddate ? <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(0), alignSelf: 'flex-start' }}>
                                 <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: '#333' }}>
@@ -200,7 +211,7 @@ const formatNumberWithCommas = (value) => {
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: normalize(10), width: '100%' }}>
                                 {+(item?.itemamt) == 0 ? (
                                     <View style={{ flexDirection: 'column' }}>
-                                        <View style={{ paddingVertical: normalize(5),paddingHorizontal:normalize(2) }}>
+                                        <View style={{ paddingVertical: normalize(5), paddingHorizontal: normalize(2) }}>
                                             <Text
                                                 style={{
                                                     fontFamily: Fonts.InterSemiBold,
@@ -262,7 +273,7 @@ const formatNumberWithCommas = (value) => {
 
                                     <TouchableOpacity
                                         onPress={() => handleIncrement(index, item)}
-                                        disabled={clickCount >= maxTickets} 
+                                        disabled={clickCount >= maxTickets}
                                     >
                                         <Image
                                             source={Imagepath.PlusImg}
@@ -270,7 +281,7 @@ const formatNumberWithCommas = (value) => {
                                                 height: normalize(30),
                                                 width: normalize(30),
                                                 resizeMode: 'contain',
-                                                tintColor: clickCount < maxTickets ? '#666666' : '#cccccc', 
+                                                tintColor: clickCount < maxTickets ? '#666666' : '#cccccc',
                                             }}
                                         />
                                     </TouchableOpacity>
@@ -310,31 +321,31 @@ const formatNumberWithCommas = (value) => {
                 break;
         }
     }
-    const backPressIn=()=>{
+    const backPressIn = () => {
         props.navigation.navigate("Statewebcast");
         setIssfilterVisible(false);
     }
     useEffect(() => {
         const onBackPress = () => {
             backPressIn();
-          return true;
+            return true;
         };
-    
+
         const backHandler = BackHandler.addEventListener(
-          'hardwareBackPress',
-          onBackPress
+            'hardwareBackPress',
+            onBackPress
         );
-    
+
         return () => backHandler.remove();
-      }, []);
-      useLayoutEffect(() => {
-                  props.navigation.setOptions({ gestureEnabled: false });
-              }, []);
+    }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
-            <Loader visible={WebcastReducer?.status == 'WebCast/saveTicketInpersonRequest'} />
+                <Loader visible={WebcastReducer?.status == 'WebCast/saveTicketInpersonRequest'} />
                 <Modal
                     animationIn={'slideInUp'}
                     animationOut={'slideOutDown'}
@@ -344,32 +355,34 @@ const formatNumberWithCommas = (value) => {
                     style={{ width: '100%', alignSelf: 'center', margin: 0 }}
                     animationInTiming={800}
                     animationOutTiming={1000}
-                    onBackdropPress={() => { 
+                    onBackdropPress={() => {
                         props.navigation.navigate("Statewebcast");
                         setIssfilterVisible(false);
-                     }}
+                    }}
                 >
-                    <View style={{backgroundColor: Colorpath.white, borderTopRightRadius: normalize(20),
-                borderTopLeftRadius: normalize(20),bottom:0,height:normalize(470)}}>
-                        <View style={{ justifyContent: "center", alignItems: "center",marginTop:normalize(10)}}>
+                    <View style={{
+                        backgroundColor: Colorpath.white, borderTopRightRadius: normalize(20),
+                        borderTopLeftRadius: normalize(20), bottom: 0, height: normalize(470)
+                    }}>
+                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
                             <View style={styles.modalIndicator} />
                         </View>
                         <View>
                             {/* <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}> */}
-                                <View style={styles.container}>
-                                    <FlatList
-                                        data={props?.route?.params?.realData?.ticketall}
-                                        renderItem={stateDataFilter}
-                                        keyExtractor={(item, index) => index.toString()}
-                                        contentContainerStyle={{paddingBottom:normalize(120)}}
-                                    />
-                                </View>
+                            <View style={styles.container}>
+                                <FlatList
+                                    data={props?.route?.params?.realData?.ticketall}
+                                    renderItem={stateDataFilter}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    contentContainerStyle={{ paddingBottom: normalize(120) }}
+                                />
+                            </View>
                             {/* </ScrollView> */}
                         </View>
                         <View style={{
                             position: 'absolute',
                             height: normalize(100),
-                            bottom:0,
+                            bottom: 0,
                             left: 0,
                             right: 0,
                             backgroundColor: Colorpath.white,
@@ -377,11 +390,11 @@ const formatNumberWithCommas = (value) => {
                             borderWidth: 1,
                             justifyContent: 'center',
                             alignItems: 'center',
-                            marginBottom:Platform.OS === 'ios'? normalize(-60):normalize(-90),
+                            marginBottom: Platform.OS === 'ios' ? normalize(-60) : normalize(-90),
                             flexDirection: "row",
                             justifyContent: "space-around",
                             alignContent: "space-around",
-                            gap:normalize(50)
+                            gap: normalize(50)
                         }}>
                             <View style={{ flexDirection: "column", marginLeft: normalize(5) }}>
                                 <Text

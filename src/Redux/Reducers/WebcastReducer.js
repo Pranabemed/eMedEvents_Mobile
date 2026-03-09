@@ -31,7 +31,8 @@ const initialState = {
   RegisterIntResponse: {},
   saveTicketCartResponse: {},
   saveTicketAddResponse: {},
-  checkoutTicketResponse:{}
+  checkoutTicketResponse: {},
+  refIDResponse: {},
 };
 
 const WebCastSlice = createSlice({
@@ -335,7 +336,7 @@ const WebCastSlice = createSlice({
       state.status = action.type;
       state.error = action.error;
     },
-     checkoutTicketRequest(state, action) {
+    checkoutTicketRequest(state, action) {
       state.status = action.type;
     },
     checkoutTicketSuccess(state, action) {
@@ -343,6 +344,17 @@ const WebCastSlice = createSlice({
       state.status = action.type;
     },
     checkoutTicketFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+    refIDRequest(state, action) {
+      state.status = action.type;
+    },
+    refIDSuccess(state, action) {
+      state.refIDResponse = action.payload;
+      state.status = action.type;
+    },
+    refIDFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
@@ -433,6 +445,9 @@ export const {
   saveTicketAddFailure,
   checkoutTicketRequest,
   checkoutTicketSuccess,
-  checkoutTicketFailure
+  checkoutTicketFailure,
+  refIDRequest,
+  refIDSuccess,
+  refIDFailure,
 } = WebCastSlice.actions;
 export default WebCastSlice.reducer;

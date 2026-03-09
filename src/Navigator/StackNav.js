@@ -376,11 +376,27 @@ const StackNav = props => {
   const handleDeepLink = async (url) => {
     if (!url) return;
 
-    const slug = url.split('/').pop();
+    // Extract slug from the URL path (everything before ?)
+    const slug = url.split('?')[0].split('/').filter(Boolean).pop();
+
+    // Extract entire query string after ? as RefID (e.g. ?RefID=ABCDE&utm_term=...)
+    let refID = null;
+    try {
+      const queryString = url.includes('?') ? url.split('?')[1] : '';
+      if (queryString) {
+        refID = queryString;
+        // Persist it for use in saveTicket later
+        await AsyncStorage.setItem(constants.REFID, refID);
+        console.log('[DeepLink] RefID query string captured:', refID);
+      }
+    } catch (e) {
+      console.log('[DeepLink] Error parsing RefID:', e);
+    }
+
     console.log('Slug from deep link:', slug);
     if (!isAuthReady) {
       console.log('Auth not ready, storing deep link');
-      setPendingDeepLink({ slug });
+      setPendingDeepLink({ url, slug, refID });
       return;
     }
     // 🔥 ALWAYS fetch latest auth directly
@@ -388,7 +404,7 @@ const StackNav = props => {
     console.log('Datareal=====', token, dashboard);
     if (token && dashboard) {
       navigateToScreen("Statewebcast", {
-        webCastURL: { webCastURL: slug, creditData: dashboard }
+        webCastURL: { webCastURL: slug, creditData: dashboard, refID: refID }
       });
     } else {
       navigateToScreen("Onboard");
@@ -427,7 +443,8 @@ const StackNav = props => {
   useEffect(() => {
     if (isAuthReady && pendingDeepLink) {
       console.log('Auth ready, processing pending deep link:', pendingDeepLink);
-      handleDeepLink(pendingDeepLink.slug);
+      // Pass the full URL if stored, otherwise just use slug (may miss RefID)
+      handleDeepLink(pendingDeepLink.url || pendingDeepLink.slug);
       setPendingDeepLink(null); // clear after processing
     }
   }, [isAuthReady, pendingDeepLink]);
