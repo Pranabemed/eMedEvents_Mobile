@@ -14,7 +14,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { useDispatch, useSelector } from 'react-redux';
 let status3 = "";
-const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, calculatePrice }) => {
+const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToReviews, calculatePrice }) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const dispatch = useDispatch();
     const handleTickets = () => {
@@ -27,6 +27,11 @@ const StatewebcastPrice = ({ nav, webcastdeatils, ratingsall, scrollToReviews, c
                     "quantity": 1
                 }))
             };
+
+            if (refID) {
+                obj["refer_params"] = refID;
+            }
+
             connectionrequest()
                 .then(() => {
                     dispatch(saveTicketRequest(obj));

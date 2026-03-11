@@ -12,7 +12,7 @@ import { addtoCartWebcastRequest, checkoutTicketRequest } from '../../Redux/Redu
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 let status = "";
-const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation }) => {
+const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
@@ -87,6 +87,11 @@ const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload
           "quantity": 1
         }))
       };
+
+      if (refID) {
+        obj["refer_params"] = refID;
+      }
+
       connectionrequest()
         .then(() => {
           dispatch(checkoutTicketRequest(obj));
@@ -95,7 +100,7 @@ const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload
           showErrorAlert("Please connect to internet", err)
         })
     }
-  }, [webcastdeatils, dispatch]);
+  }, [webcastdeatils, dispatch, refID]);
   const checkoutNav = useCallback(() => {
     navigation.navigate("Checkout", {
       checkoutSpan: {
@@ -124,9 +129,15 @@ const StatewebcastCheckout = ({ takePrice, urlneed, creditData, setAddtocartload
       }
     });
   }, [navigation, WebcastReducer?.checkoutTicketResponse, webcastdeatils, urlneed]);
+
   const registerCheck = useCallback(() => {
-    navigation.navigate("RegisterInterest", { checkoutSpan: { checkoutSpan: webcastdeatils, finalTicket: WebcastReducer?.checkoutTicketResponse } })
-  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse, urlneed])
+    navigation.navigate("RegisterInterest", { 
+      checkoutSpan: { 
+        checkoutSpan: webcastdeatils, 
+        finalTicket: WebcastReducer?.checkoutTicketResponse 
+      } 
+    })
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse])
   useEffect(() => {
     if (WebcastReducer.status == 'WebCast/checkoutTicketSuccess') {
       switch (finalcheck) {

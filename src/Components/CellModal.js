@@ -7,7 +7,7 @@ import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
-    console.log(profMerge, "profiletake=====", key)
+    console.log(profMerge, "profiletake=====", key,name)
     const pressed = useRef(false);
     useEffect(() => {
         if (isVisible) {
@@ -28,37 +28,34 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
         if (pressed.current) return;
         pressed.current = true;
 
-        if (profMerge == "freetrail" || profMerge == "nochange" || profMerge == "duplicate") {
+        if (profMerge == "freetrail") {
+            navigation.navigate("TabNav");
+        } else if (profMerge == "duplicate") {
             resetToTabHome();
         } else if (name == "TabNav" && key == "stateno") {
-            resetToTabHome();
+            navigation.navigate("TabNav");
         } else if (name == "text") {
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
-                    routes: [{ name: "BoardProfile", params: { board: "nodata" } }]
+                    routes: [
+                        {
+                            name: "BoardProfile",
+                            params: {
+                                board: "nodata",
+                            }
+                        }
+                    ]
                 })
             );
         } else if (name == "Contact") {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: "TabNav", params: { initialRoute: "Contact" } }]
-                })
-            );
+            navigation.navigate("TabNav", { initialRoute: "Contact" });
         } else if (name == "TabNav") {
-            resetToTabHome();
+            navigation.navigate("TabNav", { detectmain: "main" });
         } else {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name }]
-                })
-            );
+            navigation?.navigate(name);
         }
 
-        // Delay closing the modal internally so it remains visible over the parent screen just long enough 
-        // to securely cover the native React Navigation animation transition rendering execution!
         setTimeout(() => {
             onClose();
         }, 450);

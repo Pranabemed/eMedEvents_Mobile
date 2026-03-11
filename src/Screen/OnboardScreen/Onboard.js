@@ -42,7 +42,7 @@ const sliderData = [
         img: Imagepath.ThreeOnboard
     },
     {
-        hText: 'Build Your Medical Network,Expand Your Impact',
+        hText: 'Build Your Medical Network, Expand Your Impact',
         id: 3,
         img: Imagepath.FourOnboard
     },

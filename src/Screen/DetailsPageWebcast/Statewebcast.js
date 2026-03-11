@@ -365,6 +365,10 @@ const Statewebcast = props => {
                 }))
             };
 
+            if (refID) {
+                obj["refer_params"] = refID;
+            }
+
             connectionrequest()
                 .then(() => {
                     dispatch(saveTicketCartRequest(obj));
@@ -375,44 +379,6 @@ const Statewebcast = props => {
         }
     };
 
-    useEffect(() => {
-        const handleRefIDCheckout = async () => {
-            if (webcastdeatils?.registrationTickets?.length > 0 && refID) {
-                const checkoutSpan = webcastdeatils?.conferenceId;
-                const obj = {
-                    "conference_id": checkoutSpan,
-                    "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
-                        "id": ticket?.id,
-                        "quantity": 1
-                    }))
-                };
-
-                // Resolve refID: from state first, then AsyncStorage fallback
-                let resolvedRefID = refID;
-                if (!resolvedRefID) {
-                    try {
-                        resolvedRefID = await AsyncStorage.getItem('REFID');
-                        if (resolvedRefID) setRefID(resolvedRefID);
-                    } catch (e) {
-                        console.log('[handleRefIDCheckout] RefID read error:', e);
-                    }
-                }
-
-                if (resolvedRefID) {
-                    obj["refer_params"] = resolvedRefID;
-                }
-
-                console.log('[refIDRequest] Payload:', obj);
-
-                connectionrequest()
-                    .then(() => {
-                        dispatch(refIDRequest(obj));
-                    })
-                    .catch((err) => console.log("Internet Error", err));
-            }
-        };
-        handleRefIDCheckout();
-    }, [refID, webcastdeatils?.registrationTickets, webcastdeatils]);
     const cartHand = () => {
         const latestCartCount = Number(
             WebcastReducer?.cartcountWebcastResponse?.cartItemsCount ?? cartcount ?? 0
@@ -522,8 +488,8 @@ const Statewebcast = props => {
                         <>
                             <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white }}>
                                 <View style={{ backgroundColor: Colorpath.Pagebg, padding: 10 }}>
-                                    <StatewebcastPrice calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
-                                    <StatewebcastAddTocart urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={WebcastReducer?.status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
+                                    <StatewebcastPrice refID={refID} calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
+                                    <StatewebcastAddTocart refID={refID} urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={WebcastReducer?.status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
                                 </View>
                                 <StatewebcastOverview width={width} source={source} toggleExpansion={toggleExpansion} expanded={expanded} />
                                 {(webcastdeatils?.conferenceTypeText === "In-Person Event" ||
@@ -637,7 +603,7 @@ const Statewebcast = props => {
                                     <StatewebcastReviews setReviewsPosition={setReviewsPosition} webcastdeatils={webcastdeatils} ratingsall={ratingsall} reviewpost={reviewpost} expandreview={expandreview} reviewChange={reviewChange} />
                                 </View>}
                             </ScrollView>
-                            <StatewebcastCheckout takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils} />
+                            <StatewebcastCheckout refID={refID} takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils} />
                             <CatlogDownload
                                 setDownlink={setDownlinkdt}
                                 downlink={downlinkdt}
