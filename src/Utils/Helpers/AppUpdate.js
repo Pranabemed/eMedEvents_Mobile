@@ -75,6 +75,10 @@ const isNewerVersion = (installedVer, storeVer) => {
   return false;
 };
 
+// Version helpers: avoid showing Android versionCode (e.g., "26") in the UI
+const looksLikeSemver = (v) => /\d+\.\d+/.test(String(v ?? ''));
+const isNumericVersionCode = (v) => /^[0-9]+$/.test(String(v ?? ''));
+
 /**
  * iOS — Fetch latest version from Apple's iTunes Lookup API.
  * This is 100% dynamic; no version numbers are hardcoded.
@@ -218,6 +222,7 @@ const AppUpdateHandler = () => {
     let libraryMandatory = false;
     let libraryStoreUrl = ANDROID_STORE_URL;
     let libraryFailed = false;
+    let librarySaysUpdate = false;
 
     // ── Step 1: Try sp-react-native-in-app-updates (works for Play Store installs) ──
     try {
@@ -225,6 +230,7 @@ const AppUpdateHandler = () => {
       console.log('AppUpdate [Android]: library result:', JSON.stringify(result));
 
       if (result?.shouldUpdate) {
+        librarySaysUpdate = true;
         libraryStoreVersion = result.storeVersion;
         libraryMandatory = (result.updatePriority ?? 0) >= 4;
         libraryStoreUrl = result.storeUrl || ANDROID_STORE_URL;
@@ -247,17 +253,26 @@ const AppUpdateHandler = () => {
     const scrapeVersion = await fetchLatestAndroidVersion();
     console.log(`AppUpdate [Android]: Scrape version=${scrapeVersion}`);
 
-    // ── Step 3: Decide which version to trust ─────────────────────────────────
-    //   Priority: library result (most reliable for Play Store) > scrape
-    const updateVersion =
-      isNewerVersion(currentVersion, libraryStoreVersion ?? '') ? libraryStoreVersion
-        : isNewerVersion(currentVersion, scrapeVersion ?? '') ? scrapeVersion
-          : null;
+    // ── Step 3: Decide if update is needed + choose display version ───────────
+    const scrapeLooksSemver = looksLikeSemver(scrapeVersion);
+    const libraryLooksSemver = looksLikeSemver(libraryStoreVersion);
+    const libraryLooksLikeCode = isNumericVersionCode(libraryStoreVersion);
 
-    if (updateVersion) {
-      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${updateVersion}`);
+    // If library says update, trust it for availability even if storeVersion is a numeric code.
+    const scrapeSaysUpdate =
+      scrapeLooksSemver && isNewerVersion(currentVersion, scrapeVersion);
+    const shouldUpdate = librarySaysUpdate || scrapeSaysUpdate;
+
+    // Display version should be versionName like "1.1.1", never a numeric code.
+    const displayVersion =
+      scrapeLooksSemver ? scrapeVersion
+        : libraryLooksSemver ? libraryStoreVersion
+          : libraryLooksLikeCode ? '' : (libraryStoreVersion ?? '');
+
+    if (shouldUpdate) {
+      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${displayVersion || 'unknown'}`);
       openUpdateModal(
-        updateVersion,
+        displayVersion,
         libraryMandatory,
         libraryFailed ? ANDROID_STORE_URL : libraryStoreUrl,
       );
