@@ -24,13 +24,52 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
 import Dashboardmain from './Dashboardmain';
-import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
+import { licesensRequest, staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
 import moment from 'moment';
+
+const normalizeProfessionHandle = (professionHandle) =>
+    String(professionHandle || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
+
+const findMatchedProfessionHandle = (candidates, supportedHandles) => {
+    for (const candidate of candidates) {
+        const normalizedCandidate = normalizeProfessionHandle(candidate);
+        if (!normalizedCandidate) continue;
+
+        for (const handle of supportedHandles) {
+            if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
+                return handle;
+            }
+        }
+    }
+
+    return '';
+};
+
+const buildProfessionLabel = (profession, professionType) => {
+    const cleanProfession = String(profession || '').trim();
+    const cleanProfessionType = String(professionType || '').trim();
+
+    if (!cleanProfession) return '';
+    if (!cleanProfessionType) return cleanProfession;
+
+    const normalizedProfession = normalizeProfessionHandle(cleanProfession);
+    const normalizedProfessionType = normalizeProfessionHandle(cleanProfessionType);
+
+    if (normalizedProfession.endsWith(`-${normalizedProfessionType}`)) {
+        return cleanProfession;
+    }
+
+    return `${cleanProfession} - ${cleanProfessionType}`;
+};
+
 let status = "";
 export default function StateLicense({ propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
@@ -49,6 +88,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const CMEReducer = useSelector(state => state.CMEReducer);
+    const ProfileReducer = useSelector(state => state.ProfileReducer);
     const navigation = useNavigation();
     const [val, setval] = useState(0);
     const [detailsmodal, setDetailsmodal] = useState(false);
@@ -65,6 +105,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
+    const lastLicensureProfessionRef = useRef('');
     const getCurrentItem = () => {
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex];
@@ -222,7 +263,17 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 showErrorAlert("Please connect to the internet", err);
             });
     }
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const validHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+    const latestProfessionLabel = buildProfessionLabel(
+        ProfileReducer?.latestProfessionInfo?.profession,
+        ProfileReducer?.latestProfessionInfo?.profession_type
+    );
+    const latestProfileProfession =
+        latestProfessionLabel || null;
+    const dashboardProfessionLabel = buildProfessionLabel(
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
+    );
     const authProfession =
         AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
             ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
@@ -234,11 +285,52 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                         ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
                         : null;
     const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
-    const allProfTake = gtprof || validHandles.has(profFromDashboard) || validHandles.has(authProfession);
+        dashboardProfessionLabel || null;
+    const latestLicensureProfessionLabel =
+        latestProfessionLabel ||
+        dashboardProfessionLabel ||
+        authProfession ||
+        buildProfessionLabel(finalProfessionmain?.profession, finalProfessionmain?.profession_type) ||
+        buildProfessionLabel(
+            DashboardReducer?.dashPerResponse?.data?.user_information?.profession,
+            DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type
+        );
+    const resolvedProfessionHandle = findMatchedProfessionHandle(
+        [
+            latestProfileProfession,
+            ProfileReducer?.latestProfessionInfo?.profession,
+            `${ProfileReducer?.latestProfessionInfo?.profession || ''} ${ProfileReducer?.latestProfessionInfo?.profession_type || ''}`,
+            profFromDashboard,
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+            `${DashboardReducer?.mainprofileResponse?.professional_information?.profession || ''} ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type || ''}`,
+            authProfession,
+            AuthReducer?.loginResponse?.user?.profession,
+            `${AuthReducer?.loginResponse?.user?.profession || ''} ${AuthReducer?.loginResponse?.user?.profession_type || ''}`,
+            AuthReducer?.againloginsiginResponse?.user?.profession,
+            `${AuthReducer?.againloginsiginResponse?.user?.profession || ''} ${AuthReducer?.againloginsiginResponse?.user?.profession_type || ''}`,
+            AuthReducer?.signupResponse?.user?.profession,
+            `${AuthReducer?.signupResponse?.user?.profession || ''} ${AuthReducer?.signupResponse?.user?.profession_type || ''}`,
+            finalProfessionmain?.profession,
+            `${finalProfessionmain?.profession || ''} ${finalProfessionmain?.profession_type || ''}`,
+            DashboardReducer?.dashPerResponse?.data?.user_information?.profession,
+            `${DashboardReducer?.dashPerResponse?.data?.user_information?.profession || ''} ${DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type || ''}`,
+        ],
+        [...validHandles]
+    );
+    const allProfTake = gtprof || validHandles.has(resolvedProfessionHandle);
+    useEffect(() => {
+        if (!allProfTake || !latestLicensureProfessionLabel) return;
+        if (lastLicensureProfessionRef.current === latestLicensureProfessionLabel) return;
+
+        lastLicensureProfessionRef.current = latestLicensureProfessionLabel;
+        connectionrequest()
+            .then(() => {
+                dispatch(licesensRequest(latestLicensureProfessionLabel));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to the internet", err);
+            });
+    }, [allProfTake, latestLicensureProfessionLabel, dispatch]);
     const isPhysicianGreeting = Boolean(gtprof || allProfTake);
     const displayLastName = stableNameRef.current.last || nextLastName;
     const displayFirstName = stableNameRef.current.first || nextFirstName;
@@ -301,6 +393,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             setStateCount(derivedRemainingStates);
         }
     }, [stateCount, derivedRemainingStates, setStateCount]);
+    console.log(canAddLicenses,"canAddLicenses-=====",AuthReducer?.chooseStatecardResponse?.state_licensures,AuthReducer?.licesensResponse?.licensure_states);
+    
 
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {

@@ -8,6 +8,7 @@ const initialState = {
   profilepicResponse: {},
   personalInfoResponse:{},
   professionInfoResponse:{},
+  latestProfessionInfo:{},
   stateLicenseListResponse:{},
   stateLicenseDeleteResponse:{},
   boardListProfileResponse:{},
@@ -54,6 +55,7 @@ const ProfileSlice = createSlice({
       state.error = action.error;
     },
     professionInfoRequest(state, action) {
+      state.latestProfessionInfo = action.payload || {};
       state.status = action.type;
     },
     professionInfoSuccess(state, action) {

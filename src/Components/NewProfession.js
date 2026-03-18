@@ -14,6 +14,13 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import RestProfession from './RestProfession';
 let status = "";
+
+const normalizeProfessionHandle = (professionHandle) =>
+    String(professionHandle || '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-');
+
 export default function NewProfession({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const dispatch = useDispatch();
     const {
@@ -33,6 +40,7 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
     const isFocus = useIsFocused();
+    const lastRequestedProfessionRef = useRef('');
     console.log(fulldashbaord, "fulldashbaord====")
     useEffect(() => {
         const token_handle = () => {
@@ -59,21 +67,15 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
             })
 
     }
+    const resolvedProfessionHandle = normalizeProfessionHandle(
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
+        AuthReducer?.signupResponse?.user?.profession ||
+        AuthReducer?.loginResponse?.user?.profession ||
+        finalProfessionmain?.profession
+    );
     const restOfProfession = () => {
-        const getFirstTruthyProfession = (...sources) =>
-            sources.find(val => val) || '';
-
-        const handleProf = String(
-            getFirstTruthyProfession(
-                DashboardReducer?.mainprofileResponse?.professional_information?.profession,
-                AuthReducer?.signupResponse?.user?.profession,
-                AuthReducer?.loginResponse?.user?.profession,
-                finalProfessionmain?.profession
-            )
-        )
-            .toLowerCase()
-            .trim()
-            .replace(/\s+/g, '-');
+        const handleProf = resolvedProfessionHandle;
+        if (!handleProf) return;
         let obj =
         {
             "pageno": 0,
@@ -104,7 +106,6 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
             });
     }
     const stateTake = (toklen, anoth) => {
@@ -178,19 +179,20 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
         }
     }
     useEffect(() => {
-        // fulldashbaord can be:
-        //   - 0 (number)     → set from Login.js when no licensures exist
-        //   - []  (array)    → empty array, also means no licensures
-        // Both cases must trigger cmeCourseRequest
         const hasNoLicensures =
             fulldashbaord == 0 ||
             (Array.isArray(fulldashbaord) && fulldashbaord.length == 0);
 
-        if (hasNoLicensures) {
-            setWholeNo(true);
-            restOfProfession();
-        }
+        setWholeNo(hasNoLicensures);
     }, [fulldashbaord])
+
+    useEffect(() => {
+        if (!isFocus || !resolvedProfessionHandle) return;
+        if (lastRequestedProfessionRef.current === resolvedProfessionHandle) return;
+
+        lastRequestedProfessionRef.current = resolvedProfessionHandle;
+        restOfProfession();
+    }, [isFocus, resolvedProfessionHandle])
     const stateDashboardData = (id) => {
         let obj = {
             "state_id": id

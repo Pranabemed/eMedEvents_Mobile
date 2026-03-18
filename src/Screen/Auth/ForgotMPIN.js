@@ -49,9 +49,10 @@ const ForgotMPIN = (props) => {
     }
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
-    const cleanValue = email && email.trim().replace(/\D/g, '');
+    const trimmedValue = email ? email.trim() : '';
+    const cleanValue = trimmedValue.replace(/\D/g, '');
     const isButtonEnabled =
-        emailRegex.test(cleanValue) || mobileRegex.test(cleanValue);
+        emailRegex.test(trimmedValue) || mobileRegex.test(cleanValue);
     const animatedValuephone = useRef(new Animated.Value(1)).current;
     const scaleValuephone = useRef(new Animated.Value(0)).current;
     useEffect(() => {

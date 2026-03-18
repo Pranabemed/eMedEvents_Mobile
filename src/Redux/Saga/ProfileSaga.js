@@ -1,5 +1,7 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 import { boardListDeleteFailure, boardListDeleteSuccess, boardListProfileFailure, boardListProfileSuccess, contactInfoFailure, contactInfoSuccess, EmpAddProfileFailure, EmpAddProfileSuccess, personalInfoFailure, personalInfoSuccess, professionInfoFailure, professionInfoSuccess, profilepicFailure, profilepicSuccess, SearchHospFailure, SearchHospSuccess, stateLicenseDeleteFailure, stateLicenseDeleteSuccess, stateLicenseListFailure, stateLicenseListRequest, stateLicenseListSuccess } from '../Reducers/ProfileReducer';
 
 
@@ -71,13 +73,27 @@ export function* profilePicSaga(action) {
       contenttype: 'application/json',
       authorization: items.token,
     };
-    try {
-      let response = yield call(postApi, 'user/professionalInformation', action.payload, header);
-      console.log('registry response: ', response);
-      if (response?.status == 200) {
-        yield put(professionInfoSuccess(response?.data));
-      } else {
-        yield put(professionInfoFailure(response?.data));
+  try {
+    let response = yield call(postApi, 'user/professionalInformation', action.payload, header);
+    console.log('registry response: ', response);
+    if (response?.status == 200) {
+      const cachedProfessionRaw = yield call(AsyncStorage.getItem, constants.PROFESSION);
+      const cachedProfession = cachedProfessionRaw ? JSON.parse(cachedProfessionRaw) : {};
+      const updatedProfession = {
+        ...cachedProfession,
+        profession: action?.payload?.profession ?? cachedProfession?.profession,
+        profession_type: action?.payload?.profession_type ?? cachedProfession?.profession_type,
+        designation: action?.payload?.designation ?? cachedProfession?.designation,
+        specialities: action?.payload?.specialities ?? cachedProfession?.specialities,
+      };
+      yield call(
+        AsyncStorage.setItem,
+        constants.PROFESSION,
+        JSON.stringify(updatedProfession)
+      );
+      yield put(professionInfoSuccess(response?.data));
+    } else {
+      yield put(professionInfoFailure(response?.data));
       }
     } catch (error) {
       console.log('contact  error:', error);

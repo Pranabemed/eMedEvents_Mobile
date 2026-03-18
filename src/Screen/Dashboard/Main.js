@@ -14,6 +14,7 @@ import { AppContext } from '../GlobalSupport/AppContext';;
 import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
+import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -24,6 +25,28 @@ import { Freeze } from "react-freeze";
 import { enableFreeze } from "react-native-screens";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
+
+const normalizeProfessionHandle = (professionHandle) =>
+  String(professionHandle || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+
+const findMatchedProfessionHandle = (candidates, supportedHandles) => {
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeProfessionHandle(candidate);
+    if (!normalizedCandidate) continue;
+
+    for (const handle of supportedHandles) {
+      if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
+        return handle;
+      }
+    }
+  }
+
+  return '';
+};
+
 const Main = (props) => {
   const {
     takestate,
@@ -44,7 +67,8 @@ const Main = (props) => {
     setPushnew,
     pushnew,
     pendingCount,
-    completedCount
+    completedCount,
+    setGtprof
   } = useContext(AppContext);
   const [focusedInput, setFocusedInput] = useState(null);
   const [linearText, setLinearText] = useState(true);
@@ -75,7 +99,9 @@ const Main = (props) => {
     return () => unsubscribe();
   }, []);
   const { detectmain } = props?.route?.params || {}
-  const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+  const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+  const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
+  const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
   const authProfession =
     AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
       ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
@@ -91,29 +117,74 @@ const Main = (props) => {
       DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
-  const allProfTake = gtprof || validHandles.has(authProfession) || validHandles.has(profFromDashboard);
+  const resolvedProfessionHandle = findMatchedProfessionHandle(
+    [
+      profFromDashboard,
+      DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+      `${DashboardReducer?.mainprofileResponse?.professional_information?.profession || ''} ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type || ''}`,
+      authProfession,
+      AuthReducer?.loginResponse?.user?.profession,
+      `${AuthReducer?.loginResponse?.user?.profession || ''} ${AuthReducer?.loginResponse?.user?.profession_type || ''}`,
+      AuthReducer?.againloginsiginResponse?.user?.profession,
+      `${AuthReducer?.againloginsiginResponse?.user?.profession || ''} ${AuthReducer?.againloginsiginResponse?.user?.profession_type || ''}`,
+      AuthReducer?.signupResponse?.user?.profession,
+      `${AuthReducer?.signupResponse?.user?.profession || ''} ${AuthReducer?.signupResponse?.user?.profession_type || ''}`,
+      finalProfessionmain?.profession,
+      `${finalProfessionmain?.profession || ''} ${finalProfessionmain?.profession_type || ''}`,
+      DashboardReducer?.dashPerResponse?.data?.user_information?.profession,
+      `${DashboardReducer?.dashPerResponse?.data?.user_information?.profession || ''} ${DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type || ''}`,
+    ],
+    supportedProfessionHandles
+  );
+  const allProfTake =
+    resolvedProfessionHandle
+      ? physicianHandles.has(resolvedProfessionHandle)
+      : (gtprof || physicianHandles.has(normalizeProfessionHandle(authProfession)) || physicianHandles.has(normalizeProfessionHandle(profFromDashboard)));
   const isPhysicianFlow = allProfTake;
-  const hasNoLicensureData =
-    fulldashbaord == 0 ||
-    (Array.isArray(fulldashbaord) && fulldashbaord.length == 0);
+  const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+  console.log("isPhysicianFlow", isPhysicianFlow);
+  console.log("isNursingFlow", isNursingFlow);
+  // 🔹 Keep global context (gtprof) in sync with the latest detected profession
+  useEffect(() => {
+    if (resolvedProfessionHandle) {
+      const isPhysicianNow = physicianHandles.has(resolvedProfessionHandle);
+      if (isPhysicianNow !== gtprof) {
+        setGtprof(isPhysicianNow);
+      }
+    }
+  }, [resolvedProfessionHandle, gtprof]);
   // const isPhysicianFlow = gtprof || allProfTake || validHandles.has(cachedProfessionHandle);
   // const hasDashboardLicenses = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
   // const shouldRenderStateLicense = isPhysicianFlow || hasDashboardLicenses;
   useEffect(() => {
-    if (detectmain == "newadd") {
-      connectionrequest()
-        .then(() => {
-          dispatch(PrimeCheckRequest({}))
-        })
-        .catch((err) => showErrorAlert("Please connect to internet", err))
-    } else {
-      connectionrequest()
-        .then(() => {
-          dispatch(PrimeCheckRequest({}))
-        })
-        .catch((err) => showErrorAlert("Please connect to internet", err))
+    if (!isFocus) return;
+    connectionrequest()
+      .then(() => {
+        setShowLoader(false); // 🔹 Show shimmer while refreshing
+        dispatch(PrimeCheckRequest({}));
+        dispatch(mainprofileRequest({}));
+        dispatch(dashPerRequest({}));
+        dispatch(dashboardRequest({}));
+      })
+      .catch((err) => showErrorAlert("Please connect to internet", err));
+  }, [detectmain, isFocus]);
+
+  // 🔹 Synchronize the loading state with Redux responses
+  useEffect(() => {
+    const terminalStatuses = new Set([
+      'Dashboard/dashboardSuccess',
+      'Dashboard/dashboardFailure',
+      'Dashboard/mainprofileSuccess',
+      'Dashboard/mainprofileFailure',
+      'Dashboard/dashPerSuccess',
+      'Dashboard/dashPerFailure'
+    ]);
+
+    if (terminalStatuses.has(DashboardReducer?.status)) {
+      // 🔹 Minimal delay ensures UI elements have had one render cycle to catch up
+      setTimeout(() => setShowLoader(true), 250);
     }
-  }, [detectmain, isFocus])
+  }, [DashboardReducer?.status]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -275,12 +346,16 @@ const Main = (props) => {
               }} scrollEventThrottle={16}>
               <View>
                 <View style={{ bottom: normalize(10) }}>
-                  {isPhysicianFlow && hasNoLicensureData
-                    ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
-                    : isPhysicianFlow
-                      ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                  {isPhysicianFlow
+                    ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
+                    : isNursingFlow
+                      ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
                 </View>
+                {/* <View style={{ bottom: normalize(10) }}>
+                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : gtprof ?
+                    <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                </View> */}
               </View>
             </ScrollView>
             {!showloader && (

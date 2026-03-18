@@ -18,7 +18,7 @@ import constants from '../Utils/Helpers/constants';
 import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../Navigator/StackNav';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
-let status = "";
+
 const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
     // Start as true so shimmer shows immediately on mount (before API fires)
@@ -228,34 +228,30 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
             </View>
         )
     }
-    if (status == '' || CMEReducer.status !== status) {
+    useEffect(() => {
         switch (CMEReducer.status) {
             case 'CME/cmeCourseRequest':
-                status = CMEReducer.status;
+                hasReceivedResponse.current = false;
                 setLoading(true);
+                setStoreAlldata([]);
                 break;
-            case 'CME/cmeCourseSuccess':
-                status = CMEReducer.status;
+            case 'CME/cmeCourseSuccess': {
                 hasReceivedResponse.current = true;
                 setLoading(false);
-                if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-                    let modifiedData = [
-                        ...storeAlldata,
-                        ...CMEReducer?.cmeCourseResponse?.conferences,
-                    ]?.filter(
-                        (value, index, self) =>
-                            index === self.findIndex(t => t?.id === value?.id),
-                    );
-                    setStoreAlldata(modifiedData);
-                }
+                const conferences = CMEReducer?.cmeCourseResponse?.conferences || [];
+                const uniqueConferences = conferences.filter(
+                    (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
+                );
+                setStoreAlldata(uniqueConferences);
                 break;
+            }
             case 'CME/cmeCourseFailure':
-                status = CMEReducer.status;
                 hasReceivedResponse.current = true;
                 setLoading(false);
+                setStoreAlldata([]);
                 break;
         }
-    }
+    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse?.conferences]);
     const getFullName = (obj) => {
         const first = obj?.firstname;
         const last = obj?.lastname;

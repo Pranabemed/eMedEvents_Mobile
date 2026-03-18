@@ -26,6 +26,14 @@ import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import Buttons from './Button';
 import Fonts from '../Themes/Fonts';
 import NetInfo from '@react-native-community/netinfo';
+import RestProfession from './RestProfession';
+
+const normalizeProfessionHandle = (professionHandle) =>
+    String(professionHandle || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
+
 let status = "";
 export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
@@ -165,15 +173,26 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 showErrorAlert("Please connect to the internet", err);
             });
     }
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
+    const validHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+    const otherRestrict = new Set(["nursing-aprn", "nursing-cna", "nursing-lpn", "nursing-rn", "dentist-dds", "dentist-rda", "dentist-rdh"]);
+    const authProfession =
+        AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
+            ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
+            : AuthReducer?.againloginsiginResponse?.user?.profession && AuthReducer?.againloginsiginResponse?.user?.profession_type
+                ? `${AuthReducer?.againloginsiginResponse?.user?.profession} - ${AuthReducer?.againloginsiginResponse?.user?.profession_type}`
+                : AuthReducer?.signupResponse?.user?.profession && AuthReducer?.signupResponse?.user?.profession_type
+                    ? `${AuthReducer?.signupResponse?.user?.profession} - ${AuthReducer?.signupResponse?.user?.profession_type}`
+                    : finalProfessionmain?.profession && finalProfessionmain?.profession_type
+                        ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
+                        : null;
     const profFromDashboard =
         DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
             DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : null;
-    const allProfTake = validHandles.has(profFromDashboard);
-    const allNoDetData = otherRestrict.has(profFromDashboard);
+    const resolvedProfessionHandle = normalizeProfessionHandle(profFromDashboard || authProfession);
+    const allProfTake = validHandles.has(resolvedProfessionHandle);
+    const allNoDetData = otherRestrict.has(resolvedProfessionHandle);
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -308,16 +327,27 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         topicEarned == 0 && topicTotal == 0 &&
         generalEarned == 0 && generalTotal == 0
     );
-    const firstData = AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || AuthReducer?.signupResponse?.user?.firstname || DashboardReducer?.dashboardResponse?.data?.user_information?.firstname || DashboardReducer?.dashPerResponse?.data?.user_information?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
+    const firstData =
+        AuthReducer?.loginResponse?.user?.firstname ||
+        AuthReducer?.againloginsiginResponse?.user?.firstname ||
+        AuthReducer?.signupResponse?.user?.firstname ||
+        DashboardReducer?.dashboardResponse?.data?.user_information?.firstname ||
+        DashboardReducer?.dashPerResponse?.data?.user_information?.firstname ||
+        DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
+    const hasLicensureCards = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
+    const hasResolvedDashboard =
+        fulldashbaord == 0 ||
+        Array.isArray(fulldashbaord) ||
+        DashboardReducer.status == 'Dashboard/dashboardFailure';
 
     return (
         <>
 
             <View>
-                <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                {hasResolvedDashboard && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hello, ${firstData || ''}`}</Text>
-                </View>
-                {fulldashbaord?.length > 0 ?
+                </View>}
+                {hasLicensureCards ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
                         <View style={{ height: allProfTake ? normalize(260) : bothNoRequirement ? normalize(210) : expireDate && !allProfTake ? normalize(250) : normalize(255), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
                             <Carousel
@@ -389,7 +419,20 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                             </View>
                             : null}
                         <Nonphysicianprofile allNoDetData={allNoDetData} addit={addit} finddata={finddata} handleButtonPress={getCurrentItem()} navigation={navigation} DashboardReducer={DashboardReducer} />
-                    </View> : <HomeShimmer />}
+                    </View> : hasResolvedDashboard ? (
+                        <RestProfession
+                            finalProfessionmain={finalProfessionmain}
+                            setPrimeadd={setPrimeadd}
+                            enables={enables}
+                            addit={addit}
+                            takestate={takestate}
+                            navigation={navigation}
+                            completedCount={completedCount}
+                            pendingCount={pendingCount}
+                            DashboardReducer={DashboardReducer}
+                            CMEReducer={CMEReducer}
+                        />
+                    ) : <HomeShimmer />}
             </View>
         </>
     );

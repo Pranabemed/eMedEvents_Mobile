@@ -10,7 +10,7 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import Fonts from '../../Themes/Fonts'
 import Buttons from '../../Components/Button';
 import connectionrequest from '../../Utils/Helpers/NetInfo'
-import { professionRequest, specializationRequest } from '../../Redux/Reducers/AuthReducer'
+import { licesensRequest, professionRequest, specializationRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { useDispatch, useSelector } from 'react-redux'
 import { searchStateNameFunction } from '../DetailsPageWebcast/SearchStatename'
@@ -27,6 +27,19 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import CustomInputTouchable from '../../Components/IconTextIn'
 import CustomInputTouchableX from './CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const buildProfessionLabel = (profession, professionType) => {
+    const cleanProfession = String(profession || '').trim();
+    const cleanProfessionType = String(professionType || '').trim();
+
+    if (!cleanProfession) return '';
+    if (!cleanProfessionType) return cleanProfession;
+    if (cleanProfession.toLowerCase().replace(/\s+/g, '').endsWith(`-${cleanProfessionType.toLowerCase().replace(/\s+/g, '')}`)) {
+        return cleanProfession;
+    }
+
+    return `${cleanProfession} - ${cleanProfessionType}`;
+};
 
 const CustomRadioButton = ({ selected, onPress }) => (
     <TouchableOpacity
@@ -169,9 +182,16 @@ const PersonalInfo = (props) => {
             case 'Profile/professionInfoSuccess':
                 status1 = ProfileReducer.status;
                 if (ProfileReducer?.professionInfoResponse?.msg == "Professional inforamtion updated successfully.") {
+                    const latestProfessionLabel = buildProfessionLabel(
+                        ProfileReducer?.latestProfessionInfo?.profession,
+                        ProfileReducer?.latestProfessionInfo?.profession_type
+                    );
                     showErrorAlert("Professional information updated successfully.")
                     dispatch(mainprofileRequest({}));
                     dispatch(dashPerRequest({}))
+                    if (latestProfessionLabel) {
+                        dispatch(licesensRequest(latestProfessionLabel));
+                    }
                     props.navigation.goBack();
                 }
                 console.log(ProfileReducer?.professionInfoResponse, "log-----------");

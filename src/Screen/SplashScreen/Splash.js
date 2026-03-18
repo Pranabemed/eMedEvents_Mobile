@@ -13,6 +13,20 @@ import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
 let status1 = "";
+
+const buildProfessionLabel = (profession, professionType) => {
+  const cleanProfession = String(profession || '').trim();
+  const cleanProfessionType = String(professionType || '').trim();
+
+  if (!cleanProfession) return '';
+  if (!cleanProfessionType) return cleanProfession;
+  if (cleanProfession.toLowerCase().replace(/\s+/g, '').endsWith(`-${cleanProfessionType.toLowerCase().replace(/\s+/g, '')}`)) {
+    return cleanProfession;
+  }
+
+  return `${cleanProfession} - ${cleanProfessionType}`;
+};
+
 const safeJsonParse = (raw, fallback = null) => {
   try {
     return raw ? JSON.parse(raw) : fallback;
@@ -47,6 +61,7 @@ export default function Splash(props) {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [dashboard, setDashboard] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [spalsh, setSplash] = useState("")
@@ -56,6 +71,7 @@ export default function Splash(props) {
   const hasRedirectedToOnboardRef = useRef(false);
   const hasDashboardCacheRef = useRef(false);
   const hasNavigatedRef = useRef(false);
+  const lastLicensureProfessionRef = useRef('');
   useEffect(() => {
     const handleNavigation = async () => {
       try {
@@ -222,11 +238,20 @@ export default function Splash(props) {
         setTotalCred(total);
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
-        const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
-        const profFromDashboard = profInfo.profession && profInfo.profession_type
-          ? `${profInfo.profession} - ${profInfo.profession_type}`
-          : null;
-        licHandl(profFromDashboard);
+        const latestProfessionLabel =
+          buildProfessionLabel(
+            ProfileReducer?.latestProfessionInfo?.profession,
+            ProfileReducer?.latestProfessionInfo?.profession_type
+          ) ||
+          buildProfessionLabel(
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
+          ) ||
+          buildProfessionLabel(
+            AuthReducer?.signupResponse?.user?.profession,
+            AuthReducer?.signupResponse?.user?.profession_type
+          );
+        licHandl(latestProfessionLabel);
       }
     } else {
       // No licensures — still mark loading as done so navigation logic can proceed
@@ -261,11 +286,12 @@ export default function Splash(props) {
         showErrorAlert("Please connect to internet", err)
       })
   }
-  const licHandl = (profFromDashboard) => {
-    let obj = profFromDashboard;
+  const licHandl = (professionLabel) => {
+    if (!professionLabel || lastLicensureProfessionRef.current === professionLabel) return;
+    lastLicensureProfessionRef.current = professionLabel;
     connectionrequest()
       .then(() => {
-        dispatch(licesensRequest(obj))
+        dispatch(licesensRequest(professionLabel))
       })
       .catch(err => {
         showErrorAlert('Please connect to Internet', err);

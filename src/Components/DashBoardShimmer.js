@@ -31,9 +31,14 @@ const HomeShimmer = () => {
                             </View>
                         </SkeletonPlaceholder>
                     </View>
-                    <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
-                        <View style={styles.circlePlaceholder} />
-                    </SkeletonPlaceholder>
+                    <View style={styles.rightTopWrap}>
+                        <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
+                            <View style={styles.rightTopLine} />
+                        </SkeletonPlaceholder>
+                        <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
+                            <View style={styles.circlePlaceholder} />
+                        </SkeletonPlaceholder>
+                    </View>
                 </View>
                 <View style={styles.linesContainer}>
                     <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
@@ -65,6 +70,11 @@ const HomeShimmer = () => {
     return (
         <>
             <ScrollView contentContainerStyle={{ paddingBottom: normalize(10) }}>
+                <View style={styles.topHeaderWrap}>
+                    <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
+                        <View style={styles.topHeaderLine} />
+                    </SkeletonPlaceholder>
+                </View>
                 <View style={styles.container}>
                     <Carousel
                         layout={'default'}
@@ -128,6 +138,15 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: normalize(15),
     },
+    topHeaderWrap: {
+        paddingHorizontal: normalize(10),
+        paddingTop: normalize(10),
+    },
+    topHeaderLine: {
+        height: normalize(22),
+        width: normalize(170),
+        borderRadius: normalize(6),
+    },
     itemContainer: {
         position: 'relative',
         alignItems: 'center',
@@ -158,6 +177,15 @@ const styles = StyleSheet.create({
         width: normalize(65),
         height: normalize(65),
         borderRadius: normalize(60),
+    },
+    rightTopWrap: {
+        alignItems: 'flex-end',
+        gap: normalize(8),
+    },
+    rightTopLine: {
+        width: normalize(72),
+        height: normalize(12),
+        borderRadius: 4,
     },
     linesContainer: {
         position: "absolute",
