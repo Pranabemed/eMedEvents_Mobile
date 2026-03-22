@@ -256,11 +256,23 @@ const storeVerifyStateData = async (data) => {
   try {
     if (data == undefined || data == null) {
       console.warn('Cannot store undefined/null in AsyncStorage');
-      return; // Exit early
+      return; 
     }
-    const jsonData = JSON.stringify(data);
-    await AsyncStorage.setItem('VERIFYSTATEDATA', jsonData);
-    console.log('Data successfully saved.');
+    const existing = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
+    let finalUpdate = data;
+    if (existing) {
+      try {
+        const oldData = JSON.parse(existing);
+        if (typeof oldData === 'object' && typeof data === 'object') {
+          finalUpdate = { ...oldData, ...data };
+        }
+      } catch (e) {
+        console.error("Error parsing existing VERIFYSTATEDATA", e);
+      }
+    }
+    const jsonData = JSON.stringify(finalUpdate);
+    await AsyncStorage.setItem(constants.VERIFYSTATEDATA, jsonData);
+    console.log('VERIFYSTATEDATA successfully saved.');
   } catch (error) {
     console.error('Error saving data:', error);
   }
@@ -730,14 +742,22 @@ export function* verifyTokenSaga(action) {
   };
   try {
     let response = yield call(postApi, 'user/verifyToken', action?.payload?.key ? action?.payload?.key : action?.payload, header);
-    if (response?.data?.success == true) {
-      emailVerf(response?.data?.is_verified);
-      mobileVer(response?.data?.phone_verified);
-      yield put(verifySuccess(response?.data));
-      // showErrorAlert(response.data.message);
+    const resData = response?.data;
+    const isSuccess = response?.status == 200 || resData?.success == true || resData?.success == 1 || resData?.success == "true";
+    console.log('verifyTokenSaga response:====', response,isSuccess);
+    
+    if (isSuccess) {
+      const user = resData?.user || resData?.data || resData;
+      const verified = user?.is_verified ?? user?.email_verified;
+      const phoneVerified = user?.phone_verified;
+
+      emailVerf(verified ?? "0");
+      mobileVer(phoneVerified ?? "0");
+      storeVerifyStateData(user); // Ensure VERIFYSTATEDATA is also updated!
+
+      yield put(verifySuccess(resData));
     } else {
-      yield put(verifyFailure(response.data));
-      // showErrorAlert(response.data);
+      yield put(verifyFailure(resData));
     }
   } catch (error) {
     yield put(verifyFailure(error));

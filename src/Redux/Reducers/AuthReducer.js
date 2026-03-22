@@ -78,6 +78,8 @@ const AuthSlice = createSlice({
     },
     emailexistRequest(state, action) {
       state.status = action.type;
+      state.emailexistType = action.payload?.phone ? 'phone' : 'email';
+      state.emailexistResponse = {};
     },
     emailexistSuccess(state, action) {
       state.emailexistResponse = action.payload;

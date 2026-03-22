@@ -1,12 +1,12 @@
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView, ActivityIndicator, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, CommonActions } from '@react-navigation/native';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { BrowseSpecialtyRequest } from '../../Redux/Reducers/BrowsReducer';
@@ -50,8 +50,32 @@ const BrowseScreen = (props) => {
         return () => clearTimeout(timeout);
     }, []);
     const FilterBack = () => {
-        props.navigation.goBack();
+        if (props?.route?.params?.highText?.backProps == "yes" || props?.route?.params?.backProps == "yes") {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        { name: "TabNav", params: { initialRoute: "Home" } }
+                    ],
+                })
+            );
+        } else {
+            props.navigation.goBack();
+        }
     };
+    useEffect(() => {
+        const onBackPress = () => {
+            FilterBack();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, [props?.route?.params]);
     const isFocus = useIsFocused();
     const dispatch = useDispatch();
     const BrowsReducer = useSelector(state => state.BrowsReducer);
@@ -949,8 +973,8 @@ const BrowseScreen = (props) => {
         return () => unsubscribe();
     }, [isConnected]);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />

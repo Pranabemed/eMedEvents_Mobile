@@ -343,17 +343,16 @@ const SplashMobile = (props) => {
     };
 
     const verifyHandle = () => {
-        const enteredOTP = otpmobile.join('');
-        let serverOTP;
-        if (mobiletrue && AuthReducer?.resendmobileotpResponse?.phone_otp) {
-            serverOTP = AuthReducer.resendmobileotpResponse.phone_otp;
-        } else if (props?.route?.params?.Newphone?.Verifycell) {
-            serverOTP = props.route.params.Newphone.Verifycell;
-        } else {
-            serverOTP = AuthReducer?.resendemailotpResponse?.phone_otp;
-        }
+        const enteredOTP = otpmobile.join('').trim();
+        let serverOTP = 
+            AuthReducer?.resendmobileotpResponse?.phone_otp || 
+            props?.route?.params?.Newphone?.Verifycell || 
+            AuthReducer?.resendemailotpResponse?.phone_otp;
 
-        if (enteredOTP == serverOTP) {
+        const cleanServerOTP = serverOTP ? serverOTP.toString().trim() : "";
+        console.log('[SplashMobile] OTP Verify:', { entered: enteredOTP, server: cleanServerOTP, params: props?.route?.params });
+
+        if (enteredOTP && enteredOTP === cleanServerOTP) {
             verifyHandlevalid();
         } else {
             showErrorAlert('Invalid OTP. Please try again.');

@@ -177,15 +177,30 @@ axiosInstance.interceptors.request.use(
 
 // ─── [A] Response interceptor — Token Auto-Saver ─────────────────────────────
 // Registered FIRST → runs LAST (Axios LIFO for response interceptors).
-// Persists ANY token/refresh_token the server returns.
+// Persists ANY token/refresh_token the server returns, EXCEPT for recovery flows.
 // Note: we save even when success:false (unverified-user temporary tokens).
 // Also reschedules the proactive refresh timer via TokenManager.
 // ─────────────────────────────────────────────────────────────────────────────
+const RECOVERY_ENDPOINTS = new Set([
+  'user/forgotpasswordphone',
+  '/user/forgotpasswordphone',
+  'user/forgotpassword',
+  '/user/forgotpassword'
+]);
+
 axiosInstance.interceptors.response.use(
   async (response) => {
     try {
+      const fullUrl = response?.config?.url || '';
+      // Strip base URL and query parameters to get the relative path
+      const urlPath = fullUrl.replace(constants.BASE_URL, '').split('?')[0].replace(/\/$/, '').toLowerCase();
+      // Normalize to handle optional leading slash
+      const cleanPath = urlPath.startsWith('/') ? urlPath : `/${urlPath}`;
+      
+      const isRecovery = RECOVERY_ENDPOINTS.has(cleanPath) || RECOVERY_ENDPOINTS.has(cleanPath.substring(1));
+
       const data = response?.data;
-      if (data && typeof data === 'object' && data.token) {
+      if (data && typeof data === 'object' && data.token && !isRecovery) {
         await AsyncStorage.setItem(constants.TOKEN, data.token);
 
         if (data.refresh_token) {
@@ -203,8 +218,6 @@ axiosInstance.interceptors.response.use(
         } catch (_) { }
 
         // ── Reschedule the proactive refresh timer for the new token ──────────
-        // This ensures that if the user stays idle on a screen for 10+ minutes,
-        // the timer fires 1 minute before expiry and refreshes silently.
         try {
           TokenManager.onNewToken(data.token);
         } catch (_) { }

@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        REACT_NATIVE_NODE_EXECUTABLE = "/Users/emedevents/.nvm/versions/node/v20.19.6/bin/node"
+        REACT_NATIVE_NODE_EXECUTABLE = "node"
         buildToolsVersion = "36.0.0"
         minSdkVersion = 24
         compileSdkVersion = 36
@@ -21,3 +21,13 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+

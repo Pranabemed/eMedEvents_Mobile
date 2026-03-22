@@ -83,7 +83,7 @@ const ForgotMPIN = (props) => {
                 break;
             case 'Auth/forgotFailure':
                 status = AuthReducer.status;
-                showErrorAlert("Your cell number is not registered with us. Please use your email and password to log in if you already have an account.");
+                showErrorAlert(`Your ${showPassword ? "email" : "cell number"} is not registered with us. Please use your email and password to log in if you already have an account.`);
                 setTimeout(() => {
                     props.navigation.navigate("SignUp", { phoneCd: { phoneCd: props?.route?.params?.phoneCode } });
                 }, 1000);

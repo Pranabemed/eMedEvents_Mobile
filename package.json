@@ -11,7 +11,6 @@
     "debug-build": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res && cd android && ./gradlew assembleDebug && cd.."
   },
   "dependencies": {
-    "@d11/react-native-fast-image": "^8.13.0",
     "@dev-amirzubair/react-native-voice": "^1.0.4",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.5.1",

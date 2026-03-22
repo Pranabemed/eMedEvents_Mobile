@@ -74,10 +74,10 @@ const CreateStateInfor = (props) => {
                 });
         }
     }, [props?.route?.params?.newData])
-    const specialities = finalverify?.specialities || AuthReducer?.verifymobileResponse?.user?.specialities || props?.route?.params?.dataVerify?.specialities || props?.route?.params?.dataVerify?.allDat?.specialities;
-    const specialityValue = specialities ? Object.values(specialities)[0] : null;
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const specialities = finalverify?.specialities || finalverify?.user?.specialities || AuthReducer?.verifymobileResponse?.user?.specialities || props?.route?.params?.dataVerify?.specialities || props?.route?.params?.dataVerify?.allDat?.specialities || props?.route?.params?.dataVerify?.allDat?.user?.specialities;
+    const specialityValue = specialities ? Object.values(specialities)[0] : null;
     console.log(finalverify, "phonedata1111", finalverify?.renewal_date, "left", formattedDate?.dayMonth, AuthReducer?.verifymobileResponse?.user?.renewal_date);
     const currentYear = new Date().getFullYear();
     const yearRange = Array.from(
@@ -89,6 +89,7 @@ const CreateStateInfor = (props) => {
     const licenseStateId = useMemo(() => {
         return (
             finalverify?.license_state_id ||
+            finalverify?.user?.license_state_id ||
             props?.route?.params?.dataVerify?.license_state_id ||
             props?.route?.params?.dataVerify?.allDat?.license_state_id ||
             AuthReducer?.verifymobileResponse?.user?.license_state_id
@@ -108,7 +109,7 @@ const CreateStateInfor = (props) => {
                 showErrorAlert("Please connect to internet", err);
             });
     }, [licenseStateId, isFocus]);
-    const userLocation = AuthReducer?.verifymobileResponse?.user?.user_location || finalverify?.user_location || props?.route?.params?.dataVerify?.user_location || props?.route?.params?.dataVerify?.allDat?.user_location;
+    const userLocation = AuthReducer?.verifymobileResponse?.user?.user_location || finalverify?.user_location || finalverify?.user?.user_location || props?.route?.params?.dataVerify?.user_location || props?.route?.params?.dataVerify?.allDat?.user_location || props?.route?.params?.dataVerify?.allDat?.user?.user_location;
     const removeLastWord = (text) => {
         const words = text.split(',')[0].trim();
         return words;
@@ -143,6 +144,7 @@ const CreateStateInfor = (props) => {
         AuthReducer?.verifymobileResponse?.user?.license_state_id,
         props?.route?.params?.dataVerify?.license_state_id,
         finalverify?.license_state_id,
+        finalverify?.user?.license_state_id,
         props?.route?.params?.dataVerify?.allDat?.license_state_id,
     ]);
 
@@ -205,7 +207,7 @@ const CreateStateInfor = (props) => {
     console.log(formattedDate?.year);
 
     const finalShowDate = useMemo(() => {
-        const renewalDate = AuthReducer?.verifymobileResponse?.user?.renewal_date || finalverify?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date;
+        const renewalDate = AuthReducer?.verifymobileResponse?.user?.renewal_date || finalverify?.renewal_date || finalverify?.user?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date || props?.route?.params?.dataVerify?.allDat?.user?.renewal_date;
         console.log(renewalDate, "renewalDate----------")
         if (renewalDate) {
             return splitFormattedDate(renewalDate).dayMonth;
@@ -214,7 +216,7 @@ const CreateStateInfor = (props) => {
         } else {
             return "";
         }
-    }, [AuthReducer?.verifymobileResponse?.user?.renewal_date, finalverify?.renewal_date, formattedDate?.dayMonth, props?.route?.params?.dataVerify?.allDat?.renewal_date]);
+    }, [AuthReducer?.verifymobileResponse?.user?.renewal_date, finalverify?.renewal_date, finalverify?.user?.renewal_date, formattedDate?.dayMonth, props?.route?.params?.dataVerify?.allDat]);
 
     const wrapDataInDoubleArray = () => {
         const certificates = takestate;
@@ -324,13 +326,13 @@ const CreateStateInfor = (props) => {
     }, [cdate]);
     useEffect(() => {
         const targetDate = AuthReducer?.verifymobileResponse?.user?.renewal_date
-            || finalverify?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date
+            || finalverify?.renewal_date || finalverify?.user?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date || props?.route?.params?.dataVerify?.allDat?.user?.renewal_date
             || formattedDate?.dayMonth ? 1 : 0.8;
         Animated.parallel([
             Animated.timing(animatedValuesdate, {
                 toValue: AuthReducer?.verifymobileResponse?.user?.renewal_date
-                    || finalverify?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date
-                    || formattedDate?.dayMonth ? 1 : 0,
+                    || finalverify?.renewal_date || finalverify?.user?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date || props?.route?.params?.dataVerify?.allDat?.user?.renewal_date
+                    || (formattedDate?.dayMonth && formattedDate?.dayMonth !== 'Date') ? 1 : 0,
                 duration: 600,
                 easing: Easing.out(Easing.quad),
                 useNativeDriver: true,
@@ -343,7 +345,7 @@ const CreateStateInfor = (props) => {
             }),
         ]).start();
     }, [AuthReducer?.verifymobileResponse?.user?.renewal_date
-        || finalverify?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date
+        || finalverify?.renewal_date || finalverify?.user?.renewal_date || props?.route?.params?.dataVerify?.allDat?.renewal_date
         || formattedDate?.dayMonth]);
     useEffect(() => {
         const targetlicno = licno ? 1 : 0.8;
@@ -406,7 +408,9 @@ const CreateStateInfor = (props) => {
         const renewalDate =
             AuthReducer?.verifymobileResponse?.user?.renewal_date ||
             finalverify?.renewal_date ||
-            props?.route?.params?.dataVerify?.allDat?.renewal_date;
+            finalverify?.user?.renewal_date ||
+            props?.route?.params?.dataVerify?.allDat?.renewal_date ||
+            props?.route?.params?.dataVerify?.allDat?.user?.renewal_date;
         if (!city) {
             showErrorAlert("Select your city");
         } else if (!zipcode) {
@@ -434,9 +438,11 @@ const CreateStateInfor = (props) => {
                     ? `${moment(AuthReducer?.verifymobileResponse?.user?.renewal_date, "MMM DD").format("DD-MM")}-${cdate}`
                     : finalverify?.renewal_date
                         ? `${moment(finalverify?.renewal_date, "MMM DD").format("DD-MM")}-${cdate}`
-                        : props?.route?.params?.dataVerify?.allDat?.renewal_date
-                            ? `${moment(props?.route?.params?.dataVerify?.allDat?.renewal_date, "MMM DD").format("DD-MM")}-${cdate}`
-                            : cdate,
+                        : finalverify?.user?.renewal_date
+                            ? `${moment(finalverify.user.renewal_date, "MMM DD").format("DD-MM")}-${cdate}`
+                            : props?.route?.params?.dataVerify?.allDat?.renewal_date
+                                ? `${moment(props?.route?.params?.dataVerify?.allDat?.renewal_date, "MMM DD").format("DD-MM")}-${cdate}`
+                                : cdate,
                 "zip_code": zipcode,
                 "city_id": cityId,
                 "npi_number": npino ? npino : ""
@@ -543,8 +549,8 @@ const CreateStateInfor = (props) => {
         return isNaN(d) ? new Date() : d;
     }, [cdate]);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
@@ -609,10 +615,10 @@ const CreateStateInfor = (props) => {
                                         </View>
                                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: normalize(2) }}>
                                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontWeight: "bold", fontSize: 16, color: "#000000" }}>
-                                                {AuthReducer?.verifymobileResponse?.user?.firstname || finalverify?.firstname || props?.route?.params?.dataVerify?.firstname || props?.route?.params?.dataVerify?.allDat?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.firstname}
+                                                {AuthReducer?.verifymobileResponse?.user?.firstname || finalverify?.firstname || finalverify?.user?.firstname || props?.route?.params?.dataVerify?.firstname || props?.route?.params?.dataVerify?.allDat?.firstname || props?.route?.params?.dataVerify?.allDat?.user?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.firstname}
                                             </Text>
                                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontWeight: "bold", fontSize: 16, color: "#000000", width: Platform.OS === 'ios' ? normalize(50) : normalize(60) }}>
-                                                {AuthReducer?.verifymobileResponse?.user?.lastname || finalverify?.lastname || props?.route?.params?.dataVerify?.lastname || props?.route?.params?.dataVerify?.allDat?.lastname || DashboardReducer?.mainprofileResponse?.personal_information?.lastname}
+                                                {AuthReducer?.verifymobileResponse?.user?.lastname || finalverify?.lastname || finalverify?.user?.lastname || props?.route?.params?.dataVerify?.lastname || props?.route?.params?.dataVerify?.allDat?.lastname || props?.route?.params?.dataVerify?.allDat?.user?.lastname || DashboardReducer?.mainprofileResponse?.personal_information?.lastname}
                                             </Text>
                                         </View>
                                     </View>
@@ -660,12 +666,14 @@ const CreateStateInfor = (props) => {
                                                         {(() => {
                                                             const prof = AuthReducer?.verifymobileResponse?.user?.profession ||
                                                                 finalverify?.profession ||
+                                                                finalverify?.user?.profession ||
                                                                 props?.route?.params?.dataVerify?.profession ||
-                                                                props?.route?.params?.dataVerify?.allDat?.profession || DashboardReducer?.mainprofileResponse?.professional_information?.profession;
+                                                                props?.route?.params?.dataVerify?.allDat?.profession || props?.route?.params?.dataVerify?.allDat?.user?.profession || DashboardReducer?.mainprofileResponse?.professional_information?.profession;
                                                             const type = AuthReducer?.verifymobileResponse?.user?.profession_type ||
                                                                 finalverify?.profession_type ||
+                                                                finalverify?.user?.profession_type ||
                                                                 props?.route?.params?.dataVerify?.profession_type ||
-                                                                props?.route?.params?.dataVerify?.allDat?.profession_type || DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
+                                                                props?.route?.params?.dataVerify?.allDat?.profession_type || props?.route?.params?.dataVerify?.allDat?.user?.profession_type || DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
 
                                                             return prof && type
                                                                 ? `${prof}-${type}`

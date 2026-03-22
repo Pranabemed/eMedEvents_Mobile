@@ -10,11 +10,12 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import Imagepath from '../../Themes/Imagepath';
-import { AppContext } from '../GlobalSupport/AppContext';;
+import { AppContext } from '../GlobalSupport/AppContext';
 import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
+import { licesensRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -90,7 +91,15 @@ const Main = (props) => {
   const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
-  const [dynamicPadding, setDynamicPadding] = useState(0);
+  const bottomBannerSpacing = useMemo(() => {
+    if (enables && allProfTake) {
+      return normalize(96);
+    }
+    if (freeTrail) {
+      return normalize(150);
+    }
+    return normalize(24);
+  }, [allProfTake, enables, freeTrail]);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -144,6 +153,33 @@ const Main = (props) => {
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
   console.log("isPhysicianFlow", isPhysicianFlow);
   console.log("isNursingFlow", isNursingFlow);
+  const lastLicenseProfRef = useRef(null);
+
+  // 🔹 Sync licensure requirements when profession changes
+  useEffect(() => {
+    if (!isFocus) return;
+
+    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || {};
+    const profession = String(profInfo.profession || '').trim();
+    const profType = String(profInfo.profession_type || '').trim();
+
+    if (!profession) return;
+    const professionLabel = profType ? `${profession} - ${profType}` : profession;
+
+    if (lastLicenseProfRef.current !== professionLabel) {
+      console.log('[Main.js/LicensureSync] Change detected:', { old: lastLicenseProfRef.current, new: professionLabel });
+      lastLicenseProfRef.current = professionLabel;
+      connectionrequest()
+        .then(() => {
+          console.log('[Main.js/LicensureSync] Dispatching licesensRequest for:', professionLabel);
+          dispatch(licesensRequest(professionLabel));
+        })
+        .catch(err => console.log('Licensure refresh failed', err));
+    } else {
+      console.log('[Main.js/LicensureSync] No change, skipping.');
+    }
+  }, [isFocus, DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse, AuthReducer?.loginResponse, AuthReducer?.status]);
+
   // 🔹 Keep global context (gtprof) in sync with the latest detected profession
   useEffect(() => {
     if (resolvedProfessionHandle) {
@@ -160,7 +196,10 @@ const Main = (props) => {
     if (!isFocus) return;
     connectionrequest()
       .then(() => {
-        setShowLoader(false); // 🔹 Show shimmer while refreshing
+        // 🔹 Only show shimmer if we don't have data yet (prevents flicker on tab switch)
+        if (!DashboardReducer?.dashboardResponse?.data) {
+          setShowLoader(false);
+        }
         dispatch(PrimeCheckRequest({}));
         dispatch(mainprofileRequest({}));
         dispatch(dashPerRequest({}));
@@ -181,10 +220,16 @@ const Main = (props) => {
     ]);
 
     if (terminalStatuses.has(DashboardReducer?.status)) {
-      // 🔹 Minimal delay ensures UI elements have had one render cycle to catch up
-      setTimeout(() => setShowLoader(true), 250);
+      // 🔹 ONLY SHOW once the profession logic has had a target to lock onto
+      // This prevents jumping from NewProfession to StateLicense after mount.
+      if (resolvedProfessionHandle || !!profFromDashboard) {
+        setTimeout(() => setShowLoader(true), 150);
+      } else {
+        // Fallback if truly no profession is found after a few tries
+        setTimeout(() => setShowLoader(true), 600);
+      }
     }
-  }, [DashboardReducer?.status]);
+  }, [DashboardReducer?.status, resolvedProfessionHandle, profFromDashboard]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -233,10 +278,10 @@ const Main = (props) => {
       resetState();
     };
   }, []);
-  const [showloader, setShowLoader] = useState(true);
+  const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
   useEffect(() => {
-    setShowLoader(true);
+    setShowLoader(false);
     setFreeze(false);
     enableFreeze(false);
   }, []);
@@ -311,13 +356,17 @@ const Main = (props) => {
     } else if (takeSub) {
       setFreeTrail(true);
       const endDateString = finalProfessionmain?.subscriptions?.[0]?.end_date
-      const endDate = new Date(endDateString);
-      const currentDate = new Date();
-      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
-      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
-      const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-      setDaysleft(daysDiff);
+      if (endDateString) {
+        const endDate = new Date(endDateString);
+        const currentDate = new Date();
+        const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+        const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+        const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        setDaysleft(daysDiff);
+      } else {
+        setDaysleft(null);
+      }
     }
   }, [allProfTake, WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessionmain, finalverifyvaultmain, takeSub]);
   useLayoutEffect(() => {
@@ -338,34 +387,25 @@ const Main = (props) => {
             <Image source={Imagepath.Logo} style={{ height: normalize(40), width: normalize(40) }} resizeMode="contain" />
           </View>
           <HandleTextInput showLine={showLine} nav={props.navigation} takestate={takestate} addit={addit} setFocusedInput={setFocusedInput} focusedInput={focusedInput} />
-          <View>
-            <ScrollView contentContainerStyle={{ paddingBottom: dynamicPadding }}
-              onContentSizeChange={(w, h) => {
-                const extraPadding = h * 0.18; // 15% of content height (can adjust)
-                setDynamicPadding(extraPadding);
-              }} scrollEventThrottle={16}>
-              <View>
-                <View style={{ bottom: normalize(10) }}>
-                  {isPhysicianFlow
-                    ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
-                    : isNursingFlow
-                      ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
+          <View style={{ flex: 1 }}>
+            {showloader ? (
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: bottomBannerSpacing }}
+                scrollEventThrottle={16}
+              >
+                <View>
+                  <View style={{ bottom: normalize(10) }}>
+                    {isPhysicianFlow
+                      ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : isNursingFlow
+                        ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
+                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                  </View>
                 </View>
-                {/* <View style={{ bottom: normalize(10) }}>
-                  {fulldashbaord == 0 ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : gtprof ?
-                    <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} /> : <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
-                </View> */}
-              </View>
-            </ScrollView>
-            {!showloader && (
+              </ScrollView>
+            ) : (
               <View style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 9999,
+                flex: 1,
                 backgroundColor: Colorpath.Pagebg,
               }}>
                 <DashboardMainShimmer />
@@ -376,34 +416,35 @@ const Main = (props) => {
           {enables && allProfTake ? <View style={{
             position: 'absolute',
             height: normalize(100),
-            bottom: normalize(-40),
+            bottom: normalize(0),
             left: 0,
             right: 0,
             justifyContent: 'center',
             alignItems: 'center',
-            paddingBottom: normalize(20),
+            paddingBottom: normalize(10),
           }}>
-            <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(320), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(20), borderTopRightRadius: normalize(20) }}>
+            <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25) }}>
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : freeTrail && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ? <View
+          </View> : freeTrail ? <View
             style={{
               position: 'absolute',
-              bottom: normalize(-40),
+              bottom: normalize(0),
               left: 0,
               right: 0,
               justifyContent: 'center',
               alignItems: 'center',
-              paddingBottom: normalize(20),
+              paddingBottom: normalize(10),
             }}
           >
             <Pressable
+              onPress={() => setPrimeadd(true)}
               style={{
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                width: normalize(320),
+                width: normalize(340),
                 backgroundColor: '#FFEDCA',
                 borderTopLeftRadius: normalize(25),
                 borderTopRightRadius: normalize(25),

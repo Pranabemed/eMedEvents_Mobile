@@ -15,7 +15,6 @@ import TextInputPlain from '../../Components/PlainyTextInput';
 import Imagepath from '../../Themes/Imagepath';
 import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
 import InputField from '../../Components/CellInput';
-let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 const SignUp = (props) => {
   const [fname, setFname] = useState("");
@@ -136,38 +135,33 @@ const SignUp = (props) => {
     return strInput;
   };
   console.log(gettrue, "hgfgfgj----------", cellno)
-  if (status == '' || AuthReducer.status != status) {
-    switch (AuthReducer.status) {
-      case 'Auth/emailexistRequest':
-        status = AuthReducer.status;
-        break;
-      case 'Auth/emailexistSuccess':
-        status = AuthReducer.status;
-        console.log(AuthReducer?.emailexistResponse?.success === false, "email existwww=====")
-        if (AuthReducer?.emailexistResponse?.success === false) {
-          if (gettrue) {
-            Alert.alert('eMedEvents', 'This cell number already exists in eMedEvents.', [
-              {
-                text: 'Cancel', onPress: () => {
-                  setMobileHd("");
-                  setCellno("")
-                }, style: 'cancel'
-              },
-              { text: 'OK', onPress: () => props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" } }) },
-            ]);
-          } else if (!gettrue) {
-            Alert.alert('eMedEvents', 'This email already exists in eMedEvents.', [
-              { text: 'Cancel', onPress: () => setEmail(""), style: 'cancel' },
-              { text: 'OK', onPress: () => props.navigation.navigate("Login", { "email": email }) },
-            ]);
-          }
+  const lastHandledStatusRef = React.useRef("");
+  useEffect(() => {
+    if (AuthReducer.status === 'Auth/emailexistSuccess' && lastHandledStatusRef.current !== "Auth/emailexistSuccess") {
+      if (AuthReducer?.emailexistResponse?.success === false) {
+        lastHandledStatusRef.current = "Auth/emailexistSuccess";
+        const isPhoneCheck = AuthReducer?.emailexistType === 'phone';
+        if (isPhoneCheck) {
+          Alert.alert('eMedEvents', 'This cell number already exists in eMedEvents.', [
+            {
+              text: 'Cancel', onPress: () => {
+                setMobileHd("");
+                setCellno("");
+              }, style: 'cancel'
+            },
+            { text: 'OK', onPress: () => props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" } }) },
+          ]);
+        } else if (AuthReducer?.emailexistType === 'email') {
+          Alert.alert('eMedEvents', 'This email already exists in eMedEvents.', [
+            { text: 'Cancel', onPress: () => setEmail(""), style: 'cancel' },
+            { text: 'OK', onPress: () => props.navigation.navigate("Login", { "email": email }) },
+          ]);
         }
-        break;
-      case 'Auth/emailexistFailure':
-        status = AuthReducer.status;
-        break;
+      }
+    } else if (AuthReducer.status === 'Auth/emailexistRequest') {
+      lastHandledStatusRef.current = "";
     }
-  }
+  }, [AuthReducer.status, AuthReducer.emailexistResponse, AuthReducer.emailexistType, cellno, email]);
   const backSingUp = () => {
     props.navigation.goBack();
   }

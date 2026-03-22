@@ -376,37 +376,179 @@ const StackNav = props => {
   const handleDeepLink = async (url) => {
     if (!url) return;
 
-    // Extract slug from the URL path (everything before ?)
-    const slug = url.split('?')[0].split('/').filter(Boolean).pop();
-
-    // Extract entire query string after ? as RefID (e.g. ?RefID=ABCDE&utm_term=...)
+    // 1. Capture the FULL query string as RefID (as requested by the user)
     let refID = null;
     try {
-      const queryString = url.includes('?') ? url.split('?')[1] : '';
-      if (queryString) {
-        refID = queryString;
-        // Persist it for use in saveTicket later
-        await AsyncStorage.setItem(constants.REFID, refID);
-        console.log('[DeepLink] RefID query string captured:', refID);
+      if (url.includes('?')) {
+        const queryString = url.split('?')[1];
+        if (queryString) {
+          refID = queryString; // Capture everything after the '?'
+          await AsyncStorage.setItem(constants.REFID, refID);
+          console.log('[DeepLink] Full query string captured for RefID:', refID);
+        }
       }
     } catch (e) {
       console.log('[DeepLink] Error parsing RefID:', e);
     }
 
-    console.log('Slug from deep link:', slug);
+    // 2. Extract slug and determine if it's a valid conference URL
+    const urlWithoutQuery = url.split('?')[0];
+    const urlPath = urlWithoutQuery.includes('//') ? urlWithoutQuery.split('//')[1] : urlWithoutQuery;
+    const pathParts = urlPath.split('/').filter(Boolean); // e.g. ["www.emedevents.com", "conference", "slug"]
+
+    const isRootUrl = pathParts.length <= 1;
+    const slug = isRootUrl ? null : pathParts[pathParts.length - 1];
+
+    const lastPart = pathParts[pathParts.length - 1].toLowerCase();
+
+    // List of slugs that are NOT conferences (app static pages)
+    const staticAppSlugs = ['login', 'signup', 'onboarding', 'onboard', 'terms', 'privacy', 'about', 'contact', 'home', 'auth'];
+    
+    // Keywords for LISTING pages (Plural pages like /medical-conferences/ or /online-courses/)
+    // Individual conferences usually use singular terms or are at the root
+    const listingKeywords = ['conference', 'conferences', 'course', 'courses', 'specialties', 'organizers', 'locations'];
+
+    // 1. Static pages are root-level app pages (e.g. /login, /signup)
+    const isStaticPage = pathParts.length === 2 && staticAppSlugs.includes(lastPart);
+
     if (!isAuthReady) {
       console.log('Auth not ready, storing deep link');
       setPendingDeepLink({ url, slug, refID });
       return;
     }
+
     // 🔥 ALWAYS fetch latest auth directly
     const { token, dashboard } = await loadAuthData();
-    console.log('Datareal=====', token, dashboard);
-    if (token && dashboard) {
-      navigateToScreen("Statewebcast", {
-        webCastURL: { webCastURL: slug, creditData: dashboard, refID: refID }
-      });
+
+    // Check for country-specific conference listings (e.g., india-medical-conferences)
+    const countryConfPart = pathParts.find(p => p.toLowerCase().includes('-medical-conferences'));
+    
+    // Check for yearly conference listings (e.g., medical-conferences-2026)
+    const yearMatch = lastPart.match(/^medical-conferences-(\d{4})$/);
+
+    // Check for "medical-conferences-by-*" directories anywhere in the path
+    const browsePrefix = 'medical-conferences-by-';
+    const browseMapping = {
+      'topic': 'Topic',
+      'topics': 'Topic',
+      'profession': 'Profession',
+      'professions': 'Profession',
+      'specialty': 'Specialty',
+      'specialties': 'Specialty',
+      'country': 'Country',
+      'countries': 'Country',
+      'state': 'State',
+      'states': 'State',
+      'city': 'City',
+      'cities': 'City',
+      'month-year': 'Month-Year'
+    };
+    
+    const browsePart = pathParts.find(p => p.toLowerCase().startsWith(browsePrefix));
+    const activeFilter = browsePart ? browseMapping[browsePart.toLowerCase().replace(browsePrefix, '')] : null;
+    const isBrowsePage = !!browsePart;
+
+    // Check for specific category paths anywhere (e.g., /topics/vaccine, /specialties/cardiology)
+    const categoryMapping = {
+      'topics': { rqstType: "topicbasedconferences", mainKey: "topic" },
+      'topic': { rqstType: "topicbasedconferences", mainKey: "topic" },
+      'specialties': { rqstType: "specialityconferences", mainKey: "conference_specialitiy" },
+      'specialty': { rqstType: "specialityconferences", mainKey: "conference_specialitiy" },
+      'professions': { rqstType: "professionconferences", mainKey: "conference_profession" },
+      'profession': { rqstType: "professionconferences", mainKey: "conference_profession" }
+    };
+    const categoryPart = pathParts.length === 3 ? pathParts[1].toLowerCase() : null;
+    const activeCategory = categoryPart ? categoryMapping[categoryPart] : null;
+
+    // Enhanced listing detection to avoid misidentifying directory pages or specialized listings as conferences
+    // Directory listings, browse categories, specialized category lists (topics/specialties), 
+    // country conferences, and yearly filters are NOT specific conference details.
+    const isListingPage = (pathParts.length === 2 && listingKeywords.some(k => lastPart.includes(k))) || 
+                          isBrowsePage || activeCategory || !!countryConfPart || !!yearMatch;
+    
+    // Only navigate to Details if it's a specific conference (not root, not static, not a directory listing)
+    const isConferenceUrl = !isRootUrl && slug && !isStaticPage && !isListingPage;
+
+    console.log('Auth status for deep link:', { hasToken: !!token, isConference: isConferenceUrl, isListing: isListingPage, isBrowse: isBrowsePage, activeFilter });
+
+    if (token) {
+      if (activeFilter) {
+        // Navigate to BrowseScreen with the specific filter active
+        navigateToScreen("BrowseScreen", {
+          highText: { highText: activeFilter, backProps: 'yes' }
+        });
+      } else if (activeCategory) {
+        // Handle specific topic/specialty listing (e.g. /topics/vaccine)
+        navigateToScreen("Globalresult", {
+          trig: {
+            rqstType: activeCategory.rqstType,
+            mainKey: activeCategory.mainKey,
+            trig: lastPart,
+            backProps: "yes"
+          }
+        });
+      } else if (yearMatch) {
+        // Handle yearly conference listing
+        navigateToScreen("Globalresult", {
+          trig: {
+            rqstType: "monthbasedconferences",
+            mainKey: "year_month",
+            monthAds: yearMatch[1], // Extract the year
+            backProps: "yes"
+          }
+        });
+      } else if (countryConfPart) {
+        // Handle country conferences with dynamic sub-paths (Country/State/City)
+        const countryVal = countryConfPart;
+        const countryIdx = pathParts.indexOf(countryVal);
+        const subParts = pathParts.slice(countryIdx).map(p => p.toLowerCase()); // [country, state, city, ...]
+
+        if (subParts.length >= 3) {
+          // Fully nested: Country, State, and City (e.g. india-medical-conferences/delhi/new-delhi)
+          navigateToScreen("Globalresult", {
+            trig: {
+              rqstType: "cityconferences",
+              mainKey: "country",
+              newAdd: "state",
+              newCt: "city",
+              beforetakecity: subParts,
+              backProps: "yes"
+            }
+          });
+        } else if (subParts.length === 2) {
+          // Intermediate: Country and State (e.g. india-medical-conferences/chhattisgarh)
+          navigateToScreen("Globalresult", {
+            trig: {
+              rqstType: "stateconferences",
+              mainKey: "country",
+              newAdd: "location",
+              beforetake: subParts[0],
+              trig: subParts[1],
+              backProps: "yes"
+            }
+          });
+        } else {
+          // Root: Just Country (e.g. usa-medical-conferences)
+          navigateToScreen("Globalresult", {
+            trig: {
+              rqstType: "countryconferences",
+              mainKey: "country",
+              beforetake: subParts[0],
+              backProps: "yes"
+            }
+          });
+        }
+      } else if (isConferenceUrl) {
+        // Valid singular conference slug -> Go to Course Details
+        navigateToScreen("Statewebcast", {
+          webCastURL: { webCastURL: slug, creditData: dashboard, refID: refID }
+        });
+      } else {
+        // Root URL, static page, or Listing directory -> Go to Home
+        navigateToScreen("TabNav");
+      }
     } else {
+      // Not logged in -> Go to entry point
       navigateToScreen("Onboard");
     }
   };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import normalize from '../Utils/Helpers/Dimen';
 
@@ -8,7 +8,7 @@ const { width: SCREEN_W } = Dimensions.get('window');
 /**
  * DashboardMainShimmer
  * Mirrors the section-by-section layout of Dashboardmain.js:
- *   1. "My Course(s)" card — title + 3 stat boxes + arrow button
+ *   1. "My Course(s)" card - title + 3 stat boxes + arrow button
  *   2. "Start or Resume Courses" header + carousel card
  *   3. Task pill chips row (Due 30 / 60 / 90 days)
  *   4. State-required Courses header + horizontal cards
@@ -22,15 +22,12 @@ const DashboardMainShimmer = () => {
         <ScrollView
             scrollEnabled={false}
             contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
         >
-            {/* ── Section 1: My Course(s) card ── */}
             <View style={styles.centeredRow}>
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
-                    {/* Card shell */}
                     <View style={styles.myCourseCard}>
-                        {/* Title text line */}
                         <View style={styles.courseTitleLine} />
-                        {/* 3 stat boxes */}
                         <View style={styles.statRow}>
                             <View style={styles.statBox} />
                             <View style={styles.statBox} />
@@ -38,13 +35,11 @@ const DashboardMainShimmer = () => {
                         </View>
                     </View>
                 </SkeletonPlaceholder>
-                {/* Arrow circle button (right side of card) */}
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
                     <View style={styles.arrowCircle} />
                 </SkeletonPlaceholder>
             </View>
 
-            {/* ── Section 2: Start or Resume Courses header ── */}
             <View style={styles.sectionHeaderRow}>
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
                     <View style={styles.sectionHeaderLeft} />
@@ -54,11 +49,9 @@ const DashboardMainShimmer = () => {
                 </SkeletonPlaceholder>
             </View>
 
-            {/* ── Section 2: Resume carousel card ── */}
             <View style={styles.centeredRow}>
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
                     <View style={styles.carouselCard}>
-                        {/* Top: avatar circle + two text lines */}
                         <View style={styles.carouselInner}>
                             <View style={styles.avatarCircle} />
                             <View style={styles.carouselTextBlock}>
@@ -66,14 +59,12 @@ const DashboardMainShimmer = () => {
                                 <View style={styles.carouselLine2} />
                             </View>
                         </View>
-                        {/* Bottom: progress bar + cta */}
                         <View style={styles.progressBar} />
                         <View style={styles.carouselCTA} />
                     </View>
                 </SkeletonPlaceholder>
             </View>
 
-            {/* Pagination dots */}
             <View style={styles.dotsRow}>
                 {[0, 1, 2].map((i) => (
                     <SkeletonPlaceholder key={i} backgroundColor={BG} highlightColor={HL} speed={1200}>
@@ -82,7 +73,6 @@ const DashboardMainShimmer = () => {
                 ))}
             </View>
 
-            {/* ── Section 3: Task pill chips (Due 30 / 60 / 90 days) ── */}
             <View style={styles.taskChipsRow}>
                 {[0, 1, 2].map((i) => (
                     <SkeletonPlaceholder key={i} backgroundColor={BG} highlightColor={HL} speed={1200}>
@@ -91,7 +81,6 @@ const DashboardMainShimmer = () => {
                 ))}
             </View>
 
-            {/* ── Section 4: State-required Courses ── */}
             <View style={styles.sectionHeaderRow}>
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
                     <View style={styles.sectionHeaderLeft} />
@@ -100,6 +89,7 @@ const DashboardMainShimmer = () => {
                     <View style={styles.sectionHeaderRight} />
                 </SkeletonPlaceholder>
             </View>
+
             <View style={styles.horizontalCardRow}>
                 {[0, 1, 2].map((i) => (
                     <SkeletonPlaceholder key={i} backgroundColor={BG} highlightColor={HL} speed={1200}>
@@ -112,7 +102,6 @@ const DashboardMainShimmer = () => {
                 ))}
             </View>
 
-            {/* ── Section 5: Specialty Courses ── */}
             <View style={[styles.sectionHeaderRow, { marginTop: normalize(16) }]}>
                 <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL} speed={1200}>
                     <View style={styles.sectionHeaderLeft} />
@@ -121,6 +110,7 @@ const DashboardMainShimmer = () => {
                     <View style={styles.sectionHeaderRight} />
                 </SkeletonPlaceholder>
             </View>
+
             <View style={styles.horizontalCardRow}>
                 {[0, 1, 2].map((i) => (
                     <SkeletonPlaceholder key={i} backgroundColor={BG} highlightColor={HL} speed={1200}>
@@ -143,15 +133,11 @@ const styles = StyleSheet.create({
         paddingBottom: normalize(30),
         paddingTop: normalize(5),
     },
-
-    /* ── helpers ── */
     centeredRow: {
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: normalize(8),
     },
-
-    /* ── Section 1: My Course(s) card ── */
     myCourseCard: {
         height: normalize(95),
         width: normalize(300),
@@ -183,8 +169,6 @@ const styles = StyleSheet.create({
         right: normalize(35),
         bottom: normalize(10),
     },
-
-    /* ── Section 2: Section headers ── */
     sectionHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -202,8 +186,6 @@ const styles = StyleSheet.create({
         width: normalize(55),
         borderRadius: 4,
     },
-
-    /* ── Section 2: Resume carousel card ── */
     carouselCard: {
         height: normalize(180),
         width: SCREEN_W - normalize(20),
@@ -248,8 +230,6 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginTop: normalize(14),
     },
-
-    /* Pagination dots */
     dotsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -266,8 +246,6 @@ const styles = StyleSheet.create({
         height: normalize(8),
         borderRadius: normalize(8),
     },
-
-    /* ── Section 3: Task pill chips ── */
     taskChipsRow: {
         flexDirection: 'row',
         gap: normalize(6),
@@ -279,8 +257,6 @@ const styles = StyleSheet.create({
         width: normalize(100),
         borderRadius: normalize(8),
     },
-
-    /* ── Sections 4 & 5: Horizontal course cards ── */
     horizontalCardRow: {
         flexDirection: 'row',
         gap: normalize(10),

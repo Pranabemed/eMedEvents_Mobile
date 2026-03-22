@@ -53,7 +53,7 @@ react {
     /* Autolinking */
      reactNativeDir = file("../../node_modules/react-native")
     codegenDir = file("../../node_modules/@react-native/codegen")
-    nodeExecutableAndArgs = ["/Users/emedevents/.nvm/versions/node/v20.19.6/bin/node"]
+    nodeExecutableAndArgs = ["node"]
     autolinkLibrariesWithApp()
 }
 

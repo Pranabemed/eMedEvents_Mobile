@@ -318,19 +318,6 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         [...validHandles]
     );
     const allProfTake = gtprof || validHandles.has(resolvedProfessionHandle);
-    useEffect(() => {
-        if (!allProfTake || !latestLicensureProfessionLabel) return;
-        if (lastLicensureProfessionRef.current === latestLicensureProfessionLabel) return;
-
-        lastLicensureProfessionRef.current = latestLicensureProfessionLabel;
-        connectionrequest()
-            .then(() => {
-                dispatch(licesensRequest(latestLicensureProfessionLabel));
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to the internet", err);
-            });
-    }, [allProfTake, latestLicensureProfessionLabel, dispatch]);
     const isPhysicianGreeting = Boolean(gtprof || allProfTake);
     const displayLastName = stableNameRef.current.last || nextLastName;
     const displayFirstName = stableNameRef.current.first || nextFirstName;
@@ -356,13 +343,25 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const canAddLicenses =
         allProfTake &&
         (() => {
-            const contextHasRemaining = Array.isArray(stateCount) && stateCount.length > 0;
-            const licensureHasRemaining = derivedRemainingStates.length > 0;
+            const isGlobalLoading = 
+                AuthReducer?.status?.toLowerCase().includes('dashboardrequest') || 
+                AuthReducer?.status?.toLowerCase().includes('licesensrequest') || 
+                DashboardReducer?.status?.toLowerCase().includes('dashboardrequest');
 
-            // Secondary source available earlier in many flows.
+            // Bias towards TRUE only while GLOBAL related API is in flight
+            if (isGlobalLoading) return true;
+
+            const contextLoaded = Array.isArray(stateCount);
+            const licensureLoaded = !!AuthReducer?.licesensResponse?.licensure_states;
+            const chooseStateLoaded = !!AuthReducer?.chooseStatecardResponse?.state_licensures;
+
             const existingStateIds = new Set(
                 Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
             );
+
+            const contextHasRemaining = contextLoaded && stateCount.length > 0;
+            const licensureHasRemaining = licensureLoaded && derivedRemainingStates.length > 0;
+            
             const chooseStateLicensures = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures)
                 ? AuthReducer.chooseStatecardResponse.state_licensures
                 : [];
@@ -370,21 +369,26 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 const stateId = item?.id ?? item?.state_id;
                 return stateId != null && !existingStateIds.has(stateId);
             });
-            const chooseStateHasRemaining = chooseStateRemaining.length > 0;
-
-            const contextLoaded = Array.isArray(stateCount);
-            const licensureLoaded = Array.isArray(AuthReducer?.licesensResponse?.licensure_states);
-            const chooseStateLoaded = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures);
+            const chooseStateHasRemaining = chooseStateLoaded && chooseStateRemaining.length > 0;
 
             const hasRemaining =
                 contextHasRemaining || licensureHasRemaining || chooseStateHasRemaining;
 
-            // Keep CTA visible during partial loading; hide only when all sources are loaded
-            // and all of them confirm there are no remaining states.
+            // Wait until ALL primary sources have responded at least once
             const allSourcesLoaded = contextLoaded && licensureLoaded && chooseStateLoaded;
-            const confirmedNoRemaining = allSourcesLoaded && !hasRemaining;
+            
+            // IF we aren't loaded yet, default to TRUE (keeps button visible during refresh)
+            if (!allSourcesLoaded) return true;
 
-            return !confirmedNoRemaining;
+            const result = hasRemaining;
+            if (!result) {
+                 console.log(`[StateLicense/canAddLicenses] ${Date.now()} - Hiding`, {
+                    context: stateCount?.length,
+                    licensure: derivedRemainingStates.length,
+                    chooseState: chooseStateRemaining.length
+                 });
+            }
+            return result;
         })();
 
     useEffect(() => {
@@ -393,8 +397,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             setStateCount(derivedRemainingStates);
         }
     }, [stateCount, derivedRemainingStates, setStateCount]);
-    console.log(canAddLicenses,"canAddLicenses-=====",AuthReducer?.chooseStatecardResponse?.state_licensures,AuthReducer?.licesensResponse?.licensure_states);
-    
+    console.log(canAddLicenses, "canAddLicenses-=====", AuthReducer?.chooseStatecardResponse?.state_licensures, AuthReducer?.licesensResponse?.licensure_states);
+
 
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
@@ -593,6 +597,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
         initialSyncDoneRef.current = true;
         handleAllIndex(initialIndex);
     }, [fulldashbaord?.length, initialIndex]);
+    console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     return (
         <>
@@ -604,49 +609,43 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 {fulldashbaord?.length > 0 ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
                         <View style={{ height: getDynamicHeight(), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
-                            {canAddLicenses && <TouchableOpacity
-                                onPress={() => {
-                                    if (enables) {
-                                        setStatepush(addit);
-                                        setPrimeadd(true);
-                                    } else {
-                                        setStatepush(addit);
-                                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense" }] }));
-                                    }
-                                }}
-                                style={{
-                                    justifyContent: "flex-end",
-                                    alignItems: "flex-end",
-                                    marginTop: Platform.OS === 'ios' ? normalize(18) : normalize(8),
-                                    flexDirection: "row",
-                                    gap: normalize(3)
-                                }}
-                            >
-                                <Image source={Imagepath.PlusNew} style={{ height: normalize(16), width: normalize(17), resizeMode: 'contain' }} />
-                                <Text style={Platform.OS === 'ios' ? {
-                                    justifyContent: "flex-end",
-                                    alignItems: "flex-end",
-                                    bottom: normalize(1),
-                                    flexDirection: "row",
-                                    gap: normalize(3),
-                                    marginRight: normalize(15),
-                                    color: "#FFFFFF",
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    fontWeight: "bold"
-                                } : {
-                                    justifyContent: "flex-end",
-                                    alignItems: "flex-end",
-                                    marginTop: normalize(10),
-                                    flexDirection: "row",
-                                    gap: normalize(3),
-                                    marginRight: normalize(12),
-                                    color: "#FFFFFF",
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    fontWeight: "bold"
-                                }}>{"Add Licenses"}</Text>
-                            </TouchableOpacity>}
+                            <View style={{ height: normalize(40), justifyContent: 'center' }}>
+                                {canAddLicenses ? (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (enables) {
+                                                setStatepush(addit);
+                                                setPrimeadd(true);
+                                            } else {
+                                                setStatepush(addit);
+                                                navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense" }] }));
+                                            }
+                                        }}
+                                        style={{
+                                            justifyContent: "flex-end",
+                                            alignItems: "flex-end",
+                                            flexDirection: "row",
+                                            gap: normalize(3),
+                                            marginTop: normalize(5)
+                                        }}
+                                    >
+                                        <Image source={Imagepath.PlusNew} style={{ height: normalize(16), width: normalize(17), resizeMode: 'contain' }} />
+                                        <Text style={Platform.OS === 'ios' ? {
+                                            marginRight: normalize(15),
+                                            color: "#FFFFFF",
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 14,
+                                            fontWeight: "bold"
+                                        } : {
+                                            marginRight: normalize(12),
+                                            color: "#FFFFFF",
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 14,
+                                            fontWeight: "bold"
+                                        }}>{"Add Licenses"}</Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
                             <Carousel
                                 ref={carouselRef}
                                 layout={'default'}

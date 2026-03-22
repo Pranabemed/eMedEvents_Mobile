@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View, Text } from 'react-native';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -12,38 +12,11 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
+
 let status1 = "";
 
-const buildProfessionLabel = (profession, professionType) => {
-  const cleanProfession = String(profession || '').trim();
-  const cleanProfessionType = String(professionType || '').trim();
-
-  if (!cleanProfession) return '';
-  if (!cleanProfessionType) return cleanProfession;
-  if (cleanProfession.toLowerCase().replace(/\s+/g, '').endsWith(`-${cleanProfessionType.toLowerCase().replace(/\s+/g, '')}`)) {
-    return cleanProfession;
-  }
-
-  return `${cleanProfession} - ${cleanProfessionType}`;
-};
-
-const safeJsonParse = (raw, fallback = null) => {
-  try {
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (error) {
-    return fallback;
-  }
-};
 const isVerifiedFlag = (value) => value == "1" || value == 1 || value === true;
-const isUserVerifiedFromCache = ({ verifyCached, emailEver, mobileEver }) => {
-  const emailVerified =
-    isVerifiedFlag(verifyCached?.is_verified) ||
-    isVerifiedFlag(emailEver);
-  const phoneVerified =
-    isVerifiedFlag(verifyCached?.phone_verified) ||
-    isVerifiedFlag(mobileEver);
-  return emailVerified && phoneVerified;
-};
+
 export default function Splash(props) {
   const {
     setFulldashbaord,
@@ -56,125 +29,67 @@ export default function Splash(props) {
     setTakedata,
     fulldashbaord,
     setStateCount,
-    setFinddata
+    setFinddata,
+    stateCount
   } = useContext(AppContext);
+
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const DashboardReducer = useSelector(state => state.DashboardReducer);
-  const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [dashboard, setDashboard] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
-  const [spalsh, setSplash] = useState("")
+  const [spalsh, setSplash] = useState("");
   const isFocus = useIsFocused();
   const [emaiV, setEmaiV] = useState("");
-  const [phoneV, setPhoneV] = useState("")
-  const hasRedirectedToOnboardRef = useRef(false);
-  const hasDashboardCacheRef = useRef(false);
+  const [phoneV, setPhoneV] = useState("");
+
   const hasNavigatedRef = useRef(false);
-  const lastLicensureProfessionRef = useRef('');
+
   useEffect(() => {
     const handleNavigation = async () => {
       try {
-        const [emaileer, mobilevr, professionRaw, dashboardCacheRaw, legacyStateRaw, tokenRaw, verifyRaw] = await Promise.all([
+        const [emaileer, mobilevr] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
-          AsyncStorage.getItem(constants.MOBVER),
-          AsyncStorage.getItem(constants.PROFESSION),
-          AsyncStorage.getItem(constants.DASHBOARD_CACHE),
-          AsyncStorage.getItem(constants.WHOLEDATA),
-          AsyncStorage.getItem(constants.TOKEN),
-          AsyncStorage.getItem(constants.VERIFYSTATEDATA)
+          AsyncStorage.getItem(constants.MOBVER)
         ]);
-        const emailEver = safeJsonParse(emaileer, null);
-        const mobileEver = safeJsonParse(mobilevr, null);
-        const professionCached = safeJsonParse(professionRaw, null);
-        const dashboardCached = safeJsonParse(dashboardCacheRaw, null);
-        const legacyStateCached = safeJsonParse(legacyStateRaw, null);
-        const verifyCached = safeJsonParse(verifyRaw, null);
-        const professionHandle =
-          professionCached?.profession && professionCached?.profession_type
-            ? `${professionCached.profession} - ${professionCached.profession_type}`
-            : null;
-        const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+        const emailEver = emaileer ? JSON.parse(emaileer) : null;
+        const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
-        if (validHandles.has(professionHandle)) {
-          setGtprof(true);
-        }
-        const cachedLicensures =
-          Array.isArray(dashboardCached) && dashboardCached.length > 0
-            ? dashboardCached
-            : legacyStateCached
-              ? [legacyStateCached]
-              : [];
-        const isCachedVerified = isUserVerifiedFromCache({
-          verifyCached,
-          emailEver,
-          mobileEver
-        });
-        if (cachedLicensures.length > 0) {
-          hasDashboardCacheRef.current = true;
-          const uniqueStates = cachedLicensures.filter((state, index, self) =>
-            index === self.findIndex((s) =>
-              s?.state_id === state?.state_id &&
-              s?.board_id === state?.board_id
-            )
-          );
-          setFulldashbaord(uniqueStates);
-          setDashboard(uniqueStates.map((l) => l?.license_number));
-          setLoadingDashboard(false);
-          const firstState = uniqueStates[0];
-          if (firstState) {
-            setAddit(firstState);
-            setTakedata(firstState);
-            setTakestate(firstState.board_id);
-            setStateid(firstState.state_id);
-            const credits = firstState.credits_data || {};
-            setTotalCred((credits.topic_earned_credits || 0) + (credits.total_general_earned_credits || 0));
-          }
-        }
-        // Fast path: on app reload, if token + verified cache are present, skip waiting for API.
-        if (
-          tokenRaw &&
-          isCachedVerified &&
-          !hasNavigatedRef.current
-        ) {
-          hasNavigatedRef.current = true;
-          props.navigation.dispatch(
-            CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
-          );
-        }
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
     };
     handleNavigation();
   }, [isFocus]);
+
   useEffect(() => {
     const token_error = () => {
-      AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-        if (loginHandleProccess) {
-          let objToken = { "token": loginHandleProccess, "key": {} }
-          connectionrequest()
-            .then(() => {
-              dispatch(tokenRequest(objToken))
-              dispatch(mainprofileRequest(objToken));
-              dispatch(chooseStatecardRequest(objToken));
-              dispatch(dashboardRequest(objToken))
-              dispatch(verifyRequest(objToken))
-              if (!hasDashboardCacheRef.current && !hasNavigatedRef.current) {
-                setLoadingDashboard(true)
-              }
-            })
-            .catch((err) => showErrorAlert("Please connect to internet", err))
-        } else {
-          // Prevent stale redirects from firing after user already navigated away.
-          if (!props.navigation.isFocused() || hasRedirectedToOnboardRef.current) return;
-          hasRedirectedToOnboardRef.current = true;
-          props.navigation.dispatch(
-            CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
-          );
-        }
-      });
+      setTimeout(() => {
+        AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+          if (loginHandleProccess) {
+            let objToken = { "token": loginHandleProccess, "key": {} };
+            connectionrequest()
+              .then(() => {
+                dispatch(tokenRequest(objToken));
+                dispatch(mainprofileRequest(objToken));
+                dispatch(chooseStatecardRequest(objToken));
+                dispatch(dashboardRequest(objToken));
+                dispatch(verifyRequest(objToken));
+                setLoadingDashboard(true);
+              })
+              .catch((err) => showErrorAlert("Please connect to internet", err));
+          } else {
+            setTimeout(() => {
+              if (hasNavigatedRef.current) return;
+              hasNavigatedRef.current = true;
+              props.navigation.dispatch(
+                CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
+              );
+            }, 500);
+          }
+        });
+      }, 500);
     };
     try {
       token_error();
@@ -184,10 +99,12 @@ export default function Splash(props) {
   }, [isFocus]);
 
   useEffect(() => {
-    const token_handle = async () => {
-      const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
-      const jsonObject = safeJsonParse(loginHandle_verify, null);
-      setSplash(jsonObject);
+    const token_handle = () => {
+      setTimeout(async () => {
+        const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
+        const jsonObject = loginHandle_verify ? JSON.parse(loginHandle_verify) : null;
+        setSplash(jsonObject);
+      }, 100);
     };
 
     try {
@@ -196,6 +113,7 @@ export default function Splash(props) {
       console.log(error);
     }
   }, [isFocus]);
+
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
@@ -209,15 +127,22 @@ export default function Splash(props) {
         break;
     }
   }
+
+  const profFromDashboard = useMemo(() => {
+    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
+    return profInfo.profession && profInfo.profession_type
+      ? `${profInfo.profession} - ${profInfo.profession_type}`
+      : null;
+  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse]);
+
   useEffect(() => {
     const data = DashboardReducer?.dashboardResponse?.data;
-    if (!data) return; // API hasn't responded yet
+    if (!data) return;
 
-    const licensures = Array.isArray(data?.licensures) ? data.licensures : [];
-    if (licensures.length > 0) {
-      const wholeLN = licensures;
+    if (data?.licensures?.length > 0) {
+      const wholeLN = data.licensures;
       const finalPush = wholeLN.map((l) => l?.license_number);
-      const uniqueStates = licensures.filter((state, index, self) => {
+      const uniqueStates = data.licensures.filter((state, index, self) => {
         return index === self.findIndex((s) =>
           s.state_id === state.state_id &&
           s.board_id === state.board_id
@@ -226,6 +151,7 @@ export default function Splash(props) {
       setFulldashbaord(uniqueStates);
       setDashboard(finalPush);
       setLoadingDashboard(false);
+      
       if (uniqueStates?.length > 0) {
         const firstState = uniqueStates[0];
         setAddit(firstState);
@@ -238,71 +164,60 @@ export default function Splash(props) {
         setTotalCred(total);
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
-        const latestProfessionLabel =
-          buildProfessionLabel(
-            ProfileReducer?.latestProfessionInfo?.profession,
-            ProfileReducer?.latestProfessionInfo?.profession_type
-          ) ||
-          buildProfessionLabel(
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession,
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
-          ) ||
-          buildProfessionLabel(
-            AuthReducer?.signupResponse?.user?.profession,
-            AuthReducer?.signupResponse?.user?.profession_type
-          );
-        licHandl(latestProfessionLabel);
       }
     } else {
-      // No licensures — still mark loading as done so navigation logic can proceed
       setDashboard([]);
       setLoadingDashboard(false);
     }
-  }, [DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse]);
+  }, [DashboardReducer?.dashboardResponse?.data]);
+
   useEffect(() => {
-    if (DashboardReducer?.status === 'Dashboard/dashboardFailure') {
-      setLoadingDashboard(false);
+    if (!loadingDashboard && profFromDashboard) {
+      console.log('[Splash] Triggering licHandl for:', profFromDashboard);
+      licHandl(profFromDashboard);
     }
-  }, [DashboardReducer?.status]);
+  }, [profFromDashboard, loadingDashboard]);
+
+  const lastStateIdHandledRef = useRef(null);
+  const lastReportIdHandledRef = useRef(null);
+
   const stateDashboardData = (id) => {
-    let obj = {
-      "state_id": id
-    }
+    if (!id || lastStateIdHandledRef.current === id) return;
+    lastStateIdHandledRef.current = id;
+    
     connectionrequest()
-      .then(() => {
-        dispatch(stateDashboardRequest(obj));
-      })
-      .catch(err => { showErrorAlert("Please connect to internet", err) })
-  }
+      .then(() => dispatch(stateDashboardRequest({ "state_id": id })))
+      .catch(err => showErrorAlert("Please connect to internet", err));
+  };
+
   const stateReport = (did) => {
-    let obj = {
-      "state_id": did
-    }
+    if (!did || lastReportIdHandledRef.current === did) return;
+    lastReportIdHandledRef.current = did;
+
     connectionrequest()
-      .then(() => {
-        dispatch(stateReportingRequest(obj))
-      })
-      .catch((err) => {
-        showErrorAlert("Please connect to internet", err)
-      })
-  }
-  const licHandl = (professionLabel) => {
-    if (!professionLabel || lastLicensureProfessionRef.current === professionLabel) return;
-    lastLicensureProfessionRef.current = professionLabel;
+      .then(() => dispatch(stateReportingRequest({ "state_id": did })))
+      .catch((err) => showErrorAlert("Please connect to internet", err));
+  };
+
+  const lastLicHandledRef = useRef(null);
+
+  const licHandl = (profFromDashboard) => {
+    if (!profFromDashboard || lastLicHandledRef.current === profFromDashboard) return;
+    lastLicHandledRef.current = profFromDashboard;
+    
     connectionrequest()
-      .then(() => {
-        dispatch(licesensRequest(professionLabel))
-      })
-      .catch(err => {
-        showErrorAlert('Please connect to Internet', err);
-      });
-  }
+      .then(() => dispatch(licesensRequest(profFromDashboard)))
+      .catch(err => showErrorAlert('Please connect to Internet', err));
+  };
+
   const renewalLink = useMemo(() => (
     DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link || null
   ), [DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link]);
+
   useEffect(() => {
     setRenewal(renewalLink);
   }, [renewalLink]);
+
   const filteredStates = useMemo(() => {
     if (!AuthReducer?.licesensResponse?.licensure_states) return [];
     const existingStateIds = new Set(Array.isArray(fulldashbaord) ? fulldashbaord.map(dash => dash.state_id) : []);
@@ -315,13 +230,18 @@ export default function Splash(props) {
     return Array.from(stateMap.values())
       .filter(state => !existingStateIds.has(state.id));
   }, [AuthReducer?.licesensResponse, fulldashbaord]);
+
   useEffect(() => {
     setStateCount(filteredStates);
   }, [filteredStates]);
+
   useEffect(() => {
     if (hasNavigatedRef.current) return;
+
     const loginResponse = AuthReducer?.loginResponse || {};
-    const { is_verified, phone_verified, email, phone } = AuthReducer.verifyResponse || {};
+    const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
+    const { is_verified, phone_verified, email, phone } = verifyData;
+    
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
     const profFromDashboard = profInfo.profession && profInfo.profession_type
       ? `${profInfo.profession} - ${profInfo.profession_type}`
@@ -329,34 +249,22 @@ export default function Splash(props) {
     const stateLicenses = AuthReducer?.chooseStatecardResponse?.state_licensures || [];
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const allProfTake = validHandles.has(profFromDashboard);
-    const isVerified = is_verified == "1" || emaiV == "1";
-    const isPhoneVerified = phone_verified == "1" || phoneV == "1";
+
+    const isVerified = isVerifiedFlag(is_verified) || isVerifiedFlag(emaiV);
+    const isPhoneVerified = isVerifiedFlag(phone_verified) || isVerifiedFlag(phoneV);
     const noPhoneDt = !phone;
     const bothVerified = isVerified && isPhoneVerified;
     const handleVerify = spalsh || bothVerified;
-    const hasCachedDashboard = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
+    
     const isValidDashboard = !loadingDashboard &&
-      ((Array.isArray(dashboard) &&
-        dashboard.some(item => String(item || "").trim() !== "")) ||
-        hasCachedDashboard);
+      Array.isArray(dashboard) &&
+      dashboard.some(item => String(item || "").trim() !== "");
 
-    if (loadingDashboard || hasNavigatedRef.current) return;
+    if (loadingDashboard) return;
 
-    const isEmailVerifiedVR = AuthReducer?.verifyResponse?.is_verified == "1";
-    const isPhoneVerifiedVR = AuthReducer?.verifyResponse?.phone_verified == "1";
-    const isPhysician = profInfo?.profession == "Physician";
-    // Physician with no licensures but fully verified → go to TabNav with fulldashboard=0
-    if (isPhysician && isEmailVerifiedVR && isPhoneVerifiedVR && !isValidDashboard) {
-      setFulldashbaord(0);
-      dispatch(mainprofileRequest({}))
-      hasNavigatedRef.current = true;
-      props.navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
-      );
-      return;
-    }
+    console.log('[Splash] Nav Progress:', { allProfTake, bothVerified, isValidDashboard, isVerified, isPhoneVerified });
 
-    // First check state licenses regardless of profession type
+    // State licenses path
     if (stateLicenses?.length > 0 && !isValidDashboard && bothVerified) {
       hasNavigatedRef.current = true;
       props.navigation.dispatch(
@@ -373,16 +281,14 @@ export default function Splash(props) {
       );
       return;
     }
+
     if (allProfTake) {
       if (bothVerified) {
         if (isValidDashboard) {
           setGtprof(true);
           hasNavigatedRef.current = true;
           props.navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: "TabNav" }]
-            })
+            CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
           );
         } else {
           hasNavigatedRef.current = true;
@@ -405,10 +311,7 @@ export default function Splash(props) {
         setGtprof(false);
         hasNavigatedRef.current = true;
         props.navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: "TabNav" }]
-          })
+          CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
         );
       } else {
         navigateToVerification();
@@ -418,10 +321,7 @@ export default function Splash(props) {
         setGtprof(false);
         hasNavigatedRef.current = true;
         props.navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: "TabNav" }]
-          })
+          CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] })
         );
       } else {
         navigateToVerification();
@@ -443,12 +343,7 @@ export default function Splash(props) {
       } else if (noPhoneDt) {
         hasNavigatedRef.current = true;
         props.navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{
-              name: "AddMobile"
-            }]
-          })
+          CommonActions.reset({ index: 0, routes: [{ name: "AddMobile" }] })
         );
       } else if (!isPhoneVerified) {
         hasNavigatedRef.current = true;
@@ -476,16 +371,14 @@ export default function Splash(props) {
     loadingDashboard,
     spalsh
   ]);
-  useEffect(() => {
-    if (DashboardReducer?.stateDashboardResponse?.data) {
-      setFinddata(DashboardReducer?.stateDashboardResponse?.data);
-    }
-  }, [DashboardReducer?.stateDashboardResponse])
+
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');
   const animation = useRef(null);
+
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
+
   return (
     <>
       <MyStatusBar
@@ -504,6 +397,7 @@ export default function Splash(props) {
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -512,7 +406,6 @@ const styles = StyleSheet.create({
   },
   lottie: {
     width: "100%",
-    // height: '80%', // optional
     aspectRatio: 0.2,
   },
 });
