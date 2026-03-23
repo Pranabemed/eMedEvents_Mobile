@@ -215,8 +215,8 @@ const AppUpdateHandler = () => {
   }, [openUpdateModal]);
 
   // ─── Android check ────────────────────────────────────────────────────────
-  const checkAndroid = useCallback(async (currentVersion) => {
-    console.log(`AppUpdate [Android]: installed=${currentVersion}`);
+  const checkAndroid = useCallback(async (currentVersion, currentBuild) => {
+    console.log(`AppUpdate [Android]: installed=${currentVersion} (code: ${currentBuild})`);
 
     let libraryStoreVersion = null;
     let libraryMandatory = false;
@@ -231,25 +231,19 @@ const AppUpdateHandler = () => {
 
       if (result?.shouldUpdate) {
         librarySaysUpdate = true;
-        libraryStoreVersion = result.storeVersion;
+        libraryStoreVersion = String(result.storeVersion || '');
         libraryMandatory = (result.updatePriority ?? 0) >= 4;
         libraryStoreUrl = result.storeUrl || ANDROID_STORE_URL;
         console.log(`AppUpdate [Android]: Library says update available → ${libraryStoreVersion}`);
       } else {
-        // Library says "no update" — but we still run a scrape check below
-        // because the library can occasionally return false negatives
-        // (e.g. Play Store cache not yet refreshed on the device).
         console.log('AppUpdate [Android]: Library says up to date. Running scrape to verify...');
       }
     } catch (libErr) {
       libraryFailed = true;
       console.log('AppUpdate [Android]: Library threw error (e.g. APP_NOT_OWNED):', libErr?.message);
-      console.log('AppUpdate [Android]: Running scrape fallback...');
     }
 
     // ── Step 2: Always scrape Play Store as a second opinion ──────────────────
-    //   - If library already confirmed update → scrape gives us the exact version string
-    //   - If library said "no update" or failed → scrape is the final authority
     const scrapeVersion = await fetchLatestAndroidVersion();
     console.log(`AppUpdate [Android]: Scrape version=${scrapeVersion}`);
 
@@ -258,26 +252,37 @@ const AppUpdateHandler = () => {
     const libraryLooksSemver = looksLikeSemver(libraryStoreVersion);
     const libraryLooksLikeCode = isNumericVersionCode(libraryStoreVersion);
 
-    // If library says update, trust it for availability even if storeVersion is a numeric code.
-    const scrapeSaysUpdate =
-      scrapeLooksSemver && isNewerVersion(currentVersion, scrapeVersion);
-    const shouldUpdate = librarySaysUpdate || scrapeSaysUpdate;
+    // If both look like codes, compare them. If both look like semver, compare them.
+    // If we have a mix, trust the semver one for the UI.
+    let shouldUpdate = librarySaysUpdate;
 
-    // Display version should be versionName like "1.1.1", never a numeric code.
+    // Safety check: if library gives us a code (e.g. "28"), compare it against local buildNumber, NOT currentVersion.
+    if (librarySaysUpdate && libraryLooksLikeCode) {
+      if (!isNewerVersion(currentBuild, libraryStoreVersion)) {
+        console.log('AppUpdate [Android]: Library code is NOT newer than current build. Ignoring.');
+        shouldUpdate = false;
+      }
+    }
+
+    // If scrape says update, it's usually the most reliable for version names.
+    const scrapeSaysUpdate = scrapeLooksSemver && isNewerVersion(currentVersion, scrapeVersion);
+    if (scrapeSaysUpdate) shouldUpdate = true;
+
+    // Display version should ALWAYS be a versionName like "1.1.1", never a numeric code.
     const displayVersion =
       scrapeLooksSemver ? scrapeVersion
         : libraryLooksSemver ? libraryStoreVersion
-          : libraryLooksLikeCode ? '' : (libraryStoreVersion ?? '');
+          : ''; // Never show "28" - if we don't have a semver string, show blank and let UI handle it.
 
     if (shouldUpdate) {
-      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${displayVersion || 'unknown'}`);
+      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${displayVersion || 'unknown name'}`);
       openUpdateModal(
         displayVersion,
         libraryMandatory,
         libraryFailed ? ANDROID_STORE_URL : libraryStoreUrl,
       );
     } else {
-      console.log('AppUpdate [Android]: ✅ App is up to date (library + scrape agree).');
+      console.log('AppUpdate [Android]: ✅ App is up to date.');
     }
   }, [inAppUpdates, openUpdateModal]);
 
@@ -288,7 +293,8 @@ const AppUpdateHandler = () => {
 
     try {
       const currentVersion = DeviceInfo.getVersion();
-      console.log('AppUpdate: Checking update. Installed:', currentVersion);
+      const currentBuild = DeviceInfo.getBuildNumber();
+      console.log(`AppUpdate: Checking update. Installed: ${currentVersion} (code: ${currentBuild})`);
 
       if (Platform.OS === 'ios') {
         // ✅ iOS: iTunes Lookup API works for ALL install types:
@@ -308,16 +314,19 @@ const AppUpdateHandler = () => {
         //                              checkAndroid() catches it and runs scrape ✅
         if (__DEV__) {
           console.log('AppUpdate [Android]: DEV mode — scrape fallback only.');
-          const storeVersion = await fetchLatestAndroidVersion();
-          if (storeVersion && isNewerVersion(currentVersion, storeVersion)) {
-            openUpdateModal(storeVersion, false, ANDROID_STORE_URL);
+          const scrapeVersion = await fetchLatestAndroidVersion();
+          const scrapeLooksSemver = looksLikeSemver(scrapeVersion);
+
+          if (scrapeVersion && isNewerVersion(currentVersion, scrapeVersion)) {
+            // Even in DEV, only show the version string if it looks like semver
+            openUpdateModal(scrapeLooksSemver ? scrapeVersion : '', false, ANDROID_STORE_URL);
           } else {
             console.log('AppUpdate [Android]: DEV — up to date or scrape returned null.');
           }
         } else {
           // checkAndroid tries library first, then automatically falls back to
           // scrape if library fails (handles sideloaded release APKs transparently)
-          await checkAndroid(currentVersion);
+          await checkAndroid(currentVersion, currentBuild);
         }
       }
     } catch (err) {
