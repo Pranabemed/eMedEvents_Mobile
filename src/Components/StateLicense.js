@@ -343,9 +343,9 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const canAddLicenses =
         allProfTake &&
         (() => {
-            const isGlobalLoading = 
-                AuthReducer?.status?.toLowerCase().includes('dashboardrequest') || 
-                AuthReducer?.status?.toLowerCase().includes('licesensrequest') || 
+            const isGlobalLoading =
+                AuthReducer?.status?.toLowerCase().includes('dashboardrequest') ||
+                AuthReducer?.status?.toLowerCase().includes('licesensrequest') ||
                 DashboardReducer?.status?.toLowerCase().includes('dashboardrequest');
 
             // Bias towards TRUE only while GLOBAL related API is in flight
@@ -361,7 +361,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
 
             const contextHasRemaining = contextLoaded && stateCount.length > 0;
             const licensureHasRemaining = licensureLoaded && derivedRemainingStates.length > 0;
-            
+
             const chooseStateLicensures = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures)
                 ? AuthReducer.chooseStatecardResponse.state_licensures
                 : [];
@@ -376,17 +376,17 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
 
             // Wait until ALL primary sources have responded at least once
             const allSourcesLoaded = contextLoaded && licensureLoaded && chooseStateLoaded;
-            
+
             // IF we aren't loaded yet, default to TRUE (keeps button visible during refresh)
             if (!allSourcesLoaded) return true;
 
             const result = hasRemaining;
             if (!result) {
-                 console.log(`[StateLicense/canAddLicenses] ${Date.now()} - Hiding`, {
+                console.log(`[StateLicense/canAddLicenses] ${Date.now()} - Hiding`, {
                     context: stateCount?.length,
                     licensure: derivedRemainingStates.length,
                     chooseState: chooseStateRemaining.length
-                 });
+                });
             }
             return result;
         })();
@@ -529,24 +529,24 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const hidetext = (!enables && !bothNoRequirement);
     const getDynamicHeight = () => {
         if (enables) {
-            return normalize(325)
+            return normalize(335)
         }
         if ((!enables && bothNoRequirement)) {
-            return normalize(240);
+            return normalize(250);
         }
         if (allProfTake && !expireDate) {
-            return normalize(320);
+            return normalize(330);
         }
         if (allProfTake && expireDate && bothNoRequirement) {
-            return normalize(235);
+            return normalize(245);
         }
         if (allProfTake && expireDate) {
-            return normalize(320);
+            return normalize(330);
         }
         if ((!enables && !bothNoRequirement)) {
-            return normalize(280);
+            return normalize(290);
         }
-        return normalize(220);
+        return normalize(230);
     };
 
     const handleAllIndex = (index) => {

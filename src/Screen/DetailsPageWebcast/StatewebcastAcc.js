@@ -3,7 +3,8 @@ import React from 'react'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
-import RenderHTML from 'react-native-render-html';
+import HtmlTableRenderer from './HtmlTableRenderer';
+
 const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggleExpansionacc }) => {
     return (
         <>
@@ -23,8 +24,8 @@ const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggl
                 </Text>
             </View>
             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(2), width: "100%" }}>
-                <RenderHTML
-                    contentWidth={width}
+                <HtmlTableRenderer
+                    width={width}
                     source={acc_source}
                     tagsStyles={{
                         p: {

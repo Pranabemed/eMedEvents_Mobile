@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import Fonts from '../../Themes/Fonts';
 import DropIcon from 'react-native-vector-icons/AntDesign';
 import normalize from '../../Utils/Helpers/Dimen';
-import RenderHTML from 'react-native-render-html';
 import Colorpath from '../../Themes/Colorpath';
 import moment from 'moment';
+import HtmlTableRenderer from './HtmlTableRenderer';
 
 const CourseOutline = ({ wholedata }) => {
     const { width } = useWindowDimensions();
@@ -70,8 +70,8 @@ const CourseOutline = ({ wholedata }) => {
                                 }}>
                                 {item?.title}
                             </Text>
-                        <RenderHTML
-                            contentWidth={width}
+                        <HtmlTableRenderer
+                            width={width}
                             source={{ html: item?.description }}
                             tagsStyles={{
                                 p: {

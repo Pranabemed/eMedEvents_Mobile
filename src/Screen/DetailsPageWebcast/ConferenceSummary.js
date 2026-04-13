@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import RenderHTML from 'react-native-render-html';
+import HtmlTableRenderer from './HtmlTableRenderer';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -9,8 +9,8 @@ const ConferenceSummary = ({ conferenceHtml, expandcon,conferShows, width }) => 
     return (
         <>
         <View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(2), width: "100%" }}>
-            <RenderHTML
-                contentWidth={width}
+            <HtmlTableRenderer
+                width={width}
                 source={conferenceHtml}
                 tagsStyles={{
                     p: {
