@@ -101,7 +101,7 @@ import SpeakerProfile from '../Screen/GlobalSupport/SpeakerProfile';
 import ContactUs from '../Screen/GlobalSupport/ContactUs';
 import StickyFlatList from '../Screen/GlobalSupport/StickyFlatList';
 import NonMain from '../Screen/NonPhysician/NonMain';
-import { AppState, Linking, DeviceEventEmitter, Alert, Platform } from 'react-native';
+import { AppState, Linking, DeviceEventEmitter, Alert, Platform, BackHandler } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import SplashInt from '../Screen/SplashScreen/IntSplash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -277,6 +277,16 @@ const StackNav = props => {
   }
   const wasBackgrounded = useRef(false);
 
+
+  const resetToSplashScreen = useCallback(() => {
+    navigationRef.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Splash' }],
+      })
+    );
+  }, []);
+
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'background') {
@@ -286,6 +296,11 @@ const StackNav = props => {
         // Only reset to Splash when returning from a real background (app minimized)
         // NOT on 'inactive' (keyboard dismiss, notification pull-down, alerts, etc.)
         wasBackgrounded.current = false;
+        if (isExternalNavigationInProgress.current) {
+          console.log('[DeepLink] Skipping Splash reset after intentional external navigation');
+          isExternalNavigationInProgress.current = false;
+          return;
+        }
         AsyncStorage.getItem(constants.TOKEN).then((token) => {
           if (!token) {
             resetToSplashScreen();
@@ -298,22 +313,188 @@ const StackNav = props => {
 
     const sub = AppState.addEventListener('change', handleAppStateChange);
     return () => sub.remove();
-  }, []);
-  const navigationRefs = React.createRef();
-  const resetToSplashScreen = () => {
-    if (!navigationRefs.current) return;
-
-    navigationRefs.current.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Splash' }],
-      })
-    );
-  };
+  }, [resetToSplashScreen]);
   const [tokenever, setTokenever] = useState("");
   const [dashever, setDashever] = useState("");
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingDeepLink, setPendingDeepLink] = useState(null);
+  const isRedirectingToWeb = useRef(false);
+  const isExternalNavigationInProgress = useRef(false);
+  const initialUrlHandled = useRef(false);
+
+  const safeDecode = useCallback((value) => {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }, []);
+
+  const normalizeUrlCandidate = useCallback((value) => {
+    if (typeof value !== 'string') return value;
+
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return trimmedValue;
+
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmedValue)) {
+      return trimmedValue;
+    }
+
+    return `https://${trimmedValue}`;
+  }, []);
+
+  const extractNestedTargetUrl = useCallback((rawUrl) => {
+    if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+
+    // 1. Initial normalization (ensure protocol for URL constructor)
+    let current = normalizeUrlCandidate(rawUrl.trim());
+
+    // 2. Loop to unwrap nested redirects (Google -> Mailtiply -> Target)
+    // We increase to 10 iterations to be absolutely sure we hit the bottom
+    for (let index = 0; index < 10; index += 1) {
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(current);
+      } catch (error) {
+        // If it's not a valid URL yet, try one final decode and see if that helps
+        const decodedCandidate = safeDecode(current);
+        if (decodedCandidate === current) break;
+        current = normalizeUrlCandidate(decodedCandidate);
+        continue;
+      }
+
+      const params = parsedUrl.searchParams;
+      // Fetch nested URL from common tracking parameters
+      let nestedUrl =
+        params.get('ru') ||  // Mailtiply
+        params.get('q') ||   // Google
+        params.get('url') || // Common
+        params.get('u');     // Common
+
+      if (!nestedUrl) break;
+
+      // 3. Robust decoding (handle multiple layers of encoding like %252f)
+      let decodedNestedUrl = nestedUrl;
+      for (let decodeIndex = 0; decodeIndex < 5; decodeIndex += 1) {
+        const tempDecoded = safeDecode(decodedNestedUrl);
+        if (tempDecoded === decodedNestedUrl) break;
+        decodedNestedUrl = tempDecoded;
+      }
+
+      // 4. Normalize the result for the next iteration
+      const nextCandidate = normalizeUrlCandidate(decodedNestedUrl.trim());
+
+      // Stop if we stop making progress
+      if (!nextCandidate || nextCandidate === current) break;
+
+      current = nextCandidate;
+    }
+
+    return current;
+  }, [normalizeUrlCandidate, safeDecode]);
+
+  const cleanTrackingParams = useCallback((url) => {
+    try {
+      const parsedUrl = new URL(url);
+
+      const paramsToDelete = [
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_term',
+        'utm_content',
+        'sp_sid',
+        'source', // often comes from gmail
+        'ust',
+        'usg'
+      ];
+
+      paramsToDelete.forEach((param) => parsedUrl.searchParams.delete(param));
+      return parsedUrl.toString();
+    } catch (error) {
+      return url;
+    }
+  }, []);
+
+  const parseDeepLinkDetails = useCallback((incomingUrl) => {
+    console.log('[DeepLink] Processing incoming URL:', incomingUrl);
+
+    if (!incomingUrl) {
+      return { originalUrl: incomingUrl, resolvedUrl: incomingUrl, normalizedUrl: '', slug: null, refID: null, isInternalLink: false };
+    }
+
+    // Step 1: Unwrap tracking redirects
+    let resolvedUrl = extractNestedTargetUrl(incomingUrl);
+
+    // Step 2: Clean tracking garbage
+    resolvedUrl = cleanTrackingParams(resolvedUrl);
+    const normalizedUrl = resolvedUrl.toLowerCase();
+
+    console.log('[DeepLink] Resolved URL after decoding:', resolvedUrl);
+
+    let slug = null;
+    let refID = null;
+    let hostname = '';
+    let pathname = '';
+
+    try {
+      const parsedUrl = new URL(resolvedUrl);
+      hostname = parsedUrl.hostname.toLowerCase();
+      pathname = parsedUrl.pathname.toLowerCase();
+
+      const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+      slug = pathSegments.length ? pathSegments[pathSegments.length - 1] : null;
+
+      // Extract RefID specifically or fallback to entire query
+      refID = parsedUrl.searchParams.get('RefID') ||
+        parsedUrl.searchParams.get('refid') ||
+        (parsedUrl.search ? parsedUrl.search.slice(1) : null);
+
+    } catch (error) {
+      const [urlWithoutQuery, queryString] = resolvedUrl.split('?');
+      const fallbackPath = urlWithoutQuery.includes('//') ? urlWithoutQuery.split('//')[1] : urlWithoutQuery;
+      const pathSegments = fallbackPath.split('/').filter(Boolean);
+      slug = pathSegments.length ? pathSegments[pathSegments.length - 1] : null;
+      refID = queryString || null;
+
+      // Basic hostname extraction for fallback
+      if (urlWithoutQuery.includes('//')) {
+        hostname = urlWithoutQuery.split('//')[1].split('/')[0].toLowerCase();
+      }
+    }
+
+    // Comprehensive internal link check
+    const isEmedHost = hostname.includes('emedevents.com') || hostname.includes('emedevents.net');
+
+    const internalPathPatterns = [
+      '/online-cme-courses',
+      '/webcasts/',
+      '/webcast/',
+      'course-bundle',
+      'mandatory-topic',
+      '/conference/',
+      '/conferences/'
+    ];
+
+    const hasInternalPattern = internalPathPatterns.some(pattern =>
+      pathname.includes(pattern.toLowerCase()) ||
+      normalizedUrl.includes(pattern.toLowerCase())
+    );
+
+    const isInternalLink = isEmedHost && hasInternalPattern;
+
+    console.log('[DeepLink] Analysis result:', { hostname, pathname, slug, refID, isInternalLink });
+
+    return {
+      originalUrl: incomingUrl,
+      resolvedUrl,
+      normalizedUrl,
+      slug,
+      refID,
+      isInternalLink,
+    };
+  }, [cleanTrackingParams, extractNestedTargetUrl]);
 
   // 1. Move logic to a useCallback so it's stable
   const loadAuthData = useCallback(async () => {
@@ -333,7 +514,7 @@ const StackNav = props => {
         if (dashboardData) setDashever(dashboardData);
       }
 
-      return authData; // 🔥 return data directly
+      return authData;
     } catch (error) {
       console.log('AsyncStorage Error:', error);
       return { token: null, dashboard: null };
@@ -352,15 +533,13 @@ const StackNav = props => {
       if (nextAppState === 'active') {
         console.log('App returned to foreground - re-syncing auth...');
         loadAuthData();
-      } else {
-        loadAuthData();
       }
     });
 
     return () => subscription.remove();
   }, [loadAuthData]);
 
-  const navigateToScreen = async (screen, params) => {
+  const navigateToScreen = useCallback(async (screen, params) => {
     const newKey = Date.now().toString();
     navigationRef.current?.dispatch(
       CommonActions.reset({
@@ -371,113 +550,135 @@ const StackNav = props => {
         }]
       })
     );
-  };
+  }, []);
 
-  const handleDeepLink = async (url) => {
+  const openExternalBrowser = useCallback(async (url) => {
     if (!url) return;
+    const browserUrl = normalizeUrlCandidate(url);
+
+    try {
+      isRedirectingToWeb.current = true;
+      isExternalNavigationInProgress.current = true;
+
+      console.log('[DeepLink] Triggering browser with:', browserUrl);
+
+      await Linking.openURL(browserUrl);
+
+      setTimeout(() => { isRedirectingToWeb.current = false; }, 4000);
+      setTimeout(() => { isExternalNavigationInProgress.current = false; }, 4000);
+    } catch (err) {
+      console.log('Browser open failed', err);
+      isRedirectingToWeb.current = false;
+      isExternalNavigationInProgress.current = false;
+    }
+  }, [normalizeUrlCandidate]);
+
+  const handleDeepLink = useCallback(async (url) => {
+    if (!url) return;
+    const trimmedUrl = url.trim();
+    console.log('🌍 Incoming URL:', trimmedUrl);
+
+    const {
+      resolvedUrl,
+      normalizedUrl,
+      slug,
+      refID,
+      isInternalLink,
+    } = parseDeepLinkDetails(trimmedUrl);
+
+    console.log('🔥 FINAL CLEAN URL:', resolvedUrl);
+
+    if (refID) {
+      try {
+        await AsyncStorage.setItem(constants.REFID, refID);
+        console.log('[DeepLink] Full query string captured for RefID:', refID);
+      } catch (e) {
+        console.log('[DeepLink] Error parsing RefID:', e);
+      }
+    }
+
+    // 🔒 Reject processing if we are currently mid-redirect to prevent infinite loops (especially on Android)
+    if (isRedirectingToWeb.current) {
+      console.log('[DeepLink] Loop prevention active, ignoring trigger:', resolvedUrl);
+      return;
+    }
 
     // Restrict /price-page/ and other specific URLs to open in the web browser only
-    if (url.includes('/price-page/')) {
-      console.log('[DeepLink] Redirecting restricted URL to browser:', url);
-      Linking.openURL(url).catch(err => console.error('An error occurred', err));
+    if (normalizedUrl.includes('/price-page/')) {
+      console.log('[DeepLink] Redirecting restricted URL to browser:', resolvedUrl);
+      openExternalBrowser(resolvedUrl);
       return;
     }
 
-    // 1. Capture the FULL query string as RefID (as requested by the user)
-    let refID = null;
-    try {
-      if (url.includes('?')) {
-        const queryString = url.split('?')[1];
-        if (queryString) {
-          refID = queryString; // Capture everything after the '?'
-          await AsyncStorage.setItem(constants.REFID, refID);
-          console.log('[DeepLink] Full query string captured for RefID:', refID);
-        }
-      }
-    } catch (e) {
-      console.log('[DeepLink] Error parsing RefID:', e);
-    }
+    const [token, dashboard] = await Promise.all([
+      AsyncStorage.getItem(constants.TOKEN),
+      AsyncStorage.getItem(constants.WHOLEDATA),
+    ]);
 
-    // 2. Extract slug and determine if it's a valid conference URL
-    const urlWithoutQuery = url.split('?')[0];
-    const urlPath = urlWithoutQuery.includes('//') ? urlWithoutQuery.split('//')[1] : urlWithoutQuery;
-    const pathParts = urlPath.split('/').filter(Boolean); // e.g. ["www.emedevents.com", "conference", "slug"]
+    // 🔥 Only open in-app if URL is internal AND user is logged in
+    const shouldOpenStatewebcast = isInternalLink && !!token;
 
-    const isRootUrl = pathParts.length <= 1;
-    const slug = isRootUrl ? null : pathParts[pathParts.length - 1];
-    const normalizedUrlWithoutQuery = urlWithoutQuery.toLowerCase();
-    const isOnlineCmeLink =
-      normalizedUrlWithoutQuery.startsWith('https://www.emedevents.com/online-cme-courses') ||
-      normalizedUrlWithoutQuery.startsWith('https://emedevents.com/online-cme-courses');
-
-    if (!isAuthReady) {
-      console.log('Auth not ready, storing deep link');
-      setPendingDeepLink({ url, slug, refID });
-      return;
-    }
-
-    // 🔥 ALWAYS fetch latest auth directly
-    const { token, dashboard } = await loadAuthData();
-
-    // Strict navigation: ONLY Online CME links for logged-in users open the app
-    const shouldOpenStatewebcast = !!token && isOnlineCmeLink;
-
-    console.log('Deep link verification:', {
-      isOnlineCmeLink,
+    console.log('[DeepLink] Verification LOG:', {
+      url: normalizedUrl,
+      resolvedUrl,
+      isInternal: isInternalLink,
       hasToken: !!token,
-      shouldOpenStatewebcast
+      finalChoice: shouldOpenStatewebcast ? 'APP' : 'BROWSER'
     });
 
     if (shouldOpenStatewebcast) {
+      // Check if navigation is ready (especially on cold launch)
+      if (!isNavigationReady) {
+        console.log('[DeepLink] Navigation not ready, storing pending link');
+        setPendingDeepLink({ url: resolvedUrl, slug, refID });
+        return;
+      }
+
       navigateToScreen("Statewebcast", {
         webCastURL: { webCastURL: slug, creditData: dashboard, refID: refID }
       });
     } else {
-      console.log('[DeepLink] Redirecting to external browser');
-      Linking.openURL(url).catch(err => console.error('[DeepLink] Error redirecting to web:', err));
+      console.log('[DeepLink] Link redirected to browser (either external or user not logged in)');
+      openExternalBrowser(resolvedUrl);
     }
-  };
+  }, [isNavigationReady, navigateToScreen, openExternalBrowser, parseDeepLinkDetails]);
 
-  // const handleDeepLink = (url) => {
-  //   if (!url) {
-  //     console.log("Deep link URL is undefined");
-  //     return;
-  //   }
-  //   const slug = url.split('/').pop();
-  //   console.log('Slug from deep link:', slug);
-  //   if (!isAuthReady) {
-  //     console.log('Auth not ready, storing deep link');
-  //     setPendingDeepLink({ slug });
-  //     return;
-  //   }
-  //   handleDeepLinkNavigation(slug);
-  // };
   useEffect(() => {
     const handleUrl = (event) => {
       const { url } = event;
       console.log('🌍 URL received:', url);
       handleDeepLink(url);
     };
+
+    // Handle initial URL strictly once
     Linking.getInitialURL().then((url) => {
-      if (url) {
-        console.log('Initial URL:', url);
+      if (url && !initialUrlHandled.current) {
+        initialUrlHandled.current = true;
+        console.log('Initial URL handled:', url);
         handleDeepLink(url);
       }
     });
+
     const subscription = Linking.addEventListener('url', handleUrl);
     return () => subscription.remove();
-  }, [isAuthReady]);
+  }, [handleDeepLink, isNavigationReady]); // 🔥 Run when navigation is ready
+
   useEffect(() => {
-    if (isAuthReady && pendingDeepLink) {
-      console.log('Auth ready, processing pending deep link:', pendingDeepLink);
-      // Pass the full URL if stored, otherwise just use slug (may miss RefID)
+    if (isAuthReady && isNavigationReady && pendingDeepLink) {
+      console.log('Context ready, processing pending deep link:', pendingDeepLink);
       handleDeepLink(pendingDeepLink.url || pendingDeepLink.slug);
       setPendingDeepLink(null); // clear after processing
     }
-  }, [isAuthReady, pendingDeepLink]);
+  }, [handleDeepLink, isAuthReady, isNavigationReady, pendingDeepLink]);
 
   const linking = {
-    prefixes: ['https://www.emedevents.com', 'https://v2api.emedevents.com'],
+    prefixes: [
+      'https://www.emedevents.com',
+      'https://emedevents.com',
+      'http://www.emedevents.com',
+      'http://emedevents.com',
+      'https://v2api.emedevents.com'
+    ],
     config: {
       screens: {
         TabNavigator: "TabNav",   // ✅ dynamic parameter
@@ -485,13 +686,15 @@ const StackNav = props => {
     },
   };
   useEffect(() => {
-    const subscription = DeviceEventEmitter.addListener('url', (event) => {
-      console.log('Deep link received via DeviceEventEmitter:', event.url);
-      loadAuthData();
+    const subscription = DeviceEventEmitter.addListener('DEEP_LINK_URL', (data) => {
+      console.log('[StackNav] Internal deep link trigger received:', data?.url);
+      if (data?.url) {
+        handleDeepLink(data.url);
+      }
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [handleDeepLink, isNavigationReady, isAuthReady]);
   console.log(dashever, tokenever, "hfghjh====111", conn, DeviceEventEmitter)
   const routeNameRef = useRef();
   return (
@@ -526,6 +729,7 @@ const StackNav = props => {
         }}
         theme={mytheme}
         onReady={() => {
+          setIsNavigationReady(true);
           routeNameRef.current = navigationRef.current.getCurrentRoute().name;
         }}
       >

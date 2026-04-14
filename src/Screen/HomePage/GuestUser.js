@@ -19,7 +19,6 @@ import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import RenderHTML from 'react-native-render-html';
-import BannerComponent from './TopBanner';
 import { parseHtmlContent } from './DuplicateContent';
 import FeaturedComponent from './FeaturedBanner';
 import CMEExclusive from './ExclusiveCME';
@@ -790,6 +789,95 @@ const GuestUser = (props) => {
         });
     };
     const filteredBanners = filterBannersWithContent(wholecontent?.mobile_top_banners || []);
+    useEffect(() => {
+        setTopbanner(filteredBanners.length);
+    }, [filteredBanners.length]);
+
+    const renderTopBannerItem = ({ item }) => {
+        const htmlStructure = parseHtmlContent(item?.html_content);
+        const dynamicHeight = normalize(120 + htmlStructure.content.length * 25);
+
+        if (!htmlStructure.title || !htmlStructure.content.some((entry) => entry.date || entry.location || entry.credit)) {
+            return null;
+        }
+
+        return (
+            <View style={{ paddingHorizontal: normalize(5), paddingVertical: normalize(10) }}>
+                <ImageBackground
+                    source={Imagepath.HomeUser}
+                    style={{
+                        width: normalize(310),
+                        justifyContent: 'space-between',
+                        height: dynamicHeight,
+                        paddingVertical: normalize(15),
+                        paddingHorizontal: normalize(10),
+                        borderRadius: 10,
+                    }}
+                    imageStyle={{ borderRadius: 10 }}
+                    resizeMode="stretch"
+                >
+                    <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
+                        <Text style={{ fontSize: 24, fontFamily: Fonts.InterSemiBold, color: '#FFFFFF' }}>
+                            {htmlStructure?.title}
+                        </Text>
+                        {htmlStructure.content.map((entry, idx) => (
+                            <View style={{ flexDirection: 'column', paddingVertical: normalize(2) }} key={idx}>
+                                {entry?.date ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Icon name="access-time" size={20} color="#FFFFFF" />
+                                        <Text style={{ fontSize: 16, color: '#FFFFFF', marginLeft: normalize(6), fontFamily: Fonts.InterMedium }}>
+                                            {entry?.date}
+                                        </Text>
+                                    </View>
+                                ) : null}
+
+                                {entry?.location ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Icon name="location-on" size={20} color="#FFFFFF" />
+                                        <Text style={{ fontSize: 16, color: '#FFFFFF', marginLeft: normalize(6), fontFamily: Fonts.InterMedium }}>
+                                            {entry?.location}
+                                        </Text>
+                                    </View>
+                                ) : null}
+
+                                {entry?.credit ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Image
+                                                source={Imagepath.CreditValut}
+                                                style={{
+                                                    tintColor: Colorpath.white,
+                                                    height: normalize(18),
+                                                    width: normalize(18),
+                                                    resizeMode: 'contain',
+                                                }}
+                                            />
+                                            <Text
+                                                style={{
+                                                    width: normalize(200),
+                                                    fontSize: 16,
+                                                    color: '#FFFFFF',
+                                                    marginLeft: normalize(6),
+                                                    fontFamily: Fonts.InterMedium,
+                                                }}
+                                            >
+                                                {entry?.credit}
+                                            </Text>
+                                        </View>
+                                        {val < filteredBanners.length - 1 ? (
+                                            <TouchableOpacity onPress={handleNext} style={styles.topBannerChevron}>
+                                                <Icon name="chevron-right" size={24} color="#FFFFFF" />
+                                            </TouchableOpacity>
+                                        ) : null}
+                                    </View>
+                                ) : null}
+                            </View>
+                        ))}
+                    </View>
+                </ImageBackground>
+            </View>
+        );
+    };
     return (
         <>
             <MyStatusBar
@@ -826,7 +914,7 @@ const GuestUser = (props) => {
                             }
                             itemHeight={windowHeight * 0.4}
                             sliderHeight={windowHeight * 0.9}
-                            renderItem={({ item }) => <BannerComponent val={val} handleNext={handleNext} setTopbanner={setTopbanner} topbanner={topbanner} bannerHtmlContent={filteredBanners} htmlContent={item?.html_content} />}
+                            renderItem={renderTopBannerItem}
                             firstItem={0}
                             onSnapToItem={handleSnapToItem}
                         />
@@ -1377,5 +1465,14 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "#FFFFFF",
         borderRadius: 20
+    },
+    topBannerChevron: {
+        height: normalize(30),
+        width: normalize(30),
+        borderWidth: 2,
+        borderColor: "#FFFFFF",
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

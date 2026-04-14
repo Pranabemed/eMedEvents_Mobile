@@ -151,7 +151,7 @@ export default function Splash(props) {
       setFulldashbaord(uniqueStates);
       setDashboard(finalPush);
       setLoadingDashboard(false);
-      
+
       if (uniqueStates?.length > 0) {
         const firstState = uniqueStates[0];
         setAddit(firstState);
@@ -184,7 +184,7 @@ export default function Splash(props) {
   const stateDashboardData = (id) => {
     if (!id || lastStateIdHandledRef.current === id) return;
     lastStateIdHandledRef.current = id;
-    
+
     connectionrequest()
       .then(() => dispatch(stateDashboardRequest({ "state_id": id })))
       .catch(err => showErrorAlert("Please connect to internet", err));
@@ -204,7 +204,7 @@ export default function Splash(props) {
   const licHandl = (profFromDashboard) => {
     if (!profFromDashboard || lastLicHandledRef.current === profFromDashboard) return;
     lastLicHandledRef.current = profFromDashboard;
-    
+
     connectionrequest()
       .then(() => dispatch(licesensRequest(profFromDashboard)))
       .catch(err => showErrorAlert('Please connect to Internet', err));
@@ -241,7 +241,7 @@ export default function Splash(props) {
     const loginResponse = AuthReducer?.loginResponse || {};
     const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
     const { is_verified, phone_verified, email, phone } = verifyData;
-    
+
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
     const profFromDashboard = profInfo.profession && profInfo.profession_type
       ? `${profInfo.profession} - ${profInfo.profession_type}`
@@ -255,7 +255,7 @@ export default function Splash(props) {
     const noPhoneDt = !phone;
     const bothVerified = isVerified && isPhoneVerified;
     const handleVerify = spalsh || bothVerified;
-    
+
     const isValidDashboard = !loadingDashboard &&
       Array.isArray(dashboard) &&
       dashboard.some(item => String(item || "").trim() !== "");
