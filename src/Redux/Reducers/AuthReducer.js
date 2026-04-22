@@ -329,6 +329,7 @@ const AuthSlice = createSlice({
       state.status = action.type;
     },
     verifyFailure(state, action) {
+      state.verifyResponse = action.payload;
       state.error = action.error;
       state.status = action.type;
     },

@@ -266,6 +266,45 @@ function performRefresh(reason) {
     return _refreshPromise;
 }
 
+async function ensureValidToken(reason = 'ensure-valid-token') {
+    try {
+        const token = await AsyncStorage.getItem(constants.TOKEN);
+        if (!token) {
+            return null;
+        }
+
+        const expiryMs = getTokenExpiryMs(token);
+        if (!expiryMs) {
+            console.log('[TokenManager] ensureValidToken: unknown token expiry, using stored token and scheduling refresh fallback.');
+            performRefresh(`${reason}-unknown-expiry`);
+            return token;
+        }
+
+        const now = Date.now();
+        if (now >= expiryMs) {
+            console.log('[TokenManager] ensureValidToken: stored token already expired, waiting for silent refresh...');
+            const refreshedToken = await performRefresh(`${reason}-expired`);
+            if (refreshedToken) {
+                return refreshedToken;
+            }
+            console.warn('[TokenManager] ensureValidToken: silent refresh failed, keeping stored token to avoid forced logout.');
+            return token;
+        }
+
+        if (now >= expiryMs - REFRESH_BUFFER_MS) {
+            console.log('[TokenManager] ensureValidToken: token near expiry, waiting for proactive refresh...');
+            const refreshedToken = await performRefresh(`${reason}-near-expiry`);
+            return refreshedToken || token;
+        }
+
+        _scheduleTimer(token);
+        return token;
+    } catch (e) {
+        console.warn('[TokenManager] ensureValidToken error (non-fatal):', e?.message);
+        return await AsyncStorage.getItem(constants.TOKEN);
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Timer scheduler — reads the token, decodes exp, sets a setTimeout to fire
 // REFRESH_BUFFER_MS before expiry.
@@ -449,6 +488,14 @@ const TokenManager = {
      */
     forceRefresh() {
         return performRefresh('force-refresh');
+    },
+
+    /**
+     * Ensures startup/foreground flows can wait for a usable token before
+     * dispatching authenticated API calls.
+     */
+    ensureValidToken(reason) {
+        return ensureValidToken(reason);
     },
 };
 

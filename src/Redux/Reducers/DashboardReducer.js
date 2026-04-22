@@ -36,6 +36,7 @@ const DashboardSlice = createSlice({
       state.status = action.type;
     },
     dashboardFailure(state, action) {
+      state.dashboardResponse = action.payload;
       state.status = action.type;
       state.error = action.error;
     },

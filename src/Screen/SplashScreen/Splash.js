@@ -12,10 +12,29 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
+import TokenManager from '../../Utils/Helpers/TokenManager';
 
 let status1 = "";
+const INVALID_TOKEN_MESSAGES = [
+  'missing or invalid token',
+  'invalid token',
+  'missing token',
+  'token expired',
+  'token is expired',
+];
 
 const isVerifiedFlag = (value) => value == "1" || value == 1 || value === true;
+const getTokenErrorMessage = (value) => (
+  value?.data?.msg ||
+  value?.data?.message ||
+  value?.msg ||
+  value?.message ||
+  ''
+).toLowerCase().trim();
+const isInvalidTokenFailure = (value) => {
+  const msg = getTokenErrorMessage(value);
+  return INVALID_TOKEN_MESSAGES.some(pattern => msg === pattern || msg.startsWith(pattern));
+};
 
 export default function Splash(props) {
   const {
@@ -44,6 +63,27 @@ export default function Splash(props) {
   const [phoneV, setPhoneV] = useState("");
 
   const hasNavigatedRef = useRef(false);
+  const startupRequestedRef = useRef(false);
+
+  const resetToOnboard = async () => {
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(constants.TOKEN),
+        AsyncStorage.removeItem(constants.REFRESH_TOKEN),
+        AsyncStorage.removeItem(constants.VERIFYSTATEDATA),
+        AsyncStorage.removeItem(constants.EMAVER),
+        AsyncStorage.removeItem(constants.MOBVER),
+      ]);
+    } catch (error) {
+      console.log('[Splash] Failed to clear auth state:', error);
+    }
+
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    props.navigation.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
+    );
+  };
 
   useEffect(() => {
     const handleNavigation = async () => {
@@ -65,9 +105,12 @@ export default function Splash(props) {
 
   useEffect(() => {
     const token_error = () => {
-      setTimeout(() => {
-        AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+      setTimeout(async () => {
+        try {
+          const loginHandleProccess = await TokenManager.ensureValidToken('splash-bootstrap');
+
           if (loginHandleProccess) {
+            startupRequestedRef.current = true;
             let objToken = { "token": loginHandleProccess, "key": {} };
             connectionrequest()
               .then(() => {
@@ -81,14 +124,12 @@ export default function Splash(props) {
               .catch((err) => showErrorAlert("Please connect to internet", err));
           } else {
             setTimeout(() => {
-              if (hasNavigatedRef.current) return;
-              hasNavigatedRef.current = true;
-              props.navigation.dispatch(
-                CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
-              );
+              resetToOnboard();
             }, 500);
           }
-        });
+        } catch (error) {
+          console.log(error);
+        }
       }, 500);
     };
     try {
@@ -170,6 +211,26 @@ export default function Splash(props) {
       setLoadingDashboard(false);
     }
   }, [DashboardReducer?.dashboardResponse?.data]);
+
+  useEffect(() => {
+    if (DashboardReducer?.status === 'Dashboard/dashboardFailure') {
+      setLoadingDashboard(false);
+    }
+  }, [DashboardReducer?.status]);
+
+  useEffect(() => {
+    if (!startupRequestedRef.current || hasNavigatedRef.current) return;
+
+    const dashboardInvalid = isInvalidTokenFailure(DashboardReducer?.dashboardResponse);
+    const verifyInvalid = isInvalidTokenFailure(AuthReducer?.verifyResponse);
+
+    if (dashboardInvalid || verifyInvalid) {
+      resetToOnboard();
+    }
+  }, [
+    DashboardReducer?.dashboardResponse,
+    AuthReducer?.verifyResponse,
+  ]);
 
   useEffect(() => {
     if (!loadingDashboard && profFromDashboard) {
