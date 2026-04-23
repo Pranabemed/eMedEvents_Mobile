@@ -295,7 +295,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 }}
                     style={{
                         flexDirection: "row",
-                        height: normalize(95),
+                        height: normalize(110),
                         width: normalize(300),
                         borderRadius: normalize(10),
                         backgroundColor: "#FFFFFF",
@@ -320,7 +320,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                         <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
                             <View style={{
                                 flexDirection: "row",
-                                height: normalize(50),
+                                height: normalize(60),
                                 width: normalize(88),
                                 borderRadius: normalize(8),
                                 // paddingHorizontal: normalize(10),
@@ -335,7 +335,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </View>
                             <View style={{
                                 flexDirection: "row",
-                                height: normalize(50),
+                                height: normalize(60),
                                 width: normalize(88),
                                 borderRadius: normalize(8),
                                 // paddingHorizontal: normalize(10),
@@ -350,7 +350,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </View>
                             <View style={{
                                 flexDirection: "row",
-                                height: normalize(50),
+                                height: normalize(60),
                                 width: normalize(88),
                                 borderRadius: normalize(8),
                                 backgroundColor: "#F1EBFF",
@@ -365,7 +365,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </View>
                         </View>
                     </View>
-                    <TouchableOpacity style={{ marginBottom: normalize(60), backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
+                    <TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
                         if (enables) {
                             setPrimeadd(true);
                         } else {

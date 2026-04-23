@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import normalize from '../Utils/Helpers/Dimen';
 import Colorpath from '../Themes/Colorpath';
 import Main from '../Screen/Dashboard/Main';
@@ -50,6 +51,7 @@ const buildProfessionLabel = (profession, professionType) => {
 
 const Tab = createBottomTabNavigator();
 function TabScreen() {
+  const insets = useSafeAreaInsets();
   const {
     setFulldashbaord,
     setGtprof,
@@ -86,6 +88,16 @@ function TabScreen() {
   const hydratedStateIdRef = useRef(null);
   const processedRefreshAtRef = useRef(null);
   const lastLicensureProfessionRef = useRef('');
+  const bottomInset = Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, normalize(10));
+  const tabBarBaseHeight = Platform.OS === 'ios' ? normalize(70) : normalize(60);
+  const sharedTabBarStyle = {
+    borderWidth: 0.8,
+    borderColor: "#DADADA",
+    backgroundColor: '#FFFFFF',
+    height: tabBarBaseHeight + bottomInset,
+    paddingBottom: bottomInset,
+    paddingTop: normalize(6),
+  };
   useEffect(() => {
     const token_error = () => {
       AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
@@ -345,12 +357,10 @@ function TabScreen() {
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
-        tabBarStyle: {
-          borderWidth: 0.8,
-          borderColor: "#DADADA",
-          backgroundColor: '#FFFFFF',
-          height: Platform.OS === 'ios' ? normalize(70) : normalize(70),
+        sceneStyle: {
+          backgroundColor: Colorpath.Pagebg,
         },
+        tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
@@ -498,12 +508,10 @@ function TabScreen() {
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
-        tabBarStyle: {
-          borderWidth: 0.8,
-          borderColor: "#DADADA",
-          backgroundColor: '#FFFFFF',
-          height: Platform.OS === 'ios' ? normalize(70) : normalize(60),
+        sceneStyle: {
+          backgroundColor: Colorpath.Pagebg,
         },
+        tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
@@ -639,12 +647,10 @@ function TabScreen() {
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
-        tabBarStyle: {
-          borderWidth: 0.8,
-          borderColor: "#DADADA",
-          backgroundColor: '#FFFFFF',
-          height: Platform.OS === 'ios' ? normalize(70) : normalize(60),
+        sceneStyle: {
+          backgroundColor: Colorpath.Pagebg,
         },
+        tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {

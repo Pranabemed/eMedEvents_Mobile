@@ -57,14 +57,6 @@
               android:scheme="https"
               android:host="www.emedevents.com"
               android:pathPrefix="/online-cme-courses" />
-            <data
-              android:scheme="http"
-              android:host="emedevents.com"
-              android:pathPrefix="/online-cme-courses" />
-            <data
-              android:scheme="https"
-              android:host="emedevents.com"
-              android:pathPrefix="/online-cme-courses" />
         </intent-filter>
       </activity>
     </application>

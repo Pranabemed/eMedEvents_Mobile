@@ -33,6 +33,7 @@ import {
   Linking,
   Alert,
   AppState,
+  DeviceEventEmitter,
 } from 'react-native';
 
 import SpInAppUpdates, {
@@ -48,7 +49,8 @@ const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/ap
 const ANDROID_PACKAGE = 'com.emedevents.newapp';
 const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
 const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
-const UPDATE_RECHECK_MS = 30 * 60 * 1000; // 30 min periodic check while app is open
+const UPDATE_RECHECK_MS = 5 * 60 * 1000; // 5 min periodic check while app is open
+const NAVIGATION_RECHECK_MS = 60 * 1000; // Avoid repeated API hits during fast screen changes
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -179,6 +181,7 @@ const AppUpdateHandler = () => {
   const listenerAdded = useRef(false);  // Android download listener guard
   const isChecking = useRef(false);  // Debounce simultaneous checks
   const modalShown = useRef(false);  // Track shown state without closure issues
+  const lastCheckedAt = useRef(0); // Throttle checks triggered by navigation
 
   // ─── Open update modal ───────────────────────────────────────────────────────
   const openUpdateModal = useCallback((version, mandatory, url) => {
@@ -287,14 +290,28 @@ const AppUpdateHandler = () => {
   }, [inAppUpdates, openUpdateModal]);
 
   // ─── Main entry point ────────────────────────────────────────────────────────
-  const checkUpdate = useCallback(async () => {
+  const checkUpdate = useCallback(async ({
+    force = false,
+    minIntervalMs = 0,
+    reason = 'manual',
+  } = {}) => {
     if (modalShown.current || isChecking.current) return;
+
+    const now = Date.now();
+    if (!force && minIntervalMs > 0 && now - lastCheckedAt.current < minIntervalMs) {
+      console.log(`AppUpdate: Skipping check for ${reason}; throttled.`);
+      return;
+    }
+
     isChecking.current = true;
+    lastCheckedAt.current = now;
 
     try {
       const currentVersion = DeviceInfo.getVersion();
       const currentBuild = DeviceInfo.getBuildNumber();
-      console.log(`AppUpdate: Checking update. Installed: ${currentVersion} (code: ${currentBuild})`);
+      console.log(
+        `AppUpdate: Checking update (${reason}). Installed: ${currentVersion} (code: ${currentBuild})`,
+      );
 
       if (Platform.OS === 'ios') {
         // ✅ iOS: iTunes Lookup API works for ALL install types:
@@ -345,19 +362,36 @@ const AppUpdateHandler = () => {
 
   // ─── Run on mount + every time app comes to foreground ───────────────────────
   useEffect(() => {
-    checkUpdate();
+    checkUpdate({ force: true, reason: 'mount' });
 
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') checkUpdate();
+      if (state === 'active') {
+        checkUpdate({ reason: 'app-active' });
+      }
     });
     const intervalId = setInterval(() => {
-      checkUpdate();
+      checkUpdate({ force: true, reason: 'interval' });
     }, UPDATE_RECHECK_MS);
 
     return () => {
       sub.remove();
       clearInterval(intervalId);
     };
+  }, [checkUpdate]);
+
+  // ─── Re-check when navigation changes so auth/login transitions do not matter ──
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(
+      'APP_UPDATE_NAVIGATION_CHANGE',
+      ({ screenName }) => {
+        checkUpdate({
+          reason: `navigation:${screenName || 'unknown'}`,
+          minIntervalMs: NAVIGATION_RECHECK_MS,
+        });
+      },
+    );
+
+    return () => sub.remove();
   }, [checkUpdate]);
 
   // ─── Android download-status listener (registered once) ──────────────────────

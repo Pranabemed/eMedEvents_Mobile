@@ -72,6 +72,7 @@ export default function SplashInt(props) {
       <MyStatusBar
         barStyle={'light-content'}
         backgroundColor={Colorpath.ButtonColr}
+        translucent={false}
       />
       <ImageBackground
         source={Imagepath.SpalshNew}

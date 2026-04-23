@@ -24,7 +24,7 @@ import NonPhysicianCat from '../../Components/NonPhysicianCat';
 import NetInfo from '@react-native-community/netinfo';
 import { Freeze } from "react-freeze";
 import { enableFreeze } from "react-native-screens";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 
 const normalizeProfessionHandle = (professionHandle) =>
@@ -49,6 +49,7 @@ const findMatchedProfessionHandle = (candidates, supportedHandles) => {
 };
 
 const Main = (props) => {
+  const insets = useSafeAreaInsets();
   const {
     takestate,
     addit,
@@ -98,8 +99,12 @@ const Main = (props) => {
     if (freeTrail) {
       return normalize(150);
     }
-    return normalize(24);
+    return normalize(80);
   }, [allProfTake, enables, freeTrail]);
+  const homeBottomSpacing = useMemo(
+    () => bottomBannerSpacing + Math.max(insets.bottom, normalize(8)),
+    [bottomBannerSpacing, insets.bottom]
+  );
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -390,7 +395,11 @@ const Main = (props) => {
           <View style={{ flex: 1 }}>
             {showloader ? (
               <ScrollView
-                contentContainerStyle={{ paddingBottom: bottomBannerSpacing }}
+                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  paddingBottom: homeBottomSpacing,
+                }}
                 scrollEventThrottle={16}
               >
                 <View>
@@ -421,7 +430,7 @@ const Main = (props) => {
             right: 0,
             justifyContent: 'center',
             alignItems: 'center',
-            paddingBottom: normalize(10),
+            paddingBottom: insets.bottom + normalize(10),
           }}>
             <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25) }}>
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
@@ -435,7 +444,7 @@ const Main = (props) => {
               right: 0,
               justifyContent: 'center',
               alignItems: 'center',
-              paddingBottom: normalize(10),
+              paddingBottom: insets.bottom + normalize(10),
             }}
           >
             <Pressable

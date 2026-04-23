@@ -529,24 +529,24 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const hidetext = (!enables && !bothNoRequirement);
     const getDynamicHeight = () => {
         if (enables) {
-            return normalize(335)
+            return normalize(355)
         }
         if ((!enables && bothNoRequirement)) {
-            return normalize(250);
+            return normalize(270);
         }
         if (allProfTake && !expireDate) {
-            return normalize(330);
+            return normalize(350);
         }
         if (allProfTake && expireDate && bothNoRequirement) {
-            return normalize(245);
+            return normalize(265);
         }
         if (allProfTake && expireDate) {
-            return normalize(330);
+            return normalize(350);
         }
         if ((!enables && !bothNoRequirement)) {
-            return normalize(290);
+            return normalize(310);
         }
-        return normalize(230);
+        return normalize(250);
     };
 
     const handleAllIndex = (index) => {

@@ -445,6 +445,7 @@ export default function Splash(props) {
       <MyStatusBar
         barStyle={'light-content'}
         backgroundColor={Colorpath.ButtonColr}
+        translucent={false}
       />
       <View style={styles.container}>
         <LottieView

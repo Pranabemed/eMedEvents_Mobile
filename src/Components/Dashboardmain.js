@@ -34,96 +34,96 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                     <ActivityIndicator color={"black"} size={"small"} />
                     // <HomeShimmer />
                 ) : (!hasCourseStats ? <></> : <View style={DashboardReducer?.dashboardResponse?.data?.licensures?.length == 1 ? { justifyContent: "center", alignItems: "center", marginTop: normalize(10) } : { justifyContent: "center", alignItems: "center" }}>
-                        <TouchableOpacity onPress={() => {
-                            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
+                    <TouchableOpacity onPress={() => {
+                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
+                    }}
+                        style={{
+                            flexDirection: "row",
+                            height: normalize(110),
+                            width: normalize(300),
+                            borderRadius: normalize(10),
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: normalize(15),
+                            alignItems: "center",
+                            borderWidth: 0.5,
+                            borderColor: "#DADADA"
                         }}
-                            style={{
-                                flexDirection: "row",
-                                height: normalize(95),
-                                width: normalize(300),
-                                borderRadius: normalize(10),
-                                backgroundColor: "#FFFFFF",
-                                paddingHorizontal: normalize(15),
-                                alignItems: "center",
-                                borderWidth: 0.5,
-                                borderColor: "#DADADA"
-                            }}
-                        >
-                            <View style={{ flex: 1, justifyContent: "center" }}>
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 14,
-                                        color: "#000000",
-                                        fontWeight: "bold",
-                                    }}
-                                >
-                                    {`My Course(s) for ${finalDstat}`}
-                                </Text>
-                                <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
-                                    <View style={{
-                                        flexDirection: "row",
-                                        height: normalize(50),
-                                        width: normalize(88),
-                                        borderRadius: normalize(8),
-                                        backgroundColor: "#EAF5FF",
-                                        marginTop: normalize(5),
-                                        justifyContent: "center", alignItems: "center"
-                                    }}>
-                                        <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}</Text>
-                                        </View>
+                    >
+                        <View style={{ flex: 1, justifyContent: "center" }}>
+                            <Text
+                                style={{
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 14,
+                                    color: "#000000",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {`My Course(s) for ${finalDstat}`}
+                            </Text>
+                            <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#EAF5FF",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center", alignItems: "center"
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}</Text>
                                     </View>
-                                    <View style={{
-                                        flexDirection: "row",
-                                        height: normalize(50),
-                                        width: normalize(88),
-                                        borderRadius: normalize(8),
-                                        backgroundColor: "#E7F5E8",
-                                        marginTop: normalize(5),
-                                        justifyContent: "center", alignItems: "center"
-                                    }}>
-                                        <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}</Text>
-                                        </View>
+                                </View>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#E7F5E8",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center", alignItems: "center"
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}</Text>
                                     </View>
-                                    <View style={{
-                                        flexDirection: "row",
-                                        height: normalize(50),
-                                        width: normalize(88),
-                                        borderRadius: normalize(8),
-                                        backgroundColor: "#F1EBFF",
-                                        marginTop: normalize(5),
-                                        justifyContent: "center", alignItems: "center"
-                                    }}>
-                                        <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}</Text>
-                                        </View>
+                                </View>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#F1EBFF",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center", alignItems: "center"
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}</Text>
                                     </View>
                                 </View>
                             </View>
-                            <TouchableOpacity style={{ marginBottom: normalize(60), backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
-                                setStatepush(addit);
-                                navigation.dispatch(CommonActions.reset({
-                                    index: 0, routes: [{
-                                        name: "Course", params: {
-                                            taskData: { statid: takestate, creditID: addit },
-                                        }
-                                    }]
-                                }));
-                            }}>
-                                <ArrowIconsAnt
-                                    name="arrowright"
-                                    size={18}
-                                    color={Colorpath.white}
-                                    style={{ alignSelf: "center" }}
-                                />
-                            </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
+                            setStatepush(addit);
+                            navigation.dispatch(CommonActions.reset({
+                                index: 0, routes: [{
+                                    name: "Course", params: {
+                                        taskData: { statid: takestate, creditID: addit },
+                                    }
+                                }]
+                            }));
+                        }}>
+                            <ArrowIconsAnt
+                                name="arrowright"
+                                size={18}
+                                color={Colorpath.white}
+                                style={{ alignSelf: "center" }}
+                            />
                         </TouchableOpacity>
-                    </View>)}
+                    </TouchableOpacity>
+                </View>)}
                 {finddata?.my_activities?.length > 0 ? <View style={{ paddingVertical: hasTasks ? normalize(10) : normalize(10) }}>
                     <Pressable onPress={() => {
                         setStatepush(addit);

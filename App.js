@@ -10,6 +10,7 @@ import { Platform } from 'react-native'
 import { initPublicIP } from './src/Utils/Helpers/IPServer'
 import AppUpdateHandler from './src/Utils/Helpers/AppUpdate';
 import TokenManager from './src/Utils/Helpers/TokenManager';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const App = () => {
   const dispatch = useDispatch()
@@ -47,10 +48,10 @@ const App = () => {
   }, []);
 
   return (
-    <>
+    <SafeAreaProvider>
       <StackNav />
       <AppUpdateHandler />
-    </>
+    </SafeAreaProvider>
   )
 }
 

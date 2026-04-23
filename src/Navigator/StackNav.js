@@ -677,7 +677,6 @@ const StackNav = props => {
       'https://emedevents.com',
       'http://www.emedevents.com',
       'http://emedevents.com',
-      'https://v2api.emedevents.com'
     ],
     config: {
       screens: {
@@ -722,6 +721,9 @@ const StackNav = props => {
           setCurrentScreen(screenName);
 
           if (previousRouteName !== currentRouteName) {
+            DeviceEventEmitter.emit('APP_UPDATE_NAVIGATION_CHANGE', {
+              screenName,
+            });
             await trackScreen(screenName);
           }
 
