@@ -2,11 +2,11 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import propTypes from 'prop-types';
 
-const MyStatusBar = ({ backgroundColor, barStyle, translucent = true, ...props }) => (
+const MyStatusBar = ({ backgroundColor, barStyle, translucent = false, ...props }) => (
     <StatusBar
       translucent={translucent}
       backgroundColor={backgroundColor}
-      barStyle={barStyle || 'dark-content'}
+      barStyle={'dark-content'}
       hidden={false}
       animated={true}
       showHideTransition={'fade'}

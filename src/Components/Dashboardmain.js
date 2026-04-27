@@ -39,27 +39,49 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                     }}
                         style={{
                             flexDirection: "row",
-                            height: normalize(110),
+                            minHeight: normalize(110),
                             width: normalize(300),
                             borderRadius: normalize(10),
                             backgroundColor: "#FFFFFF",
                             paddingHorizontal: normalize(15),
-                            alignItems: "center",
+                            paddingVertical: normalize(12),
                             borderWidth: 0.5,
                             borderColor: "#DADADA"
                         }}
                     >
                         <View style={{ flex: 1, justifyContent: "center" }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    fontWeight: "bold",
-                                }}
-                            >
-                                {`My Course(s) for ${finalDstat}`}
-                            </Text>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <Text
+                                    numberOfLines={1}
+                                    style={{
+                                        flex: 1,
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 14,
+                                        color: "#000000",
+                                        fontWeight: "bold",
+                                        marginRight: normalize(8),
+                                    }}
+                                >
+                                    {`My Course(s) for ${finalDstat}`}
+                                </Text>
+                                <TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
+                                    setStatepush(addit);
+                                    navigation.dispatch(CommonActions.reset({
+                                        index: 0, routes: [{
+                                            name: "Course", params: {
+                                                taskData: { statid: takestate, creditID: addit },
+                                            }
+                                        }]
+                                    }));
+                                }}>
+                                    <ArrowIconsAnt
+                                        name="arrowright"
+                                        size={18}
+                                        color={Colorpath.white}
+                                        style={{ alignSelf: "center" }}
+                                    />
+                                </TouchableOpacity>
+                            </View>
                             <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
                                 <View style={{
                                     flexDirection: "row",
@@ -105,23 +127,6 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                                 </View>
                             </View>
                         </View>
-                        <TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
-                            setStatepush(addit);
-                            navigation.dispatch(CommonActions.reset({
-                                index: 0, routes: [{
-                                    name: "Course", params: {
-                                        taskData: { statid: takestate, creditID: addit },
-                                    }
-                                }]
-                            }));
-                        }}>
-                            <ArrowIconsAnt
-                                name="arrowright"
-                                size={18}
-                                color={Colorpath.white}
-                                style={{ alignSelf: "center" }}
-                            />
-                        </TouchableOpacity>
                     </TouchableOpacity>
                 </View>)}
                 {finddata?.my_activities?.length > 0 ? <View style={{ paddingVertical: hasTasks ? normalize(10) : normalize(10) }}>

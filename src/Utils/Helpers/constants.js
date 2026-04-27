@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 const BASE_URL = __DEV__
   ? 'https://v2api.emedevents.com'   // Staging
   : 'https://newdev.emedevents.com'; // Production
+const BASIC_AUTH_TOKEN = 'Basic ZW1lZGV2ZW50czplbWVkZXZlbnRzQDEyMw==';
 
 console.log(`[Config] Environment: ${__DEV__ ? 'STAGING' : 'PRODUCTION'}`);
 console.log(`[Config] BASE_URL: ${BASE_URL}`);
@@ -16,6 +17,7 @@ console.log(`[Config] BASE_URL: ${BASE_URL}`);
 
 export default {
   BASE_URL,
+  BASIC_AUTH_TOKEN,
   TOKEN: 'TOKEN',
   EMAILOTP: 'EMAILOTP',
   PHONEOTP: 'PHONEOTP',

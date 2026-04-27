@@ -154,6 +154,7 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     try {
       if (!config.headers) config.headers = {};
+      config.headers['Authorization'] = constants.BASIC_AUTH_TOKEN;
       const freshToken = await AsyncStorage.getItem(constants.TOKEN);
       if (freshToken) {
         config.headers['eMedAuthorization'] = freshToken;
@@ -161,10 +162,7 @@ axiosInstance.interceptors.request.use(
 
       const userAgentHeader = getUserAgentJSON();
       if (userAgentHeader) {
-        // Keep existing custom header name expected by backend.
         config.headers['userAgent'] = userAgentHeader;
-        // Also set standard header key for proxies/tools that only inspect User-Agent.
-        config.headers['User-Agent'] = userAgentHeader;
       }
 
     } catch (_) {
@@ -262,9 +260,10 @@ export async function getApi(url, header) {
   const userAgentHeader = getUserAgentJSON();
   const reqHeaders = {
     Accept: header.Accept,
+    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-type': header.contenttype,
     eMedAuthorization: header.authorization,
-    ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
+    ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   return axiosInstance.get(`${constants.BASE_URL}/${url}`, {
     headers: reqHeaders,
@@ -275,8 +274,9 @@ export async function getApiWithParam(url, param, header) {
   const userAgentHeader = getUserAgentJSON();
   const reqHeaders = {
     Accept: header.Accept,
+    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-type': header.contenttype,
-    ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
+    ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   return axiosInstance({
     method: 'GET',
@@ -308,10 +308,11 @@ export async function postApi(url, payload, header) {
   const userAgentHeader = getUserAgentJSON();
   const reqHeaders = {
     Accept: header.Accept,
+    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-Type': header.contenttype,
     eMedAuthorization: header.authorization,
     IPADDRESS: header.IPADDRESS,
-    ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
+    ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   console.log("header==========", reqHeaders);
   const requestPromise = axiosInstance.post(`${constants.BASE_URL}/${url}`, payload, {
@@ -343,9 +344,10 @@ export async function deleteApi(url, payload, header) {
   const userAgentHeader = getUserAgentJSON();
   const reqHeaders = {
     Accept: header.Accept,
+    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-Type': header.contenttype,
     eMedAuthorization: header.authorization,
-    ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
+    ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   try {
     return await axiosInstance.delete(cleanUrl, {
