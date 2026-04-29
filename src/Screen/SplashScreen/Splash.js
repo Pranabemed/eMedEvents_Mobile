@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
+import { chooseStatecardRequest, headerRequest, licesensRequest, tokenRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { dashboardRequest, mainprofileRequest, stateDashboardRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -102,6 +102,10 @@ export default function Splash(props) {
     };
     handleNavigation();
   }, [isFocus]);
+
+  useEffect(() => {
+    dispatch(headerRequest());
+  }, [dispatch]);
 
   useEffect(() => {
     const token_error = () => {

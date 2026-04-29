@@ -1,5 +1,4 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
-import { Platform } from 'react-native';
 import {
   signupSuccess,
   signupFailure,
@@ -7,6 +6,8 @@ import {
   loginFailure,
   tokenSuccess,
   tokenFailure,
+  headerSuccess,
+  headerFailure,
   professionSuccess,
   professionFailure,
   specializationSuccess,
@@ -63,7 +64,6 @@ import {
   allreducerSuccess,
   primeTrailSuccess,
   primeTrailFailure,
-  refreshTokenSuccess,
   refreshTokenFailure,
 } from '../Reducers/AuthReducer';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
@@ -72,13 +72,32 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { doRefreshToken } from '../../Utils/Helpers/TokenRefresh';
-import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
+import { fetchAndStoreBasicAuthToken } from '../../Utils/Helpers/BasicAuth';
 import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 
 ///token
+
+function* fetchBasicAuthTokenSaga() {
+  try {
+    const basicAuthToken = yield call(fetchAndStoreBasicAuthToken);
+
+    if (basicAuthToken) {
+      yield put(headerSuccess(basicAuthToken));
+      return basicAuthToken;
+    }
+
+    yield call(AsyncStorage.removeItem, constants.BASIC_AUTH_TOKEN);
+    yield put(headerFailure('Unable to fetch basic auth token'));
+    return null;
+  } catch (error) {
+    yield call(AsyncStorage.removeItem, constants.BASIC_AUTH_TOKEN);
+    yield put(headerFailure(error));
+    return null;
+  }
+}
 
 export function* gettokenSaga(action) {
   try {
@@ -855,57 +874,11 @@ export function* refreshTokenSaga(action) {
    *     creating an infinite loop.
    */
   try {
-    if (Platform.OS === 'ios') {
-      const newToken = yield call(doRefreshToken);
-      if (!newToken) {
-        yield put(refreshTokenFailure({ message: 'Refresh failed' }));
-      }
-      return;
-    }
-
-    const payload = action?.payload || {};
-    const storedRefresh = yield call(AsyncStorage.getItem, constants.REFRESH_TOKEN);
-    const refresh_token = payload?.refresh_token || storedRefresh;
-
-    if (!refresh_token) {
-      console.warn('[refreshTokenSaga] ❌ No refresh_token in storage — cannot refresh.');
-      yield put(refreshTokenFailure({ message: 'No refresh token available' }));
-      return;
-    }
-
-    console.log('[refreshTokenSaga] 🔄 Calling user/verifyRefreshToken (plain axios)…');
-    const userAgentHeader = getUserAgentJSON();
-
-    // ── PLAIN axios — NOT postApi — avoids interceptor loop ──────────────────
-    const { default: axios } = require('axios');
-    const res = yield call(() =>
-      axios.post(
-        `${constants.BASE_URL}/user/verifyRefreshToken`,
-        { refresh_token },
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
-          },
-          timeout: 15000,
-        },
-      )
-    );
-
-    if (res?.data?.success && res?.data?.token) {
-      const newToken = res.data.token;
-      const newRefreshToken = res.data.refresh_token || refresh_token;
-
-      yield call(AsyncStorage.setItem, constants.TOKEN, newToken);
-      yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, newRefreshToken);
-      yield put(tokenSuccess(newToken));
-      yield put(refreshTokenSuccess(res.data));
-
-      console.log('[refreshTokenSaga] ✅ Token refreshed successfully.');
+    const newToken = yield call(doRefreshToken);
+    if (newToken) {
+      console.log('[refreshTokenSaga] ✅ Token refreshed successfully through shared TokenManager lock.');
     } else {
-      console.warn('[refreshTokenSaga] ❌ verifyRefreshToken failed:', res?.data?.msg);
-      yield put(refreshTokenFailure(res?.data));
+      yield put(refreshTokenFailure({ message: 'Refresh failed' }));
     }
   } catch (error) {
     console.error('[refreshTokenSaga] Network error:', error?.message || error);
@@ -943,6 +916,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Auth/tokenRequest', gettokenSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Auth/headerRequest', fetchBasicAuthTokenSaga);
   })(),
   (function* () {
     yield takeLatest('Auth/professionRequest', ProfessionSaga);

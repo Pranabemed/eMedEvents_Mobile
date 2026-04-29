@@ -42,6 +42,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 import TokenManager from './TokenManager';
 import getUserAgentJSON from './UserAgent';
+import { fetchAndStoreBasicAuthToken, getBasicAuthorizationHeader } from './BasicAuth';
 const DASHBOARD_ENDPOINTS = new Set(['user/dashboard', '/user/dashboard']);
 const DASHBOARD_COOLDOWN_MS = 3000;
 let dashboardInFlightPromise = null;
@@ -61,6 +62,8 @@ const getDashboardRequestKey = (payload) => {
 };
 const shouldBypassDashboardCache = (payload) =>
   Boolean(payload?.force_dashboard_refresh || payload?._forceDashboardRefresh || payload?.bypass_cache);
+const buildApiUrl = (url = '') => `${constants.BASE_URL}/${String(url).replace(/^\/+/, '')}`;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-expiry detection — STRICT
 //
@@ -139,6 +142,30 @@ async function handleTokenExpiry(originalConfig, originalResponse) {
   }
 }
 
+async function retryWithFreshBasicAuth(originalConfig) {
+  if (!originalConfig || originalConfig._retriedBasicAuth || originalConfig.skipBasicAuth) {
+    return null;
+  }
+
+  originalConfig._retriedBasicAuth = true;
+  originalConfig.headers = originalConfig.headers || {};
+
+  let basicAuthToken = '';
+  try {
+    basicAuthToken = await fetchAndStoreBasicAuthToken();
+  } catch (error) {
+    console.warn('[BasicAuth] Refresh failed before retry:', error?.message || error);
+  }
+
+  if (!basicAuthToken) {
+    return null;
+  }
+
+  originalConfig.headers.Authorization = basicAuthToken;
+  console.log('[BasicAuth] Retrying request with refreshed basic auth:', originalConfig.url);
+  return axiosInstance(originalConfig);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Axios instance — all app API calls go through this
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +181,16 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     try {
       if (!config.headers) config.headers = {};
-      config.headers['Authorization'] = constants.BASIC_AUTH_TOKEN;
+      const skipBasicAuth = config.skipBasicAuth || config.headers.skipBasicAuth;
+      delete config.headers.skipBasicAuth;
+
+      if (!skipBasicAuth) {
+        const basicAuthToken = await getBasicAuthorizationHeader();
+        if (basicAuthToken) {
+          config.headers['Authorization'] = basicAuthToken;
+        }
+      }
+
       const freshToken = await AsyncStorage.getItem(constants.TOKEN);
       if (freshToken) {
         config.headers['eMedAuthorization'] = freshToken;
@@ -246,6 +282,11 @@ axiosInstance.interceptors.response.use(
     const config = error?.config;
 
     if (response?.status === 401 && config) {
+      const retriedWithBasicAuth = await retryWithFreshBasicAuth(config);
+      if (retriedWithBasicAuth) {
+        return retriedWithBasicAuth;
+      }
+
       console.log('[TokenRefresh] 🔑 HTTP 401 on:', config?.url?.split('/').pop());
       return handleTokenExpiry(config, response);
     }
@@ -256,26 +297,30 @@ axiosInstance.interceptors.response.use(
 );
 
 // ─── Public API functions ──────────────────────────────────────────────────────
-export async function getApi(url, header) {
+export async function getApi(url, header = {}) {
   const userAgentHeader = getUserAgentJSON();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
   const reqHeaders = {
     Accept: header.Accept,
-    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-type': header.contenttype,
-    eMedAuthorization: header.authorization,
+    ...(!header.skipBasicAuth && basicAuthToken ? { Authorization: basicAuthToken } : {}),
+    ...(header.authorization ? { eMedAuthorization: header.authorization } : {}),
     ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
-  return axiosInstance.get(`${constants.BASE_URL}/${url}`, {
+  return axiosInstance.get(buildApiUrl(url), {
     headers: reqHeaders,
+    skipBasicAuth: header.skipBasicAuth,
   });
 }
 
-export async function getApiWithParam(url, param, header) {
+export async function getApiWithParam(url, param, header = {}) {
   const userAgentHeader = getUserAgentJSON();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
   const reqHeaders = {
     Accept: header.Accept,
-    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-type': header.contenttype,
+    ...(!header.skipBasicAuth && basicAuthToken ? { Authorization: basicAuthToken } : {}),
+    ...(header.authorization ? { eMedAuthorization: header.authorization } : {}),
     ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   return axiosInstance({
@@ -284,10 +329,11 @@ export async function getApiWithParam(url, param, header) {
     url: url,
     params: param,
     headers: reqHeaders,
+    skipBasicAuth: header.skipBasicAuth,
   });
 }
 
-export async function postApi(url, payload, header) {
+export async function postApi(url, payload, header = {}) {
   if (isDashboardEndpoint(url)) {
     const bypassCache = shouldBypassDashboardCache(payload);
     const requestKey = getDashboardRequestKey(payload);
@@ -306,17 +352,19 @@ export async function postApi(url, payload, header) {
   }
 
   const userAgentHeader = getUserAgentJSON();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
   const reqHeaders = {
     Accept: header.Accept,
-    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-Type': header.contenttype,
-    eMedAuthorization: header.authorization,
-    IPADDRESS: header.IPADDRESS,
+    ...(!header.skipBasicAuth && basicAuthToken ? { Authorization: basicAuthToken } : {}),
+    ...(header.authorization ? { eMedAuthorization: header.authorization } : {}),
+    ...(header.IPADDRESS ? { IPADDRESS: header.IPADDRESS } : {}),
     ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   console.log("header==========", reqHeaders);
-  const requestPromise = axiosInstance.post(`${constants.BASE_URL}/${url}`, payload, {
+  const requestPromise = axiosInstance.post(buildApiUrl(url), payload, {
     headers: reqHeaders,
+    skipBasicAuth: header.skipBasicAuth,
   });
 
   if (isDashboardEndpoint(url)) {
@@ -339,20 +387,22 @@ export async function postApi(url, payload, header) {
   return requestPromise;
 }
 
-export async function deleteApi(url, payload, header) {
-  const cleanUrl = `${constants.BASE_URL}/${url}`.replace(/\/\/+/g, '/').trim();
+export async function deleteApi(url, payload, header = {}) {
+  const cleanUrl = buildApiUrl(url).trim();
   const userAgentHeader = getUserAgentJSON();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
   const reqHeaders = {
     Accept: header.Accept,
-    Authorization: constants.BASIC_AUTH_TOKEN,
     'Content-Type': header.contenttype,
-    eMedAuthorization: header.authorization,
+    ...(!header.skipBasicAuth && basicAuthToken ? { Authorization: basicAuthToken } : {}),
+    ...(header.authorization ? { eMedAuthorization: header.authorization } : {}),
     ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
   };
   try {
     return await axiosInstance.delete(cleanUrl, {
       headers: reqHeaders,
       data: payload,
+      skipBasicAuth: header.skipBasicAuth,
     });
   } catch (error) {
     console.error('[ApiRequest] DELETE error:', error.response?.data || error.message);

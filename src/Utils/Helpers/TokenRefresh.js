@@ -42,12 +42,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { call, put, select } from 'redux-saga/effects';
-import {
-    tokenSuccess,
-    refreshTokenSuccess,
-} from '../../Redux/Reducers/AuthReducer';
+import { call, select } from 'redux-saga/effects';
 import constants from './constants';
 import TokenManager from './TokenManager';
 

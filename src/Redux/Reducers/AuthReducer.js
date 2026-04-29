@@ -2,7 +2,9 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   status: '',
+  headerStatus: '',
   token: null,
+  basicAuthToken: null,
   isLoading: true,
   page: 1,
   signupResponse: {},
@@ -36,7 +38,8 @@ const initialState = {
   allreducerResponse: {},
   primeTrailResponse: {},
   refreshTokenResponse: {},
-  refreshToken: null
+  refreshToken: null,
+  headerError: null
 };
 
 const AuthSlice = createSlice({
@@ -100,6 +103,19 @@ const AuthSlice = createSlice({
     tokenFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
+    },
+    headerRequest(state, action) {
+      state.headerStatus = action.type;
+      state.headerError = null;
+    },
+    headerSuccess(state, action) {
+      state.basicAuthToken = action.payload;
+      state.headerStatus = action.type;
+      state.headerError = null;
+    },
+    headerFailure(state, action) {
+      state.headerStatus = action.type;
+      state.headerError = action.error || action.payload;
     },
     loginRequest(state, action) {
       state.status = action.type;
@@ -423,6 +439,9 @@ export const {
   tokenRequest,
   tokenSuccess,
   tokenFailure,
+  headerRequest,
+  headerSuccess,
+  headerFailure,
   loginRequest,
   loginSuccess,
   loginFailure,
