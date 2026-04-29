@@ -92,19 +92,6 @@ const Main = (props) => {
   const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
-  const bottomBannerSpacing = useMemo(() => {
-    if (enables && allProfTake) {
-      return normalize(96);
-    }
-    if (freeTrail) {
-      return normalize(150);
-    }
-    return normalize(80);
-  }, [allProfTake, enables, freeTrail]);
-  const homeBottomSpacing = useMemo(
-    () => bottomBannerSpacing + Math.max(insets.bottom, normalize(8)),
-    [bottomBannerSpacing, insets.bottom]
-  );
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -156,6 +143,19 @@ const Main = (props) => {
       : (gtprof || physicianHandles.has(normalizeProfessionHandle(authProfession)) || physicianHandles.has(normalizeProfessionHandle(profFromDashboard)));
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+  const bottomBannerSpacing = useMemo(() => {
+    if (enables && allProfTake) {
+      return normalize(96);
+    }
+    if (freeTrail) {
+      return normalize(150);
+    }
+    return Platform.OS === 'ios' ? normalize(16) : normalize(80);
+  }, [allProfTake, enables, freeTrail]);
+  const homeBottomSpacing = useMemo(
+    () => bottomBannerSpacing + (Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, normalize(8))),
+    [bottomBannerSpacing, insets.bottom]
+  );
   console.log("isPhysicianFlow", isPhysicianFlow);
   console.log("isNursingFlow", isNursingFlow);
   const lastLicenseProfRef = useRef(null);
@@ -387,7 +387,7 @@ const Main = (props) => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
           <View style={Platform.OS === 'android' ? { marginTop: normalize(0), paddingHorizontal: normalize(6) } : { paddingHorizontal: normalize(10) }}>
             <Image source={Imagepath.Logo} style={{ height: normalize(40), width: normalize(40) }} resizeMode="contain" />
           </View>

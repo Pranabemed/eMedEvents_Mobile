@@ -88,15 +88,16 @@ function TabScreen() {
   const hydratedStateIdRef = useRef(null);
   const processedRefreshAtRef = useRef(null);
   const lastLicensureProfessionRef = useRef('');
-  const bottomInset = Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, normalize(10));
-  const tabBarBaseHeight = Platform.OS === 'ios' ? normalize(70) : normalize(60);
+  const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, normalize(10)) : 0;
   const sharedTabBarStyle = {
     borderWidth: 0.8,
     borderColor: "#DADADA",
     backgroundColor: '#FFFFFF',
-    height: tabBarBaseHeight + bottomInset,
-    paddingBottom: bottomInset,
-    paddingTop: normalize(6),
+    ...(Platform.OS === 'android' ? {
+      height: normalize(60) + bottomInset,
+      paddingBottom: bottomInset,
+      paddingTop: normalize(6),
+    } : {}),
   };
   useEffect(() => {
     const token_error = () => {
