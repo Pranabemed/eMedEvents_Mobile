@@ -283,10 +283,9 @@ const Main = (props) => {
       resetState();
     };
   }, []);
-  const [showloader, setShowLoader] = useState(false);
+  const [showloader, setShowLoader] = useState(!!DashboardReducer?.dashboardResponse?.data);
   const [freeze, setFreeze] = useState(false);
   useEffect(() => {
-    setShowLoader(false);
     setFreeze(false);
     enableFreeze(false);
   }, []);

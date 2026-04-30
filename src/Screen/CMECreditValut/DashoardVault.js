@@ -213,7 +213,7 @@ const DashoardVault = (props) => {
         setCmemodal(false);
     }
     const oncmeModalclose = () => {
-        setCmemodal(!cmemodal)
+        setCmemodal(false);
     }
     useFocusEffect(
         React.useCallback(() => {

@@ -4,6 +4,10 @@ import Fonts from '../Themes/Fonts';
 import moment from 'moment';
 import normalize from '../Utils/Helpers/Dimen';
 import { FormatDateZone } from '../Utils/Helpers/Timezone';
+const COURSE_CARD_WIDTH = normalize(230);
+const COURSE_CARD_HEIGHT = normalize(165);
+const COURSE_CARD_GAP = normalize(4);
+
 const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navigation }) => {
     const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
@@ -72,17 +76,11 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
     const cmehit = () => {
         if (allProfTake && item?.display_cme) {
             return (
-                <View>
+                <View style={styles.cmeContainer}>
                     <Text
                         numberOfLines={1}
-                        style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 14,
-                            color: '#000000',
-                            paddingVertical: normalize(0),
-                            fontWeight: "bold",
-                            // width: normalize(140)
-                        }}
+                        ellipsizeMode="tail"
+                        style={styles.cmeText}
                     >
                         {item?.display_cme}
                     </Text>
@@ -90,18 +88,13 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
             )
         } else if (allNoDetData && item?.cme_points_popovar?.length > 0) {
             return (
-                <View>
+                <View style={styles.cmeContainer}>
                     {item?.cme_points_popovar?.map((d, index) => (
                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text
-                                numberOfLines={3}
-                                style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    color: '#000000',
-                                    paddingVertical: normalize(0),
-                                    fontWeight: "bold",
-                                }}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                                style={styles.cmeText}
                             >
                                 {`${parseFloat(d?.points) || 0} ${d?.name &&
                                     d?.name?.toLowerCase() == "contact hour"
@@ -115,11 +108,12 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
             )
         } else if (item?.cme_points_popovar?.length > 0 && item?.display_cme) {
             return (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[styles.cmeContainer, { flexDirection: 'row', alignItems: 'center' }]}>
                     {/* Render CME points with commas */}
                     <View>
                         <Text
                             numberOfLines={1}
+                            ellipsizeMode="tail"
                             style={{
                                 fontFamily: Fonts.InterMedium,
                                 fontSize: 14,
@@ -143,6 +137,7 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', width: normalize(50) }}>
                             <Text
                                 numberOfLines={1}
+                                ellipsizeMode="tail"
                                 style={{
                                     fontFamily: Fonts.InterMedium,
                                     fontSize: 14,
@@ -166,20 +161,14 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
             );
         } else if (item.cme_points_popovar) {
             return (
-                <>
+                <View style={styles.cmeContainer}>
                     {
                         item.cme_points_popovar.map((d, index, array) => (
                             <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <Text
                                     numberOfLines={1}
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 14,
-                                        color: '#000000',
-                                        paddingVertical: normalize(0),
-                                        width: normalize(120),
-                                        fontWeight: "bold"
-                                    }}
+                                    ellipsizeMode="tail"
+                                    style={styles.cmeText}
                                 >
                                     {`${parseFloat(d?.points) || 0} ${d?.name &&
                                         d?.name?.toLowerCase() == "contact hour"
@@ -191,22 +180,16 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
                             </View>
                         ))
                     }
-                </>
+                </View>
             )
 
         } else if (item?.display_cme) {
             return (
-                <View>
+                <View style={styles.cmeContainer}>
                     <Text
                         numberOfLines={1}
-                        style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 14,
-                            color: '#000000',
-                            paddingVertical: normalize(0),
-                            fontWeight: "bold"
-                            // width: normalize(120)
-                        }}
+                        ellipsizeMode="tail"
+                        style={styles.cmeText}
                     >
                         {`${item?.display_cme
                             ? item?.display_cme?.toLowerCase()?.includes("contact hour")
@@ -222,66 +205,94 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
     };
 
     return (
-        <View style={{ margin: normalize(10) }}>
-            <View style={styles.card}>
-                <Pressable onPress={() => titlhandleUrl(item)}>
-                    <Text numberOfLines={2} style={styles.title}>
-                        {item?.title}
-                    </Text>
-                </Pressable>
-                <Text numberOfLines={2} style={[styles.subtitle, { width: normalize(190) }]}>
-                    {item?.organization_name}
+        <View style={styles.cardOuter}>
+            <Pressable style={styles.card} onPress={() => titlhandleUrl(item)}>
+                <Text numberOfLines={2} ellipsizeMode="tail" style={styles.title}>
+                    {item?.title}
                 </Text>
-                {(item?.startdate !== null || item?.enddate !== null) ? <Text style={styles.date}>
-                    {FormatDateZone(item?.startdate, item?.enddate)}
-                </Text> : null}
-                <View style={styles.infoRow}>
-                    {cmehit()}
+                <View style={styles.cardBody}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.subtitle}>
+                        {item?.organization_name}
+                    </Text>
+                    {(item?.startdate !== null || item?.enddate !== null) ? <Text numberOfLines={1} ellipsizeMode="tail" style={styles.date}>
+                        {FormatDateZone(item?.startdate, item?.enddate)}
+                    </Text> : <View style={styles.datePlaceholder} />}
+                    <View style={styles.infoRow}>
+                        {cmehit()}
+                    </View>
                 </View>
                 <View style={styles.bottomRow}>
-                    <Text style={styles.freeText}>{item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}</Text>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.freeText}>{item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}</Text>
                     <Pressable onPress={() => titlhandleUrl(item)}>
-                        <Text style={styles.registerText}>{item?.buttonText}</Text>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.registerText}>{item?.buttonText}</Text>
                     </Pressable>
                 </View>
-            </View>
+            </Pressable>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    cardOuter: {
+        width: COURSE_CARD_WIDTH + (COURSE_CARD_GAP * 2),
+        height: COURSE_CARD_HEIGHT + (COURSE_CARD_GAP * 2),
+        margin: COURSE_CARD_GAP,
+    },
     card: {
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: normalize(15),
+        width: COURSE_CARD_WIDTH,
+        height: COURSE_CARD_HEIGHT,
+        overflow: 'hidden',
     },
     title: {
         fontSize: 16,
         fontFamily: Fonts.InterBold,
         color: '#000',
         marginBottom: 4,
-        width: normalize(200),
+        width: '100%',
         fontWeight: "bold"
+    },
+    cardBody: {
+        flex: 1,
     },
     subtitle: {
         fontSize: 12,
         color: '#999',
         fontFamily: Fonts.InterMedium,
-        marginBottom: 12,
+        marginBottom: 8,
         fontWeight: "bold"
     },
     date: {
         fontSize: 14,
         color: '#333',
-        marginBottom: 8,
+        marginBottom: 6,
         fontFamily: Fonts.InterMedium,
         fontWeight: "bold"
+    },
+    datePlaceholder: {
+        height: normalize(18),
+        marginBottom: 6,
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        minHeight: normalize(20),
         // bottom:10
+    },
+    cmeContainer: {
+        maxHeight: normalize(22),
+        overflow: 'hidden',
+        width: '100%',
+    },
+    cmeText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: '#000000',
+        paddingVertical: normalize(0),
+        fontWeight: "bold",
+        width: '100%',
     },
     infoText: {
         fontSize: 14,
@@ -302,19 +313,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: '#eee',
-        paddingTop: 12
+        paddingTop: 10,
+        gap: normalize(8),
     },
     freeText: {
         fontSize: 14,
         fontFamily: Fonts.InterBold,
         color: '#000000',
-        fontWeight: "bold"
+        fontWeight: "bold",
+        flexShrink: 1,
+        maxWidth: normalize(90),
     },
     registerText: {
         fontSize: 14,
         fontFamily: Fonts.InterBold,
         color: '#2C4DB9',
-        fontWeight: "bold"
+        fontWeight: "bold",
+        maxWidth: normalize(100),
     }
 });
 

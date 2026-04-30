@@ -176,13 +176,12 @@ const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow,
         )
     );
 };
-const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearchText, creditDataAll = {} }) => {
+const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearchText, creditDataAll = {}, isLoading = false }) => {
     const {
         setIsConnected,
         isConnected
     } = useContext(AppContext);
-    const [showLoader, setShowLoader] = useState(true);
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(null)
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -190,14 +189,6 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 2000);
-
-        return () => clearTimeout(timeout);
-    }, []);
     const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -212,7 +203,30 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
     }
     console.log(data, "data=====")
     const hasData = (data?.topic?.length > 0 || data?.speciality?.length > 0 || data?.conferences?.length > 0 || data?.speaker?.length > 0 || data?.organizer?.length > 0) || data?.conferences_count;
-    return conn == false ? ( // Changed from conn === false to !conn for better readability
+    const shouldShowLoader = isLoading || conn === null;
+    return hasData ? (
+        <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(1), paddingBottom: normalize(70) }}>
+            {data?.conferences?.length > 0 &&
+                renderSection(
+                    data?.conferences_text || 'Conferences',
+                    data?.conferences?.flatMap(conf => conf.data),
+                    handleUrl,
+                    nav,
+                    searchText,
+                    data?.conferences_count,
+                    setSearchText,
+                    creditDataAll
+                )}
+            {data?.speciality?.length > 0 && renderSection('Speciality', data?.speciality, handleUrl, nav, searchText, setSearchText, creditDataAll)}
+            {data?.topic?.length > 0 && renderSection('Topics', data?.topic, handleUrl, nav, searchText, setSearchText, creditDataAll)}
+            {data?.speaker?.length > 0 && renderSection('Speakers', data?.speaker, handleUrl, nav, searchText, setSearchText, creditDataAll)}
+            {data?.organizer?.length > 0 && renderSection('Organizers', data?.organizer, handleUrl, nav, searchText, setSearchText, creditDataAll)}
+        </ScrollView>
+    ) : shouldShowLoader ? (
+        <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(10), paddingBottom: normalize(70) }}>
+            <ActivityIndicator size={"small"} color={"green"} />
+        </ScrollView>
+    ) : conn === false ? (
         <SafeAreaView style={styles.container}>
             <View style={styles.centerContainer}>
                 <View style={{
@@ -270,28 +284,10 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
                 />
             </View>
         </SafeAreaView>
-    ) : hasData ? (
-        <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(1), paddingBottom: normalize(70) }}>
-            {data?.conferences?.length > 0 &&
-                renderSection(
-                    data?.conferences_text || 'Conferences',
-                    data?.conferences?.flatMap(conf => conf.data),
-                    handleUrl,
-                    nav,
-                    searchText,
-                    data?.conferences_count,
-                    setSearchText,
-                    creditDataAll
-                )}
-            {data?.speciality?.length > 0 && renderSection('Speciality', data?.speciality, handleUrl, nav, searchText, setSearchText, creditDataAll)}
-            {data?.topic?.length > 0 && renderSection('Topics', data?.topic, handleUrl, nav, searchText, setSearchText, creditDataAll)}
-            {data?.speaker?.length > 0 && renderSection('Speakers', data?.speaker, handleUrl, nav, searchText, setSearchText, creditDataAll)}
-            {data?.organizer?.length > 0 && renderSection('Organizers', data?.organizer, handleUrl, nav, searchText, setSearchText, creditDataAll)}
-        </ScrollView>
     ) : (
         <>
             <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(10), paddingBottom: normalize(70) }}>
-                {showLoader ? <ActivityIndicator size={"small"} color={"green"} /> : <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(25) }}>
+                <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(25) }}>
                     <View
                         style={{
                             flexDirection: 'column',
@@ -327,7 +323,7 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
                         </Text>
 
                     </View>
-                </View>}
+                </View>
                 <View style={{ marginTop: normalize(20) }}>
                     {data?.popularSpecialties?.length > 0 && renderSection('Popular specialities', data?.popularSpecialties, handleUrl, nav, setSearchText)}
                 </View>

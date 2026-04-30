@@ -338,7 +338,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                             </View>}
 
                             <View style={stylesmodal.checklistButton}>
-                                <Pressable style={{ flexDirection: "row", gap: normalize(5) }} onPress={() => setCmemodal(!cmemodal)}>
+                                <Pressable style={{ flexDirection: "row", gap: normalize(5) }} onPress={() => setCmemodal(true)}>
                                     <Text style={[stylesmodal.checklistText,{fontWeight:"bold"}]}>{"CME Checklist"}</Text>
                                     <View style={{ backgroundColor: Colorpath.ButtonColr, height: normalize(15), width: normalize(15), borderRadius: normalize(15), justifyContent: "center", alignItems: "center" }}>
                                         <ArrowNeed name={"arrow-right"} color={"#FFFFFF"} size={12} />

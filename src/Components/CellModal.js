@@ -52,6 +52,8 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
             navigation.navigate("TabNav", { initialRoute: "Contact" });
         } else if (name == "TabNav") {
             navigation.navigate("TabNav", { detectmain: "main" });
+        } else if (name == "goBack") {
+            navigation.goBack();
         } else {
             navigation?.navigate(name);
         }

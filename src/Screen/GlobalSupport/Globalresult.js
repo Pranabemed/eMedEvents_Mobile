@@ -1,5 +1,5 @@
 import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, Alert } from 'react-native'
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -13,7 +13,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import moment from 'moment';
 import Modal from 'react-native-modal';
 import Loader from '../../Utils/Helpers/Loader';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 import { AppContext } from './AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
@@ -43,6 +43,7 @@ const Globalresult = (props) => {
     const [refreshing, setRefreshing] = useState(false);
     const [sortedFall, setSortedFall] = useState(false);
     const [sortType, setSortType] = useState("");
+    const hasFocusedOnceRef = useRef(false);
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
     useEffect(() => {
@@ -73,19 +74,11 @@ const Globalresult = (props) => {
                 })
             );
         } else if (props?.route?.params?.trig?.speaker) {
-            props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.trig?.textHo, hitDat: props?.route?.params?.trig?.highText, fullUrl: props?.route?.params?.trig?.trig, creditData: props?.route?.params?.trig?.creditAll, speaks: "speaker" } })
+            props.navigation.goBack();
         } else if (props?.route?.params?.trig?.back == "goBack") {
-            props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.trig?.textHo, hitDat: props?.route?.params?.trig?.highText, fullUrl: props?.route?.params?.trig?.trig, creditData: props?.route?.params?.trig?.creditAll, speaks: props?.route?.params?.trig?.speaks == "organ" ? "organ" : "speaker" } })
+            props.navigation.goBack();
         } else {
             props.navigation.goBack();
-            props.navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        { name: "TabNav", params: { initialRoute: "Home" } }
-                    ],
-                })
-            );
         }
     }
     useEffect(() => {
@@ -101,7 +94,8 @@ const Globalresult = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const fetchHandle = (d) => {
+    const fetchHandle = (d, options = {}) => {
+        const requestedPageNum = options?.pageNum ?? pageNum;
         const mainKey = props?.route?.params?.trig?.mainKey ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.mainKey ?? "";
         const stateKey = props?.route?.params?.trig?.newAdd ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newAdd ?? "";
         const newCt = props?.route?.params?.trig?.newCt ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newCt ?? "";
@@ -115,7 +109,7 @@ const Globalresult = (props) => {
                 : rqstType;
 
         let obj = {
-            "pageno": pageNum,
+            "pageno": requestedPageNum,
             "limit": limit,
             "search_speciality": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat().length > 0
                 ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat()
@@ -186,23 +180,35 @@ const Globalresult = (props) => {
             });
     };
 
+    useFocusEffect(
+        useCallback(() => {
+            if (!hasFocusedOnceRef.current) {
+                hasFocusedOnceRef.current = true;
+                return undefined;
+            }
+
+            if (props?.route?.params?.trig?.Realback === "cont") {
+                setStoreAlldata([]);
+                setPageNum(0);
+                fetchHandle(undefined, { pageNum: 0 });
+            }
+
+            return undefined;
+        }, [props?.route?.params?.trig, props?.route?.params?.filterDatSh, limit])
+    );
+
     const fetchMore = useCallback(() => {
-        if (CMEReducer?.cmeCourseResponse?.conferences?.length >= props?.route?.params?.trig?.count) {
-            setApiReq(false);
-            setLoading(false);
-            return;
-        }
         if (!apiReq && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
             setPageNum(pageNum + 1);
-            fetchHandle();
+            fetchHandle(undefined, { pageNum: pageNum + 1 });
         }
-    }, [apiReq]);
+    }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences?.length]);
 
     const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
-        fetchHandle();
+        fetchHandle(undefined, { pageNum: 0 });
     };
     const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
@@ -224,23 +230,7 @@ const Globalresult = (props) => {
             props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll, Realback: props?.route?.params?.trig?.Realback } })
         }
     }
-    useEffect(() => {
-        if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-            setApiReq(false);
-            setLoading(false);
-            let modifiedData = [
-                ...storeAlldata,
-                ...CMEReducer?.cmeCourseResponse?.conferences,
-            ]?.filter(
-                (value, index, self) =>
-                    index === self.findIndex(t => t?.id === value?.id),
-            );
-            setStoreAlldata(modifiedData);
-        } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
-            setApiReq(false);
-            setLoading(false);
-        }
-    }, [CMEReducer?.cmeCourseResponse?.conferences])
+    
     if (status == '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/cmeCourseRequest':
@@ -253,15 +243,20 @@ const Globalresult = (props) => {
                 setApiReq(false);
                 setLoading(false);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-                    let modifiedData = [
-                        ...storeAlldata,
-                        ...CMEReducer?.cmeCourseResponse?.conferences,
-                    ]?.filter(
-                        (value, index, self) =>
-                            index === self.findIndex(t => t?.id === value?.id),
-                    );
-                    setStoreAlldata(modifiedData);
+                    if (pageNum === 0) {
+                        setStoreAlldata(CMEReducer?.cmeCourseResponse?.conferences);
+                    } else {
+                        let modifiedData = [
+                            ...storeAlldata,
+                            ...CMEReducer?.cmeCourseResponse?.conferences,
+                        ]?.filter(
+                            (value, index, self) =>
+                                index === self.findIndex(t => t?.id === value?.id),
+                        );
+                        setStoreAlldata(modifiedData);
+                    }
                 } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
+                    if (pageNum === 0) setStoreAlldata([]);
                     setApiReq(false);
                     setLoading(false);
                 }

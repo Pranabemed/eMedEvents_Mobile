@@ -353,7 +353,7 @@ const StateProfile = (props) => {
                             </View>
                         } />
                 </View>
-                {stateCount?.length > 0 &&! pushnew && <View style={{
+                {(!stateCount || stateCount.length > 0) && !pushnew && <View style={{
                     position: 'absolute',
                     bottom: 70,
                     right: 0,

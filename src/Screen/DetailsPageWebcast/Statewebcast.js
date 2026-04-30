@@ -22,7 +22,7 @@ import StatewebcastAddTocart from './StatewebcastAddTocart';
 import StatewebcastPrice from './StatewebcastPrice';
 import Loader from '../../Utils/Helpers/Loader';
 import StatewebcastShimmer from '../../Components/StatewebcastShimmer';
-import { CommonActions, useFocusEffect } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import InpersonKeydates from './InpersonKeydates';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -52,6 +52,7 @@ const Statewebcast = props => {
     const { width } = useWindowDimensions();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const isFocused = useIsFocused();
     console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
     const dispatch = useDispatch();
     const [refID, setRefID] = useState(props?.route?.params?.webCastURL?.refID || null);
@@ -79,23 +80,41 @@ const Statewebcast = props => {
     const [loadingdowndt, setLoadingdowndt] = useState(false);
     const [pdfUridt, setPdfUridt] = useState("");
     const downDt = [{ id: 1, name: "Physician (MD/DO)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-04-02/global_pediatric_images/State%20Wise%20CME%20Course%20Bundle%20For%20Physicians-4.pdf" }, { id: 2, name: "Registered Nurse (RN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20RN-4.pdf" }, { id: 3, name: "Nurse Practitioner (NP/APRN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20NP.pdf" }]
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const profFromDashboard =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
+            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
+            : null;
+    const allProfTake = validHandles.has(profFromDashboard);
 
-    const boardCast = () => {
+    const resetToHome = useCallback(() => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "TabNav", params: { initialRoute: "Home" } }],
+            })
+        );
+    }, [props.navigation]);
+
+    const boardCast = useCallback(() => {
         if (props?.route?.params?.webCastURL?.takeUrl) {
             props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.webCastURL?.textHo, speaks: props?.route?.params?.webCastURL?.speaks, hitDat: props?.route?.params?.webCastURL?.highText, fullUrl: props?.route?.params?.webCastURL?.takeUrl, creditData: props?.route?.params?.webCastURL?.creditData } })
         } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
             props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
+        } else if (props?.route?.params?.webCastURL?.Realback === "cont") {
+            props.navigation.goBack();
         } else if (allProfTake) {
             setGtprof(true);
             setAddit(statepush);
             setAddit(props?.route?.params?.webCastURL?.creditData);
-            props.navigation.navigate("TabNav");
+            resetToHome();
         } else {
             setAddit(statepush);
             setAddit(props?.route?.params?.webCastURL?.creditData);
-            props.navigation.navigate("TabNav");
+            resetToHome();
         }
-    };
+    }, [allProfTake, props.navigation, props?.route?.params?.webCastURL, resetToHome, setAddit, setGtprof, statepush]);
     const handleSnapToItem = (index) => {
         setval(index);
     };
@@ -335,19 +354,21 @@ const Statewebcast = props => {
     const urltrack = props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast;
     // const isWebcastLoading = WebcastReducer?.status === 'WebCast/webcastDeatilsRequest' || 
     //                      WebcastReducer?.status === 'WebCast/saveTicketRequest';
-    useEffect(() => {
-        const onBackPress = () => {
-            boardCast();
-            return true;
-        };
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                boardCast();
+                return true;
+            };
 
-        const backHandler = BackHandler.addEventListener(
-            'hardwareBackPress',
-            onBackPress
-        );
+            const backHandler = BackHandler.addEventListener(
+                'hardwareBackPress',
+                onBackPress
+            );
 
-        return () => backHandler.remove();
-    }, []);
+            return () => backHandler.remove();
+        }, [boardCast])
+    );
     const takeCount = useMemo(() => (
         WebcastReducer?.cartcountWebcastResponse?.cartItemsCount || 0
     ), [WebcastReducer?.cartcountWebcastResponse?.cartItemsCount]);
@@ -430,6 +451,8 @@ const Statewebcast = props => {
         }
     }, [webcastdeatils?.registrationTickets]);
     useEffect(() => {
+        if (!isFocused) return;
+
         switch (WebcastReducer.status) {
             case 'WebCast/webcastDeatilsRequest':
                 setLoading(true);
@@ -453,15 +476,7 @@ const Statewebcast = props => {
                 }
                 break;
         }
-    }, [WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, webcastdeatils, urltrack, props.navigation]);
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
-    const allProfTake = validHandles.has(profFromDashboard);
-
+    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, webcastdeatils, urltrack, props.navigation]);
     return (
         <>
             <MyStatusBar

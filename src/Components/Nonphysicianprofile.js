@@ -54,7 +54,7 @@ const Nonphysicianprofile = ({allNoDetData, addit, finddata, handleButtonPress, 
                     ))}
                 </View>
             </View> : null}
-            {stateHit?.length > 0 ? <View style={{ height: normalize(220), width: normalize(320), backgroundColor: "#b6d7ff", marginTop: normalize(10) }}>
+            {stateHit?.length > 0 ? <View style={{ height: normalize(230), width: normalize(320), backgroundColor: "#b6d7ff", marginTop: normalize(10) }}>
                 <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "StateCourse", params: { back: "tabnav" } }] }))} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(13), marginTop: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000" }}>{"State-required Courses"}</Text>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: Colorpath.ButtonColr }}>{"View All"}</Text>
@@ -64,10 +64,12 @@ const Nonphysicianprofile = ({allNoDetData, addit, finddata, handleButtonPress, 
                     horizontal
                     renderItem={({ item, index }) => <StateRequireditem allNoDetData={allNoDetData} navigation={navigation} addit={addit} item={item} index={index} />}
                     keyExtractor={(item, index) => index.toString()}
+                    style={{ marginTop: normalize(6) }}
+                    contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                 />
             </View> : null}
             {specHit?.length > 0 ? <View style={{ marginTop: normalize(10) }}>
-                <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "SpecialityCourseSlide", params: { back: "tabnav" } }] }))} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(15), marginTop: normalize(10) }}>
+                <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "SpecialityCourseSlide", params: { back: "tabnav" } }] }))} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(13), marginTop: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000" }}>{"Specialty Courses"}</Text>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: Colorpath.ButtonColr }}>{"View All"}</Text>
                 </Pressable>
@@ -76,6 +78,8 @@ const Nonphysicianprofile = ({allNoDetData, addit, finddata, handleButtonPress, 
                     horizontal
                     renderItem={({ item, index }) => <StateRequireditem allNoDetData={allNoDetData} navigation={navigation} addit={addit} item={item} index={index} />}
                     keyExtractor={(item, index) => index.toString()}
+                    style={{ marginTop: normalize(6) }}
+                    contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                 />
             </View> : null}
             {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>

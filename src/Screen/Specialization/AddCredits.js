@@ -1135,7 +1135,7 @@ const AddCredits = (props) => {
                                 onClose={toggleModalcred}
                                 content={props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully."}
                                 navigation={props.navigation}
-                                name={"TabNav"}
+                                name={"goBack"}
                             />
 
 

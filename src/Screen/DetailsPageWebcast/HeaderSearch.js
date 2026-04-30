@@ -34,7 +34,7 @@ const HeaderSearch = (props) => {
     const [searchText, setSearchText] = useState("")
     const [searchEn, setSearchEn] = useState(false);
     const [searchkey, setSearchkey] = useState("");
-    const [hadtr, setHadtr] = useState(false);
+    const [hadtr, setHadtr] = useState(true);
     console.log(props?.route?.params?.taskData, "fdmlsdklmg------1233344", searchText, WebcastReducer?.webcastsearchResponse)
     const placeholders = [
         "Search for CME/CE courses",
@@ -54,11 +54,14 @@ const HeaderSearch = (props) => {
     // }, [placeholderIndex]);
     useEffect(() => {
         if (searchText == "") {
+            setHadtr(true);
+            setWebcast(null);
             connectionrequest()
                 .then(() => {
                     dispatch(webcastsearchRequest({}));
                 })
                 .catch((err) => {
+                    setHadtr(false);
                     showErrorAlert("Please connect to internet", err);
                 });
         }
@@ -92,7 +95,7 @@ const HeaderSearch = (props) => {
             });
         if (result) {
             setSearchText("");
-            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.taskData } })
+            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.taskData, Realback: "cont" } })
         }
     }
     const SearchCont = text => {
@@ -100,11 +103,14 @@ const HeaderSearch = (props) => {
             let textObj = {
                 "searchKeyword": text
             };
+            setHadtr(true);
+            setWebcast(null);
             connectionrequest()
                 .then(() => {
                     dispatch(webcastsearchRequest(textObj));
                 })
                 .catch((err) => {
+                    setHadtr(false);
                     showErrorAlert("Please connect to internet", err);
                 });
             setSearchText(text);
@@ -113,11 +119,14 @@ const HeaderSearch = (props) => {
                 "searchKeyword": searchText,
                 "searchRequestType": "insertSearchKeyword"
             };
+            setHadtr(true);
+            setWebcast(null);
             connectionrequest()
                 .then(() => {
                     dispatch(webcastsearchRequest(textObjtc));
                 })
                 .catch((err) => {
+                    setHadtr(false);
                     showErrorAlert("Please connect to internet", err);
                 });
             setSearchText("");
@@ -269,8 +278,8 @@ const HeaderSearch = (props) => {
                     {/* <Loader
                         visible={hadtr} /> */}
                     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(15) }}>
-                        {!searchText || searchText == "" ? <WrongGlobalData setSearchText={setSearchText} setPlaceholderIndex={setPlaceholderIndex} nav={props.navigation} creditDataAll={props?.route?.params?.taskData} wrongData={webcast} handleUrl={handleUrl} />
-                            : <GlobalSearchAll creditDataAll={props?.route?.params?.taskData} setSearchText={setSearchText} nav={props.navigation} searchText={searchText} data={webcast} handleUrl={handleUrl} />}
+                        {!searchText || searchText == "" ? <WrongGlobalData isLoading={hadtr} setSearchText={setSearchText} setPlaceholderIndex={setPlaceholderIndex} nav={props.navigation} creditDataAll={props?.route?.params?.taskData} wrongData={webcast} handleUrl={handleUrl} />
+                            : <GlobalSearchAll isLoading={hadtr} creditDataAll={props?.route?.params?.taskData} setSearchText={setSearchText} nav={props.navigation} searchText={searchText} data={webcast} handleUrl={handleUrl} />}
                     </View>
                 </KeyboardAvoidingView>
             </SafeAreaView>}

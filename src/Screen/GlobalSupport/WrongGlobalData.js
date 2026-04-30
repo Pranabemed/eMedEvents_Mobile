@@ -106,9 +106,8 @@ const wrongRenderData = (title, data, onPressHandler, creditDataAll, nav, setPla
         )
     );
 };
-const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlaceholderIndex }) => {
-    const [showLoader, setShowLoader] = useState(true);
-    const [conn, setConn] = useState("");
+const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlaceholderIndex, isLoading = false }) => {
+    const [conn, setConn] = useState(null);
     const {
         isConnected,
         setIsConnected,
@@ -132,25 +131,18 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
 
         return () => unsubscribe();
     }
-    useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 4000);
-
-        return () => clearTimeout(timeout);
-    }, []);
     console.log(creditDataAll, "creditDataAll====", wrongData, conn)
     const hasDataWrong = wrongData?.stateMandateCourses?.length > 0 || wrongData?.popularSpecialties?.length > 0;
+    const shouldShowLoader = isLoading || conn === null;
     return hasDataWrong ? (
         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(10), paddingBottom: normalize(70) }}>
             {wrongData?.popularSpecialties?.length > 0 && wrongRenderData('Popular specialities', wrongData?.popularSpecialties, handleUrl, creditDataAll, nav, setPlaceholderIndex)}
         </ScrollView>
     ) :  (
         <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(25) }}>
-            {showLoader ? (
+            {shouldShowLoader ? (
                 <ActivityIndicator size={"small"} color={"green"} />
-            ):conn == false ? ( // Changed from conn === false to !conn for better readability
+            ):conn === false ? (
         <SafeAreaView style={styles.container}>
             <View style={styles.centerContainer}>
                 <View style={{

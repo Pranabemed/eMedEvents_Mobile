@@ -209,7 +209,7 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                         </View>
                     </View>
                 ) : null}
-                {stateHit?.length > 0 ? <View style={{ height: Platform.OS === 'ios' ? normalize(200) : normalize(220), width: normalize(320), backgroundColor: "#b6d7ff", marginTop: normalize(20) }}>
+                {stateHit?.length > 0 ? <View style={{ height: normalize(230), width: normalize(320), backgroundColor: "#b6d7ff", marginTop: normalize(20) }}>
                     <Pressable onPress={() => {
                         setStatepush(addit);
                         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "StateCourse", params: { back: "tabnav" } }] }));
@@ -222,13 +222,15 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                         horizontal
                         renderItem={({ item, index }) => <StateRequireditem allProfTake={allProfTake} navigation={navigation} addit={addit} item={item} index={index} />}
                         keyExtractor={(item, index) => index.toString()}
+                        style={{ marginTop: normalize(6) }}
+                        contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                     />
                 </View> : null}
                 {specHit?.length > 0 ? <View style={{ marginTop: stateHit?.length > 0 ? normalize(0) : normalize(10) }}>
                     <Pressable onPress={() => {
                         setStatepush(addit);
                         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "SpecialityCourseSlide", params: { back: "tabnav" } }] }))
-                    }} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(15), marginTop: normalize(10) }}>
+                    }} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(13), marginTop: normalize(10) }}>
                         <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000", fontWeight: "bold" }}>{"Specialty Courses"}</Text>
                         <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: Colorpath.ButtonColr, fontWeight: "bold" }}>{"View All"}</Text>
                     </Pressable>
@@ -237,6 +239,8 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                         horizontal
                         renderItem={({ item, index }) => <StateRequireditem allProfTake={allProfTake} navigation={navigation} addit={addit} item={item} index={index} />}
                         keyExtractor={(item, index) => index.toString()}
+                        style={{ marginTop: normalize(6) }}
+                        contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                     />
                 </View> : null}
                 {enables && <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>

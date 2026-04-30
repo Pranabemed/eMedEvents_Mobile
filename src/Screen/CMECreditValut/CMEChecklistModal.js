@@ -54,8 +54,11 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
             hideModalContentWhileAnimating={true}
             isVisible={isVisibelCME}
             style={{ width: '100%', alignSelf: 'center', margin: 0 }}
-            animationInTiming={800}
-            animationOutTiming={1000}
+            animationInTiming={400}
+            animationOutTiming={400}
+            useNativeDriver={true}
+            onBackdropPress={onCMEClose}
+            onBackButtonPress={onCMEClose}
         >
             <View style={[styles.modalView, { height: modalHeightcme }]}>
                 <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -158,6 +161,26 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                 <RenderHTML
                                     contentWidth={width}
                                     source={{ html: selectedData?.additional_notes }}
+                                    renderersProps={{
+                                        a: {
+                                            onPress: (event, href) => {
+                                                if (href) {
+                                                    let resultTopic = href.substring(href.lastIndexOf('/') + 1);
+                                                    if (href.includes('/topic/')) {
+                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "" } });
+                                                    } else if (href.includes('/specialty/')) {
+                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: "" } });
+                                                    } else {
+                                                        // fallback to topicbasedconferences
+                                                        let keyword = href.split('/').pop();
+                                                        navigation.navigate("Globalresult", { trig: { trig: keyword, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "" } });
+                                                    }
+                                                }
+                                                onSaved();
+                                                onCMEClose();
+                                            }
+                                        }
+                                    }}
                                     tagsStyles={{
                                         ...styles.tagsStyles,
                                         p: {
@@ -169,6 +192,13 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                             color: '#000',
                                             marginVertical: normalize(5),
                                             paddingHorizontal: normalize(5),
+                                        },
+                                        a: {
+                                            color: Colorpath.ButtonColr,
+                                            textDecorationLine: 'underline',
+                                        },
+                                        u: {
+                                            textDecorationLine: 'underline',
                                         }
                                     }}
                                 />

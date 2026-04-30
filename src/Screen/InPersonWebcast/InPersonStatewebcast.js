@@ -322,7 +322,7 @@ const InPersonStatewebcast = (props) => {
         }
     }
     const backPressIn = () => {
-        props.navigation.navigate("Statewebcast");
+        props.navigation.goBack();
         setIssfilterVisible(false);
     }
     useEffect(() => {
@@ -352,11 +352,11 @@ const InPersonStatewebcast = (props) => {
                     backdropTransitionOutTiming={0}
                     hideModalContentWhileAnimating={true}
                     isVisible={isfilterVisible}
-                    style={{ width: '100%', alignSelf: 'center', margin: 0 }}
+                    style={{ width: '100%', alignSelf: 'center', margin: 0, justifyContent: 'flex-end' }}
                     animationInTiming={800}
                     animationOutTiming={1000}
                     onBackdropPress={() => {
-                        props.navigation.navigate("Statewebcast");
+                        props.navigation.goBack();
                         setIssfilterVisible(false);
                     }}
                 >
@@ -390,7 +390,6 @@ const InPersonStatewebcast = (props) => {
                             borderWidth: 1,
                             justifyContent: 'center',
                             alignItems: 'center',
-                            marginBottom: Platform.OS === 'ios' ? normalize(-60) : normalize(-90),
                             flexDirection: "row",
                             justifyContent: "space-around",
                             alignContent: "space-around",

@@ -192,7 +192,7 @@ const Speaker = (props) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             {conn == false ? <IntOff/> :<SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title={props?.route?.params?.highText?.organ == "organ" ? "Search Organizers" : "Search Speakers"}
