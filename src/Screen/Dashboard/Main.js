@@ -310,12 +310,15 @@ const Main = (props) => {
     token_handle_vault();
   }, [isFocus]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
+  const isPrimePaymentSuccess =
+    WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+  const hasActivePrimeMembership = Boolean(subscription || isPrimePaymentSuccess);
   const isPrimeTrial = useMemo(() => {
-    return subscription == false && allProfTake;
-  }, [subscription, allProfTake]);
+    return !hasActivePrimeMembership && subscription == false && allProfTake;
+  }, [subscription, allProfTake, hasActivePrimeMembership]);
 
-  const takeSub = isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed";
-  const hsdSub = finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial;
+  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
+  const hsdSub = !hasActivePrimeMembership && (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
   const endDateStringMain =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
@@ -435,7 +438,7 @@ const Main = (props) => {
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : freeTrail ? <View
+          </View> : !hasActivePrimeMembership && freeTrail ? <View
             style={{
               position: 'absolute',
               bottom: normalize(0),
