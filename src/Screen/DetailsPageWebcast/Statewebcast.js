@@ -334,9 +334,37 @@ const Statewebcast = props => {
     const reviewChange = () => {
         setExpandreview(!expandreview)
     }
-    const source = {
-        html: expanded ? htmlContents : htmlContents.substring(0, 1010) + '...',
-    };
+    const stripHtmlForPreview = useCallback((html = '') => {
+        return String(html)
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<table[\s\S]*?<\/table>/gi, ' ')
+            .replace(/<\/?[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }, []);
+    const overviewHasTable = useMemo(() => htmlContents.toLowerCase().includes('<table'), [htmlContents]);
+    const overviewPreviewText = useMemo(() => {
+        if (!htmlContents) return '';
+        if (expanded) return stripHtmlForPreview(htmlContents);
+        return stripHtmlForPreview(htmlContents).slice(0, 1000);
+    }, [expanded, htmlContents, stripHtmlForPreview]);
+    const source = useMemo(() => {
+        if (!htmlContents) {
+            return { html: '' };
+        }
+        if (expanded) {
+            return { html: htmlContents };
+        }
+
+        const lowerHtml = htmlContents.toLowerCase();
+        if (lowerHtml.includes('<table')) {
+            const preview = stripHtmlForPreview(htmlContents);
+            return { html: preview ? `${preview.slice(0, 1000)}...` : '' };
+        }
+
+        return { html: htmlContents.substring(0, 1010) + '...' };
+    }, [expanded, htmlContents, stripHtmlForPreview]);
     const acc_source = {
         html: expandedacc ? viewmore : viewmore.substring(0, 1300) + '...',
     };
@@ -506,7 +534,17 @@ const Statewebcast = props => {
                                     <StatewebcastPrice refID={refID} calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
                                     <StatewebcastAddTocart refID={refID} urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={WebcastReducer?.status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
                                 </View>
-                                <StatewebcastOverview width={width} source={source} toggleExpansion={toggleExpansion} expanded={expanded} />
+            <StatewebcastOverview
+                width={width}
+                source={source}
+                previewText={overviewPreviewText}
+                hasTable={overviewHasTable}
+                toggleExpansion={toggleExpansion}
+                expanded={expanded}
+                navigation={props.navigation}
+                webcastdeatils={webcastdeatils}
+                                    creditData={props?.route?.params?.webCastURL?.creditData}
+                                />
                                 {(webcastdeatils?.conferenceTypeText === "In-Person Event" ||
                                     webcastdeatils?.conferenceTypeText === "Hybrid Event" ||
                                     webcastdeatils?.conferenceTypeText === "Live Webinar") &&

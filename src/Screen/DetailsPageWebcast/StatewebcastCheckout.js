@@ -341,7 +341,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                       <>
                         <Buttons
                           onPress={() => {
-                            handleTicketsCheckout();
+                            if (webcastdeatils?.registrationTickets?.length > 0 && webcastdeatils?.registered_allow == 1) {
+                              handleTicketsCheckout();
+                            } else {
+                              registerCheck();
+                            }
                             setFinalcheck("textproceed");
                           }}
                           height={normalize(45)}
@@ -363,7 +367,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                         <>
                           <Buttons
                             onPress={() => {
-                              handleTicketsCheckout();
+                              if (webcastdeatils?.registrationTickets?.length > 0 && webcastdeatils?.registered_allow == 1) {
+                                handleTicketsCheckout();
+                              } else {
+                                registerCheck();
+                              }
                               setFinalcheck("textproceed");
                             }}
                             height={normalize(45)}

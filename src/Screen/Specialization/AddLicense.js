@@ -87,7 +87,12 @@ const AddLicense = (props) => {
     const [targt, setTargt] = useState(null)
     const [isSaving, setIsSaving] = useState(false);
     const initialPrefillDone = useRef(false);
+    const requestedLicenseProfessionRef = useRef("");
+    const requestedReportingStateRef = useRef("");
     const isFoucs = useIsFocused();
+    const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+    const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+    const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
     const resetToTab = (initialRoute = "Home") => {
         props.navigation.dispatch(
             CommonActions.reset({
@@ -176,21 +181,30 @@ const AddLicense = (props) => {
         setModalVisiblecred(!isModalVisiblecred);
     };
     const licesenseState = () => {
-        if (allProfession) {
-            let obj = `${allProfession?.profession} - ${allProfession?.profession_type}`;
-            connectionrequest()
-                .then(() => {
-                    dispatch(licesensRequest(obj))
-                })
-                .catch(err => {
-                    showErrorAlert('Please connect to Internet', err);
-                });
+        if (!dashboardProfession || !dashboardProfessionType) return;
+        const obj = `${dashboardProfession} - ${dashboardProfessionType}`;
+        if (
+            requestedLicenseProfessionRef.current === obj &&
+            Array.isArray(AuthReducer?.licesensResponse?.licensure_states) &&
+            AuthReducer?.licesensResponse?.licensure_states?.length > 0
+        ) {
+            return;
         }
+        requestedLicenseProfessionRef.current = obj;
+        connectionrequest()
+            .then(() => {
+                dispatch(licesensRequest(obj))
+            })
+            .catch(err => {
+                showErrorAlert('Please connect to Internet', err);
+            });
     }
 
     useEffect(() => {
-        licesenseState();
-    }, [allProfession, isFoucs])
+        if (dashboardProfession && dashboardProfessionType) {
+            licesenseState();
+        }
+    }, [dashboardProfession, dashboardProfessionType, isFoucs])
     function convertDate(dateString) {
         const date = moment(dateString, 'MMM DD');
         date.year(2024);
@@ -322,20 +336,28 @@ const AddLicense = (props) => {
     }, [prefillSource, DashboardReducer?.dashboardResponse?.data?.licensures])
     useEffect(() => {
         const handleTakeIt = prefillSource;
+        const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
         if (handleTakeIt && (typeof stateDateFetch == "undefined" || !stateDateFetch)) {
-            const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
             if (finalget?.length > 0) {
                 setSelectlicsense(finalget?.[0]?.state);
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
-                dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+                const nextStateId = String(finalget?.[0]?.state_id || "");
+                if (nextStateId && requestedReportingStateRef.current !== nextStateId) {
+                    requestedReportingStateRef.current = nextStateId;
+                    dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+                }
             } else {
                 setSelectlicsense(handleTakeIt?.state || handleTakeIt?.state_name || "");
                 setlicsenseno(handleTakeIt?.license_number || "");
                 setSpecailidpraticelic(handleTakeIt?.state_id || "");
-                if (handleTakeIt?.state_id) dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
+                const nextStateId = String(handleTakeIt?.state_id || "");
+                if (nextStateId && requestedReportingStateRef.current !== nextStateId) {
+                    requestedReportingStateRef.current = nextStateId;
+                    dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
+                }
             }
             const fromDate =
                 handleTakeIt?.from_date && handleTakeIt?.from_date !== "0000-00-00"
@@ -354,19 +376,26 @@ const AddLicense = (props) => {
             }
 
         } else if (handleTakeIt) {
-            const boardId = handleTakeIt?.board_id || handleTakeIt?.board_data?.board_id;
             const takeState = DashboardReducer?.dashboardResponse?.data?.licensures;
             const finalget = takeState?.filter(item => item?.board_id == boardId);
             if (finalget?.length > 0) {
                 setSelectlicsense(finalget?.[0]?.state);
                 setlicsenseno(handleTakeIt?.license_number);
                 setSpecailidpraticelic(finalget?.[0]?.state_id);
-                dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+                const nextStateId = String(finalget?.[0]?.state_id || "");
+                if (nextStateId && requestedReportingStateRef.current !== nextStateId) {
+                    requestedReportingStateRef.current = nextStateId;
+                    dispatch(stateReportingRequest({ "state_id": finalget?.[0]?.state_id }));
+                }
             } else {
                 setSelectlicsense(handleTakeIt?.state || handleTakeIt?.state_name || "");
                 setlicsenseno(handleTakeIt?.license_number || "");
                 setSpecailidpraticelic(handleTakeIt?.state_id || "");
-                if (handleTakeIt?.state_id) dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
+                const nextStateId = String(handleTakeIt?.state_id || "");
+                if (nextStateId && requestedReportingStateRef.current !== nextStateId) {
+                    requestedReportingStateRef.current = nextStateId;
+                    dispatch(stateReportingRequest({ "state_id": handleTakeIt?.state_id }));
+                }
             }
             const fromDate =
                 handleTakeIt?.from_date && handleTakeIt?.from_date !== "0000-00-00"
@@ -574,6 +603,7 @@ const AddLicense = (props) => {
         setSelectlicsense(itemmode?.state_name);
         setSpecailidpraticelic(itemmode.id)
         setPraticelic(false);
+        requestedReportingStateRef.current = String(itemmode?.id || "");
         dispatch(stateReportingRequest({ "state_id": itemmode?.id }))
     }
     useLayoutEffect(() => {

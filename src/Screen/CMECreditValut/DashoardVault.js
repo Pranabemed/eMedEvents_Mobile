@@ -30,6 +30,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 let status = "";
 let status1 = "";
 const DashoardVault = (props) => {
@@ -147,16 +148,15 @@ const DashoardVault = (props) => {
             setGencreditboard(defaultStated?.credits_data?.total_general_earned_credits);
             setGentopiccreditboard(defaultStated?.credits_data?.total_general_credits);
             setTotalCreditboard(defaultStated?.credits_data?.total_credits)
-            setBoardexpiredate(moment(defaultStated?.board_data?.expiry_date).format('MMMM DD, YYYY'));
-            const targetDate = defaultStated?.board_data?.expiry_date;
-            const today = new Date();
-            const endDate = new Date(targetDate);
-            const differenceMs = endDate - today;
-            const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-            if (differenceDays < 0 || differenceDays === 0) {
+            const parsedExpiry = parseExpiryDate(defaultStated?.board_data?.expiry_date);
+            setBoardexpiredate(parsedExpiry.isValid() ? parsedExpiry.format('MMMM DD, YYYY') : "");
+            const today = moment().startOf('day');
+            const isExpired = parsedExpiry.isValid() ? today.isAfter(parsedExpiry.clone().startOf('day'), 'day') : true;
+            if (isExpired) {
                 setExpireDatecreditboard(true);
                 setCountdownMessagecreditboard('');
             } else {
+                const differenceDays = parsedExpiry.clone().startOf('day').diff(today, 'days');
                 setExpireDatecreditboard(false);
                 setCountdownMessagecreditboard(`${differenceDays}`);
             }
@@ -167,15 +167,14 @@ const DashoardVault = (props) => {
     }, [isfocused])
     useEffect(() => {
         if (stateidboard) {
-            const targetDate = stateidboard?.board_data?.expiry_date;
-            const today = new Date();
-            const endDate = new Date(targetDate);
-            const differenceMs = endDate - today;
-            const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-            if (differenceDays < 0 || differenceDays === 0) {
+            const parsedExpiry = parseExpiryDate(stateidboard?.board_data?.expiry_date);
+            const today = moment().startOf('day');
+            const isExpired = parsedExpiry.isValid() ? today.isAfter(parsedExpiry.clone().startOf('day'), 'day') : true;
+            if (isExpired) {
                 setExpireDatecreditboard(true);
                 setCountdownMessagecreditboard('');
             } else {
+                const differenceDays = parsedExpiry.clone().startOf('day').diff(today, 'days');
                 setExpireDatecreditboard(false);
                 setCountdownMessagecreditboard(`${differenceDays}`);
             }
@@ -371,20 +370,21 @@ const DashoardVault = (props) => {
     useEffect(() => {
         if (creditwise) {
             if (creditwise?.board_data?.expiry_date) {
-                const targetDate = creditwise?.board_data?.expiry_date ? new Date(creditwise.board_data.expiry_date) : null;
-                const today = new Date();
-                if (moment(today).format("YYYY-MM-DD") > creditwise?.board_data?.expiry_date) {
+                const parsedExpiry = parseExpiryDate(creditwise?.board_data?.expiry_date);
+                const today = moment().startOf('day');
+                if (!parsedExpiry.isValid()) {
                     setModalShow(true);
-                }
-                if (targetDate) {
-                    const ninetyDaysBefore = new Date(targetDate);
-                    ninetyDaysBefore.setDate(targetDate.getDate() - 90);
-                    if (today > targetDate) {
+                    setExpireDatecredit(true);
+                    setCountdownMessagecredit('');
+                } else {
+                    const targetDate = parsedExpiry.clone().startOf('day');
+                    const isExpired = today.isAfter(targetDate, 'day');
+                    if (isExpired) {
+                        setModalShow(true);
                         setExpireDatecredit(true);
                         setCountdownMessagecredit('');
                     } else {
-                        const differenceMs = targetDate - today;
-                        const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
+                        const differenceDays = targetDate.diff(today, 'days');
                         if (differenceDays == 89) {
                             // setModalShow(true);
                             setExpireDatecredit(true);
@@ -399,17 +399,14 @@ const DashoardVault = (props) => {
                             setCountdownMessagecredit(`${differenceDays}`);
                         }
                     }
-                } else {
-                    // setModalShow(true);
-                    setExpireDatecredit(true);
-                    setCountdownMessagecredit('');
                 }
             }
             if (creditwise?.board_data?.board_name) {
                 setBoardname(creditwise?.board_data?.board_name);
             }
             if (creditwise?.board_data?.expiry_date) {
-                setExpirelicno(moment(creditwise?.board_data?.expiry_date).format('MMMM DD, YYYY'))
+                const parsedExpiry = parseExpiryDate(creditwise?.board_data?.expiry_date);
+                setExpirelicno(parsedExpiry.isValid() ? parsedExpiry.format('MMMM DD, YYYY') : '')
             }
             if (creditwise?.license_number) {
                 setLicesense(creditwise?.license_number);

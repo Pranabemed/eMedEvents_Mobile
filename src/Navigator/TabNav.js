@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useContext, useRef } from 'react';
 import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
@@ -127,10 +127,12 @@ function TabScreen() {
     if (!refreshLicensesAt) return;
     if (processedRefreshAtRef.current === refreshLicensesAt) return;
     processedRefreshAtRef.current = refreshLicensesAt;
+    lastLicensureProfessionRef.current = '';
     connectionrequest()
       .then(() => {
         dispatch(dashPerRequest({}));
         dispatch(mainprofileRequest({}));
+        dispatch(chooseStatecardRequest({}));
       })
       .catch((err) => showErrorAlert("Please connect to internet", err));
   }, [refreshLicensesAt, dispatch]);
@@ -187,23 +189,10 @@ function TabScreen() {
         stateDashboardData(firstState.state_id);
         stateReport(firstState.state_id);
       }
-      const latestProfessionLabel =
-        buildProfessionLabel(
-          ProfileReducer?.latestProfessionInfo?.profession,
-          ProfileReducer?.latestProfessionInfo?.profession_type
-        ) ||
-        buildProfessionLabel(
-          DashboardReducer?.mainprofileResponse?.professional_information?.profession,
-          DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
-        ) ||
-        buildProfessionLabel(
-          AuthReducer?.signupResponse?.user?.profession,
-          AuthReducer?.signupResponse?.user?.profession_type
-        ) ||
-        buildProfessionLabel(
-          wholeProf?.profession,
-          wholeProf?.profession_type
-        );
+      const latestProfessionLabel = buildProfessionLabel(
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
+      );
       licHandl(latestProfessionLabel);
     }
   }, [DashboardReducer?.status, DashboardReducer?.dashPerResponse?.data?.licensures, DashboardReducer?.mainprofileResponse?.professional_information, AuthReducer?.signupResponse?.user, ProfileReducer?.latestProfessionInfo, wholeProf]);
@@ -230,7 +219,9 @@ function TabScreen() {
       })
   }
   const licHandl = (professionLabel) => {
-    if (!professionLabel || lastLicensureProfessionRef.current === professionLabel) return;
+    if (!professionLabel) return;
+    if (professionLabel.toLowerCase().includes('undefined')) return;
+    if (lastLicensureProfessionRef.current === professionLabel) return;
     lastLicensureProfessionRef.current = professionLabel;
     connectionrequest()
       .then(() => {
@@ -241,13 +232,13 @@ function TabScreen() {
       });
   }
   const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+  const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+  const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+  const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
   const profFromDashboard =
-    DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-      DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-      ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}` : wholeProf?.profession != null &&
-        wholeProf?.profession_type != null
-        ? `${wholeProf?.profession} - ${wholeProf?.profession_type}`
-        : null;
+    dashboardProfession && dashboardProfessionType
+      ? `${dashboardProfession} - ${dashboardProfessionType}`
+      : '';
   const allProfTake = validHandles.has(profFromDashboard);
   useEffect(() => {
     const loadLastActiveTab = async () => {
@@ -270,7 +261,7 @@ function TabScreen() {
       console.error('Failed to save last active tab', error);
     }
   };
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (initialRoute) {
       setTabtooltip("did");
       navigation.navigate(initialRoute);

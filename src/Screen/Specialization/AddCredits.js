@@ -86,6 +86,7 @@ const AddCredits = (props) => {
         : ProfilePicObj1)
     const [finalverifyadd, setFinalverifyadd] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
+    const returnToDashboardVault = props?.route?.params?.returnToDashboardVault === true;
     useEffect(() => {
         const token_handle_vault = () => {
             setTimeout(async () => {
@@ -1135,7 +1136,7 @@ const AddCredits = (props) => {
                                 onClose={toggleModalcred}
                                 content={props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully."}
                                 navigation={props.navigation}
-                                name={"goBack"}
+                                name={returnToDashboardVault ? "DashoardVault" : "goBack"}
                             />
 
 

@@ -103,44 +103,22 @@ const Main = (props) => {
   const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
   const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
-  const authProfession =
-    AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
-      ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
-      : AuthReducer?.againloginsiginResponse?.user?.profession && AuthReducer?.againloginsiginResponse?.user?.profession_type
-        ? `${AuthReducer?.againloginsiginResponse?.user?.profession} - ${AuthReducer?.againloginsiginResponse?.user?.profession_type}`
-        : AuthReducer?.signupResponse?.user?.profession && AuthReducer?.signupResponse?.user?.profession_type
-          ? `${AuthReducer?.signupResponse?.user?.profession} - ${AuthReducer?.signupResponse?.user?.profession_type}`
-          : finalProfessionmain?.profession && finalProfessionmain?.profession_type
-            ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
-            : null;
+  const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+  const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+  const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
   const profFromDashboard =
-    DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-      DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-      ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-      : null;
+    dashboardProfession && dashboardProfessionType
+      ? `${dashboardProfession} - ${dashboardProfessionType}`
+      : '';
   const resolvedProfessionHandle = findMatchedProfessionHandle(
     [
       profFromDashboard,
-      DashboardReducer?.mainprofileResponse?.professional_information?.profession,
-      `${DashboardReducer?.mainprofileResponse?.professional_information?.profession || ''} ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type || ''}`,
-      authProfession,
-      AuthReducer?.loginResponse?.user?.profession,
-      `${AuthReducer?.loginResponse?.user?.profession || ''} ${AuthReducer?.loginResponse?.user?.profession_type || ''}`,
-      AuthReducer?.againloginsiginResponse?.user?.profession,
-      `${AuthReducer?.againloginsiginResponse?.user?.profession || ''} ${AuthReducer?.againloginsiginResponse?.user?.profession_type || ''}`,
-      AuthReducer?.signupResponse?.user?.profession,
-      `${AuthReducer?.signupResponse?.user?.profession || ''} ${AuthReducer?.signupResponse?.user?.profession_type || ''}`,
-      finalProfessionmain?.profession,
-      `${finalProfessionmain?.profession || ''} ${finalProfessionmain?.profession_type || ''}`,
-      DashboardReducer?.dashPerResponse?.data?.user_information?.profession,
-      `${DashboardReducer?.dashPerResponse?.data?.user_information?.profession || ''} ${DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type || ''}`,
+      dashboardProfession,
+      `${dashboardProfession} ${dashboardProfessionType}`.trim(),
     ],
     supportedProfessionHandles
   );
-  const allProfTake =
-    resolvedProfessionHandle
-      ? physicianHandles.has(resolvedProfessionHandle)
-      : (gtprof || physicianHandles.has(normalizeProfessionHandle(authProfession)) || physicianHandles.has(normalizeProfessionHandle(profFromDashboard)));
+  const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
   const bottomBannerSpacing = useMemo(() => {
@@ -164,12 +142,12 @@ const Main = (props) => {
   useEffect(() => {
     if (!isFocus) return;
 
-    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || {};
+    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || {};
     const profession = String(profInfo.profession || '').trim();
     const profType = String(profInfo.profession_type || '').trim();
 
-    if (!profession) return;
-    const professionLabel = profType ? `${profession} - ${profType}` : profession;
+    if (!profession || !profType) return;
+    const professionLabel = `${profession} - ${profType}`;
 
     if (lastLicenseProfRef.current !== professionLabel) {
       console.log('[Main.js/LicensureSync] Change detected:', { old: lastLicenseProfRef.current, new: professionLabel });
@@ -183,7 +161,7 @@ const Main = (props) => {
     } else {
       console.log('[Main.js/LicensureSync] No change, skipping.');
     }
-  }, [isFocus, DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse, AuthReducer?.loginResponse, AuthReducer?.status]);
+  }, [isFocus, DashboardReducer?.mainprofileResponse?.professional_information]);
 
   // 🔹 Keep global context (gtprof) in sync with the latest detected profession
   useEffect(() => {

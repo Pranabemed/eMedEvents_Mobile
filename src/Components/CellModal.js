@@ -54,6 +54,13 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
             navigation.navigate("TabNav", { detectmain: "main" });
         } else if (name == "goBack") {
             navigation.goBack();
+        } else if (name == "DashoardVault") {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav", params: { initialRoute: "Contact", detectmain: "main" } }],
+                })
+            );
         } else {
             navigation?.navigate(name);
         }

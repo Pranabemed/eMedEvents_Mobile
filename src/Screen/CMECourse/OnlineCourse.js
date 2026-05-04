@@ -6,7 +6,7 @@ import Colorpath from '../../Themes/Colorpath';
 import Imagepath from '../../Themes/Imagepath';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { cmeCourseRequest } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Modal from 'react-native-modal';
@@ -77,7 +77,19 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
         } else if (dataItem?.current_activity_api == "startTest") {
             navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {
-            navigation.navigate("AddCredits", { mainAdd: crediwhole })
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{
+                        name: "TabNav",
+                        params: {
+                            initialRoute: "Contact",
+                            detectmain: "main",
+                            refreshLicensesAt: Date.now()
+                        }
+                    }],
+                })
+            );
         } else if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
         }

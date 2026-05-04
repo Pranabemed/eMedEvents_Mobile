@@ -30,16 +30,19 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     const isFocus = useIsFocused();
     const [CMEcard, setCMECard] = useState(false)
     const [isItemExpired, setIsItemExpired] = useState(false);
+    const [isExpiringSoon, setIsExpiringSoon] = useState(false);
     const [dashMod, setDashMod] = useState(false);
     const [countdownMessage, setCountdownMessage] = useState('');
     const [takeName, setTakeName] = useState("");
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+    const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+    const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
+        dashboardProfession && dashboardProfessionType
+            ? `${dashboardProfession} - ${dashboardProfessionType}`
+            : '';
     const allProfTake = validHandles.has(profFromDashboard);
     useEffect(() => {
         const token_handle_vault = () => {
@@ -128,17 +131,22 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         isFocus
     ]);
     const fetchLicenses = useCallback(async () => {
-        if (!allProfession || !fetcheddt || AuthReducer?.licesensResponse?.licensure_states?.length > 0) {
+        if (
+            !dashboardProfession ||
+            !dashboardProfessionType ||
+            !fetcheddt ||
+            AuthReducer?.licesensResponse?.licensure_states?.length > 0
+        ) {
             return;
         }
-        const professionString = `${allProfession.profession} - ${allProfession.profession_type}`;
+        const professionString = `${dashboardProfession} - ${dashboardProfessionType}`;
         try {
             await connectionrequest();
             dispatch(licesensRequest(professionString));
         } catch (err) {
             showErrorAlert('Please connect to Internet', err);
         }
-    }, [allProfession, fetcheddt, AuthReducer?.licesensResponse?.licensure_states]);
+    }, [dashboardProfession, dashboardProfessionType, fetcheddt, AuthReducer?.licesensResponse?.licensure_states]);
 
     useEffect(() => {
         fetchLicenses();
@@ -343,7 +351,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         }
     };
     // --- Derived expiry logic (no useEffect timing issues) ---
-    const parsedExpiry = moment(item?.to_date, ["YYYY-MM-DD", moment.ISO_8601], true);
+    const parsedExpiry = moment(item?.to_date, ["YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY", "MM/DD/YYYY", moment.ISO_8601], true);
     const isExpiryValid = parsedExpiry.isValid();
     const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
     useEffect(() => {
@@ -351,37 +359,30 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         let timeoutId = null;
 
         if (isActiveCard) {
-            const today = new Date();
+            const today = moment().startOf('day');
             let isExpired = false;
+            let isWarning = false;
             let message = '';
 
             if (isMissingLicenseData || !item?.to_date || !isExpiryValid) {
                 isExpired = true;
+                isWarning = true;
             } else {
-                const targetDate = parsedExpiry.toDate();
-                if (moment(today).format("YYYY-MM-DD") > parsedExpiry.format("YYYY-MM-DD")) {
+                const targetDate = parsedExpiry.clone().startOf('day');
+                if (today.isAfter(targetDate, 'day')) {
                     isExpired = true;
-                }
-                if (today > targetDate) {
-                    isExpired = true;
+                    isWarning = true;
                 } else {
-                    const differenceMs = targetDate - today;
-                    const differenceDays = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-                    if (differenceDays == 89) {
-                        isExpired = true;
-                        message = 'Renew & Update';
-                    } else if (differenceDays < 89) {
-                        isExpired = true;
-                        message = `${differenceDays}`;
-                    } else {
-                        isExpired = false;
-                        message = `${differenceDays}`;
-                    }
+                    const differenceDays = targetDate.diff(today, 'days');
+                    isExpired = false;
+                    isWarning = differenceDays < 90;
+                    message = differenceDays === 89 ? 'Renew & Update' : `${differenceDays}`;
                 }
             }
 
             setTakeName(item?.board_name || '');
             setIsItemExpired(isExpired);
+            setIsExpiringSoon(isWarning);
             setExpireDate(isExpired);
             setCountdownMessage(message);
 
@@ -397,6 +398,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
                 setDashMod(false);
             }
         } else {
+            setIsExpiringSoon(false);
             setDashMod(false);
         }
 
@@ -439,7 +441,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
                         </View>
                     </Pressable>}
                 </View>
-                {isItemExpired ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                {isExpiringSoon ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
                     <View style={styles.updateRenew}>
                         <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }))}>
                             <Text style={styles.update}>{"Update"}</Text>

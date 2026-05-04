@@ -1,25 +1,45 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import RenderHTML from 'react-native-render-html';
 
-const HtmlTableRenderer = ({ source, width, tagsStyles }) => {
+const HtmlTableRenderer = ({ source, width, tagsStyles, onLinkPress }) => {
     const [webViewHeight, setWebViewHeight] = useState(200);
+    const lastHeightRef = useRef(200);
     const html = source?.html || '';
     const hasTable = html.toLowerCase().includes('<table');
 
     if (hasTable) {
-        // Inject script to calculate content height and post it back to React Native
         const injectedJS = `
-            setTimeout(function() {
-                var height = document.documentElement.scrollHeight || document.body.scrollHeight;
-                window.ReactNativeWebView.postMessage(height.toString());
-            }, 500);
-            true;
+            (function() {
+                function postHeight() {
+                    var height = document.documentElement.scrollHeight || document.body.scrollHeight;
+                    window.ReactNativeWebView.postMessage(String(height));
+                }
+
+                function postLink(event) {
+                    var node = event.target;
+                    while (node && node.tagName !== 'A') {
+                        node = node.parentElement;
+                    }
+
+                    if (node && node.tagName === 'A' && node.href) {
+                        event.preventDefault();
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                            type: 'link',
+                            href: node.href
+                        }));
+                    }
+                }
+
+                document.addEventListener('click', postLink, true);
+                setTimeout(postHeight, 500);
+                true;
+            })();
         `;
 
         return (
-            <View style={{ height: webViewHeight, width: '100%', marginVertical: 10 }}>
+            <View style={{ height: webViewHeight, width: '100%', marginVertical: 10, overflow: 'hidden' }}>
                 <WebView
                     originWhitelist={['*']}
                     source={{
@@ -29,25 +49,25 @@ const HtmlTableRenderer = ({ source, width, tagsStyles }) => {
                           <head>
                             <meta name="viewport" content="width=device-width, initial-scale=1.0">
                             <style>
-                              body { 
-                                font-family: -apple-system, system-ui; 
-                                font-size: 16px; 
-                                margin: 0; 
-                                padding: 0; 
+                              body {
+                                font-family: -apple-system, system-ui;
+                                font-size: 16px;
+                                margin: 0;
+                                padding: 0;
                                 color: #000;
                               }
-                              table { 
-                                width: 100% !important; 
-                                border-collapse: collapse; 
-                                margin-bottom: 10px; 
+                              table {
+                                width: 100% !important;
+                                border-collapse: collapse;
+                                margin-bottom: 10px;
                               }
-                              th, td { 
-                                border: 1px solid #ddd; 
-                                padding: 8px; 
-                                text-align: left; 
+                              th, td {
+                                border: 1px solid #ddd;
+                                padding: 8px;
+                                text-align: left;
                               }
-                              th { 
-                                background-color: #f8f8f8; 
+                              th {
+                                background-color: #f8f8f8;
                                 font-weight: bold;
                               }
                               img {
@@ -61,16 +81,50 @@ const HtmlTableRenderer = ({ source, width, tagsStyles }) => {
                           </body>
                         </html>`
                     }}
-                    scrollEnabled={true}
+                    scrollEnabled={false}
+                    onShouldStartLoadWithRequest={(request) => {
+                        const url = request?.url || '';
+
+                        if (!url || url === 'about:blank' || url.startsWith('about:srcdoc') || url.startsWith('javascript:')) {
+                            return true;
+                        }
+
+                        if (onLinkPress) {
+                            onLinkPress(url);
+                        }
+                        return false;
+                    }}
                     onMessage={(event) => {
-                        const height = Number(event.nativeEvent.data);
+                        const rawData = event?.nativeEvent?.data;
+                        if (!rawData) return;
+
+                        try {
+                            const parsed = JSON.parse(rawData);
+                            if (parsed?.type === 'link' && parsed?.href) {
+                                if (onLinkPress) {
+                                    onLinkPress(parsed.href);
+                                }
+                                return;
+                            }
+                        } catch (error) {
+                            // Not a JSON link payload, fall through to height handling.
+                        }
+
+                        const height = Number(rawData);
                         if (height > 0) {
-                            setWebViewHeight(height + 30);
+                            const nextHeight = height + 30;
+                            if (Math.abs(nextHeight - lastHeightRef.current) > 8) {
+                                lastHeightRef.current = nextHeight;
+                                setWebViewHeight(nextHeight);
+                            }
                         }
                     }}
                     injectedJavaScript={injectedJS}
                     javaScriptEnabled={true}
                     domStorageEnabled={true}
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                    style={{ backgroundColor: 'transparent' }}
                 />
             </View>
         );
@@ -81,6 +135,15 @@ const HtmlTableRenderer = ({ source, width, tagsStyles }) => {
             contentWidth={width}
             source={source}
             tagsStyles={tagsStyles}
+            renderersProps={{
+                a: {
+                    onPress: (event, href) => {
+                        if (href && onLinkPress) {
+                            onLinkPress(href);
+                        }
+                    }
+                }
+            }}
         />
     );
 };

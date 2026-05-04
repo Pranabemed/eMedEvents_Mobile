@@ -5,7 +5,30 @@ import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import HtmlTableRenderer from './HtmlTableRenderer';
 
-const StatewebcastOverview = ({width,source,toggleExpansion,expanded}) => {
+const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpansion, expanded, navigation, webcastdeatils, creditData }) => {
+    const handleOverviewLink = (href) => {
+        if (!href || !navigation) return;
+
+        const normalizedHref = String(href).trim();
+        const cleanedHref = normalizedHref.toLowerCase();
+        const urlParts = normalizedHref.split('?')[0].split('#')[0].split('/').filter(Boolean);
+        const slug = urlParts[urlParts.length - 1] || normalizedHref;
+
+        const isSpeaker = cleanedHref.includes('speaker');
+
+        navigation.navigate("SpeakerProfile", {
+            fullUrl: {
+                fullUrl: slug,
+                creditData,
+                speaks: isSpeaker ? "speaker" : "organ",
+                showtext: isSpeaker ? "speaker" : "organ",
+                textHo: "fs",
+                hitDat: webcastdeatils?.conferenceId,
+                Realback: webcastdeatils
+            }
+        });
+    };
+
     return (
         <View>
             <View
@@ -24,30 +47,48 @@ const StatewebcastOverview = ({width,source,toggleExpansion,expanded}) => {
                 </Text>
             </View>
             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(2), width: "100%" }}>
-                <HtmlTableRenderer
-                    width={width}
-                    source={source}
-                    tagsStyles={{
-                        p: {
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: '#000000',
-                            marginVertical: 0
-                        },
-                        ul: {
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: '#000000',
-                            marginVertical: 0
-                        },
-                        li: {
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: "#000000",
-                            marginVertical: 0
-                        }
-                    }}
-                />
+                {(!expanded && hasTable) ? (
+                    <View style={{ paddingVertical: normalize(2) }}>
+                        <Text
+                            numberOfLines={7}
+                            ellipsizeMode="tail"
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: '#000000',
+                                lineHeight: 22,
+                            }}
+                        >
+                            {previewText || ' '}
+                        </Text>
+                    </View>
+                ) : (
+                    <HtmlTableRenderer
+                        width={width}
+                        source={source}
+                        onLinkPress={handleOverviewLink}
+                        tagsStyles={{
+                            p: {
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: '#000000',
+                                marginVertical: 0
+                            },
+                            ul: {
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: '#000000',
+                                marginVertical: 0
+                            },
+                            li: {
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: "#000000",
+                                marginVertical: 0
+                            }
+                        }}
+                    />
+                )}
 
                 <TouchableOpacity
                     onPress={toggleExpansion}

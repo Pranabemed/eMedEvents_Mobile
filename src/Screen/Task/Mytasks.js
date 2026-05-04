@@ -1,5 +1,5 @@
 import { View, Text, Platform, FlatList, TouchableOpacity, ScrollView, BackHandler } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
@@ -21,15 +21,66 @@ const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
         const { isConnected,fulldashbaord,setAddit,statepush } = useContext(AppContext);
         const dispatch = useDispatch();
+    const resolveLicenseStateName = () => (
+        props?.route?.params?.taskData?.creditID?.state ||
+        props?.route?.params?.taskData?.creditID?.state_name ||
+        props?.route?.params?.backget?.creditID?.state ||
+        props?.route?.params?.backget?.creditID?.state_name ||
+        ""
+    );
+    const resolveLicenseExpiryDate = () => (
+        props?.route?.params?.taskData?.creditID?.to_date ||
+        props?.route?.params?.taskData?.creditID?.expiry_date ||
+        props?.route?.params?.taskData?.creditID?.license_expiry_date ||
+        props?.route?.params?.backget?.creditID?.to_date ||
+        props?.route?.params?.backget?.creditID?.expiry_date ||
+        props?.route?.params?.backget?.creditID?.license_expiry_date ||
+        ""
+    );
+    const isLicenseExpired = useMemo(() => {
+        const expiryValue = resolveLicenseExpiryDate();
+        if (!expiryValue) return false;
+
+        const parsedExpiry = moment(expiryValue, [
+            moment.ISO_8601,
+            "YYYY-MM-DD",
+            "MM-DD-YYYY",
+            "DD-MM-YYYY",
+            "MMM DD, YYYY",
+            "MMM D, YYYY",
+        ], true);
+
+        if (!parsedExpiry.isValid()) return false;
+
+        return moment().startOf("day").isAfter(parsedExpiry.startOf("day"));
+    }, [
+        props?.route?.params?.taskData?.creditID?.to_date,
+        props?.route?.params?.taskData?.creditID?.expiry_date,
+        props?.route?.params?.taskData?.creditID?.license_expiry_date,
+        props?.route?.params?.backget?.creditID?.to_date,
+        props?.route?.params?.backget?.creditID?.expiry_date,
+        props?.route?.params?.backget?.creditID?.license_expiry_date
+    ]);
     const taskPress = () => {
         setAddit(statepush);
         stateDashboardSuccess(null)
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+            return;
+        }
         taskHandle();
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
                 routes: [
-                    { name: "TabNav", params: { initialRoute: "Home" } }
+                    {
+                        name: "TabNav",
+                        params: {
+                            initialRoute: "Home",
+                            detectmain: "main",
+                            refreshLicensesAt: Date.now()
+                        }
+                    }
                 ],
             })
         );
@@ -62,19 +113,21 @@ const Mytasks = (props) => {
     useEffect(() => {
         if (props?.route?.params?.taskData?.taskData) {
             const taskData = props?.route?.params?.taskData?.taskData;
-            const allStatesItem = { title: props?.route?.params?.taskData?.creditID?.state_name, button_display_text: "Update" };
-            const updatedStateDataArray = [...taskData, allStatesItem];
+            const updatedStateDataArray = isLicenseExpired
+                ? [...taskData, { title: resolveLicenseStateName(), button_display_text: "Update" }]
+                : taskData;
             setFinalTask(updatedStateDataArray);
         }
-    }, [props?.route?.params?.taskData])
+    }, [props?.route?.params?.taskData, isLicenseExpired])
     useEffect(() => {
         if (props?.route?.params?.backget?.taskData?.taskData) {
             const backgetAll = props?.route?.params?.backget?.taskData?.taskData;
-            const allStatesItem = { title: props?.route?.params?.backget?.creditID?.state_name, button_display_text: "Update" };
-            const updatedStateDataArray = [...backgetAll, allStatesItem];
+            const updatedStateDataArray = isLicenseExpired
+                ? [...backgetAll, { title: resolveLicenseStateName(), button_display_text: "Update" }]
+                : backgetAll;
             setFinalTask(updatedStateDataArray);
         }
-    }, [props?.route?.params?.backget])
+    }, [props?.route?.params?.backget, isLicenseExpired])
     const taskAction = (taskID) => {
         const url_webcast = taskID?.detailpage_url;
         const result_final = url_webcast.split('/').pop();
@@ -149,7 +202,7 @@ const Mytasks = (props) => {
                                         flexWrap: 'wrap',
                                     }}
                                 >
-                                    {item?.button_display_text == "Update" ? `Renew ${props?.route?.params?.taskData?.creditID?.state || props?.route?.params?.backget?.creditID?.state_name} State License` : item?.title}
+                                    {item?.button_display_text == "Update" ? `Renew ${resolveLicenseStateName()} State License` : item?.title}
                                 </Text>
                             </TouchableOpacity>
                         </View>
