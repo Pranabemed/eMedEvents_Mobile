@@ -49,8 +49,8 @@ const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/ap
 const ANDROID_PACKAGE = 'com.emedevents.newapp';
 const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
 const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
-const UPDATE_RECHECK_MS = 5 * 60 * 1000; // 5 min periodic check while app is open
-const NAVIGATION_RECHECK_MS = 60 * 1000; // Avoid repeated API hits during fast screen changes
+const UPDATE_RECHECK_MS = 10 * 60 * 1000; // 10 min periodic check while app is open
+const NAVIGATION_RECHECK_MS = 10 * 60 * 1000; // Avoid repeated API hits during fast screen changes
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
