@@ -48,6 +48,17 @@ const findMatchedProfessionHandle = (candidates, supportedHandles) => {
   return '';
 };
 
+const buildProfessionLabel = (profession, professionType) => {
+  const cleanProfession = String(profession || '').trim();
+  const cleanProfessionType = String(professionType || '').trim();
+
+  if (!cleanProfession || !cleanProfessionType) {
+    return '';
+  }
+
+  return `${cleanProfession} - ${cleanProfessionType}`;
+};
+
 const Main = (props) => {
   const insets = useSafeAreaInsets();
   const {
@@ -104,23 +115,39 @@ const Main = (props) => {
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
   const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
   const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+  const authProfessionInfo =
+    AuthReducer?.loginResponse?.user ||
+    AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.signupResponse?.user ||
+    {};
   const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
   const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
-  const profFromDashboard =
-    dashboardProfession && dashboardProfessionType
-      ? `${dashboardProfession} - ${dashboardProfessionType}`
-      : '';
-  const resolvedProfessionHandle = findMatchedProfessionHandle(
-    [
-      profFromDashboard,
-      dashboardProfession,
-      `${dashboardProfession} ${dashboardProfessionType}`.trim(),
-    ],
-    supportedProfessionHandles
+  const isDashboardProfessionReady = Boolean(dashboardProfession && dashboardProfessionType);
+  const profFromDashboard = buildProfessionLabel(dashboardProfession, dashboardProfessionType);
+  const profFromAuth = buildProfessionLabel(
+    authProfessionInfo?.profession,
+    authProfessionInfo?.profession_type
   );
+  const resolvedProfessionHandle = profFromDashboard
+    ? findMatchedProfessionHandle(
+      [
+        profFromDashboard,
+        dashboardProfession,
+        `${dashboardProfession} ${dashboardProfessionType}`.trim(),
+      ],
+      supportedProfessionHandles
+    )
+    : findMatchedProfessionHandle(
+      [
+        profFromAuth,
+        `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
+      ],
+      supportedProfessionHandles
+    );
   const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+  const shouldHoldSkeleton = (isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady;
   const bottomBannerSpacing = useMemo(() => {
     if (enables && allProfTake) {
       return normalize(96);
@@ -134,7 +161,7 @@ const Main = (props) => {
     () => bottomBannerSpacing + (Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, normalize(8))),
     [bottomBannerSpacing, insets.bottom]
   );
-  console.log("isPhysicianFlow", isPhysicianFlow);
+  console.log("isPhysicianFlow", isPhysicianFlow, fulldashbaord);
   console.log("isNursingFlow", isNursingFlow);
   const lastLicenseProfRef = useRef(null);
 
@@ -191,28 +218,21 @@ const Main = (props) => {
       .catch((err) => showErrorAlert("Please connect to internet", err));
   }, [detectmain, isFocus]);
 
-  // 🔹 Synchronize the loading state with Redux responses
+  // Keep the main page on skeleton until dashboard profession info is ready.
   useEffect(() => {
-    const terminalStatuses = new Set([
-      'Dashboard/dashboardSuccess',
-      'Dashboard/dashboardFailure',
-      'Dashboard/mainprofileSuccess',
-      'Dashboard/mainprofileFailure',
-      'Dashboard/dashPerSuccess',
-      'Dashboard/dashPerFailure'
-    ]);
-
-    if (terminalStatuses.has(DashboardReducer?.status)) {
-      // 🔹 ONLY SHOW once the profession logic has had a target to lock onto
-      // This prevents jumping from NewProfession to StateLicense after mount.
-      if (resolvedProfessionHandle || !!profFromDashboard) {
-        setTimeout(() => setShowLoader(true), 150);
-      } else {
-        // Fallback if truly no profession is found after a few tries
-        setTimeout(() => setShowLoader(true), 600);
-      }
+    if (!isFocus) return;
+    if (shouldHoldSkeleton) {
+      setShowLoader(false);
+      return;
     }
-  }, [DashboardReducer?.status, resolvedProfessionHandle, profFromDashboard]);
+    if (!isPhysicianFlow && !isNursingFlow) {
+      setShowLoader(true);
+      return;
+    }
+    if (DashboardReducer?.dashboardResponse?.data) {
+      setShowLoader(true);
+    }
+  }, [isFocus, shouldHoldSkeleton, isPhysicianFlow, isNursingFlow, DashboardReducer?.dashboardResponse?.data]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -261,8 +281,10 @@ const Main = (props) => {
       resetState();
     };
   }, []);
-  const [showloader, setShowLoader] = useState(!!DashboardReducer?.dashboardResponse?.data);
+  const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
+  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || (!isPhysicianFlow && !isNursingFlow));
+  const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   useEffect(() => {
     setFreeze(false);
     enableFreeze(false);
@@ -373,7 +395,7 @@ const Main = (props) => {
           </View>
           <HandleTextInput showLine={showLine} nav={props.navigation} takestate={takestate} addit={addit} setFocusedInput={setFocusedInput} focusedInput={focusedInput} />
           <View style={{ flex: 1 }}>
-            {showloader ? (
+            {shouldRenderDashboardContent ? (
               <ScrollView
                 style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
                 contentContainerStyle={{
@@ -385,10 +407,10 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {isPhysicianFlow
-                      ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                       : isNursingFlow
-                        ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={fulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                        ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
                   </View>
                 </View>
               </ScrollView>
