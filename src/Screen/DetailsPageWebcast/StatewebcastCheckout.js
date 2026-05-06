@@ -17,6 +17,23 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const [finalcheck, setFinalcheck] = useState("");
+  const shouldShowDownloadCatalog = webcastdeatils?.organizerName == "eMedEd, Inc." ||
+    webcastdeatils?.organizerName == "eMedEvents Corporation" ||
+    webcastdeatils?.organizerName == "eMedEd";
+  const isCheckoutCta = (
+    webcastdeatils?.conferenceTypeText == "Webcast" ||
+    webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
+    webcastdeatils?.conferenceTypeText == "Journal CME" ||
+    webcastdeatils?.conferenceTypeText == "Podcast"
+  ) &&
+    webcastdeatils?.registrationTickets?.length == 1 &&
+    webcastdeatils?.conferenceTypeId != "1" &&
+    webcastdeatils?.conferenceTypeId != "6" &&
+    webcastdeatils?.conferenceTypeId != "34";
+  const showCartAction = webcastdeatils?.buttonType &&
+    webcastdeatils?.buttonType.toLowerCase() !== "interest" &&
+    webcastdeatils?.is_cart_applicable == 1 &&
+    webcastdeatils?.isHavingActivity !== 1;
   console.log(webcastdeatils, creditData, "webcastdeatils=====11", urlneed);
   const { width } = useWindowDimensions();
   const dispatch = useDispatch();
@@ -38,6 +55,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
 
     return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
   }
+  const ticketPriceAmount = parseFloat(takePrice || "0") || 0;
+  const processingFeeAmount = shouldShowDownloadCatalog && ticketPriceAmount > 0
+    ? parseFloat((ticketPriceAmount * 0.035).toFixed(2))
+    : 0;
+  const totalAmountWithFee = parseFloat((ticketPriceAmount + processingFeeAmount).toFixed(2));
   const handleAddtoCart = useCallback(() => {
     let obj = {
       "bundle_conference_id": bundle_conference_id,
@@ -131,11 +153,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   }, [navigation, WebcastReducer?.checkoutTicketResponse, webcastdeatils, urlneed]);
 
   const registerCheck = useCallback(() => {
-    navigation.navigate("RegisterInterest", { 
-      checkoutSpan: { 
-        checkoutSpan: webcastdeatils, 
-        finalTicket: WebcastReducer?.checkoutTicketResponse 
-      } 
+    navigation.navigate("RegisterInterest", {
+      checkoutSpan: {
+        checkoutSpan: webcastdeatils,
+        finalTicket: WebcastReducer?.checkoutTicketResponse
+      }
     })
   }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse])
   useEffect(() => {
@@ -194,114 +216,103 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
           <View style={{
             width: "100%",
             position: 'absolute',
-            height: normalize(120),
-            bottom: normalize(-34),
+            height: isCheckoutCta
+              ? (shouldShowDownloadCatalog ? normalize(148) : normalize(108))
+              : normalize(108),
+            bottom: 0,
             left: 0,
             right: 0,
             backgroundColor: Colorpath.white,
             // borderColor: "#DDDDDD",
             // borderWidth: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingBottom: normalize(20),
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignContent: "space-between",
-            marginLeft: normalize(-7)
+            paddingHorizontal: normalize(16),
+            paddingTop: normalize(14),
+            paddingBottom: normalize(16),
             // zIndex:1
           }}>
-
             {webcastdeatils?.buttonType &&
               webcastdeatils?.buttonType?.toLowerCase() === "register" &&
-              webcastdeatils?.registered_allow === 1 ? <><View style={{ flexDirection: "column", marginLeft: normalize(10) }}>
-                {webcastdeatils?.registrationTickets?.length > 0 && parseFloat(takePrice || "0") > 0 ? (
+              webcastdeatils?.registered_allow === 1 ? (
+              <View style={{ flex: 1, justifyContent: isCheckoutCta ? "flex-start" : "center", alignItems: "center" }}>
+                {isCheckoutCta && webcastdeatils?.registrationTickets?.length > 0 && ticketPriceAmount > 0 ? (
                   <>
-                    <View style={{ marginLeft: normalize(5) }}>
-                      <Text
-                        style={{
-                          fontFamily: Fonts.InterMedium,
-                          fontSize: 14,
-                          color: "#333",
-                        }}
-                      >
-                        {"Total"}
-                      </Text>
-                      <Text
-                        style={{
-                          fontFamily: Fonts.InterBold,
-                          fontSize: 18,
-                          color: "#333",
-                          width: normalize(80)
-                        }}
-                      >
-                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(takePrice || "0"))}`}
-                      </Text>
+                    <View style={{ width: "100%" }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
+                          {"Price"}
+                        </Text>
+                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
+                          {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
+                        </Text>
+                      </View>
+                      {shouldShowDownloadCatalog ? (
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10) }}>
+                          <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
+                            {"Processing Fee"}
+                          </Text>
+                          <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
+                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(processingFeeAmount))}`}
+                          </Text>
+                        </View>
+                      ) : null}
+                      <View style={{ marginTop: normalize(10), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10) }}>
+                        <View>
+                          <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
+                            {"Total"}
+                          </Text>
+                          <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
+                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(totalAmountWithFee))}`}
+                          </Text>
+                        </View>
+                        <Buttons
+                          onPress={() => {
+                            if (isCheckoutCta) {
+                              handleTicketsCheckout();
+                              setFinalcheck("checkout")
+                            } else {
+                              handleTicketsCheckout();
+                              setFinalcheck("inperson");
+                            }
+                          }}
+                          height={normalize(48)}
+                          width={showCartAction ? normalize(100) : normalize(160)}
+                          backgroundColor={Colorpath.ButtonColr}
+                          borderRadius={normalize(5)}
+                          text={"Checkout"}
+                          color={Colorpath.white}
+                          fontSize={16}
+                          fontFamily={Fonts.InterSemiBold} />
+                      </View>
                     </View>
                   </>
                 ) : (
-                  <Text
-                    style={{
-                      fontFamily: Fonts.InterBold,
-                      fontSize: 20,
-                      color: Colorpath.ButtonColr,
-                      marginLeft: normalize(5)
-                    }}
-                  >
-                    {"Free"}
-                  </Text>
+                  <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+                    <View>
+                      <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
+                        {"Total"}
+                      </Text>
+                      <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
+                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(totalAmountWithFee))}`}
+                      </Text>
+                    </View>
+                    <Buttons
+                      onPress={() => {
+                        handleTicketsCheckout();
+                        setFinalcheck("inperson");
+                      }}
+                      height={normalize(48)}
+                      width={showCartAction ? normalize(122) : normalize(160)}
+                      backgroundColor={Colorpath.ButtonColr}
+                      borderRadius={normalize(5)}
+                      text={"Register"}
+                      color={Colorpath.white}
+                      fontSize={16}
+                      fontFamily={Fonts.InterSemiBold} />
+                  </View>
                 )}
-
-              </View><Buttons
-                onPress={() => {
-                  if ((
-                    webcastdeatils?.conferenceTypeText == "Webcast" ||
-                    webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
-                    webcastdeatils?.conferenceTypeText == "Journal CME" ||
-                    webcastdeatils?.conferenceTypeText == "Podcast"
-                  ) && webcastdeatils?.registrationTickets?.length == 1 && webcastdeatils?.conferenceTypeId != "1" &&
-                    webcastdeatils?.conferenceTypeId != "6" &&
-                    webcastdeatils?.conferenceTypeId != "34") {
-                    handleTicketsCheckout();
-                    setFinalcheck("checkout")
-                  } else {
-                    handleTicketsCheckout();
-                    setFinalcheck("inperson");
-                    // navigation.navigate("InPersonStatewebcast", { realData: webcastdeatils });
-                  }
-                }}
-                height={normalize(45)}
-                width={
-                  (webcastdeatils?.is_cart_applicable === 1 &&
-                    webcastdeatils?.already_in_cart === 1 &&
-                    webcastdeatils?.isHavingActivity !== 1) ||
-                    (webcastdeatils?.buttonType &&
-                      webcastdeatils?.buttonType.toLowerCase() !== "interest" &&
-                      webcastdeatils?.is_cart_applicable === 1 &&
-                      webcastdeatils?.already_in_cart === 0 &&
-                      webcastdeatils?.isHavingActivity !== 1)
-                    ? normalize(100)
-                    : normalize(140)
-                }
-                backgroundColor={Colorpath.ButtonColr}
-                borderRadius={normalize(5)}
-                text={(
-                  (
-                    webcastdeatils?.conferenceTypeText == "Webcast" ||
-                    webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
-                    webcastdeatils?.conferenceTypeText == "Journal CME" ||
-                    webcastdeatils?.conferenceTypeText == "Podcast"
-                  ) &&
-                  webcastdeatils?.registrationTickets?.length == 1 &&
-                  webcastdeatils?.conferenceTypeId != "1" &&
-                  webcastdeatils?.conferenceTypeId != "6" &&
-                  webcastdeatils?.conferenceTypeId != "34"
-                )
-                  ? "Checkout"
-                  : "Register"}
-                color={Colorpath.white}
-                fontSize={16}
-                fontFamily={Fonts.InterSemiBold} /></>
-              : null}
+              </View>
+            ) : null}
           </View>
           <View>
             {
@@ -490,7 +501,13 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                         ) : (
                           ""
                         )}
-            <View style={{ position: 'absolute', bottom: normalize(1), zIndex: 2 }}>
+            <View style={{
+              position: 'absolute',
+              bottom:-5,
+              left: normalize(0),
+              right: normalize(24),
+              zIndex: 2
+            }}>
               {webcastdeatils?.buttonType &&
                 webcastdeatils.buttonType.toLowerCase() !== "interest" ? (
                 webcastdeatils &&
@@ -502,14 +519,13 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                       handleTicketsCheckout();
                       setFinalcheck("singlecart")
                     }}
-                    height={normalize(45)}
+                    height={normalize(48)}
                     width={normalize(100)}
                     backgroundColor={Colorpath.ButtonColr}
                     borderRadius={normalize(5)}
                     text={"ADD TO CART"}
                     color={Colorpath.white}
                     fontSize={14}
-                    marginLeft={normalize(87)}
                     marginBottom={normalize(13)}
                     fontFamily={Fonts.InterSemiBold}
                   />
@@ -519,18 +535,17 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                   webcastdeatils.already_in_cart === 1 &&
                   webcastdeatils.isHavingActivity !== 1 ? (
                   <Buttons
-                    onPress={() => {
+                  onPress={() => {
                       handleTicketsCheckout();
                       setFinalcheck("doublecart");
                     }}
-                    height={normalize(45)}
+                    height={normalize(48)}
                     width={normalize(100)}
                     backgroundColor={Colorpath.ButtonColr}
                     borderRadius={normalize(5)}
                     text={"Already in cart"}
                     color={Colorpath.white}
                     fontSize={14}
-                    marginLeft={normalize(87)}
                     marginBottom={normalize(15)}
                     fontFamily={Fonts.InterSemiBold}
                   />
