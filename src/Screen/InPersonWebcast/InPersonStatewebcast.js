@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import Loader from '../../Utils/Helpers/Loader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useIsFocused } from '@react-navigation/native';
 
 let status1 = "";
 const InPersonStatewebcast = (props) => {
@@ -35,6 +36,7 @@ const InPersonStatewebcast = (props) => {
     const dispatch = useDispatch();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     console.log(WebcastReducer, "WebcastReducer")
+    const isFocused = useIsFocused();
     const [isfilterVisible, setIssfilterVisible] = useState(false);
     const [finalamount, setFinalamount] = useState("");
     const [inpersonticket, setInpersonticket] = useState(null)
@@ -46,10 +48,10 @@ const InPersonStatewebcast = (props) => {
     const totalAmountWithFee = parseFloat((subtotalAmount + processingFeeAmount).toFixed(2));
     const listBottomPadding = shouldShowDownloadCatalog ? normalize(190) : normalize(150);
     useEffect(() => {
-        if (props?.route?.params?.realData?.realData) {
+        if (isFocused && props?.route?.params?.realData?.realData) {
             setIssfilterVisible(true);
         }
-    }, [props?.route?.params?.realData?.realData])
+    }, [isFocused, props?.route?.params?.realData?.realData])
     useEffect(() => {
         const registrationTickets = props?.route?.params?.realData?.ticketall || [];
         const baseHeight = 400;
@@ -328,7 +330,15 @@ const InPersonStatewebcast = (props) => {
                 setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
                 if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
                     setIssfilterVisible(false);
-                    props.navigation.navigate("Checkout", { inPersonTicket: { inPersonTicket: WebcastReducer?.saveTicketInpersonResponse, inpersonSpanrole: props?.route?.params?.realData?.realData, totalTicketPrice: totalAmountWithFee } });
+                    props.navigation.navigate("Checkout", {
+                        inPersonTicket: {
+                            inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
+                            inpersonSpanrole: props?.route?.params?.realData?.realData,
+                            subtotalAmount: subtotalAmount,
+                            processingFeeAmount: processingFeeAmount,
+                            totalTicketPrice: totalAmountWithFee
+                        }
+                    });
                     // props.navigation.navigate("Checkout",  { checkoutSpan: { checkoutSpan: props?.route?.params?.realData, finalTicket: WebcastReducer?.saveTicketInpersonResponse }});
                 }
                 console.log("saveTicketfollowed>>>>", WebcastReducer?.saveTicketInpersonResponse);

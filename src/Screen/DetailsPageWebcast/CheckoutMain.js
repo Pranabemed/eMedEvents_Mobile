@@ -85,6 +85,9 @@ const CheckoutMain = ({
     customFieldsLabels,
     setCustomFieldsLabels,
     iseMededDo,
+    checkoutBaseAmount,
+    checkoutProcessingFeeAmount,
+    checkoutTotalAmount,
     setActiveIndexct, pratice, cityPicker, city_id, state_id, country_id, countrypicker, speciality_id, selectedSpecialities, removeSpeciality, setSelectedSpecialities, handleSpecialitySelect, formData, setFormData, activeIndex, setActiveIndex, setSearchState, searchState, searchStateName, slist, setSpeciality, setSpeciality_id, statepicker, cartPayment, proceedPayment, fullAccess, spanroute, ticketSave, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
     console.log(spanroute, statepicker, ticketSave, "spanroute=========", country_id, fullAccess, spanroute?.checkoutSpan?.cmeCreditsData);
     const [totalcount, setTotalcount] = useState("");
@@ -101,6 +104,20 @@ const CheckoutMain = ({
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
+    const feeAwareBaseAmount = Number(
+        checkoutBaseAmount != null
+            ? checkoutBaseAmount
+            : (savefull?.discount_value && savefull?.total_value != null
+                ? savefull?.total_value
+                : ticketSave?.tickets?.[0]?.itemamt || 0)
+    );
+    const feeAwareProcessingAmount = Number(checkoutProcessingFeeAmount || 0);
+    const feeAwareTotalAmount = Number(
+        checkoutTotalAmount != null
+            ? checkoutTotalAmount
+            : feeAwareBaseAmount + feeAwareProcessingAmount
+    );
+    const feeAwareDisplayAmount = feeAwareTotalAmount > 0 ? feeAwareTotalAmount : feeAwareBaseAmount;
     const handleToggleExpand = () => {
         setIsExpanded(!isExpanded);
     };
@@ -394,13 +411,9 @@ const CheckoutMain = ({
                                             color: "#000000",
                                         }}
                                     >
-                                        {spanroute?.totalTicketPrice != null
-                                            ? spanroute.totalTicketPrice > 0
-                                                ? `US$${formatNumberWithCommas(formatPrice(spanroute.totalTicketPrice))}`
-                                                : null
-                                            : ticketSave?.tickets?.[0]?.itemamt > 0
-                                                ? `US$${formatNumberWithCommas(formatPrice(ticketSave.tickets?.[0].itemamt))}`
-                                                : null}
+                                        {feeAwareDisplayAmount > 0
+                                            ? `US$${formatNumberWithCommas(formatPrice(feeAwareDisplayAmount))}`
+                                            : null}
                                     </Text>
                                 </View>
                             ) : null}
@@ -809,6 +822,32 @@ const CheckoutMain = ({
                         </Text>
                     </View>) : null}
                     <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
+                    {feeAwareProcessingAmount > 0 ? (
+                        <View style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: '100%',
+                            paddingVertical: normalize(5)
+                        }}>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 14,
+                                color: Colorpath.black,
+                                fontWeight: "bold"
+                            }}>
+                                {"Processing Fee"}
+                            </Text>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 14,
+                                color: Colorpath.black,
+                                fontWeight: "bold"
+                            }}>
+                                {`US$${formatNumberWithCommas(formatPrice(feeAwareProcessingAmount))}`}
+                            </Text>
+                        </View>
+                    ) : null}
                     <View style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
@@ -830,7 +869,7 @@ const CheckoutMain = ({
                             color: Colorpath.black,
                             fontWeight: "bold"
                         }}>
-                            {savefull?.discount_value ? `US$${savefull?.total_value}` : `US$${ticketSave?.tickets?.[0]?.itemamt}`}
+                            {`US$${formatNumberWithCommas(formatPrice(feeAwareTotalAmount))}`}
                         </Text>
                     </View>
                 </View>

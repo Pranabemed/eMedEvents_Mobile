@@ -60,6 +60,12 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     ? parseFloat((ticketPriceAmount * 0.035).toFixed(2))
     : 0;
   const totalAmountWithFee = parseFloat((ticketPriceAmount + processingFeeAmount).toFixed(2));
+  const hasCartActionButton = Boolean(
+    webcastdeatils?.buttonType &&
+      webcastdeatils.buttonType.toLowerCase() !== "interest" &&
+      webcastdeatils?.is_cart_applicable == 1 &&
+      webcastdeatils?.isHavingActivity !== 1
+  );
   const handleAddtoCart = useCallback(() => {
     let obj = {
       "bundle_conference_id": bundle_conference_id,
@@ -255,9 +261,9 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                           </Text>
                         </View>
                       ) : null}
-                      <View style={{ marginTop: normalize(10), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10) }}>
-                        <View>
+                      <View style={{ marginTop: normalize(0), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10), gap: normalize(8) }}>
+                        <View style={{ flexShrink: 1 }}>
                           <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
                             {"Total"}
                           </Text>
@@ -265,24 +271,41 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                             {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(totalAmountWithFee))}`}
                           </Text>
                         </View>
-                        <Buttons
-                          onPress={() => {
-                            if (isCheckoutCta) {
-                              handleTicketsCheckout();
-                              setFinalcheck("checkout")
-                            } else {
-                              handleTicketsCheckout();
-                              setFinalcheck("inperson");
-                            }
-                          }}
-                          height={normalize(48)}
-                          width={showCartAction ? normalize(100) : normalize(160)}
-                          backgroundColor={Colorpath.ButtonColr}
-                          borderRadius={normalize(5)}
-                          text={"Checkout"}
-                          color={Colorpath.white}
-                          fontSize={16}
-                          fontFamily={Fonts.InterSemiBold} />
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(5) }}>
+                          {hasCartActionButton ? (
+                            <Buttons
+                              onPress={() => {
+                                handleTicketsCheckout();
+                                setFinalcheck(webcastdeatils?.already_in_cart === 1 ? "doublecart" : "singlecart");
+                              }}
+                              height={normalize(48)}
+                              width={normalize(100)}
+                              backgroundColor={Colorpath.ButtonColr}
+                              borderRadius={normalize(5)}
+                              text={webcastdeatils?.already_in_cart === 1 ? "Already in cart" : "ADD TO CART"}
+                              color={Colorpath.white}
+                              fontSize={14}
+                              fontFamily={Fonts.InterSemiBold} />
+                          ) : null}
+                          <Buttons
+                            onPress={() => {
+                              if (isCheckoutCta) {
+                                handleTicketsCheckout();
+                                setFinalcheck("checkout")
+                              } else {
+                                handleTicketsCheckout();
+                                setFinalcheck("inperson");
+                              }
+                            }}
+                            height={normalize(48)}
+                            width={showCartAction ? normalize(100) : normalize(160)}
+                            backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text={"Checkout"}
+                            color={Colorpath.white}
+                            fontSize={16}
+                            fontFamily={Fonts.InterSemiBold} />
+                        </View>
                       </View>
                     </View>
                   </>
@@ -501,57 +524,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                         ) : (
                           ""
                         )}
-            <View style={{
-              position: 'absolute',
-              bottom:-5,
-              left: normalize(0),
-              right: normalize(24),
-              zIndex: 2
-            }}>
-              {webcastdeatils?.buttonType &&
-                webcastdeatils.buttonType.toLowerCase() !== "interest" ? (
-                webcastdeatils &&
-                  webcastdeatils?.is_cart_applicable == 1 &&
-                  webcastdeatils?.already_in_cart === 0 &&
-                  webcastdeatils.isHavingActivity !== 1 ? (
-                  <Buttons
-                    onPress={() => {
-                      handleTicketsCheckout();
-                      setFinalcheck("singlecart")
-                    }}
-                    height={normalize(48)}
-                    width={normalize(100)}
-                    backgroundColor={Colorpath.ButtonColr}
-                    borderRadius={normalize(5)}
-                    text={"ADD TO CART"}
-                    color={Colorpath.white}
-                    fontSize={14}
-                    marginBottom={normalize(13)}
-                    fontFamily={Fonts.InterSemiBold}
-                  />
-
-                ) : webcastdeatils?.is_cart_applicable &&
-                  webcastdeatils.is_cart_applicable == 1 &&
-                  webcastdeatils.already_in_cart === 1 &&
-                  webcastdeatils.isHavingActivity !== 1 ? (
-                  <Buttons
-                  onPress={() => {
-                      handleTicketsCheckout();
-                      setFinalcheck("doublecart");
-                    }}
-                    height={normalize(48)}
-                    width={normalize(100)}
-                    backgroundColor={Colorpath.ButtonColr}
-                    borderRadius={normalize(5)}
-                    text={"Already in cart"}
-                    color={Colorpath.white}
-                    fontSize={14}
-                    marginBottom={normalize(15)}
-                    fontFamily={Fonts.InterSemiBold}
-                  />
-                ) : null
-              ) : null}
-            </View>
+            {null}
           </View>
         </View>
       ) : webcastdeatils?.conference_active == 0 &&

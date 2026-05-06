@@ -163,6 +163,41 @@ const Checkout = (props) => {
         }
     }, [props?.route?.params?.checkoutSpan?.cartData?.tickets])
     console.log(ticketSave, props?.route?.params?.checkoutSpan?.cartData?.tickets, "ticketSave========", props?.route?.params?.checkoutSpan?.finalTicket)
+    const cleanNumber = (value) => {
+        if (typeof value == 'number') return value;
+        if (typeof value == 'string') {
+            const num = parseFloat(value.replace(/,/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    };
+    const routePaymentPrice = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket || {};
+    const shouldShowDownloadCatalog =
+        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEd, Inc." ||
+        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEvents Corporation" ||
+        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEd" ||
+        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEd, Inc." ||
+        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEvents Corporation" ||
+        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEd";
+    const checkoutBaseAmount = routePaymentPrice?.subtotalAmount != null
+        ? cleanNumber(routePaymentPrice?.subtotalAmount)
+        : savefull?.discount_value != null && savefull?.total_value != null
+            ? cleanNumber(savefull?.total_value)
+            : cleanNumber(ticketSave?.tickets?.[0]?.itemamt || ticketSave?.tickets?.[0]?.gross_value || routePaymentPrice?.cartData?.subtotal_amount || routePaymentPrice?.cartData?.total_paid_amount || routePaymentPrice?.totalTicketPrice || 0);
+    const checkoutProcessingFeeAmount = routePaymentPrice?.processingFeeAmount != null
+        ? cleanNumber(routePaymentPrice?.processingFeeAmount)
+        : shouldShowDownloadCatalog && checkoutBaseAmount > 0
+            ? cleanNumber((checkoutBaseAmount * 0.035).toFixed(2))
+            : 0;
+    const checkoutTotalAmount = routePaymentPrice?.totalTicketPrice != null
+        ? cleanNumber(routePaymentPrice?.totalTicketPrice)
+        : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
+    const buildPaymentPrice = (source = {}) => ({
+        subtotalAmount: checkoutBaseAmount,
+        processingFeeAmount: checkoutProcessingFeeAmount,
+        totalTicketPrice: checkoutTotalAmount,
+        ...source,
+    });
     const checkoutClear = () => {
         if (navigation.canGoBack()) {
             navigation.goBack();
@@ -540,10 +575,10 @@ const Checkout = (props) => {
                     } else if (handleDis) {
                         handleFree(ticketSave?.invoice);
                     } else {
-                        props.navigation.navigate("Payment", {
-                            invoiceTxt: {
-                                invoiceTxt: ticketSave?.invoice, webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
-                                paymentprice: props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket, ticketShow: ticketSave,
+                    props.navigation.navigate("Payment", {
+                        invoiceTxt: {
+                            invoiceTxt: ticketSave?.invoice, webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
+                                paymentprice: buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket), ticketShow: ticketSave,
                                 emeded_acc: iseMededDoPass ? "added" : "notadded"
                             }
                         });
@@ -595,7 +630,12 @@ const Checkout = (props) => {
                             webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan
                                 ? props.route.params.checkoutSpan.checkoutSpan
                                 : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
-                            paymentprice: props?.route?.params?.checkoutSpan,
+                            paymentprice: buildPaymentPrice({
+                                ...(props?.route?.params?.checkoutSpan || {}),
+                                totalTicketPrice: cleanNumber(props?.route?.params?.checkoutSpan?.cartData?.total_paid_amount || 0),
+                                subtotalAmount: cleanNumber(props?.route?.params?.checkoutSpan?.cartData?.subtotal_amount || props?.route?.params?.checkoutSpan?.cartData?.total_paid_amount || 0),
+                                processingFeeAmount: 0,
+                            }),
                         },
                     });
                 }
@@ -1572,6 +1612,9 @@ const Checkout = (props) => {
                         setCustomFieldsLabels={setCustomFieldsLabels}
                         setPaymentcardfree={setPaymentcardfree}
                         setPaymentfdfree={setPaymentfdfree}
+                        checkoutBaseAmount={checkoutBaseAmount}
+                        checkoutProcessingFeeAmount={checkoutProcessingFeeAmount}
+                        checkoutTotalAmount={checkoutTotalAmount}
                         dialcode={dialcode}
                         SetDialcode={SetDialcode}
                         setDateofbirth={setDateofbirth}

@@ -442,7 +442,7 @@ const Payment = (props) => {
                 status1 = WebcastReducer.status;
                 break;
             case 'WebCast/walletCheckFailure':
-                status1 = WebcastReducer.status; t
+                status1 = WebcastReducer.status;
                 break;
         }
     }
@@ -501,23 +501,33 @@ const Payment = (props) => {
         }
         return 0;
     };
-    const getTotalPaidAmount = () => {
-        const invoiceTxt = props?.route?.params?.invoiceTxt;
-        const cartInvoice = props?.route?.params?.cartInvoice;
-        const totalTicketPrice = invoiceTxt?.paymentprice?.totalTicketPrice;
-        if (totalTicketPrice != null && totalTicketPrice > 0) {
-            return cleanNumber(totalTicketPrice);
-        }
-        const ticketItemAmt = invoiceTxt?.ticketShow?.tickets[0]?.itemamt;
-        if (ticketItemAmt != null && ticketItemAmt > 0) {
-            return cleanNumber(ticketItemAmt);
-        }
-        return cleanNumber(
-            cartInvoice?.paymentprice?.cartData?.total_paid_amount || 0
-        );
-    };
-    const finalAmnt = props?.route?.params?.cartInvoice?.paymentprice?.cartData?.total_paid_amount || props?.route?.params?.invoiceTxt?.paymentprice?.totalTicketPrice || props?.route?.params?.invoiceTxt?.ticketShow?.tickets?.[0]?.itemamt
-    const totalPaidAmount = getTotalPaidAmount();
+    const invoiceTxt = props?.route?.params?.invoiceTxt;
+    const cartInvoice = props?.route?.params?.cartInvoice;
+    const paymentPrice = invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
+    const shouldShowDownloadCatalog =
+        paymentPrice?.webcastTake?.organizerName == "eMedEd, Inc." ||
+        paymentPrice?.webcastTake?.organizerName == "eMedEvents Corporation" ||
+        paymentPrice?.webcastTake?.organizerName == "eMedEd";
+    const subtotalAmount = cleanNumber(
+        paymentPrice?.subtotalAmount ??
+        paymentPrice?.ticketAmount ??
+        invoiceTxt?.ticketShow?.tickets?.[0]?.itemamt ??
+        paymentPrice?.cartData?.subtotal_amount ??
+        paymentPrice?.cartData?.total_paid_amount ??
+        0
+    );
+    const processingFeeAmount = cleanNumber(
+        paymentPrice?.processingFeeAmount ??
+        paymentPrice?.processing_fee_amount ??
+        (shouldShowDownloadCatalog && subtotalAmount > 0 ? (subtotalAmount * 0.035).toFixed(2) : 0)
+    );
+    const finalAmnt = cleanNumber(
+        paymentPrice?.totalTicketPrice ??
+        paymentPrice?.total_paid_amount ??
+        paymentPrice?.cartData?.total_paid_amount ??
+        (subtotalAmount + processingFeeAmount)
+    );
+    const totalPaidAmount = finalAmnt;
     const walletBalance = cleanNumber(WebcastReducer?.walletCheckResponse?.balance || 0);
     const isWalletOptionAvailable = walletBalance > 0;
     const roundedTotalPaidAmount = Math.round(walletBalance);
@@ -912,6 +922,30 @@ const Payment = (props) => {
                     </View>
                     <View style={{ justifyContent: "center", alignItems: "center" }}>
                         <View style={{ marginTop: normalize(10), height: 0.8, width: '89%', backgroundColor: "#DADADA" }} />
+                        {processingFeeAmount > 0 ? (
+                            <View style={{
+                                flexDirection: "row",
+                                justifyContent: "space-evenly",
+                                alignContent: "space-evenly",
+                                width: '181%',
+                                paddingVertical: normalize(5),
+                            }}>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: Colorpath.black
+                                }}>
+                                    {"Processing Fee"}
+                                </Text>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: Colorpath.black,
+                                }}>
+                                    {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
+                                </Text>
+                            </View>
+                        ) : null}
                         <View style={{
                             flexDirection: "row",
                             justifyContent: "space-evenly",
@@ -921,7 +955,7 @@ const Payment = (props) => {
                         }}>
                             <Text style={{
                                 fontFamily: Fonts.InterSemiBold,
-                                fontSize: 18,
+                                fontSize: 16,
                                 color: Colorpath.black
                             }}>
                                 {"Total Amount"}
