@@ -356,6 +356,11 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
+          if (route.name == "Volts") {
+            e.preventDefault();
+            toggleDrawerModal();
+            return;
+          }
           if (route.name == "Contact" && tabsub) {
             e.preventDefault();
             setTabmodal(true);
@@ -364,6 +369,10 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: () => {
+          if (route.name == "Volts") {
+            toggleDrawerModal();
+            return;
+          }
           if (route.name == "Contact" && tabsub) {
             e.preventDefault();
             setTabmodal(true);
@@ -507,9 +516,18 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
+          if (route.name == "Volts") {
+            e.preventDefault();
+            toggleDrawerModal();
+            return;
+          }
           handleTabPress(route.name);
         },
         focus: () => {
+          if (route.name == "Volts") {
+            toggleDrawerModal();
+            return;
+          }
           handleTabPress(route.name);
         },
       })}
@@ -646,9 +664,18 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
+          if (route.name == "Volts") {
+            e.preventDefault();
+            toggleDrawerModal();
+            return;
+          }
           handleTabPress(route.name);
         },
         focus: () => {
+          if (route.name == "Volts") {
+            toggleDrawerModal();
+            return;
+          }
           handleTabPress(route.name);
         },
       })}
