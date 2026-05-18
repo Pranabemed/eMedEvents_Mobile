@@ -503,6 +503,7 @@ const Payment = (props) => {
     };
     const invoiceTxt = props?.route?.params?.invoiceTxt;
     const cartInvoice = props?.route?.params?.cartInvoice;
+    console.log(invoiceTxt, cartInvoice, "invoiceTxtinvoiceTxt");
     const paymentPrice = invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
     const shouldShowDownloadCatalog =
         paymentPrice?.webcastTake?.organizerName == "eMedEd, Inc." ||
@@ -922,20 +923,65 @@ const Payment = (props) => {
                     </View>
                     <View style={{ justifyContent: "center", alignItems: "center" }}>
                         <View style={{ marginTop: normalize(10), height: 0.8, width: '89%', backgroundColor: "#DADADA" }} />
-                        {processingFeeAmount > 0 ? (
+                        <View style={{
+                            width: '89%',
+                            paddingTop: normalize(12),
+                            paddingBottom: normalize(6),
+                        }}>
                             <View style={{
                                 flexDirection: "row",
-                                justifyContent: "space-evenly",
-                                alignContent: "space-evenly",
-                                width: '181%',
-                                paddingVertical: normalize(5),
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingBottom: normalize(6),
+                            }}>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 13,
+                                    color: "#666666",
+                                }}>
+                                    {"Price"}
+                                </Text>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 13,
+                                    color: "#666666",
+                                }}>
+                                    {"Amount"}
+                                </Text>
+                            </View>
+                            <View style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingVertical: normalize(4),
                             }}>
                                 <Text style={{
                                     fontFamily: Fonts.InterSemiBold,
                                     fontSize: 14,
-                                    color: Colorpath.black
+                                    color: Colorpath.black,
                                 }}>
-                                    {"Processing Fee"}
+                                    {"Price"}
+                                </Text>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: Colorpath.black,
+                                }}>
+                                    {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
+                                </Text>
+                            </View>
+                            <View style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingVertical: normalize(4),
+                            }}>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: Colorpath.black,
+                                }}>
+                                    {"Processing Fee Amount"}
                                 </Text>
                                 <Text style={{
                                     fontFamily: Fonts.InterSemiBold,
@@ -945,28 +991,28 @@ const Payment = (props) => {
                                     {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
                                 </Text>
                             </View>
-                        ) : null}
-                        <View style={{
-                            flexDirection: "row",
-                            justifyContent: "space-evenly",
-                            alignContent: "space-evenly",
-                            width: '181%',
-                            paddingVertical: normalize(5),
-                        }}>
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: Colorpath.black
+                            <View style={{ marginVertical: normalize(6), height: 0.8, width: '100%', backgroundColor: "#DADADA" }} />
+                            <View style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingVertical: normalize(4),
                             }}>
-                                {"Total Amount"}
-                            </Text>
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 18,
-                                color: Colorpath.black,
-                            }}>
-                                {`US$${formatNumberWithCommas(cutomPrice(finalAmnt))}`}
-                            </Text>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 16,
+                                    color: Colorpath.black
+                                }}>
+                                    {"Total Amount"}
+                                </Text>
+                                <Text style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 18,
+                                    color: Colorpath.black,
+                                }}>
+                                    {`US$${formatNumberWithCommas(cutomPrice(finalAmnt))}`}
+                                </Text>
+                            </View>
                         </View>
                     </View>
                     <View style={{ justifyContent: "center", alignItems: "center" }}>

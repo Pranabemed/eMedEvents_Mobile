@@ -342,6 +342,16 @@ const AddToCart = (props) => {
                             <DeletIcon name="delete" size={20} color={Colorpath.black} />
                         </TouchableOpacity>
                     </View>
+                    {cleanNumber(item?.transaction_fee || 0) > 0 ? (
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2) }}>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#666666" }}>
+                                {"Processing Fee"}
+                            </Text>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#666666" }}>
+                                {`US$${formatNumberWithCommas(formatPrice(item?.transaction_fee))}`}
+                            </Text>
+                        </View>
+                    ) : null}
                     <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
                 </View>
             </View>
@@ -354,9 +364,59 @@ const AddToCart = (props) => {
     const totalPaid = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount ?? 0;
     const totalValue = WebcastReducer?.couponWebcastResponse?.total_value ?? 0;
     const totalQty = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_qty ?? 0;
+    const cleanNumber = (value) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+            const num = parseFloat(value.replace(/,/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    };
+    const formatPrice = (price) => {
+        let num = parseFloat(price);
+        if (isNaN(num)) {
+            return price;
+        }
+        let truncated = Math.floor(num * 100) / 100;
+        return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
+    };
+    const ticketItems = cart?.cartData?.tickets || [];
+    const latestCartBaseAmount = cleanNumber(
+        WebcastReducer?.couponWebcastResponse?.discount_value
+            ? totalValue
+            : cart?.cartData?.subtotal_amount ?? totalPaid
+    );
+    const latestCartProcessingFeeAmount = cleanNumber(
+        cart?.cartData?.overall_transaction_fee ??
+        ticketItems.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee || 0), 0)
+    );
+    const latestCartTotalAmount = cleanNumber(
+        cart?.cartData?.total_amount_with_fee ??
+        (latestCartBaseAmount + latestCartProcessingFeeAmount)
+    );
+    const buildCartRoutePayload = () => ({
+        ...cart,
+        cartData: {
+            ...(cart?.cartData || {}),
+            subtotal_amount: latestCartBaseAmount,
+            overall_transaction_fee: latestCartProcessingFeeAmount,
+            total_amount_with_fee: latestCartTotalAmount,
+            total_paid_amount: latestCartTotalAmount,
+        },
+        subtotalAmount: latestCartBaseAmount,
+        processingFeeAmount: latestCartProcessingFeeAmount,
+        totalTicketPrice: latestCartTotalAmount,
+    });
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+     const formatNumberWithCommas = (value) => {
+        if (value == null || value == undefined) return '';
+        const stringValue = value.toString().replace(/,/g, '');
+        const parts = stringValue.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+    };
     return (
         <>
             <MyStatusBar
@@ -530,6 +590,14 @@ const AddToCart = (props) => {
                                                 {`US$${WebcastReducer?.couponWebcastResponse?.discount_value}`}
                                             </Text>
                                         </View>) : null}
+                                        {latestCartProcessingFeeAmount > 0 ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
+                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
+                                                {"Processing Fee"}
+                                            </Text>
+                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
+                                                {`US$${formatNumberWithCommas(formatPrice(latestCartProcessingFeeAmount))}`}
+                                            </Text>
+                                        </View>) : null}
                                         <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
                                         <View style={{
                                             flexDirection: "row",
@@ -552,23 +620,25 @@ const AddToCart = (props) => {
                                                 color: Colorpath.black,
                                                 fontWeight: "bold"
                                             }}>
-                                                {WebcastReducer?.couponWebcastResponse?.discount_value
-                                                    ? `US$${totalValue}`
-                                                    : `US$${totalPaid}`}
+                                                {latestCartTotalAmount > 0
+                                                    ? `US$${formatNumberWithCommas(formatPrice(latestCartTotalAmount))}`
+                                                    : WebcastReducer?.couponWebcastResponse?.discount_value
+                                                        ? `US$${totalValue}`
+                                                        : `US$${totalPaid}`}
                                                 {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.total_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
                                             </Text>
                                         </View>
                                     </View>
                                     <View>
-                                        <Buttons
-                                            onPress={() => {
-                                                if (isFree) {
-                                                    CheckCart();
-                                                } else {
-                                                    props.navigation.navigate("Checkout", { checkoutSpan: cart });
-                                                }
-                                            }}
-                                            height={normalize(45)}
+                                            <Buttons
+                                                onPress={() => {
+                                                    if (isFree) {
+                                                        CheckCart();
+                                                    } else {
+                                                        props.navigation.navigate("Checkout", { checkoutSpan: buildCartRoutePayload() });
+                                                    }
+                                                }}
+                                                height={normalize(45)}
                                             width={normalize(300)}
                                             backgroundColor={Colorpath.ButtonColr}
                                             borderRadius={normalize(9)}

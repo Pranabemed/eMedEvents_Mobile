@@ -1,1478 +1,767 @@
-import { View, Text, Platform, TouchableOpacity, StyleSheet, ImageBackground, Image, Dimensions, ScrollView, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import MyStatusBar from '../../Utils/MyStatusBar';
-import Colorpath from '../../Themes/Colorpath';
-import PageHeader from '../../Components/PageHeader';
-import normalize from '../../Utils/Helpers/Dimen';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Image,
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+  Modal,
+  FlatList,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import NotifyIcn from 'react-native-vector-icons/MaterialCommunityIcons';
-import SearchIcn from 'react-native-vector-icons/Ionicons';
-import Imagepath from '../../Themes/Imagepath';
-import Carousel, { Pagination } from 'react-native-snap-carousel';
-import Fonts from '../../Themes/Fonts';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import CalIcon from 'react-native-vector-icons/FontAwesome5'
-import Buttons from '../../Components/Button';
 import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import SearchIcon from 'react-native-vector-icons/Ionicons';
+import Carousel, { Pagination } from 'react-native-snap-carousel';
+import Colorpath from '../../Themes/Colorpath';
+import Imagepath from '../../Themes/Imagepath';
+import MyStatusBar from '../../Utils/MyStatusBar';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import RenderHTML from 'react-native-render-html';
-import { parseHtmlContent } from './DuplicateContent';
-import FeaturedComponent from './FeaturedBanner';
-import CMEExclusive from './ExclusiveCME';
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
+import { countryRequest, stateRequest } from '../../Redux/Reducers/AuthReducer';
+import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
+import styles from './GuestUser.styles';
 
-let status = "";
-const GuestUser = (props) => {
-    const [val, setval] = useState(0);
-    const carouselRef = useRef(null);
-    const [vals, setvals] = useState(0);
-    const [valcmmnt, setvalcmmnt] = useState(0);
-    const windowWidth = Dimensions.get('window').width;
-    const windowHeight = Dimensions.get('window').height;
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [activeIndexspe, setActiveIndexspe] = useState(0);
-    const [activeIndexspein, setActiveIndexspein] = useState(0);
-    const [wholecontent, setWholecontent] = useState([]);
-    const [topbanner, setTopbanner] = useState(0);
-    const isfocused = useIsFocused();
-    const dispatch = useDispatch();
-    const GuestReducer = useSelector(state => state.GuestReducer);
-    console.log(topbanner, "GutopbannerestReducer---------", activeIndex)
-    useEffect(() => {
-        connectionrequest()
-            .then(() => {
-                dispatch(HomelistRequest({}))
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }, [isfocused])
-    useEffect(() => {
-        setActiveIndex(0);
-    }, []);
-    useEffect(() => {
-        setActiveIndexspe(0);
-    }, []);
-    useEffect(() => {
-        setActiveIndexspein(0);
-    }, []);
-    if (status == '' || GuestReducer.status != status) {
-        switch (GuestReducer.status) {
-            case 'Guest/HomelistRequest':
-                status = GuestReducer.status;
-                break;
-            case 'Guest/HomelistSuccess':
-                status = GuestReducer.status;
-                setWholecontent(GuestReducer?.HomelistResponse);
-                break;
-            case 'Guest/HomelistFailure':
-                status = GuestReducer.status;
-                break;
-        }
+const SPECIALTIES = [
+  'Internal medicine',
+  'Pediatrics',
+  'Oncology',
+  'Obstetrics',
+  'Orthopedics',
+  'Cardiology',
+  'Dentist',
+  'Pulmonology',
+];
+const STATS = [
+  ['1,520,220', 'Healthcare Professionals'],
+  ['101,224', 'Registrations Sold'],
+  ['303,671', 'Hosted Conferences'],
+  ['15,628', 'Organizers'],
+  ['606,654', 'Monthly Visitors'],
+  ['24/7', 'Live support'],
+];
+const MEMBERSHIP_POINTS = [
+  'Multi State & Board Licensure Tracking',
+  'Personalized CME/CE Recommendations',
+  'Centralized CME/CE Credit Vault',
+  'CME & CE Expenses',
+];
+
+const scale = (width, value) =>
+  Math.round((Math.min(width, 430) / 390) * value);
+
+const SectionTitle = ({ title, action, onAction, width }) => (
+  <View style={styles.sectionHeader}>
+    <Text style={[styles.sectionTitle, { fontSize: scale(width, 20) }]}>
+      {title}
+    </Text>
+    {action ? (
+      <TouchableOpacity onPress={onAction} hitSlop={10}>
+        <Text style={[styles.sectionAction, { fontSize: scale(width, 12) }]}>
+          {action}
+        </Text>
+      </TouchableOpacity>
+    ) : null}
+  </View>
+);
+
+const TagChip = ({ label, active, width, onPress }) => (
+  <TouchableOpacity
+    onPress={onPress}
+    activeOpacity={0.85}
+    style={[
+      styles.chip,
+      active && styles.chipActive,
+      { paddingHorizontal: scale(width, 14), paddingVertical: scale(width, 9) },
+    ]}
+  >
+    <Text
+      style={[
+        styles.chipText,
+        active && styles.chipTextActive,
+        { fontSize: scale(width, 12) },
+      ]}
+    >
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
+
+const InfoRow = ({ icon, text, width, iconColor = '#666666' }) => (
+  <View style={styles.infoRow}>
+    <Icon name={icon} size={scale(width, 16)} color={iconColor} />
+    <Text style={[styles.infoText, { fontSize: scale(width, 12) }]}>
+      {text}
+    </Text>
+  </View>
+);
+
+const ConferenceCard = ({ item, width, dark = false, compact = false }) => (
+  <View style={styles.cardWrap}>
+    <View
+      style={[
+        styles.card,
+        dark ? styles.cardDark : styles.cardLight,
+        compact && styles.cardCompact,
+      ]}
+    >
+      <View
+        style={[styles.cardImageWrap, compact && styles.cardImageWrapCompact]}
+      >
+        <ImageBackground
+          source={item.image}
+          style={styles.cardImage}
+          imageStyle={styles.cardImageRadius}
+          resizeMode="cover"
+        />
+        {item.badge ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{item.badge}</Text>
+          </View>
+        ) : null}
+      </View>
+      {item.kicker ? (
+        <Text
+          style={[
+            styles.cardMeta,
+            dark && styles.cardMetaDark,
+            { fontSize: scale(width, 11) },
+          ]}
+        >
+          {item.kicker}
+        </Text>
+      ) : null}
+      <Text
+        numberOfLines={2}
+        style={[
+          styles.cardTitle,
+          dark && styles.cardTitleDark,
+          { fontSize: scale(width, 16) },
+        ]}
+      >
+        {item.title}
+      </Text>
+      {!item.kicker && (
+        <Text
+          style={[
+            styles.cardMeta,
+            dark && styles.cardMetaDark,
+            { fontSize: scale(width, 11) },
+          ]}
+        >
+          {item.by}
+        </Text>
+      )}
+      <View style={styles.metaGroup}>
+        <InfoRow
+          icon="calendar-today"
+          text={item.date}
+          width={width}
+          iconColor={dark ? '#FFFFFF' : '#666666'}
+        />
+        <InfoRow
+          icon="place"
+          text={item.location}
+          width={width}
+          iconColor={dark ? '#FFFFFF' : '#666666'}
+        />
+        <View style={styles.creditRow}>
+          <Image
+            source={Imagepath.CreditValut}
+            style={[styles.creditIcon, dark && styles.creditIconDark]}
+          />
+          <Text
+            style={[
+              styles.cardMeta,
+              dark && styles.cardMetaDark,
+              { fontSize: scale(width, 11) },
+            ]}
+          >
+            {item.credit}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.divider} />
+      <View style={styles.priceRow}>
+        <Text
+          style={[
+            styles.priceText,
+            dark && styles.priceTextDark,
+            { fontSize: scale(width, 18) },
+          ]}
+        >
+          {item.price}
+        </Text>
+        <TouchableOpacity
+          onPress={item.onPress}
+          style={[styles.ctaPill, dark && styles.ctaPillDark]}
+        >
+          <Text style={[styles.ctaText, { fontSize: scale(width, 12) }]}>
+            {item.cta}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+);
+
+const CarouselSection = ({
+  data,
+  renderItem,
+  sliderWidth,
+  itemWidth,
+  title,
+  action,
+  onAction,
+  width,
+}) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  return (
+    <View style={styles.carouselContainer}>
+      <SectionTitle
+        title={title}
+        action={action}
+        onAction={onAction}
+        width={width}
+      />
+      <Carousel
+        layout="stack"
+        data={data}
+        renderItem={renderItem}
+        sliderWidth={sliderWidth}
+        itemWidth={itemWidth}
+        onSnapToItem={index => setActiveIndex(index)}
+        inactiveSlideScale={1}
+        inactiveSlideOpacity={1}
+      />
+      <Pagination
+        dotsLength={data.length}
+        activeDotIndex={activeIndex}
+        containerStyle={styles.paginationContainer}
+        dotStyle={styles.activeDot}
+        inactiveDotStyle={styles.inactiveDot}
+        inactiveDotOpacity={0.4}
+        inactiveDotScale={0.8}
+      />
+    </View>
+  );
+};
+
+const StatsGrid = ({ width }) => (
+  <View style={styles.statsGrid}>
+    <View style={styles.statTileFull}>
+      <Text style={[styles.statValue, { fontSize: scale(width, 24) }]}>
+        {STATS[0][0]}
+      </Text>
+      <Text style={[styles.statLabel, { fontSize: scale(width, 13) }]}>
+        {STATS[0][1]}
+      </Text>
+    </View>
+    {STATS.slice(1, 5).map(([value, label]) => (
+      <View key={label} style={styles.statTile}>
+        <Text style={[styles.statValue, { fontSize: scale(width, 18) }]}>
+          {value}
+        </Text>
+        <Text style={[styles.statLabel, { fontSize: scale(width, 11) }]}>
+          {label}
+        </Text>
+      </View>
+    ))}
+  </View>
+);
+
+const MembershipBanner = ({ width, onPress }) => (
+  <LinearGradient
+    colors={['#1E40AF', '#1D4ED8']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.membershipCard}
+  >
+    <Text style={styles.membershipTitle}>Prime Membership</Text>
+    <View style={styles.membershipHeader}>
+      <View style={styles.membershipArtwork}>
+        <Image
+          source={Imagepath.GuestPrime}
+          style={styles.membershipImage}
+          resizeMode="contain"
+        />
+      </View>
+    </View>
+    <View style={styles.membershipPointsList}>
+      {MEMBERSHIP_POINTS.map(point => (
+        <View key={point} style={styles.membershipPoint}>
+          <Icon name="check" size={scale(width, 18)} color="#FFFFFF" />
+          <Text style={styles.membershipPointText}>{point}</Text>
+        </View>
+      ))}
+    </View>
+    <TouchableOpacity style={styles.membershipFeatureText} activeOpacity={0.85}>
+      <Text style={styles.moreFeaturesText}>and more features...</Text>
+    </TouchableOpacity>
+    <TouchableOpacity onPress={onPress} style={styles.membershipButton}>
+      <Text style={styles.membershipButtonText}>Explore Now</Text>
+    </TouchableOpacity>
+  </LinearGradient>
+);
+
+const GuestUser = props => {
+  const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+  const { width } = useWindowDimensions();
+  const [activeSpecialty, setActiveSpecialty] = useState(0);
+
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const GuestReducer = useSelector(state => state.GuestReducer);
+  const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+
+  const [profModalVisible, setProfModalVisible] = useState(false);
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [selectedProfession, setSelectedProfession] = useState('');
+  const [selectedState, setSelectedState] = useState(null);
+  const [cmeModalVisible, setCmeModalVisible] = useState(false);
+  const [allProfessionData, setAllProfessionData] = useState(null);
+
+  const PROFESSIONS = ['Physician', 'Nursing', 'Dentist', 'Pharmacist'];
+
+  useEffect(() => {
+    dispatch(countryRequest({}));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (AuthReducer?.countryResponse?.data) {
+      const us = AuthReducer.countryResponse.data.find(c => c.name === 'United States');
+      if (us) {
+        dispatch(stateRequest(us.id));
+      }
     }
-    console.log(wholecontent, "regndhgg090000")
+  }, [AuthReducer?.countryResponse?.data, dispatch]);
 
-    const handleSnapToItem = (index) => {
-        setval(index);
-    };
-    const handleSnapToItems = (index) => {
-        setvals(index);
-    };
-    const handlecmmnt = (index) => {
-        setvalcmmnt(index);
-    };
-    const handleNext = () => {
-        if (carouselRef.current && val < filteredBanners.length - 1) {
-            carouselRef.current.snapToItem(val + 1);
-        }
-    };
-    const commentDataItem = ({ item, index }) => {
-        console.log(item, "full item ===========");
-        return (
-            <View style={{ justifyContent: "center", alignItems: "center", paddingBottom: normalize(10) }}>
-                <View
-                    style={{
-                        width: normalize(290),
-                        borderRadius: normalize(15),
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        alignItems: "center",
-                        backgroundColor: "#FFF8E2",
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 8,
-                        elevation: 3,
-                    }}
+  useEffect(() => {
+    if (CreditVaultReducer?.status === 'CreditVault/professionvaultSuccess') {
+      setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
+      setCmeModalVisible(true);
+    }
+  }, [CreditVaultReducer?.status, CreditVaultReducer?.professionvaultResponse]);
+
+  const handleProfStateSubmit = (prof, stateObj) => {
+    if (prof && stateObj) {
+      dispatch(professionvaultRequest({ profession: prof, stateId: stateObj.id }));
+    }
+  };
+
+  const handleProfessionSelect = (prof) => {
+    setSelectedProfession(prof);
+    setProfModalVisible(false);
+    if (selectedState) {
+      handleProfStateSubmit(prof, selectedState);
+    }
+  };
+
+  const handleStateSelect = (stateObj) => {
+    setSelectedState(stateObj);
+    setStateModalVisible(false);
+    if (selectedProfession) {
+      handleProfStateSubmit(selectedProfession, stateObj);
+    }
+  };
+
+  useEffect(() => {
+    if (!isFocused) return;
+    connectionrequest()
+      .then(() => dispatch(HomelistRequest({})))
+      .catch(err => showErrorAlert('Please connect to internet', err));
+  }, [dispatch, isFocused]);
+
+  const homeData = GuestReducer?.HomelistResponse?.data || {};
+  const topBanners = homeData?.mobile_top_banners || [];
+  const topSpecialities = homeData?.topSpecialities || [];
+  const featuredConferences = homeData?.featured_conferences || [];
+
+  const mapConference = (c) => ({
+    title: c.course_title || c.title || c.name || '',
+    kicker: c.organizer_name ? `By ${c.organizer_name}` : '',
+    date: c.course_start_date || c.start_date || '',
+    location: c.course_location || c.location || '',
+    credit: c.credits ? `${c.credits} Credits` : '',
+    price: c.price ? `US$${c.price}` : '',
+    cta: 'VIEW',
+    image: c.image_path || c.course_image ? { uri: c.image_path || c.course_image } : Imagepath.MainCard,
+    onPress: () => props.navigation.navigate('SearchResult'),
+  });
+
+  const cards = useMemo(
+    () => [
+      {
+        title: 'Paediatric Emergency Medicine (PEM) Course',
+        kicker: 'By PEM Courses',
+        date: 'Sep 04 - 05, 2024',
+        location: 'Bali, Bali, ID',
+        credit: '1 AMA PRA Category 1 Credit™',
+        price: 'US$999.00',
+        cta: 'REGISTER NOW',
+        image: Imagepath.SpecialityCard,
+        badge: 'FEW DAYS LEFT',
+        onPress: () => props.navigation.navigate('SearchResult'),
+      },
+      {
+        title: 'Next-Gen Immuno Oncology Conference',
+        kicker: 'By MarketandMarkets',
+        date: 'Oct 21 - 22, 2023',
+        location: 'UK, San Diego',
+        credit: '1 AMA PRA Category 1 Credit™',
+        price: 'US$1,165.00',
+        cta: 'VIEW',
+        image: Imagepath.MainCard,
+        onPress: () => props.navigation.navigate('SearchResult'),
+      },
+      {
+        title: 'Advanced Cardiology Summit 2024',
+        kicker: 'By HeartHealth',
+        date: 'June 12 - 14, 2024',
+        location: 'Chicago, Illinois',
+        credit: '12 AMA PRA Category 1 Credit™',
+        price: 'US$850.00',
+        cta: 'REGISTER',
+        image: Imagepath.HomeBanner,
+        onPress: () => props.navigation.navigate('SearchResult'),
+      },
+      {
+        title: 'Global Healthcare Expo 2024',
+        kicker: 'By WorldHealth',
+        date: 'Aug 20 - 22, 2024',
+        location: 'New York, USA',
+        credit: '15 AMA PRA Category 1 Credit™',
+        price: 'US$1,200.00',
+        cta: 'VIEW',
+        image: Imagepath.GlobalPng,
+        onPress: () => props.navigation.navigate('SearchResult'),
+      },
+    ],
+    [props.navigation],
+  );
+
+  const renderCard = ({ item }) => <ConferenceCard item={item} width={width} />;
+  const renderDarkCard = ({ item }) => (
+    <ConferenceCard item={item} width={width} dark />
+  );
+  const renderCompactCard = ({ item }) => (
+    <ConferenceCard item={item} width={width} compact />
+  );
+
+  return (
+    <>
+      <MyStatusBar
+        barStyle="dark-content"
+        backgroundColor={Colorpath.Pagebg}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={[styles.page, { width: width }]}>
+            <View style={styles.topBar}>
+              <Image
+                source={Imagepath.Logo}
+                style={[
+                  styles.logo,
+                  { width: scale(width, 40), height: scale(width, 40) },
+                ]}
+                resizeMode="contain"
+              />
+              <View style={styles.topActions}>
+                <TouchableOpacity
+                  style={styles.langPill}
+                  onPress={() => props.navigation.navigate('BrowseScreen')}
                 >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{
-                            height: normalize(70),
-                            width: normalize(70),
-                            backgroundColor: '#FFF8E2',
-                            borderRadius: normalize(35),
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginRight: normalize(10),
-                        }}>
-                            <ImageBackground
-                                source={Imagepath.Man}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(50),
-                                }}
-                                imageStyle={{ borderRadius: normalize(60) }}
-                            />
-                        </View>
-                        <View style={{ flex: 1, justifyContent: 'center', marginTop: normalize(0), marginLeft: normalize(-10) }}>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000", fontWeight: "bold" }}>{"Luther Park, MD"}</Text>
-                            <Text style={{ paddingVertical: normalize(0), fontFamily: Fonts.InterRegular, fontSize: 12, color: "#666666" }}>{"Internal Medicine"}</Text>
-                        </View>
-                    </View>
-                    <View style={{ justifyContent: "center", alignContent: "center" }}>
-                        <Text
-                            numberOfLines={5}
-                            style={{
-                                fontFamily: Fonts.InterRegular,
-                                fontSize: 12,
-                                color: "#000000",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                textAlign: "center",
-                            }}
-                        >
-                            {"Lorem ipsum dolor sit amet consectetur. Habitasse libero dolor sit dui condimentum ac sed tempus potenti. Amet imperdiet viverra nam sed id nisl malesuada commodo. Interdum ac tristique risus ultrices neque porta elit"}
-                        </Text>
-                    </View>
-                    <View style={{ justifyContent: "center", alignContent: "center", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text
-                            numberOfLines={5}
-                            style={{
-                                fontFamily: Fonts.InterRegular,
-                                fontSize: 12,
-                                color: "#000000",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                textAlign: "center",
-                            }}
-                        >
-                            {"Felis nunc at fermentum pellentesque venenatis quis turpis."}
-                        </Text>
-                    </View>
-                    <View style={{ alignSelf: "flex-end" }}>
-                        <Image source={Imagepath.CommaImg} style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }} />
-                    </View>
-                </View>
-            </View>
-
-        );
-    };
-    const exclusiveItem = ({ item, index }) => {
-        const isActive = index === activeIndex;
-        return (
-            <TouchableOpacity onPress={() => { setActiveIndex(index) }}
-                style={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10),
-                    borderRadius: normalize(20),
-                    borderWidth: 0.5,
-                    borderColor: isActive ? Colorpath.ButtonColr : "#D9D9D9",
-                    margin: 5
-                }}
-            >
-                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: isActive ? Colorpath.ButtonColr : "#999999" }}>
-                    {item?.Statename}
-                </Text>
-            </TouchableOpacity>
-        )
-    }
-    const exclusiveItemspe = ({ item, index }) => {
-        const isActive = index === activeIndexspe;
-        return (
-            <TouchableOpacity onPress={() => { setActiveIndexspe(index) }}
-                style={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10),
-                    borderRadius: normalize(20),
-                    borderWidth: 0.5,
-                    borderColor: isActive ? Colorpath.ButtonColr : "#D9D9D9",
-                    margin: 5
-                }}
-            >
-                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: isActive ? Colorpath.ButtonColr : "#999999" }}>
-                    {item?.Statename}
-                </Text>
-            </TouchableOpacity>
-        )
-    }
-    const exclusiveItemsInperson = ({ item, index }) => {
-        const isActive = index === activeIndexspein;
-        return (
-            <TouchableOpacity onPress={() => { setActiveIndexspein(index) }}
-                style={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10),
-                    borderRadius: normalize(20),
-                    borderWidth: 0.5,
-                    borderColor: isActive ? Colorpath.ButtonColr : "#D9D9D9",
-                    margin: 5
-                }}
-            >
-                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: isActive ? Colorpath.ButtonColr : "#999999" }}>
-                    {item?.Statename}
-                </Text>
-            </TouchableOpacity>
-        )
-    }
-    const exclusiveItemsmany = ({ item, index }) => {
-        return (
-            <View>
-                <View style={{
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    paddingVertical: normalize(10),
-                    paddingHorizontal: normalize(2),
-                    margin: 5
-                }}>
-                    <View
-                        style={{
-                            width: normalize(270),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                        }}
-                    >
-                        <Image
-                            source={item.Image}
-                            style={{
-                                alignSelf: "center",
-                                height: normalize(80),
-                                width: normalize(270),
-                                resizeMode: "contain"
-                            }}
-                        />
-                        <Text
-                            numberOfLines={2}
-                            style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: "#000000",
-                                fontWeight: "bold",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                paddingVertical: 2
-                            }}
-                        >
-                            {item?.Statename}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999999" }}>
-                            {"By eMedEd"}
-                        </Text>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(10) }}>
-                            <CalIcon name="calendar" size={20} color="#000000" />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"Topics - 3 | Courses in bundle -3"}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(0) }}>
-                            <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(17), resizeMode: "contain" }} />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"1 AMA PRA Category 1 Credit™ ..."}
-                            </Text>
-                        </View>
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDDDDD" }} />
-
-                        <View style={{ alignItems: "flex-end", marginTop: normalize(10) }}>
-
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: "#2C4DB9",
-                                }}
-                            >
-                                {"US$800"}
-                            </Text>
-
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-        )
-    }
-    const exclusiveItemsmanyin = ({ item, index }) => {
-        return (
-            <View>
-                <View style={{
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    paddingVertical: normalize(10),
-                    paddingHorizontal: normalize(2),
-                    margin: 5
-                }}>
-                    <View
-                        style={{
-                            width: normalize(270),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                        }}
-                    >
-                        <Image
-                            source={item.Image}
-                            style={{
-                                alignSelf: "center",
-                                height: normalize(80),
-                                width: normalize(270),
-                                resizeMode: "contain"
-                            }}
-                        />
-                        <Text
-                            numberOfLines={2}
-                            style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: "#000000",
-                                fontWeight: "bold",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                paddingVertical: 2
-                            }}
-                        >
-                            {item?.Statename}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999999" }}>
-                            {"By eMedEd"}
-                        </Text>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(10) }}>
-                            <CalIcon name="calendar" size={20} color="#000000" />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"Topics - 3 | Courses in bundle -3"}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(0) }}>
-                            <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(17), resizeMode: "contain" }} />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"1 AMA PRA Category 1 Credit™ ..."}
-                            </Text>
-                        </View>
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDDDDD" }} />
-
-                        <View style={{ alignItems: "flex-end", marginTop: normalize(10) }}>
-
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: "#2C4DB9",
-                                }}
-                            >
-                                {"US$800"}
-                            </Text>
-
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-        )
-    }
-    const exclusiveItemsmanyinlive = ({ item, index }) => {
-        return (
-            <View>
-                <View style={{
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    paddingVertical: normalize(0),
-                    paddingHorizontal: normalize(2),
-                    margin: 5
-                }}>
-                    <View
-                        style={{
-                            width: normalize(270),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                        }}
-                    >
-                        <Image
-                            source={item.Image}
-                            style={{
-                                alignSelf: "center",
-                                height: normalize(80),
-                                width: normalize(270),
-                                resizeMode: "contain"
-                            }}
-                        />
-                        <Text
-                            numberOfLines={2}
-                            style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: "#000000",
-                                fontWeight: "bold",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                paddingVertical: 2
-                            }}
-                        >
-                            {item?.Statename}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999999" }}>
-                            {"By eMedEd"}
-                        </Text>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(10) }}>
-                            <CalIcon name="calendar" size={20} color="#000000" />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"Topics - 3 | Courses in bundle -3"}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(0) }}>
-                            <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(17), resizeMode: "contain" }} />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"1 AMA PRA Category 1 Credit™ ..."}
-                            </Text>
-                        </View>
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDDDDD" }} />
-
-                        <View style={{ alignItems: "flex-end", marginTop: normalize(10) }}>
-
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: "#2C4DB9",
-                                }}
-                            >
-                                {"US$42"}
-                            </Text>
-
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-        )
-    }
-    const exclusiveItemsmanyinlivefree = ({ item, index }) => {
-        return (
-            <View>
-                <View style={{
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    paddingVertical: normalize(0),
-                    paddingHorizontal: normalize(2),
-                    margin: 5
-                }}>
-                    <View
-                        style={{
-                            width: normalize(270),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                        }}
-                    >
-                        <Text
-                            numberOfLines={2}
-                            style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: "#000000",
-                                fontWeight: "bold",
-                                flexShrink: 1,
-                                flexWrap: 'wrap',
-                                paddingVertical: 2
-                            }}
-                        >
-                            {item?.Statename}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999999" }}>
-                            {"By eMedEd"}
-                        </Text>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(10) }}>
-                            <CalIcon name="calendar" size={20} color="#000000" />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(5),
-                            }}>
-                                {"Topics - 3 | Courses in bundle -3"}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", paddingVertical: normalize(0) }}>
-                            <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(17), resizeMode: "contain" }} />
-                            <Text style={{
-                                fontSize: 14,
-                                color: '#000000',
-                                fontFamily: Fonts.InterRegular,
-                                marginLeft: normalize(3),
-                            }}>
-                                {"1 AMA PRA Category 1 Credit™ ..."}
-                            </Text>
-                        </View>
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDDDDD" }} />
-
-                        <View style={{ alignItems: "flex-end", marginTop: normalize(10) }}>
-
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: "#2C4DB9",
-                                }}
-                            >
-                                {"Free"}
-                            </Text>
-
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-        )
-    }
-    const commentData = [
-        {
-            "id": 0,
-            "Statename": "ABFM",
-            "work": "Unilogic",
-            "email": "adam.carter@unilogic.com",
-            "dob": "1978",
-            "address": "83 Warner Street",
-            "city": "Boston",
-            "optedin": true
-        },
-        {
-            "id": 1,
-            "Statename": "AAFP",
-            "work": "Connic",
-            "email": "leanne.brier@connic.org",
-            "dob": "1987",
-            "address": "9 Coleman Avenue",
-            "city": "Toronto",
-            "optedin": false
-        },
-        {
-            "id": 2,
-            "Statename": "ABFM",
-            "work": "Unilogic",
-            "email": "adam.carter@unilogic.com",
-            "dob": "1978",
-            "address": "83 Warner Street",
-            "city": "Boston",
-            "optedin": true
-        },
-        {
-            "id": 3,
-            "Statename": "AAFP",
-            "work": "Connic",
-            "email": "leanne.brier@connic.org",
-            "dob": "1987",
-            "address": "9 Coleman Avenue",
-            "city": "Toronto",
-            "optedin": false
-        }
-    ]
-    const flatData = [
-        {
-            "id": 0,
-            "Statename": "State-required"
-
-        },
-        {
-            "id": 1,
-            "Statename": "Speciality Bundles"
-        },
-    ]
-    const Inpersonhybrid = [
-        {
-            "id": 0,
-            "Statename": "2024"
-
-        },
-        {
-            "id": 1,
-            "Statename": "2025"
-        },
-        {
-            "id": 2,
-            "Statename": "2026"
-        },
-    ]
-    const flatDataspecaility = [
-        {
-            "id": 0,
-            "Statename": "Internal Medicine"
-
-        },
-        {
-            "id": 1,
-            "Statename": "Family Medicine"
-        },
-        {
-            "id": 2,
-            "Statename": "Psychiatry"
-
-        },
-        {
-            "id": 3,
-            "Statename": "Oncology"
-        },
-        {
-            "id": 4,
-            "Statename": "Radiology"
-
-        },
-        {
-            "id": 5,
-            "Statename": "Neurology"
-        },
-        {
-            "id": 6,
-            "Statename": "Cardiology"
-
-        },
-        {
-            "id": 7,
-            "Statename": "Dermatology"
-        },
-    ]
-    const flatDatasinperson = [
-        {
-            "id": 0,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-
-        },
-        {
-            "id": 1,
-            "Statename": "Recognition and Response: Violence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 2,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-    ]
-    const flatDatasinpersonlive = [
-        {
-            "id": 0,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-
-        },
-        {
-            "id": 1,
-            "Statename": "Recognition and Response: Violence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 2,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-    ]
-    const flatDatasinpersonlivefree = [
-        {
-            "id": 0,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-
-        },
-        {
-            "id": 1,
-            "Statename": "Recognition and Response:\nViolence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 2,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-    ]
-    const flatDatamanyspecaility = [
-        {
-            "id": 0,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-
-        },
-        {
-            "id": 1,
-            "Statename": "Recognition and Response: Violence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 2,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-        {
-            "id": 3,
-            "Statename": "Recognition and Response: Violence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 4,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-
-        },
-        {
-            "id": 5,
-            "Statename": "Recognition and Response: Violence and Abuse in the..",
-            "Image": Imagepath.GlobalPng
-        },
-        {
-            "id": 6,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-        {
-            "id": 7,
-            "Statename": "Paediatric Emergency Medicine (PEM) Course",
-            "Image": Imagepath.SpecialityCard
-        },
-
-    ]
-    console.log(wholecontent?.mobile_top_banners, "wholeciomtgee=====", activeIndex)
-    const filterBannersWithContent = (banners) => {
-        return banners.filter((item) => {
-            const parsedData = parseHtmlContent(item.html_content);
-            return parsedData.content.length > 0;
-        });
-    };
-    const filteredBanners = filterBannersWithContent(wholecontent?.mobile_top_banners || []);
-    useEffect(() => {
-        setTopbanner(filteredBanners.length);
-    }, [filteredBanners.length]);
-
-    const renderTopBannerItem = ({ item }) => {
-        const htmlStructure = parseHtmlContent(item?.html_content);
-        const dynamicHeight = normalize(120 + htmlStructure.content.length * 25);
-
-        if (!htmlStructure.title || !htmlStructure.content.some((entry) => entry.date || entry.location || entry.credit)) {
-            return null;
-        }
-
-        return (
-            <View style={{ paddingHorizontal: normalize(5), paddingVertical: normalize(10) }}>
-                <ImageBackground
-                    source={Imagepath.HomeUser}
-                    style={{
-                        width: normalize(310),
-                        justifyContent: 'space-between',
-                        height: dynamicHeight,
-                        paddingVertical: normalize(15),
-                        paddingHorizontal: normalize(10),
-                        borderRadius: 10,
-                    }}
-                    imageStyle={{ borderRadius: 10 }}
-                    resizeMode="stretch"
+                  <Text style={styles.langText}>FL</Text>
+                  <Icon
+                    name="keyboard-arrow-down"
+                    size={20}
+                    color={Colorpath.black}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.signInButton}
+                  onPress={() => props.navigation.navigate('Login')}
                 >
-                    <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
-                        <Text style={{ fontSize: 24, fontFamily: Fonts.InterSemiBold, color: '#FFFFFF' }}>
-                            {htmlStructure?.title}
-                        </Text>
-                        {htmlStructure.content.map((entry, idx) => (
-                            <View style={{ flexDirection: 'column', paddingVertical: normalize(2) }} key={idx}>
-                                {entry?.date ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Icon name="access-time" size={20} color="#FFFFFF" />
-                                        <Text style={{ fontSize: 16, color: '#FFFFFF', marginLeft: normalize(6), fontFamily: Fonts.InterMedium }}>
-                                            {entry?.date}
-                                        </Text>
-                                    </View>
-                                ) : null}
-
-                                {entry?.location ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Icon name="location-on" size={20} color="#FFFFFF" />
-                                        <Text style={{ fontSize: 16, color: '#FFFFFF', marginLeft: normalize(6), fontFamily: Fonts.InterMedium }}>
-                                            {entry?.location}
-                                        </Text>
-                                    </View>
-                                ) : null}
-
-                                {entry?.credit ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Image
-                                                source={Imagepath.CreditValut}
-                                                style={{
-                                                    tintColor: Colorpath.white,
-                                                    height: normalize(18),
-                                                    width: normalize(18),
-                                                    resizeMode: 'contain',
-                                                }}
-                                            />
-                                            <Text
-                                                style={{
-                                                    width: normalize(200),
-                                                    fontSize: 16,
-                                                    color: '#FFFFFF',
-                                                    marginLeft: normalize(6),
-                                                    fontFamily: Fonts.InterMedium,
-                                                }}
-                                            >
-                                                {entry?.credit}
-                                            </Text>
-                                        </View>
-                                        {val < filteredBanners.length - 1 ? (
-                                            <TouchableOpacity onPress={handleNext} style={styles.topBannerChevron}>
-                                                <Icon name="chevron-right" size={24} color="#FFFFFF" />
-                                            </TouchableOpacity>
-                                        ) : null}
-                                    </View>
-                                ) : null}
-                            </View>
-                        ))}
-                    </View>
-                </ImageBackground>
+                  <Text style={styles.signInText}>SIGN IN</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-        );
-    };
-    return (
-        <>
-            <MyStatusBar
-                barStyle={'light-content'}
-                backgroundColor={Colorpath.Pagebg}
-            />
-            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
-                    <TouchableOpacity onPress={() => { props.navigation.navigate("SearchScreen") }}>
-                        <Image source={Imagepath.Logo} style={{ height: normalize(35), width: normalize(35), resizeMode: "contain" }} />
-                    </TouchableOpacity>
-                    <View style={{
-                        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-                        width: normalize(80), paddingHorizontal: normalize(10)
-                    }}>
-                        <TouchableOpacity onPress={() => { props.navigation.navigate("BrowseScreen") }}>
-                            <NotifyIcn name="bell-ring-outline" size={23} color={Colorpath.black} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { props.navigation.navigate("FilterScreen") }}>
-                            <SearchIcn name="search" size={23} color={Colorpath.black} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                <ScrollView contentContainerStyle={{ paddingBottom: normalize(20) }}>
-                    {wholecontent?.mobile_top_banners?.length > 0 ? <View>
-                        <Carousel
-                            ref={carouselRef}
-                            layout={'default'}
-                            data={filteredBanners}
-                            marginTop={normalize(10)}
-                            sliderWidth={windowWidth}
-                            itemWidth={
-                                Platform.OS === 'ios' ? windowWidth : windowWidth
-                            }
-                            itemHeight={windowHeight * 0.4}
-                            sliderHeight={windowHeight * 0.9}
-                            renderItem={renderTopBannerItem}
-                            firstItem={0}
-                            onSnapToItem={handleSnapToItem}
-                        />
-                        <View
-                            style={{
-                                width: normalize(40),
-                                alignSelf: 'center'
-                            }}>
-                            <Pagination
-                                dotsLength={topbanner}
-                                activeDotIndex={val}
-                                dotStyle={{
-                                    width: normalize(20),
-                                    height: 10,
-                                    borderRadius: 10,
-                                    backgroundColor: "#999999",
-                                    marginHorizontal: normalize(30)
-                                }}
-                                inactiveDotStyle={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 10,
-                                    opacity: 0.7,
-                                    borderWidth: 1,
-                                    borderColor: "#999999",
-                                    backgroundColor: Colorpath.Pagebg
-                                }}
-                                containerStyle={{
-                                    gap: 10,
-                                }}
-                                inactiveDotScale={0.9}
-                            />
-                        </View>
-                    </View> :
-                        <View style={{ marginTop: normalize(30), justifyContent: "center", alignSelf: "center" }}>
-                            <ActivityIndicator
-                                size="small"
-                                color={Colorpath.white}
-                                style={{
-                                    position: 'absolute',
-                                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                    borderRadius: 30,
-                                    height: 40,
-                                    width: 40,
-                                    zIndex: 999
-                                }}
-                            />
-                        </View>}
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"Featured"}</Text>
-                    </View>
-                    {wholecontent?.featured_conferences?.length > 0 ? <View>
-                        <Carousel
-                            layout={'default'}
-                            data={wholecontent?.featured_conferences}
-                            marginTop={normalize(10)}
-                            sliderWidth={windowWidth}
-                            itemWidth={
-                                Platform.OS === 'ios' ? windowWidth : windowWidth
-                            }
-                            itemHeight={windowHeight * 0.4}
-                            sliderHeight={windowHeight * 0.9}
-                            renderItem={({ item }) => <FeaturedComponent item={item} />}
-                            firstItem={0}
-                            onSnapToItem={handleSnapToItems}
-                        />
-                        <View
-                            style={{
-                                width: normalize(40),
-                                alignSelf: 'center'
-                            }}>
-                            <Pagination
-                                dotsLength={wholecontent?.featured_conferences?.length}
-                                activeDotIndex={vals}
-                                dotStyle={{
-                                    width: normalize(20),
-                                    height: 10,
-                                    borderRadius: 10,
-                                    backgroundColor: "#999999",
-                                    marginHorizontal: normalize(30)
-                                }}
-                                inactiveDotStyle={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 10,
-                                    opacity: 0.7,
-                                    borderWidth: 1,
-                                    borderColor: "#999999",
-                                    backgroundColor: Colorpath.Pagebg
-                                }}
-                                containerStyle={{
-                                    gap: 10,
-                                }}
-                                inactiveDotScale={0.9}
-                            />
-                        </View>
-                    </View> : null}
 
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"Exclusive CME & CE Course Bundles"}</Text>
-                    </View>
-                    <View>
-                        <FlatList
-                            horizontal
-                            data={flatData}
-                            renderItem={exclusiveItem}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                        <FlatList
-                            horizontal
-                            data={activeIndex === 0
-                                ? wholecontent?.state_course_bundles
-                                : wholecontent?.specialty_course_bundles || []}
-                            renderItem={({ item, index }) =>
-                                item ? <CMEExclusive item={item} index={index} /> : null}
-                            keyExtractor={(item, index) => index.toString()}
-                            ListEmptyComponent={
-                                activeIndex === 1 && !wholecontent?.specialty_course_bundles?.length
-                                    ? <Text>No courses available</Text>
-                                    : null
-                            }
-                        />
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"By Specialty"}</Text>
-                    </View>
-                    <View>
-                        <FlatList
-                            horizontal
-                            data={flatDataspecaility}
-                            renderItem={exclusiveItemspe}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                        <FlatList
-                            horizontal
-                            data={[flatDatamanyspecaility[activeIndexspe]]}
-                            renderItem={exclusiveItemsmany}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                        <ImageBackground source={Imagepath.HomeBanner} style={{ height: normalize(130), width: normalize(300) }} imageStyle={{ borderRadius: 30 }} resizeMode="stretch">
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterBold,
-                                        fontSize: 18,
-                                        color: "#FFFFFF",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                        paddingVertical: 2,
-                                        alignSelf: "center",
-                                        lineHeight: normalize(20),
-                                        textAlign: "center"
-                                    }}
-                                >
-                                    {"Recognition and Response:\nViolence and Abuse in the Healthcare"}
-                                </Text>
-                            </View>
-                            <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignContent: "space-evenly" }}>
-                                <View style={{ flexDirection: "row" }}>
-                                    <Image source={Imagepath.CreditValut} style={{ tintColor: "#FFFFFF", height: normalize(15), width: normalize(15), resizeMode: "contain" }} />
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#FFFFFF", marginLeft: normalize(10) }}>{"9 CME Credits"}</Text>
-                                </View>
-                                <View style={{ flexDirection: "row" }}>
-                                    <Icon name="access-time" size={20} color="#FFFFFF" />
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#FFFFFF", marginLeft: normalize(10) }}>{"9 Contact Hours"}</Text>
-                                </View>
-                            </View>
-                            <Buttons
-                                onPress={() => {
-                                    props.navigation.navigate("SearchResult")
-                                }}
-                                height={normalize(35)}
-                                width={normalize(140)}
-                                backgroundColor={"#FF773D"}
-                                borderRadius={normalize(5)}
-                                text="REGISTER NOW"
-                                color={Colorpath.white}
-                                fontSize={16}
-                                fontFamily={Fonts.InterBold}
-                                marginTop={normalize(10)}
-                            />
-                        </ImageBackground>
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"In-Person & Hybrid"}</Text>
-                    </View>
-                    <View>
-                        <FlatList
-                            horizontal
-                            data={Inpersonhybrid}
-                            renderItem={exclusiveItemsInperson}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                        <FlatList
-                            horizontal
-                            data={[flatDatasinperson[activeIndexspein]]}
-                            renderItem={exclusiveItemsmanyin}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"Live Webinars"}</Text>
-                    </View>
-                    <View>
-                        <FlatList
-                            horizontal
-                            data={flatDatasinpersonlive}
-                            renderItem={exclusiveItemsmanyinlive}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                        <ImageBackground source={Imagepath.HomeBanner} style={{ height: normalize(130), width: normalize(300) }} imageStyle={{ borderRadius: 30 }} resizeMode="stretch">
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterBold,
-                                        fontSize: 18,
-                                        color: "#FFFFFF",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                        paddingVertical: 2,
-                                        alignSelf: "center",
-                                        lineHeight: normalize(20),
-                                        textAlign: "center"
-                                    }}
-                                >
-                                    {"Recognition and Response:\nViolence and Abuse in the Healthcare"}
-                                </Text>
-                            </View>
-                            <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignContent: "space-evenly" }}>
-                                <View style={{ flexDirection: "row" }}>
-                                    <Image source={Imagepath.CreditValut} style={{ tintColor: "#FFFFFF", height: normalize(15), width: normalize(15), resizeMode: "contain" }} />
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#FFFFFF", marginLeft: normalize(10) }}>{"9 CME Credits"}</Text>
-                                </View>
-                                <View style={{ flexDirection: "row" }}>
-                                    <Icon name="access-time" size={20} color="#FFFFFF" />
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#FFFFFF", marginLeft: normalize(10) }}>{"9 Contact Hours"}</Text>
-                                </View>
-                            </View>
-                            <Buttons
-                                onPress={() => {
-                                    console.log("dsfkdkgkdj")
-                                }}
-                                height={normalize(35)}
-                                width={normalize(140)}
-                                backgroundColor={"#FF773D"}
-                                borderRadius={normalize(5)}
-                                text="REGISTER NOW"
-                                color={Colorpath.white}
-                                fontSize={16}
-                                fontFamily={Fonts.InterBold}
-                                marginTop={normalize(10)}
-                            />
-                        </ImageBackground>
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"Sponsored & Free"}</Text>
-                    </View>
-                    <View>
-                        <FlatList
-                            horizontal
-                            data={flatDatasinpersonlivefree}
-                            renderItem={exclusiveItemsmanyinlivefree}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                    </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"World’s Largest"}</Text>
-                        <Text style={{ fontStyle: "italic", fontFamily: Fonts.InterExtraBold, fontSize: 28, color: Colorpath.ButtonColr }}>{"CME/CE marketplace"}</Text>
-                    </View>
-                    <View style={{ justifyContent: "center", alignSelf: "center" }}>
+            <Pressable
+              style={styles.searchBar}
+              onPress={() => props.navigation.navigate('SearchScreen')}
+            >
+              <SearchIcon name="search" size={20} color="#9CA3AF" />
+              <Text style={styles.searchText}>
+                Search CME, conferences, specialties
+              </Text>
+              <TouchableOpacity
+                onPress={() => props.navigation.navigate('FilterScreen')}
+              >
+                <Icon name="mic-none" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+            </Pressable>
+           {/*Top banner with conference details and register button*/}
+            <Carousel
+              layout="stack"
+              data={topBanners.length > 0 ? topBanners : [ { fallback: true } ]}
+              renderItem={({ item }) => {
+                if (item.fallback) {
+                  return (
                         <ImageBackground
-                            source={Imagepath.HomeUser}
-                            style={{
-                                height: normalize(175),
-                                width: normalize(310)
-                            }}
-                            imageStyle={{ borderRadius: 10 }}
-                            resizeMode="stretch"
+                          source={Imagepath.HomeUser}
+                          imageStyle={styles.heroRadius}
+                          style={styles.hero}
                         >
-                            <View style={{ paddingVertical: normalize(20), paddingHorizontal: normalize(30) }}>
-                                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                    <View style={{ width: "48%" }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Hosted Conferences"}</Text>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 26, color: "#FFFFFF" }}>{"256,968 +"}</Text>
-                                    </View>
-                                    <View style={{ width: "48%" }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Registrations Sold"}</Text>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 26, color: "#FFFFFF" }}>{"85,656 +"}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: normalize(5) }}>
-                                    <View style={{ width: "48%" }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Monthly Visitors"}</Text>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 26, color: "#FFFFFF" }}>{"395,811 +"}</Text>
-                                    </View>
-                                    <View style={{ width: "48%" }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Healthcare Professionals"}</Text>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 26, color: "#FFFFFF" }}>{"1,435,627 +"}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={{ marginTop: normalize(5) }}>
-                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Organizers"}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 26, color: "#FFFFFF" }}>{"14,307 +"}</Text>
-                                </View>
-                            </View>
-
-                        </ImageBackground>
-                    </View>
-                    <View style={{ justifyContent: "center", alignItems: "center", alignSelf: "center", marginTop: normalize(40) }}>
-                        <ImageBackground
-                            source={Imagepath.MainCard}
-                            style={{
-                                height: normalize(580),
-                                width: normalize(325)
-                            }}
-                            imageStyle={{ borderRadius: 10 }}
-                            resizeMode="stretch"
-                        >
-                            <View style={{
-                                height: normalize(70),
-                                width: normalize(70),
-                                borderRadius: normalize(40),
-                                shadowColor: "#000",
-                                shadowOffset: { height: 3, width: 0 },
-                                shadowOpacity: 5,
-                                shadowRadius: 10,
-                                elevation: 10,
-                                backgroundColor: "#FF773D",
-                                alignSelf: "center",
-                                position: 'relative',
-                                marginTop: normalize(-35),
-                                zIndex: 999,
-                                justifyContent: "center"
-                            }}>
-                                <Image source={Imagepath.CrownHome} style={{ height: normalize(38), width: normalize(38), resizeMode: "contain", alignSelf: "center" }} />
-                            </View>
-                            <View style={{ width: normalize(320), alignItems: "center", paddingVertical: normalize(10) }}>
-                                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Discover the Value of Your"}
+                          <View style={styles.heroBadge}>
+                            <Text style={styles.heroBadgeText}>
+                              FEW{'\n'}DAYS{'\n'}LEFT
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={styles.heroKicker}>By PEM Courses</Text>
+                            <Text numberOfLines={2} style={styles.heroTitle}>
+                              Paediatric Emergency Medicine (PEM) Course
+                            </Text>
+                          </View>
+                          <View style={styles.heroBottomRow}>
+                            <View style={styles.heroMeta}>
+                              <View style={styles.heroMetaRow}>
+                                <Icon name="access-time" size={18} color="#FFFFFF" />
+                                <Text style={styles.heroMetaText}>
+                                  {'Sep 04 - 05, 2024'}
                                 </Text>
-
-                                <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(5) }}>
-                                    <Image
-                                        source={Imagepath.TickMark}
-                                        style={{ height: normalize(35), width: normalize(35), resizeMode: "contain" }}
-                                    />
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 30, color: "#FFFFFF", textAlign: "center" }}>
-                                        {"Prime Membership"}
-                                    </Text>
-                                </View>
+                              </View>
+                              <View style={styles.heroMetaRow}>
+                                <Icon name="location-on" size={18} color="#FFFFFF" />
+                                <Text style={styles.heroMetaText}>{'Bali, Bali, ID'}</Text>
+                              </View>
                             </View>
-                            <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Multi State & Board Licensure Tracking"}
-                                </Text>
-                            </View>
-                            <View style={{ width: "105%", flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Personalized CME/CE Recommendations"}
-                                </Text>
-                            </View>
-                            <View style={{ width: "90%", flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Centralized CME/CE Credit Vault"}
-                                </Text>
-                            </View>
-                            <View style={{ width: "85%", flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Credentialing Document Vault"}
-                                </Text>
-                            </View>
-                            <View style={{ width: "86%", flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"Add Credits earned elsewhere"}
-                                </Text>
-                            </View>
-                            <View style={{ width: "96%", flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: normalize(20) }}>
-                                <Image
-                                    source={Imagepath.CrownHome}
-                                    style={{ height: normalize(25), width: normalize(25), resizeMode: "contain" }}
-                                />
-                                <Text style={{ marginLeft: normalize(10), fontFamily: Fonts.InterRegular, fontSize: 16, color: "#FFFFFF", textAlign: "center" }}>
-                                    {"CME/CE Planning Tool & Scheduler"}
-                                </Text>
-                            </View>
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF", textDecorationLine: "underline" }}>{"and more features..."}</Text>
-                            </View>
-                            <View style={{ justifyContent: "center", alignItems: "center", alignSelf: "center" }}>
-                                <Text
-                                    numberOfLines={3}
-                                    style={{
-                                        fontFamily: Fonts.InterRegular,
-                                        fontSize: 16,
-                                        color: "#FFFFFF",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    {"Join eMedEvents Prime and elevate your \n professional journey with unmatched \n features and support"}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => { props.navigation.navigate("Testing") }} style={{ justifyContent: "center", alignSelf: "center", alignItems: "center", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <ImageBackground
-                                    source={Imagepath.StartBg}
-                                    style={{ height: normalize(50), width: normalize(310), justifyContent: "center", alignItems: "center" }}
-                                    resizeMode="stretch"
-                                    imageStyle={{ borderRadius: 10 }}
-                                >
-                                    <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignContent: "space-evenly" }}>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#FFFFFF", textAlign: "center" }}>
-                                            {"Start Your 30-Day Free Trial Today!"}
-                                        </Text>
-                                        <TouchableOpacity style={styles.iconContainer}>
-                                            <Icon name="chevron-right" size={24} color="#FFFFFF" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </ImageBackground>
+                            <TouchableOpacity
+                              style={styles.heroButton}
+                              onPress={() => props.navigation.navigate('SearchResult')}
+                            >
+                              <Text style={styles.heroButtonText}>REGISTER NOW</Text>
                             </TouchableOpacity>
-                            <View style={{ paddingHorizontal: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                                <Text style={{ fontFamily: Fonts.InterLight, fontSize: 12, color: "#FFFFFF" }}>{"No credit card is needed to get started"}</Text>
-                            </View>
+                          </View>
                         </ImageBackground>
+                  );
+                }
+                return (
+                  <ImageBackground
+                    source={{ uri: item.banner_image || item.image_path || item.mobile_image }}
+                    imageStyle={styles.heroRadius}
+                    style={styles.hero}
+                  >
+                    {item.badge ? (
+                    <View style={styles.heroBadge}>
+                      <Text style={styles.heroBadgeText}>{item.badge}</Text>
                     </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000000" }}>{"Customer Chronicles"}</Text>
-                        <Text style={{ fontFamily: Fonts.InterExtraBold, fontSize: 28, color: Colorpath.ButtonColr, fontStyle: 'italic' }}>{"real stories, real impact"}</Text>
-                    </View>
+                    ) : null}
                     <View>
-                        <Carousel
-                            layout={'default'}
-                            data={commentData}
-                            sliderWidth={windowWidth}
-                            itemWidth={
-                                Platform.OS === 'ios' ? windowWidth : windowWidth
-                            }
-                            itemHeight={windowHeight * 0.4}
-                            sliderHeight={windowHeight * 0.9}
-                            renderItem={commentDataItem}
-                            firstItem={0}
-                            onSnapToItem={handlecmmnt}
-                        />
-                        <View
-                            style={{
-                                width: normalize(40),
-                                alignSelf: 'center'
-                            }}>
-                            <Pagination
-                                dotsLength={4}
-                                activeDotIndex={valcmmnt}
-                                dotStyle={{
-                                    width: normalize(20),
-                                    height: 10,
-                                    borderRadius: 10,
-                                    backgroundColor: "#999999",
-                                    marginHorizontal: normalize(30)
-                                }}
-                                inactiveDotStyle={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 10,
-                                    opacity: 0.7,
-                                    borderWidth: 1,
-                                    borderColor: "#999999",
-                                    backgroundColor: Colorpath.Pagebg
-                                }}
-                                containerStyle={{
-                                    gap: 10,
-                                }}
-                                inactiveDotScale={0.9}
-                            />
-                        </View>
+                      <Text style={styles.heroKicker}>{item.organizer_name ? `By ${item.organizer_name}` : ''}</Text>
+                      <Text numberOfLines={2} style={styles.heroTitle}>
+                        {item.title || item.course_title || item.name || ''}
+                      </Text>
                     </View>
-                </ScrollView>
-            </SafeAreaView>
-        </>
-    )
-}
+                    <View style={styles.heroBottomRow}>
+                      <View style={styles.heroMeta}>
+                        {item.start_date || item.course_start_date ? (
+                        <View style={styles.heroMetaRow}>
+                          <Icon name="access-time" size={18} color="#FFFFFF" />
+                          <Text style={styles.heroMetaText}>
+                            {item.start_date || item.course_start_date}
+                          </Text>
+                        </View>
+                        ) : null}
+                        {item.location || item.course_location ? (
+                        <View style={styles.heroMetaRow}>
+                          <Icon name="location-on" size={18} color="#FFFFFF" />
+                          <Text style={styles.heroMetaText}>{item.location || item.course_location}</Text>
+                        </View>
+                        ) : null}
+                      </View>
+                      <TouchableOpacity
+                        style={styles.heroButton}
+                        onPress={() => props.navigation.navigate('SearchResult')}
+                      >
+                        <Text style={styles.heroButtonText}>REGISTER NOW</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </ImageBackground>
+                );
+              }}
+              sliderWidth={width}
+              itemWidth={width - 32}
+              inactiveSlideScale={1}
+              inactiveSlideOpacity={1}
+            />
 
-export default GuestUser
-const styles = StyleSheet.create({
-    imageBackground: {
-        height: normalize(170),
-        width: normalize(310),
-        justifyContent: 'space-between',
-        paddingVertical: normalize(15),
-        paddingHorizontal: normalize(10),
-    },
-    courseTitle: {
-        fontSize: 24,
-        fontFamily: Fonts.InterSemiBold,
-        color: '#FFFFFF',
-        marginBottom: normalize(4),
-    },
-    courseProvider: {
-        fontSize: 14,
-        color: '#FFFFFF',
-        marginBottom: 12,
-        fontFamily: Fonts.InterMedium,
-    },
-    infoContainer: {
-        flexDirection: 'column',
-        marginBottom: normalize(8),
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: normalize(4),
-    },
-    infoText: {
-        fontSize: 16,
-        color: '#FFFFFF',
-        marginLeft: normalize(6),
-        fontFamily: Fonts.InterMedium,
-    },
-    iconContainer: {
-        marginLeft: normalize(5), // aligns icon to the end of the row
-        // paddingLeft: normalize(8),
-        borderWidth: 2,
-        borderColor: "#FFFFFF",
-        borderRadius: 20
-    },
-    topBannerChevron: {
-        height: normalize(30),
-        width: normalize(30),
-        borderWidth: 2,
-        borderColor: "#FFFFFF",
-        borderRadius: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});
+            <CarouselSection
+              title="Featured Conferences"
+              action="View all"
+              data={featuredConferences.length > 0 ? featuredConferences.map(mapConference) : cards}
+              renderItem={renderCard}
+              sliderWidth={width - 32}
+              itemWidth={width - 32}
+              width={width}
+              onAction={() => props.navigation.navigate('SearchResult')}
+            />
+
+            <View style={styles.panel}>
+              <Text style={styles.panelTitle}>
+                Tell Us Your Profession & Specialty
+              </Text>
+              <Text style={styles.panelSubTitle}>
+                Let us tailor the best courses for you
+              </Text>
+              <View style={styles.selectorRow}>
+                <TouchableOpacity style={styles.selectorBox} onPress={() => setProfModalVisible(true)}>
+                  <Text style={styles.selectorLabel}>Profession</Text>
+                  <View style={styles.selectorValueRow}>
+                    <Text style={styles.selectorValue}>{selectedProfession || 'Select Profession'}</Text>
+                    <Icon name="keyboard-arrow-down" size={18} color="#4B5563" />
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.selectorBox} onPress={() => setStateModalVisible(true)}>
+                  <Text style={styles.selectorLabel}>State</Text>
+                  <View style={styles.selectorValueRow}>
+                    <Text numberOfLines={1} style={[styles.selectorValue, { maxWidth: '80%' }]}>{selectedState?.name || 'Select State'}</Text>
+                    <Icon name="keyboard-arrow-down" size={18} color="#4B5563" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <CarouselSection
+              title="Most Popular Conferences"
+              action="View all"
+              data={cards}
+              renderItem={renderCard}
+              sliderWidth={width - 32}
+              itemWidth={width - 32}
+              width={width}
+              onAction={() => props.navigation.navigate('SearchResult')}
+            />
+
+            <SectionTitle
+              title="Specialties"
+              action="View all"
+              width={width}
+              onAction={() => {}}
+            />
+            <View style={styles.chipRow}>
+              {(topSpecialities.length > 0 ? topSpecialities.map(c => c.name || c.specialty_name) : SPECIALTIES).map((item, index) => (
+                <TagChip
+                  key={index.toString()}
+                  label={item}
+                  active={index === activeSpecialty}
+                  width={width}
+                  onPress={() => setActiveSpecialty(index)}
+                />
+              ))}
+            </View>
+
+            <CarouselSection
+              title="Specialty Featured"
+              action="View all"
+              data={[cards[1], cards[0], cards[2]]}
+              renderItem={renderDarkCard}
+              sliderWidth={width - 32}
+              itemWidth={width - 32}
+              width={width}
+              onAction={() => props.navigation.navigate('SearchResult')}
+            />
+
+            <CarouselSection
+              title="Live Conferences"
+              action="View all"
+              data={cards}
+              renderItem={renderCompactCard}
+              sliderWidth={width - 32}
+              itemWidth={width - 32}
+              width={width}
+              onAction={() => props.navigation.navigate('SearchResult')}
+            />
+
+            <CarouselSection
+              title="Free CME/CE"
+              action="View all"
+              data={cards}
+              renderItem={renderCompactCard}
+              sliderWidth={width - 32}
+              itemWidth={width - 32}
+              width={width}
+              onAction={() => props.navigation.navigate('SearchResult')}
+            />
+
+            <View style={styles.marketHeader}>
+              <Text style={styles.marketTitle}>
+                World's Largest CME/CE Marketplace
+              </Text>
+            </View>
+            <StatsGrid width={width} />
+
+            <MembershipBanner
+              width={width}
+              onPress={() => props.navigation.navigate('Testing')}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+
+      <Modal visible={profModalVisible} transparent animationType="fade">
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setProfModalVisible(false)}>
+          <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, width: '80%' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#000' }}>Select Profession</Text>
+            {PROFESSIONS.map((prof) => (
+              <TouchableOpacity key={prof} onPress={() => handleProfessionSelect(prof)} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+                <Text style={{ fontSize: 16, color: '#333' }}>{prof}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={stateModalVisible} transparent animationType="fade">
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setStateModalVisible(false)}>
+          <View style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 16, width: '80%', maxHeight: '70%' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#000' }}>Select State</Text>
+            <FlatList
+              data={AuthReducer?.stateResponse?.data || []}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => handleStateSelect(item)} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+                  <Text style={{ fontSize: 16, color: '#333' }}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <CMEChecklistModal
+        allProfessionData={allProfessionData}
+        setAllProfessionData={setAllProfessionData}
+        onCMEClose={() => setCmeModalVisible(false)}
+        onSaved={() => setCmeModalVisible(false)}
+        isVisibelCME={cmeModalVisible}
+        allProfession={selectedProfession}
+        certificatedata={{state_id: selectedState?.id}}
+      />
+    </>
+  );
+};
+
+export default GuestUser;

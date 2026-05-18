@@ -77,6 +77,12 @@ yarn-error.log
 # Android release build artifacts (large binaries - use CI/CD or manual upload)
 android/app/release/
 android/app/build/
+android/android/
+android/caches/
+android/daemon/
+android/kotlin-profile/
+android/native/
+android/wrapper/
 *.aab
 *.apk
 **/*.apk

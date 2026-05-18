@@ -81,7 +81,7 @@ export default function Splash(props) {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
     props.navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
+      CommonActions.reset({ index: 0, routes: [{ name: "GuestUser" }] })
     );
   };
 

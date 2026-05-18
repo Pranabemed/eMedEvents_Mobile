@@ -632,9 +632,9 @@ const Checkout = (props) => {
                                 : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
                             paymentprice: buildPaymentPrice({
                                 ...(props?.route?.params?.checkoutSpan || {}),
-                                totalTicketPrice: cleanNumber(props?.route?.params?.checkoutSpan?.cartData?.total_paid_amount || 0),
-                                subtotalAmount: cleanNumber(props?.route?.params?.checkoutSpan?.cartData?.subtotal_amount || props?.route?.params?.checkoutSpan?.cartData?.total_paid_amount || 0),
-                                processingFeeAmount: 0,
+                                subtotalAmount: checkoutBaseAmount,
+                                processingFeeAmount: checkoutProcessingFeeAmount,
+                                totalTicketPrice: checkoutTotalAmount,
                             }),
                         },
                     });

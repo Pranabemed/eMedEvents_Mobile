@@ -109,7 +109,8 @@ const Imagepath = {
    WarnImg: require('../Assets/Images/Warning.png'),
    IntConf: require('../Assets/Images/IntCon.png'),
    Mail: require('../Assets/Images/mail.png'),
-   NoImg: require('../Assets/Images/noimage.png')
+   NoImg: require('../Assets/Images/noimage.png'),
+   GuestPrime: require('../Assets/Images/guestuserPrime.png'),
 }
 
 export default Imagepath;

@@ -20,6 +20,7 @@ const Colorpath = {
     shadow: '#e6ebe7',
     homeStatus: '#e1f9e3',
     exitPlace:"#DDDDDD",
-    green:"#009E38"
+    green:"#009E38",
+    SkyBG:"#CBECFF"
 }
 export default Colorpath;
