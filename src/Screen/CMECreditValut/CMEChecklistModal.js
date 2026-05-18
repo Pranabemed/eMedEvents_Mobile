@@ -16,6 +16,7 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
     const [selectedOption, setSelectedOption] = useState(firstOption);
     const [modalHeightcme, setModalHeightcme] = useState(300);
     const [colortrue, setColortrue] = useState(false);
+    const [tabWidths, setTabWidths] = useState({});
     const navigation = useNavigation();
     useEffect(() => {
         if (allOptions?.length > 0) {
@@ -35,6 +36,12 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
         setSelectedOption(option);
         setColortrue(prev => !prev);
         console.log("Option selected:", option);
+    };
+    const handleTabLayout = (optionKey, widthValue) => {
+        setTabWidths(prev => {
+            if (prev[optionKey] === widthValue) return prev;
+            return { ...prev, [optionKey]: widthValue };
+        });
     };
     const { width } = useWindowDimensions();
     const selectedData = allProfessionData?.cme_data?.[selectedOption];
@@ -101,24 +108,42 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                         />
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
-                        <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignContent: "space-evenly" }}>
-                            {Object.keys(allProfessionData?.cme_data || {}).map((optionKey) => (
-                                <TouchableOpacity
-                                    key={optionKey}
-                                    onPress={() => handleOptionSelect(optionKey)}
-                                    style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0) }}
-                                >
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
-                                        color: selectedOption === optionKey ? "#FF773D" : "#000000",
-                                        fontWeight: "bold"
-                                    }}>
-                                        {optionKey}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingHorizontal: normalize(8), alignItems: 'center' }}
+                        >
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                {Object.keys(allProfessionData?.cme_data || {}).map((optionKey) => (
+                                    <TouchableOpacity
+                                        key={optionKey}
+                                        onPress={() => handleOptionSelect(optionKey)}
+                                        onLayout={(event) => handleTabLayout(optionKey, event.nativeEvent.layout.width)}
+                                        style={{
+                                            paddingHorizontal: normalize(16),
+                                            paddingVertical: normalize(6),
+                                            marginRight: normalize(8),
+                                            borderBottomWidth: 2,
+                                            borderBottomColor: selectedOption === optionKey ? '#FF773D' : 'transparent',
+                                            width: tabWidths[optionKey] || undefined,
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <Text
+                                            numberOfLines={1}
+                                            style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: selectedOption === optionKey ? "#FF773D" : "#000000",
+                                                fontWeight: "bold"
+                                            }}
+                                        >
+                                            {optionKey}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
                         <View
                             style={{
                                 justifyContent: "center",
@@ -129,22 +154,7 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                 backgroundColor: "#AAAAAA"
                             }}
                         >
-                            <View style={{ justifyContent: "center", alignSelf: "center", margin: normalize(10), height: 1, width: normalize(290), backgroundColor: "#AAAAAA", position: 'relative' }}>
-                                {selectedOption && (
-                                    <View
-                                        style={{
-                                            height: 1,
-                                            backgroundColor: "#FF773D",
-                                            width: normalize(290 / allOptions.length),
-                                            position: 'absolute',
-                                            left: normalize(
-                                                (290 / allOptions.length) *
-                                                allOptions.indexOf(selectedOption)
-                                            ),
-                                        }}
-                                    />
-                                )}
-                            </View>
+                            <View style={{ height: 1, width: normalize(290), backgroundColor: "#AAAAAA" }} />
                         </View>
                         <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0) }}>
                             <Text numberOfLines={2} style={{ flex: 1, fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>

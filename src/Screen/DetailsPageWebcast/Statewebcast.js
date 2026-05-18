@@ -97,7 +97,20 @@ const Statewebcast = props => {
         );
     }, [props.navigation]);
 
+    const goBackToGuestUser = useCallback(() => {
+        if (props.navigation.canGoBack?.()) {
+            props.navigation.goBack();
+            return;
+        }
+
+        props.navigation.navigate('GuestUser');
+    }, [props.navigation]);
+
     const boardCast = useCallback(() => {
+        if (props?.route?.params?.webCastURL?.Realback === "guest") {
+            goBackToGuestUser();
+            return;
+        }
         if (props?.route?.params?.webCastURL?.takeUrl) {
             props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.webCastURL?.textHo, speaks: props?.route?.params?.webCastURL?.speaks, hitDat: props?.route?.params?.webCastURL?.highText, fullUrl: props?.route?.params?.webCastURL?.takeUrl, creditData: props?.route?.params?.webCastURL?.creditData } })
         } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
@@ -114,7 +127,7 @@ const Statewebcast = props => {
             setAddit(props?.route?.params?.webCastURL?.creditData);
             resetToHome();
         }
-    }, [allProfTake, props.navigation, props?.route?.params?.webCastURL, resetToHome, setAddit, setGtprof, statepush]);
+    }, [allProfTake, goBackToGuestUser, props.navigation, props?.route?.params?.webCastURL, resetToHome, setAddit, setGtprof, statepush]);
     const handleSnapToItem = (index) => {
         setval(index);
     };
