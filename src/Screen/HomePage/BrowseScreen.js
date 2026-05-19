@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView, ActivityIndicator, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -42,6 +42,13 @@ const BrowseScreen = (props) => {
     const [alphabetItems, setAlphabetItems] = useState([]);
     const [browseSpe, setBrowseSpe] = useState(null);
     const [showLoader, setShowLoader] = useState(false);
+    const browseRealback =
+        props?.route?.params?.highText?.Realback ||
+        props?.route?.params?.Realback ||
+        (props?.route?.params?.highText?.isGuest ||
+        props?.route?.params?.creditData?.isGuest
+            ? "guest"
+            : undefined);
     useEffect(() => {
         const timeout = setTimeout(() => {
             setShowLoader(true);
@@ -49,7 +56,7 @@ const BrowseScreen = (props) => {
 
         return () => clearTimeout(timeout);
     }, []);
-    const FilterBack = () => {
+    const FilterBack = useCallback(() => {
         if (props?.route?.params?.highText?.backProps == "yes" || props?.route?.params?.backProps == "yes") {
             props.navigation.dispatch(
                 CommonActions.reset({
@@ -62,7 +69,7 @@ const BrowseScreen = (props) => {
         } else {
             props.navigation.goBack();
         }
-    };
+    }, [props.navigation, props?.route?.params]);
     useEffect(() => {
         const onBackPress = () => {
             FilterBack();
@@ -75,7 +82,7 @@ const BrowseScreen = (props) => {
         );
 
         return () => backHandler.remove();
-    }, [props?.route?.params]);
+    }, [FilterBack]);
     const isFocus = useIsFocused();
     const dispatch = useDispatch();
     const BrowsReducer = useSelector(state => state.BrowsReducer);
@@ -103,7 +110,7 @@ const BrowseScreen = (props) => {
                     showErrorAlert("Please connect to internet", err)
                 })
         }
-    }, [selectedFilter])
+    }, [dispatch, selectedFilter])
     console.log(props?.route?.params, "fkghjkfhjk-----------", selectedFilter)
     if (status == '' || BrowsReducer.status != status) {
         switch (BrowsReducer.status) {
@@ -324,39 +331,50 @@ const BrowseScreen = (props) => {
             { type: selectedFilter == "Month-Year" ? "Browse Year" : selectedFilter, data: selectedFilter == "Month-Year" ? alphabetlisting : filteredProfessions },
             { type: selectedFilter == "Month-Year" ? "Future Conferences" : "alphabetlisting", data: selectedFilter == "Month-Year" ? futureConferences : alphabetlisting },
         ]);
-    }, [search, filteredProfessions, alphabetlisting])
+    }, [search, filteredProfessions, alphabetlisting, selectedFilter, futureConferences])
     const alphbetSelect = (specialty, rqsttype, mainkey, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { trig: specialty, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { trig: specialty, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     };
     const alphbetSelectState = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     }
     const stateToggleSingle = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([totalData]);
     }
     const cityToggleSingle = (partAll, rqsttype, mainkey, newState, newcity, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAll, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAll, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([totalData]);
     }
     const cityToggleMulti = (partAllMul, rqsttype, mainkey, newState, newcity, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAllMul, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAllMul, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     }
     const updateSearch = (text) => setSearch(text);
     const toggleSelection = (singleera, rqsttype, mainkey, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { trig: singleera, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { trig: singleera, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([singleera]);
     };
     const toggleSelectionyear = (stateTakeit) => {
         setSelectedItemsyr([stateTakeit]);
     };
     const monthyearToggle = (monthyear, rqsttype, mainkey, totalData) => {
-        props.navigation.navigate("Globalresult", { trig: { monthAds: monthyear, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData } });
+        props.navigation.navigate("Globalresult", { trig: { monthAds: monthyear, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     };
+    const renderBrowseSearchInput = () => (
+        <View style={styles.stickySearchWrap}>
+            <TextInput
+                placeholderTextColor={"#999999"}
+                placeholder='Search here'
+                style={styles.stickySearchInput}
+                onChangeText={updateSearch}
+                value={search}
+            />
+        </View>
+    );
 
     const renderFilterOption = ({ item, index }) => (
         <>
@@ -611,6 +629,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -638,24 +657,7 @@ const BrowseScreen = (props) => {
 
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -665,6 +667,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -691,24 +694,7 @@ const BrowseScreen = (props) => {
                                     </Text>}
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -718,6 +704,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -744,24 +731,7 @@ const BrowseScreen = (props) => {
                                     </Text>}
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -771,6 +741,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -797,24 +768,7 @@ const BrowseScreen = (props) => {
                                     </Text>}
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -824,6 +778,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -850,24 +805,7 @@ const BrowseScreen = (props) => {
                                     </Text>}
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -877,6 +815,7 @@ const BrowseScreen = (props) => {
                     <>
                         <CustomFlatList
                             ref={flatListRef}
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -903,24 +842,7 @@ const BrowseScreen = (props) => {
                                     </Text>}
                                 </View>
                             }
-                            StickyElementComponent={
-                                <View style={{ height: normalize(45), width: normalize(160), backgroundColor: "#FFFFFF" }}>
-                                    <TextInput
-                                        placeholderTextColor={"#999999"}
-                                        placeholder='Search here'
-                                        style={{
-                                            height: normalize(40),
-                                            width: normalize(160),
-                                            borderRadius: 5,
-                                            borderWidth: 1,
-                                            borderColor: "#DADADA",
-                                            paddingHorizontal: normalize(8),
-                                        }}
-                                        onChangeText={updateSearch}
-                                        value={search}
-                                    />
-                                </View>
-                            }
+                            StickyElementComponent={<View />}
 
                         />
                     </>
@@ -929,6 +851,7 @@ const BrowseScreen = (props) => {
                 return (
                     <>
                         <FlatList
+                            style={styles.browseDataList}
                             data={combinedData}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item?.url}
@@ -974,7 +897,7 @@ const BrowseScreen = (props) => {
     }, [isConnected]);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
-    }, []);
+    }, [props.navigation]);
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
@@ -993,6 +916,7 @@ const BrowseScreen = (props) => {
                             keyboardShouldPersistTaps="always"
                         />
                         <View style={styles.professionContainer}>
+                            {selectedFilter !== 'Month-Year' ? renderBrowseSearchInput() : null}
                             {renderContent()}
                         </View>
                     </View>
@@ -1008,7 +932,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     filterList: {
-        width: '40%',
+        width: '5%',
         backgroundColor: '#EAF5FF',
     },
     filterOption: {
@@ -1058,8 +982,26 @@ const styles = StyleSheet.create({
     },
     professionContainer: {
         width: '60%',
+        flex: 1,
         paddingHorizontal: normalize(15),
         backgroundColor: "#FFFFFF"
+    },
+    stickySearchWrap: {
+        height: normalize(45),
+        width: '100%',
+        backgroundColor: "#FFFFFF",
+        justifyContent: 'center',
+    },
+    stickySearchInput: {
+        height: normalize(40),
+        width: '100%',
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: "#DADADA",
+        paddingHorizontal: normalize(8),
+    },
+    browseDataList: {
+        flex: 1,
     },
     professionHeader: {
         fontSize: 14,

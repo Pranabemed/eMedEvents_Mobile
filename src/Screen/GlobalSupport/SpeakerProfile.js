@@ -62,7 +62,7 @@ const SpeakerProfile = (props) => {
                 })
                 .catch((err) => showErrorAlert("Please conenct to internet", err))
         }
-    }, [props?.route?.params])
+    }, [dispatch, props?.route?.params])
     const toggleExpansion = () => {
         if (!expanded) {
             setSpeakerconf(prevContent => prevContent);
@@ -93,7 +93,8 @@ const SpeakerProfile = (props) => {
                         takeUrl: props?.route?.params?.fullUrl?.hitDat ? props?.route?.params?.fullUrl?.fullUrl : "",
                         speaks: props?.route?.params?.fullUrl?.speaks == "speaker" ? "speaker" : "organ",
                         highText: props?.route?.params?.fullUrl?.hitDat,
-                        textHo: props?.route?.params?.fullUrl?.textHo
+                        textHo: props?.route?.params?.fullUrl?.textHo,
+                        Realback: props?.route?.params?.fullUrl?.Realback
                     }
                 });
             }
@@ -275,7 +276,7 @@ const SpeakerProfile = (props) => {
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
-    }, []);
+    }, [props.navigation]);
     return (
         <>
             <MyStatusBar

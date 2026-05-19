@@ -8,33 +8,26 @@ import Buttons from '../../Components/Button';
 import RenderHTML from 'react-native-render-html';
 import { useNavigation } from '@react-navigation/native';
 
-const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved }) => {
+const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved, cmeRealback }) => {
     // const firstOption = Object.keys(allProfessionData?.cme_data || {})[0] || "";
 
     const allOptions = Object.keys(allProfessionData?.cme_data || {}) || "";
     const firstOption = allOptions?.[0];
     const [selectedOption, setSelectedOption] = useState(firstOption);
     const [modalHeightcme, setModalHeightcme] = useState(300);
-    const [colortrue, setColortrue] = useState(false);
     const [tabWidths, setTabWidths] = useState({});
     const navigation = useNavigation();
     useEffect(() => {
-        if (allOptions?.length > 0) {
+        if (firstOption) {
             setSelectedOption(firstOption);
-            setColortrue(prev => !prev);
         }
-    }, [allProfessionData]);
+    }, [firstOption]);
     useEffect(() => {
         setModalHeightcme(isVisibelCME ? 600 : 300);
         console.log("Modal visibility changed:", isVisibelCME);
     }, [isVisibelCME]);
-    useEffect(() => {
-        setColortrue(!colortrue);
-        setSelectedOption(firstOption);
-    }, [allProfessionData]);
     const handleOptionSelect = (option) => {
         setSelectedOption(option);
-        setColortrue(prev => !prev);
         console.log("Option selected:", option);
     };
     const handleTabLayout = (optionKey, widthValue) => {
@@ -44,14 +37,16 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
         });
     };
     const { width } = useWindowDimensions();
+    const optionCount = Object.keys(allProfessionData?.cme_data || {}).length || 1;
+    const tabItemWidth = width / optionCount;
     const selectedData = allProfessionData?.cme_data?.[selectedOption];
     if (!selectedData) {
         console.log("No selected data available for:", selectedOption);
         return null;
     }
     console.log(firstOption)
-    const StateCMEChekck = (allProfession, stateID, rqsttype, mainkey, newState, anothKey, keySmain) => {
-        navigation.navigate("Globalresult", { trig: { allProfessionMain: allProfession, stateID: stateID, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: anothKey, datamainkey: keySmain } });
+    const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, anothKey, keySmain) => {
+        navigation.navigate("Globalresult", { trig: { allProfessionMain: professionValue, stateID: stateID, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: anothKey, datamainkey: keySmain, Realback: cmeRealback } });
     }
     return (
         <Modal
@@ -107,27 +102,24 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                             disabled={false}
                         />
                     </View>
-                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120)}}>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={{ paddingHorizontal: normalize(8), alignItems: 'center' }}
                         >
-                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", width: width - normalize(16) }}>
                                 {Object.keys(allProfessionData?.cme_data || {}).map((optionKey) => (
                                     <TouchableOpacity
                                         key={optionKey}
                                         onPress={() => handleOptionSelect(optionKey)}
-                                        onLayout={(event) => handleTabLayout(optionKey, event.nativeEvent.layout.width)}
-                                        style={{
-                                            paddingHorizontal: normalize(16),
-                                            paddingVertical: normalize(6),
-                                            marginRight: normalize(8),
-                                            borderBottomWidth: 2,
-                                            borderBottomColor: selectedOption === optionKey ? '#FF773D' : 'transparent',
-                                            width: tabWidths[optionKey] || undefined,
-                                            alignItems: 'center',
-                                        }}
+                                    style={{
+                                        flex: 1,
+                                        paddingVertical: normalize(6),
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: selectedOption === optionKey ? '#FF773D' : '#cccccc',
+                                        alignItems: 'center',
+                                    }}
                                     >
                                         <Text
                                             numberOfLines={1}
@@ -144,19 +136,7 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                 ))}
                             </View>
                         </ScrollView>
-                        <View
-                            style={{
-                                justifyContent: "center",
-                                alignSelf: "center",
-                                margin: normalize(10),
-                                height: 1,
-                                width: normalize(290),
-                                backgroundColor: "#AAAAAA"
-                            }}
-                        >
-                            <View style={{ height: 1, width: normalize(290), backgroundColor: "#AAAAAA" }} />
-                        </View>
-                        <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0) }}>
+                        <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0), marginTop: normalize(10) }}>
                             <Text numberOfLines={2} style={{ flex: 1, fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
                                 {selectedData?.name}
                             </Text>
@@ -177,13 +157,13 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                                 if (href) {
                                                     let resultTopic = href.substring(href.lastIndexOf('/') + 1);
                                                     if (href.includes('/topic/')) {
-                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "" } });
+                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "", Realback: cmeRealback } });
                                                     } else if (href.includes('/specialty/')) {
-                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: "" } });
+                                                        navigation.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: "", Realback: cmeRealback } });
                                                     } else {
                                                         // fallback to topicbasedconferences
                                                         let keyword = href.split('/').pop();
-                                                        navigation.navigate("Globalresult", { trig: { trig: keyword, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "" } });
+                                                        navigation.navigate("Globalresult", { trig: { trig: keyword, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: "", Realback: cmeRealback } });
                                                     }
                                                 }
                                                 onSaved();

@@ -1,5 +1,5 @@
 import { View, Text, Platform, Image, FlatList, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
@@ -8,11 +8,20 @@ import Fonts from '../../Themes/Fonts'
 import Imagepath from '../../Themes/Imagepath'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+const dommyResult = [{ id: 0, name: "PRP and Microneedling Training in Washington DC (Falls Church, VA) ", price: "US$2,195" }, { id: 1, name: "COPD: Review of Current Treatment Guidelines", price: "US$42" }, { id: 2, name: "Unconscious Bias and Healthcare Part I", price: "US$42" }, { id: 3, name: "Antidiabetic Pharmacology Part 3: Insulin", price: "US$42" }, { id: 4, name: "Safe, Effective and Judicious Use of Antibiotics in the Outpatient Setting", price: "US$42" }];
+
 const SearchResult = (props) => {
+    const selectedSpecialty = props?.route?.params?.specialty || 'Internal Medicine';
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 2;
     const FilterBack = () => {
         props.navigation.goBack();
     };
-    const dommyResult = [{ id: 0, name: "PRP and Microneedling Training in Washington DC (Falls Church, VA) ", price: "US$2,195" }, { id: 1, name: "COPD: Review of Current Treatment Guidelines", price: "US$42" }, { id: 2, name: "Unconscious Bias and Healthcare Part I", price: "US$42" }, { id: 3, name: "Antidiabetic Pharmacology Part 3: Insulin", price: "US$42" }, { id: 4, name: "Safe, Effective and Judicious Use of Antibiotics in the Outpatient Setting", price: "US$42" }];
+    const paginatedResults = useMemo(
+        () => dommyResult.slice(0, page * itemsPerPage),
+        [page]
+    );
+    const hasMore = paginatedResults.length < dommyResult.length;
     const intenalMedItem = ({ item, index }) => {
 
         console.log(item, "full item ===========", item?.certificate?.conference_id)
@@ -88,20 +97,37 @@ const SearchResult = (props) => {
                     <PageHeader title="Search Results" onBackPress={FilterBack} />
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", margin: normalize(10), marginBottom: 0 }}>
-                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333333" }}>{"Showing (657) Results for"}</Text>
+                    <View style={{ flex: 1, paddingRight: normalize(12) }}>
+                        <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333333" }}>{`Showing (657) Results for ${selectedSpecialty}`}</Text>
+                    </View>
                     <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: normalize(8) }}>
                         <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333333" }}>{"Sort By"}</Text>
                         <Image source={Imagepath.SortedPng} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
                     </View>
                 </View>
                 <View style={{ paddingHorizontal: normalize(10), paddingTop: 0 }}>
-                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{"Internal Medicine"}</Text>
+                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{selectedSpecialty}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                     <FlatList
-                        data={dommyResult}
+                        data={paginatedResults}
                         renderItem={intenalMedItem}
                         keyExtractor={(item, index) => index.toString()}
+                        onEndReached={() => {
+                            if (hasMore) {
+                                setPage(prev => prev + 1);
+                            }
+                        }}
+                        onEndReachedThreshold={0.2}
+                        ListFooterComponent={
+                            hasMore ? (
+                                <View style={{ paddingVertical: normalize(16), alignItems: 'center' }}>
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#666666' }}>
+                                        Loading more results...
+                                    </Text>
+                                </View>
+                            ) : null
+                        }
                     />
                 </View>
                 <View style={{

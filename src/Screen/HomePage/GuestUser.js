@@ -8,6 +8,8 @@ import { stateRequest } from '../../Redux/Reducers/AuthReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import GuestUserView from './GuestUserView';
 
+const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
+
 const GuestUser = props => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
@@ -22,17 +24,47 @@ const GuestUser = props => {
   const [stateSearchText, setStateSearchText] = useState('');
   const [cmeModalVisible, setCmeModalVisible] = useState(false);
   const [allProfessionData, setAllProfessionData] = useState(null);
+  const [shouldOpenCmeChecklist, setShouldOpenCmeChecklist] = useState(false);
+  const [cmeRequestKey, setCmeRequestKey] = useState('');
+  const [handledCmeRequestKey, setHandledCmeRequestKey] = useState('');
+  const [cmeRequestStarted, setCmeRequestStarted] = useState(false);
 
   useEffect(() => {
     dispatch(stateRequest(1));
   }, [dispatch]);
 
   useEffect(() => {
-    if (CreditVaultReducer?.status === 'CreditVault/professionvaultSuccess') {
+    if (
+      shouldOpenCmeChecklist &&
+      cmeRequestKey &&
+      cmeRequestStarted &&
+      handledCmeRequestKey !== cmeRequestKey &&
+      CreditVaultReducer?.status === 'CreditVault/professionvaultSuccess'
+    ) {
       setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
       setCmeModalVisible(true);
+      setHandledCmeRequestKey(cmeRequestKey);
+      setShouldOpenCmeChecklist(false);
+      setCmeRequestStarted(false);
     }
-  }, [CreditVaultReducer?.status, CreditVaultReducer?.professionvaultResponse]);
+  }, [
+    CreditVaultReducer?.status,
+    CreditVaultReducer?.professionvaultResponse,
+    cmeRequestKey,
+    cmeRequestStarted,
+    handledCmeRequestKey,
+    shouldOpenCmeChecklist,
+  ]);
+
+  useEffect(() => {
+    if (
+      shouldOpenCmeChecklist &&
+      cmeRequestKey &&
+      CreditVaultReducer?.status === 'CreditVault/professionvaultRequest'
+    ) {
+      setCmeRequestStarted(true);
+    }
+  }, [CreditVaultReducer?.status, cmeRequestKey, shouldOpenCmeChecklist]);
 
   useEffect(() => {
     if (!isFocused) return;
@@ -42,15 +74,18 @@ const GuestUser = props => {
   }, [dispatch, isFocused]);
 
   useEffect(() => {
-    if (selectedProfession && selectedState) {
+    const stateId = getStateId(selectedState);
+    if (shouldOpenCmeChecklist && selectedProfession && stateId != null) {
+      const requestKey = `${selectedProfession}-${stateId}`;
+      setCmeRequestKey(requestKey);
       dispatch(
         professionvaultRequest({
           profession: selectedProfession,
-          stateId: String(selectedState.id),
+          stateId: String(stateId),
         }),
       );
     }
-  }, [dispatch, selectedProfession, selectedState]);
+  }, [dispatch, selectedProfession, selectedState, shouldOpenCmeChecklist]);
 
   const openFeaturedActivity = detailpageUrl => {
     if (!detailpageUrl) return;
@@ -75,6 +110,7 @@ const GuestUser = props => {
   const guest = {
     navigation: props.navigation,
     homeData,
+    homeStatus: GuestReducer?.status,
     stateList,
     selectedProfession,
     selectedState,
@@ -85,10 +121,18 @@ const GuestUser = props => {
     stateModalVisible,
     setStateModalVisible,
     handleProfessionSelect: prof => {
+      setHandledCmeRequestKey('');
+      setCmeRequestStarted(false);
+      setShouldOpenCmeChecklist(true);
       setSelectedProfession(prof);
       setProfModalVisible(false);
     },
-    handleStateSelect: stateObj => {
+    handleStateSelect: (stateObj, source) => {
+      if (source === 'profile') {
+        setHandledCmeRequestKey('');
+        setCmeRequestStarted(false);
+      }
+      setShouldOpenCmeChecklist(source === 'profile');
       setSelectedState(stateObj);
       setStateModalVisible(false);
       setStateSearchText('');
@@ -102,9 +146,10 @@ const GuestUser = props => {
     allProfessionData,
     setAllProfessionData,
     allProfession: selectedProfession,
-    certificatedata: { state_id: selectedState?.id },
+    certificatedata: { state_id: getStateId(selectedState) },
     onCMEClose: () => setCmeModalVisible(false),
     onSaved: () => setCmeModalVisible(false),
+    cmeRealback: 'guest',
     onFeaturedActivityPress: openFeaturedActivity,
   };
 

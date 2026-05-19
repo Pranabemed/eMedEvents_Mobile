@@ -1,20 +1,15 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
     Image,
     ImageBackground,
     Text,
     View,
     StyleSheet,
-    Alert,
-    Platform,
     BackHandler,
-    Easing,
-    Animated,
-    Linking,
-    PermissionsAndroid,
-    InteractionManager
+    Pressable
 } from 'react-native';
 import AppIntroSlider from 'react-native-app-intro-slider';
+import { CommonActions } from '@react-navigation/native';
 import normalize from '../../Utils/Helpers/Dimen';
 import Imagepath from '../../Themes/Imagepath';
 import Fonts from '../../Themes/Fonts';
@@ -53,65 +48,61 @@ const sliderData = [
     },
 ];
 
+const COUNTRY_DIAL_CODES = {
+    IN: '+91',
+    US: '+1',
+    GB: '+44',
+    AU: '+61',
+    CA: '+1',
+    SG: '+65',
+};
+
 const Onboard = (props) => {
     const [codegt, setCodegt] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
     const sliderRef = useRef(null);
-    const timerRef = useRef(null);
-    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const autoScrollRef = useRef(null);
+    const currentIndexRef = useRef(0);
     const isFocused = useIsFocused();
+    // const isLastSlide = currentIndex === sliderData.length - 1;
+    const SLIDE_INTERVAL = 4000;
+
+    const clearAutoScroll = useCallback(() => {
+        if (autoScrollRef.current) {
+            clearTimeout(autoScrollRef.current);
+            autoScrollRef.current = null;
+        }
+    }, []);
+
+    const scheduleAutoScroll = useCallback(() => {
+        clearAutoScroll();
+        autoScrollRef.current = setTimeout(() => {
+            const nextIndex = (currentIndexRef.current + 1) % sliderData.length;
+            sliderRef.current?.goToSlide(nextIndex, false);
+            currentIndexRef.current = nextIndex;
+            setCurrentIndex(nextIndex);
+            scheduleAutoScroll();
+        }, SLIDE_INTERVAL);
+    }, [clearAutoScroll]);
 
     useEffect(() => {
         if (isFocused) {
-            startAutoScroll();
+            scheduleAutoScroll();
         } else {
-            clearTimer();
+            clearAutoScroll();
         }
-        return () => clearTimer();
-    }, [isFocused, currentIndex]);
+        return () => clearAutoScroll();
+    }, [isFocused, clearAutoScroll, scheduleAutoScroll]);
 
-    const handleSlideChange = (index) => {
+    const handleSlideChange = useCallback((index) => {
+        currentIndexRef.current = index;
         setCurrentIndex(index);
-        startAutoScroll(); // Reset timer on manual slide change
-    };
-
-    const clearTimer = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    };
-
-    const startAutoScroll = () => {
-        clearTimer();
-        timerRef.current = setInterval(() => {
-            // Forward scrolling that loops back to start
-            const nextIndex = (currentIndex + 1) % sliderData.length;
-
-            // Fade out animation
-            Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 300,
-                easing: Easing.ease,
-                useNativeDriver: true,
-            }).start(() => {
-                // Change slide and fade back in
-                sliderRef.current?.goToSlide(nextIndex, true);
-                setCurrentIndex(nextIndex);
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    easing: Easing.ease,
-                    useNativeDriver: true,
-                }).start();
-            });
-        }, 4000);
-    };
+    }, []);
 
     const _renderItem = ({ item }) => {
         const lines = item.hText.split('\n');
         return (
-            <Animated.View style={[styles.slide, { opacity: fadeAnim }]}>
+            <View style={styles.slide}>
                 <View style={styles.logoContainer}>
                     <Image
                         source={item?.img}
@@ -128,13 +119,22 @@ const Onboard = (props) => {
                         ))}
                     </View>
                 </View>
-            </Animated.View>
+            </View>
         );
     };
 
-    const BackToback = () => {
+    const BackToback = useCallback(() => {
         props.navigation.goBack();
-    }
+    }, [props.navigation]);
+
+    const continueAsGuest = useCallback(() => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'GuestUser' }],
+            })
+        );
+    }, [props.navigation]);
 
     useEffect(() => {
         const onBackPress = () => {
@@ -148,19 +148,11 @@ const Onboard = (props) => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [BackToback]);
 
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
-    }, []);
-    const COUNTRY_DIAL_CODES = {
-        IN: '+91',
-        US: '+1',
-        GB: '+44',
-        AU: '+61',
-        CA: '+1',
-        SG: '+65',
-    };
+    }, [props.navigation]);
     const getCountryFromIP = async (ip) => {
         try {
             const res = await fetch(`https://ipinfo.io/${ip}/json`);
@@ -199,11 +191,10 @@ const Onboard = (props) => {
                 style={styles.imageBackground}
             >
                 <View style={styles.sliderContainer}>
-                    <Image source={Imagepath.eMedfulllogo} style={{ height: normalize(40), width: normalize(260), resizeMode: "contain", marginTop: normalize(70), alignSelf: "center" }} />
+                    <Image source={Imagepath.eMedfulllogo} style={styles.headerLogo} />
                     <AppIntroSlider
                         ref={sliderRef}
-                        activeDotStyle={styles.activeDotStyle}
-                        dotStyle={styles.dotStyle}
+                        renderPagination={() => null}
                         renderItem={_renderItem}
                         data={sliderData}
                         keyExtractor={(item) => item.id.toString()}
@@ -211,87 +202,78 @@ const Onboard = (props) => {
                         showNextButton={false}
                         showDoneButton={false}
                         showSkipButton={false}
-                        onTouchStart={clearTimer}
-                        onTouchEnd={startAutoScroll}
                     />
                 </View>
 
-                {/* Fixed Buttons */}
-                <View style={styles.buttonContainer}>
-                    <Buttons
-                        onPress={() => {
-                            // Don't wrap in await, so navigation is immediate
-                            analytics().logEvent('emedevents', {
-                                id: 3745092,
-                                item: 'onboardingpage',
-                                description: "successfully join",
-                                size: 'L',
-                            });
-                            props.navigation.navigate("Login");
-                        }}
-                        height={normalize(38)}
-                        width={normalize(130)}
-                        loading={''}
-                        backgroundColor={Colorpath.ButtonColr}
-                        borderRadius={normalize(5)}
-                        text={"Sign In"}
-                        color={Colorpath.white}
-                        fontSize={18}
-                        fontFamily={Fonts.InterSemiBold}
-                        marginTop={normalize(10)}
-                        fontWeight={"500"}
-                    />
-                    <Buttons
-                        onPress={() => {
-                            if (codegt) {
-                                props.navigation.navigate("SignUp", {
-                                    phoneCd: {
-                                        phoneCd: codegt,
-                                    }
+                <View style={styles.footerContainer}>
+                    <View style={styles.pagerRow}>
+                        {sliderData.map((_, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.pagerDot,
+                                    index === currentIndex ? styles.pagerDotActive : styles.pagerDotInactive
+                                ]}
+                            />
+                        ))}
+                    </View>
+
+                    <View style={styles.authRow}>
+                        <Buttons
+                            onPress={() => {
+                                analytics().logEvent('emedevents', {
+                                    id: 3745092,
+                                    item: 'onboardingpage',
+                                    description: "successfully join",
+                                    size: 'L',
                                 });
-                            } else {
                                 props.navigation.navigate("Login");
-                            }
-                        }}
-                        height={normalize(38)}
-                        width={normalize(130)}
-                        loading={''}
-                        backgroundColor={Colorpath.white}
-                        borderRadius={normalize(5)}
-                        text="Sign Up"
-                        color={Colorpath.black}
-                        fontSize={18}
-                        fontFamily={Fonts.InterSemiBold}
-                        marginTop={normalize(10)}
-                        borderColor={"#333333"}
-                        borderWidth={normalize(0.5)}
-                        fontWeight={"500"}
-                    />
-                    {/* <Buttons
-                        onPress={() => {
-                            props.navigation.navigate("SignUp", {
-                                phoneCd: {
-                                    phoneCd: "+91",
+                            }}
+                            height={normalize(42)}
+                            width={normalize(130)}
+                            loading={''}
+                            backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text={"Sign In"}
+                            color={Colorpath.white}
+                            fontSize={18}
+                            fontFamily={Fonts.InterSemiBold}
+                            marginTop={normalize(10)}
+                            fontWeight={"500"}
+                        />
+                        <Buttons
+                            onPress={() => {
+                                if (codegt) {
+                                    props.navigation.navigate("SignUp", {
+                                        phoneCd: {
+                                            phoneCd: codegt,
+                                        }
+                                    });
+                                } else {
+                                    props.navigation.navigate("Login");
                                 }
-                            });
-                        }}
-                        height={normalize(38)}
-                        width={normalize(290)}
-                        loading={''}
-                        backgroundColor={Colorpath.white}
-                        borderRadius={normalize(5)}
-                        text="Sign Up"
-                        color={Colorpath.black}
-                        fontSize={18}
-                        fontFamily={Fonts.InterSemiBold}
-                        marginTop={normalize(10)}
-                        borderColor={"#333333"}
-                        borderWidth={normalize(0.5)}
-                    /> */}
+                            }}
+                            height={normalize(42)}
+                            width={normalize(130)}
+                            loading={''}
+                            backgroundColor={Colorpath.white}
+                            borderRadius={normalize(5)}
+                            text="Sign Up"
+                            color={Colorpath.black}
+                            fontSize={18}
+                            fontFamily={Fonts.InterSemiBold}
+                            marginTop={normalize(10)}
+                            borderColor={"#333333"}
+                            borderWidth={normalize(0.5)}
+                            fontWeight={"500"}
+                        />
+                    </View>
+                    <View style={styles.guestButtonSlot}>
+                            <Pressable onPress={continueAsGuest} style={styles.guestButton}>
+                                <Text style={styles.guestButtonText}>Continue as guest user</Text>
+                            </Pressable>
+                    </View>
                 </View>
-                {/* <Pressable onPress={()=>props.navigation.navigate("Login")} style={{justifyContent:"center",alignItems:"center"}}>
-                   <Text style={{fontFamily:Fonts.InterMedium,fontSize:16,color:"#666666"}}>{"Skip"}</Text>
-                </Pressable> */}
             </ImageBackground>
         </>
     );
@@ -310,6 +292,13 @@ const styles = StyleSheet.create({
     logo: {
         height: normalize(170),
         width: normalize(224),
+    },
+    headerLogo: {
+        height: normalize(40),
+        width: normalize(260),
+        resizeMode: "contain",
+        marginTop: normalize(70),
+        alignSelf: "center",
     },
     sliderContainer: {
         flex: 0.9,
@@ -332,29 +321,60 @@ const styles = StyleSheet.create({
         lineHeight: normalize(30),
         fontWeight: "bold"
     },
-    buttonContainer: {
-        paddingBottom: normalize(30),
-        // alignItems: 'center',
-        flexDirection: "row",
+    footerContainer: {
+        marginTop: 'auto',
+        paddingTop: normalize(12),
+        paddingBottom: normalize(28),
+        paddingHorizontal: normalize(18),
         justifyContent: "center",
         alignItems: "center",
         gap: normalize(10)
     },
-    activeDotStyle: {
-        width: normalize(10),
-        height: normalize(10),
-        borderRadius: normalize(12),
-        backgroundColor: '#A39D9D',
-        marginHorizontal: normalize(7),
+    authRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: normalize(12),
+        width: '100%',
     },
-    dotStyle: {
-        backgroundColor: '#FFFFFF',
+    guestButton: {
+        marginTop: normalize(16),
+        paddingVertical: normalize(10),
+        paddingHorizontal: normalize(18),
+    },
+    guestButtonSlot: {
+        minHeight: normalize(52),
+        marginTop: normalize(6),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    guestButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 16,
+        color: Colorpath.ButtonColr,
+        textAlign: 'center',
+    },
+    pagerRow: {
+        marginTop: normalize(2),
+        marginBottom: normalize(38),
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: normalize(8),
+    },
+    pagerDot: {
         width: normalize(10),
         height: normalize(10),
         borderRadius: normalize(10),
-        marginHorizontal: normalize(7),
-        borderWidth: 2,
-        borderColor: "#A39D9D",
+        borderWidth: 1.5,
+    },
+    pagerDotActive: {
+        backgroundColor: '#A39D9D',
+        borderColor: '#A39D9D',
+    },
+    pagerDotInactive: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#A39D9D',
     },
     textContainer: {
         paddingHorizontal: normalize(15), // 15 padding on both sides
