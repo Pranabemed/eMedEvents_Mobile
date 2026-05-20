@@ -219,7 +219,7 @@ const CheckoutMain = ({
                         />
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#FF773D", fontWeight: "bold" }}>{`Total Fee: US$${spanroute?.cartData?.total_paid_amount}`}</Text>
+                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#FF773D", fontWeight: "bold" }}>{`Total Fee: US$${spanroute?.cartData?.subtotal_amount || spanroute?.cartData?.total_paid_amount || 0}`}</Text>
                         <View style={{ flexDirection: "row" }}>
                             <Text style={{ paddingHorizontal: normalize(3), paddingVertical: normalize(5), fontFamily: Fonts.InterBold, fontSize: 14, color: "#333" }}>{`Total Courses: `}</Text>
                             <Text style={{ paddingVertical: normalize(5), fontFamily: Fonts.InterBold, fontSize: 14, color: "#FF773D" }}>{`${spanroute?.cartData?.total_qty}`}</Text>
@@ -411,8 +411,8 @@ const CheckoutMain = ({
                                             color: "#000000",
                                         }}
                                     >
-                                        {feeAwareDisplayAmount > 0
-                                            ? `US$${formatNumberWithCommas(formatPrice(feeAwareDisplayAmount))}`
+                                        {feeAwareBaseAmount > 0
+                                            ? `US$${formatNumberWithCommas(formatPrice(feeAwareBaseAmount))}`
                                             : null}
                                     </Text>
                                 </View>
@@ -822,32 +822,6 @@ const CheckoutMain = ({
                         </Text>
                     </View>) : null}
                     <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
-                    {feeAwareProcessingAmount > 0 ? (
-                        <View style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            width: '100%',
-                            paddingVertical: normalize(5)
-                        }}>
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 14,
-                                color: Colorpath.black,
-                                fontWeight: "bold"
-                            }}>
-                                {"Processing Fee"}
-                            </Text>
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 14,
-                                color: Colorpath.black,
-                                fontWeight: "bold"
-                            }}>
-                                {`US$${formatNumberWithCommas(formatPrice(feeAwareProcessingAmount))}`}
-                            </Text>
-                        </View>
-                    ) : null}
                     <View style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
@@ -869,7 +843,7 @@ const CheckoutMain = ({
                             color: Colorpath.black,
                             fontWeight: "bold"
                         }}>
-                            {`US$${formatNumberWithCommas(formatPrice(feeAwareTotalAmount))}`}
+                            {`US$${formatNumberWithCommas(formatPrice(feeAwareBaseAmount))}`}
                         </Text>
                     </View>
                 </View>

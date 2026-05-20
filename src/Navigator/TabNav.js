@@ -88,6 +88,7 @@ function TabScreen() {
   const hydratedStateIdRef = useRef(null);
   const processedRefreshAtRef = useRef(null);
   const lastLicensureProfessionRef = useRef('');
+  const isOpeningDrawerRef = useRef(false);
   const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, normalize(10)) : 0;
   const sharedTabBarStyle = {
     borderWidth: 0.8,
@@ -245,7 +246,7 @@ function TabScreen() {
       try {
         const lastTab = await AsyncStorage.getItem('lastActiveTab');
         if (lastTab) {
-          setLastActiveTab(lastTab);
+          setLastActiveTab(lastTab == "Volts" ? "Home" : lastTab);
         }
       } catch (error) {
         console.error('Failed to load last active tab', error);
@@ -254,6 +255,7 @@ function TabScreen() {
     loadLastActiveTab();
   }, []);
   const handleTabPress = async (tabName) => {
+    if (tabName == "Volts") return;
     try {
       await AsyncStorage.setItem('lastActiveTab', tabName);
       setLastActiveTab(tabName);
@@ -322,14 +324,22 @@ function TabScreen() {
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
   const toggleDrawerModal = () => {
+    if (visible || isOpeningDrawerRef.current) return;
+    isOpeningDrawerRef.current = true;
     setVisible(true);
-    // Dispatch after drawer starts opening to avoid re-render during animation
-    setTimeout(() => {
-      connectionrequest()
-        .then(() => dispatch(mainprofileRequest({})))
-        .catch((err) => showErrorAlert("Please connect to internet", err));
-    }, 300);
   };
+  const closeDrawerModal = () => {
+    setVisible(false);
+  };
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        isOpeningDrawerRef.current = false;
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+    isOpeningDrawerRef.current = false;
+  }, [visible]);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
@@ -368,11 +378,7 @@ function TabScreen() {
           }
           handleTabPress(route.name);
         },
-        focus: () => {
-          if (route.name == "Volts") {
-            toggleDrawerModal();
-            return;
-          }
+        focus: (e) => {
           if (route.name == "Contact" && tabsub) {
             e.preventDefault();
             setTabmodal(true);
@@ -455,8 +461,39 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
+          tabBarButton: (tabBarButtonProps) => (
+            <TouchableOpacity
+              {...tabBarButtonProps}
+              activeOpacity={0.8}
+              onPress={toggleDrawerModal}
+              style={[tabBarButtonProps.style, { alignItems: 'center', justifyContent: 'center' }]}
+            >
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Image
+                  source={Imagepath.Menubar}
+                  style={{
+                    height: normalize(19),
+                    width: normalize(19),
+                    resizeMode: "contain",
+                    tintColor: visible ? Colorpath.ButtonColr : "#999999",
+                    top: normalize(7)
+                  }}
+                />
+                <Text
+                  style={{
+                    color: visible ? Colorpath.ButtonColr : "#999999",
+                    marginTop: normalize(7),
+                    fontSize: 10,
+                    textAlign: "center"
+                  }}
+                >
+                  {"Menu"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ),
           tabBarIcon: ({ focused }) => (
-            <Pressable onPress={toggleDrawerModal} style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <Image
                 source={Imagepath.Menubar}
                 style={{
@@ -477,7 +514,7 @@ function TabScreen() {
               >
                 {"Menu"}
               </Text>
-            </Pressable>
+            </View>
           ),
         }}
       />
@@ -488,17 +525,17 @@ function TabScreen() {
       lastActiveTab={lastActiveTab}
       handel={tabtooltip}
       isVisible={visible}
-      onBackdropPress={() => setVisible(!visible)}
-      onRequestClose={() => setVisible(false)}
-      backButton={() => setVisible(!visible)}
-      rentalNavigate={() => setVisible(!visible)}
-      watchlistNavigate={() => setVisible(!visible)}
-      subscribeNavigate={() => setVisible(!visible)}
-      rewardNavigate={() => setVisible(!visible)}
-      homeNavigate={() => setVisible(!visible)}
-      expensesNav={() => setVisible(!visible)}
-      interestedNav={() => setVisible(!visible)}
-      drawerPress={() => setVisible(!visible)}
+      onBackdropPress={closeDrawerModal}
+      onRequestClose={closeDrawerModal}
+      backButton={closeDrawerModal}
+      rentalNavigate={closeDrawerModal}
+      watchlistNavigate={closeDrawerModal}
+      subscribeNavigate={closeDrawerModal}
+      rewardNavigate={closeDrawerModal}
+      homeNavigate={closeDrawerModal}
+      expensesNav={closeDrawerModal}
+      interestedNav={closeDrawerModal}
+      drawerPress={closeDrawerModal}
     />
   </> : nettrue == false ? <>
     <Tab.Navigator
@@ -524,10 +561,6 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: () => {
-          if (route.name == "Volts") {
-            toggleDrawerModal();
-            return;
-          }
           handleTabPress(route.name);
         },
       })}
@@ -604,8 +637,38 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
+          tabBarButton: (tabBarButtonProps) => (
+            <TouchableOpacity
+              {...tabBarButtonProps}
+              activeOpacity={0.8}
+              onPress={toggleDrawerModal}
+              style={[tabBarButtonProps.style, { alignItems: 'center', justifyContent: 'center' }]}
+            >
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Image
+                  source={Imagepath.Menubar}
+                  style={{
+                    height: normalize(19),
+                    width: normalize(19),
+                    resizeMode: "contain",
+                    tintColor: visible ? Colorpath.ButtonColr : "#999999"
+                  }}
+                />
+                <Text
+                  style={{
+                    color: visible ? Colorpath.ButtonColr : "#999999",
+                    marginTop: normalize(3),
+                    fontSize: 10,
+                    textAlign: "center"
+                  }}
+                >
+                  {"Menu"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ),
           tabBarIcon: ({ focused }) => (
-            <Pressable onPress={toggleDrawerModal} style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <Image
                 source={Imagepath.Menubar}
                 style={{
@@ -625,7 +688,7 @@ function TabScreen() {
               >
                 {"Menu"}
               </Text>
-            </Pressable>
+            </View>
           ),
         }}
       />
@@ -636,17 +699,17 @@ function TabScreen() {
       lastActiveTab={lastActiveTab}
       handel={tabtooltip}
       isVisible={visible}
-      onBackdropPress={() => setVisible(!visible)}
-      onRequestClose={() => setVisible(false)}
-      backButton={() => setVisible(!visible)}
-      rentalNavigate={() => setVisible(!visible)}
-      watchlistNavigate={() => setVisible(!visible)}
-      subscribeNavigate={() => setVisible(!visible)}
-      rewardNavigate={() => setVisible(!visible)}
-      homeNavigate={() => setVisible(!visible)}
-      expensesNav={() => setVisible(!visible)}
-      interestedNav={() => setVisible(!visible)}
-      drawerPress={() => setVisible(!visible)}
+      onBackdropPress={closeDrawerModal}
+      onRequestClose={closeDrawerModal}
+      backButton={closeDrawerModal}
+      rentalNavigate={closeDrawerModal}
+      watchlistNavigate={closeDrawerModal}
+      subscribeNavigate={closeDrawerModal}
+      rewardNavigate={closeDrawerModal}
+      homeNavigate={closeDrawerModal}
+      expensesNav={closeDrawerModal}
+      interestedNav={closeDrawerModal}
+      drawerPress={closeDrawerModal}
     />
   </> : <>
     <Tab.Navigator
@@ -672,10 +735,6 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: () => {
-          if (route.name == "Volts") {
-            toggleDrawerModal();
-            return;
-          }
           handleTabPress(route.name);
         },
       })}
@@ -755,8 +814,39 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
+          tabBarButton: (tabBarButtonProps) => (
+            <TouchableOpacity
+              {...tabBarButtonProps}
+              activeOpacity={0.8}
+              onPress={toggleDrawerModal}
+              style={[tabBarButtonProps.style, { alignItems: 'center' }]}
+            >
+              <Image
+                source={Imagepath.Menubar}
+                style={{
+                  height: normalize(20),
+                  width: normalize(20),
+                  resizeMode: "contain",
+                  tintColor: visible ? Colorpath.ButtonColr : "#999999",
+                  // top: normalize(1)
+                }}
+              />
+              <Text
+                style={{
+                  color: visible ? Colorpath.ButtonColr : "#999999",
+                  marginTop: normalize(4),
+                  fontSize: 10,
+                  fontFamily: Fonts.InterSemiBold,
+                  textAlign: "center",
+                  width: normalize(30),
+                }}
+              >
+                {"Menu"}
+              </Text>
+            </TouchableOpacity>
+          ),
           tabBarIcon: ({ focused }) => (
-            <Pressable onPress={toggleDrawerModal} style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <Image
                 source={Imagepath.Menubar}
                 style={{
@@ -777,7 +867,7 @@ function TabScreen() {
               >
                 {"Menu"}
               </Text>
-            </Pressable>
+            </View>
           ),
         }}
       />
@@ -788,17 +878,17 @@ function TabScreen() {
       lastActiveTab={lastActiveTab}
       handel={tabtooltip}
       isVisible={visible}
-      onBackdropPress={() => setVisible(!visible)}
-      onRequestClose={() => setVisible(false)}
-      backButton={() => setVisible(!visible)}
-      rentalNavigate={() => setVisible(!visible)}
-      watchlistNavigate={() => setVisible(!visible)}
-      subscribeNavigate={() => setVisible(!visible)}
-      rewardNavigate={() => setVisible(!visible)}
-      homeNavigate={() => setVisible(!visible)}
-      expensesNav={() => setVisible(!visible)}
-      interestedNav={() => setVisible(!visible)}
-      drawerPress={() => setVisible(!visible)}
+      onBackdropPress={closeDrawerModal}
+      onRequestClose={closeDrawerModal}
+      backButton={closeDrawerModal}
+      rentalNavigate={closeDrawerModal}
+      watchlistNavigate={closeDrawerModal}
+      subscribeNavigate={closeDrawerModal}
+      rewardNavigate={closeDrawerModal}
+      homeNavigate={closeDrawerModal}
+      expensesNav={closeDrawerModal}
+      interestedNav={closeDrawerModal}
+      drawerPress={closeDrawerModal}
     />
   </>
 

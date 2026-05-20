@@ -17,9 +17,6 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const [finalcheck, setFinalcheck] = useState("");
-  const shouldShowDownloadCatalog = webcastdeatils?.organizerName == "eMedEd, Inc." ||
-    webcastdeatils?.organizerName == "eMedEvents Corporation" ||
-    webcastdeatils?.organizerName == "eMedEd";
   const isCheckoutCta = (
     webcastdeatils?.conferenceTypeText == "Webcast" ||
     webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
@@ -56,10 +53,6 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
   }
   const ticketPriceAmount = parseFloat(takePrice || "0") || 0;
-  const processingFeeAmount = shouldShowDownloadCatalog && ticketPriceAmount > 0
-    ? parseFloat((ticketPriceAmount * 0.035).toFixed(2))
-    : 0;
-  const totalAmountWithFee = parseFloat((ticketPriceAmount + processingFeeAmount).toFixed(2));
   const hasCartActionButton = Boolean(
     webcastdeatils?.buttonType &&
       webcastdeatils.buttonType.toLowerCase() !== "interest" &&
@@ -223,7 +216,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
             width: "100%",
             position: 'absolute',
             height: isCheckoutCta
-              ? (shouldShowDownloadCatalog ? normalize(148) : normalize(108))
+              ? normalize(108)
               : normalize(108),
             bottom: 0,
             left: 0,
@@ -251,16 +244,6 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                           {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
                         </Text>
                       </View>
-                      {shouldShowDownloadCatalog ? (
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10) }}>
-                          <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
-                            {"Processing Fee"}
-                          </Text>
-                          <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(processingFeeAmount))}`}
-                          </Text>
-                        </View>
-                      ) : null}
                       <View style={{ marginTop: normalize(0), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
                       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10), gap: normalize(8) }}>
                         <View style={{ flexShrink: 1 }}>
@@ -268,7 +251,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                             {"Total"}
                           </Text>
                           <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(totalAmountWithFee))}`}
+                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
                           </Text>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(5) }}>
@@ -316,7 +299,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                         {"Total"}
                       </Text>
                       <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(totalAmountWithFee))}`}
+                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
                       </Text>
                     </View>
                     <Buttons

@@ -19,10 +19,6 @@ import { useIsFocused } from '@react-navigation/native';
 
 let status1 = "";
 const InPersonStatewebcast = (props) => {
-    const shouldShowDownloadCatalog = props?.route?.params?.realData?.realData?.organizerName == "eMedEd, Inc." ||
-        props?.route?.params?.realData?.realData?.organizerName == "eMedEvents Corporation" ||
-        props?.route?.params?.realData?.realData?.organizerName == "eMedEd";
-
     function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
@@ -42,11 +38,7 @@ const InPersonStatewebcast = (props) => {
     const [inpersonticket, setInpersonticket] = useState(null)
     const [modalHeight, setModalHeight] = useState(300);
     const subtotalAmount = parseFloat(finalamount || "0") || 0;
-    const processingFeeAmount = shouldShowDownloadCatalog && subtotalAmount > 0
-        ? parseFloat((subtotalAmount * 0.035).toFixed(2))
-        : 0;
-    const totalAmountWithFee = parseFloat((subtotalAmount + processingFeeAmount).toFixed(2));
-    const listBottomPadding = shouldShowDownloadCatalog ? normalize(190) : normalize(150);
+    const listBottomPadding = normalize(150);
     useEffect(() => {
         if (isFocused && props?.route?.params?.realData?.realData) {
             setIssfilterVisible(true);
@@ -335,8 +327,8 @@ const InPersonStatewebcast = (props) => {
                             inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
                             inpersonSpanrole: props?.route?.params?.realData?.realData,
                             subtotalAmount: subtotalAmount,
-                            processingFeeAmount: processingFeeAmount,
-                            totalTicketPrice: totalAmountWithFee
+                            processingFeeAmount: 0,
+                            totalTicketPrice: subtotalAmount
                         }
                     });
                     // props.navigation.navigate("Checkout",  { checkoutSpan: { checkoutSpan: props?.route?.params?.realData, finalTicket: WebcastReducer?.saveTicketInpersonResponse }});
@@ -408,7 +400,7 @@ const InPersonStatewebcast = (props) => {
                         </View>
                         <View style={{
                             position: 'absolute',
-                            height: shouldShowDownloadCatalog ? normalize(148) : normalize(108),
+                            height: normalize(108),
                             bottom: 0,
                             left: 0,
                             right: 0,
@@ -419,68 +411,22 @@ const InPersonStatewebcast = (props) => {
                             paddingTop: normalize(14),
                             paddingBottom: normalize(16),
                         }}>
-                            {shouldShowDownloadCatalog ? (
-                                <View style={{ flex: 1 }}>
-                                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
-                                            {`${totalQuantity} Tickets Selected`}
-                                        </Text>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
-                                            {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
-                                        </Text>
-                                    </View>
-                                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(8) }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
-                                            {"Processing Fee"}
-                                        </Text>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
-                                            {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
-                                        </Text>
-                                    </View>
-                                    <View style={{ marginTop: normalize(10), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
-                                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10) }}>
-                                        <View>
-                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
-                                                {"Total"}
-                                            </Text>
-                                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
-                                                {`US$${formatNumberWithCommas(cutomPrice(totalAmountWithFee))}`}
-                                            </Text>
-                                        </View>
-                                        <Buttons
-                                            onPress={() => {
-                                                setIssfilterVisible(false);
-                                                inPersonSaveTicket();
-                                            }}
-                                            height={normalize(48)}
-                                            width={normalize(150)}
-                                            backgroundColor={clickHistory?.some(arr => arr.length > 0) ? Colorpath.ButtonColr : "#DADADA"}
-                                            borderRadius={normalize(5)}
-                                            text="Checkout"
-                                            color={Colorpath.white}
-                                            fontSize={16}
-                                            fontFamily={Fonts.InterSemiBold}
-                                            disabled={clickHistory?.some(arr => arr.length > 0) ? false : true}
-                                        />
-                                    </View>
+                            <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
+                                        {`${totalQuantity} Tickets Selected`}
+                                    </Text>
+                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
+                                        {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
+                                    </Text>
                                 </View>
-                            ) : (
-                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", flex: 1 }}>
-                                    <View style={{ flexDirection: "column" }}>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterMedium,
-                                                fontSize: 14,
-                                                color: '#333',
-                                            }}>
-                                            {`${totalQuantity} Tickets Selected`}
+                                <View style={{ marginTop: normalize(10), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10) }}>
+                                    <View>
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
+                                            {"Total"}
                                         </Text>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterBold,
-                                                fontSize: 18,
-                                                color: '#333',
-                                            }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
                                             {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
                                         </Text>
                                     </View>
@@ -500,7 +446,7 @@ const InPersonStatewebcast = (props) => {
                                         disabled={clickHistory?.some(arr => arr.length > 0) ? false : true}
                                     />
                                 </View>
-                            )}
+                            </View>
                         </View>
                     </View>
                 </Modal>

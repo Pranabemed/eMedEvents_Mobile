@@ -342,16 +342,6 @@ const AddToCart = (props) => {
                             <DeletIcon name="delete" size={20} color={Colorpath.black} />
                         </TouchableOpacity>
                     </View>
-                    {cleanNumber(item?.transaction_fee || 0) > 0 ? (
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2) }}>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#666666" }}>
-                                {"Processing Fee"}
-                            </Text>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#666666" }}>
-                                {`US$${formatNumberWithCommas(formatPrice(item?.transaction_fee))}`}
-                            </Text>
-                        </View>
-                    ) : null}
                     <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
                 </View>
             </View>
@@ -590,14 +580,6 @@ const AddToCart = (props) => {
                                                 {`US$${WebcastReducer?.couponWebcastResponse?.discount_value}`}
                                             </Text>
                                         </View>) : null}
-                                        {latestCartProcessingFeeAmount > 0 ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
-                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                                                {"Processing Fee"}
-                                            </Text>
-                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                                                {`US$${formatNumberWithCommas(formatPrice(latestCartProcessingFeeAmount))}`}
-                                            </Text>
-                                        </View>) : null}
                                         <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
                                         <View style={{
                                             flexDirection: "row",
@@ -620,8 +602,8 @@ const AddToCart = (props) => {
                                                 color: Colorpath.black,
                                                 fontWeight: "bold"
                                             }}>
-                                                {latestCartTotalAmount > 0
-                                                    ? `US$${formatNumberWithCommas(formatPrice(latestCartTotalAmount))}`
+                                                {latestCartBaseAmount > 0
+                                                    ? `US$${formatNumberWithCommas(formatPrice(latestCartBaseAmount))}`
                                                     : WebcastReducer?.couponWebcastResponse?.discount_value
                                                         ? `US$${totalValue}`
                                                         : `US$${totalPaid}`}

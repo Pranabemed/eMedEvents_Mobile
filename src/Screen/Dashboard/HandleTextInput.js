@@ -25,7 +25,7 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
   //   return () => clearTimeout(timeoutId); 
   // }, [placeholderIndex]);
   return (showLine ? <TouchableOpacity onPress={() => {
-    nav.replace("HeaderSearch", {
+    nav.navigate("HeaderSearch", {
       taskData: { statid: takestate, creditID: addit },
     })
   }} style={Platform.OS === 'ios' ? { backgroundColor: "#FFFFFF", paddingHorizontal: normalize(10), paddingVertical: normalize(10), marginTop: normalize(10) } : { backgroundColor: "#FFFFFF", paddingVertical: normalize(10), marginTop: normalize(35) }}>
@@ -58,12 +58,12 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
       // shadowRadius={5}
       // elevation={5}
       onPressLeftIcon={() => {
-        nav.replace("HeaderSearch", {
+        nav.navigate("HeaderSearch", {
           taskData: { statid: takestate, creditID: addit },
         })
       }}
       SearchLeft={() => {
-        nav.replace("HeaderSearch", {
+        nav.navigate("HeaderSearch", {
           taskData: { statid: takestate, creditID: addit },
         });
       }}
@@ -71,7 +71,7 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
       searchIconColor={"#999"}
       editable={false} />
   </TouchableOpacity> : <TouchableOpacity onPress={() => {
-    nav.replace("HeaderSearch", {
+    nav.navigate("HeaderSearch", {
       taskData: { statid: takestate, creditID: addit },
     });
   }} style={Platform.OS === 'ios' ? { backgroundColor: "#FFFFFF", paddingHorizontal: normalize(10), paddingVertical: normalize(10), marginTop: normalize(10), justifyContent: "center", alignItems: "center" } : { backgroundColor: "#FFFFFF", paddingVertical: normalize(10), marginTop: normalize(10),justifyContent: "center", alignItems: "center" }}>
@@ -142,12 +142,12 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
       // elevation={5}
       leftIconStyle={{ top: normalize(8) }}
       onPressLeftIcon={() => {
-        nav.replace("HeaderSearch", {
+        nav.navigate("HeaderSearch", {
           taskData: { statid: takestate, creditID: addit },
         })
       }}
       SearchLeft={() => {
-        nav.replace("HeaderSearch", {
+        nav.navigate("HeaderSearch", {
           taskData: { statid: takestate, creditID: addit },
         });
       }}

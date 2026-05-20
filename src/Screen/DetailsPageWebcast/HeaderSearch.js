@@ -4,7 +4,7 @@ import PageHeader from '../../Components/PageHeader'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native';
 import Fonts from '../../Themes/Fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
@@ -68,7 +68,24 @@ const HeaderSearch = (props) => {
     }, [searchText]);
 
     const checkoutClear = () => {
-        props.navigation.replace("TabNav", { initialRoute: "Home" });
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+        } else {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: "TabNav",
+                            params: {
+                                initialRoute: "Home",
+                                screen: "Home",
+                            },
+                        },
+                    ],
+                })
+            );
+        }
     }
     // const inputRef = useRef(null);
 

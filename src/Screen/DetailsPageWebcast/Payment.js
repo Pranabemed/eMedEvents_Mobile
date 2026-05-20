@@ -80,10 +80,7 @@ const Payment = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }, [isFocus])
-    const options = [
-        { id: 1, label: 'Credit Card' },
-        { id: 2, label: 'Wallet Balance' },
-    ];
+    // Options are defined dynamically based on wallet balance availability below
     const handleSelect = (option) => {
         setRemind(option);
     };
@@ -440,9 +437,19 @@ const Payment = (props) => {
                 break;
             case 'WebCast/walletCheckSuccess':
                 status1 = WebcastReducer.status;
+                const bal = Number(WebcastReducer?.walletCheckResponse?.balance || 0);
+                if (bal > 0) {
+                    setSelectedOption(2);
+                    setRemind({ id: 2, label: 'Wallet Balance' });
+                } else {
+                    setSelectedOption(1);
+                    setRemind({ id: 1, label: 'Credit Card' });
+                }
                 break;
             case 'WebCast/walletCheckFailure':
                 status1 = WebcastReducer.status;
+                setSelectedOption(1);
+                setRemind({ id: 1, label: 'Credit Card' });
                 break;
         }
     }
@@ -505,11 +512,62 @@ const Payment = (props) => {
     const cartInvoice = props?.route?.params?.cartInvoice;
     console.log(invoiceTxt, cartInvoice, "invoiceTxtinvoiceTxt");
     const paymentPrice = invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
-    const shouldShowDownloadCatalog =
-        paymentPrice?.webcastTake?.organizerName == "eMedEd, Inc." ||
-        paymentPrice?.webcastTake?.organizerName == "eMedEvents Corporation" ||
-        paymentPrice?.webcastTake?.organizerName == "eMedEd";
-    const subtotalAmount = cleanNumber(
+    const isCartFlow = !!cartInvoice || !!paymentPrice?.cartData;
+
+    const getCartTransactionFeeValue = () => {
+        if (paymentPrice?.transaction_fee !== undefined) {
+            return cleanNumber(paymentPrice.transaction_fee);
+        }
+        if (paymentPrice?.cartData) {
+            if (paymentPrice.cartData.overall_transaction_fee !== undefined) {
+                return cleanNumber(paymentPrice.cartData.overall_transaction_fee);
+            }
+            if (Array.isArray(paymentPrice.cartData.tickets)) {
+                return paymentPrice.cartData.tickets.reduce((sum, t) => sum + cleanNumber(t?.transaction_fee), 0);
+            }
+        }
+        if (paymentPrice?.processingFeeAmount !== undefined) {
+            return cleanNumber(paymentPrice.processingFeeAmount);
+        }
+        if (paymentPrice?.processing_fee_amount !== undefined) {
+            return cleanNumber(paymentPrice.processing_fee_amount);
+        }
+        return 0;
+    };
+
+    const getRegisterTransactionFeeValue = () => {
+        if (paymentPrice?.transaction_fee !== undefined) {
+            return cleanNumber(paymentPrice.transaction_fee);
+        }
+        if (invoiceTxt?.ticketShow) {
+            if (invoiceTxt.ticketShow.transaction_fee !== undefined) {
+                return cleanNumber(invoiceTxt.ticketShow.transaction_fee);
+            }
+            if (Array.isArray(invoiceTxt.ticketShow.tickets)) {
+                const feeSum = invoiceTxt.ticketShow.tickets.reduce((sum, t) => sum + cleanNumber(t?.transaction_fee), 0);
+                if (feeSum > 0) return feeSum;
+            }
+        }
+        if (paymentPrice?.inPersonTicket) {
+            if (paymentPrice.inPersonTicket.transaction_fee !== undefined) {
+                return cleanNumber(paymentPrice.inPersonTicket.transaction_fee);
+            }
+            if (Array.isArray(paymentPrice.inPersonTicket.tickets)) {
+                const feeSum = paymentPrice.inPersonTicket.tickets.reduce((sum, t) => sum + cleanNumber(t?.transaction_fee), 0);
+                if (feeSum > 0) return feeSum;
+            }
+        }
+        if (paymentPrice?.processingFeeAmount !== undefined) {
+            return cleanNumber(paymentPrice.processingFeeAmount);
+        }
+        if (paymentPrice?.processing_fee_amount !== undefined) {
+            return cleanNumber(paymentPrice.processing_fee_amount);
+        }
+        return 0;
+    };
+
+    const transactionFeeValue = isCartFlow ? getCartTransactionFeeValue() : getRegisterTransactionFeeValue();
+    const baseAmount = cleanNumber(
         paymentPrice?.subtotalAmount ??
         paymentPrice?.ticketAmount ??
         invoiceTxt?.ticketShow?.tickets?.[0]?.itemamt ??
@@ -517,22 +575,54 @@ const Payment = (props) => {
         paymentPrice?.cartData?.total_paid_amount ??
         0
     );
-    const processingFeeAmount = cleanNumber(
-        paymentPrice?.processingFeeAmount ??
-        paymentPrice?.processing_fee_amount ??
-        (shouldShowDownloadCatalog && subtotalAmount > 0 ? (subtotalAmount * 0.035).toFixed(2) : 0)
-    );
-    const finalAmnt = cleanNumber(
+    const subtotalAmount = baseAmount;
+    const storedTotalAmountWithFee = cleanNumber(
+        paymentPrice?.total_amount_with_fee ??
         paymentPrice?.totalTicketPrice ??
-        paymentPrice?.total_paid_amount ??
-        paymentPrice?.cartData?.total_paid_amount ??
-        (subtotalAmount + processingFeeAmount)
+        paymentPrice?.cartData?.total_amount_with_fee ??
+        (baseAmount + transactionFeeValue)
     );
-    const totalPaidAmount = finalAmnt;
+    const isTransactionFeeApplicable = transactionFeeValue > 0;
+    const feeRate = isTransactionFeeApplicable && baseAmount > 0
+        ? cleanNumber((transactionFeeValue / baseAmount).toFixed(6))
+        : 0.035;
+
     const walletBalance = cleanNumber(WebcastReducer?.walletCheckResponse?.balance || 0);
     const isWalletOptionAvailable = walletBalance > 0;
-    const roundedTotalPaidAmount = Math.round(walletBalance);
-    const isOnlyCardOption = walletBalance == 0
+    const options = isWalletOptionAvailable
+        ? [
+            { id: 2, label: 'Wallet Balance' },
+            { id: 1, label: 'Credit Card' },
+          ]
+        : [
+            { id: 1, label: 'Credit Card' },
+            { id: 2, label: 'Wallet Balance' },
+          ];
+    const isOnlyCardOption = walletBalance == 0;
+    const walletAppliedAmount = isWalletOptionAvailable
+        ? cleanNumber(Math.min(walletBalance, baseAmount).toFixed(2))
+        : 0;
+    const cardPayableAmount = cleanNumber(Math.max(baseAmount - walletAppliedAmount, 0).toFixed(2));
+
+    let processingFeeAmount = 0;
+    if (isTransactionFeeApplicable) {
+        if (isWalletOptionAvailable && selectedOption == 2) {
+            if (cardPayableAmount <= 0) {
+                processingFeeAmount = 0;
+            } else {
+                processingFeeAmount = cleanNumber((cardPayableAmount * feeRate).toFixed(2));
+            }
+        } else {
+            processingFeeAmount = transactionFeeValue;
+        }
+    }
+
+    const finalAmnt = cleanNumber(
+        (!isWalletOptionAvailable || selectedOption != 2)
+            ? storedTotalAmountWithFee
+            : (cardPayableAmount + processingFeeAmount).toFixed(2)
+    );
+    const totalPaidAmount = finalAmnt;
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
@@ -559,7 +649,7 @@ const Payment = (props) => {
                 <Loader
                     visible={printgo == "pdf" || printgo == "go" || printgo == "no" || WebcastReducer?.status == 'WebCast/webcastPaymentRequest' || WebcastReducer?.status == 'WebCast/cartPaymentRequest'} />
                 <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(80) }}>
-                    {Number(isWalletOptionAvailable) && Number(walletBalance) >= Number(totalPaidAmount) ? (
+                    {Number(isWalletOptionAvailable) && Number(walletBalance) >= Number(baseAmount) ? (
                         // Scenario 1: Wallet balance is enough to cover the full ticket price
                         <View>
                             <View
@@ -571,7 +661,7 @@ const Payment = (props) => {
                                 }}
                             >
                                 <CustomPaymentradio
-                                    walletmo={roundedTotalPaidAmount}
+                                    walletmo={walletBalance}
                                     selectedOption={selectedOption}
                                     setSelectedOption={setSelectedOption}
                                     stylechange={remind}
@@ -586,7 +676,7 @@ const Payment = (props) => {
                                         textAlign: 'center',
                                     }}
                                 >
-                                    {`You can use US$${totalPaidAmount || props?.route?.params?.cartInvoice?.paymentprice?.cartData?.total_paid_amount} from your wallet.`}
+                                    {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet.`}
                                 </Text>}
                             </View>
                             {selectedOption == 1 && <View>
@@ -667,7 +757,7 @@ const Payment = (props) => {
                                 </View>
                             </View>}
                         </View>
-                    ) : Number(isWalletOptionAvailable) && Number(walletBalance) < Number(totalPaidAmount) ? (
+                    ) : Number(isWalletOptionAvailable) && Number(walletBalance) < Number(baseAmount) ? (
                         // Scenario 2: Wallet balance is not enough, but still show wallet option with card option
                         <>
                             <View
@@ -678,7 +768,7 @@ const Payment = (props) => {
                                 }}
                             >
                                 <CustomPaymentradio
-                                    walletmo={roundedTotalPaidAmount}
+                                    walletmo={walletBalance}
                                     selectedOption={selectedOption}
                                     setSelectedOption={setSelectedOption}
                                     stylechange={remind}
@@ -694,10 +784,7 @@ const Payment = (props) => {
                                             textAlign: 'center',
                                         }}
                                     >
-                                        {`You can use US$${roundedTotalPaidAmount} from your wallet and pay the balance amount of US$${formatPrice(
-                                            totalPaidAmount -
-                                            roundedTotalPaidAmount
-                                        )} using your credit card.`}
+                                        {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet and pay the balance amount of US$${formatNumberWithCommas(cutomPrice(finalAmnt))} using your credit card.`}
                                     </Text>}
                                 </View>
                             </View>
@@ -970,27 +1057,29 @@ const Payment = (props) => {
                                     {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
                                 </Text>
                             </View>
-                            <View style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                paddingVertical: normalize(4),
-                            }}>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: Colorpath.black,
+                            {processingFeeAmount > 0 ? (
+                                <View style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    paddingVertical: normalize(4),
                                 }}>
-                                    {"Processing Fee Amount"}
-                                </Text>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: Colorpath.black,
-                                }}>
-                                    {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
-                                </Text>
-                            </View>
+                                    <Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14,
+                                        color: Colorpath.black,
+                                    }}>
+                                        {"Transaction Fee : 3.5%"}
+                                    </Text>
+                                    <Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14,
+                                        color: Colorpath.black,
+                                    }}>
+                                        {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
+                                    </Text>
+                                </View>
+                            ) : null}
                             <View style={{ marginVertical: normalize(6), height: 0.8, width: '100%', backgroundColor: "#DADADA" }} />
                             <View style={{
                                 flexDirection: "row",

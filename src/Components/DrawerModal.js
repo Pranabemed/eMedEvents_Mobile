@@ -12,10 +12,10 @@ import {
   Pressable,
   StyleSheet,
   Linking,
-  SafeAreaView,
   InteractionManager
 } from 'react-native';
 import { takeLatest, select, put, call } from 'redux-saga/effects';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import propstype from 'prop-types';
 import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
@@ -57,7 +57,6 @@ export default function DrawerModal(props) {
   const [primeit, setPrimeit] = useState(false);
   const [primeits, setPrimeits] = useState(false);
   const [subit, setSubit] = useState(false);
-  const [allProfDr, setAllProfDr] = useState("");
   const [nettruedr, setNettruedr] = useState("")
   const navigateSmooth = (name, params) => {
     props.drawerPress?.();
@@ -203,36 +202,35 @@ export default function DrawerModal(props) {
       })
       .catch((err) => showErrorAlert("Please connect to internet", err))
   }, [])
-  const [allProfession, setAllProfession] = useState(null);
-  useEffect(() => {
-    const profession =
+  const resolvedProfessionSource = useMemo(() => {
+    return (
       allHandled?.professional_information ||
       AuthReducer?.loginResponse?.user ||
       AuthReducer?.againloginsiginResponse?.user ||
       AuthReducer?.verifymobileResponse?.user ||
       finalverifyvault ||
-      finalProfession;
-
-    setAllProfession(profession);
-  }, [AuthReducer, finalverifyvault, finalProfession]);
-  useEffect(() => {
-    if (allHandled || allProfession) {
-      const profession = allHandled?.professional_information?.profession || allProfession?.profession;
-      const profession_type = allHandled?.professional_information?.profession_type || allProfession?.profession_type;
-      const clean = (value) => {
-        if (value == null) return '';
-        return String(value).trim();
-      };
-      const cleanedProfession = clean(profession);
-      const cleanedProfessionType = clean(profession_type);
-      const combinedValue =
-        cleanedProfession && cleanedProfessionType
-          ? `${cleanedProfession} - ${cleanedProfessionType}`
-          : cleanedProfession || cleanedProfessionType;
-
-      setAllProfDr(combinedValue || '');
-    }
-  }, [allHandled, allProfession])
+      finalProfession ||
+      null
+    );
+  }, [
+    allHandled?.professional_information,
+    AuthReducer?.loginResponse?.user,
+    AuthReducer?.againloginsiginResponse?.user,
+    AuthReducer?.verifymobileResponse?.user,
+    finalverifyvault,
+    finalProfession,
+  ]);
+  const resolvedProfessionText = useMemo(() => {
+    const clean = (value) => {
+      if (value == null) return '';
+      return String(value).trim();
+    };
+    const profession = clean(resolvedProfessionSource?.profession);
+    const professionType = clean(resolvedProfessionSource?.profession_type);
+    return profession && professionType
+      ? `${profession} - ${professionType}`
+      : profession || professionType || '';
+  }, [resolvedProfessionSource]);
   const isPrimeTrial = useMemo(() => {
     return !WebcastReducer?.PrimeCheckResponse?.subscription;
   }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
@@ -271,24 +269,29 @@ export default function DrawerModal(props) {
       setPrimeits(true);
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvault, finalProfession, takeSub, endDateStringTake]);
-  const [specialities, setSpecialities] = useState([]);
-  const [text, setText] = useState('');
-
+  const resolvedSpecialityText = useMemo(() => {
+    const specialitiesObject = allHandled?.specialities || resolvedProfessionSource?.specialities;
+    if (!specialitiesObject) return '';
+    const valuesArray = Object.values(specialitiesObject).filter(Boolean);
+    return valuesArray.join(', ');
+  }, [allHandled?.specialities, resolvedProfessionSource]);
+  const [stableProfileMetaText, setStableProfileMetaText] = useState('');
+  const currentProfileMetaText = useMemo(() => {
+    return [resolvedProfessionText, resolvedSpecialityText].filter(Boolean).join(' | ');
+  }, [resolvedProfessionText, resolvedSpecialityText]);
   useEffect(() => {
-    if (allHandled?.specialities || allProfession?.specialities) {
-      const myObject = allHandled?.specialities || allProfession?.specialities
-      const valuesArray = Object.values(myObject);
-      setText(valuesArray.join(', '));
+    if (currentProfileMetaText) {
+      setStableProfileMetaText(currentProfileMetaText);
     }
-  }, [allProfession, allHandled]);
+  }, [currentProfileMetaText]);
   useEffect(() => {
-    if (DashboardReducer?.mainprofileResponse || allProfession) {
-      const firstName = DashboardReducer?.mainprofileResponse?.personal_information?.firstname || allProfession?.firstname;
-      const lastName = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || allProfession?.lastname;
+    if (DashboardReducer?.mainprofileResponse || resolvedProfessionSource) {
+      const firstName = DashboardReducer?.mainprofileResponse?.personal_information?.firstname || resolvedProfessionSource?.firstname;
+      const lastName = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || resolvedProfessionSource?.lastname;
       const initials = getInitials(firstName, lastName);
       setAlphaimg(initials)
     }
-  }, [DashboardReducer?.mainprofileResponse, allProfession])
+  }, [DashboardReducer?.mainprofileResponse, resolvedProfessionSource])
   const renderNestedItem = ({ item, index }) => {
     return (
       <>
@@ -518,7 +521,9 @@ export default function DrawerModal(props) {
               <View style={{ flexDirection: "column" }}>
                 {(DashboardReducer?.mainprofileResponse?.personal_information?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.lastname) && <View style={{ flexDirection: "column" }}>
                   <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${DashboardReducer?.mainprofileResponse?.personal_information?.firstname} ${DashboardReducer?.mainprofileResponse?.personal_information?.lastname}`}</Text>
-                  <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>{`${allProfDr} | ${text}`}</Text>
+                  <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>
+                    {stableProfileMetaText}
+                  </Text>
                 </View>}
                 {allProfTake && (
                   <Pressable

@@ -127,6 +127,39 @@ const Checkout = (props) => {
     console.log(ticketSave, props?.route?.params, "1cheochg", props?.route?.params?.inPersonTicket?.inpersonSpanrole?.conferenceTypeId == "2", formData, "checkoutSpan=============");
     const isInitialLoad = useRef(true);
 
+    const [loaderVisible, setLoaderVisible] = useState(false);
+
+    useEffect(() => {
+        if (!isfocus) {
+            setLoaderVisible(false);
+            return;
+        }
+
+        const showStatuses = [
+            'WebCast/saveRegistRequest',
+            'WebCast/cartCheckoutRequest',
+            'WebCast/FreeTransRequest',
+            'WebCast/StatusPaymentRequest',
+            'WebCast/couponWebcastRequest'
+        ];
+
+        const hideStatuses = [
+            'WebCast/saveRegistFailure',
+            'WebCast/cartCheckoutFailure',
+            'WebCast/FreeTransFailure',
+            'WebCast/StatusPaymentSuccess',
+            'WebCast/StatusPaymentFailure',
+            'WebCast/couponWebcastSuccess',
+            'WebCast/couponWebcastFailure'
+        ];
+
+        if (showStatuses.includes(WebcastReducer.status)) {
+            setLoaderVisible(true);
+        } else if (hideStatuses.includes(WebcastReducer.status)) {
+            setLoaderVisible(false);
+        }
+    }, [WebcastReducer.status, isfocus]);
+
     useEffect(() => {
         if (isInitialLoad.current && formData && formData[0]?.emailad) {
             console.log(formData[0].emailad, "Initial formData load");
@@ -172,13 +205,38 @@ const Checkout = (props) => {
         return 0;
     };
     const routePaymentPrice = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket || {};
-    const shouldShowDownloadCatalog =
-        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEd, Inc." ||
-        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEvents Corporation" ||
-        props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName == "eMedEd" ||
-        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEd, Inc." ||
-        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEvents Corporation" ||
-        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.organizerName == "eMedEd";
+    const getRouteTransactionFee = (source = routePaymentPrice) => {
+        if (source?.transaction_fee !== undefined) {
+            return cleanNumber(source.transaction_fee);
+        }
+        if (source?.processingFeeAmount !== undefined) {
+            return cleanNumber(source.processingFeeAmount);
+        }
+        if (source?.processing_fee_amount !== undefined) {
+            return cleanNumber(source.processing_fee_amount);
+        }
+        if (source?.overall_transaction_fee !== undefined) {
+            return cleanNumber(source.overall_transaction_fee);
+        }
+        if (source?.cartData?.overall_transaction_fee !== undefined) {
+            return cleanNumber(source.cartData.overall_transaction_fee);
+        }
+        if (Array.isArray(source?.tickets)) {
+            const ticketsFee = source.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
+            if (ticketsFee > 0) return ticketsFee;
+        }
+        if (Array.isArray(source?.cartData?.tickets)) {
+            const ticketsFee = source.cartData.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
+            if (ticketsFee > 0) return ticketsFee;
+        }
+        if (ticketSave?.transaction_fee !== undefined) {
+            return cleanNumber(ticketSave.transaction_fee);
+        }
+        if (Array.isArray(ticketSave?.tickets)) {
+            return ticketSave.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
+        }
+        return 0;
+    };
     const checkoutBaseAmount = routePaymentPrice?.subtotalAmount != null
         ? cleanNumber(routePaymentPrice?.subtotalAmount)
         : savefull?.discount_value != null && savefull?.total_value != null
@@ -186,16 +244,20 @@ const Checkout = (props) => {
             : cleanNumber(ticketSave?.tickets?.[0]?.itemamt || ticketSave?.tickets?.[0]?.gross_value || routePaymentPrice?.cartData?.subtotal_amount || routePaymentPrice?.cartData?.total_paid_amount || routePaymentPrice?.totalTicketPrice || 0);
     const checkoutProcessingFeeAmount = routePaymentPrice?.processingFeeAmount != null
         ? cleanNumber(routePaymentPrice?.processingFeeAmount)
-        : shouldShowDownloadCatalog && checkoutBaseAmount > 0
-            ? cleanNumber((checkoutBaseAmount * 0.035).toFixed(2))
-            : 0;
+        : getRouteTransactionFee();
     const checkoutTotalAmount = routePaymentPrice?.totalTicketPrice != null
         ? cleanNumber(routePaymentPrice?.totalTicketPrice)
-        : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
+        : routePaymentPrice?.total_amount_with_fee != null
+            ? cleanNumber(routePaymentPrice?.total_amount_with_fee)
+            : routePaymentPrice?.cartData?.total_amount_with_fee != null
+                ? cleanNumber(routePaymentPrice?.cartData?.total_amount_with_fee)
+                : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
     const buildPaymentPrice = (source = {}) => ({
         subtotalAmount: checkoutBaseAmount,
         processingFeeAmount: checkoutProcessingFeeAmount,
         totalTicketPrice: checkoutTotalAmount,
+        transaction_fee: checkoutProcessingFeeAmount,
+        total_amount_with_fee: checkoutTotalAmount,
         ...source,
     });
     const checkoutClear = () => {
@@ -568,7 +630,7 @@ const Checkout = (props) => {
                     ticketsArray?.length > 0 && ticketsArray.every(ticket => ticket?.ticket_type == "Free");
                 const isAllFree = allTicketsFree(props?.route?.params?.checkoutSpan?.finalTicket?.tickets) ||
                     allTicketsFree(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
-                const handleDis = ticketSave?.discounts == true && !props?.route?.params?.inPersonTicket?.inPersonTicket;
+                const handleDis = ticketSave?.discounts == true && !props?.route?.params?.inPersonTicket?.inPersonTicket && checkoutBaseAmount == 0;
                 if (WebcastReducer?.saveRegistResponse?.msg == "Registration details saved successfully.") {
                     if (isAllFree) {
                         handleFree(ticketSave?.invoice);
@@ -1512,8 +1574,7 @@ const Checkout = (props) => {
                             </View>
                         )
                     )}
-                    <Loader
-                        visible={WebcastReducer?.status == 'WebCast/saveRegistRequest' || WebcastReducer?.status == 'WebCast/cartCheckoutRequest' || WebcastReducer?.status == 'WebCast/FreeTransRequest' || WebcastReducer?.status == 'WebCast/StatusPaymentRequest' || WebcastReducer?.status == 'WebCast/couponWebcastRequest'} />
+                    <Loader visible={loaderVisible} />
                     <CheckoutMain
                         savefull={savefull}
                         setSavefull={setSavefull}
