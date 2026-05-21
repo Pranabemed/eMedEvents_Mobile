@@ -5,6 +5,7 @@ const initialState = {
   token: null,
   isLoading: true,
   HomelistResponse:{},
+  AboutusResponse:{},
 };
 
 const GuestSlice = createSlice({
@@ -21,6 +22,17 @@ const GuestSlice = createSlice({
     HomelistFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
+    },
+    AboutusRequest(state, action) {
+      state.status = action.type;
+    },
+    AboutusSuccess(state, action) {
+      state.AboutusResponse = action.payload;
+      state.status = action.type;
+    },
+    AboutusFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
     }
   },
 });
@@ -29,5 +41,8 @@ export const {
   HomelistRequest,
   HomelistFailure,
   HomelistSuccess,
+  AboutusRequest,
+  AboutusFailure,
+  AboutusSuccess,
 } = GuestSlice.actions;
 export default GuestSlice.reducer;

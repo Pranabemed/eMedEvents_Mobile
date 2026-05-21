@@ -15,8 +15,13 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
 
   const handleSearch = () => {
     if (searchPress) {
-      const baseUrl = constants.BASE_URL == "https://newdev.emedevents.com" ?'https://www.emedevents.com/online-cme-courses/webcasts' : "https://v2.emedevents.com/online-cme-courses/webcasts";
-      const endpoint = `${baseUrl}/${searchPress}`; // ✅ append searchPress to URL dynamically
+      const websiteBaseUrl = constants.BASE_URL == "https://newdev.emedevents.com"
+        ? 'https://www.emedevents.com'
+        : 'https://v2.emedevents.com';
+      const normalizedConferenceUrl = String(searchPress || '').trim();
+      const endpoint = /^https?:\/\//i.test(normalizedConferenceUrl)
+        ? normalizedConferenceUrl
+        : `${websiteBaseUrl}/${normalizedConferenceUrl.replace(/^\/+/, '')}`;
 
       const options = {
         title: "Share ConferenceURL",

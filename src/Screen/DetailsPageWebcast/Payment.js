@@ -622,6 +622,13 @@ const Payment = (props) => {
             ? storedTotalAmountWithFee
             : (cardPayableAmount + processingFeeAmount).toFixed(2)
     );
+    const summaryTotalAmount = (
+        isWalletOptionAvailable &&
+        selectedOption == 2 &&
+        cardPayableAmount <= 0
+    )
+        ? subtotalAmount
+        : finalAmnt;
     const totalPaidAmount = finalAmnt;
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
@@ -1099,7 +1106,7 @@ const Payment = (props) => {
                                     fontSize: 18,
                                     color: Colorpath.black,
                                 }}>
-                                    {`US$${formatNumberWithCommas(cutomPrice(finalAmnt))}`}
+                                    {`US$${formatNumberWithCommas(cutomPrice(summaryTotalAmount))}`}
                                 </Text>
                             </View>
                         </View>

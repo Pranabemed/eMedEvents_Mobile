@@ -3,10 +3,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
+import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 import { stateRequest } from '../../Redux/Reducers/AuthReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import GuestUserView from './GuestUserView';
+import { View } from 'react-native';
+import Colorpath from '../../Themes/Colorpath';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
@@ -69,7 +71,10 @@ const GuestUser = props => {
   useEffect(() => {
     if (!isFocused) return;
     connectionrequest()
-      .then(() => dispatch(HomelistRequest({})))
+      .then(() => {
+        dispatch(HomelistRequest({ is_mobile: 1 }));
+        dispatch(AboutusRequest({}));
+      })
       .catch(err => showErrorAlert('Please connect to internet', err));
   }, [dispatch, isFocused]);
 
@@ -100,6 +105,10 @@ const GuestUser = props => {
     GuestReducer?.HomelistResponse?.data && typeof GuestReducer?.HomelistResponse?.data === 'object'
       ? GuestReducer?.HomelistResponse?.data
       : GuestReducer?.HomelistResponse || {};
+  const aboutUsData =
+    GuestReducer?.AboutusResponse?.data && typeof GuestReducer?.AboutusResponse?.data === 'object'
+      ? GuestReducer?.AboutusResponse?.data
+      : GuestReducer?.AboutusResponse || {};
 
   const stateList = Array.isArray(AuthReducer?.stateResponse?.data)
     ? AuthReducer?.stateResponse?.data
@@ -110,6 +119,7 @@ const GuestUser = props => {
   const guest = {
     navigation: props.navigation,
     homeData,
+    aboutUsData,
     homeStatus: GuestReducer?.status,
     stateList,
     selectedProfession,
@@ -153,7 +163,11 @@ const GuestUser = props => {
     onFeaturedActivityPress: openFeaturedActivity,
   };
 
-  return <GuestUserView guest={guest} />;
+  return (
+    <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+      <GuestUserView guest={guest} />
+    </View>
+  );
 };
 
 export default GuestUser;

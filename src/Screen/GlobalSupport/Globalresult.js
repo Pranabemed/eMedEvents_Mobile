@@ -38,6 +38,7 @@ const Globalresult = (props) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [hasFetchedResults, setHasFetchedResults] = useState(false);
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
     const [refreshing, setRefreshing] = useState(false);
@@ -96,6 +97,10 @@ const Globalresult = (props) => {
     }, []);
     const fetchHandle = (d, options = {}) => {
         const requestedPageNum = options?.pageNum ?? pageNum;
+        if (requestedPageNum === 0) {
+            setLoading(true);
+            setHasFetchedResults(false);
+        }
         const mainKey = props?.route?.params?.trig?.mainKey ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.mainKey ?? "";
         const stateKey = props?.route?.params?.trig?.newAdd ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newAdd ?? "";
         const newCt = props?.route?.params?.trig?.newCt ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newCt ?? "";
@@ -242,6 +247,7 @@ const Globalresult = (props) => {
                 status = CMEReducer.status;
                 setApiReq(false);
                 setLoading(false);
+                setHasFetchedResults(true);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
                     if (pageNum === 0) {
                         setStoreAlldata(CMEReducer?.cmeCourseResponse?.conferences);
@@ -266,6 +272,7 @@ const Globalresult = (props) => {
                 setPageNum(0);
                 setApiReq(false);
                 setLoading(false);
+                setHasFetchedResults(true);
                 setRefreshing(false);
                 break;
         }
@@ -438,7 +445,7 @@ const Globalresult = (props) => {
 
                     )}
                 </View>
-                {/* <Loader visible={CMEReducer?.status == 'CME/cmeCourseRequest'} /> */}
+                <Loader visible={loading && storeAlldata?.length === 0} />
                 {storeAlldata?.length > 0 && <TouchableOpacity onPress={() => {
                     setPageNum(0);
                     setSortedFall(!sortedFall);
@@ -472,7 +479,7 @@ const Globalresult = (props) => {
                                 onRefresh={fullDataRefresh}
                             />
                         }
-                        ListEmptyComponent={!loading &&
+                        ListEmptyComponent={hasFetchedResults && !loading &&
                             <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
                                 <View
                                     style={{

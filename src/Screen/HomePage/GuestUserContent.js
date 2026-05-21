@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   FlatList,
   Image,
@@ -26,15 +26,6 @@ import normalize from '../../Utils/Helpers/Dimen';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
 import styles from './GuestUser.styles';
-const STATS = [
-  ['1,520,220', 'Healthcare Professionals'],
-  ['101,224', 'Registrations Sold'],
-  ['303,671', 'Hosted Conferences'],
-  ['15,628', 'Organizers'],
-  ['606,654', 'Monthly Visitors'],
-  ['24/7', 'Live support'],
-];
-
 const MEMBERSHIP_POINTS = [
   'Multi State & Board Licensure Tracking',
   'Personalized CME/CE Recommendations',
@@ -97,6 +88,15 @@ const getInitials = value =>
     .slice(0, 2)
     .map(word => word[0]?.toUpperCase())
     .join('');
+
+const getCountValue = (...values) => {
+  for (const value of values) {
+    if (value == null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return '';
+};
 
 const getBannerUrl = item => {
   const rawUrl =
@@ -654,6 +654,58 @@ const ConferenceCard = ({ item, width, dark = false, compact = false }) => (
   </View>
 );
 
+const PopularConferenceCard = ({ item, width }) => {
+  const handlePress = () => {
+    item?.onPress?.(item?.detailpageUrl);
+  };
+
+  return (
+    <View style={styles.popularCardWrap}>
+      <Pressable onPress={handlePress} style={styles.popularCard}>
+        {item?.kicker ? (
+          <Text numberOfLines={1} style={styles.popularByText}>
+            {item.kicker}
+          </Text>
+        ) : null}
+
+        <Text
+          numberOfLines={2}
+          style={[styles.popularTitle, { fontSize: scale(width, 16) }]}
+        >
+          {item.title}
+        </Text>
+
+        <View style={styles.popularMetaGroup}>
+          {item?.date ? (
+            <InfoRow icon="calendar-today" text={item.date} width={width} />
+          ) : null}
+          {item?.location ? (
+            <InfoRow icon="place" text={item.location} width={width} />
+          ) : null}
+          {item?.credit ? (
+            <InfoRow icon="place" text={item.credit} width={width} />
+          ) : null}
+        </View>
+
+        <View style={styles.popularDivider} />
+
+        <View style={styles.popularFooterRow}>
+          {item?.price ? (
+            <Text style={[styles.popularPrice, { fontSize: scale(width, 18) }]}>
+              {item.price}
+            </Text>
+          ) : null}
+          {item?.buttonText ? (
+            <TouchableOpacity onPress={handlePress} style={styles.popularButton}>
+              <Text style={styles.popularButtonText}>{item.buttonText}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </Pressable>
+    </View>
+  );
+};
+
 const LiveConferenceCard = ({ item }) => {
   const handlePress = () => {
     item?.onPress?.(item?.detailpageUrl);
@@ -895,28 +947,24 @@ const GuestChipsShimmer = ({ width }) => (
   </View>
 );
 
-const StatsGrid = ({ width }) => (
-  <View style={styles.statsGrid}>
-    <View style={styles.statTileFull}>
-      <Text style={[styles.statValue, { fontSize: scale(width, 24) }]}>
-        {STATS[0][0]}
-      </Text>
-      <Text style={[styles.statLabel, { fontSize: scale(width, 13) }]}>
-        {STATS[0][1]}
-      </Text>
+const StatsGrid = ({ width, stats }) => {
+  if (!stats?.length) return null;
+
+  return (
+    <View style={styles.statsGrid}>
+      {stats.slice(1, 5).map(item => (
+        <View key={item.label} style={styles.statTile}>
+          <Text style={[styles.statValue, { fontSize: scale(width, 18) }]}>
+            {item.value}
+          </Text>
+          <Text style={[styles.statLabel, { fontSize: scale(width, 11) }]}>
+            {item.label}
+          </Text>
+        </View>
+      ))}
     </View>
-    {STATS.slice(1, 5).map(([value, label]) => (
-      <View key={label} style={styles.statTile}>
-        <Text style={[styles.statValue, { fontSize: scale(width, 18) }]}>
-          {value}
-        </Text>
-        <Text style={[styles.statLabel, { fontSize: scale(width, 11) }]}>
-          {label}
-        </Text>
-      </View>
-    ))}
-  </View>
-);
+  );
+};
 
 const MembershipBanner = ({ width, onPress }) => (
   <LinearGradient
@@ -943,9 +991,6 @@ const MembershipBanner = ({ width, onPress }) => (
         </View>
       ))}
     </View>
-    <TouchableOpacity style={styles.membershipFeatureText} activeOpacity={0.85}>
-      <Text style={styles.moreFeaturesText}>and more features...</Text>
-    </TouchableOpacity>
     <TouchableOpacity onPress={onPress} style={styles.membershipButton}>
       <Text style={styles.membershipButtonText}>Explore Now</Text>
     </TouchableOpacity>
@@ -956,6 +1001,7 @@ const GuestUserContent = ({ guest }) => {
   const {
     navigation,
     homeData,
+    aboutUsData,
     homeStatus,
     stateList,
     selectedProfession,
@@ -978,7 +1024,7 @@ const GuestUserContent = ({ guest }) => {
     onSaved,
     onFeaturedActivityPress,
   } = guest;
-  console.log('stateList====', guest?.homeData);
+  console.log(aboutUsData,'stateList====', guest?.homeData);
   const { width } = useWindowDimensions();
   const [activeSpecialty, setActiveSpecialty] = useState(0);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
@@ -1022,6 +1068,11 @@ const GuestUserContent = ({ guest }) => {
     homeData?.liveWebinar,
     homeData?.live_webinars,
     homeData?.liveWebinars,
+  );
+  const popularCourses = firstArray(
+    homeData?.popular_courses,
+    homeData?.popularCourses,
+    homeData?.popular_course,
   );
   const filteredStateList = (stateList || []).filter(item => {
     const name = String(
@@ -1074,57 +1125,6 @@ const GuestUserContent = ({ guest }) => {
 
     openStateResults(stateObj);
   };
-
-  const cards = useMemo(
-    () => [
-      {
-        title: 'Paediatric Emergency Medicine (PEM) Course',
-        kicker: 'By PEM Courses',
-        date: 'Sep 04 - 05, 2024',
-        location: 'Bali, Bali, ID',
-        credit: '1 AMA PRA Category 1 Credit™',
-        price: 'US$999.00',
-        cta: 'REGISTER NOW',
-        image: Imagepath.SpecialityCard,
-        badge: 'FEW DAYS LEFT',
-        onPress: () => navigation.navigate('SearchResult'),
-      },
-      {
-        title: 'Next-Gen Immuno Oncology Conference',
-        kicker: 'By MarketandMarkets',
-        date: 'Oct 21 - 22, 2023',
-        location: 'UK, San Diego',
-        credit: '1 AMA PRA Category 1 Credit™',
-        price: 'US$1,165.00',
-        cta: 'VIEW',
-        image: Imagepath.MainCard,
-        onPress: () => navigation.navigate('SearchResult'),
-      },
-      {
-        title: 'Advanced Cardiology Summit 2024',
-        kicker: 'By HeartHealth',
-        date: 'June 12 - 14, 2024',
-        location: 'Chicago, Illinois',
-        credit: '12 AMA PRA Category 1 Credit™',
-        price: 'US$850.00',
-        cta: 'REGISTER',
-        image: Imagepath.HomeBanner,
-        onPress: () => navigation.navigate('SearchResult'),
-      },
-      {
-        title: 'Global Healthcare Expo 2024',
-        kicker: 'By WorldHealth',
-        date: 'Aug 20 - 22, 2024',
-        location: 'New York, USA',
-        credit: '15 AMA PRA Category 1 Credit™',
-        price: 'US$1,200.00',
-        cta: 'VIEW',
-        image: Imagepath.GlobalPng,
-        onPress: () => navigation.navigate('SearchResult'),
-      },
-    ],
-    [navigation],
-  );
 
   const mapConference = c => ({
     title: getText(
@@ -1306,7 +1306,48 @@ const GuestUserContent = ({ guest }) => {
     };
   };
 
+  const mapPopularConference = c => {
+    const detailpageUrl = getDetailPageUrl(c) || getBannerUrl(c);
+    const organization = getText(
+      c?.organization_name,
+      c?.organizer_name,
+      c?.organizer,
+      c?.provider,
+    );
+
+    return {
+      title: getText(
+        c?.course_title,
+        c?.title,
+        c?.conference_name,
+        c?.name,
+        c?.banner_title,
+        c?.heading,
+      ),
+      kicker: organization ? `By ${organization}` : '',
+      date: getDateRange(c),
+      location: getText(c?.course_location, c?.location, c?.venue, c?.city),
+      credit: getCmeLabel(c),
+      price: getPriceLabel(c),
+      buttonText:
+        getText(c?.buttonText, c?.button_text, c?.button, c?.cta_text) ||
+        'REGISTER NOW',
+      detailpageUrl,
+      onPress: detailUrl => {
+        const slug = getDetailSlug(detailUrl);
+        if (slug) {
+          navigation.navigate('Statewebcast', {
+            webCastURL: { webCastURL: slug, Realback: 'guest' },
+          });
+        }
+      },
+    };
+  };
+
   const renderCard = ({ item }) => <ConferenceCard item={item} width={width} />;
+  const renderPopularCard = ({ item }) => (
+    <PopularConferenceCard item={item} width={width} />
+  );
   const renderFeaturedCard = ({ item }) =>
     item?.organization || item?.cmeLabel || item?.detailpageUrl ? (
       <FeaturedConferenceCard item={item} width={width} />
@@ -1325,6 +1366,42 @@ const GuestUserContent = ({ guest }) => {
     specialityItems.map((label, index) => ({ label, index })),
     2,
   );
+  const aboutUsRoot =
+    aboutUsData?.eMedEventsStats && typeof aboutUsData?.eMedEventsStats === 'object'
+      ? aboutUsData.eMedEventsStats
+      : {};
+  const marketplaceStats = [
+    {
+      value: getCountValue(
+        aboutUsRoot?.hcpcount,
+      ),
+      label: 'Healthcare Professionals',
+    },
+    {
+      value: getCountValue(
+        aboutUsRoot?.hcpcount,
+      ),
+      label: 'Healthcare Professionals',
+    },
+    {
+      value: getCountValue(
+        aboutUsRoot?.specialties,
+      ),
+      label: 'Specialities',
+    },
+    {
+      value: getCountValue(
+        aboutUsRoot?.hosted_conferences,
+      ),
+      label: 'Online Activities',
+    },
+    {
+      value: getCountValue(
+        aboutUsRoot?.live_conferences,
+      ),
+      label: 'Live Activities',
+    },
+  ].filter(item => item.value);
 
   return (
     <>
@@ -1382,10 +1459,17 @@ const GuestUserContent = ({ guest }) => {
               })}
             >
               <SearchIcon name="search" size={20} color="#9CA3AF" />
-              <Text style={styles.searchText}>
-                Search CME, conferences, specialties
-              </Text>
-                <Icon name="mic-none" size={20} color="#9CA3AF" />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.searchTextScrollContent}
+                style={styles.searchTextScroll}
+              >
+                <Text numberOfLines={1} style={styles.searchText}>
+                  Search CME, conferences, specialties
+                </Text>
+              </ScrollView>
+              <Icon name="mic-none" size={20} color="#9CA3AF" />
             </Pressable>
 
             {topBanners.length > 0 ? (
@@ -1489,7 +1573,7 @@ const GuestUserContent = ({ guest }) => {
                 };
 
                 return (
-                  <View style={{ width: width - 32, alignItems: 'center' }}>
+                  <View style={{ width: width-30, alignItems: 'center' }}>
                     <ImageBackground
                       source={Imagepath.HomeUser}
                       imageStyle={styles.heroRadius}
@@ -1599,7 +1683,7 @@ const GuestUserContent = ({ guest }) => {
 
             {featuredConferences.length > 0 ? (
               <CarouselSection
-                title="Featured Activity"
+                title="Featured Activities"
                 action="View all"
                 data={featuredConferences.map(mapConference)}
                 renderItem={renderFeaturedCard}
@@ -1619,14 +1703,17 @@ const GuestUserContent = ({ guest }) => {
               <Text style={styles.panelSubTitle}>
                 Let us tailor the best courses for you
               </Text>
-              <View style={styles.selectorRow}>
+              <View style={[styles.selectorRow, { gap: 12 }]}>
                 <TouchableOpacity
                   style={styles.selectorBox}
                   onPress={() => setProfModalVisible(true)}
                 >
                   <Text style={styles.selectorLabel}>Profession</Text>
                   <View style={styles.selectorValueRow}>
-                    <Text style={styles.selectorValue}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
+                    >
                       {selectedProfession || 'Select Profession'}
                     </Text>
                     <Icon
@@ -1644,7 +1731,7 @@ const GuestUserContent = ({ guest }) => {
                   <View style={styles.selectorValueRow}>
                     <Text
                       numberOfLines={1}
-                      style={[styles.selectorValue, { maxWidth: '80%' }]}
+                      style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
                     >
                       {selectedState?.name ||
                         selectedState?.state_name ||
@@ -1661,16 +1748,20 @@ const GuestUserContent = ({ guest }) => {
               </View>
             </View>
 
-            <CarouselSection
-              title="Most Popular Conferences"
-              action="View all"
-              data={cards}
-              renderItem={renderCard}
-              sliderWidth={width - 32}
-              itemWidth={width - 32}
-              width={width}
-              onAction={() => navigation.navigate('SearchResult')}
-            />
+            {popularCourses.length > 0 ? (
+              <CarouselSection
+                title="Most Popular Conferences"
+                action="View all"
+                data={popularCourses.map(mapPopularConference)}
+                renderItem={renderPopularCard}
+                sliderWidth={width - 20}
+                itemWidth={width - 20}
+                width={width}
+                onAction={() => navigation.navigate('SearchResult')}
+              />
+            ) : isHomeLoading ? (
+              <GuestCarouselShimmer title="Most Popular Conferences" width={width} />
+            ) : null}
 
             {specialityItems.length > 0 ? (
               <>
@@ -1816,11 +1907,13 @@ const GuestUserContent = ({ guest }) => {
                 World&apos;s Largest CME/CE Marketplace
               </Text>
             </View>
-            <StatsGrid width={width} />
+            <StatsGrid width={width} stats={marketplaceStats} />
 
             <MembershipBanner
               width={width}
-              onPress={() => navigation.navigate('Testing')}
+              onPress={() =>
+                navigation.navigate('CheckMembership', { fromGuestUser: true })
+              }
             />
           </View>
         </ScrollView>

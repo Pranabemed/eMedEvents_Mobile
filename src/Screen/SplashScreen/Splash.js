@@ -448,8 +448,8 @@ export default function Splash(props) {
     <>
       <MyStatusBar
         barStyle={'light-content'}
-        backgroundColor={Colorpath.ButtonColr}
-        translucent={false}
+        backgroundColor={'transparent'}
+        translucent={true}
       />
       <View style={styles.container}>
         <LottieView
@@ -467,11 +467,12 @@ export default function Splash(props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colorpath.ButtonColr,
     justifyContent: 'center',
     alignItems: 'center',
   },
   lottie: {
-    width: "100%",
-    aspectRatio: 0.2,
+    width: '100%',
+    height: '100%',
   },
 });

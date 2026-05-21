@@ -1,14 +1,17 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { HomelistFailure, HomelistSuccess } from '../Reducers/GuestReducer';
+import { AboutusFailure, AboutusSuccess, HomelistFailure, HomelistSuccess } from '../Reducers/GuestReducer';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 
 let getItem = state => state.AuthReducer;
 export function* HomelistSaga(action) {
   console.log('hi');
+  const ipAddress = getPublicIP();
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
+    IPADDRESS: ipAddress ? ipAddress : '',
   };
   try {
     let response = yield call(postApi, 'Home/list', action.payload, header);
@@ -24,9 +27,29 @@ export function* HomelistSaga(action) {
   }
 }
 
+export function* AboutusSaga(action) {
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+  };
+  try {
+    let response = yield call(postApi, 'LandingPages/aboutus', action.payload, header);
+    if (response?.status == 200) {
+      yield put(AboutusSuccess(response?.data));
+    } else {
+      yield put(AboutusFailure(response?.data));
+    }
+  } catch (error) {
+    yield put(AboutusFailure(error));
+  }
+}
+
 const watchFunction = [
   (function* () {
     yield takeLatest('Guest/HomelistRequest', HomelistSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Guest/AboutusRequest', AboutusSaga);
   })(),
 ];
 

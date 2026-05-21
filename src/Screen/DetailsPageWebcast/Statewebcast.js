@@ -526,10 +526,10 @@ const Statewebcast = props => {
             />
             {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
+                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.webCastURL?.shareUrl || props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
                 ) : (
                     <View>
-                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
+                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.webCastURL?.shareUrl || props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
                     </View>
                 )}
                 <Loader

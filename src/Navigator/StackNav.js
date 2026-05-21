@@ -470,6 +470,8 @@ const StackNav = props => {
     const isEmedHost = hostname.includes('emedevents.com') || hostname.includes('emedevents.net');
 
     const internalPathPatterns = [
+      '/medical-hybrid-events-2026',
+      '/c',
       '/online-cme-courses',
       '/webcasts/',
       '/webcast/',

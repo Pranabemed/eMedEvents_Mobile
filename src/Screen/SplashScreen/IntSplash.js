@@ -71,12 +71,13 @@ export default function SplashInt(props) {
     <>
       <MyStatusBar
         barStyle={'light-content'}
-        backgroundColor={Colorpath.ButtonColr}
-        translucent={false}
+        backgroundColor={'transparent'}
+        translucent={true}
       />
       <ImageBackground
         source={Imagepath.SpalshNew}
-        style={{ flex: 1, resizeMode: "contain" }}
+        resizeMode="cover"
+        style={{ flex: 1, backgroundColor: Colorpath.ButtonColr }}
       >
         <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
           <Image source={Imagepath.NewLogo} style={{ justifyContent: "center", alignItems: "center", height: normalize(50), width: normalize(250), resizeMode: "contain" }} />

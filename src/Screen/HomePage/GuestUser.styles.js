@@ -1,14 +1,14 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
-import normalize from '../../Utils/Helpers/Dimen'
+import normalize from '../../Utils/Helpers/Dimen';
 export default StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colorpath.Pagebg
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 4,
     alignItems: 'center'
   },
   page: {
@@ -72,14 +72,21 @@ export default StyleSheet.create({
     borderColor: '#DADADA',
   },
   searchText: {
-    flex: 1,
     fontFamily: Fonts.InterMedium,
     color: '#798492',
     fontSize: 15,
   },
+  searchTextScroll: {
+    flex: 1,
+  },
+  searchTextScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
   hero: {
     width: normalize(310),
-    aspectRatio: 1.8,
+    // aspectRatio: Platform.OS === 'android' ? 1.2 : 1.8,
     borderRadius: 40,
     overflow: 'hidden',
     padding: 20,
@@ -116,8 +123,8 @@ export default StyleSheet.create({
   heroTitle: {
     color: '#FFFFFF',
     fontFamily: Fonts.InterBold,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: Platform.OS === 'android' ? 18 : 22,
+    lineHeight: Platform.OS === 'android' ? 24 : 28,
     width: '85%',
   },
   heroBottomRow: {
@@ -135,7 +142,7 @@ export default StyleSheet.create({
   },
   heroLocationRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 10,
     minWidth: 0,
@@ -146,6 +153,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingRight: 6,
   },
   heroMetaText: {
     color: '#FFFFFF',
@@ -173,17 +181,19 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFFFFF',
     borderRadius: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 10,
-    minWidth: 104,
+    minWidth: 0,
+    maxWidth: '42%',
     alignItems: 'center',
     flexShrink: 0,
   },
   heroButtonText: {
     color: '#FFFFFF',
     fontFamily: Fonts.InterBold,
-    fontSize: 14,
+    fontSize: 12,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   bannerCounterWrap: {
     alignSelf: 'center',
@@ -191,8 +201,8 @@ export default StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 6,
+    marginBottom: 8,
   },
   bannerCounterText: {
     color: '#111827',
@@ -203,16 +213,16 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 10,
+    marginBottom: 8,
   },
   sectionTitle: { fontFamily: Fonts.InterBold, color: '#111827' },
   sectionAction: {
     fontFamily: Fonts.InterSemiBold,
     color: Colorpath.ButtonColr,
   },
-  carouselContainer: { width: '100%', marginBottom: 10 },
-  paginationContainer: { paddingTop: 8, paddingBottom: 16 },
+  carouselContainer: { width: '100%', marginBottom: 4 },
+  paginationContainer: { paddingTop: 8, paddingBottom: 10 },
   activeDot: {
     width: 8,
     height: 8,
@@ -330,9 +340,9 @@ export default StyleSheet.create({
   liveSection: {
     width: '100%',
     backgroundColor: Colorpath.Pagebg,
-    paddingTop: 8,
-    marginTop: 16,
-    marginBottom: 14,
+    paddingTop: 4,
+    marginTop: 8,
+    marginBottom: 6,
   },
   liveHeader: {
     minHeight: 24,
@@ -489,7 +499,7 @@ export default StyleSheet.create({
   },
   livePaginationContainer: {
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   liveActiveDot: {
     width: 18,
@@ -605,6 +615,71 @@ export default StyleSheet.create({
   ctaPillDark: { backgroundColor: '#FF8A00' },
   ctaText: { color: '#FFFFFF', fontFamily: Fonts.InterBold },
   ctaTextDark: { color: '#FFFFFF' },
+  popularCardWrap: {
+    width: '100%',
+    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  popularCard: {
+    width: '100%',
+    maxWidth: normalize(390),
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F4B000',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    elevation: 4,
+  },
+  popularByText: {
+    fontFamily: Fonts.InterMedium,
+    color: '#4B5563',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  popularTitle: {
+    fontFamily: Fonts.InterBold,
+    color: '#111827',
+    lineHeight: 22,
+  },
+  popularMetaGroup: {
+    gap: 10,
+    marginTop: 14,
+  },
+  popularDivider: {
+    height: 1,
+    width: '100%',
+    backgroundColor: '#D1D5DB',
+    marginTop: 16,
+    marginBottom: 14,
+  },
+  popularPrice: {
+    fontFamily: Fonts.InterExtraBold,
+    color: '#111827',
+  },
+  popularFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  popularButton: {
+    minHeight: 36,
+    borderRadius: 10,
+    backgroundColor: '#111827',
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  popularButtonText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.InterBold,
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
   featureCardOuter: {
     width: '100%',
     paddingHorizontal: 4,
@@ -883,7 +958,7 @@ export default StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#1E3A8A',
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 10,
     width: '100%',
   },
   panelTitle: {
@@ -898,15 +973,18 @@ export default StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 6,
-    marginBottom: 20,
+    marginBottom: 14,
   },
-  selectorRow: { flexDirection: 'row', gap: 12 },
+  selectorRow: { flexDirection: 'row' },
   selectorBox: {
     flex: 1,
-    borderRadius: 16,
+    minWidth: 0,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 5,
+    paddingVertical: 10,
+    minHeight: 56,
+    justifyContent: 'center',
   },
   selectorLabel: {
     fontFamily: Fonts.InterRegular,
@@ -922,7 +1000,7 @@ export default StyleSheet.create({
   selectorValue: {
     fontFamily: Fonts.InterSemiBold,
     color: '#111827',
-    fontSize: 15,
+    fontSize: 14,
   },
   chipRow: {
     paddingBottom: 10,
@@ -947,7 +1025,8 @@ export default StyleSheet.create({
   chipActive: { backgroundColor: '#2C4DB9', borderColor: '#2C4DB9' },
   chipText: { fontFamily: Fonts.InterSemiBold, color: '#6B7280' },
   chipTextActive: { color: '#FFFFFF' },
-  marketHeader: { justifyContent: 'center', alignSelf: 'center', marginTop: 24, marginBottom: 16, width: normalize(180) },
+  marketHeader:
+   { justifyContent: 'center', alignSelf: 'center', marginTop: 12, marginBottom: 10, width: normalize(185) },
   marketTitle: {
     fontFamily: Fonts.InterBold,
     color: '#111827',
@@ -959,7 +1038,7 @@ export default StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 12,
     width: '100%',
     // backgroundColor:Colorpath.SkyBG,
   },
@@ -975,8 +1054,8 @@ export default StyleSheet.create({
   statTile: {
     width: '48%',
     backgroundColor: Colorpath.SkyBG,
-    borderRadius: 16,
-    paddingVertical: 20,
+    borderRadius: 10,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -995,10 +1074,12 @@ export default StyleSheet.create({
   membershipCard: {
     borderRadius: 28,
     paddingTop: 30,
-    width: normalize(290),
-    height: normalize(465),
+    paddingBottom: 20,
+    width: normalize(300),
+    minHeight: normalize(465),
     alignItems: 'center',
     alignSelf: 'center',
+    overflow: 'hidden',
   },
   membershipHeader: {
     alignItems: 'center',
@@ -1058,7 +1139,8 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     paddingVertical: 14,
-    width: '90%',
+    width: '92%',
+    alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1073,15 +1155,15 @@ export default StyleSheet.create({
   },
   membershipArtwork: {
     width: '100%',
-    height: normalize(180),
+    height: Platform.OS === 'android' ? normalize(120) : normalize(180),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
     marginBottom: 8,
   },
   membershipImage: {
-    width: normalize(240),
-    height: normalize(160),
+    width: Platform.OS === 'android' ? normalize(180) : normalize(240),
+    height: Platform.OS === 'android' ? normalize(110) : normalize(160),
     alignSelf: 'center',
   },
   membershipOrb: {

@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const CheckMembership = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isGuestUserFlow = props?.route?.params?.fromGuestUser === true;
     const features = [
         {
             title: 'Multi State & Board Licensure Tracking',
@@ -58,7 +59,7 @@ const CheckMembership = (props) => {
             CommonActions.reset({
                 index: 0,
                 routes: [
-                    { name: "TabNav" }
+                    { name: isGuestUserFlow ? "GuestUser" : "TabNav" }
                 ],
             })
         );
@@ -156,7 +157,7 @@ const CheckMembership = (props) => {
                             width={normalize(288)}
                             backgroundColor={Colorpath.ButtonColr}
                             borderRadius={normalize(5)}
-                            text="Start Your  30-Day Free Trial Today!"
+                            text={isGuestUserFlow ? "Back To Home" : "Start Your  30-Day Free Trial Today!"}
                             color={Colorpath.white}
                             fontSize={16}
                             fontFamily={Fonts.InterSemiBold}
@@ -273,4 +274,3 @@ const styles = StyleSheet.create({
     },
 });
 export default CheckMembership;
-

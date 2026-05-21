@@ -112,7 +112,14 @@ const HeaderSearch = (props) => {
             });
         if (result) {
             setSearchText("");
-            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.taskData, Realback: "cont" } })
+            props.navigation.navigate("Statewebcast", {
+                webCastURL: {
+                    webCastURL: result,
+                    shareUrl: url,
+                    creditData: props?.route?.params?.taskData,
+                    Realback: "cont"
+                }
+            })
         }
     }
     const SearchCont = text => {
