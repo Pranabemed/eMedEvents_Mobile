@@ -20,7 +20,6 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-let status = "";
 const Globalresult = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const dispatch = useDispatch();
@@ -45,6 +44,7 @@ const Globalresult = (props) => {
     const [sortedFall, setSortedFall] = useState(false);
     const [sortType, setSortType] = useState("");
     const hasFocusedOnceRef = useRef(false);
+    const requestStatusRef = useRef("");
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
     useEffect(() => {
@@ -236,18 +236,23 @@ const Globalresult = (props) => {
         }
     }
     
-    if (status == '' || CMEReducer.status !== status) {
+    useEffect(() => {
+        if (!CMEReducer.status || requestStatusRef.current === CMEReducer.status) {
+            return;
+        }
+
+        requestStatusRef.current = CMEReducer.status;
+
         switch (CMEReducer.status) {
             case 'CME/cmeCourseRequest':
-                status = CMEReducer.status;
                 setApiReq(true);
                 setLoading(true);
                 break;
             case 'CME/cmeCourseSuccess':
-                status = CMEReducer.status;
                 setApiReq(false);
                 setLoading(false);
                 setHasFetchedResults(true);
+                setRefreshing(false);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
                     if (pageNum === 0) {
                         setStoreAlldata(CMEReducer?.cmeCourseResponse?.conferences);
@@ -268,7 +273,6 @@ const Globalresult = (props) => {
                 }
                 break;
             case 'CME/cmeCourseFailure':
-                status = CMEReducer.status;
                 setPageNum(0);
                 setApiReq(false);
                 setLoading(false);
@@ -276,7 +280,7 @@ const Globalresult = (props) => {
                 setRefreshing(false);
                 break;
         }
-    }
+    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, storeAlldata]);
     const searchGlobalitem = ({ item, index }) => {
         console.log(item, "item---------")
         const formatDate = (dateStr) => {
