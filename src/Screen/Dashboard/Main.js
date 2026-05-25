@@ -15,7 +15,7 @@ import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
-import { licesensRequest } from '../../Redux/Reducers/AuthReducer';
+import { licesensRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -26,6 +26,9 @@ import { Freeze } from "react-freeze";
 import { enableFreeze } from "react-native-screens";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
+import Modal from 'react-native-modal';
+
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 
 const normalizeProfessionHandle = (professionHandle) =>
   String(professionHandle || '')
@@ -100,6 +103,10 @@ const Main = (props) => {
   const [finalProfessionmain, setFinalProfessionmain] = useState(null);
   const [freeTrail, setFreeTrail] = useState(false);
   const [daysleft, setDaysleft] = useState(false);
+  const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
+  const [guestVerifyData, setGuestVerifyData] = useState(null);
+  const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
+  const guestVerifyNavigationRef = useRef(false);
   const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
@@ -309,6 +316,43 @@ const Main = (props) => {
 
     token_handle_vault();
   }, [isFocus]);
+  useEffect(() => {
+    if (!isFocus) return;
+    const loadGuestVerifyModal = async () => {
+      try {
+        if (guestVerifyNavigationRef.current) {
+          return;
+        }
+        const [guestFlowRaw, verifyRaw, professionRaw] = await Promise.all([
+          AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
+          AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+          AsyncStorage.getItem(constants.PROFESSION),
+        ]);
+        if (!guestFlowRaw) {
+          setGuestVerifyModalVisible(false);
+          return;
+        }
+        const verifyData = verifyRaw ? JSON.parse(verifyRaw) : null;
+        const professionData = professionRaw ? JSON.parse(professionRaw) : null;
+        const user = verifyData || professionData;
+        const hasLicenseInfo = Boolean(
+          user?.license_state_id && user?.license_number && user?.license_expiry_date
+        );
+        const isEmailVerified = String(user?.is_verified ?? user?.email_verified ?? '0') === '1';
+        const isPhoneVerified = String(user?.phone_verified ?? '0') === '1';
+
+        if (user && hasLicenseInfo && (!isEmailVerified || !isPhoneVerified)) {
+          setGuestVerifyData(user);
+          setGuestVerifyModalVisible(true);
+        } else {
+          setGuestVerifyModalVisible(false);
+        }
+      } catch (error) {
+        console.log('loadGuestVerifyModal error', error);
+      }
+    };
+    loadGuestVerifyModal();
+  }, [isFocus]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
   const isPrimePaymentSuccess =
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
@@ -379,6 +423,79 @@ const Main = (props) => {
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
+  const closeGuestVerifyModal = async () => {
+    setGuestVerifyModalVisible(false);
+  };
+  const guestVerifyEmail =
+    guestVerifyData?.email ||
+    AuthReducer?.verifyResponse?.email ||
+    AuthReducer?.verifyResponse?.user?.email ||
+    finalverifyvaultmain?.email ||
+    finalProfessionmain?.email ||
+    '';
+  const handleGuestVerifyAccount = async () => {
+    const verifyPayload = AuthReducer?.verifyResponse || guestVerifyData  || AuthReducer?.verifyResponse || finalverifyvaultmain || finalProfessionmain || {};
+    const countryCode =
+      verifyPayload?.countryCode ||
+      verifyPayload?.callingCode ||
+      (verifyPayload?.usa_user ? '+1' : '');
+    const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
+    const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
+    const token = await AsyncStorage.getItem(constants.TOKEN);
+
+    if (token) {
+      setGuestVerifyLoading(true);
+      connectionrequest()
+        .then(() => {
+          dispatch(verifyRequest({ token, key: {} }));
+        })
+        .catch((err) => showErrorAlert("Please connect to internet", err))
+        .finally(() => {
+          setGuestVerifyLoading(false);
+        });
+    }
+
+    guestVerifyNavigationRef.current = true;
+    setTimeout(() => {
+      guestVerifyNavigationRef.current = false;
+    }, 1200);
+    await closeGuestVerifyModal();
+
+    if (!isEmailVerified) {
+      props.navigation.navigate('VerifyOTP', {
+        NewEmail: {
+          email: verifyPayload?.email,
+          phoneNo: verifyPayload?.phone,
+          phone: verifyPayload?.phone,
+          countryCode,
+          returnDat: { ...verifyPayload, countryCode },
+          forceResend: true,
+        },
+        user: {
+          emailid: verifyPayload?.email,
+          phoneData: verifyPayload?.phone,
+        },
+      });
+      return;
+    }
+
+    if (!isPhoneVerified) {
+      props.navigation.navigate('VerifyMobileOTP', {
+        validPh: {
+          validPh: verifyPayload?.phone,
+          phonecode: countryCode,
+        },
+        forceResend: true,
+      });
+      return;
+    }
+
+    try {
+      await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+    } catch (error) {
+      console.log('handleGuestVerifyAccount cleanup error', error);
+    }
+  };
   return (
     <>
       <MyStatusBar
@@ -432,9 +549,9 @@ const Main = (props) => {
             right: 0,
             justifyContent: 'center',
             alignItems: 'center',
-            paddingBottom: insets.bottom + normalize(10),
+            paddingBottom: Math.max(insets.bottom, normalize(2)),
           }}>
-            <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25) }}>
+            <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25), marginBottom: normalize(-2) }}>
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
@@ -446,7 +563,7 @@ const Main = (props) => {
               right: 0,
               justifyContent: 'center',
               alignItems: 'center',
-              paddingBottom: insets.bottom + normalize(10),
+              paddingBottom: Math.max(insets.bottom, normalize(2)),
             }}
           >
             <Pressable
@@ -461,6 +578,7 @@ const Main = (props) => {
                 borderTopRightRadius: normalize(25),
                 paddingVertical: normalize(20),
                 paddingHorizontal: normalize(10),
+                marginBottom: normalize(-2),
               }}
             >
               <Text
@@ -515,6 +633,128 @@ const Main = (props) => {
           </View>
             : null}
           {primeadd && <PrimeCard primeadd={primeadd} setPrimeadd={setPrimeadd} />}
+          <Modal
+            isVisible={guestVerifyModalVisible}
+            onBackdropPress={() => { }}
+            onBackButtonPress={() => { }}
+            animationIn="slideInUp"
+            animationOut="slideOutDown"
+            backdropTransitionOutTiming={0}
+            useNativeDriver={true}
+            hideModalContentWhileAnimating={true}
+            style={{ justifyContent: 'flex-end', margin: 0 }}
+          >
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: normalize(24),
+                borderTopRightRadius: normalize(24),
+                paddingHorizontal: normalize(20),
+                paddingTop: normalize(22),
+                paddingBottom: Math.max(insets.bottom, normalize(18)),
+              }}
+            >
+              <View
+                style={{
+                  alignSelf: 'center',
+                  width: normalize(48),
+                  height: normalize(5),
+                  borderRadius: normalize(10),
+                  backgroundColor: '#D1D5DB',
+                  marginBottom: normalize(18),
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: Fonts.InterBold,
+                  fontSize: 22,
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: normalize(14),
+                }}
+              >
+                {'Verification Alert !'}
+              </Text>
+              <View
+                style={{
+                  height: 0.5,
+                  backgroundColor:Colorpath.ButtonColr,
+                  width: '100%',
+                  marginBottom: normalize(18),
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: Fonts.InterSemiBold,
+                  fontSize: 18,
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: normalize(20),
+                  lineHeight: normalize(24),
+                }}
+              >
+                {"We've sent a verification email to your registered email address "}
+                {guestVerifyEmail ? (
+                  <Text
+                    style={{
+                      color: '#FF773D',
+                      fontFamily: Fonts.InterBold,
+                      fontSize: 18,
+                    }}
+                  >
+                    {guestVerifyEmail}
+                  </Text>
+                ) : null}
+                {
+                  '. Please verify your account to access all features of your eMedEvents account.'
+                }
+              </Text>
+              <TouchableOpacity
+                onPress={handleGuestVerifyAccount}
+                disabled={guestVerifyLoading}
+                style={{
+                  height: normalize(48),
+                  borderRadius: normalize(10),
+                  backgroundColor: Colorpath.ButtonColr,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: normalize(12),
+                  opacity: guestVerifyLoading ? 0.7 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: Fonts.InterBold,
+                    fontSize: 16,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {guestVerifyLoading ? 'Please wait...' : 'Verify your account'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { }}
+                style={{
+                  height: normalize(48),
+                  borderRadius: normalize(10),
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: Fonts.InterSemiBold,
+                    fontSize: 16,
+                    color: '#374151',
+                  }}
+                >
+                  {'Go to Home'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
         </SafeAreaView>
         <Freeze freeze={freeze} />
       </KeyboardAvoidingView>

@@ -8,7 +8,7 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import constants from '../../Utils/Helpers/constants';
-import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer';
+import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { cancelcouponRequest, cartCheckoutRequest, couponWebcastRequest, FreeTransRequest, saveRegistRequest, StatusPaymentRequest, TransemailcheckRequest } from '../../Redux/Reducers/WebcastReducer';
@@ -42,6 +42,7 @@ let status = "";
 let status1 = "";
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import { SafeAreaView } from 'react-native-safe-area-context'
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const Checkout = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer)
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -260,6 +261,32 @@ const Checkout = (props) => {
         total_amount_with_fee: checkoutTotalAmount,
         ...source,
     });
+    const persistGuestRegistrationSession = async (registrationResponse) => {
+        console.log('Persisting====', registrationResponse);
+        const token = registrationResponse?.token;
+        const refreshToken = registrationResponse?.refresh_token;
+        const user = registrationResponse?.user;
+
+        if (token) {
+            await AsyncStorage.setItem(constants.TOKEN, token);
+            dispatch(tokenSuccess(token));
+        }
+        if (refreshToken) {
+            await AsyncStorage.setItem(constants.REFRESH_TOKEN, refreshToken);
+        }
+        if (user) {
+            const userString = JSON.stringify(user);
+            await AsyncStorage.setItem(constants.VERIFYSTATEDATA, userString);
+            await AsyncStorage.setItem(constants.PROFESSION, userString);
+            await AsyncStorage.setItem(
+                GUEST_REGISTRATION_FLOW_KEY,
+                JSON.stringify({
+                    license_state_id: user?.license_state_id || '',
+                    license_number: user?.license_number || '',
+                })
+            );
+        }
+    };
     const checkoutClear = () => {
         if (navigation.canGoBack()) {
             navigation.goBack();
@@ -632,6 +659,9 @@ const Checkout = (props) => {
                     allTicketsFree(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
                 const handleDis = ticketSave?.discounts == true && !props?.route?.params?.inPersonTicket?.inPersonTicket && checkoutBaseAmount == 0;
                 if (WebcastReducer?.saveRegistResponse?.msg == "Registration details saved successfully.") {
+                    persistGuestRegistrationSession(WebcastReducer?.saveRegistResponse).catch(error => {
+                        console.log('persistGuestRegistrationSession error', error);
+                    });
                     if (isAllFree) {
                         handleFree(ticketSave?.invoice);
                     } else if (handleDis) {

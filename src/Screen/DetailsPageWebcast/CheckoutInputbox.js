@@ -83,6 +83,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   setDobindex,
   setDobchoose,
   dobchoose,
+  isGuestCheckout,
   iseMededDo,
   setActiveIndexct, city_id, state_id, country_id, countrypicker, spanroute, ticketSave, speciality_id, setSpeciality, setSpeciality_id, activeIndex, removeSpeciality, selectedSpecialities, setSelectedSpecialities, slist, searchStateName, searchState, setSearchState, statepicker, handleSpecialitySelect, formData, setFormData, setActiveIndex, totalQuantity, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
   console.log(speciality, "totalQuantity122", slist, totalQuantity, spanroute)
@@ -717,7 +718,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index !== 0}
+                  editable={isGuestCheckout || index !== 0}
                 />
               </View>
             </View>
@@ -738,7 +739,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index !== 0}
+                  editable={isGuestCheckout || index !== 0}
                 />
               </View>
             </View>
@@ -763,7 +764,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index === 0 ? !!allmsg : true}
+                  editable={index === 0 ? (isGuestCheckout || !!allmsg) : true}
                 />
               </View>
             </View>
@@ -1476,7 +1477,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index !== 0}
+                  editable={isGuestCheckout || index !== 0}
                 />
               </View>
             </View>
@@ -1497,7 +1498,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index !== 0}
+                  editable={isGuestCheckout || index !== 0}
                 />
               </View>
             </View>
@@ -1522,7 +1523,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={index === 0 ? !!allmsg : true}
+                  editable={index === 0 ? (isGuestCheckout || !!allmsg) : true}
                 />
               </View>
             </View>

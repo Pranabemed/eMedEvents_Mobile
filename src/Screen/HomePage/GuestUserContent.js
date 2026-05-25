@@ -947,6 +947,30 @@ const GuestChipsShimmer = ({ width }) => (
   </View>
 );
 
+const GuestRequirementsShimmer = () => (
+  <View style={styles.panel}>
+    <View style={styles.requirementsCard}>
+      <SkeletonPlaceholder
+        backgroundColor={SHIMMER_BG}
+        highlightColor={SHIMMER_HL}
+        speed={1200}
+      >
+        <View style={styles.requirementsShimmerHeader}>
+          <View style={styles.requirementsShimmerIcon} />
+          <View style={styles.requirementsShimmerHeaderText}>
+            <View style={styles.requirementsShimmerTitle} />
+            <View style={styles.requirementsShimmerSubtitle} />
+          </View>
+        </View>
+        <View style={styles.requirementsShimmerRow}>
+          <View style={styles.requirementsShimmerField} />
+          <View style={styles.requirementsShimmerField} />
+        </View>
+      </SkeletonPlaceholder>
+    </View>
+  </View>
+);
+
 const StatsGrid = ({ width, stats }) => {
   if (!stats?.length) return null;
 
@@ -1064,7 +1088,8 @@ const GuestUserContent = ({ guest }) => {
     homeData?.free_conference,
   );
   const liveWebinars = firstArray(
-    homeData?.live_webinar,
+    homeData?.inperson_hybrid,
+    homeData?.inPersonHybrid,
     homeData?.liveWebinar,
     homeData?.live_webinars,
     homeData?.liveWebinars,
@@ -1696,6 +1721,9 @@ const GuestUserContent = ({ guest }) => {
               <GuestCarouselShimmer title="Featured Activity" width={width} />
             ) : null}
 
+            {isHomeLoading ? (
+              <GuestRequirementsShimmer />
+            ) : (
             <View style={styles.panel}>
               <Text style={styles.panelTitle}>
                 Tell Us Your Profession & Specialty
@@ -1703,50 +1731,65 @@ const GuestUserContent = ({ guest }) => {
               <Text style={styles.panelSubTitle}>
                 Let us tailor the best courses for you
               </Text>
-              <View style={[styles.selectorRow, { gap: 12 }]}>
-                <TouchableOpacity
-                  style={styles.selectorBox}
-                  onPress={() => setProfModalVisible(true)}
-                >
-                  <Text style={styles.selectorLabel}>Profession</Text>
-                  <View style={styles.selectorValueRow}>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
-                    >
-                      {selectedProfession || 'Select Profession'}
-                    </Text>
-                    <Icon
-                      name="keyboard-arrow-down"
-                      size={18}
-                      color="#4B5563"
-                    />
+              <View style={styles.requirementsCard}>
+                <View style={styles.requirementsHeader}>
+                  <View style={styles.requirementsIconWrap}>
+                    <Image source={Imagepath.CreditValut} style={{height:18,width:18,resizeMode:'contain'}}/>
+                    {/* <BadgeIcon name="ribbon" size={18} color="#2F2F2F" /> */}
                   </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.selectorBox}
-                  onPress={() => openStatePicker('profile')}
-                >
-                  <Text style={styles.selectorLabel}>State</Text>
-                  <View style={styles.selectorValueRow}>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
-                    >
-                      {selectedState?.name ||
-                        selectedState?.state_name ||
-                        selectedState?.title ||
-                        'Select State'}
+                  <View style={styles.requirementsHeaderText}>
+                    <Text style={styles.requirementsTitle}>CME Requirements</Text>
+                    <Text style={styles.requirementsSubtitle}>
+                      Input your state specific CE requirements
                     </Text>
-                    <Icon
-                      name="keyboard-arrow-down"
-                      size={18}
-                      color="#4B5563"
-                    />
                   </View>
-                </TouchableOpacity>
+                </View>
+                <View style={styles.selectorRow}>
+                  <TouchableOpacity
+                    style={styles.selectorPlain}
+                    onPress={() => setProfModalVisible(true)}
+                  >
+                    <Text style={styles.selectorLabel}>Profession</Text>
+                    <View style={styles.selectorValueRow}>
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
+                      >
+                        {selectedProfession || 'Select Profession'}
+                      </Text>
+                      <Icon
+                        name="keyboard-arrow-down"
+                        size={18}
+                        color="#4B5563"
+                      />
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.selectorPlain}
+                    onPress={() => openStatePicker('profile')}
+                  >
+                    <Text style={styles.selectorLabel}>State</Text>
+                    <View style={styles.selectorValueRow}>
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
+                      >
+                        {selectedState?.name ||
+                          selectedState?.state_name ||
+                          selectedState?.title ||
+                          'Select State'}
+                      </Text>
+                      <Icon
+                        name="keyboard-arrow-down"
+                        size={18}
+                        color="#4B5563"
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
+            )}
 
             {popularCourses.length > 0 ? (
               <CarouselSection

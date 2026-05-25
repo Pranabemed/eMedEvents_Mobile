@@ -961,6 +961,77 @@ export default StyleSheet.create({
     marginBottom: 10,
     width: '100%',
   },
+  requirementsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+  requirementsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  requirementsIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#D9E7F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    backgroundColor: '#F9FBFF',
+  },
+  requirementsHeaderText: {
+    flex: 1,
+  },
+  requirementsTitle: {
+    color: '#111827',
+    fontFamily: Fonts.InterBold,
+    fontSize: 15,
+  },
+  requirementsSubtitle: {
+    color: '#9CA3AF',
+    fontFamily: Fonts.InterRegular,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  requirementsShimmerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  requirementsShimmerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
+  },
+  requirementsShimmerHeaderText: {
+    flex: 1,
+  },
+  requirementsShimmerTitle: {
+    width: normalize(130),
+    height: 14,
+    borderRadius: 7,
+    marginBottom: 6,
+  },
+  requirementsShimmerSubtitle: {
+    width: normalize(165),
+    height: 10,
+    borderRadius: 5,
+  },
+  requirementsShimmerRow: {
+    flexDirection: 'row',
+    columnGap: 12,
+  },
+  requirementsShimmerField: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+  },
   panelTitle: {
     color: '#FFFFFF',
     fontFamily: Fonts.InterBold,
@@ -975,21 +1046,21 @@ export default StyleSheet.create({
     marginTop: 6,
     marginBottom: 14,
   },
-  selectorRow: { flexDirection: 'row' },
-  selectorBox: {
+  selectorRow: {
+    flexDirection: 'row',
+    columnGap: 12,
+  },
+  selectorPlain: {
     flex: 1,
     minWidth: 0,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 5,
-    paddingVertical: 10,
-    minHeight: 56,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
     justifyContent: 'center',
   },
   selectorLabel: {
     fontFamily: Fonts.InterRegular,
-    color: '#6B7280',
-    fontSize: 12,
+    color: '#111827',
+    fontSize: 11,
     marginBottom: 4,
   },
   selectorValueRow: {
@@ -999,8 +1070,8 @@ export default StyleSheet.create({
   },
   selectorValue: {
     fontFamily: Fonts.InterSemiBold,
-    color: '#111827',
-    fontSize: 14,
+    color: Colorpath.ButtonColr,
+    fontSize: 18,
   },
   chipRow: {
     paddingBottom: 10,

@@ -12,7 +12,7 @@ import { addtoCartWebcastRequest, checkoutTicketRequest } from '../../Redux/Redu
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 let status = "";
-const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation }) => {
+const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, guestOrigin }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
@@ -126,19 +126,21 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     navigation.navigate("Checkout", {
       checkoutSpan: {
         checkoutSpan: webcastdeatils,
-        finalTicket: WebcastReducer?.checkoutTicketResponse
+        finalTicket: WebcastReducer?.checkoutTicketResponse,
+        guestOrigin,
       }
     });
-  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse]);
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse, guestOrigin]);
 
   const inpersonNav = useCallback(() => {
     navigation.navigate("InPersonStatewebcast", {
       realData: {
         realData: webcastdeatils,
-        ticketall: WebcastReducer?.checkoutTicketResponse?.tickets
+        ticketall: WebcastReducer?.checkoutTicketResponse?.tickets,
+        guestOrigin,
       }
     });
-  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse?.tickets]);
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse?.tickets, guestOrigin]);
 
   const alreadyCart = useCallback(() => {
     navigation.navigate("AddToCart", {

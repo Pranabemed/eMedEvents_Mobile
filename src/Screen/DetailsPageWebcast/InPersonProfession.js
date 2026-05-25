@@ -9,15 +9,15 @@ import PageHeader from '../../Components/PageHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
 const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countrypickerprof, clist, setcountrypicker, searchCountryName, searchtext }) => {
     console.log(clist, "wekknamecustome");
-      const[showLoader,setShowLoader] = useState(false)
-        useEffect(() => {
-                    // Simulate 2-second loading time
-                    const timeout = setTimeout(() => {
-                        setShowLoader(true);
-                    }, 2000);
-            
-                    return () => clearTimeout(timeout);
-                }, []);
+    const [showLoader, setShowLoader] = useState(false)
+    useEffect(() => {
+        // Simulate 2-second loading time
+        const timeout = setTimeout(() => {
+            setShowLoader(true);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+    }, []);
     const weekFilterProfession = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -90,7 +90,7 @@ const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countr
                     }}>
                         <View
                             style={{
-                                backgroundColor:'#ffffff',
+                                backgroundColor: '#ffffff',
                                 // borderBottomColor: '#000000',
                                 // borderBottomWidth: 0.5,
                                 marginTop: normalize(10),
@@ -106,8 +106,8 @@ const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countr
                                     height: normalize(50),
                                     width: normalize(300),
                                     paddingLeft: normalize(13),
-                                    borderWidth:0.8,
-                                    borderColor:"#DADADA"
+                                    borderWidth: 0.8,
+                                    borderColor: "#DADADA"
                                 }}
                                 placeholder="Search Profession*"
                                 placeholderTextColor={"RGB(170, 170, 170)"}
@@ -121,7 +121,7 @@ const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countr
                             keyExtractor={(item, index) => index.toString()}
                             contentContainerStyle={{ paddingBottom: normalize(120) }}
                             keyboardShouldPersistTaps="always"
-                            ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"}/> :
+                            ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"} /> :
                                 <View style={{
                                     height: normalize(50),
                                     width: normalize(170),

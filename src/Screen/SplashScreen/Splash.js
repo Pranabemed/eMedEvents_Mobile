@@ -15,6 +15,7 @@ import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
 
 let status1 = "";
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const INVALID_TOKEN_MESSAGES = [
   'missing or invalid token',
   'invalid token',
@@ -61,6 +62,7 @@ export default function Splash(props) {
   const isFocus = useIsFocused();
   const [emaiV, setEmaiV] = useState("");
   const [phoneV, setPhoneV] = useState("");
+  const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
@@ -88,14 +90,16 @@ export default function Splash(props) {
   useEffect(() => {
     const handleNavigation = async () => {
       try {
-        const [emaileer, mobilevr] = await Promise.all([
+        const [emaileer, mobilevr, guestFlowRaw] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
-          AsyncStorage.getItem(constants.MOBVER)
+          AsyncStorage.getItem(constants.MOBVER),
+          AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
+        setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
@@ -329,6 +333,14 @@ export default function Splash(props) {
 
     console.log('[Splash] Nav Progress:', { allProfTake, bothVerified, isValidDashboard, isVerified, isPhoneVerified });
 
+    if (guestRegistrationFlowActive) {
+      hasNavigatedRef.current = true;
+      props.navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }] })
+      );
+      return;
+    }
+
     // State licenses path
     if (stateLicenses?.length > 0 && !isValidDashboard && bothVerified) {
       hasNavigatedRef.current = true;
@@ -434,7 +446,8 @@ export default function Splash(props) {
     AuthReducer?.signupResponse,
     isFocus,
     loadingDashboard,
-    spalsh
+    spalsh,
+    guestRegistrationFlowActive
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

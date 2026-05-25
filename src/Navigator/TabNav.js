@@ -461,60 +461,31 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarButton: (tabBarButtonProps) => (
-            <TouchableOpacity
-              {...tabBarButtonProps}
-              activeOpacity={0.8}
-              onPress={toggleDrawerModal}
-              style={[tabBarButtonProps.style, { alignItems: 'center', justifyContent: 'center' }]}
-            >
-              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Image
-                  source={Imagepath.Menubar}
-                  style={{
-                    height: normalize(19),
-                    width: normalize(19),
-                    resizeMode: "contain",
-                    tintColor: visible ? Colorpath.ButtonColr : "#999999",
-                    top: normalize(7)
-                  }}
-                />
-                <Text
-                  style={{
-                    color: visible ? Colorpath.ButtonColr : "#999999",
-                    marginTop: normalize(7),
-                    fontSize: 10,
-                    textAlign: "center"
-                  }}
-                >
-                  {"Menu"}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ),
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <>
               <Image
                 source={Imagepath.Menubar}
                 style={{
-                  height: normalize(19),
+                  height: normalize(22),
                   width: normalize(19),
                   resizeMode: "contain",
-                  tintColor: focused ? Colorpath.ButtonColr : "#999999",
+                  tintColor: visible ? Colorpath.ButtonColr : "#999999",
                   top: normalize(7)
                 }}
               />
               <Text
                 style={{
-                  color: focused ? Colorpath.ButtonColr : "#999999",
+                  color: visible ? Colorpath.ButtonColr : "#999999",
                   marginTop: normalize(7),
                   fontSize: 10,
-                  textAlign: "center"
+                  fontFamily: Fonts.InterSemiBold,
+                  textAlign: "center",
+                  width: normalize(30),
                 }}
               >
                 {"Menu"}
               </Text>
-            </View>
+            </>
           ),
         }}
       />
@@ -637,58 +608,29 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarButton: (tabBarButtonProps) => (
-            <TouchableOpacity
-              {...tabBarButtonProps}
-              activeOpacity={0.8}
-              onPress={toggleDrawerModal}
-              style={[tabBarButtonProps.style, { alignItems: 'center', justifyContent: 'center' }]}
-            >
-              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Image
-                  source={Imagepath.Menubar}
-                  style={{
-                    height: normalize(19),
-                    width: normalize(19),
-                    resizeMode: "contain",
-                    tintColor: visible ? Colorpath.ButtonColr : "#999999"
-                  }}
-                />
-                <Text
-                  style={{
-                    color: visible ? Colorpath.ButtonColr : "#999999",
-                    marginTop: normalize(3),
-                    fontSize: 10,
-                    textAlign: "center"
-                  }}
-                >
-                  {"Menu"}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ),
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <>
               <Image
                 source={Imagepath.Menubar}
                 style={{
-                  height: normalize(19),
-                  width: normalize(19),
+                  height: normalize(23),
+                  width: normalize(23),
                   resizeMode: "contain",
-                  tintColor: focused ? Colorpath.ButtonColr : "#999999"
+                  tintColor: visible ? Colorpath.ButtonColr : "#999999"
                 }}
               />
               <Text
                 style={{
-                  color: focused ? Colorpath.ButtonColr : "#999999",
+                  color: visible ? Colorpath.ButtonColr : "#999999",
                   marginTop: normalize(3),
                   fontSize: 10,
+                  fontFamily: Fonts.InterSemiBold,
                   textAlign: "center"
                 }}
               >
                 {"Menu"}
               </Text>
-            </View>
+            </>
           ),
         }}
       />
@@ -814,27 +756,22 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarButton: (tabBarButtonProps) => (
-            <TouchableOpacity
-              {...tabBarButtonProps}
-              activeOpacity={0.8}
-              onPress={toggleDrawerModal}
-              style={[tabBarButtonProps.style, { alignItems: 'center' }]}
-            >
+          tabBarIcon: ({ focused }) => (
+            <>
               <Image
                 source={Imagepath.Menubar}
                 style={{
-                  height: normalize(20),
-                  width: normalize(20),
+                  height: normalize(23),
+                  width: normalize(23),
                   resizeMode: "contain",
                   tintColor: visible ? Colorpath.ButtonColr : "#999999",
-                  // top: normalize(1)
+                  top: normalize(10)
                 }}
               />
               <Text
                 style={{
                   color: visible ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(4),
+                  marginTop: normalize(12),
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
@@ -843,31 +780,7 @@ function TabScreen() {
               >
                 {"Menu"}
               </Text>
-            </TouchableOpacity>
-          ),
-          tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <Image
-                source={Imagepath.Menubar}
-                style={{
-                  height: normalize(19),
-                  width: normalize(19),
-                  resizeMode: "contain",
-                  tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                  top: normalize(10)
-                }}
-              />
-              <Text
-                style={{
-                  color: focused ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(12),
-                  fontSize: 10,
-                  textAlign: "center"
-                }}
-              >
-                {"Menu"}
-              </Text>
-            </View>
+            </>
           ),
         }}
       />

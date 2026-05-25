@@ -24,6 +24,7 @@ import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/Webc
 import { SafeAreaView } from 'react-native-safe-area-context'
 let status = "";
 let status1 = "";
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const VerifyMobileOTP = (props) => {
     const {
         setFulldashbaord,
@@ -229,6 +230,7 @@ const VerifyMobileOTP = (props) => {
     const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
+    const autoResendHandledRef = useRef(false);
     const verifyHandlevalid = () => {
         let obj = {
             "verify_type": "phone"
@@ -275,19 +277,42 @@ const VerifyMobileOTP = (props) => {
                 break;
             case 'Auth/verifymobileSuccess':
                 status = AuthReducer.status;
-                if (allProfTake) {
-                    setNoload(false);
-                    toggleModal();
-                    dispatch(chooseStatecardRequest({}))
-                } else {
-                    setGtprof(false);
-                    setNoload(true);
-                    setTimeout(async () => {
-                        const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
-                        let objToken = { "token": loginHandleProccess || AuthReducer?.loginsiginResponse?.token, "key": {} }
-                        dispatch(dashMbRequest(objToken));
-                    }, 10);
-                }
+                setNoload(false);
+                (async () => {
+                    const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
+                    const guestFlow = guestFlowRaw ? JSON.parse(guestFlowRaw) : null;
+                    const verifiedUser = AuthReducer?.verifymobileResponse?.user || {};
+                    const hasLicenseInfo = Boolean(
+                        verifiedUser?.license_state_id && verifiedUser?.license_number
+                    );
+
+                    if (guestFlow && hasLicenseInfo) {
+                        await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+                        props.navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'TabNav', params: { initialRoute: 'Home', detectmain: 'newadd' } }],
+                        });
+                        return;
+                    }
+                    if (guestFlow) {
+                        await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+                    }
+
+                    if (allProfTake) {
+                        toggleModal();
+                        dispatch(chooseStatecardRequest({}))
+                    } else {
+                        setGtprof(false);
+                        setNoload(true);
+                        setTimeout(async () => {
+                            const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
+                            let objToken = { "token": loginHandleProccess || AuthReducer?.loginsiginResponse?.token, "key": {} }
+                            dispatch(dashMbRequest(objToken));
+                        }, 10);
+                    }
+                })().catch(error => {
+                    console.log('guest verify redirect error', error);
+                });
                 break;
             case 'Auth/verifymobileFailure':
                 status = AuthReducer.status;
@@ -473,6 +498,17 @@ const VerifyMobileOTP = (props) => {
             resendMobile();
         }
     }, [props?.route?.params?.Newphone?.Verifycell])
+    useEffect(() => {
+        if (!props?.route?.params?.forceResend) return;
+        if (autoResendHandledRef.current) return;
+        autoResendHandledRef.current = true;
+        setTimeout(() => {
+            resendMobileOTP();
+            resendMobile();
+            setMobiletrue(true);
+            clearAllOTPFieldsMobile();
+        }, 200);
+    }, [props?.route?.params?.forceResend, resendMobile]);
     const isPrimeTrial = useMemo(() => {
         return !!WebcastReducer?.PrimeCheckResponse?.subscription;
     }, [WebcastReducer?.PrimeCheckResponse?.subscription]);

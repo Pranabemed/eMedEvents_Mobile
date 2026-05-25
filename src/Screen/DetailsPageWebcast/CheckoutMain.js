@@ -118,6 +118,13 @@ const CheckoutMain = ({
             : feeAwareBaseAmount + feeAwareProcessingAmount
     );
     const feeAwareDisplayAmount = feeAwareTotalAmount > 0 ? feeAwareTotalAmount : feeAwareBaseAmount;
+    const guestOrigin =
+        spanroute?.guestOrigin ||
+        spanroute?.checkoutSpan?.Realback ||
+        spanroute?.inpersonSpanrole?.Realback;
+    const isGuestCheckout = ['guest', 'guestuser'].includes(
+        String(guestOrigin || '').toLowerCase()
+    );
     const handleToggleExpand = () => {
         setIsExpanded(!isExpanded);
     };
@@ -660,6 +667,7 @@ const CheckoutMain = ({
                 setDobindex={setDobindex}
                 setDobchoose={setDobchoose}
                 dobchoose={dobchoose}
+                isGuestCheckout={isGuestCheckout}
                 iseMededDo={iseMededDo}
                 professionad={professionad} setProfessionad={setProfessionad} setstatepicker={setstatepicker} allProfession={allProfession} specaillized={specaillized} npino={npino} setNpino={setNpino} address={address} setAddress={setAddress} ticketSave={ticketSave} setCountrypicker={setCountrypicker} countryReq={countryReq} country={country} PraticingState={PraticingState} setPratice={setPratice} state={state} setCityPicker={setCityPicker} cityReq={cityReq} city={city} zipcode={zipcode} setZipcode={setZipcode} cellno={cellno} setCellno={setCellno} />
 

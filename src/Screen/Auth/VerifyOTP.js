@@ -18,6 +18,26 @@ import Imagepath from '../../Themes/Imagepath';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+const persistEmailVerifiedStatus = async () => {
+    try {
+        const [verifyRaw, professionRaw] = await Promise.all([
+            AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+            AsyncStorage.getItem(constants.PROFESSION),
+        ]);
+        if (verifyRaw) {
+            const verifyData = JSON.parse(verifyRaw);
+            const updatedVerifyData = { ...verifyData, is_verified: 1, email_verified: 1 };
+            await AsyncStorage.setItem(constants.VERIFYSTATEDATA, JSON.stringify(updatedVerifyData));
+        }
+        if (professionRaw) {
+            const professionData = JSON.parse(professionRaw);
+            const updatedProfessionData = { ...professionData, is_verified: 1, email_verified: 1 };
+            await AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(updatedProfessionData));
+        }
+    } catch (error) {
+        console.log('persistEmailVerifiedStatus error', error);
+    }
+};
 const VerifyOTP = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -204,6 +224,7 @@ const VerifyOTP = (props) => {
     const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
+    const autoResendHandledRef = useRef(false);
     const verifyHandlevalid = () => {
         let obj = {
             "verify_type": "email"
@@ -236,6 +257,7 @@ const VerifyOTP = (props) => {
                 break;
             case 'Auth/verifyemailSuccess':
                 status = AuthReducer.status;
+                persistEmailVerifiedStatus();
                 toggleModal();
                 // props.navigation.navigate("VerifyMobileOTP");
                 break;
@@ -248,7 +270,7 @@ const VerifyOTP = (props) => {
     const email = props?.route?.params?.verifyemail?.verifyemail?.email || props?.route?.params?.NewEmail?.email || props?.route?.params?.newMail || props?.route?.params?.mobileNo || props?.route?.params?.user?.emailid || AuthReducer?.verifyResponse?.email || allotpcheck;
     const phoneTake = props?.route?.params?.user?.phoneData || props?.route?.params?.mobileNo?.phone || props?.route?.params?.verifyemail?.verifyemail?.phone || props?.route?.params?.NewEmail?.phoneNo || props?.route?.params?.NewEmail?.phone || props?.route?.params?.NewEmail?.returnDat?.phone || props?.route?.params?.NewEmail?.returnDat?.phoneNo;
     const countryCode = props?.route?.params?.verifyemail?.verifyemail?.countryCode || props?.route?.params?.NewEmail?.returnDat?.countryCode
-    console.log(phoneTake, "phoneTake")
+    console.log(phoneTake, "phoneTake",props?.route?.params)
     const clearAllOTPFields = () => {
         setOtp(new Array(6).fill(''));
         if (inputs.current[0]) {
@@ -275,6 +297,17 @@ const VerifyOTP = (props) => {
     useEffect(() => {
         resendOTP();
     }, [props?.route?.params?.NewEmail?.verifyotp])
+    useEffect(() => {
+        if (!props?.route?.params?.NewEmail?.forceResend) return;
+        if (autoResendHandledRef.current) return;
+        autoResendHandledRef.current = true;
+        setTimeout(() => {
+            resendEmailOTP();
+            resendOTP();
+            setResendtrue(true);
+            clearAllOTPFields();
+        }, 200);
+    }, [props?.route?.params?.NewEmail?.forceResend, resendOTP]);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);

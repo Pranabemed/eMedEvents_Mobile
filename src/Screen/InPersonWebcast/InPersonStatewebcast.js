@@ -326,6 +326,7 @@ const InPersonStatewebcast = (props) => {
                         inPersonTicket: {
                             inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
                             inpersonSpanrole: props?.route?.params?.realData?.realData,
+                            guestOrigin: props?.route?.params?.realData?.guestOrigin,
                             subtotalAmount: subtotalAmount,
                             processingFeeAmount: 0,
                             totalTicketPrice: subtotalAmount
