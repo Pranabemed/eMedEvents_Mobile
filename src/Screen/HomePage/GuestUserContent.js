@@ -395,6 +395,7 @@ const FreeConferenceCard = ({ item }) => {
 const FeaturedConferenceCard = ({ item, width }) => {
   console.log('item====', item);
   const organizationName = getText(item?.organization, item?.organizer_name);
+  const showOrganization = item?.showOrganization !== false;
   const visibleSpecialities = item?.showSpecialities
     ? normalizeSpecialities(item?.specialities).slice(0, 4)
     : [];
@@ -428,29 +429,31 @@ const FeaturedConferenceCard = ({ item, width }) => {
   return (
     <View style={styles.featureCardOuter}>
       <Pressable onPress={handlePress} style={styles.featureCard}>
-        <View style={styles.featureHeader}>
-          <TouchableOpacity
-            onPress={handleOrganizerPress}
-            disabled={!item?.organizationUrl}
-            activeOpacity={0.8}
-            style={styles.featureLogoCircle}
-          >
-            {organizationLogo ? (
-              <Image
-                source={organizationLogo}
-                style={styles.featureLogoImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={styles.featureLogoFallback}>
-                {getInitials(organizationName) || ' '}
-              </Text>
-            )}
-          </TouchableOpacity>
-          <Text numberOfLines={1} style={styles.featureOrgName}>
-            {organizationName}
-          </Text>
-        </View>
+        {showOrganization ? (
+          <View style={styles.featureHeader}>
+            <TouchableOpacity
+              onPress={handleOrganizerPress}
+              disabled={!item?.organizationUrl}
+              activeOpacity={0.8}
+              style={styles.featureLogoCircle}
+            >
+              {organizationLogo ? (
+                <Image
+                  source={organizationLogo}
+                  style={styles.featureLogoImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.featureLogoFallback}>
+                  {getInitials(organizationName) || ' '}
+                </Text>
+              )}
+            </TouchableOpacity>
+            <Text numberOfLines={1} style={styles.featureOrgName}>
+              {organizationName}
+            </Text>
+          </View>
+        ) : null}
 
         {visibleSpecialities.length ? (
           <View style={styles.featureSpecialityWrap}>
@@ -897,9 +900,14 @@ const GuestHeroShimmer = ({ width }) => (
   </View>
 );
 
-const GuestCarouselShimmer = ({ title, width, variant = 'feature' }) => (
+const GuestCarouselShimmer = ({
+  title,
+  width,
+  variant = 'feature',
+  showTitle = false,
+}) => (
   <View style={styles.carouselContainer}>
-    <SectionTitle title={title} width={width} />
+    {showTitle ? <SectionTitle title={title} width={width} /> : null}
     <View style={styles.shimmerCardWrap}>
       <SkeletonPlaceholder
         backgroundColor={SHIMMER_BG}
@@ -932,7 +940,6 @@ const GuestCarouselShimmer = ({ title, width, variant = 'feature' }) => (
 
 const GuestChipsShimmer = ({ width }) => (
   <View style={styles.shimmerChipsSection}>
-    <SectionTitle title="Specialities" width={width} />
     <SkeletonPlaceholder
       backgroundColor={SHIMMER_BG}
       highlightColor={SHIMMER_HL}
@@ -1027,6 +1034,7 @@ const GuestUserContent = ({ guest }) => {
     homeData,
     aboutUsData,
     homeStatus,
+    isGuestHomeLoading,
     stateList,
     selectedProfession,
     selectedState,
@@ -1054,9 +1062,11 @@ const GuestUserContent = ({ guest }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [statePickerMode, setStatePickerMode] = useState('listing');
   const isHomeLoading =
-    homeStatus === 'Guest/HomelistRequest' ||
-    homeStatus === '' ||
-    homeStatus == null;
+    isGuestHomeLoading != null
+      ? isGuestHomeLoading
+      : homeStatus === 'Guest/HomelistRequest' ||
+        homeStatus === '' ||
+        homeStatus == null;
 
   const topBanners = firstArray(
     homeData?.mobile_top_banners,
@@ -1709,16 +1719,20 @@ const GuestUserContent = ({ guest }) => {
             {featuredConferences.length > 0 ? (
               <CarouselSection
                 title="Featured Activities"
-                action="View all"
+                action=""
                 data={featuredConferences.map(mapConference)}
                 renderItem={renderFeaturedCard}
                 sliderWidth={width - 20}
                 itemWidth={width - 20}
                 width={width}
-                onAction={() => navigation.navigate('SearchResult')}
+                onAction={() => ''}
               />
             ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Featured Activity" width={width} />
+              <GuestCarouselShimmer
+                title="Featured Activity"
+                width={width}
+                showTitle={false}
+              />
             ) : null}
 
             {isHomeLoading ? (
@@ -1794,13 +1808,13 @@ const GuestUserContent = ({ guest }) => {
             {popularCourses.length > 0 ? (
               <CarouselSection
                 title="Most Popular Conferences"
-                action="View all"
+                action=""
                 data={popularCourses.map(mapPopularConference)}
                 renderItem={renderPopularCard}
                 sliderWidth={width - 20}
                 itemWidth={width - 20}
                 width={width}
-                onAction={() => navigation.navigate('SearchResult')}
+                onAction={() => ""}
               />
             ) : isHomeLoading ? (
               <GuestCarouselShimmer title="Most Popular Conferences" width={width} />
@@ -1872,6 +1886,7 @@ const GuestUserContent = ({ guest }) => {
                 data={specialtyCourseBundles.map(item => ({
                   ...mapConference(item),
                   showSpecialities: true,
+                  showOrganization: false,
                 }))}
                 renderItem={renderFeaturedCard}
                 sliderWidth={width - 20}
@@ -1929,9 +1944,9 @@ const GuestUserContent = ({ guest }) => {
                 onAction={() =>
                   navigation.navigate('Globalresult', {
                     trig: {
-                      trig: 'free',
-                      rqstType: 'typebasedconferences',
-                      mainKey: 'conference_type',
+                      trig: '',
+                      rqstType: 'freeconferences',
+                      mainKey: '',
                       Realback: 'guest',
                     },
                   })

@@ -30,6 +30,7 @@ const GuestUser = props => {
   const [cmeRequestKey, setCmeRequestKey] = useState('');
   const [handledCmeRequestKey, setHandledCmeRequestKey] = useState('');
   const [cmeRequestStarted, setCmeRequestStarted] = useState(false);
+  const [isGuestHomeLoading, setIsGuestHomeLoading] = useState(true);
 
   useEffect(() => {
     dispatch(stateRequest(1));
@@ -70,6 +71,7 @@ const GuestUser = props => {
 
   useEffect(() => {
     if (!isFocused) return;
+    setIsGuestHomeLoading(true);
     connectionrequest()
       .then(() => {
         dispatch(HomelistRequest({ is_mobile: 1 }));
@@ -77,6 +79,18 @@ const GuestUser = props => {
       })
       .catch(err => showErrorAlert('Please connect to internet', err));
   }, [dispatch, isFocused]);
+  useEffect(() => {
+    if (GuestReducer?.status === 'Guest/HomelistRequest') {
+      setIsGuestHomeLoading(true);
+      return;
+    }
+    if (
+      GuestReducer?.status === 'Guest/HomelistSuccess' ||
+      GuestReducer?.status === 'Guest/HomelistFailure'
+    ) {
+      setIsGuestHomeLoading(false);
+    }
+  }, [GuestReducer?.status]);
 
   useEffect(() => {
     const stateId = getStateId(selectedState);
@@ -121,6 +135,7 @@ const GuestUser = props => {
     homeData,
     aboutUsData,
     homeStatus: GuestReducer?.status,
+    isGuestHomeLoading,
     stateList,
     selectedProfession,
     selectedState,

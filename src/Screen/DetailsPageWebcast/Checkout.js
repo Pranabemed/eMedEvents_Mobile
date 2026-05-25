@@ -328,6 +328,7 @@ const Checkout = (props) => {
     }
     const [paymentcardfree, setPaymentcardfree] = useState(false);
     const [paymentfdfree, setPaymentfdfree] = useState(false);
+    const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
     const toggleModalPaymentfree = (dd) => {
         console.log(paymentcardfree, "paymentcardfree-----", dd)
         setPaymentcardfree(dd);
@@ -337,6 +338,38 @@ const Checkout = (props) => {
         setPaymentfdfree(tik);
     };
     console.log(paymentcardfree, "paymentcardfree-----", paymentfdfree)
+    const guestOrigin =
+        props?.route?.params?.checkoutSpan?.guestOrigin ||
+        props?.route?.params?.inPersonTicket?.guestOrigin ||
+        props?.route?.params?.checkoutSpan?.checkoutSpan?.Realback ||
+        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.Realback;
+    const isGuestCheckout = ['guest', 'guestuser'].includes(
+        String(guestOrigin || '').toLowerCase()
+    );
+    const resetGuestCheckoutFields = () => {
+        setFirstname("");
+        setLastname("");
+        setEmailad("");
+        setProfessionad("");
+        setSpeciality("");
+        setNpino("");
+        setAddress("");
+        setCountry("");
+        setState("");
+        setCity("");
+        setZipcode("");
+        setCellno("");
+        setCountry_id("");
+        setState_id("");
+        setCity_id("");
+        SetDialcode("");
+        setDateofbirth("");
+        setLicense_state_id("");
+        setLicense_number("");
+        setLicense_expiry_date("");
+        setSpeciality_id([]);
+        setPreviousSpec("");
+    };
     const searchCountryNameProfession = text => {
         console.log(text, 'text12333');
         if (text) {
@@ -383,9 +416,27 @@ const Checkout = (props) => {
         return () => backHandler.remove();
     }, []);
     useEffect(() => {
+        const loadGuestRegistrationFlow = async () => {
+            try {
+                const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
+                setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
+            } catch (error) {
+                console.log('loadGuestRegistrationFlow error', error);
+                setGuestRegistrationFlowActive(false);
+            }
+        };
+
+        loadGuestRegistrationFlow();
+    }, [isfocus, props?.route?.params?.checkoutSpan?.checkoutSpan, props?.route?.params?.inPersonTicket?.inpersonSpanrole]);
+    useEffect(() => {
         const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
+                    if (isGuestCheckout && !guestRegistrationFlowActive) {
+                        setFinalverifyvault(null);
+                        setFinalProfession(null);
+                        return;
+                    }
                     const [board_special, profession_data] = await Promise.all([
                         AsyncStorage.getItem(constants.VERIFYSTATEDATA),
                         AsyncStorage.getItem(constants.PROFESSION)
@@ -403,9 +454,23 @@ const Checkout = (props) => {
         };
 
         token_handle_vault();
-    }, [props?.route?.params?.checkoutSpan?.checkoutSpan, props?.route?.params?.inPersonTicket?.inpersonSpanrole]);
-    const allProfession = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
+    }, [props?.route?.params?.checkoutSpan?.checkoutSpan, props?.route?.params?.inPersonTicket?.inpersonSpanrole, isGuestCheckout, guestRegistrationFlowActive]);
+    const guestCheckoutProfile = guestRegistrationFlowActive
+        ? (AuthReducer?.verifymobileResponse?.user ||
+            AuthReducer?.verifyResponse?.user ||
+            finalverifyvault ||
+            finalProfession ||
+            AuthReducer?.verifyResponse)
+        : null;
+    const allProfession = isGuestCheckout
+        ? guestCheckoutProfile
+        : (DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession);
     console.log(allProfession, "allprofesss=========");
+    useEffect(() => {
+        if (isGuestCheckout && !guestRegistrationFlowActive) {
+            resetGuestCheckoutFields();
+        }
+    }, [isGuestCheckout, guestRegistrationFlowActive]);
 
     useEffect(() => {
         if (allProfession?.personal_information?.firstname || allProfession?.firstname) {
@@ -776,6 +841,7 @@ const Checkout = (props) => {
 
     }
     useEffect(() => {
+        if (isGuestCheckout && !guestRegistrationFlowActive) return;
         if (ticketSave?.billing_address) {
             const { zipcode, contact_no, country_name, state_name, city_name, address, country_id, state_id, city_id, callingCode } = ticketSave.billing_address;
             console.log(zipcode, "zipcode=======");
@@ -806,16 +872,18 @@ const Checkout = (props) => {
             if (license_number) setLicense_number(license_number);
             if (license_expiry_date) setLicense_expiry_date(license_expiry_date);
         }
-    }, [ticketSave]);
+    }, [ticketSave, isGuestCheckout, guestRegistrationFlowActive]);
     useEffect(() => {
+        if (isGuestCheckout && !guestRegistrationFlowActive) return;
         if (ticketSave) {
             const { license_state_id, license_number, license_expiry_date } = ticketSave;
             if (license_state_id) setLicense_state_id(license_state_id);
             if (license_number) setLicense_number(license_number);
             if (license_expiry_date) setLicense_expiry_date(license_expiry_date);
         }
-    }, [ticketSave])
+    }, [ticketSave, isGuestCheckout, guestRegistrationFlowActive])
     useEffect(() => {
+        if (isGuestCheckout) return;
         if (DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.phone) {
             const allDatashow = DashboardReducer?.mainprofileResponse?.user_address;
             const NpiNo = DashboardReducer?.mainprofileResponse?.professional_information?.npi_number;
@@ -863,7 +931,7 @@ const Checkout = (props) => {
             SetDialcode(callingCodeToUse || null);
             setCellno(formattedCellNo || "");
         }
-    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone]);
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isGuestCheckout]);
 
 
     const formatPhoneNumberno = (input) => {

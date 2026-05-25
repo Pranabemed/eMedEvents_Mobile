@@ -56,6 +56,11 @@ const InPersonStatewebcast = (props) => {
     }, [props?.route?.params?.realData?.registrationTickets, isfilterVisible]);
 
     const { ticketall } = props?.route?.params?.realData || { ticketall: [] };
+    const isFreeSingleTicketFlow =
+        props?.route?.params?.realData?.freeSingleTicket === true ||
+        (Array.isArray(ticketall) &&
+            ticketall.length > 0 &&
+            ticketall.every(ticket => Number(ticket?.itemamt || 0) === 0));
     console.log(ticketall, "ticketall-----------")
     const inPersonSaveTicket = async () => {
         if (clickHistory?.length > 0) {
@@ -91,9 +96,35 @@ const InPersonStatewebcast = (props) => {
         }
     };
 
-    const [clickHistory, setClickHistory] = useState(Array(ticketall?.length).fill([]));
-    const [totalAmounts, setTotalAmounts] = useState(Array(ticketall?.length).fill([]));
+    const [clickHistory, setClickHistory] = useState(() =>
+        (ticketall || []).map((ticket, index) => (
+            isFreeSingleTicketFlow && index === 0 ? [1] : []
+        ))
+    );
+    const [totalAmounts, setTotalAmounts] = useState(() =>
+        (ticketall || []).map((ticket, index) => (
+            isFreeSingleTicketFlow && index === 0
+                ? Number(ticket?.amount || ticket?.itemamt || 0)
+                : []
+        ))
+    );
     const [totalQuantity, setTotalQuantity] = useState(0); // New state for total quantity
+    useEffect(() => {
+        if (!Array.isArray(ticketall)) return;
+
+        if (isFreeSingleTicketFlow) {
+            setClickHistory(ticketall.map((ticket, index) => (index === 0 ? [1] : [])));
+            setTotalAmounts(
+                ticketall.map((ticket, index) => (
+                    index === 0 ? Number(ticket?.amount || ticket?.itemamt || 0) : []
+                ))
+            );
+            return;
+        }
+
+        setClickHistory(Array(ticketall.length).fill([]));
+        setTotalAmounts(Array(ticketall.length).fill([]));
+    }, [isFreeSingleTicketFlow, ticketall]);
     useEffect(() => {
         const totalPerIndex = clickHistory.map((quantity, index) => quantity);
         const totalLength = totalPerIndex.reduce((acc, curr) => acc + curr.length, 0);
@@ -108,8 +139,12 @@ const InPersonStatewebcast = (props) => {
             return;
         }
 
-        const maxTickets = 10;
+        const maxTickets = isFreeSingleTicketFlow ? 1 : 10;
         const currentClickHistory = clickHistory[index];
+
+        if (isFreeSingleTicketFlow) {
+            return;
+        }
 
         if (currentClickHistory.length >= maxTickets) {
             console.log(`Cannot exceed the maximum limit of ${maxTickets} clicks for index ${index}.`);
@@ -173,8 +208,10 @@ const InPersonStatewebcast = (props) => {
     };
     const stateDataFilter = ({ item, index }) => {
         const minTickets = 0;
-        const maxTickets = 10;
+        const maxTickets = isFreeSingleTicketFlow ? 1 : 10;
         const clickCount = clickHistory[index]?.length || 0;
+        const disableIncrement = isFreeSingleTicketFlow || clickCount >= maxTickets;
+        const disableDecrement = isFreeSingleTicketFlow || clickCount <= minTickets;
         return (
             <>
 
@@ -256,7 +293,7 @@ const InPersonStatewebcast = (props) => {
                                     {/* Decrement */}
                                     <TouchableOpacity
                                         onPress={() => handleDecrement(index, item)}
-                                        disabled={clickCount <= minTickets} // Disable if count is at or below minTickets
+                                        disabled={disableDecrement} // Disable if count is at or below minTickets
                                     >
                                         <Image
                                             source={Imagepath.MinusImg}
@@ -264,7 +301,7 @@ const InPersonStatewebcast = (props) => {
                                                 height: normalize(30),
                                                 width: normalize(30),
                                                 resizeMode: 'contain',
-                                                tintColor: clickCount > minTickets ? '#666666' : '#cccccc', // Disable color logic
+                                                tintColor: !disableDecrement ? '#666666' : '#cccccc', // Disable color logic
                                             }}
                                         />
                                     </TouchableOpacity>
@@ -284,7 +321,7 @@ const InPersonStatewebcast = (props) => {
 
                                     <TouchableOpacity
                                         onPress={() => handleIncrement(index, item)}
-                                        disabled={clickCount >= maxTickets}
+                                        disabled={disableIncrement}
                                     >
                                         <Image
                                             source={Imagepath.PlusImg}
@@ -292,7 +329,7 @@ const InPersonStatewebcast = (props) => {
                                                 height: normalize(30),
                                                 width: normalize(30),
                                                 resizeMode: 'contain',
-                                                tintColor: clickCount < maxTickets ? '#666666' : '#cccccc',
+                                                tintColor: !disableIncrement ? '#666666' : '#cccccc',
                                             }}
                                         />
                                     </TouchableOpacity>

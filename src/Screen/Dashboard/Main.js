@@ -106,7 +106,9 @@ const Main = (props) => {
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
   const [guestVerifyData, setGuestVerifyData] = useState(null);
   const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
+  const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
   const guestVerifyNavigationRef = useRef(false);
+  const guestVerifyRequestStartedRef = useRef(false);
   const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
@@ -433,27 +435,18 @@ const Main = (props) => {
     finalverifyvaultmain?.email ||
     finalProfessionmain?.email ||
     '';
-  const handleGuestVerifyAccount = async () => {
-    const verifyPayload = AuthReducer?.verifyResponse || guestVerifyData  || AuthReducer?.verifyResponse || finalverifyvaultmain || finalProfessionmain || {};
+  const proceedGuestVerification = async verifyPayload => {
     const countryCode =
       verifyPayload?.countryCode ||
       verifyPayload?.callingCode ||
       (verifyPayload?.usa_user ? '+1' : '');
     const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
     const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
-    const token = await AsyncStorage.getItem(constants.TOKEN);
-
-    if (token) {
-      setGuestVerifyLoading(true);
-      connectionrequest()
-        .then(() => {
-          dispatch(verifyRequest({ token, key: {} }));
-        })
-        .catch((err) => showErrorAlert("Please connect to internet", err))
-        .finally(() => {
-          setGuestVerifyLoading(false);
-        });
-    }
+    const phoneValue =
+      verifyPayload?.phone ||
+      verifyPayload?.mobile ||
+      verifyPayload?.phone_number ||
+      verifyPayload?.user?.phone;
 
     guestVerifyNavigationRef.current = true;
     setTimeout(() => {
@@ -465,15 +458,15 @@ const Main = (props) => {
       props.navigation.navigate('VerifyOTP', {
         NewEmail: {
           email: verifyPayload?.email,
-          phoneNo: verifyPayload?.phone,
-          phone: verifyPayload?.phone,
+          phoneNo: phoneValue,
+          phone: phoneValue,
           countryCode,
-          returnDat: { ...verifyPayload, countryCode },
+          returnDat: { ...verifyPayload, phone: phoneValue, countryCode },
           forceResend: true,
         },
         user: {
           emailid: verifyPayload?.email,
-          phoneData: verifyPayload?.phone,
+          phoneData: phoneValue,
         },
       });
       return;
@@ -482,7 +475,7 @@ const Main = (props) => {
     if (!isPhoneVerified) {
       props.navigation.navigate('VerifyMobileOTP', {
         validPh: {
-          validPh: verifyPayload?.phone,
+          validPh: phoneValue,
           phonecode: countryCode,
         },
         forceResend: true,
@@ -496,6 +489,82 @@ const Main = (props) => {
       console.log('handleGuestVerifyAccount cleanup error', error);
     }
   };
+  const handleGuestVerifyAccount = async () => {
+    const verifyPayload = guestVerifyData || finalverifyvaultmain || finalProfessionmain || AuthReducer?.verifyResponse || {};
+    const token = await AsyncStorage.getItem(constants.TOKEN);
+    const hasImmediateGuestContact =
+      Boolean(verifyPayload?.email) &&
+      Boolean(
+        verifyPayload?.phone ||
+        verifyPayload?.mobile ||
+        verifyPayload?.phone_number ||
+        verifyPayload?.user?.phone
+      );
+
+    if (token) {
+      setGuestVerifyLoading(true);
+      guestVerifyRequestStartedRef.current = false;
+      if (!hasImmediateGuestContact) {
+        setPendingGuestVerifyPayload(verifyPayload);
+      }
+      connectionrequest()
+        .then(() => {
+          dispatch(verifyRequest({ token, key: {} }));
+        })
+        .catch((err) => {
+          setPendingGuestVerifyPayload(null);
+          setGuestVerifyLoading(false);
+          showErrorAlert("Please connect to internet", err);
+        });
+      if (hasImmediateGuestContact) {
+        proceedGuestVerification(verifyPayload).catch(error => {
+          console.log('handleGuestVerifyAccount immediate flow error', error);
+          setGuestVerifyLoading(false);
+        });
+      }
+      return;
+    }
+
+    await proceedGuestVerification(verifyPayload);
+  };
+  useEffect(() => {
+    if (!pendingGuestVerifyPayload) return;
+    if (AuthReducer?.status === 'Auth/verifyRequest') {
+      guestVerifyRequestStartedRef.current = true;
+      return;
+    }
+    if (!guestVerifyRequestStartedRef.current) {
+      return;
+    }
+    if (AuthReducer?.status !== 'Auth/verifySuccess' && AuthReducer?.status !== 'Auth/verifyFailure') {
+      return;
+    }
+
+    const verifyResponse = AuthReducer?.verifyResponse || {};
+    const responseUser = verifyResponse?.user || {};
+    const mergedVerifyPayload = {
+      ...pendingGuestVerifyPayload,
+      ...responseUser,
+      ...verifyResponse,
+      email:
+        verifyResponse?.email ||
+        responseUser?.email ||
+        pendingGuestVerifyPayload?.email,
+      phone:
+        verifyResponse?.phone ||
+        responseUser?.phone ||
+        pendingGuestVerifyPayload?.phone,
+    };
+
+    guestVerifyRequestStartedRef.current = false;
+    setPendingGuestVerifyPayload(null);
+    setGuestVerifyLoading(false);
+    setGuestVerifyData(mergedVerifyPayload);
+    proceedGuestVerification(mergedVerifyPayload).catch(error => {
+      console.log('proceedGuestVerification error', error);
+      setGuestVerifyLoading(false);
+    });
+  }, [AuthReducer?.status, AuthReducer?.verifyResponse, pendingGuestVerifyPayload]);
   return (
     <>
       <MyStatusBar
@@ -733,7 +802,9 @@ const Main = (props) => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { }}
+                onPress={() => {
+                  props.navigation.navigate('GuestUser');
+                }}
                 style={{
                   height: normalize(48),
                   borderRadius: normalize(10),

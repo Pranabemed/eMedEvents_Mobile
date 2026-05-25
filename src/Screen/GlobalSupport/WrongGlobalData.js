@@ -65,7 +65,7 @@ const wrongRenderData = (title, data, onPressHandler, creditDataAll, nav, setPla
                                     onPressHandler(item);
                                 } else {
                                     const formattedText = item.toLowerCase().replace(/\s+/g, '-');
-                                    nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", creditData: creditDataAll,Realback:"cont" } });
+                                    nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", creditData: creditDataAll, Realback: "cont" } });
                                 }
                             }
                             }
@@ -289,69 +289,69 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(10), paddingBottom: normalize(70) }}>
             {wrongData?.popularSpecialties?.length > 0 && wrongRenderData('Popular specialities', wrongData?.popularSpecialties, handleUrl, creditDataAll, nav, setPlaceholderIndex)}
         </ScrollView>
-    ) :  (
+    ) : (
         <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(25) }}>
             {shouldShowLoader ? (
                 <ActivityIndicator size={"small"} color={"green"} />
-            ):conn === false ? (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.centerContainer}>
-                <View style={{
-                    height: normalize(100),
-                    width: normalize(120),
-                    borderRadius: normalize(20),
-                    bottom: normalize(20),
-                    justifyContent: "center",
-                    alignItems: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { height: 3, width: 0 },
-                    elevation: 10,
-                    backgroundColor: "#FFFFFF"
-                }}>
-                    <Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
-                </View>
-              <Buttons
-                    onPress={handleRot}
-                    height={normalize(25)}
-                    width={normalize(240)}
-                    // backgroundColor={Colorpath.ButtonColr}
-                    borderRadius={normalize(5)}
-                    text="No Internet Connection"
-                    color={Colorpath.black}
-                    fontSize={20}
-                    fontFamily={Fonts.InterSemiBold}
-                    fontWeight="bold"
-                    // marginTop={normalize(5)}
-                />
-                 <Buttons
-                    onPress={handleRot}
-                    height={normalize(45)}
-                    width={normalize(290)}
-                    // backgroundColor={Colorpath.ButtonColr}
-                    borderRadius={normalize(5)}
-                    text={`Please check your internet connection ${"\n"}and try again`}
-                    color={Colorpath.black}
-                    fontSize={16}
-                    fontFamily={Fonts.InterSemiBold}
-                    fontWeight="bold"
-                    marginTop={normalize(5)}
-                />
-                  <Buttons
-                    onPress={handleRot}
-                    height={normalize(45)}
-                    width={normalize(240)}
-                    backgroundColor={Colorpath.ButtonColr}
-                    borderRadius={normalize(5)}
-                    text="Retry"
-                    color={Colorpath.white}
-                    fontSize={16}
-                    fontFamily={Fonts.InterSemiBold}
-                    fontWeight="bold"
-                    marginTop={normalize(15)}
-                />
-            </View>
-        </SafeAreaView>
-    ) : (
+            ) : conn === false ? (
+                <SafeAreaView style={styles.container}>
+                    <View style={styles.centerContainer}>
+                        <View style={{
+                            height: normalize(100),
+                            width: normalize(120),
+                            borderRadius: normalize(20),
+                            bottom: normalize(20),
+                            justifyContent: "center",
+                            alignItems: "center",
+                            shadowColor: "#000",
+                            shadowOffset: { height: 3, width: 0 },
+                            elevation: 10,
+                            backgroundColor: "#FFFFFF"
+                        }}>
+                            <Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
+                        </View>
+                        <Buttons
+                            onPress={handleRot}
+                            height={normalize(25)}
+                            width={normalize(240)}
+                            // backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text="No Internet Connection"
+                            color={Colorpath.black}
+                            fontSize={20}
+                            fontFamily={Fonts.InterSemiBold}
+                            fontWeight="bold"
+                        // marginTop={normalize(5)}
+                        />
+                        <Buttons
+                            onPress={handleRot}
+                            height={normalize(45)}
+                            width={normalize(290)}
+                            // backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text={`Please check your internet connection ${"\n"}and try again`}
+                            color={Colorpath.black}
+                            fontSize={16}
+                            fontFamily={Fonts.InterSemiBold}
+                            fontWeight="bold"
+                            marginTop={normalize(5)}
+                        />
+                        <Buttons
+                            onPress={handleRot}
+                            height={normalize(45)}
+                            width={normalize(240)}
+                            backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text="Retry"
+                            color={Colorpath.white}
+                            fontSize={16}
+                            fontFamily={Fonts.InterSemiBold}
+                            fontWeight="bold"
+                            marginTop={normalize(15)}
+                        />
+                    </View>
+                </SafeAreaView>
+            ) : (
                 <View style={{
                     width: normalize(290),
                     borderRadius: normalize(10),

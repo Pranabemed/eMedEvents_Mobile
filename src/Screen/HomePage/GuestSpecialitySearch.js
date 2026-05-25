@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import SearchIcon from 'react-native-vector-icons/Ionicons';
@@ -33,11 +34,11 @@ const getLabel = item => {
   if (typeof item === 'string') return item.trim();
   return String(
     item?.label ||
-      item?.name ||
-      item?.title ||
-      item?.specialty_name ||
-      item?.speciality_name ||
-      '',
+    item?.name ||
+    item?.title ||
+    item?.specialty_name ||
+    item?.speciality_name ||
+    '',
   ).trim();
 };
 
@@ -77,6 +78,7 @@ const GuestSpecialitySearch = props => {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceText, setVoiceText] = useState('');
   const [selectedLetter, setSelectedLetter] = useState('A');
+  const [isAlphabetDragging, setIsAlphabetDragging] = useState(false);
 
   const specialtyData = useMemo(() => {
     const list = browseData?.allspecialities || browseData?.allSpecialities;
@@ -175,7 +177,7 @@ const GuestSpecialitySearch = props => {
         rqstType: 'specialityconferences',
         mainKey: 'conference_specialitiy',
         creditData: taskData,
-        Realback: 'cont',
+        Realback: 'guest',
       },
     });
   };
@@ -203,7 +205,7 @@ const GuestSpecialitySearch = props => {
       webCastURL: {
         webCastURL: result,
         creditData: taskData,
-        Realback: 'cont',
+        Realback: 'guest',
       },
     });
   };
@@ -219,9 +221,9 @@ const GuestSpecialitySearch = props => {
             text
               ? { searchKeyword: text }
               : {
-                  searchKeyword: searchText,
-                  searchRequestType: 'insertSearchKeyword',
-                },
+                searchKeyword: searchText,
+                searchRequestType: 'insertSearchKeyword',
+              },
           ),
         );
       })
@@ -241,70 +243,82 @@ const GuestSpecialitySearch = props => {
     }
 
     return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        contentContainerStyle={styles.defaultContent}
-      >
-        <Text style={styles.sectionTitle}>Top Specialities</Text>
-        {topSpecialties.map((item, index) => (
-          <SpecialtyItem
-            key={`top-${getLabel(item)}-${index}`}
-            item={item}
-            onPress={openSpecialityResult}
-          />
-        ))}
-
-        <Text style={[styles.sectionTitle, styles.alphaTitle]}>
-          Browse Alphabetically
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          contentContainerStyle={styles.letterContent}
-        >
-          {LETTERS.map(letter => {
-            const active = selectedLetter === letter;
-            const disabled = !availableLetters.has(letter);
-            return (
-              <TouchableOpacity
-                key={letter}
-                disabled={disabled}
-                activeOpacity={0.8}
-                onPress={() => setSelectedLetter(letter)}
-                style={[
-                  styles.letterButton,
-                  active && styles.letterButtonActive,
-                  disabled && styles.letterButtonDisabled,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.letterText,
-                    active && styles.letterTextActive,
-                    disabled && styles.letterTextDisabled,
-                  ]}
-                >
-                  {letter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {alphaSpecialties.length > 0 ? (
-          alphaSpecialties.map((item, index) => (
-            <SpecialtyItem
-              key={`alpha-${getLabel(item)}-${index}`}
-              item={item}
-              onPress={openSpecialityResult}
-            />
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No specialities found</Text>
+      <FlatList
+        data={alphaSpecialties}
+        keyExtractor={(item, index) => `alpha-${getLabel(item)}-${index}`}
+        renderItem={({ item }) => (
+          <SpecialtyItem item={item} onPress={openSpecialityResult} />
         )}
-      </ScrollView>
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!isAlphabetDragging}
+        keyboardShouldPersistTaps="always"
+        nestedScrollEnabled
+        contentContainerStyle={styles.defaultContent}
+        ListHeaderComponent={
+          <View>
+            <Text style={styles.sectionTitle}>Top Specialities</Text>
+            {topSpecialties.map((item, index) => (
+              <SpecialtyItem
+                key={`top-${getLabel(item)}-${index}`}
+                item={item}
+                onPress={openSpecialityResult}
+              />
+            ))}
+
+            <Text style={[styles.sectionTitle, styles.alphaTitle]}>
+              Browse Alphabetically
+            </Text>
+            <View
+              onTouchStart={() => setIsAlphabetDragging(true)}
+              onTouchEnd={() => setIsAlphabetDragging(false)}
+              onTouchCancel={() => setIsAlphabetDragging(false)}
+            >
+              <GestureScrollView
+                horizontal
+                bounces={false}
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                contentContainerStyle={styles.letterContent}
+                nestedScrollEnabled
+                directionalLockEnabled
+                onScrollBeginDrag={() => setIsAlphabetDragging(true)}
+                onScrollEndDrag={() => setIsAlphabetDragging(false)}
+                onMomentumScrollEnd={() => setIsAlphabetDragging(false)}
+              >
+                {LETTERS.map(letter => {
+                  const active = selectedLetter === letter;
+                  const unavailable = !availableLetters.has(letter);
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedLetter(letter)}
+                      style={[
+                        styles.letterButton,
+                        active && styles.letterButtonActive,
+                        unavailable && styles.letterButtonDisabled,
+                      ]}
+                      key={letter}
+                    >
+                      <Text
+                        style={[
+                          styles.letterText,
+                          active && styles.letterTextActive,
+                          unavailable && styles.letterTextDisabled,
+                        ]}
+                      >
+                        {letter}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </GestureScrollView>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No specialities found</Text>
+        }
+      />
     );
   };
 
@@ -331,11 +345,11 @@ const GuestSpecialitySearch = props => {
           <View style={styles.header}>
             <TouchableOpacity
               onPress={goBack}
-              style={[styles.backButton,{flexDirection:"row",alignItems:"center",gap:normalize(5)}]}
+              style={[styles.backButton, { flexDirection: "row", alignItems: "center", gap: normalize(5) }]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Icon name="keyboard-arrow-left" size={34} color="#111111" />
-            <Text style={styles.headerTitle}>All Specialities</Text>
+              <Text style={styles.headerTitle}>All Specialities</Text>
             </TouchableOpacity >
           </View>
 
@@ -440,6 +454,7 @@ const styles = StyleSheet.create({
     color: '#111111',
   },
   defaultContent: {
+    flexGrow: 1,
     paddingBottom: normalize(80),
   },
   sectionTitle: {
@@ -466,6 +481,7 @@ const styles = StyleSheet.create({
   },
   letterContent: {
     paddingBottom: normalize(12),
+    paddingRight: normalize(18),
   },
   letterButton: {
     height: normalize(38),

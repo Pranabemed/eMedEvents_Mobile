@@ -1071,7 +1071,7 @@ export default StyleSheet.create({
   selectorValue: {
     fontFamily: Fonts.InterSemiBold,
     color: Colorpath.ButtonColr,
-    fontSize: 18,
+    fontSize: 11,
   },
   chipRow: {
     paddingBottom: 10,

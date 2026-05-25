@@ -17,6 +17,7 @@ const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow,
         "Online courses",
         "Conferences",
     ];
+    const guestRealback = creditDataAll?.isGuest ? "guest" : undefined;
     return (
         data && data.length > 0 && (
             <View style={{ marginBottom: normalize(20) }}>
@@ -40,7 +41,7 @@ const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow,
                             nav.navigate("Speaker", { highText: { highText: searchTextD, CreditData: setSearchText, organ: "organ" } });
                         } else {
                             setSearchText("");
-                            nav.navigate("Globalresult", { trig: { searchTxt: searchTextD, rqstType: "headerSearch", CreditData: creditDataAll } });
+                            nav.navigate("Globalresult", { trig: { searchTxt: searchTextD, rqstType: "headerSearch", CreditData: creditDataAll, creditData: creditDataAll, Realback: guestRealback } });
                         }
                     }}
                         style={{
@@ -77,18 +78,18 @@ const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow,
                                     countShow("");
                                     const topicurl = item?.url;
                                     const resultTopic = topicurl.substring(topicurl.lastIndexOf('/') + 1);
-                                    nav.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: setSearchText } });
+                                    nav.navigate("Globalresult", { trig: { trig: resultTopic, rqstType: "topicbasedconferences", mainKey: "topic", CreditData: creditDataAll, creditData: creditDataAll, Realback: guestRealback } });
                                 } else if (title == "Speciality" && item?.url) {
                                     countShow("");
-                                    nav.navigate("Globalresult", { trig: { trig: item?.url, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: setSearchText } });
+                                    nav.navigate("Globalresult", { trig: { trig: item?.url, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: creditDataAll, creditData: creditDataAll, Realback: guestRealback } });
                                 } else if (title == "Speciality" && item) {
                                     countShow("");
                                     const formattedText = item.toLowerCase().replace(/\s+/g, '-');
-                                    nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: setSearchText } });
+                                    nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: creditDataAll, creditData: creditDataAll, Realback: guestRealback } });
                                 } else if (title == "Popular specialities") {
                                     searchTextD("");
                                     const formattedTextAno = item.toLowerCase().replace(/\s+/g, '-');
-                                    nav.navigate("Globalresult", { trig: { trig: formattedTextAno, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: setSearchText } });
+                                    nav.navigate("Globalresult", { trig: { trig: formattedTextAno, rqstType: "specialityconferences", mainKey: "conference_specialitiy", CreditData: creditDataAll, creditData: creditDataAll, Realback: guestRealback } });
                                 } else if (title == "Speakers") {
                                     countShow("");
                                     const separateLine = item?.url;
