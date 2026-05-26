@@ -42,11 +42,43 @@ const BrowseScreen = (props) => {
     const [alphabetItems, setAlphabetItems] = useState([]);
     const [browseSpe, setBrowseSpe] = useState(null);
     const [showLoader, setShowLoader] = useState(false);
+
+    const getPlaceholderText = useCallback(() => {
+        if (!selectedFilter) return 'Search here';
+        if (selectedFilter === 'Profession') {
+            return 'Search by profession';
+        }
+        const filterName = selectedFilter.toLowerCase();
+        return `Search by ${filterName}`;
+    }, [selectedFilter]);
+
+    const getFilterData = useCallback(() => {
+        if (!browseSpe) return { top: [], all: null };
+        switch (selectedFilter) {
+            case 'Specialty':
+                return { top: browseSpe?.topspecialities || [], all: browseSpe?.allspecialities };
+            case 'Profession':
+                return { top: browseSpe?.topProfessions || [], all: browseSpe?.allProfessions };
+            case 'Topic':
+                return { top: browseSpe?.topTopics || [], all: browseSpe?.allTopics };
+            case 'Country':
+                return { top: browseSpe?.topCountries || [], all: browseSpe?.allCountries };
+            case 'State':
+                return { top: browseSpe?.topStates || [], all: browseSpe?.allStates };
+            case 'City':
+                return { top: browseSpe?.topCities || [], all: browseSpe?.allCities };
+            case 'Month-Year':
+                return { top: browseSpe?.monthYearsPast || [], all: browseSpe?.monthYears };
+            default:
+                return { top: [], all: null };
+        }
+    }, [browseSpe, selectedFilter]);
+
     const browseRealback =
         props?.route?.params?.highText?.Realback ||
         props?.route?.params?.Realback ||
         (props?.route?.params?.highText?.isGuest ||
-        props?.route?.params?.creditData?.isGuest
+            props?.route?.params?.creditData?.isGuest
             ? "guest"
             : undefined);
     useEffect(() => {
@@ -98,6 +130,10 @@ const BrowseScreen = (props) => {
     useEffect(() => {
         if (selectedFilter) {
             setSearch("");
+            setFilteredProfessions([]);
+            setAlphabetData({});
+            setAlphabetListing([]);
+            setFutureConferences({});
             let obj = {
                 "apikey": selectedFilter == 'Month-Year' ? "monthYear" : selectedFilter,
                 "appurl": {}
@@ -270,44 +306,36 @@ const BrowseScreen = (props) => {
         setFutureConferences(tempFutureConferences);
     };
     useEffect(() => {
-        if (browseSpe?.allStates) {
-            processAlphabetStateData(browseSpe?.allStates);
+        const { all } = getFilterData();
+        if (selectedFilter === 'State' && all) {
+            processAlphabetStateData(all);
+        } else if (selectedFilter === 'City' && all) {
+            processAlphabeCityData(all);
+        } else if (selectedFilter === 'Month-Year' && all) {
+            processAlphabetYear(all);
+        } else if (all) {
+            processAlphabetData(all);
         }
-    }, [browseSpe])
-    useEffect(() => {
-        if (browseSpe?.allCities) {
-            processAlphabeCityData(browseSpe?.allCities);
-        }
-    }, [browseSpe])
-    useEffect(() => {
-        if (browseSpe?.monthYears) {
-            processAlphabetYear(browseSpe?.monthYears);
-        }
-    }, [browseSpe])
-    useEffect(() => {
-        if (browseSpe?.allspecialities || browseSpe?.allProfessions || browseSpe?.allTopics || browseSpe?.allCountries) {
-            processAlphabetData(browseSpe?.allspecialities || browseSpe?.allProfessions || browseSpe?.allTopics || browseSpe?.allCountries);
-        }
-    }, [browseSpe]);
-    useEffect(() => {
-        if (browseSpe?.topspecialities || browseSpe?.topProfessions || browseSpe?.topTopics || browseSpe?.topCountries || browseSpe?.topStates || browseSpe?.topCities || browseSpe?.monthYearsPast) {
-            const professions = browseSpe?.topspecialities || browseSpe?.topProfessions || browseSpe?.topTopics || browseSpe?.topCountries || browseSpe?.topStates || browseSpe?.topCities || browseSpe?.monthYearsPast;
-            const tempFilteredProfessions = professions
-                .filter(
-                    (p) =>
-                        typeof p?.name == "string" &&
-                        p.name.toLowerCase().includes(search.toLowerCase())
-                )
-                .map((p) => ({
-                    name: p.name,
-                    url: p.url,
-                    count: p.count,
-                }))
-                .sort((a, b) => a.name.localeCompare(b.name));
+    }, [browseSpe, selectedFilter, getFilterData]);
 
-            setFilteredProfessions(tempFilteredProfessions);
-        }
-    }, [browseSpe, search]);
+    useEffect(() => {
+        const { top } = getFilterData();
+        const professions = Array.isArray(top) ? top : [];
+        const tempFilteredProfessions = professions
+            .filter(
+                (p) =>
+                    typeof p?.name === "string" &&
+                    p.name.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((p) => ({
+                name: p.name,
+                url: p.url,
+                count: p.count,
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        setFilteredProfessions(tempFilteredProfessions);
+    }, [browseSpe, search, selectedFilter, getFilterData]);
 
     useEffect(() => {
         if (alphabetdata) {
@@ -366,13 +394,23 @@ const BrowseScreen = (props) => {
     };
     const renderBrowseSearchInput = () => (
         <View style={styles.stickySearchWrap}>
+            <Icon name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
             <TextInput
                 placeholderTextColor={"#999999"}
-                placeholder='Search here'
+                placeholder={getPlaceholderText()}
                 style={styles.stickySearchInput}
                 onChangeText={updateSearch}
                 value={search}
             />
+            {search.length > 0 && (
+                <TouchableOpacity
+                    onPress={() => setSearch('')}
+                    style={styles.clearIconWrap}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Icon name="x" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 
@@ -907,6 +945,7 @@ const BrowseScreen = (props) => {
                     <PageHeader title="Browse" onBackPress={FilterBack} />
                 </View>
                 <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }} behavior={Platform.OS === 'ios' ? "padding" : undefined}>
+                    {selectedFilter !== 'Month-Year' ? renderBrowseSearchInput() : null}
                     <View style={styles.content}>
                         <FlatList
                             data={filters}
@@ -916,7 +955,6 @@ const BrowseScreen = (props) => {
                             keyboardShouldPersistTaps="always"
                         />
                         <View style={styles.professionContainer}>
-                            {selectedFilter !== 'Month-Year' ? renderBrowseSearchInput() : null}
                             {renderContent()}
                         </View>
                     </View>
@@ -930,9 +968,11 @@ const styles = StyleSheet.create({
     content: {
         flexDirection: 'row',
         flex: 1,
+        alignItems: 'stretch',
     },
     filterList: {
-        width: '5%',
+        width: '30%',
+        maxWidth: '30%',
         backgroundColor: '#EAF5FF',
     },
     filterOption: {
@@ -981,24 +1021,45 @@ const styles = StyleSheet.create({
         color: "#000000"
     },
     professionContainer: {
-        width: '60%',
-        flex: 1,
+        width: '70%',
+        maxWidth: '70%',
         paddingHorizontal: normalize(15),
-        backgroundColor: "#FFFFFF"
+        backgroundColor: "#FFFFFF",
     },
     stickySearchWrap: {
-        height: normalize(45),
+        height: normalize(56),
         width: '100%',
         backgroundColor: "#FFFFFF",
+        paddingHorizontal: normalize(15),
+        paddingVertical: normalize(8),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
         justifyContent: 'center',
     },
     stickySearchInput: {
         height: normalize(40),
         width: '100%',
-        borderRadius: 5,
+        borderRadius: normalize(8),
         borderWidth: 1,
         borderColor: "#DADADA",
-        paddingHorizontal: normalize(8),
+        paddingLeft: normalize(38),
+        paddingRight: normalize(38),
+        color: '#111111',
+        fontFamily: Fonts.InterMedium,
+        fontSize: 15,
+        backgroundColor: '#F3F4F6',
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
+    },
+    clearIconWrap: {
+        position: 'absolute',
+        right: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
     },
     browseDataList: {
         flex: 1,

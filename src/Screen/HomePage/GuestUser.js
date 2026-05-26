@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
@@ -6,6 +6,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 import { stateRequest } from '../../Redux/Reducers/AuthReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
 import { View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -31,6 +32,42 @@ const GuestUser = props => {
   const [handledCmeRequestKey, setHandledCmeRequestKey] = useState('');
   const [cmeRequestStarted, setCmeRequestStarted] = useState(false);
   const [isGuestHomeLoading, setIsGuestHomeLoading] = useState(true);
+  const [handledGuestResetAt, setHandledGuestResetAt] = useState(null);
+
+  const shouldResetRef = useRef(false);
+
+  const resetGuestSelections = useCallback(() => {
+    setProfModalVisible(false);
+    setStateModalVisible(false);
+    setCmeModalVisible(false);
+    setSelectedProfession('');
+    setSelectedState(null);
+    setStateSearchText('');
+    setAllProfessionData(null);
+    setShouldOpenCmeChecklist(false);
+    setCmeRequestKey('');
+    setHandledCmeRequestKey('');
+    setCmeRequestStarted(false);
+    dispatch(clearCmeCourseData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const unsubscribeBlur = props.navigation.addListener('blur', () => {
+      if (selectedProfession || selectedState) {
+        shouldResetRef.current = true;
+      }
+    });
+    const unsubscribeFocus = props.navigation.addListener('focus', () => {
+      if (shouldResetRef.current) {
+        resetGuestSelections();
+        shouldResetRef.current = false;
+      }
+    });
+    return () => {
+      unsubscribeBlur();
+      unsubscribeFocus();
+    };
+  }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
 
   useEffect(() => {
     dispatch(stateRequest(1));
@@ -91,6 +128,21 @@ const GuestUser = props => {
       setIsGuestHomeLoading(false);
     }
   }, [GuestReducer?.status]);
+
+  useEffect(() => {
+    const resetAt = props?.route?.params?.resetGuestSelectionsAt;
+    if (!isFocused || !resetAt || handledGuestResetAt === resetAt) return;
+
+    resetGuestSelections();
+    setHandledGuestResetAt(resetAt);
+    props.navigation.setParams({ resetGuestSelectionsAt: null });
+  }, [
+    handledGuestResetAt,
+    isFocused,
+    props.navigation,
+    props?.route?.params?.resetGuestSelectionsAt,
+    resetGuestSelections,
+  ]);
 
   useEffect(() => {
     const stateId = getStateId(selectedState);

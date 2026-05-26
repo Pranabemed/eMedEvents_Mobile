@@ -2,32 +2,30 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ScrollView as GestureScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import SearchIcon from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { BrowseSpecialtyRequest } from '../../Redux/Reducers/BrowsReducer';
 import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
 import { webcastsearchRequest } from '../../Redux/Reducers/WebcastReducer';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
+import Imagepath from '../../Themes/Imagepath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import normalize from '../../Utils/Helpers/Dimen';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import GlobalSearchAll from '../GlobalSupport/GlobalSearchAll';
 import VoiceSearchBar from '../GlobalSupport/Voice';
-
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+import TextFieldIn from '../../Components/Textfield';
 
 const getLabel = item => {
   if (item == null) return '';
@@ -57,10 +55,13 @@ const SpecialtyItem = ({ item, onPress }) => {
       style={styles.specialtyRow}
       onPress={() => onPress(item)}
     >
+      <Image
+        source={Imagepath.WrongArrw}
+        style={styles.specialtyIcon}
+      />
       <Text numberOfLines={1} style={styles.specialtyText}>
         {label}
       </Text>
-      <Icon name="keyboard-arrow-right" size={24} color="#111111" />
     </TouchableOpacity>
   );
 };
@@ -69,7 +70,13 @@ const GuestSpecialitySearch = props => {
   const dispatch = useDispatch();
   const BrowsReducer = useSelector(state => state.BrowsReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
-  const taskData = props?.route?.params?.taskData || {};
+  const taskData = useMemo(() => {
+    const base = props?.route?.params?.taskData || {};
+    return {
+      ...base,
+      fromGuestSpecialitySearch: true,
+    };
+  }, [props?.route?.params?.taskData]);
   const [searchText, setSearchText] = useState('');
   const [browseData, setBrowseData] = useState(null);
   const [searchData, setSearchData] = useState(null);
@@ -77,8 +84,6 @@ const GuestSpecialitySearch = props => {
   const [browseLoading, setBrowseLoading] = useState(true);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceText, setVoiceText] = useState('');
-  const [selectedLetter, setSelectedLetter] = useState('A');
-  const [isAlphabetDragging, setIsAlphabetDragging] = useState(false);
 
   const specialtyData = useMemo(() => {
     const list = browseData?.allspecialities || browseData?.allSpecialities;
@@ -87,32 +92,33 @@ const GuestSpecialitySearch = props => {
 
   const topSpecialties = useMemo(() => {
     const list = browseData?.topspecialities;
-    const topList = Array.isArray(list) ? list.filter(item => getLabel(item)) : [];
-    return (topList.length > 0 ? topList : specialtyData).slice(0, 5);
-  }, [browseData?.topspecialities, specialtyData]);
+    const filtered = Array.isArray(list) ? list.filter(item => getLabel(item)) : [];
 
-  const availableLetters = useMemo(
-    () =>
-      new Set(
-        specialtyData
-          .map(item => getLabel(item)[0]?.toUpperCase())
-          .filter(letter => LETTERS.includes(letter)),
-      ),
-    [specialtyData],
-  );
+    const required = ['Gastroenterology', 'Orthopaedics', 'Pulmonology'];
+    const existingLabels = new Set(filtered.map(item => getLabel(item).toLowerCase()));
+    const missing = required.filter(req => !existingLabels.has(req.toLowerCase()));
 
-  const firstAvailableLetter =
-    LETTERS.find(letter => availableLetters.has(letter)) || 'A';
-
-  const alphaSpecialties = specialtyData.filter(item =>
-    getLabel(item).toUpperCase().startsWith(selectedLetter),
-  );
-
-  useEffect(() => {
-    if (!availableLetters.has(selectedLetter)) {
-      setSelectedLetter(firstAvailableLetter);
+    if (missing.length === 0) {
+      return filtered;
     }
-  }, [availableLetters, firstAvailableLetter, selectedLetter]);
+
+    const extraItems = [];
+    missing.forEach(reqName => {
+      const found = specialtyData.find(item => getLabel(item).toLowerCase() === reqName.toLowerCase());
+      if (found) {
+        extraItems.push(found);
+      } else {
+        extraItems.push({
+          label: reqName,
+          name: reqName,
+          specialty_name: reqName,
+          speciality_name: reqName,
+        });
+      }
+    });
+
+    return [...filtered, ...extraItems];
+  }, [browseData?.topspecialities, specialtyData]);
 
   useEffect(() => {
     setBrowseLoading(true);
@@ -178,6 +184,7 @@ const GuestSpecialitySearch = props => {
         mainKey: 'conference_specialitiy',
         creditData: taskData,
         Realback: 'guest',
+        fromGuestSpecialitySearch: true,
       },
     });
   };
@@ -233,8 +240,12 @@ const GuestSpecialitySearch = props => {
       });
   };
 
+  const navigateToBrowse = () => {
+    props.navigation.navigate('BrowseScreen', { creditData: taskData });
+  };
+
   const renderDefaultContent = () => {
-    if (browseLoading && specialtyData.length === 0) {
+    if (browseLoading && topSpecialties.length === 0) {
       return (
         <View style={styles.loaderWrap}>
           <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
@@ -242,77 +253,25 @@ const GuestSpecialitySearch = props => {
       );
     }
 
+    const listData = topSpecialties.length > 0 ? topSpecialties : specialtyData;
+
     return (
       <FlatList
-        data={alphaSpecialties}
-        keyExtractor={(item, index) => `alpha-${getLabel(item)}-${index}`}
+        data={listData}
+        keyExtractor={(item, index) => `popular-${getLabel(item)}-${index}`}
         renderItem={({ item }) => (
           <SpecialtyItem item={item} onPress={openSpecialityResult} />
         )}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isAlphabetDragging}
         keyboardShouldPersistTaps="always"
         nestedScrollEnabled
         contentContainerStyle={styles.defaultContent}
         ListHeaderComponent={
-          <View>
-            <Text style={styles.sectionTitle}>Top Specialities</Text>
-            {topSpecialties.map((item, index) => (
-              <SpecialtyItem
-                key={`top-${getLabel(item)}-${index}`}
-                item={item}
-                onPress={openSpecialityResult}
-              />
-            ))}
-
-            <Text style={[styles.sectionTitle, styles.alphaTitle]}>
-              Browse Alphabetically
-            </Text>
-            <View
-              onTouchStart={() => setIsAlphabetDragging(true)}
-              onTouchEnd={() => setIsAlphabetDragging(false)}
-              onTouchCancel={() => setIsAlphabetDragging(false)}
-            >
-              <GestureScrollView
-                horizontal
-                bounces={false}
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                contentContainerStyle={styles.letterContent}
-                nestedScrollEnabled
-                directionalLockEnabled
-                onScrollBeginDrag={() => setIsAlphabetDragging(true)}
-                onScrollEndDrag={() => setIsAlphabetDragging(false)}
-                onMomentumScrollEnd={() => setIsAlphabetDragging(false)}
-              >
-                {LETTERS.map(letter => {
-                  const active = selectedLetter === letter;
-                  const unavailable = !availableLetters.has(letter);
-                  return (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => setSelectedLetter(letter)}
-                      style={[
-                        styles.letterButton,
-                        active && styles.letterButtonActive,
-                        unavailable && styles.letterButtonDisabled,
-                      ]}
-                      key={letter}
-                    >
-                      <Text
-                        style={[
-                          styles.letterText,
-                          active && styles.letterTextActive,
-                          unavailable && styles.letterTextDisabled,
-                        ]}
-                      >
-                        {letter}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </GestureScrollView>
-            </View>
+          <View style={styles.headerRow}>
+            <Text style={styles.sectionTitle}>Popular specialties</Text>
+            <TouchableOpacity onPress={navigateToBrowse}>
+              <Text style={styles.browseAllText}>Browse All</Text>
+            </TouchableOpacity>
           </View>
         }
         ListEmptyComponent={
@@ -336,49 +295,133 @@ const GuestSpecialitySearch = props => {
 
   return (
     <>
-      <MyStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <SafeAreaView style={styles.safeArea}>
+      <MyStatusBar
+        barStyle="light-content"
+        backgroundColor={Colorpath.Pagebg}
+      />
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
         <KeyboardAvoidingView
-          style={styles.screen}
+          style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
           behavior={Platform.OS === 'ios' ? 'height' : undefined}
         >
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={goBack}
-              style={[styles.backButton, { flexDirection: "row", alignItems: "center", gap: normalize(5) }]}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Icon name="keyboard-arrow-left" size={34} color="#111111" />
-              <Text style={styles.headerTitle}>All Specialities</Text>
-            </TouchableOpacity >
-          </View>
-
-          <View style={styles.searchContent}>
-            <View style={styles.searchBox}>
-              <SearchIcon name="search" size={24} color="#6B7280" />
-              <TextInput
-                value={searchText}
-                onChangeText={searchContent}
-                placeholder="Search Specialities"
-                placeholderTextColor="#9CA3AF"
-                style={styles.searchInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-              />
+          {Platform.OS === 'ios' ? (
+            <View style={{ paddingHorizontal: normalize(10), flexDirection: 'row' }}>
+              <View style={{ alignItems: 'center' }}>
+                <View
+                  style={{
+                    borderBottomColor: '#000000',
+                    borderBottomWidth: 0.5,
+                    marginTop: normalize(2),
+                  }}
+                >
+                  <TextFieldIn
+                    value={searchText}
+                    onChangeText={searchContent}
+                    height={normalize(40)}
+                    width={normalize(275)}
+                    backgroundColor={Colorpath.Pagebg}
+                    color="#000000"
+                    placeholder="Search for CME/CE courses"
+                    placeholderTextColor="#AAAAAA"
+                    fontSize={16}
+                    fontFamily={Fonts.InterRegular}
+                    searchIcon={true}
+                    leftIcon={Icon}
+                    leftIconName="keyboard-arrow-left"
+                    leftIconSize={35}
+                    leftIconColor="#63748b"
+                    leftIconStyle={{ marginLeft: normalize(-4), top: normalize(7) }}
+                    onPressLeftIcon={goBack}
+                  />
+                </View>
+              </View>
               <TouchableOpacity
                 onPress={() => {
                   setSearchText('');
                   setVoiceOpen(true);
                 }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{
+                  justifyContent: 'center',
+                  alignContent: 'center',
+                  marginTop: normalize(10),
+                  height: normalize(30),
+                  width: normalize(30),
+                  borderRadius: normalize(30),
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                }}
               >
-                <Icon name="keyboard-voice" size={26} color="#6B7280" />
+                <Icon
+                  style={{ alignSelf: 'center' }}
+                  name="keyboard-voice"
+                  size={24}
+                  color="#fff"
+                />
               </TouchableOpacity>
             </View>
-          </View>
+          ) : (
+            <View
+              style={{
+                marginTop: normalize(0),
+                paddingHorizontal: normalize(3),
+                flexDirection: 'row',
+                gap: 10,
+              }}
+            >
+              <View style={{ alignItems: 'center' }}>
+                <View
+                  style={{
+                    borderBottomColor: '#000000',
+                    borderBottomWidth: 0.5,
+                    marginTop: normalize(2),
+                  }}
+                >
+                  <TextFieldIn
+                    value={searchText}
+                    onChangeText={searchContent}
+                    height={normalize(40)}
+                    width={normalize(275)}
+                    backgroundColor={Colorpath.Pagebg}
+                    color="#000000"
+                    placeholder="Search for CME/CE courses"
+                    placeholderTextColor="#AAAAAA"
+                    fontSize={16}
+                    fontFamily={Fonts.InterRegular}
+                    searchIcon={true}
+                    leftIcon={Icon}
+                    leftIconName="keyboard-arrow-left"
+                    leftIconSize={35}
+                    leftIconColor="#63748b"
+                    leftIconStyle={{ marginLeft: normalize(0), top: normalize(5) }}
+                    onPressLeftIcon={goBack}
+                  />
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchText('');
+                  setVoiceOpen(true);
+                }}
+                style={{
+                  justifyContent: 'center',
+                  alignContent: 'center',
+                  marginTop: normalize(10),
+                  height: normalize(30),
+                  width: normalize(30),
+                  borderRadius: normalize(30),
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                }}
+              >
+                <Icon
+                  style={{ alignSelf: 'center' }}
+                  name="keyboard-voice"
+                  size={24}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+            </View>
+          )}
 
-          <View style={searchText ? styles.resultContent : styles.content}>
+          <View style={searchText ? { justifyContent: 'center', alignItems: 'center', marginTop: normalize(15) } : styles.content}>
             {searchText ? (
               <GlobalSearchAll
                 isLoading={isLoading}
@@ -400,116 +443,49 @@ const GuestSpecialitySearch = props => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: '#EAF4FF',
-  },
-  header: {
-    minHeight: normalize(52),
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: normalize(5),
-  },
-  backButton: {
-    marginRight: normalize(8),
-  },
-  headerTitle: {
-    fontFamily: Fonts.InterBold,
-    fontSize: 22,
-    color: '#000000',
-  },
   content: {
     flex: 1,
     paddingHorizontal: normalize(18),
-  },
-  searchContent: {
-    paddingHorizontal: normalize(18),
-    paddingTop: normalize(14),
-  },
-  resultContent: {
-    flex: 1,
-    width: normalize(330),
-    paddingHorizontal: normalize(18),
-  },
-  searchBox: {
-    minHeight: normalize(40),
-    borderRadius: normalize(10),
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: normalize(5),
-    marginBottom: normalize(25),
-  },
-  searchInput: {
-    flex: 1,
-    marginHorizontal: normalize(10),
-    paddingVertical: normalize(5),
-    fontFamily: Fonts.InterMedium,
-    fontSize: 15,
-    color: '#111111',
   },
   defaultContent: {
     flexGrow: 1,
     paddingBottom: normalize(80),
   },
-  sectionTitle: {
-    fontFamily: Fonts.InterBold,
-    fontSize: 18,
-    color: '#000000',
-    marginBottom: normalize(10),
-  },
-  specialtyRow: {
-    minHeight: normalize(38),
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: normalize(15),
+    marginBottom: normalize(15),
+  },
+  sectionTitle: {
+    fontFamily: Fonts.InterBold,
+    fontSize: 20,
+    color: '#000000',
+  },
+  browseAllText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 16,
+    color: Colorpath.ButtonColr,
+  },
+  specialtyRow: {
+    minHeight: normalize(34),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: normalize(4),
+  },
+  specialtyIcon: {
+    height: normalize(14),
+    width: normalize(14),
+    tintColor: '#7F8C8D',
+    resizeMode: 'contain',
+    marginRight: normalize(10),
   },
   specialtyText: {
     flex: 1,
     fontFamily: Fonts.InterRegular,
-    fontSize: 15,
-    color: '#000000',
-    marginRight: normalize(12),
-  },
-  alphaTitle: {
-    marginTop: normalize(26),
-  },
-  letterContent: {
-    paddingBottom: normalize(12),
-    paddingRight: normalize(18),
-  },
-  letterButton: {
-    height: normalize(38),
-    width: normalize(38),
-    borderRadius: normalize(38),
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: normalize(12),
-  },
-  letterButtonActive: {
-    backgroundColor: '#0888D8',
-    borderColor: '#0888D8',
-  },
-  letterButtonDisabled: {
-    opacity: 0.35,
-  },
-  letterText: {
-    fontFamily: Fonts.InterBold,
-    fontSize: 14,
-    color: '#000000',
-  },
-  letterTextActive: {
-    color: '#FFFFFF',
-  },
-  letterTextDisabled: {
-    color: '#6B7280',
+    fontSize: 16,
+    color: '#2C3E50',
   },
   emptyText: {
     fontFamily: Fonts.InterMedium,

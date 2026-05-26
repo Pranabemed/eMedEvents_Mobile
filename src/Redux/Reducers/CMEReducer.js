@@ -37,6 +37,10 @@ const CMESlice = createSlice({
       state.status = action.type;
       state.error = action.error;
     },
+    clearCmeCourseData(state) {
+      state.cmeCourseResponse = {};
+      state.status = '';
+    },
     cmereviewRequest(state, action) {
       state.status = action.type;
     },
@@ -210,6 +214,7 @@ export const {
   cmeCourseRequest,
   cmeCourseSuccess,
   cmeCourseFailure,
+  clearCmeCourseData,
   cmereviewRequest,
   cmereviewSuccess,
   cmereviewFailure,

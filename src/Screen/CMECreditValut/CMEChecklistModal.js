@@ -8,7 +8,7 @@ import Buttons from '../../Components/Button';
 import RenderHTML from 'react-native-render-html';
 import { useNavigation } from '@react-navigation/native';
 
-const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved, cmeRealback }) => {
+const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved, cmeRealback, selectedState, onBrowseCourses }) => {
     // const firstOption = Object.keys(allProfessionData?.cme_data || {})[0] || "";
 
     const allOptions = Object.keys(allProfessionData?.cme_data || {}) || "";
@@ -46,7 +46,34 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
     }
     console.log(firstOption)
     const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, anothKey, keySmain) => {
-        navigation.navigate("Globalresult", { trig: { allProfessionMain: professionValue, stateID: stateID, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: anothKey, datamainkey: keySmain, Realback: cmeRealback } });
+        const params = {
+            trig: {
+                allProfessionMain: professionValue,
+                stateID: stateID,
+                rqstType: rqsttype,
+                mainKey: mainkey,
+                newAdd: newState,
+                newCt: anothKey,
+                datamainkey: keySmain,
+                Realback: cmeRealback,
+                guestCmeFlow: cmeRealback === 'guest',
+                refreshKey: Date.now(),
+            },
+            guestCmeFlow: cmeRealback === 'guest',
+            guestSelection: cmeRealback === 'guest' ? {
+                profession: professionValue,
+                stateId: stateID,
+                state: selectedState || null,
+                stateName: selectedState?.name || selectedState?.state_name || selectedState?.title || '',
+            } : undefined,
+        };
+
+        if (onBrowseCourses) {
+            onBrowseCourses(params);
+            return;
+        }
+
+        navigation.navigate("Globalresult", params);
     }
     return (
         <Modal
