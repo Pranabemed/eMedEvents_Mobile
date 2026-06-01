@@ -58,6 +58,7 @@ import ProfileMain from '../Screen/Profile/ProfileMain';
 import AddToCart from '../Screen/DetailsPageWebcast/AddToCart';
 import InPersonStatewebcast from '../Screen/InPersonWebcast/InPersonStatewebcast';
 import GuestUser from '../Screen/HomePage/GuestUser';
+import CMERequirement from '../Screen/CMERequirement/CMERequirement';
 import GuestSpecialitySearch from '../Screen/HomePage/GuestSpecialitySearch';
 import FilterScreen from '../Screen/HomePage/FilterScreen';
 import PriceSlider from '../Screen/HomePage/PriceSlider';
@@ -218,6 +219,7 @@ const StackNav = props => {
     AddToCart: AddToCart,
     InPersonStatewebcast: InPersonStatewebcast,
     GuestUser: GuestUser,
+    CMERequirement: CMERequirement,
     GuestSpecialitySearch: GuestSpecialitySearch,
     FilterScreen: FilterScreen,
     PriceSlider: PriceSlider,

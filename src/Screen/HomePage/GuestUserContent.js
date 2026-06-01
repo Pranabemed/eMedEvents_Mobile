@@ -25,6 +25,7 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import normalize from '../../Utils/Helpers/Dimen';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
+import ProfessionDropdown from '../CMERequirement/ProfessionDropdown';
 import styles from './GuestUser.styles';
 const MEMBERSHIP_POINTS = [
   'Multi State & Board Licensure Tracking',
@@ -1738,6 +1739,7 @@ const GuestUserContent = ({ guest }) => {
             {isHomeLoading ? (
               <GuestRequirementsShimmer />
             ) : (
+              // {*\CME Requirements Panel*}
             <View style={styles.panel}>
               <Text style={styles.panelTitle}>
                 Tell Us Your Profession & Specialty
@@ -1758,49 +1760,13 @@ const GuestUserContent = ({ guest }) => {
                     </Text>
                   </View>
                 </View>
-                <View style={styles.selectorRow}>
-                  <TouchableOpacity
-                    style={styles.selectorPlain}
-                    onPress={() => setProfModalVisible(true)}
-                  >
-                    <Text style={styles.selectorLabel}>Profession</Text>
-                    <View style={styles.selectorValueRow}>
-                      <Text
-                        numberOfLines={1}
-                        style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
-                      >
-                        {selectedProfession || 'Select Profession'}
-                      </Text>
-                      <Icon
-                        name="keyboard-arrow-down"
-                        size={18}
-                        color="#4B5563"
-                      />
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.selectorPlain}
-                    onPress={() => openStatePicker('profile')}
-                  >
-                    <Text style={styles.selectorLabel}>State</Text>
-                    <View style={styles.selectorValueRow}>
-                      <Text
-                        numberOfLines={1}
-                        style={[styles.selectorValue, { flex: 1, marginRight: 4 }]}
-                      >
-                        {selectedState?.name ||
-                          selectedState?.state_name ||
-                          selectedState?.title ||
-                          'Select State'}
-                      </Text>
-                      <Icon
-                        name="keyboard-arrow-down"
-                        size={18}
-                        color="#4B5563"
-                      />
-                    </View>
-                  </TouchableOpacity>
-                </View>
+                <ProfessionDropdown
+                  selectedProfession={selectedProfession}
+                  onSelectProfession={handleProfessionSelect}
+                  selectedState={selectedState}
+                  onSelectState={stateObj => handleStateSelect(stateObj, 'profile')}
+                  statesList={stateList}
+                />
               </View>
             </View>
             )}
@@ -2112,6 +2078,12 @@ const GuestUserContent = ({ guest }) => {
         certificatedata={certificatedata}
         selectedState={selectedState}
         cmeRealback={guest?.cmeRealback}
+        onBrowseCourses={(params) => {
+          navigation.navigate('CMERequirement', {
+            initialState: selectedState,
+            initialProfession: selectedProfession || 'Physician',
+          });
+        }}
       />
     </>
   );

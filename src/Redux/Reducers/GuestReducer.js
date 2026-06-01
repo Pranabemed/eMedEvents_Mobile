@@ -6,6 +6,8 @@ const initialState = {
   isLoading: true,
   HomelistResponse:{},
   AboutusResponse:{},
+  StateBundleLandingResponse:{},
+  stateBundleLandingLoading:false,
 };
 
 const GuestSlice = createSlice({
@@ -33,6 +35,24 @@ const GuestSlice = createSlice({
     AboutusFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
+    },
+    StateBundleLandingRequest(state, action) {
+      state.status = action.type;
+      state.isLoading = true;
+      state.stateBundleLandingLoading = true;
+      state.StateBundleLandingResponse = {};
+    },
+    StateBundleLandingSuccess(state, action) {
+      state.StateBundleLandingResponse = action.payload;
+      state.status = action.type;
+      state.isLoading = false;
+      state.stateBundleLandingLoading = false;
+    },
+    StateBundleLandingFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error || action.payload;
+      state.isLoading = false;
+      state.stateBundleLandingLoading = false;
     }
   },
 });
@@ -44,5 +64,8 @@ export const {
   AboutusRequest,
   AboutusFailure,
   AboutusSuccess,
+  StateBundleLandingRequest,
+  StateBundleLandingFailure,
+  StateBundleLandingSuccess,
 } = GuestSlice.actions;
 export default GuestSlice.reducer;

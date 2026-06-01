@@ -1,0 +1,16 @@
+$ = caveman mode for this project
+
+Rules:
+- read minimum context
+- patch only requested files
+- avoid broad repo scans
+- keep answer short
+- run minimal validation
+- no extra suggestions unless asked
+
+Prompt template:
+$ Task: <what to do>
+$ File: <path>
+$ Keep: <what must not change>
+$ Change: <what should change>
+$ Verify: <eslint / none>

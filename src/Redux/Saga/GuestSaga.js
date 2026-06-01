@@ -1,10 +1,15 @@
-import { takeLatest, select, put, call } from 'redux-saga/effects';
-import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { AboutusFailure, AboutusSuccess, HomelistFailure, HomelistSuccess } from '../Reducers/GuestReducer';
+import { takeLatest, put, call } from 'redux-saga/effects';
+import { postApi } from '../../Utils/Helpers/ApiRequest';
+import {
+  AboutusFailure,
+  AboutusSuccess,
+  HomelistFailure,
+  HomelistSuccess,
+  StateBundleLandingFailure,
+  StateBundleLandingSuccess,
+} from '../Reducers/GuestReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
-
-let getItem = state => state.AuthReducer;
 export function* HomelistSaga(action) {
   console.log('hi');
   const ipAddress = getPublicIP();
@@ -16,7 +21,7 @@ export function* HomelistSaga(action) {
   try {
     let response = yield call(postApi, 'Home/list', action.payload, header);
     console.log('guest module response: ', response);
-    if (response?.status == 200) {
+    if (response?.status === 200) {
       yield put(HomelistSuccess(response?.data));
     } else {
       yield put(HomelistFailure(response?.data));
@@ -34,7 +39,7 @@ export function* AboutusSaga(action) {
   };
   try {
     let response = yield call(postApi, 'LandingPages/aboutus', action.payload, header);
-    if (response?.status == 200) {
+    if (response?.status === 200) {
       yield put(AboutusSuccess(response?.data));
     } else {
       yield put(AboutusFailure(response?.data));
@@ -44,12 +49,37 @@ export function* AboutusSaga(action) {
   }
 }
 
+export function* StateBundleLandingSaga(action) {
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+  };
+  try {
+    let response = yield call(
+      postApi,
+      'LandingPages/stateBundleLanding',
+      action.payload,
+      header,
+    );
+    if (response?.status === 200) {
+      yield put(StateBundleLandingSuccess(response?.data));
+    } else {
+      yield put(StateBundleLandingFailure(response?.data));
+    }
+  } catch (error) {
+    yield put(StateBundleLandingFailure(error));
+  }
+}
+
 const watchFunction = [
   (function* () {
     yield takeLatest('Guest/HomelistRequest', HomelistSaga);
   })(),
   (function* () {
     yield takeLatest('Guest/AboutusRequest', AboutusSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Guest/StateBundleLandingRequest', StateBundleLandingSaga);
   })(),
 ];
 
