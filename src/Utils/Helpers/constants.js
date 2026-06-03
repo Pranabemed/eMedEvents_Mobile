@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 // 🔹 Dynamic Base URL
 // __DEV__ = true  → Development/Staging build (metro bundler running)
 // __DEV__ = false → Production/Release build (AAB/APK)
-const BASE_URL =  __DEV__
+const BASE_URL =  !__DEV__
   ? 'https://v2api.emedevents.com'   // Staging
   : 'https://newdev.emedevents.com'; // Production
 const BASIC_AUTH_TOKEN = 'BASIC_AUTH_TOKEN';

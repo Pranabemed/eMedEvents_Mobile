@@ -34,16 +34,6 @@ const getDynamicCourseSections = responseData => {
 
   return Object.entries(responseData)
     .filter(([key, value]) => Array.isArray(value) && value.length > 0 && key.includes('_bundle'))
-    .sort(([keyA], [keyB]) => {
-      const aIsConference = keyA.includes('_bundle_conference');
-      const bIsConference = keyB.includes('_bundle_conference');
-
-      if (aIsConference === bIsConference) {
-        return keyA.localeCompare(keyB);
-      }
-
-      return aIsConference ? 1 : -1;
-    })
     .map(([key, value]) => ({
       key,
       data: value,

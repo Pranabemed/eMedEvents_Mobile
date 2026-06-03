@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import StarRating from 'react-native-star-rating-widget';
+import { StarRatingDisplay } from 'react-native-star-rating-widget';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
@@ -41,34 +41,33 @@ const getPriceText = item => {
   return `${symbol}${amount}`;
 };
 
-const getMetaParts = item => {
-  const parts = [];
-
-  if (item?.bundle_sub_conf_count) {
-    parts.push(`${item.bundle_sub_conf_count} COURSE(S)`);
-  }
-
+const getConferenceTypeText = item => {
   if (item?.conference_type && conferenceTypeMap[String(item.conference_type)]) {
-    parts.push(conferenceTypeMap[String(item.conference_type)].toUpperCase());
-  } else if (item?.eventType) {
-    parts.push(String(item.eventType).toUpperCase());
-  } else if (item?.activity_format) {
-    parts.push(String(item.activity_format).toUpperCase());
-  } else if (item?.conference_type) {
-    parts.push(String(item.conference_type).toUpperCase());
+    return conferenceTypeMap[String(item.conference_type)].toUpperCase();
   }
 
-  if (item?.average_rating) {
-    parts.push(`Ratings (${Math.round(Number(item.rating_users_count || 0))})`);
+  if (item?.eventType) {
+    return String(item.eventType).toUpperCase();
   }
 
-  return parts;
+  if (item?.activity_format) {
+    return String(item.activity_format).toUpperCase();
+  }
+
+  if (item?.conference_type) {
+    return String(item.conference_type).toUpperCase();
+  }
+
+  return '';
 };
 
 const CourseCard = ({ item, featured, onPress }) => {
   const creditsText = normalizeDisplayCme(item?.display_cme || item?.credits);
-  const metaParts = getMetaParts(item);
-  const ratingValue = Number(item?.rating_users_count) || 0;
+  const typeText = getConferenceTypeText(item);
+  const courseCount = Number(item?.bundle_sub_conf_count) || 0;
+  const rawRatingValue = Number(item?.average_rating) || 0;
+  const ratingValue = Math.floor(rawRatingValue * 2) / 2;
+  const ratingCount = Number(item?.rating_users_count) || 0;
   const hasRating = ratingValue > 0;
 
   return (
@@ -78,48 +77,56 @@ const CourseCard = ({ item, featured, onPress }) => {
       onPress={() => onPress(item)}
     >
       <View style={[styles.cardBody, featured && styles.featuredCardBody]}>
-        <View style={styles.topRow}>
-          <View style={styles.metaWrap}>
-            {metaParts.length > 0 ? (
-              <Text
-                style={[styles.metaText, featured && styles.featuredMetaText]}
-                numberOfLines={1}
-              >
-                {metaParts.join('  ·  ')}
-              </Text>
-            ) : null}
-
-            {hasRating ? (
-              <View style={styles.ratingRow}>
-                <View pointerEvents="none">
-                  <StarRating
-                    rating={ratingValue}
-                    onChange={() => {}}
-                    starSize={normalize(14)}
-                    starStyle={starStyle}
-                    color={'#FF8A00'}
-                    emptyColor={featured ? 'rgba(255,255,255,0.45)' : '#D1D5DB'}
-                  />
-                </View>
-              </View>
-            ) : null}
-          </View>
-        </View>
-
         <Text
           style={[styles.cardTitle, featured && styles.featuredCardTitle]}
           numberOfLines={2}
         >
           {item?.title}
         </Text>
-        {creditsText ? (
+
+        {(typeText || creditsText) ? (
+          <View style={styles.infoRow}>
+            <Text
+              style={[styles.infoText, featured && styles.featuredInfoText]}
+              numberOfLines={1}
+            >
+              {[typeText, creditsText].filter(Boolean).join(' | ')}
+            </Text>
+          </View>
+        ) : null}
+
+        {courseCount > 0 ? (
           <Text
-            style={[styles.creditsText, featured && styles.featuredCreditsText]}
-            numberOfLines={2}
+            style={[styles.courseCountText, featured && styles.featuredCourseCountText]}
+            numberOfLines={1}
           >
-            {creditsText}
+            {`${courseCount} COURSE(S)`}
           </Text>
         ) : null}
+
+        {hasRating ? (
+          <View style={styles.ratingRow}>
+            <Text style={[styles.ratingLabel, featured && styles.featuredRatingLabel]}>
+              RATINGS:
+            </Text>
+            <View pointerEvents="none">
+              <StarRatingDisplay
+                rating={ratingValue}
+                starSize={normalize(14)}
+                starStyle={starStyle}
+                step={0.5}
+                color={'#FF8A00'}
+                emptyColor={featured ? 'rgba(255,255,255,0.45)' : '#D1D5DB'}
+              />
+            </View>
+            {ratingCount > 0 ? (
+              <Text style={[styles.ratingCountText, featured && styles.featuredRatingCountText]}>
+                {`(${ratingCount})`}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={styles.bottomRow}>
           <Text style={[styles.priceText, featured && styles.featuredPriceText]}>
             {getPriceText(item)}
@@ -235,69 +242,68 @@ const styles = StyleSheet.create({
     paddingTop: normalize(16),
     paddingBottom: normalize(16),
   },
-  topRow: {
+  infoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: normalize(8),
   },
-  metaWrap: {
-    flex: 1,
-    paddingRight: normalize(10),
+  infoText: {
+    fontFamily: Fonts.InterMedium,
+    fontSize: normalize(12),
+    lineHeight: normalize(18),
+    color: '#6B7280',
   },
-  metaText: {
+  featuredInfoText: {
+    color: 'rgba(0, 0, 0, 0.82)',
+  },
+  infoSeparator: {
     fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(10),
-    color: Colorpath.ButtonColr,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  featuredMetaText: {
-    color: Colorpath.ButtonColr,
-  },
-  ratingRow: {
-    marginTop: normalize(6),
-    alignItems: 'flex-start',
+    fontSize: normalize(12),
+    color: '#9CA3AF',
+    marginHorizontal: normalize(6),
   },
   cardTitle: {
     fontFamily: Fonts.InterBold,
     fontSize: normalize(15),
     lineHeight: normalize(22),
     color: '#111827',
-    marginTop: normalize(10),
   },
   featuredCardTitle: {
     color: '#000000',
   },
-  topicText: {
-    fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(10),
-    lineHeight: normalize(16),
-    color: '#94A3B8',
-    marginTop: normalize(8),
-    textTransform: 'uppercase',
-  },
-  featuredTopicText: {
-    color: 'rgba(0, 0, 0, 0.92)',
-  },
-  creditsText: {
+  courseCountText: {
     fontFamily: Fonts.InterRegular,
     fontSize: normalize(12),
     lineHeight: normalize(18),
-    color: '#94A3B8',
-    marginTop: normalize(6),
+    color: '#6B7280',
+    marginTop: normalize(8),
   },
-  featuredCreditsText: {
+  featuredCourseCountText: {
+    color: 'rgba(0, 0, 0, 0.82)',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: normalize(8),
+  },
+  ratingLabel: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: normalize(12),
+    color: '#374151',
+    marginRight: normalize(6),
+  },
+  featuredRatingLabel: {
     color: 'rgba(0, 0, 0, 0.86)',
   },
-  subtitleText: {
+  ratingCountText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(11),
-    lineHeight: normalize(17),
+    fontSize: normalize(12),
     color: '#6B7280',
-    marginTop: normalize(6),
+    marginLeft: normalize(6),
   },
-  featuredSubtitleText: {
-    color: 'rgba(0, 0, 0, 0.8)',
+  featuredRatingCountText: {
+    color: 'rgba(0, 0, 0, 0.82)',
   },
   bottomRow: {
     flexDirection: 'row',

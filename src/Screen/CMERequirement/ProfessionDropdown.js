@@ -170,12 +170,12 @@ const ProfessionDropdown = ({
                     setStateSearch('');
                   }}
                 >
-                  <Text style={[styles.stateItemText, isSelected && styles.selectedItemText]}>
+                  <Text style={styles.stateItemText}>
                     {name}
                   </Text>
-                  {isSelected && (
+                  {/* {isSelected && (
                     <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
-                  )}
+                  )} */}
                 </TouchableOpacity>
               );
             }}
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   selectedItemText: {
-    color: '#2C4DB9',
+    color: '#000000',
     fontWeight: 'bold',
   },
   stateModalContainer: {
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   stateItemText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(15),
+    fontSize: 16,
     color: '#374151',
   },
   emptyText: {
