@@ -1,3 +1,13 @@
+/**
+ * File Name: CMERequirement.js
+ * Module: CME Requirement
+ * Purpose: Renders the CME requirement screen with profession/state filters, requirement details, and course bundle sections.
+ * Author: Codex
+ * Created Date: 2026-06-03
+ * Last Modified: 2026-06-03
+ * Dependencies: react, react-native, react-redux, react-native-vector-icons/MaterialIcons, react-native-skeleton-placeholder, react-native-safe-area-context, ../../Utils/MyStatusBar, ../../Themes/Fonts, ../../Utils/Helpers/Dimen, ../../Utils/Helpers/ApiRequest, ../../Redux/Reducers/GuestReducer, ./ProfessionDropdown, ./RequirementCard, ./CourseHorizontalList
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -15,7 +25,7 @@ import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
 import { StateBundleLandingRequest } from '../../Redux/Reducers/GuestReducer';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ProfessionDropdown from './ProfessionDropdown';
 import RequirementCard from './RequirementCard';
 import CourseHorizontalList from './CourseHorizontalList';
@@ -27,6 +37,30 @@ const professionMapping = {
   Pharmacist: 173,
 };
 
+/**
+ * Description: Extracts valid course bundle sections from the API payload while preserving response order.
+ * Purpose: Converts raw API bundle keys into a render-friendly section list for the CME requirement screen.
+ *
+ * Params:
+ * @param {Object} responseData
+ *
+ * Returns:
+ * @returns {Array}
+ *
+ * Flow:
+ * 1. Guard against invalid payloads.
+ * 2. Filter keys that contain non-empty bundle arrays.
+ * 3. Map each bundle entry to a normalized section object.
+ *
+ * API Used:
+ * Guest State Bundle Landing response payload
+ *
+ * Redux Actions:
+ * Used after Guest/StateBundleLandingSuccess response is stored.
+ *
+ * Error Handling:
+ * Returns an empty array when payload shape is invalid.
+ */
 const getDynamicCourseSections = responseData => {
   if (!responseData || typeof responseData !== 'object') {
     return [];
@@ -41,12 +75,60 @@ const getDynamicCourseSections = responseData => {
     }));
 };
 
+/**
+ * Description: Normalizes related bundle keys into a shared grouping key.
+ * Purpose: Helps pair standard bundles with conference bundles that belong to the same specialty/state section.
+ *
+ * Params:
+ * @param {string} key
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Convert the incoming key to string.
+ * 2. Strip conference and bundle suffixes.
+ * 3. Return the shared group key.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Handles non-string values through safe string conversion.
+ */
 const getSectionGroupKey = key =>
   String(key)
     .replace(/_bundle_conferences$/i, '')
     .replace(/_bundle_conference$/i, '')
     .replace(/_bundle$/i, '');
 
+/**
+ * Description: Groups bundle sections into paired bucket objects.
+ * Purpose: Keeps standard bundle and conference bundle sections visually associated on the screen.
+ *
+ * Params:
+ * @param {Array} sections
+ *
+ * Returns:
+ * @returns {Array}
+ *
+ * Flow:
+ * 1. Create a grouping map keyed by normalized bundle name.
+ * 2. Attach each section to bundle, conference, or extras.
+ * 3. Return grouped values for rendering.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Safely initializes missing group buckets before assignment.
+ */
 const getPairedCourseSections = sections => {
   const grouped = new Map();
 
@@ -73,20 +155,86 @@ const getPairedCourseSections = sections => {
   return Array.from(grouped.values());
 };
 
-const CMERequirement = (props) => {
+/**
+ * Description: CME requirement screen component.
+ * Purpose: Shows state-specific CME licensure requirements and related course bundles for guest users.
+ *
+ * Screen Purpose:
+ * Provides requirement details and bundle recommendations based on selected profession and state.
+ *
+ * Navigation Flow:
+ * 1. User lands on CMERequirement screen.
+ * 2. User can go back using header action.
+ * 3. User can open course detail screens from nested course cards.
+ *
+ * API Dependencies:
+ * 1. `master/states?country_id=1`
+ * 2. Guest state bundle landing API via Redux action `StateBundleLandingRequest`
+ *
+ * Redux Dependencies:
+ * 1. `GuestReducer.status`
+ * 2. `GuestReducer.StateBundleLandingResponse`
+ * 3. `StateBundleLandingRequest`
+ *
+ * Component Dependencies:
+ * 1. `ProfessionDropdown`
+ * 2. `RequirementCard`
+ * 3. `CourseHorizontalList`
+ * 4. `MyStatusBar`
+ *
+ * State Management Logic:
+ * 1. Tracks selected profession/state locally.
+ * 2. Fetches state list from API.
+ * 3. Dispatches Redux action for bundle payload when filters change.
+ * 4. Derives loading, empty, and render states from reducer status.
+ *
+ * User Actions:
+ * 1. Change profession
+ * 2. Change state
+ * 3. View more/view less bundle pairs
+ * 4. Open course details from nested list items
+ *
+ * Validation Rules:
+ * 1. Falls back to default state/profession when navigation params are missing.
+ * 2. Only renders course sections when bundle arrays contain items.
+ *
+ * Error Handling:
+ * 1. Shows empty-state UI when API returns no requirement or course data.
+ * 2. Logs state-list fetch warnings without blocking the screen.
+ *
+ * Params:
+ * @param {Object} props
+ *
+ * Returns:
+ * @returns {JSX.Element}
+ *
+ * Flow:
+ * 1. Load states and initialize selected filters.
+ * 2. Dispatch requirement request when filters change.
+ * 3. Transform reducer payload into grouped course sections.
+ * 4. Render skeleton, empty state, or full screen content.
+ *
+ * API Used:
+ * `master/states?country_id=1`
+ *
+ * Redux Actions:
+ * `StateBundleLandingRequest`
+ *
+ * Error Handling:
+ * Handles request, success, and failure UI states through reducer status checks.
+ */
+const CMERequirement = props => {
   const dispatch = useDispatch();
   const GuestReducer = useSelector(state => state.GuestReducer);
 
-  // Retrieve initial values if passed from navigation
   const initialPassedState = props?.route?.params?.initialState;
   const initialPassedProf = props?.route?.params?.initialProfession;
 
-  // Local state management
   const [selectedProfession, setSelectedProfession] = useState(
-    initialPassedProf || 'Physician'
+    initialPassedProf || 'Physician',
   );
   const [selectedState, setSelectedState] = useState(
-    initialPassedState || { name: 'Alabama', state_id: 1, id: 1 }
+    initialPassedState || { name: 'Alabama', state_id: 1, id: 1 },
   );
   const [statesList, setStatesList] = useState([]);
   const [cmeRequirementData, setCmeRequirementData] = useState(null);
@@ -94,20 +242,44 @@ const CMERequirement = (props) => {
   const [error, setError] = useState(false);
   const [showAllPairs, setShowAllPairs] = useState(false);
 
-  // Helper to fetch list of US states dynamically
+  /**
+   * Description: Fetches the master state list from API.
+   * Purpose: Populates the state selector and aligns incoming navigation state with canonical state objects.
+   *
+   * Params:
+   * @param {void} none
+   *
+   * Returns:
+   * @returns {Promise<void>}
+   *
+   * Flow:
+   * 1. Request the US states master API.
+   * 2. Store the states list for dropdown use.
+   * 3. Match and sync initial passed state when available.
+   *
+   * API Used:
+   * `master/states?country_id=1`
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Logs warnings without interrupting UI rendering.
+   */
   const fetchStates = useCallback(async () => {
     try {
       const response = await getApi('master/states?country_id=1');
       if (response?.data?.states) {
         setStatesList(response.data.states);
-        // Sync selected state if initialPassedState is just a string or partial
         if (initialPassedState) {
           const match = response.data.states.find(
             s =>
               String(s.name).toLowerCase() ===
-              String(initialPassedState.name || initialPassedState).toLowerCase()
+              String(initialPassedState.name || initialPassedState).toLowerCase(),
           );
-          if (match) setSelectedState(match);
+          if (match) {
+            setSelectedState(match);
+          }
         }
       }
     } catch (err) {
@@ -115,25 +287,51 @@ const CMERequirement = (props) => {
     }
   }, [initialPassedState]);
 
-  // Fetch the CME requirements and recommended courses
-  const fetchRequirements = useCallback((profession, stateObj) => {
-    const profId = professionMapping[profession] || 167;
-    const stateName = stateObj?.name || stateObj?.state_name || stateObj?.title || 'Alabama';
+  /**
+   * Description: Dispatches the guest bundle landing request for the active profession/state.
+   * Purpose: Retrieves licensure requirement and course bundle data used by this screen.
+   *
+   * Params:
+   * @param {string} profession
+   * @param {Object} stateObj
+   *
+   * Returns:
+   * @returns {void}
+   *
+   * Flow:
+   * 1. Convert selected profession to backend profession ID.
+   * 2. Resolve state name from supported object shapes.
+   * 3. Dispatch the Redux request action.
+   *
+   * API Used:
+   * Guest State Bundle Landing API via Redux Saga
+   *
+   * Redux Actions:
+   * `StateBundleLandingRequest`
+   *
+   * Error Handling:
+   * Uses safe fallbacks for unknown professions and incomplete state payloads.
+   */
+  const fetchRequirements = useCallback(
+    (profession, stateObj) => {
+      const profId = professionMapping[profession] || 167;
+      const stateName =
+        stateObj?.name || stateObj?.state_name || stateObj?.title || 'Alabama';
 
-    dispatch(
-      StateBundleLandingRequest({
-        profession_id: profId,
-        state: stateName,
-      }),
-    );
-  }, [dispatch]);
+      dispatch(
+        StateBundleLandingRequest({
+          profession_id: profId,
+          state: stateName,
+        }),
+      );
+    },
+    [dispatch],
+  );
 
-  // Initialize States List
   useEffect(() => {
     fetchStates();
   }, [fetchStates]);
 
-  // Fetch data on state/profession change
   useEffect(() => {
     if (selectedState) {
       fetchRequirements(selectedProfession, selectedState);
@@ -174,10 +372,58 @@ const CMERequirement = (props) => {
     }
   }, [GuestReducer?.StateBundleLandingResponse, GuestReducer?.status]);
 
+  /**
+   * Description: Navigates back from the CME requirement screen.
+   * Purpose: Supports header back action.
+   *
+   * Params:
+   * @param {void} none
+   *
+   * Returns:
+   * @returns {void}
+   *
+   * Flow:
+   * 1. Trigger navigation back.
+   * 2. Return control to previous screen.
+   * 3. Preserve current logic without side effects.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Relies on React Navigation stack behavior.
+   */
   const handleBack = () => {
     props.navigation.goBack();
   };
 
+  /**
+   * Description: Opens an informational alert for the screen.
+   * Purpose: Explains how the profession/state selector affects requirement results.
+   *
+   * Params:
+   * @param {void} none
+   *
+   * Returns:
+   * @returns {void}
+   *
+   * Flow:
+   * 1. Open native alert.
+   * 2. Show instructional message.
+   * 3. Wait for user dismissal.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Uses native alert API without custom error handling.
+   */
   const handleMenuPress = () => {
     Alert.alert(
       'CME Requirements',
@@ -185,39 +431,135 @@ const CMERequirement = (props) => {
     );
   };
 
+  /**
+   * Description: Resolves a display-safe state name from multiple possible payload shapes.
+   * Purpose: Avoids repeated state-name fallback logic across the screen.
+   *
+   * Params:
+   * @param {Object} item
+   *
+   * Returns:
+   * @returns {string}
+   *
+   * Flow:
+   * 1. Read supported state name fields.
+   * 2. Fall back to Alabama if nothing exists.
+   * 3. Return a user-facing title value.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Uses fallback text for incomplete objects.
+   */
   const getStateName = item => item?.name || item?.state_name || item?.title || 'Alabama';
+
   const pageTitle = `${getStateName(selectedState)} CME Requirements`;
   const dynamicCourseSections = getDynamicCourseSections(cmeRequirementData);
   const pairedCourseSections = getPairedCourseSections(dynamicCourseSections);
-  const visiblePairedSections = showAllPairs ? pairedCourseSections : pairedCourseSections.slice(0, 1);
+  const visiblePairedSections = showAllPairs
+    ? pairedCourseSections
+    : pairedCourseSections.slice(0, 1);
 
-  // Render Skeleton Shimmer Loading state
+  /**
+   * Description: Renders shimmer placeholders for loading state.
+   * Purpose: Keeps the screen structure stable while requirement data is loading.
+   *
+   * Params:
+   * @param {void} none
+   *
+   * Returns:
+   * @returns {JSX.Element}
+   *
+   * Flow:
+   * 1. Render dropdown placeholder.
+   * 2. Render requirement card placeholder.
+   * 3. Render course-list placeholders.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Pure render helper with no side effects.
+   */
   const renderShimmer = () => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
       <SkeletonPlaceholder backgroundColor="#F3F4F6" highlightColor="#E5E7EB">
         <View style={{ paddingHorizontal: normalize(16), paddingTop: normalize(16) }}>
-          {/* Dropdown Container Shimmer */}
-          <View style={{ height: normalize(52), borderRadius: normalize(8), marginBottom: normalize(20) }} />
-          
-          {/* Requirements Card Shimmer */}
-          <View style={{ height: normalize(220), borderRadius: normalize(12), marginBottom: normalize(20) }} />
-          
-          {/* Section 1 Title Shimmer */}
-          <View style={{ width: normalize(180), height: normalize(18), borderRadius: normalize(4), marginBottom: normalize(12) }} />
-          
-          {/* Horiz list placeholders */}
+          <View
+            style={{
+              height: normalize(52),
+              borderRadius: normalize(8),
+              marginBottom: normalize(20),
+            }}
+          />
+
+          <View
+            style={{
+              height: normalize(220),
+              borderRadius: normalize(12),
+              marginBottom: normalize(20),
+            }}
+          />
+
+          <View
+            style={{
+              width: normalize(180),
+              height: normalize(18),
+              borderRadius: normalize(4),
+              marginBottom: normalize(12),
+            }}
+          />
+
           <View style={styles.shimmerRow}>
-            <View style={{ width: normalize(240), height: normalize(240), borderRadius: normalize(12), marginRight: normalize(16) }} />
-            <View style={{ width: normalize(240), height: normalize(240), borderRadius: normalize(12) }} />
+            <View
+              style={{
+                width: normalize(240),
+                height: normalize(240),
+                borderRadius: normalize(12),
+                marginRight: normalize(16),
+              }}
+            />
+            <View
+              style={{
+                width: normalize(240),
+                height: normalize(240),
+                borderRadius: normalize(12),
+              }}
+            />
           </View>
 
-          {/* Section 2 Title Shimmer */}
-          <View style={{ width: normalize(200), height: normalize(18), borderRadius: normalize(4), marginBottom: normalize(12) }} />
-          
-          {/* Horiz list placeholders */}
+          <View
+            style={{
+              width: normalize(200),
+              height: normalize(18),
+              borderRadius: normalize(4),
+              marginBottom: normalize(12),
+            }}
+          />
+
           <View style={styles.shimmerRow}>
-            <View style={{ width: normalize(240), height: normalize(240), borderRadius: normalize(12), marginRight: normalize(16) }} />
-            <View style={{ width: normalize(240), height: normalize(240), borderRadius: normalize(12) }} />
+            <View
+              style={{
+                width: normalize(240),
+                height: normalize(240),
+                borderRadius: normalize(12),
+                marginRight: normalize(16),
+              }}
+            />
+            <View
+              style={{
+                width: normalize(240),
+                height: normalize(240),
+                borderRadius: normalize(12),
+              }}
+            />
           </View>
         </View>
       </SkeletonPlaceholder>
@@ -228,13 +570,14 @@ const CMERequirement = (props) => {
     <>
       <MyStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <SafeAreaView style={styles.container}>
-        {/* Header Section */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.headerSideButton}>
             <Icon name="arrow-back-ios-new" size={normalize(18)} color="#111827" />
           </TouchableOpacity>
 
-          <Text numberOfLines={1} style={styles.headerTitle}>{pageTitle}</Text>
+          <Text numberOfLines={1} style={styles.headerTitle}>
+            {pageTitle}
+          </Text>
 
           <TouchableOpacity onPress={handleMenuPress} style={styles.headerSideButton}>
             <Icon name="info-outline" size={normalize(20)} color="#64748B" />
@@ -249,7 +592,6 @@ const CMERequirement = (props) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* Dropdown Section */}
             <View style={styles.dropdownWrap}>
               <ProfessionDropdown
                 selectedProfession={selectedProfession}
@@ -260,7 +602,6 @@ const CMERequirement = (props) => {
               />
             </View>
 
-            {/* CME Requirement Content / Empty State / Error Screen */}
             {error || !cmeRequirementData ? (
               <View style={styles.emptyContainer}>
                 <Icon name="error-outline" size={normalize(48)} color="#9CA3AF" />
@@ -268,7 +609,6 @@ const CMERequirement = (props) => {
               </View>
             ) : (
               <View>
-                {/* Requirements Card */}
                 <View style={styles.cardWrap}>
                   <RequirementCard
                     stateName={getStateName(selectedState)}

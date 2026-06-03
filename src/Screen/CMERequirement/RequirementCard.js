@@ -1,3 +1,13 @@
+/**
+ * File Name: RequirementCard.js
+ * Module: CME Requirement
+ * Purpose: Displays licensure requirement details for the selected profession and state.
+ * Author: Codex
+ * Created Date: 2026-06-03
+ * Last Modified: 2026-06-03
+ * Dependencies: react, react-native, react-native-vector-icons/MaterialIcons, react-native-render-html, @react-navigation/native, ../../Themes/Fonts, ../../Utils/Helpers/Dimen
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -12,6 +22,58 @@ import { useNavigation } from '@react-navigation/native';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 
+/**
+ * Description: Requirement detail card.
+ * Purpose: Shows licensure tabs, credit requirements, cycle duration, and mandatory notes for a selected state/profession.
+ *
+ * Purpose:
+ * Provides a collapsible summary/detail view of CME requirement data.
+ *
+ * Props:
+ * 1. `stateName`
+ * 2. `professionName`
+ * 3. `cmeData`
+ * 4. `creditCategory`
+ *
+ * State:
+ * 1. `activeTab`
+ * 2. `isExpanded`
+ *
+ * Events:
+ * 1. Switch licensure tab
+ * 2. Expand/collapse card
+ * 3. Open linked topic/specialty search
+ *
+ * Dependencies:
+ * `RenderHTML`, `useNavigation`
+ *
+ * Usage Example:
+ * `<RequirementCard stateName="Alabama" cmeData={payload} />`
+ *
+ * Params:
+ * @param {Object} props
+ * @param {string} props.stateName
+ * @param {string} props.professionName
+ * @param {Object} props.cmeData
+ * @param {string} props.creditCategory
+ *
+ * Returns:
+ * @returns {JSX.Element|null}
+ *
+ * Flow:
+ * 1. Build licensure tabs from `cmeData`.
+ * 2. Keep active tab aligned with available keys.
+ * 3. Render collapsed summary and expandable details.
+ *
+ * API Used:
+ * Consumes guest requirement payload returned by state bundle landing API.
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns null when no requirement tab data exists.
+ */
 const RequirementCard = ({
   stateName,
   professionName,
@@ -21,7 +83,6 @@ const RequirementCard = ({
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
 
-  // Tabs are the keys of the cmeData object (e.g. MD, DO, DPM or RN, LPN)
   const tabKeys = Object.keys(cmeData || {});
   const [activeTab, setActiveTab] = useState(tabKeys[0] || '');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -37,8 +98,35 @@ const RequirementCard = ({
   }
 
   const selectedData = cmeData[activeTab];
-  if (!selectedData) return null;
+  if (!selectedData) {
+    return null;
+  }
 
+  /**
+   * Description: Handles link taps inside HTML notes.
+   * Purpose: Routes topic and specialty links into the shared guest search result flow.
+   *
+   * Params:
+   * @param {Object} event
+   * @param {string} href
+   *
+   * Returns:
+   * @returns {void}
+   *
+   * Flow:
+   * 1. Extract slug or keyword from tapped link.
+   * 2. Map supported URL patterns to search request payloads.
+   * 3. Navigate to `Globalresult`.
+   *
+   * API Used:
+   * None directly; prepares data for downstream course search flow.
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Skips navigation when href is missing.
+   */
   const handleLinkPress = (event, href) => {
     if (href) {
       const resultTopic = href.substring(href.lastIndexOf('/') + 1);
@@ -77,16 +165,40 @@ const RequirementCard = ({
     }
   };
 
-  // Convert credit format from decimal string (e.g. "24.00" -> "24")
+  /**
+   * Description: Formats credit strings into rounded integer display text.
+   * Purpose: Prevents long decimal values from cluttering the requirement summary grid.
+   *
+   * Params:
+   * @param {string|number} credits
+   *
+   * Returns:
+   * @returns {string}
+   *
+   * Flow:
+   * 1. Guard missing values.
+   * 2. Parse numeric value.
+   * 3. Round and return string output.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Falls back to `'0'` for invalid numeric input.
+   */
   const formatCredits = credits => {
-    if (!credits) return '0';
+    if (!credits) {
+      return '0';
+    }
     const val = parseFloat(credits);
     return isNaN(val) ? '0' : String(Math.round(val));
   };
 
   return (
     <View style={styles.card}>
-      {/* Top Header Row of the Card */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <View style={styles.iconCircle}>
@@ -94,9 +206,7 @@ const RequirementCard = ({
           </View>
           <View style={styles.headerTitles}>
             <Text style={styles.title}>{stateName} Requirements</Text>
-            <Text style={styles.subtitle}>
-              {activeTab} Licensure
-            </Text>
+            <Text style={styles.subtitle}>{activeTab} Licensure</Text>
           </View>
         </View>
 
@@ -105,7 +215,9 @@ const RequirementCard = ({
           activeOpacity={0.7}
           onPress={() => setIsExpanded(!isExpanded)}
         >
-          <Text style={styles.detailsButtonText}>{isExpanded ? 'Hide Details' : 'View Details'}</Text>
+          <Text style={styles.detailsButtonText}>
+            {isExpanded ? 'Hide Details' : 'View Details'}
+          </Text>
           <Icon
             name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-right'}
             size={normalize(17)}
@@ -114,10 +226,8 @@ const RequirementCard = ({
         </TouchableOpacity>
       </View>
 
-      {/* Expanded Content */}
-      {isExpanded && (
+      {isExpanded ? (
         <View style={styles.expandedContent}>
-          {/* Tabs Section */}
           <View style={styles.tabContainer}>
             {tabKeys.map(tab => (
               <TouchableOpacity
@@ -141,31 +251,26 @@ const RequirementCard = ({
             ))}
           </View>
 
-          {/* Statistics Grid */}
           <View style={styles.statsRow}>
-            {/* Col 1 */}
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>
-                {formatCredits(selectedData.credits)}
-              </Text>
+              <Text style={styles.statValue}>{formatCredits(selectedData.credits)}</Text>
               <Text style={styles.statLabel}>CME Credits Required</Text>
             </View>
 
             <View style={styles.verticalDivider} />
 
-            {/* Col 2 */}
             <View style={styles.statCol}>
               <Text style={styles.statValue}>
-                {selectedData.term} {parseInt(selectedData.term, 10) === 1 ? 'Year' : 'Years'}
+                {selectedData.term}{' '}
+                {parseInt(selectedData.term, 10) === 1 ? 'Year' : 'Years'}
               </Text>
               <Text style={styles.statLabel}>Licensing Cycle</Text>
             </View>
 
-            {/* Render Category 1 credits column only if relevant/specified */}
-            {selectedData.amapra_cat_credits && parseFloat(selectedData.amapra_cat_credits) > 0 ? (
+            {selectedData.amapra_cat_credits &&
+            parseFloat(selectedData.amapra_cat_credits) > 0 ? (
               <>
                 <View style={styles.verticalDivider} />
-                {/* Col 3 */}
                 <View style={styles.statCol}>
                   <Text style={styles.statValue}>
                     {formatCredits(selectedData.amapra_cat_credits)}
@@ -178,7 +283,6 @@ const RequirementCard = ({
             ) : (
               <>
                 <View style={styles.verticalDivider} />
-                {/* Fallback display for 0 Category 1 credits - e.g. nursing contact hours */}
                 <View style={styles.statCol}>
                   <Text style={styles.statValue}>
                     {formatCredits(selectedData.credits)}
@@ -189,17 +293,18 @@ const RequirementCard = ({
             )}
           </View>
 
-          {/* Divider */}
           <View style={styles.horizontalDivider} />
 
-          {/* Mandatory Requirements Title */}
           <Text style={styles.mandatoryTitle}>Mandatory Requirements</Text>
 
-          {/* RenderHTML for bullets */}
           <View style={styles.htmlContainer}>
             <RenderHTML
               contentWidth={width - normalize(48)}
-              source={{ html: selectedData.additional_notes || '<p>No specific mandatory requirements stated.</p>' }}
+              source={{
+                html:
+                  selectedData.additional_notes ||
+                  '<p>No specific mandatory requirements stated.</p>',
+              }}
               renderersProps={{
                 a: {
                   onPress: handleLinkPress,
@@ -209,7 +314,7 @@ const RequirementCard = ({
             />
           </View>
         </View>
-      )}
+      ) : null}
     </View>
   );
 };
@@ -251,11 +356,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D8E3F4',
     padding: normalize(14),
-    // shadowColor: '#000000',
-    // shadowOffset: { width: 0, height: 6 },
-    // shadowOpacity: 0.05,
-    // shadowRadius: 12,
-    // elevation: 2,
     marginBottom: normalize(14),
   },
   headerRow: {

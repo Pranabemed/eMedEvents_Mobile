@@ -1,3 +1,12 @@
+/**
+ * File Name: GuestUser.js
+ * Module: Guest User
+ * Purpose: Container screen for guest home state, Redux orchestration, and modal/checklist coordination.
+ * Author: Codex
+ * Created Date: 2026-06-03
+ * Last Modified: 2026-06-03
+ * Dependencies: react, react-native, @react-navigation/native, react-redux, ../../Utils/Helpers/NetInfo, ../../Utils/Helpers/Toast, ../../Redux/Reducers/GuestReducer, ../../Redux/Reducers/AuthReducer, ../../Redux/Reducers/CreditVaultReducer, ../../Redux/Reducers/CMEReducer, ./GuestUserView, ../../Themes/Colorpath
+ */
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -8,11 +17,36 @@ import { stateRequest } from '../../Redux/Reducers/AuthReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
+/**
+ * Description: Guest user home container screen.
+ * Purpose: Owns Redux integration, guest selection state, and request orchestration for the guest home flow.
+ *
+ * Params:
+ * @param {Object} props
+ *
+ * Returns:
+ * @returns {JSX.Element}
+ *
+ * Flow:
+ * 1. Fetch base guest home, about-us, and state data.
+ * 2. Sync checklist request state with Redux reducer statuses.
+ * 3. Build a `guest` view-model for `GuestUserView`.
+ * 4. Reset stale guest selections across navigation cycles.
+ *
+ * API Used:
+ * Guest home list, about us, state list, profession vault APIs
+ *
+ * Redux Actions:
+ * `HomelistRequest`, `AboutusRequest`, `stateRequest`, `professionvaultRequest`, `clearCmeCourseData`
+ *
+ * Error Handling:
+ * Uses `showErrorAlert` for connectivity failures and guards checklist-open timing.
+ */
 const GuestUser = props => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
@@ -36,6 +70,7 @@ const GuestUser = props => {
 
   const shouldResetRef = useRef(false);
 
+  /** Description: Resets guest-only UI state. Purpose: Prevents stale selections across navigation sessions. */
   const resetGuestSelections = useCallback(() => {
     setProfModalVisible(false);
     setStateModalVisible(false);
@@ -158,6 +193,7 @@ const GuestUser = props => {
     }
   }, [dispatch, selectedProfession, selectedState, shouldOpenCmeChecklist]);
 
+  /** Description: Opens the featured activity detail screen. Purpose: Centralizes guest activity routing. */
   const openFeaturedActivity = detailpageUrl => {
     if (!detailpageUrl) return;
     const slug = String(detailpageUrl).split('/').pop();
@@ -231,10 +267,17 @@ const GuestUser = props => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+    <View style={styles.container}>
       <GuestUserView guest={guest} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colorpath.Pagebg,
+  },
+});
 
 export default GuestUser;

@@ -1,3 +1,13 @@
+/**
+ * File Name: ProfessionDropdown.js
+ * Module: CME Requirement
+ * Purpose: Provides profession and state selectors for the CME requirement screen.
+ * Author: Codex
+ * Created Date: 2026-06-03
+ * Last Modified: 2026-06-03
+ * Dependencies: react, react-native, react-native-vector-icons/MaterialIcons, react-native-safe-area-context, ../../Themes/Colorpath, ../../Themes/Fonts, ../../Utils/Helpers/Dimen
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -13,6 +23,63 @@ import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+/**
+ * Description: Profession and state dropdown component.
+ * Purpose: Lets the user change requirement context without leaving the CME requirement screen.
+ *
+ * Purpose:
+ * Provides dual selectors for profession and state using modal-based pickers.
+ *
+ * Props:
+ * 1. `selectedProfession`
+ * 2. `onSelectProfession`
+ * 3. `selectedState`
+ * 4. `onSelectState`
+ * 5. `statesList`
+ *
+ * State:
+ * 1. Profession modal visibility
+ * 2. State modal visibility
+ * 3. State search text
+ *
+ * Events:
+ * 1. Open/close profession modal
+ * 2. Open/close state modal
+ * 3. Search states
+ * 4. Select profession/state
+ *
+ * Dependencies:
+ * `MaterialIcons`, `SafeAreaView`
+ *
+ * Usage Example:
+ * `<ProfessionDropdown {...props} />`
+ *
+ * Params:
+ * @param {Object} props
+ * @param {string} props.selectedProfession
+ * @param {Function} props.onSelectProfession
+ * @param {Object} props.selectedState
+ * @param {Function} props.onSelectState
+ * @param {Array} props.statesList
+ *
+ * Returns:
+ * @returns {JSX.Element}
+ *
+ * Flow:
+ * 1. Render profession and state selector triggers.
+ * 2. Open dedicated modal for each selector.
+ * 3. Filter states by search text and return selection to parent.
+ *
+ * API Used:
+ * None directly; consumes parent-provided states list.
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Safely handles empty states list and missing display fields.
+ */
 const ProfessionDropdown = ({
   selectedProfession,
   onSelectProfession,
@@ -31,11 +98,34 @@ const ProfessionDropdown = ({
     return name.includes(stateSearch.toLowerCase().trim());
   });
 
+  /**
+   * Description: Resolves state display name from supported payload shapes.
+   * Purpose: Centralizes state label fallbacks for dropdown and list rendering.
+   *
+   * Params:
+   * @param {Object} item
+   *
+   * Returns:
+   * @returns {string}
+   *
+   * Flow:
+   * 1. Read possible state-name fields.
+   * 2. Return first valid value.
+   * 3. Fall back to empty string.
+   *
+   * API Used:
+   * None
+   *
+   * Redux Actions:
+   * None
+   *
+   * Error Handling:
+   * Uses fallback text for incomplete objects.
+   */
   const getStateName = item => item?.name || item?.state_name || item?.title || '';
 
   return (
     <View style={styles.dropdownContainer}>
-      {/* Left Profession Dropdown */}
       <TouchableOpacity
         style={styles.dropdownHalf}
         activeOpacity={0.7}
@@ -55,10 +145,8 @@ const ProfessionDropdown = ({
         />
       </TouchableOpacity>
 
-      {/* Vertical Separator */}
       <View style={styles.divider} />
 
-      {/* Right State Dropdown */}
       <TouchableOpacity
         style={styles.dropdownHalf}
         activeOpacity={0.7}
@@ -81,7 +169,6 @@ const ProfessionDropdown = ({
         />
       </TouchableOpacity>
 
-      {/* Profession Modal Selector */}
       <Modal visible={profModalVisible} transparent animationType="fade">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -107,16 +194,15 @@ const ProfessionDropdown = ({
                 >
                   {prof}
                 </Text>
-                {selectedProfession === prof && (
+                {selectedProfession === prof ? (
                   <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
-                )}
+                ) : null}
               </TouchableOpacity>
             ))}
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* State Modal Selector */}
       <Modal visible={stateModalVisible} transparent animationType="slide">
         <SafeAreaView style={styles.stateModalContainer}>
           <View style={styles.stateModalHeader}>
@@ -134,7 +220,12 @@ const ProfessionDropdown = ({
           </View>
 
           <View style={styles.searchBarContainer}>
-            <Icon name="search" size={normalize(20)} color="#9CA3AF" style={styles.searchIcon} />
+            <Icon
+              name="search"
+              size={normalize(20)}
+              color="#9CA3AF"
+              style={styles.searchIcon}
+            />
             <TextInput
               style={styles.searchInput}
               placeholder="Search State"
@@ -142,11 +233,11 @@ const ProfessionDropdown = ({
               value={stateSearch}
               onChangeText={setStateSearch}
             />
-            {stateSearch.length > 0 && (
+            {stateSearch.length > 0 ? (
               <TouchableOpacity onPress={() => setStateSearch('')}>
                 <Icon name="clear" size={normalize(20)} color="#9CA3AF" />
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
 
           <FlatList
@@ -155,12 +246,9 @@ const ProfessionDropdown = ({
             contentContainerStyle={styles.stateList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No states found</Text>
-            }
+            ListEmptyComponent={<Text style={styles.emptyText}>No states found</Text>}
             renderItem={({ item }) => {
               const name = getStateName(item);
-              const isSelected = selectedState && (selectedState?.id === item?.id || selectedState?.state_id === item?.state_id || getStateName(selectedState) === name);
               return (
                 <TouchableOpacity
                   style={styles.stateItem}
@@ -170,12 +258,7 @@ const ProfessionDropdown = ({
                     setStateSearch('');
                   }}
                 >
-                  <Text style={styles.stateItemText}>
-                    {name}
-                  </Text>
-                  {/* {isSelected && (
-                    <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
-                  )} */}
+                  <Text style={styles.stateItemText}>{name}</Text>
                 </TouchableOpacity>
               );
             }}
@@ -190,17 +273,14 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // backgroundColor: '#FFFFFF',
     borderRadius: normalize(10),
     borderWidth: 1,
     borderColor: '#D9E2EC',
     height: normalize(50),
     paddingHorizontal: normalize(10),
-    // backgroundColor: 'red',
     paddingVertical: normalize(12),
     padding: 10,
     width: '100%',
-
   },
   dropdownHalf: {
     flex: 1,
@@ -209,7 +289,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: '90%',
     paddingHorizontal: normalize(0),
-
   },
   dropdownTextContainer: {
     width: '90%',
@@ -222,8 +301,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.InterRegular,
     fontSize: 11,
     color: '#94A3B8',
-    // marginBottom: normalize(3),
-    
   },
   value: {
     fontFamily: Fonts.InterMedium,
