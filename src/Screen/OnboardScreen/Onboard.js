@@ -19,6 +19,7 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { useIsFocused } from '@react-navigation/native';
 import analytics from '@react-native-firebase/analytics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const sliderData = [
     {
@@ -128,12 +129,25 @@ const Onboard = (props) => {
     }, [props.navigation]);
 
     const continueAsGuest = useCallback(() => {
-        props.navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'GuestUser' }],
+        const guestSessionId = `guest_session_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+        AsyncStorage.setItem('PLAYERSESSION', guestSessionId)
+            .then(() => {
+                props.navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'GuestUser' }],
+                    })
+                );
             })
-        );
+            .catch(err => {
+                console.log('Error setting player session:', err);
+                props.navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'GuestUser' }],
+                    })
+                );
+            });
     }, [props.navigation]);
 
     useEffect(() => {
@@ -269,9 +283,9 @@ const Onboard = (props) => {
                         />
                     </View>
                     <View style={styles.guestButtonSlot}>
-                            <Pressable onPress={continueAsGuest} style={styles.guestButton}>
-                                <Text style={styles.guestButtonText}>Continue as guest user</Text>
-                            </Pressable>
+                        <Pressable onPress={continueAsGuest} style={styles.guestButton}>
+                            <Text style={styles.guestButtonText}>Continue as guest user</Text>
+                        </Pressable>
                     </View>
                 </View>
             </ImageBackground>

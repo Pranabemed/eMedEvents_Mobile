@@ -876,9 +876,10 @@ export default StyleSheet.create({
     alignItems: 'center',
     minWidth: 0,
     marginBottom: 12,
+    justifyContent: 'space-between',
   },
   freeTypePill: {
-    maxWidth: '42%',
+    maxWidth: '58%',
     minHeight: 22,
     borderRadius: 999,
     backgroundColor: Colorpath.ButtonColr,
@@ -886,6 +887,12 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 10,
+    flexShrink: 1,
+  },
+  freeTypeIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#FFFFFF',
     flexShrink: 0,
   },
   freeTypeText: {
@@ -893,12 +900,15 @@ export default StyleSheet.create({
     fontFamily: Fonts.InterBold,
     fontSize: 12,
     marginLeft: 4,
+    flexShrink: 1,
   },
   freeDateText: {
     flex: 1,
     color: '#333333',
     fontFamily: Fonts.InterSemiBold,
     fontSize: 13,
+    textAlign: 'right',
+    flexShrink: 1,
   },
   freeOrgText: {
     color: '#333333',

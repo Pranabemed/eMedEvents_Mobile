@@ -708,10 +708,16 @@ const Main = (props) => {
             onBackButtonPress={() => { }}
             animationIn="slideInUp"
             animationOut="slideOutDown"
+            backdropTransitionInTiming={300}
             backdropTransitionOutTiming={0}
             useNativeDriver={true}
+            useNativeDriverForBackdrop={true}
             hideModalContentWhileAnimating={true}
             style={{ justifyContent: 'flex-end', margin: 0 }}
+            coverScreen={true}
+            hasBackdrop={true}
+            backdropColor="#000000"
+            backdropOpacity={0.7}
           >
             <View
               style={{
@@ -787,7 +793,7 @@ const Main = (props) => {
                   backgroundColor: Colorpath.ButtonColr,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  marginBottom: normalize(12),
+                  marginBottom: 0,
                   opacity: guestVerifyLoading ? 0.7 : 1,
                 }}
               >
@@ -799,29 +805,6 @@ const Main = (props) => {
                   }}
                 >
                   {guestVerifyLoading ? 'Please wait...' : 'Verify your account'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  props.navigation.navigate('GuestUser');
-                }}
-                style={{
-                  height: normalize(48),
-                  borderRadius: normalize(10),
-                  borderWidth: 1,
-                  borderColor: '#D1D5DB',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: Fonts.InterSemiBold,
-                    fontSize: 16,
-                    color: '#374151',
-                  }}
-                >
-                  {'Go to Home'}
                 </Text>
               </TouchableOpacity>
             </View>

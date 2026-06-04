@@ -280,164 +280,161 @@ const GuestSpecialitySearch = props => {
       />
     );
   };
-
-  if (voiceOpen) {
-    return (
-      <VoiceSearchBar
-        SearchCont={searchContent}
-        searchEn={voiceOpen}
-        setSearchEn={setVoiceOpen}
-        searchText={voiceText}
-        setSearchText={setVoiceText}
-      />
-    );
-  }
-
   return (
     <>
       <MyStatusBar
         barStyle="light-content"
         backgroundColor={Colorpath.Pagebg}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
-          behavior={Platform.OS === 'ios' ? 'height' : undefined}
-        >
-          {Platform.OS === 'ios' ? (
-            <View style={{ paddingHorizontal: normalize(10), flexDirection: 'row' }}>
-              <View style={{ alignItems: 'center' }}>
-                <View
+      {voiceOpen ? (
+        <VoiceSearchBar
+          SearchCont={searchContent}
+          searchEn={voiceOpen}
+          setSearchEn={setVoiceOpen}
+          searchText={voiceText}
+          setSearchText={setVoiceText}
+        />
+      ) : (
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+          <KeyboardAvoidingView
+            style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+            behavior={Platform.OS === 'ios' ? 'height' : undefined}
+          >
+            {Platform.OS === 'ios' ? (
+              <View style={{ paddingHorizontal: normalize(10), flexDirection: 'row' }}>
+                <View style={{ alignItems: 'center' }}>
+                  <View
+                    style={{
+                      borderBottomColor: '#000000',
+                      borderBottomWidth: 0.5,
+                      marginTop: normalize(2),
+                    }}
+                  >
+                    <TextFieldIn
+                      value={searchText}
+                      onChangeText={searchContent}
+                      height={normalize(40)}
+                      width={normalize(275)}
+                      backgroundColor={Colorpath.Pagebg}
+                      color="#000000"
+                      placeholder="Search for CME/CE courses"
+                      placeholderTextColor="#AAAAAA"
+                      fontSize={16}
+                      fontFamily={Fonts.InterRegular}
+                      searchIcon={true}
+                      leftIcon={Icon}
+                      leftIconName="keyboard-arrow-left"
+                      leftIconSize={35}
+                      leftIconColor="#63748b"
+                      leftIconStyle={{ marginLeft: normalize(-4), top: normalize(7) }}
+                      onPressLeftIcon={goBack}
+                    />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchText('');
+                    setVoiceOpen(true);
+                  }}
                   style={{
-                    borderBottomColor: '#000000',
-                    borderBottomWidth: 0.5,
-                    marginTop: normalize(2),
+                    justifyContent: 'center',
+                    alignContent: 'center',
+                    marginTop: normalize(10),
+                    height: normalize(30),
+                    width: normalize(30),
+                    borderRadius: normalize(30),
+                    backgroundColor: 'rgba(0,0,0,0.5)',
                   }}
                 >
-                  <TextFieldIn
-                    value={searchText}
-                    onChangeText={searchContent}
-                    height={normalize(40)}
-                    width={normalize(275)}
-                    backgroundColor={Colorpath.Pagebg}
-                    color="#000000"
-                    placeholder="Search for CME/CE courses"
-                    placeholderTextColor="#AAAAAA"
-                    fontSize={16}
-                    fontFamily={Fonts.InterRegular}
-                    searchIcon={true}
-                    leftIcon={Icon}
-                    leftIconName="keyboard-arrow-left"
-                    leftIconSize={35}
-                    leftIconColor="#63748b"
-                    leftIconStyle={{ marginLeft: normalize(-4), top: normalize(7) }}
-                    onPressLeftIcon={goBack}
+                  <Icon
+                    style={{ alignSelf: 'center' }}
+                    name="keyboard-voice"
+                    size={24}
+                    color="#fff"
                   />
-                </View>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchText('');
-                  setVoiceOpen(true);
-                }}
-                style={{
-                  justifyContent: 'center',
-                  alignContent: 'center',
-                  marginTop: normalize(10),
-                  height: normalize(30),
-                  width: normalize(30),
-                  borderRadius: normalize(30),
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                }}
-              >
-                <Icon
-                  style={{ alignSelf: 'center' }}
-                  name="keyboard-voice"
-                  size={24}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View
-              style={{
-                marginTop: normalize(0),
-                paddingHorizontal: normalize(3),
-                flexDirection: 'row',
-                gap: 10,
-              }}
-            >
-              <View style={{ alignItems: 'center' }}>
-                <View
-                  style={{
-                    borderBottomColor: '#000000',
-                    borderBottomWidth: 0.5,
-                    marginTop: normalize(2),
-                  }}
-                >
-                  <TextFieldIn
-                    value={searchText}
-                    onChangeText={searchContent}
-                    height={normalize(40)}
-                    width={normalize(275)}
-                    backgroundColor={Colorpath.Pagebg}
-                    color="#000000"
-                    placeholder="Search for CME/CE courses"
-                    placeholderTextColor="#AAAAAA"
-                    fontSize={16}
-                    fontFamily={Fonts.InterRegular}
-                    searchIcon={true}
-                    leftIcon={Icon}
-                    leftIconName="keyboard-arrow-left"
-                    leftIconSize={35}
-                    leftIconColor="#63748b"
-                    leftIconStyle={{ marginLeft: normalize(0), top: normalize(5) }}
-                    onPressLeftIcon={goBack}
-                  />
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchText('');
-                  setVoiceOpen(true);
-                }}
-                style={{
-                  justifyContent: 'center',
-                  alignContent: 'center',
-                  marginTop: normalize(10),
-                  height: normalize(30),
-                  width: normalize(30),
-                  borderRadius: normalize(30),
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                }}
-              >
-                <Icon
-                  style={{ alignSelf: 'center' }}
-                  name="keyboard-voice"
-                  size={24}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={searchText ? { justifyContent: 'center', alignItems: 'center', marginTop: normalize(15) } : styles.content}>
-            {searchText ? (
-              <GlobalSearchAll
-                isLoading={isLoading}
-                creditDataAll={taskData}
-                setSearchText={setSearchText}
-                nav={props.navigation}
-                searchText={searchText}
-                data={searchData}
-                handleUrl={handleUrl}
-              />
             ) : (
-              renderDefaultContent()
+              <View
+                style={{
+                  marginTop: normalize(0),
+                  paddingHorizontal: normalize(3),
+                  flexDirection: 'row',
+                  gap: 10,
+                }}
+              >
+                <View style={{ alignItems: 'center' }}>
+                  <View
+                    style={{
+                      borderBottomColor: '#000000',
+                      borderBottomWidth: 0.5,
+                      marginTop: normalize(2),
+                    }}
+                  >
+                    <TextFieldIn
+                      value={searchText}
+                      onChangeText={searchContent}
+                      height={normalize(40)}
+                      width={normalize(275)}
+                      backgroundColor={Colorpath.Pagebg}
+                      color="#000000"
+                      placeholder="Search for CME/CE courses"
+                      placeholderTextColor="#AAAAAA"
+                      fontSize={16}
+                      fontFamily={Fonts.InterRegular}
+                      searchIcon={true}
+                      leftIcon={Icon}
+                      leftIconName="keyboard-arrow-left"
+                      leftIconSize={35}
+                      leftIconColor="#63748b"
+                      leftIconStyle={{ marginLeft: normalize(0), top: normalize(5) }}
+                      onPressLeftIcon={goBack}
+                    />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchText('');
+                    setVoiceOpen(true);
+                  }}
+                  style={{
+                    justifyContent: 'center',
+                    alignContent: 'center',
+                    marginTop: normalize(10),
+                    height: normalize(30),
+                    width: normalize(30),
+                    borderRadius: normalize(30),
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                  }}
+                >
+                  <Icon
+                    style={{ alignSelf: 'center' }}
+                    name="keyboard-voice"
+                    size={24}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+              </View>
             )}
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+
+            <View style={searchText ? { justifyContent: 'center', alignItems: 'center', marginTop: normalize(15) } : styles.content}>
+              {searchText ? (
+                <GlobalSearchAll
+                  isLoading={isLoading}
+                  creditDataAll={taskData}
+                  setSearchText={setSearchText}
+                  nav={props.navigation}
+                  searchText={searchText}
+                  data={searchData}
+                  handleUrl={handleUrl}
+                />
+              ) : (
+                renderDefaultContent()
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      )}
     </>
   );
 };

@@ -70,6 +70,8 @@ const Globalresult = (props) => {
     const [displayedAggregations, setDisplayedAggregations] = useState(null);
     const hasFocusedOnceRef = useRef(false);
     const requestStatusRef = useRef("");
+    const lastTrigRef = useRef();
+    const lastFilterRef = useRef();
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
     const guestSelection = props?.route?.params?.guestSelection;
@@ -143,17 +145,27 @@ const Globalresult = (props) => {
         dispatch(clearCmeCourseData());
     }, [dispatch]);
     useEffect(() => {
-        if (props?.route?.params?.trig) {
-            resetResultsView({ clearSort: true, loadingState: true });
-            fetchHandle(undefined, { pageNum: 0, sortType: '' });
+        const currentTrig = props?.route?.params?.trig;
+        if (currentTrig) {
+            const currentTrigStr = JSON.stringify(currentTrig);
+            if (currentTrigStr !== lastTrigRef.current) {
+                lastTrigRef.current = currentTrigStr;
+                resetResultsView({ clearSort: true, loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType: '' });
+            }
         }
-    }, [props?.route?.params?.trig, resetResultsView, fetchHandle])
+    }, [props?.route?.params?.trig, resetResultsView, fetchHandle]);
     useEffect(() => {
-        if (props?.route?.params?.filterDatSh?.filterDatSh) {
-            resetResultsView({ loadingState: true });
-            fetchHandle(undefined, { pageNum: 0, sortType });
+        const currentFilter = props?.route?.params?.filterDatSh?.filterDatSh;
+        if (currentFilter) {
+            const currentFilterStr = JSON.stringify(currentFilter);
+            if (currentFilterStr !== lastFilterRef.current) {
+                lastFilterRef.current = currentFilterStr;
+                resetResultsView({ loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType });
+            }
         }
-    }, [props?.route?.params?.filterDatSh, resetResultsView, sortType, fetchHandle])
+    }, [props?.route?.params?.filterDatSh, resetResultsView, sortType, fetchHandle]);
     useEffect(() => {
         if (!isGuestCmeFlow) return;
 
@@ -378,6 +390,55 @@ const Globalresult = (props) => {
                     ? (props?.route?.params?.trig?.beforetakecity?.[2] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.beforetakecity?.[2] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.allProfessionMain ?? props?.route?.params?.trig?.allProfessionMain)
                     : "",
         };
+
+        if (props?.route?.params?.trig?.request_type === 'stateconferences') {
+            obj = {
+                "pageno": requestedPageNum,
+                "limit": limit,
+                "search_speciality": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat()
+                    : props?.route?.params?.trig?.search_speciality ?? "",
+                "conference_type_text": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat()
+                    : props?.route?.params?.trig?.conference_type_text ?? "",
+                "cme_from": props?.route?.params?.filterDatSh?.minVal ? props?.route?.params?.filterDatSh?.minVal : props?.route?.params?.trig?.cme_from ?? "",
+                "cme_to": props?.route?.params?.filterDatSh?.maxVal ? props?.route?.params?.filterDatSh?.maxVal : props?.route?.params?.trig?.cme_to ?? "",
+                "organization": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat()
+                    : props?.route?.params?.trig?.organization ?? "",
+                "price_from": props?.route?.params?.filterDatSh?.minValP ? props?.route?.params?.filterDatSh?.minValP : props?.route?.params?.trig?.price_from ?? "",
+                "price_to": props?.route?.params?.filterDatSh?.maxValp ? props?.route?.params?.filterDatSh?.maxValp : props?.route?.params?.trig?.price_to ?? "",
+                "startdate": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat()
+                    : props?.route?.params?.trig?.startdate ?? "",
+                "location": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat()
+                    : props?.route?.params?.trig?.location ?? "",
+                "free_conf": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Free Courses") == "Free Courses" ? 1 : "" : props?.route?.params?.trig?.free_conf ?? "",
+                "noncme": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Non-CME Courses") == "Non-CME Courses" ? 1 : "" : props?.route?.params?.trig?.noncme ?? "",
+                "speaker": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat()
+                    : props?.route?.params?.trig?.speaker ?? "",
+                "search_mandate_states": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat()
+                    : props?.route?.params?.trig?.search_mandate_states ?? [],
+                "search_topic": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat()
+                    : props?.route?.params?.trig?.search_topic ?? "",
+                "search_profession": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat()
+                    : props?.route?.params?.trig?.search_profession ?? "",
+                "credittype": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat()
+                    : props?.route?.params?.trig?.credittype ?? "",
+                "sort_type": requestedSortType || props?.route?.params?.trig?.sort_type || "",
+                "searchKeyword": props?.route?.params?.trig?.searchKeyword ?? "",
+                "request_type": "stateconferences",
+                "country": props?.route?.params?.trig?.country ?? "usa-medical-conferences",
+                "state": props?.route?.params?.trig?.state ?? "",
+                "": ""
+            };
+        }
         connectionrequest()
             .then(() => {
                 dispatch(cmeCourseRequest(obj));
@@ -388,21 +449,20 @@ const Globalresult = (props) => {
             });
     }, [dispatch, limit, pageNum, props?.route?.params?.filterDatSh, props?.route?.params?.trig, sortType]);
 
-    useFocusEffect(
-        useCallback(() => {
+    useEffect(() => {
+        const unsubscribe = props.navigation.addListener('focus', () => {
             if (!hasFocusedOnceRef.current) {
                 hasFocusedOnceRef.current = true;
-                return undefined;
+                return;
             }
 
             if (props?.route?.params?.trig?.Realback === "cont") {
                 resetResultsView({ loadingState: true });
                 fetchHandle(undefined, { pageNum: 0 });
             }
-
-            return undefined;
-        }, [props?.route?.params?.trig, resetResultsView, fetchHandle])
-    );
+        });
+        return unsubscribe;
+    }, [props.navigation, props?.route?.params?.trig, resetResultsView, fetchHandle]);
 
     const fetchMore = useCallback(() => {
         if (!apiReq && !loading && canLoadMore && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
@@ -721,30 +781,47 @@ const Globalresult = (props) => {
                         </View>
                     </View>
                 )}
-                {!isRouteRefreshing && storeAlldata?.length > 0 && <TouchableOpacity onPress={() => {
-                    setPageNum(0);
-                    setSortedFall(!sortedFall);
-                }} style={isGuestCmeFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                    <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", alignItems: isGuestCmeFlow ? 'flex-start' : 'center' }}>
-                        <View style={{ flex: 1, marginRight: 12 }}>
-                            <Text style={isGuestCmeFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>{`Showing (${totalResults || ""}) Results for`}</Text>
-                            {(isGuestCmeFlow || isGuestSpecialityFlow) && CMEReducer?.cmeCourseResponse?.header_title ? (
-                                <Text style={isGuestCmeFlow ? styles.guestSummaryTitle : { fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                {!isRouteRefreshing && storeAlldata?.length > 0 && (
+                    <>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setPageNum(0);
+                                setSortedFall(!sortedFall);
+                            }}
+                            style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
+                        >
+                            <View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
+                                <Text style={[
+                                    (isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
+                                    { marginBottom: 0 }
+                                ]}>
+                                    {`Showing (${totalResults || ""}) Results for`}
+                                </Text>
+                                <View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
+                                    <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
+                                    <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                        {(isGuestCmeFlow || isGuestSpecialityFlow) && CMEReducer?.cmeCourseResponse?.header_title ? (
+                            <View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
+                                <Text style={styles.guestSummaryTitle}>
                                     {CMEReducer?.cmeCourseResponse?.header_title}
                                 </Text>
-                            ) : null}
-                        </View>
-                        <View style={styles.guestSortWrap}>
-                            <Text style={isGuestCmeFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
-                            <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
-                        </View>
+                            </View>
+                        ) : null}
+                    </>
+                )}
+                {!isRouteRefreshing && !isGuestCmeFlow && !isGuestSpecialityFlow && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && (
+                    <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
+                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                            {CMEReducer?.cmeCourseResponse?.header_title}
+                        </Text>
                     </View>
-                </TouchableOpacity>}
-                {!isRouteRefreshing && !isGuestCmeFlow && !isGuestSpecialityFlow && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
-                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}</Text>
-                </View>}
-                <View>
+                )}
+                <View style={{ flex: 1 }}>
                     <FlatList
+                        style={{ flex: 1 }}
                         key={`results-${routeQueryKey}-${selectedProfession || 'none'}-${getStateId(selectedState) || 'none'}`}
                         data={isRouteRefreshing ? [] : storeAlldata}
                         renderItem={searchGlobalitem}

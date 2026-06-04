@@ -99,6 +99,69 @@ export const getText = (...values) => {
 };
 
 /**
+ * Description: Formats a numeric string using Indian-style comma grouping.
+ * Purpose: Keeps guest-home counts and amount-like values readable without affecting non-numeric text.
+ *
+ * Params:
+ * @param {string|number} value
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Normalize the input into text.
+ * 2. Preserve decimal precision from the original string.
+ * 3. Apply `en-IN` grouping to the integer portion.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Falls back to the original value when parsing is not possible.
+ */
+export const formatGuestNumber = value => {
+  const raw = String(value ?? '').trim();
+  if (!raw || !/^-?\d+(?:\.\d+)?$/.test(raw)) return raw;
+
+  const isNegative = raw.startsWith('-');
+  const numericText = isNegative ? raw.slice(1) : raw;
+  const [integerPart, decimalPart] = numericText.split('.');
+  const formattedInteger = Number(integerPart || 0).toLocaleString('en-IN');
+
+  return `${isNegative ? '-' : ''}${formattedInteger}${decimalPart != null ? `.${decimalPart}` : ''}`;
+};
+
+/**
+ * Description: Formats number-like fragments inside guest-home display text.
+ * Purpose: Adds commas to visible guest-home counts, prices, and credit labels while preserving surrounding text.
+ *
+ * Params:
+ * @param {string|number} value
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Convert the value into a string.
+ * 2. Find standalone numeric fragments.
+ * 3. Replace each fragment with Indian-style grouped output.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns an empty string for nullish inputs.
+ */
+export const formatGuestNumericText = value =>
+  String(value ?? '').replace(/-?\d+(?:\.\d+)?/g, match => formatGuestNumber(match));
+
+/**
  * Description: Resolves a specialty label from string or object inputs.
  * Purpose: Normalizes specialty payload variations into one label format.
  *
@@ -286,7 +349,7 @@ export const getCountValue = (...values) => {
   for (const value of values) {
     if (value == null) continue;
     const text = String(value).trim();
-    if (text) return text;
+    if (text) return formatGuestNumericText(text);
   }
   return '';
 };

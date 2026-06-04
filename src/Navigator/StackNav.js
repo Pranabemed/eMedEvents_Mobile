@@ -305,8 +305,11 @@ const StackNav = props => {
           isExternalNavigationInProgress.current = false;
           return;
         }
-        AsyncStorage.getItem(constants.TOKEN).then((token) => {
-          if (!token) {
+        Promise.all([
+          AsyncStorage.getItem(constants.TOKEN),
+          AsyncStorage.getItem('PLAYERSESSION'),
+        ]).then(([token, playerSession]) => {
+          if (!token && !playerSession) {
             resetToSplashScreen();
           }
         });

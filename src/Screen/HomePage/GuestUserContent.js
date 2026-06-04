@@ -136,7 +136,9 @@ const GuestUserContent = ({ guest }) => {
               width={width}
             />
 
-            {featuredConferenceItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestCarouselShimmer title="Featured Activity" width={width} showTitle={false} />
+            ) : featuredConferenceItems.length > 0 ? (
               <CarouselSection
                 title="Featured Activities"
                 action=""
@@ -147,8 +149,6 @@ const GuestUserContent = ({ guest }) => {
                 width={width}
                 onAction={() => ''}
               />
-            ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Featured Activity" width={width} showTitle={false} />
             ) : null}
 
             {isHomeLoading ? (
@@ -164,7 +164,9 @@ const GuestUserContent = ({ guest }) => {
               />
             )}
 
-            {popularConferenceItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestCarouselShimmer title="Most Popular Conferences" width={width} />
+            ) : popularConferenceItems.length > 0 ? (
               <CarouselSection
                 title="Most Popular Conferences"
                 action=""
@@ -175,22 +177,22 @@ const GuestUserContent = ({ guest }) => {
                 width={width}
                 onAction={() => ''}
               />
-            ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Most Popular Conferences" width={width} />
             ) : null}
 
-            {specialityItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestChipsShimmer />
+            ) : specialityItems.length > 0 ? (
               <GuestSpecialitySection
                 navigation={navigation}
                 width={width}
                 specialityItems={specialityItems}
                 specialityColumns={specialityColumns}
               />
-            ) : isHomeLoading ? (
-              <GuestChipsShimmer />
             ) : null}
 
-            {specialtyFeaturedItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestCarouselShimmer title="Specialty Featured" width={width} />
+            ) : specialtyFeaturedItems.length > 0 ? (
               <CarouselSection
                 title="Specialty Featured"
                 action="View all"
@@ -210,11 +212,11 @@ const GuestUserContent = ({ guest }) => {
                   })
                 }
               />
-            ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Specialty Featured" width={width} />
             ) : null}
 
-            {liveWebinarItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestCarouselShimmer title="Live Conferences" width={width} variant="live" />
+            ) : liveWebinarItems.length > 0 ? (
               <LiveConferenceSection
                 data={liveWebinarItems}
                 renderItem={renderLiveCard}
@@ -231,11 +233,11 @@ const GuestUserContent = ({ guest }) => {
                   })
                 }
               />
-            ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Live Conferences" width={width} variant="live" />
             ) : null}
 
-            {freeConferenceItems.length > 0 ? (
+            {isHomeLoading ? (
+              <GuestCarouselShimmer title="Free CME/CE" width={width} variant="free" />
+            ) : freeConferenceItems.length > 0 ? (
               <CarouselSection
                 title="Free CME/CE"
                 action="View all"
@@ -250,11 +252,11 @@ const GuestUserContent = ({ guest }) => {
                   })
                 }
               />
-            ) : isHomeLoading ? (
-              <GuestCarouselShimmer title="Free CME/CE" width={width} variant="free" />
             ) : null}
 
-            <GuestMarketplaceSection width={width} stats={marketplaceStats} navigation={navigation} />
+            {!isHomeLoading ? (
+              <GuestMarketplaceSection width={width} stats={marketplaceStats} navigation={navigation} />
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>

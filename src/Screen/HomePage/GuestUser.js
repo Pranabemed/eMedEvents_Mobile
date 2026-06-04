@@ -69,6 +69,7 @@ const GuestUser = props => {
   const [handledGuestResetAt, setHandledGuestResetAt] = useState(null);
 
   const shouldResetRef = useRef(false);
+  const guestHomeRequestInFlightRef = useRef(false);
 
   /** Description: Resets guest-only UI state. Purpose: Prevents stale selections across navigation sessions. */
   const resetGuestSelections = useCallback(() => {
@@ -144,22 +145,31 @@ const GuestUser = props => {
   useEffect(() => {
     if (!isFocused) return;
     setIsGuestHomeLoading(true);
+    guestHomeRequestInFlightRef.current = true;
     connectionrequest()
       .then(() => {
         dispatch(HomelistRequest({ is_mobile: 1 }));
         dispatch(AboutusRequest({}));
       })
-      .catch(err => showErrorAlert('Please connect to internet', err));
+      .catch(err => {
+        guestHomeRequestInFlightRef.current = false;
+        setIsGuestHomeLoading(false);
+        showErrorAlert('Please connect to internet', err);
+      });
   }, [dispatch, isFocused]);
   useEffect(() => {
-    if (GuestReducer?.status === 'Guest/HomelistRequest') {
+    if (GuestReducer?.status === 'Guest/HomelistRequest' && guestHomeRequestInFlightRef.current) {
       setIsGuestHomeLoading(true);
       return;
     }
     if (
-      GuestReducer?.status === 'Guest/HomelistSuccess' ||
-      GuestReducer?.status === 'Guest/HomelistFailure'
+      guestHomeRequestInFlightRef.current &&
+      (
+        GuestReducer?.status === 'Guest/HomelistSuccess' ||
+        GuestReducer?.status === 'Guest/HomelistFailure'
+      )
     ) {
+      guestHomeRequestInFlightRef.current = false;
       setIsGuestHomeLoading(false);
     }
   }, [GuestReducer?.status]);

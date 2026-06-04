@@ -9,7 +9,7 @@
  */
 
 import { FormatDateZone } from '../../../../Utils/Helpers/Timezone';
-import { getText } from './guestUserCore';
+import { formatGuestNumber, formatGuestNumericText, getText } from './guestUserCore';
 
 /**
  * Description: Removes HTML tags and entity noise from a string.
@@ -215,14 +215,15 @@ export const getDateRange = item => {
  */
 export const getCmeLabel = item => {
   if (item?.display_cme) {
-    return String(item.display_cme).toLowerCase().includes('contact hour')
+    const normalizedDisplayCme = String(item.display_cme).toLowerCase().includes('contact hour')
       ? String(item.display_cme).replace(/contact hour/i, 'Contact Hour(s)')
       : String(item.display_cme);
+    return formatGuestNumericText(normalizedDisplayCme);
   }
   if (Array.isArray(item?.cme_points_popovar) && item.cme_points_popovar.length) {
     return item.cme_points_popovar
       .map(point => {
-        const count = Number.parseFloat(point?.points) || 0;
+        const count = formatGuestNumber(Number.parseFloat(point?.points) || 0);
         const name =
           point?.name && point?.name.toLowerCase() === 'contact hour'
             ? 'Contact Hour(s)'
@@ -263,11 +264,11 @@ export const getPriceLabel = item => {
   if (String(item?.display_price || '').toUpperCase() === 'FREE') {
     return 'FREE';
   }
-  return `${getText(item?.display_currency_code, item?.currency_code, '')}${getText(
+  return `${getText(item?.display_currency_code, item?.currency_code, '')}${formatGuestNumericText(getText(
     item?.display_price,
     item?.price,
     item?.amount,
-  )}`.trim();
+  ))}`.trim();
 };
 
 /**
@@ -339,7 +340,7 @@ export const parseBannerMeta = html => {
 
   return {
     date: date || '',
-    credits: credits || '',
+    credits: formatGuestNumericText(credits || ''),
   };
 };
 
@@ -375,7 +376,7 @@ export const splitMetaLine = value => {
 
   return {
     date: parts[0] || '',
-    credits: parts.slice(1).join(' | ') || '',
+    credits: formatGuestNumericText(parts.slice(1).join(' | ') || ''),
   };
 };
 

@@ -29,8 +29,12 @@ import { GuestHeroShimmer } from './GuestUserShimmers';
 const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, width }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
+  if (isHomeLoading) {
+    return <GuestHeroShimmer width={width} />;
+  }
+
   if (!topBanners.length) {
-    return isHomeLoading ? <GuestHeroShimmer width={width} /> : null;
+    return null;
   }
 
   return (

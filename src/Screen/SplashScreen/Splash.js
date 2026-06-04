@@ -75,6 +75,7 @@ export default function Splash(props) {
         AsyncStorage.removeItem(constants.VERIFYSTATEDATA),
         AsyncStorage.removeItem(constants.EMAVER),
         AsyncStorage.removeItem(constants.MOBVER),
+        AsyncStorage.removeItem('PLAYERSESSION'),
       ]);
     } catch (error) {
       console.log('[Splash] Failed to clear auth state:', error);
@@ -131,9 +132,22 @@ export default function Splash(props) {
               })
               .catch((err) => showErrorAlert("Please connect to internet", err));
           } else {
-            setTimeout(() => {
-              resetToOnboard();
-            }, 500);
+            const playerSession = await AsyncStorage.getItem('PLAYERSESSION');
+            if (playerSession) {
+              if (!hasNavigatedRef.current) {
+                hasNavigatedRef.current = true;
+                props.navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'GuestUser' }],
+                  })
+                );
+              }
+            } else {
+              setTimeout(() => {
+                resetToOnboard();
+              }, 500);
+            }
           }
         } catch (error) {
           console.log(error);

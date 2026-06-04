@@ -713,6 +713,7 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, constants.PHONE);
     yield call(AsyncStorage.removeItem, constants.TOKEN);
     yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
+    yield call(AsyncStorage.removeItem, 'PLAYERSESSION');
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
     yield put(dashMbSuccess(null));

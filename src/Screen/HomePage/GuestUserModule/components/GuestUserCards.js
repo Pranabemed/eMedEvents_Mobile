@@ -23,8 +23,24 @@ import {
 } from '../utils/guestUserCore';
 import { InfoRow } from './GuestUserShared';
 
+const getFreeEventTypeIcon = eventType => {
+  const normalizedType = String(eventType || '').trim().toLowerCase();
+
+  if (!normalizedType) return null;
+  if (normalizedType.includes('text')) return Imagepath.Textbased;
+  if (normalizedType.includes('podcast')) return Imagepath.PodCast;
+  if (normalizedType.includes('journal')) return Imagepath.Journal;
+  if (normalizedType.includes('live webinar')) return Imagepath.LiveWebinar;
+  if (normalizedType.includes('hybrid')) return Imagepath.Hybrid;
+  if (normalizedType.includes('in-person')) return Imagepath.InPerson;
+  if (normalizedType.includes('webcast')) return Imagepath.VideoCam;
+
+  return Imagepath.VideoCam;
+};
+
 const FreeConferenceCardComponent = ({ item }) => {
   const handlePress = () => item?.onPress?.(item?.detailpageUrl);
+  const eventTypeIcon = getFreeEventTypeIcon(item?.eventType);
 
   return (
     <View style={styles.freeCardWrap}>
@@ -32,7 +48,11 @@ const FreeConferenceCardComponent = ({ item }) => {
         <View style={styles.freeTopRow}>
           {item?.eventType ? (
             <View style={styles.freeTypePill}>
-              <Icon name="keyboard-voice" size={13} color="#FFFFFF" />
+              {eventTypeIcon ? (
+                <Image source={eventTypeIcon} style={styles.freeTypeIcon} resizeMode="contain" />
+              ) : (
+                <Icon name="keyboard-voice" size={13} color="#FFFFFF" />
+              )}
               <Text numberOfLines={1} style={styles.freeTypeText}>{item.eventType}</Text>
             </View>
           ) : null}
