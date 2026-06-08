@@ -1,5 +1,5 @@
 import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
-import React, { useLayoutEffect, useState } from 'react'
+import React, { useLayoutEffect, useState, useContext, useEffect } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -10,14 +10,241 @@ import CrossIcon from 'react-native-vector-icons/EvilIcons';
 import Buttons from '../../Components/Button';
 import { CommonActions } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import constants from '../../Utils/Helpers/constants';
+
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+
+const getCountryFromIP = async (ip) => {
+    try {
+        const res = await fetch(`https://ipinfo.io/${ip}/json`);
+        const text = await res.text();
+        if (text.startsWith('<')) {
+            throw new Error('HTML response');
+        }
+        const data = JSON.parse(text);
+        return String(data?.country || 'unknown').trim().toUpperCase();
+    } catch (e) {
+        console.log('CheckMembership geo lookup failed:', e);
+        return 'unknown';
+    }
+};
+
+const normalizeProfessionHandle = (professionHandle) =>
+  String(professionHandle || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+
+const findMatchedProfessionHandle = (candidates, supportedHandles) => {
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeProfessionHandle(candidate);
+    if (!normalizedCandidate) continue;
+
+    for (const handle of supportedHandles) {
+      if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
+        return handle;
+      }
+    }
+  }
+  return '';
+};
+
+const buildProfessionLabel = (profession, professionType) => {
+  const cleanProfession = String(profession || '').trim();
+  const cleanProfessionType = String(professionType || '').trim();
+
+  if (!cleanProfession || !cleanProfessionType) {
+    return '';
+  }
+
+  return `${cleanProfession} - ${cleanProfessionType}`;
+};
+
+const isUsaBasedUser = (user, ipCountryCode = '') => {
+  const countryId = String(
+    user?.country_id ||
+    user?.billing_address?.country_id ||
+    user?.user_billing_address?.country_id ||
+    user?.user_address?.country_id ||
+    ''
+  ).trim();
+  const countryName = String(
+    user?.country_name ||
+    user?.billing_address?.country_name ||
+    user?.user_billing_address?.country_name ||
+    user?.user_address?.country_name ||
+    ''
+  ).trim().toLowerCase();
+  const usaUser = String(user?.usa_user || '').trim().toLowerCase();
+  const ipCountry = String(user?.ip_country || user?.country_code || '').trim().toLowerCase();
+  const callingCode = String(user?.callingCode || user?.countryCode || '').trim();
+  const normalizedResolvedIpCountry = String(ipCountryCode || '').trim().toLowerCase();
+
+  if (countryId && countryId !== '1' && countryId !== '233' && countryId !== '0') {
+    return false;
+  }
+  if (countryName && !countryName.includes('usa') && !countryName.includes('united states') && !countryName.includes('us')) {
+    return false;
+  }
+
+  return (
+    usaUser === '1' ||
+    usaUser === 'true' ||
+    countryId === '1' ||
+    countryName.includes('usa') ||
+    countryName.includes('united states') ||
+    callingCode === '+1' ||
+    normalizedResolvedIpCountry === 'us' ||
+    normalizedResolvedIpCountry === 'usa' ||
+    ipCountry === 'us' ||
+    ipCountry === 'usa'
+  );
+};
+
 const CheckMembership = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isGuestUserFlow = props?.route?.params?.fromGuestUser === true;
+    const [isEligible, setIsEligible] = useState(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const checkEligibility = async () => {
+            try {
+                const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+                const authProfessionInfo =
+                    AuthReducer?.loginResponse?.user ||
+                    AuthReducer?.againloginsiginResponse?.user ||
+                    AuthReducer?.signupResponse?.user ||
+                    {};
+
+                const ipAddress = getPublicIP();
+                const countryCode = 'US'||await getCountryFromIP(ipAddress);
+
+                const [verifyRaw, professionRaw] = await Promise.all([
+                    AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                    AsyncStorage.getItem(constants.PROFESSION),
+                ]);
+
+                const parseStoredJson = (value) => {
+                    if (!value) return null;
+                    try {
+                        return JSON.parse(value);
+                    } catch (error) {
+                        return null;
+                    }
+                };
+
+                const verifyData = parseStoredJson(verifyRaw);
+                const professionData = parseStoredJson(professionRaw);
+                const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
+                const user = verifyResponseData || verifyData || professionData;
+
+                const rawProfession =
+                    verifyData?.profession ||
+                    professionData?.profession ||
+                    user?.profession ||
+                    dashboardProfessionInfo?.profession ||
+                    authProfessionInfo?.profession ||
+                    '';
+                const rawProfessionType =
+                    verifyData?.profession_type ||
+                    professionData?.profession_type ||
+                    user?.profession_type ||
+                    authProfessionInfo?.profession_type ||
+                    '';
+
+                const userProfession = (
+                    rawProfession.includes(' - ')
+                        ? rawProfession
+                        : rawProfession && rawProfessionType
+                            ? `${rawProfession} - ${rawProfessionType}`
+                            : rawProfession || rawProfessionType
+                ).trim();
+
+                const allowedProfessions = [
+                    "Physician - MD",
+                    "Physician - DO",
+                    "Physician - DPM"
+                ];
+
+                const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+                const supportedHandles = [...physicianHandles];
+
+                const dashboardProfessionTypeStr = String(dashboardProfessionInfo?.profession_type || '').trim().toUpperCase();
+                const authProfessionTypeStr = String(authProfessionInfo?.profession_type || '').trim().toUpperCase();
+                const professionType = String(
+                    verifyData?.profession_type ||
+                    professionData?.profession_type ||
+                    user?.profession_type ||
+                    dashboardProfessionTypeStr ||
+                    authProfessionTypeStr ||
+                    ''
+                ).trim().toUpperCase();
+
+                const profFromDashboard = buildProfessionLabel(
+                    String(dashboardProfessionInfo?.profession || '').trim(),
+                    String(dashboardProfessionInfo?.profession_type || '').trim()
+                );
+                const profFromAuth = buildProfessionLabel(
+                    authProfessionInfo?.profession,
+                    authProfessionInfo?.profession_type
+                );
+
+                const resolvedProfessionHandle = profFromDashboard
+                    ? findMatchedProfessionHandle(
+                        [
+                            profFromDashboard,
+                            String(dashboardProfessionInfo?.profession || '').trim(),
+                            `${String(dashboardProfessionInfo?.profession || '').trim()} ${String(dashboardProfessionInfo?.profession_type || '').trim()}`.trim(),
+                        ],
+                        supportedHandles
+                    )
+                    : findMatchedProfessionHandle(
+                        [
+                            profFromAuth,
+                            `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
+                        ],
+                        supportedHandles
+                    );
+
+                const isEligibleGuestPhysician =
+                    allowedProfessions.includes(userProfession) ||
+                    (resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false) ||
+                    ['MD', 'DO', 'DPM'].includes(professionType);
+
+                const isEligibleCountry =
+                    countryCode === "US" ||
+                    countryCode === "USA" ||
+                    isUsaBasedUser(user, countryCode);
+
+                const eligible = isEligibleCountry && isEligibleGuestPhysician;
+
+                if (isMounted) {
+                    setIsEligible(eligible);
+                }
+            } catch (error) {
+                console.log('CheckMembership eligibility check error', error);
+                if (isMounted) {
+                    setIsEligible(false);
+                }
+            }
+        };
+
+        checkEligibility();
+        return () => {
+            isMounted = false;
+        };
+    }, [AuthReducer, DashboardReducer, isGuestUserFlow, props.navigation]);
+
     const features = [
         {
             title: 'Multi State & Board Licensure Tracking',
@@ -55,18 +282,54 @@ const CheckMembership = (props) => {
     ]
     const [linearText, setLinearText] = useState(true);
     const handleClk = () => {
-        props.navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [
-                    { name: isGuestUserFlow ? "GuestUser" : "TabNav" }
-                ],
-            })
-        );
+        (async () => {
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        { name: isGuestUserFlow ? "GuestUser" : "TabNav" }
+                    ],
+                })
+            );
+        })().catch(error => {
+            console.log('CheckMembership free trial flag error', error);
+        });
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
-    }, []);
+    }, [props.navigation]);
+    const handlePrimeMembership = () => {
+        (async () => {
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "PrimePayment" }],
+                })
+            );
+        })().catch(error => {
+            console.log('CheckMembership prime flag error', error);
+        });
+    };
+    const handleSkip = async () => {
+        try {
+            await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+            await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
+        } catch (error) {
+            console.log('CheckMembership skip flag error', error);
+        }
+
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
+            })
+        );
+    };
+
     return (
         <>
             <MyStatusBar
@@ -106,7 +369,7 @@ const CheckMembership = (props) => {
                         <View style={{ height: 0.5, width: normalize(320), backgroundColor: "#DDDDDD" }} />
                     </View>
                     <View>
-                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(95) }}>
+                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(205) }}>
 
                             {linearText && <View style={styles.table}>
                                 {features?.map((feature, index) => (
@@ -150,20 +413,52 @@ const CheckMembership = (props) => {
                             </View>}
                         </ScrollView>
                     </View>
-                    <View style={styles.buttonContainer}>
-                        <Buttons
-                            onPress={handleClk}
-                            height={normalize(45)}
-                            width={normalize(288)}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            text={isGuestUserFlow ? "Back To Home" : "Start Your  30-Day Free Trial Today!"}
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(-15)}
-                        />
-                    </View>
+                    {isEligible ? (
+                        <View style={styles.buttonContainer}>
+                            <Buttons
+                                onPress={handleClk}
+                                height={normalize(45)}
+                                width={normalize(288)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text={isGuestUserFlow ? "Back To Home" : "Start Your  30-Day Free Trial Today!"}
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(-15)}
+                            />
+                            <Buttons
+                                onPress={handlePrimeMembership}
+                                height={normalize(45)}
+                                width={normalize(288)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text={"Get Prime Membership"}
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(12)}
+                            />
+                            <TouchableOpacity onPress={handleSkip} style={{ marginTop: normalize(16) }}>
+                                <Text style={styles.skipText}>{"Skip"}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.buttonContainerOriginal}>
+                            <Buttons
+                                onPress={handleClk}
+                                height={normalize(45)}
+                                width={normalize(288)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text={isGuestUserFlow ? "Back To Home" : "Start Your  30-Day Free Trial Today!"}
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(-15)}
+                            />
+                        </View>
+                    )}
                 </View>
             </SafeAreaView>
         </>
@@ -260,6 +555,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     buttonContainer: {
+        position: 'absolute',
+        height: normalize(180),
+        bottom: -20,
+        left: 0,
+        right: 0,
+        backgroundColor: Colorpath.white,
+        borderColor: "#DDDDDD",
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: normalize(20),
+    },
+    skipText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(18),
+        color: "#000000",
+        fontWeight: "bold",
+    },
+    buttonContainerOriginal: {
         position: 'absolute',
         height: normalize(100),
         bottom: -40,

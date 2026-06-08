@@ -6,7 +6,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import StateLicense from '../../Components/StateLicense';
 import { useDispatch, useSelector } from 'react-redux';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import Imagepath from '../../Themes/Imagepath';
@@ -27,8 +27,13 @@ import { enableFreeze } from "react-native-screens";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+const PRIME_CARD_TEST_COUNTRY_CODE = 'US';
 
 const normalizeProfessionHandle = (professionHandle) =>
   String(professionHandle || '')
@@ -62,6 +67,77 @@ const buildProfessionLabel = (profession, professionType) => {
   return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
+const getCountryFromIP = async (ip) => {
+  try {
+    const res = await fetch(`https://ipinfo.io/${ip}/json`);
+    const text = await res.text();
+    if (text.startsWith('<')) {
+      throw new Error('HTML response');
+    }
+    const data = JSON.parse(text);
+    return String(data?.country || 'unknown').trim().toUpperCase();
+  } catch (e) {
+    console.log('Main guest geo lookup failed:', e);
+    return 'unknown';
+  }
+};
+
+const isUsaBasedUser = (user, ipCountryCode = '') => {
+  const countryId = String(
+    user?.country_id ||
+    user?.billing_address?.country_id ||
+    user?.user_billing_address?.country_id ||
+    user?.user_address?.country_id ||
+    ''
+  ).trim();
+  const countryName = String(
+    user?.country_name ||
+    user?.billing_address?.country_name ||
+    user?.user_billing_address?.country_name ||
+    user?.user_address?.country_name ||
+    ''
+  ).trim().toLowerCase();
+  const usaUser = String(user?.usa_user || '').trim().toLowerCase();
+  const ipCountry = String(user?.ip_country || user?.country_code || '').trim().toLowerCase();
+  const callingCode = String(user?.callingCode || user?.countryCode || '').trim();
+  const normalizedResolvedIpCountry = String(ipCountryCode || '').trim().toLowerCase();
+
+  if (countryId && countryId !== '1' && countryId !== '233' && countryId !== '0') {
+    return false;
+  }
+  if (countryName && !countryName.includes('usa') && !countryName.includes('united states') && !countryName.includes('us')) {
+    return false;
+  }
+
+  return (
+    usaUser === '1' ||
+    usaUser === 'true' ||
+    countryId === '1' ||
+    countryName.includes('usa') ||
+    countryName.includes('united states') ||
+    callingCode === '+1' ||
+    normalizedResolvedIpCountry === 'us' ||
+    normalizedResolvedIpCountry === 'usa' ||
+    ipCountry === 'us' ||
+    ipCountry === 'usa'
+  );
+};
+
+const parseStoredJson = (value) => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return null;
+  }
+};
+
+const requiresVerification = (user) => {
+  if (!user) return false;
+  const isEmailVerified = String(user?.is_verified ?? user?.email_verified ?? '0') === '1';
+  const isPhoneVerified = String(user?.phone_verified ?? '0') === '1';
+  return !isEmailVerified || !isPhoneVerified;
+};
 const Main = (props) => {
   const insets = useSafeAreaInsets();
   const {
@@ -84,7 +160,9 @@ const Main = (props) => {
     pushnew,
     pendingCount,
     completedCount,
-    setGtprof
+    setGtprof,
+    primeCardSessionSkipped,
+    setPrimeCardSessionSkipped
   } = useContext(AppContext);
   const [focusedInput, setFocusedInput] = useState(null);
   const [linearText, setLinearText] = useState(true);
@@ -107,6 +185,10 @@ const Main = (props) => {
   const [guestVerifyData, setGuestVerifyData] = useState(null);
   const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
   const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
+  const [forceNewProfession, setForceNewProfession] = useState(false);
+  const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
+  const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
+  const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
   const guestVerifyNavigationRef = useRef(false);
   const guestVerifyRequestStartedRef = useRef(false);
   const isFocus = useIsFocused();
@@ -306,6 +388,7 @@ const Main = (props) => {
             AsyncStorage.getItem(constants.VERIFYSTATEDATA),
             AsyncStorage.getItem(constants.PROFESSION)
           ]);
+          console.log(profession_data, 'Fetched=====:', board_special);
           const board_special_json = board_special ? JSON.parse(board_special) : null;
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           setFinalverifyvaultmain(board_special_json);
@@ -318,6 +401,118 @@ const Main = (props) => {
 
     token_handle_vault();
   }, [isFocus]);
+  const ipAddress = getPublicIP();
+  useEffect(() => {
+    if (PRIME_CARD_TEST_COUNTRY_CODE) {
+      setResolvedIpCountryCode(PRIME_CARD_TEST_COUNTRY_CODE);
+      return;
+    }
+    if (!ipAddress) return;
+    let isMounted = true;
+    const fetchCountry = async () => {
+      const countryCode = await getCountryFromIP(ipAddress);
+      if (isMounted) {
+        setResolvedIpCountryCode(countryCode || 'unknown');
+      }
+    };
+    fetchCountry();
+    return () => {
+      isMounted = false;
+    };
+  }, [ipAddress]);
+  useEffect(() => {
+    if (!isFocus) return;
+    const loadForcedProfessionView = async () => {
+      try {
+        const [forceNewProfessionRaw, primeMembershipSkippedRaw] = await Promise.all([
+          AsyncStorage.getItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+        ]);
+        if ((forceNewProfessionRaw === '1' || primeMembershipSkippedRaw === 'true') && !hasActivePrimeMembership) {
+          setForceNewProfession(true);
+          if (forceNewProfessionRaw === '1') {
+            await AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY);
+          }
+        } else {
+          setForceNewProfession(false);
+        }
+      } catch (error) {
+        console.log('loadForcedProfessionView error', error);
+      }
+    };
+    loadForcedProfessionView();
+  }, [isFocus, hasActivePrimeMembership]);
+  const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
+    if (!user) return;
+    if (shouldClearPendingKey) {
+      try {
+        await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+      } catch (error) {
+        console.log('openGuestVerificationAlert clear pending error', error);
+      }
+    }
+    setGuestVerifyData(user);
+    setPrimeadd(false);
+    setShowGuestPrimePrompt(false);
+    setTimeout(() => {
+      setGuestVerifyModalVisible(true);
+    }, 180);
+  };
+  const requestGuestVerificationCheck = async () => {
+    const token = await AsyncStorage.getItem(constants.TOKEN);
+    if (!token) return;
+    setGuestVerifyCheckRequested(true);
+    connectionrequest()
+      .then(() => {
+        dispatch(verifyRequest({ token, key: {} }));
+      })
+      .catch((err) => {
+        setGuestVerifyCheckRequested(false);
+        showErrorAlert("Please connect to internet", err);
+      });
+  };
+  const setGuestPrimeVerificationPending = async () => {
+    try {
+      await AsyncStorage.setItem(GUEST_PRIME_VERIFICATION_PENDING_KEY, 'true');
+    } catch (error) {
+      console.log('setGuestPrimeVerificationPending error', error);
+    }
+  };
+  const handleGuestPrimeSkip = async () => {
+    await setGuestPrimeVerificationPending();
+    try {
+      await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+      setForceNewProfession(true);
+      await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
+      setPrimeCardSessionSkipped(true);
+    } catch (error) {
+      console.log('handleGuestPrimeSkip flag error', error);
+    }
+    setPrimeadd(false);
+    setShowGuestPrimePrompt(false);
+    await requestGuestVerificationCheck();
+  };
+  const handleGuestPrimeExploreTrial = async () => {
+    await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+    await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+    await setGuestPrimeVerificationPending();
+    setPrimeadd(false);
+    setShowGuestPrimePrompt(false);
+    await requestGuestVerificationCheck();
+  };
+  const handleGuestPrimeMembership = async () => {
+    await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+    await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+    await setGuestPrimeVerificationPending();
+    setPrimeadd(false);
+    setShowGuestPrimePrompt(false);
+    props.navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'PrimePayment' }],
+      })
+    );
+  };
   useEffect(() => {
     if (!isFocus) return;
     const loadGuestVerifyModal = async () => {
@@ -325,36 +520,178 @@ const Main = (props) => {
         if (guestVerifyNavigationRef.current) {
           return;
         }
-        const [guestFlowRaw, verifyRaw, professionRaw] = await Promise.all([
+        const [
+          guestFlowRaw,
+          verifyRaw,
+          professionRaw,
+          guestPrimeVerifyPendingRaw,
+          primeMembershipSkippedRaw,
+          primeCardFlowCompleteRaw,
+        ] = await Promise.all([
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
           AsyncStorage.getItem(constants.PROFESSION),
+          AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+          AsyncStorage.getItem('PrimeCardFlowComplete'),
         ]);
-        if (!guestFlowRaw) {
-          setGuestVerifyModalVisible(false);
+        const guestFlowData = parseStoredJson(guestFlowRaw);
+        const isGuestFlow = Boolean(guestFlowData);
+        const isSkippedFlow = primeMembershipSkippedRaw === 'true';
+        const isVerificationPending = guestPrimeVerifyPendingRaw === 'true';
+        const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
+        const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
+        const hasFreshVerifyResponse =
+          AuthReducer?.status === 'Auth/verifySuccess' &&
+          Boolean(verifyResponseData);
+
+        if (!resolvedIpCountryCode) {
           return;
         }
-        const verifyData = verifyRaw ? JSON.parse(verifyRaw) : null;
-        const professionData = professionRaw ? JSON.parse(professionRaw) : null;
-        const user = verifyData || professionData;
-        const hasLicenseInfo = Boolean(
-          user?.license_state_id && user?.license_number && user?.license_expiry_date
-        );
-        const isEmailVerified = String(user?.is_verified ?? user?.email_verified ?? '0') === '1';
-        const isPhoneVerified = String(user?.phone_verified ?? '0') === '1';
 
-        if (user && hasLicenseInfo && (!isEmailVerified || !isPhoneVerified)) {
+        if (!isGuestFlow && !isSkippedFlow) {
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          setShowGuestPrimePrompt(false);
+          return;
+        }
+        const verifyData = parseStoredJson(verifyRaw);
+        const professionData = parseStoredJson(professionRaw);
+        const user = verifyResponseData || verifyData || professionData;
+        const professionType = String(
+          verifyData?.profession_type || professionData?.profession_type ||
+          user?.profession_type ||
+          dashboardProfessionType ||
+          authProfessionInfo?.profession_type ||
+          ''
+        ).trim().toUpperCase();
+        const professionLabel = buildProfessionLabel(
+          verifyData?.profession || professionData?.profession ||
+          user?.profession || dashboardProfessionInfo?.profession || authProfessionInfo?.profession,
+          user?.profession_type || dashboardProfessionType || authProfessionInfo?.profession_type
+        ).toUpperCase();
+
+        const rawProfession =
+          verifyData?.profession ||
+          professionData?.profession ||
+          user?.profession ||
+          dashboardProfessionInfo?.profession ||
+          authProfessionInfo?.profession ||
+          '';
+        const rawProfessionType =
+          verifyData?.profession_type ||
+          professionData?.profession_type ||
+          user?.profession_type ||
+          dashboardProfessionType ||
+          authProfessionInfo?.profession_type ||
+          '';
+
+        const userProfession = (
+          rawProfession.includes(' - ')
+            ? rawProfession
+            : rawProfession && rawProfessionType
+              ? `${rawProfession} - ${rawProfessionType}`
+              : rawProfession || rawProfessionType
+        ).trim();
+
+        const allowedProfessions = [
+          "Physician - MD",
+          "Physician - DO",
+          "Physician - DPM"
+        ];
+
+        const isEligibleGuestPhysician =
+          allowedProfessions.includes(userProfession) ||
+          allProfTake ||
+          ['MD', 'DO', 'DPM'].includes(professionType) ||
+          professionLabel.includes('PHYSICIAN - MD') ||
+          professionLabel.includes('PHYSICIAN - DO') ||
+          professionLabel.includes('PHYSICIAN - DPM');
+
+        const isEligibleCountry =
+          resolvedIpCountryCode === 'US' ||
+          resolvedIpCountryCode === 'USA' ||
+          isUsaBasedUser(user, resolvedIpCountryCode);
+
+        const isUSAAndPhysician = isEligibleGuestPhysician && isEligibleCountry;
+
+        const shouldShowPrimeFirst =
+          !hasActivePrimeMembership &&
+          !isVerificationPending &&
+          !isPrimeCardFlowComplete &&
+          !primeCardSessionSkipped &&
+          (isUSAAndPhysician || isSkippedFlow);
+
+        console.log({
+          shouldShowPrimeFirst,
+          isUSAAndPhysician,
+          isEligibleGuestPhysician,
+          isEligibleCountry,
+          isVerificationPending,
+          isPrimeCardFlowComplete
+        }, 'Fetched=====1222:');
+
+        if (shouldShowPrimeFirst) {
+          setGuestVerifyData(user);
+          setGuestVerifyModalVisible(false);
+          setShowGuestPrimePrompt(true);
+          setPrimeadd(true);
+          return;
+        }
+
+        if (!isGuestFlow) {
+          setPrimeadd(false);
+          setShowGuestPrimePrompt(false);
+          return;
+        }
+
+        const shouldCheckVerificationNow =
+          !shouldShowPrimeFirst &&
+          !isVerificationPending &&
+          !hasFreshVerifyResponse &&
+          user;
+
+        if (shouldCheckVerificationNow) {
+          setGuestVerifyData(user);
+          setPrimeadd(false);
+          setShowGuestPrimePrompt(false);
+          await setGuestPrimeVerificationPending();
+          await requestGuestVerificationCheck();
+          return;
+        }
+
+        if (isVerificationPending) {
+          if (!hasFreshVerifyResponse) {
+            setGuestVerifyModalVisible(false);
+            setShowGuestPrimePrompt(false);
+            return;
+          }
+          if (requiresVerification(user)) {
+            await openGuestVerificationAlert(user, true);
+          } else {
+            await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+            setGuestVerifyModalVisible(false);
+            setGuestVerifyData(null);
+            setShowGuestPrimePrompt(false);
+          }
+          return;
+        }
+
+        if (hasFreshVerifyResponse && user && requiresVerification(user)) {
+          setShowGuestPrimePrompt(false);
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(true);
         } else {
           setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          setShowGuestPrimePrompt(false);
         }
       } catch (error) {
         console.log('loadGuestVerifyModal error', error);
       }
     };
     loadGuestVerifyModal();
-  }, [isFocus]);
+  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
   const isPrimePaymentSuccess =
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
@@ -425,6 +762,17 @@ const Main = (props) => {
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
+  useEffect(() => {
+    if (!isFocus || !isPrimePaymentSuccess) return;
+    (async () => {
+      const guestPrimeVerifyPendingRaw = await AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+      if (guestPrimeVerifyPendingRaw === 'true') {
+        await requestGuestVerificationCheck();
+      }
+    })().catch(error => {
+      console.log('prime success verify trigger error', error);
+    });
+  }, [isFocus, isPrimePaymentSuccess]);
   const closeGuestVerifyModal = async () => {
     setGuestVerifyModalVisible(false);
   };
@@ -559,12 +907,23 @@ const Main = (props) => {
     guestVerifyRequestStartedRef.current = false;
     setPendingGuestVerifyPayload(null);
     setGuestVerifyLoading(false);
+    setGuestVerifyCheckRequested(false);
     setGuestVerifyData(mergedVerifyPayload);
     proceedGuestVerification(mergedVerifyPayload).catch(error => {
       console.log('proceedGuestVerification error', error);
       setGuestVerifyLoading(false);
     });
   }, [AuthReducer?.status, AuthReducer?.verifyResponse, pendingGuestVerifyPayload]);
+  useEffect(() => {
+    if (!guestVerifyCheckRequested) return;
+    if (AuthReducer?.status === 'Auth/verifyRequest') {
+      return;
+    }
+    if (AuthReducer?.status !== 'Auth/verifySuccess' && AuthReducer?.status !== 'Auth/verifyFailure') {
+      return;
+    }
+    setGuestVerifyCheckRequested(false);
+  }, [guestVerifyCheckRequested, AuthReducer?.status]);
   return (
     <>
       <MyStatusBar
@@ -592,11 +951,13 @@ const Main = (props) => {
               >
                 <View>
                   <View style={{ bottom: normalize(10) }}>
-                    {isPhysicianFlow
-                      ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : isNursingFlow
-                        ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                    {forceNewProfession
+                      ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : isPhysicianFlow
+                        ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                        : isNursingFlow
+                          ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
                   </View>
                 </View>
               </ScrollView>
@@ -701,7 +1062,16 @@ const Main = (props) => {
             </Pressable>
           </View>
             : null}
-          {primeadd && <PrimeCard primeadd={primeadd} setPrimeadd={setPrimeadd} />}
+          {primeadd && <PrimeCard
+            primeadd={primeadd}
+            setPrimeadd={setPrimeadd}
+            primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30Days' : undefined}
+            onPrimaryAction={showGuestPrimePrompt ? handleGuestPrimeExploreTrial : undefined}
+            secondaryButtonText={showGuestPrimePrompt ? 'Get Prime Membership' : undefined}
+            onSecondaryAction={showGuestPrimePrompt ? handleGuestPrimeMembership : undefined}
+            showSkip={showGuestPrimePrompt}
+            onSkip={showGuestPrimePrompt ? handleGuestPrimeSkip : undefined}
+          />}
           <Modal
             isVisible={guestVerifyModalVisible}
             onBackdropPress={() => { }}
@@ -753,7 +1123,7 @@ const Main = (props) => {
               <View
                 style={{
                   height: 0.5,
-                  backgroundColor:Colorpath.ButtonColr,
+                  backgroundColor: Colorpath.ButtonColr,
                   width: '100%',
                   marginBottom: normalize(18),
                 }}

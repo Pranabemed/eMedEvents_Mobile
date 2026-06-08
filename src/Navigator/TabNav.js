@@ -85,6 +85,20 @@ function TabScreen() {
   const [tabsub, setTabsub] = useState(false);
   const [tabmodal, setTabmodal] = useState(false);
   const [wholeProf, setWholeProf] = useState()
+  const [primeSkipped, setPrimeSkipped] = useState(false);
+  useEffect(() => {
+    const checkPrimeSkipped = async () => {
+      try {
+        const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+        setPrimeSkipped(skipped === 'true');
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    if (isFoucs) {
+      checkPrimeSkipped();
+    }
+  }, [isFoucs]);
   const hydratedStateIdRef = useRef(null);
   const processedRefreshAtRef = useRef(null);
   const lastLicensureProfessionRef = useRef('');
@@ -240,7 +254,7 @@ function TabScreen() {
     dashboardProfession && dashboardProfessionType
       ? `${dashboardProfession} - ${dashboardProfessionType}`
       : '';
-  const allProfTake = validHandles.has(profFromDashboard);
+  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
   useEffect(() => {
     const loadLastActiveTab = async () => {
       try {

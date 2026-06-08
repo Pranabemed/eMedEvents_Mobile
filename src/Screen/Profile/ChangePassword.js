@@ -34,10 +34,18 @@ const ChangePassword = (props) => {
     const dispatch = useDispatch();
     const clearAllAsyncStorage = async () => {
         try {
+            const skipFlag = await AsyncStorage.getItem('PRIME_CARD_SKIPPED_ONCE');
+            const skippedKey = await AsyncStorage.getItem('PrimeMembershipSkipped');
             await AsyncStorage.removeItem('lastActiveTab')
             await AsyncStorage.removeItem('WHOLEDATA');
             await AsyncStorage.removeItem('PRODATA');
             await AsyncStorage.clear();
+            if (skipFlag !== null) {
+                await AsyncStorage.setItem('PRIME_CARD_SKIPPED_ONCE', skipFlag);
+            }
+            if (skippedKey !== null) {
+                await AsyncStorage.setItem('PrimeMembershipSkipped', skippedKey);
+            }
             console.log('All AsyncStorage keys cleared successfully!');
         } catch (e) {
             console.error('Error clearing AsyncStorage:', e);

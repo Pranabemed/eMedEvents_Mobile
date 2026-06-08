@@ -58,6 +58,20 @@ export default function DrawerModal(props) {
   const [primeits, setPrimeits] = useState(false);
   const [subit, setSubit] = useState(false);
   const [nettruedr, setNettruedr] = useState("")
+  const [primeSkipped, setPrimeSkipped] = useState(false);
+  useEffect(() => {
+    const checkPrimeSkipped = async () => {
+      try {
+        const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+        setPrimeSkipped(skipped === 'true');
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    if (isFocus) {
+      checkPrimeSkipped();
+    }
+  }, [isFocus]);
   const navigateSmooth = (name, params) => {
     props.drawerPress?.();
     props.onBackdropPress?.();
@@ -85,7 +99,7 @@ export default function DrawerModal(props) {
       DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
-  const allProfTake = validHandles.has(profFromDashboard);
+  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
       case 'Auth/logoutRequest':
@@ -400,10 +414,18 @@ export default function DrawerModal(props) {
   }
   const clearAllAsyncStorage = async () => {
     try {
+      const skipFlag = await AsyncStorage.getItem('PRIME_CARD_SKIPPED_ONCE');
+      const skippedKey = await AsyncStorage.getItem('PrimeMembershipSkipped');
       await AsyncStorage.removeItem('lastActiveTab')
       await AsyncStorage.removeItem('WHOLEDATA');
       await AsyncStorage.removeItem('PRODATA');
       await AsyncStorage.clear();
+      if (skipFlag !== null) {
+        await AsyncStorage.setItem('PRIME_CARD_SKIPPED_ONCE', skipFlag);
+      }
+      if (skippedKey !== null) {
+        await AsyncStorage.setItem('PrimeMembershipSkipped', skippedKey);
+      }
       console.log('All AsyncStorage keys cleared successfully!');
     } catch (e) {
       console.error('Error clearing AsyncStorage:', e);

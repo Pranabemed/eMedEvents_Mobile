@@ -45,6 +45,20 @@ const ProfileMain = (props) => {
     const [subitprof, setSubitprof] = useState(false);
     const [allProf, setAllProf] = useState("");
     const [nettrue, setNettrue] = useState("");
+    const [primeSkipped, setPrimeSkipped] = useState(false);
+    useEffect(() => {
+        const checkPrimeSkipped = async () => {
+            try {
+                const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+                setPrimeSkipped(skipped === 'true');
+            } catch (e) {
+                console.log(e);
+            }
+        };
+        if (isFoucs) {
+            checkPrimeSkipped();
+        }
+    }, [isFoucs]);
     const read = (value) => (value == null ? "" : String(value).trim());
     const getDisplayName = (source) => {
         if (!source) return { firstname: "", lastname: "" };
@@ -122,7 +136,7 @@ const ProfileMain = (props) => {
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
     const profFromDashboard = getDisplayProfession(allHandle);
-    const allProfTake = validHandles.has(profFromDashboard);
+    const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
     const allNoDetData = otherRestrict.has(profFromDashboard);
     const profileData = allProfTake ? [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },

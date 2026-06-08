@@ -31,6 +31,7 @@ const AppProvider = ({ children }) => {
   const [addresssort, setAddresssort] = useState("");
   const [completedCount, setCompletedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [primeCardSessionSkipped, setPrimeCardSessionSkipped] = useState(false);
   const authToken = useSelector(state => state?.AuthReducer?.token);
   const dashboardLicensures = useSelector(
     state => state?.DashboardReducer?.dashboardResponse?.data?.licensures
@@ -55,6 +56,7 @@ const AppProvider = ({ children }) => {
     setAddresssort("");
     setCompletedCount(0);
     setPendingCount(0);
+    setPrimeCardSessionSkipped(false);
   };
 
   useEffect(() => {
@@ -126,7 +128,9 @@ const AppProvider = ({ children }) => {
     pushnew,
     setAddresssort,
     addresssort,
-    clearContextData
+    clearContextData,
+    primeCardSessionSkipped,
+    setPrimeCardSessionSkipped
   };
 
   useEffect(() => {
