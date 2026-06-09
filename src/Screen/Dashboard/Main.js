@@ -1065,7 +1065,7 @@ const Main = (props) => {
           {primeadd && <PrimeCard
             primeadd={primeadd}
             setPrimeadd={setPrimeadd}
-            primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30Days' : undefined}
+            primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30 Days' : undefined}
             onPrimaryAction={showGuestPrimePrompt ? handleGuestPrimeExploreTrial : undefined}
             secondaryButtonText={showGuestPrimePrompt ? 'Get Prime Membership' : undefined}
             onSecondaryAction={showGuestPrimePrompt ? handleGuestPrimeMembership : undefined}

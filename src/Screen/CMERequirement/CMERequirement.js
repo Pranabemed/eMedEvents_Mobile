@@ -66,8 +66,20 @@ const getDynamicCourseSections = responseData => {
     return [];
   }
 
+  const supportedSectionKeyPatterns = [
+    '_bundle',
+    'other_courses_list',
+    'flag',
+    'parameter',
+  ];
+
   return Object.entries(responseData)
-    .filter(([key, value]) => Array.isArray(value) && value.length > 0 && key.includes('_bundle'))
+    .filter(
+      ([key, value]) =>
+        Array.isArray(value) &&
+        value.length > 0 &&
+        supportedSectionKeyPatterns.some(pattern => key.includes(pattern)),
+    )
     .map(([key, value]) => ({
       key,
       data: value,
