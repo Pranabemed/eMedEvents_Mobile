@@ -231,7 +231,9 @@ export const useGuestUserContentData = guest => {
         onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
-            navigation.navigate('Statewebcast', { webCastURL: { webCastURL: slug, Realback: 'guest' } });
+            navigation.navigate('Statewebcast', {
+              webCastURL: { webCastURL: slug, shareUrl: detailUrl, detailpage_url: detailUrl, Realback: 'guest' }
+            });
           }
         },
       };
@@ -278,7 +280,9 @@ export const useGuestUserContentData = guest => {
         onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
-            navigation.navigate('Statewebcast', { webCastURL: { webCastURL: slug, Realback: 'guest' } });
+            navigation.navigate('Statewebcast', {
+              webCastURL: { webCastURL: slug, shareUrl: detailUrl, detailpage_url: detailUrl, Realback: 'guest' }
+            });
           }
         },
       };
@@ -302,7 +306,9 @@ export const useGuestUserContentData = guest => {
         onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
-            navigation.navigate('Statewebcast', { webCastURL: { webCastURL: slug, Realback: 'guest' } });
+            navigation.navigate('Statewebcast', {
+              webCastURL: { webCastURL: slug, shareUrl: detailUrl, detailpage_url: detailUrl, Realback: 'guest' }
+            });
           }
         },
       };

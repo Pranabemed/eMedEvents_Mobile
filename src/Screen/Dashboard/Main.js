@@ -194,6 +194,14 @@ const Main = (props) => {
   const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
+      setIsDrawerVisible(visible);
+    });
+    return () => sub.remove();
+  }, []);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -1062,7 +1070,7 @@ const Main = (props) => {
             </Pressable>
           </View>
             : null}
-          {primeadd && <PrimeCard
+           {(primeadd && !isDrawerVisible) && <PrimeCard
             primeadd={primeadd}
             setPrimeadd={setPrimeadd}
             primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30 Days' : undefined}
@@ -1073,7 +1081,7 @@ const Main = (props) => {
             onSkip={showGuestPrimePrompt ? handleGuestPrimeSkip : undefined}
           />}
           <Modal
-            isVisible={guestVerifyModalVisible}
+            isVisible={guestVerifyModalVisible && !isDrawerVisible}
             onBackdropPress={() => { }}
             onBackButtonPress={() => { }}
             animationIn="slideInUp"

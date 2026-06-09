@@ -33,14 +33,14 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: addit } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: addit } })
         }
     }
     const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: addit } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, detailpage_url: urltitle, creditData: addit } })
         }
     }
     const fullAction = (dataItem) => {
@@ -55,7 +55,7 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
         } else if (dataItem?.button_display_text == "Add Credits") {
             navigation.navigate("AddCredits", { mainAdd: addit })
         } else if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: addit } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: addit } })
         }
     }
     const handleLinkst = (link) => {

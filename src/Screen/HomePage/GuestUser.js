@@ -192,16 +192,13 @@ const GuestUser = props => {
   useEffect(() => {
     const stateId = getStateId(selectedState);
     if (shouldOpenCmeChecklist && selectedProfession && stateId != null) {
-      const requestKey = `${selectedProfession}-${stateId}`;
-      setCmeRequestKey(requestKey);
-      dispatch(
-        professionvaultRequest({
-          profession: selectedProfession,
-          stateId: String(stateId),
-        }),
-      );
+      props.navigation.navigate('CMERequirement', {
+        initialState: selectedState,
+        initialProfession: selectedProfession,
+      });
+      resetGuestSelections();
     }
-  }, [dispatch, selectedProfession, selectedState, shouldOpenCmeChecklist]);
+  }, [props.navigation, selectedProfession, selectedState, shouldOpenCmeChecklist, resetGuestSelections]);
 
   /** Description: Opens the featured activity detail screen. Purpose: Centralizes guest activity routing. */
   const openFeaturedActivity = detailpageUrl => {
@@ -209,7 +206,7 @@ const GuestUser = props => {
     const slug = String(detailpageUrl).split('/').pop();
     if (!slug) return;
     props.navigation.navigate('Statewebcast', {
-      webCastURL: { webCastURL: slug, Realback: 'guest' },
+      webCastURL: { webCastURL: slug, shareUrl: detailpageUrl, detailpage_url: detailpageUrl, Realback: 'guest' },
     });
   };
 

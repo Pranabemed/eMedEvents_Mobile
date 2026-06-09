@@ -59,6 +59,11 @@ export default function DrawerModal(props) {
   const [subit, setSubit] = useState(false);
   const [nettruedr, setNettruedr] = useState("")
   const [primeSkipped, setPrimeSkipped] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
+  }, [props.isVisible]);
   useEffect(() => {
     const checkPrimeSkipped = async () => {
       try {
@@ -100,20 +105,23 @@ export default function DrawerModal(props) {
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
   const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
-  if (status == '' || AuthReducer.status != status) {
-    switch (AuthReducer.status) {
-      case 'Auth/logoutRequest':
-        status = AuthReducer.status;
-        break;
-      case 'Auth/logoutSuccess':
-        status = AuthReducer.status
-        navigation.navigate("Splash");
-        break;
-      case 'Auth/logoutFailure':
-        status = AuthReducer.status;
-        break;
+  useEffect(() => {
+    if (AuthReducer.status === 'Auth/logoutSuccess') {
+      setLogoutPending(false);
+      props.onBackdropPress?.();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Splash' }]
+        })
+      );
+      return;
     }
-  }
+
+    if (AuthReducer.status === 'Auth/logoutFailure') {
+      setLogoutPending(false);
+    }
+  }, [AuthReducer.status, navigation, props]);
   useEffect(() => {
     if (props?.handel == "closeit") {
       connectionrequest()
@@ -444,11 +452,11 @@ export default function DrawerModal(props) {
               {
                 text: "Yes", style: "default",
                 onPress: () => {
+                  setLogoutPending(true);
                   clearAllAsyncStorage()
                     .then(() => dispatch(logoutRequest()))
                     .then(() => dispatch(allreducerRequest({ "obj": "" })))
                     .catch(err => console.log("Logout flow error:", err));
-                  props.rentalNavigate();
                 }
               }])
           } else if (item.id == 1) {

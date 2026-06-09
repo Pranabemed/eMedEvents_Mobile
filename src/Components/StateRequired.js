@@ -14,7 +14,7 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make, allNoDetData);
         if (resulttitle) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: addit } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, detailpage_url: urltitle, creditData: addit } })
         }
     }
     const formatDate = (dateStr) => {

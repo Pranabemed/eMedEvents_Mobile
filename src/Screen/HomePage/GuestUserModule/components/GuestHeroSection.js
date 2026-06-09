@@ -120,7 +120,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
           const handleRegisterPress = () => {
             if (stateWebcastUrl) {
               navigation.navigate('Statewebcast', {
-                webCastURL: { webCastURL: stateWebcastUrl, Realback: 'guest' },
+                webCastURL: { webCastURL: stateWebcastUrl, shareUrl: stateWebcastUrl, detailpage_url: stateWebcastUrl, Realback: 'guest' },
               });
             }
           };

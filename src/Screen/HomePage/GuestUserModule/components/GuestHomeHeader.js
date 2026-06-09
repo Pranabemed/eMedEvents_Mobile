@@ -2,6 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View, Modal, FlatList, TextInput, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import SearchIcon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colorpath from '../../../../Themes/Colorpath';
 import Imagepath from '../../../../Themes/Imagepath';
 import Fonts from '../../../../Themes/Fonts';
@@ -75,6 +76,22 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
     });
   };
 
+  const handleSignInPress = async () => {
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem('GUEST_REGISTRATION_FLOW'),
+        AsyncStorage.removeItem('GUEST_PRIME_VERIFICATION_PENDING'),
+        AsyncStorage.removeItem('PrimeMembershipSkipped'),
+        AsyncStorage.removeItem('CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION'),
+        AsyncStorage.removeItem('PrimeCardFlowComplete'),
+      ]);
+    } catch (err) {
+      console.warn('Failed to clear guest sign-in flags:', err);
+    }
+
+    navigation.navigate('Login');
+  };
+
   return (
     <>
       <View style={styles.topBar}>
@@ -88,7 +105,7 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
             <Text style={styles.langText}>{stateCode || 'State'}</Text>
             <Icon name="keyboard-arrow-down" size={20} color={Colorpath.black} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.signInButton} onPress={() => navigation.navigate('Login')}>
+          <TouchableOpacity style={styles.signInButton} onPress={handleSignInPress}>
             <Text style={styles.signInText}>SIGN IN</Text>
           </TouchableOpacity>
         </View>

@@ -33,7 +33,7 @@ const CarouselSectionComponent = ({
     <View style={styles.carouselContainer}>
       <SectionTitle title={title} action={action} onAction={onAction} width={width} />
       <Carousel
-        layout="stack"
+        layout="default"
         data={data}
         renderItem={renderItem}
         sliderWidth={sliderWidth}

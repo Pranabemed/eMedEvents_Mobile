@@ -117,6 +117,82 @@ const getSectionGroupKey = key =>
     .replace(/_bundle_conference$/i, '')
     .replace(/_bundle$/i, '');
 
+const isBundleConferenceKey = key =>
+  String(key).includes('_bundle_conference');
+
+const isPrimaryBundleKey = key =>
+  String(key).includes('_bundle') &&
+  !String(key).includes('_bundle_conference') &&
+  !String(key).includes('other_courses_list');
+
+const getCourseIdentity = item =>
+  String(
+    item?.id ||
+    item?.detailpage_url ||
+    item?.emed_url ||
+    item?.course_id ||
+    item?.conference_id ||
+    item?.title ||
+    '',
+  )
+    .trim()
+    .toLowerCase();
+
+const filterUniqueSection = (section, seenItems) => {
+  if (!section || !Array.isArray(section.data)) {
+    return null;
+  }
+
+  const isBundle = isPrimaryBundleKey(section.key);
+
+  const uniqueItems = section.data.filter(item => {
+    const identity = getCourseIdentity(item);
+    if (!identity) {
+      return false;
+    }
+    if (!isBundle && seenItems.has(identity)) {
+      return false;
+    }
+    seenItems.add(identity);
+    return true;
+  });
+
+  return uniqueItems.length > 0 ? { ...section, data: uniqueItems } : null;
+};
+
+const removeDuplicateCourseSections = sections => {
+  const seenItems = new Set();
+
+  return sections
+    .map(group => {
+      const bundle = filterUniqueSection(group.bundle, seenItems);
+      const conference = filterUniqueSection(group.conference, seenItems);
+      const extras = group.extras
+        .map(section => filterUniqueSection(section, seenItems))
+        .filter(Boolean);
+
+      return {
+        ...group,
+        conference,
+        bundle,
+        extras,
+      };
+    })
+    .filter(group => group.conference || group.bundle || group.extras.length > 0);
+};
+
+const prioritizeBundleGroups = groups =>
+  [...groups].sort((firstGroup, secondGroup) => {
+    const firstHasBundle = Boolean(firstGroup?.bundle?.data?.length);
+    const secondHasBundle = Boolean(secondGroup?.bundle?.data?.length);
+
+    if (firstHasBundle === secondHasBundle) {
+      return 0;
+    }
+
+    return firstHasBundle ? -1 : 1;
+  });
+
 /**
  * Description: Groups bundle sections into paired bucket objects.
  * Purpose: Keeps standard bundle and conference bundle sections visually associated on the screen.
@@ -153,10 +229,10 @@ const getPairedCourseSections = sections => {
       extras: [],
     };
 
-    if (section.isMandatory && !existing.conference) {
-      existing.conference = section;
-    } else if (!section.isMandatory && !existing.bundle) {
+    if (isPrimaryBundleKey(section.key) && !existing.bundle) {
       existing.bundle = section;
+    } else if (isBundleConferenceKey(section.key) && !existing.conference) {
+      existing.conference = section;
     } else {
       existing.extras.push(section);
     }
@@ -471,7 +547,9 @@ const CMERequirement = props => {
 
   const pageTitle = `${getStateName(selectedState)} CME Requirements`;
   const dynamicCourseSections = getDynamicCourseSections(cmeRequirementData);
-  const pairedCourseSections = getPairedCourseSections(dynamicCourseSections);
+  const pairedCourseSections = removeDuplicateCourseSections(
+    prioritizeBundleGroups(getPairedCourseSections(dynamicCourseSections)),
+  );
   const visiblePairedSections = showAllPairs
     ? pairedCourseSections
     : pairedCourseSections.slice(0, 1);
@@ -636,6 +714,7 @@ const CMERequirement = props => {
                       <CourseHorizontalList
                         data={group.bundle.data}
                         isMandatory={group.bundle.isMandatory}
+                        highlightFirstItem={isPrimaryBundleKey(group.bundle.key)}
                       />
                     ) : null}
 
@@ -643,6 +722,7 @@ const CMERequirement = props => {
                       <CourseHorizontalList
                         data={group.conference.data}
                         isMandatory={group.conference.isMandatory}
+                        highlightFirstItem={false}
                       />
                     ) : null}
 
@@ -651,6 +731,7 @@ const CMERequirement = props => {
                         key={section.key}
                         data={section.data}
                         isMandatory={section.isMandatory}
+                        highlightFirstItem={false}
                       />
                     ))}
                   </View>

@@ -95,6 +95,31 @@ const normalizeDisplayCme = value => {
     : text;
 };
 
+const getCourseIdentity = item =>
+  String(
+    item?.id ||
+    item?.detailpage_url ||
+    item?.emed_url ||
+    item?.course_id ||
+    item?.conference_id ||
+    item?.title ||
+    '',
+  )
+    .trim()
+    .toLowerCase();
+
+const getButtonLabel = item =>
+  String(
+    item?.buttonText ||
+    item?.button_text ||
+    item?.buttonType ||
+    item?.buttontype ||
+    item?.button_type ||
+    item?.button ||
+    '',
+  )
+    .trim();
+
 /**
  * Description: Builds the display price string for a course card.
  * Purpose: Combines currency symbol and visible price from supported payload fields.
@@ -121,7 +146,23 @@ const normalizeDisplayCme = value => {
  */
 const getPriceText = item => {
   const symbol = item?.currency_code || item?.display_currency_code || 'US$';
-  const amount = item?.display_price || item?.ticketprice || '0';
+  const amount = String(item?.display_price || item?.ticketprice || '').trim();
+  const buttonLabel = getButtonLabel(item);
+
+  if (!amount || /interested/i.test(amount)) {
+    return '';
+  }
+
+  if (/free/i.test(amount)) {
+    return /interested/i.test(buttonLabel) ? 'Free' : 'FREE';
+  }
+
+  const numericAmount = Number(amount.replace(/[^0-9.]/g, ''));
+  const containsDigits = /\d/.test(amount);
+  if (containsDigits && !Number.isNaN(numericAmount) && numericAmount === 0) {
+    return /interested/i.test(buttonLabel) ? 'Free' : '';
+  }
+
   return `${symbol}${amount}`;
 };
 
@@ -225,6 +266,7 @@ const CourseCard = ({ item, featured, onPress }) => {
   const ratingValue = Math.floor(rawRatingValue * 2) / 2;
   const ratingCount = Number(item?.rating_users_count) || 0;
   const hasRating = ratingValue > 0;
+  const priceText = getPriceText(item);
 
   return (
     <TouchableOpacity
@@ -284,9 +326,13 @@ const CourseCard = ({ item, featured, onPress }) => {
         ) : null}
 
         <View style={styles.bottomRow}>
-          <Text style={[styles.priceText, featured && styles.featuredPriceText]}>
-            {getPriceText(item)}
-          </Text>
+          {priceText ? (
+            <Text style={[styles.priceText, featured && styles.featuredPriceText]}>
+              {priceText}
+            </Text>
+          ) : (
+            <View />
+          )}
 
           <TouchableOpacity
             style={[styles.registerButton, featured && styles.featuredRegisterButton]}
@@ -335,6 +381,7 @@ const CourseCard = ({ item, featured, onPress }) => {
  * @param {Object} props
  * @param {Array} props.data
  * @param {boolean} props.isMandatory
+ * @param {boolean} props.highlightFirstItem
  *
  * Returns:
  * @returns {JSX.Element|null}
@@ -353,11 +400,30 @@ const CourseCard = ({ item, featured, onPress }) => {
  * Error Handling:
  * Returns null when data array is empty or invalid.
  */
-const CourseHorizontalList = ({ data, isMandatory }) => {
+const CourseHorizontalList = ({ data, isMandatory, highlightFirstItem = false }) => {
   const navigation = useNavigation();
-  const items = useMemo(() => (Array.isArray(data) ? data.filter(Boolean) : []), [data]);
-  const featuredItem = !isMandatory && items.length > 0 ? items[0] : null;
-  const listItems = !isMandatory && items.length > 1 ? items.slice(1) : isMandatory ? items : [];
+  const items = useMemo(() => {
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    const seen = new Set();
+    return data.filter(item => {
+      if (!item) {
+        return false;
+      }
+
+      const identity = getCourseIdentity(item);
+      if (!identity || seen.has(identity)) {
+        return false;
+      }
+
+      seen.add(identity);
+      return true;
+    });
+  }, [data]);
+  const featuredItem = highlightFirstItem && items.length > 0 ? items[0] : null;
+  const listItems = highlightFirstItem && items.length > 1 ? items.slice(1) : highlightFirstItem ? [] : items;
 
   if (items.length === 0) {
     return null;

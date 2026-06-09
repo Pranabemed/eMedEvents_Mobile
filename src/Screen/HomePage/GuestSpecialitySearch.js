@@ -190,7 +190,8 @@ const GuestSpecialitySearch = props => {
   };
 
   const handleUrl = data => {
-    const result = data?.url?.split('/')?.pop();
+    const detailUrl = data?.detailpage_url || data?.url || data?.emed_url || '';
+    const result = detailUrl.split('/')?.pop();
     if (!result) return;
 
     connectionrequest()
@@ -211,6 +212,8 @@ const GuestSpecialitySearch = props => {
     props.navigation.navigate('Statewebcast', {
       webCastURL: {
         webCastURL: result,
+        shareUrl: detailUrl,
+        detailpage_url: detailUrl,
         creditData: taskData,
         Realback: 'guest',
       },

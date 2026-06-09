@@ -87,7 +87,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 showErrorAlert("Please connect to internet", err);
             });
         if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } })
         }
     }
     console.log(completedCount, pendingCount, "fdgd0000------")

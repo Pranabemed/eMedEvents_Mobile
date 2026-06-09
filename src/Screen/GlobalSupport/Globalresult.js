@@ -29,6 +29,31 @@ const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 const getStateLabel = stateObj =>
     stateObj?.name || stateObj?.state_name || stateObj?.title || '';
 
+const getResultButtonLabel = item =>
+    item?.buttonText ||
+    item?.button_text ||
+    item?.buttonType ||
+    item?.buttontype ||
+    item?.button_type ||
+    item?.button ||
+    item?.cta_text ||
+    '';
+
+const getResultPriceLabel = item => {
+    const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? '';
+    const priceText = String(rawPrice).trim();
+
+    if (!priceText) {
+        return '';
+    }
+
+    if (priceText.toUpperCase() === 'FREE') {
+        return 'FREE';
+    }
+
+    return `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}`;
+};
+
 const Globalresult = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -479,6 +504,9 @@ const Globalresult = (props) => {
     };
     const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
+        if (!url) {
+            return;
+        }
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", onlineName);
         let obj = {
@@ -494,7 +522,14 @@ const Globalresult = (props) => {
                 showErrorAlert("Please connect to internet", err);
             });
         if (result) {
-            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll, Realback: props?.route?.params?.trig?.Realback } })
+            props.navigation.navigate("Statewebcast", {
+                webCastURL: {
+                    webCastURL: result,
+                    shareUrl: url,
+                    creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll,
+                    Realback: props?.route?.params?.trig?.Realback
+                }
+            })
         }
     }
 
@@ -547,6 +582,9 @@ const Globalresult = (props) => {
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
     const searchGlobalitem = ({ item, index }) => {
         console.log(item, "item---------")
+        const buttonLabel = getResultButtonLabel(item);
+        const priceLabel = getResultPriceLabel(item);
+        const hasBottomRow = Boolean(buttonLabel || priceLabel);
         const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
@@ -671,13 +709,30 @@ const Globalresult = (props) => {
                             {(item?.startdate || item?.enddate || item?.location) && (<View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
                                 {renderLocationAndDates()}
                             </View>)}
-                            {(item?.display_price !== "" || item?.buttonText == "Register") && <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
-                            {(!item?.display_price || !item?.buttonText) ? null : <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", marginTop: normalize(3) }}>
-                                {!(isGuestCmeFlow || isGuestSpecialityFlow) && <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}</Text>}
-                                {!(isGuestCmeFlow || isGuestSpecialityFlow) && <View style={{ width: 1, height: 20, backgroundColor: "#D9D9D9" }} />}
-                                <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr }}>
-                                    {item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}
-                                </Text>
+                            {hasBottomRow && <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
+                            {!hasBottomRow ? null : <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", alignItems: "center", marginTop: normalize(3) }}>
+                                <View style={{ flex: 1, justifyContent: 'center' }}>
+                                    {buttonLabel ? (
+                                        <Text
+                                            numberOfLines={1}
+                                            style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultButtonText : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold" }}
+                                        >
+                                            {buttonLabel}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                                {buttonLabel && priceLabel ? (
+                                    <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPipe : { marginHorizontal: normalize(10), fontFamily: Fonts.InterBold, fontSize: 16, color: "#9CA3AF", fontWeight: "bold", textAlign: "center" }}>
+                                        |
+                                    </Text>
+                                ) : null}
+                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                                    {priceLabel ? (
+                                        <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                                            {priceLabel}
+                                        </Text>
+                                    ) : null}
+                                </View>
                             </View>}
                         </View>
                     </TouchableOpacity>
@@ -1108,12 +1163,9 @@ const styles = StyleSheet.create({
         borderRadius: normalize(12),
         backgroundColor: '#FFFFFF',
         paddingHorizontal: normalize(14),
-        paddingVertical: normalize(14),
-        shadowColor: '#9FB8D2',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.18,
-        shadowRadius: 12,
-        elevation: 4,
+        paddingVertical: normalize(8),
+        borderColor: '#DADADA',
+        borderWidth: 0.8,
     },
     guestResultTitle: {
         fontFamily: Fonts.InterSemiBold,
@@ -1143,6 +1195,23 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.InterBold,
         fontSize: 16,
         color: Colorpath.ButtonColr,
+    },
+    guestResultPipe: {
+        marginHorizontal: normalize(10),
+        fontFamily: Fonts.InterBold,
+        fontSize: 22,
+        color: '#9CA3AF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: normalize(24),
+    },
+    guestResultButtonText: {
+        flex: 1,
+        marginRight: normalize(10),
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        color: '#111827',
+        fontWeight: 'bold',
     },
     centerModal: {
         justifyContent: 'center',

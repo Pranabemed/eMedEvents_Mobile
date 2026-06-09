@@ -88,6 +88,18 @@ const Statewebcast = props => {
             : null;
     const allProfTake = validHandles.has(profFromDashboard);
 
+    const resolvedShareUrl = useMemo(() => {
+        return (
+            props?.route?.params?.webCastURL?.shareUrl ||
+            props?.route?.params?.webCastURL?.detailpage_url ||
+            webcastdeatils?.detailpage_url ||
+            webcastdeatils?.emed_url ||
+            props?.route?.params?.newCast ||
+            props?.route?.params?.webCastURL?.webCastURL ||
+            ""
+        );
+    }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
+
     const resetToHome = useCallback(() => {
         props.navigation.dispatch(
             CommonActions.reset({
@@ -526,10 +538,10 @@ const Statewebcast = props => {
             />
             {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.webCastURL?.shareUrl || props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
+                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} />
                 ) : (
                     <View>
-                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={props?.route?.params?.webCastURL?.shareUrl || props?.route?.params?.newCast || props?.route?.params?.webCastURL?.webCastURL} cartcount={cartcount} cartHand={cartHand} />
+                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} />
                     </View>
                 )}
                 <Loader

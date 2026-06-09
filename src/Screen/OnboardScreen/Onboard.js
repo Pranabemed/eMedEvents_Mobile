@@ -5,8 +5,7 @@ import {
     Text,
     View,
     StyleSheet,
-    BackHandler,
-    Pressable
+    BackHandler
 } from 'react-native';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { CommonActions } from '@react-navigation/native';
@@ -232,6 +231,22 @@ const Onboard = (props) => {
                         ))}
                     </View>
 
+                    <View style={styles.guestButtonSlot}>
+                        <Buttons
+                            onPress={continueAsGuest}
+                            height={normalize(44)}
+                            width={'100%'}
+                            loading={''}
+                            backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(5)}
+                            text={"Start Exploring CME/CE"}
+                            color={Colorpath.white}
+                            fontSize={17}
+                            fontFamily={Fonts.InterSemiBold}
+                            marginTop={normalize(12)}
+                            fontWeight={"500"}
+                        />
+                    </View>
                     <View style={styles.authRow}>
                         <Buttons
                             onPress={() => {
@@ -246,13 +261,15 @@ const Onboard = (props) => {
                             height={normalize(42)}
                             width={normalize(130)}
                             loading={''}
-                            backgroundColor={Colorpath.ButtonColr}
+                            backgroundColor={Colorpath.white}
                             borderRadius={normalize(5)}
                             text={"Sign In"}
-                            color={Colorpath.white}
+                            color={Colorpath.black}
                             fontSize={18}
                             fontFamily={Fonts.InterSemiBold}
                             marginTop={normalize(10)}
+                            borderColor={"#333333"}
+                            borderWidth={normalize(0.5)}
                             fontWeight={"500"}
                         />
                         <Buttons
@@ -281,11 +298,6 @@ const Onboard = (props) => {
                             borderWidth={normalize(0.5)}
                             fontWeight={"500"}
                         />
-                    </View>
-                    <View style={styles.guestButtonSlot}>
-                        <Pressable onPress={continueAsGuest} style={styles.guestButton}>
-                            <Text style={styles.guestButtonText}>Continue as guest user</Text>
-                        </Pressable>
                     </View>
                 </View>
             </ImageBackground>
@@ -351,22 +363,12 @@ const styles = StyleSheet.create({
         gap: normalize(12),
         width: '100%',
     },
-    guestButton: {
-        marginTop: normalize(16),
-        paddingVertical: normalize(10),
-        paddingHorizontal: normalize(18),
-    },
     guestButtonSlot: {
-        minHeight: normalize(52),
+        width: '100%',
+        minHeight: normalize(56),
         marginTop: normalize(6),
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    guestButtonText: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 16,
-        color: Colorpath.ButtonColr,
-        textAlign: 'center',
     },
     pagerRow: {
         marginTop: normalize(2),
