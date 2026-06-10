@@ -831,7 +831,13 @@ const StackNav = props => {
           {Object.entries({
             ...Screens,
           }).map(([name, component]) => {
-            return <Stack.Screen name={name} component={component} />
+            return (
+              <Stack.Screen
+                name={name}
+                component={component}
+                options={name === 'Onboard' ? { gestureEnabled: false } : undefined}
+              />
+            )
           })}
 
         </Stack.Navigator>

@@ -130,13 +130,13 @@ const GuestUserContent = ({ guest }) => {
               isUsaUser={guest?.isUsaUser}
             />
 
-            <GuestHeroSection
+            {/* <GuestHeroSection
               topBanners={topBanners}
               isHomeLoading={isHomeLoading}
               navigation={navigation}
               width={width}
-            />
-
+            /> */}
+            {/* {api needed} */}
             {isHomeLoading ? (
               <GuestCarouselShimmer title="Featured Activity" width={width} showTitle={false} />
             ) : featuredConferenceItems.length > 0 ? (

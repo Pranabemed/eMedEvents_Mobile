@@ -8,6 +8,7 @@ import {
     BackHandler,
     useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { CommonActions } from '@react-navigation/native';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -66,7 +67,7 @@ const Onboard = (props) => {
     const autoScrollRef = useRef(null);
     const currentIndexRef = useRef(0);
     const isFocused = useIsFocused();
-    const isCompactWidth = width <= 350;
+    const isCompactWidth = width <= 290;
     // const isLastSlide = currentIndex === sliderData.length - 1;
     const SLIDE_INTERVAL = 4000;
 
@@ -105,7 +106,7 @@ const Onboard = (props) => {
     const _renderItem = ({ item }) => {
         const lines = item.hText.split('\n');
         return (
-            <View style={styles.slide}>
+            <View style={[styles.slide, { width }]}>
                 <View style={styles.logoContainer}>
                     <Image
                         source={item?.img}
@@ -113,7 +114,7 @@ const Onboard = (props) => {
                         resizeMode="contain"
                     />
                 </View>
-                <View style={{ top: normalize(80) }}>
+                <View style={styles.textBlock}>
                     <View style={styles.textContainer}>
                         {lines.map((line, index) => (
                             <Text key={index} style={styles.hText}>
@@ -202,108 +203,110 @@ const Onboard = (props) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.white}
             />
-            <ImageBackground
-                source={Imagepath.Onboard}
-                style={styles.imageBackground}
-            >
-                <View style={styles.sliderContainer}>
-                    <Image source={Imagepath.eMedfulllogo} style={styles.headerLogo} />
-                    <AppIntroSlider
-                        ref={sliderRef}
-                        renderPagination={() => null}
-                        renderItem={_renderItem}
-                        data={sliderData}
-                        keyExtractor={(item) => item.id.toString()}
-                        onSlideChange={handleSlideChange}
-                        showNextButton={false}
-                        showDoneButton={false}
-                        showSkipButton={false}
-                    />
-                </View>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+                <ImageBackground
+                    source={Imagepath.Onboard}
+                    style={styles.imageBackground}
+                >
+                    <View style={styles.sliderContainer}>
+                        <Image source={Imagepath.eMedfulllogo} style={styles.headerLogo} />
+                        <AppIntroSlider
+                            ref={sliderRef}
+                            renderPagination={() => null}
+                            renderItem={_renderItem}
+                            data={sliderData}
+                            keyExtractor={(item) => item.id.toString()}
+                            onSlideChange={handleSlideChange}
+                            showNextButton={false}
+                            showDoneButton={false}
+                            showSkipButton={false}
+                        />
+                    </View>
 
-                <View style={styles.footerContainer}>
-                    <View style={styles.pagerRow}>
-                        {sliderData.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.pagerDot,
-                                    index === currentIndex ? styles.pagerDotActive : styles.pagerDotInactive
-                                ]}
+                    <View style={styles.footerContainer}>
+                        <View style={styles.pagerRow}>
+                            {sliderData.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.pagerDot,
+                                        index === currentIndex ? styles.pagerDotActive : styles.pagerDotInactive
+                                    ]}
+                                />
+                            ))}
+                        </View>
+
+                        <View style={styles.guestButtonSlot}>
+                            <Buttons
+                                onPress={continueAsGuest}
+                                height={normalize(isCompactWidth ? 48 : 44)}
+                                width={'100%'}
+                                loading={''}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text={"Start Exploring CME/CE"}
+                                color={Colorpath.white}
+                                fontSize={isCompactWidth ? 15 : 17}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(12)}
+                                fontWeight={"500"}
                             />
-                        ))}
-                    </View>
-
-                    <View style={styles.guestButtonSlot}>
-                        <Buttons
-                            onPress={continueAsGuest}
-                            height={normalize(isCompactWidth ? 48 : 44)}
-                            width={'100%'}
-                            loading={''}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            text={"Start Exploring CME/CE"}
-                            color={Colorpath.white}
-                            fontSize={isCompactWidth ? 15 : 17}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(12)}
-                            fontWeight={"500"}
-                        />
-                    </View>
-                    <View style={[styles.authRow, isCompactWidth && styles.authRowCompact]}>
-                        <Buttons
-                            onPress={() => {
-                                analytics().logEvent('emedevents', {
-                                    id: 3745092,
-                                    item: 'onboardingpage',
-                                    description: "successfully join",
-                                    size: 'L',
-                                });
-                                props.navigation.navigate("Login");
-                            }}
-                            height={normalize(42)}
-                            width={isCompactWidth ? '100%' : '48%'}
-                            loading={''}
-                            backgroundColor={Colorpath.white}
-                            borderRadius={normalize(5)}
-                            text={"Sign In"}
-                            color={Colorpath.black}
-                            fontSize={isCompactWidth ? 16 : 18}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(10)}
-                            borderColor={"#333333"}
-                            borderWidth={normalize(0.5)}
-                            fontWeight={"500"}
-                        />
-                        <Buttons
-                            onPress={() => {
-                                if (codegt) {
-                                    props.navigation.navigate("SignUp", {
-                                        phoneCd: {
-                                            phoneCd: codegt,
-                                        }
+                        </View>
+                        <View style={[styles.authRow, isCompactWidth && styles.authRowCompact]}>
+                            <Buttons
+                                onPress={() => {
+                                    analytics().logEvent('emedevents', {
+                                        id: 3745092,
+                                        item: 'onboardingpage',
+                                        description: "successfully join",
+                                        size: 'L',
                                     });
-                                } else {
                                     props.navigation.navigate("Login");
-                                }
-                            }}
-                            height={normalize(42)}
-                            width={isCompactWidth ? '100%' : '48%'}
-                            loading={''}
-                            backgroundColor={Colorpath.white}
-                            borderRadius={normalize(5)}
-                            text="Sign Up"
-                            color={Colorpath.black}
-                            fontSize={isCompactWidth ? 16 : 18}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(10)}
-                            borderColor={"#333333"}
-                            borderWidth={normalize(0.5)}
-                            fontWeight={"500"}
-                        />
+                                }}
+                                height={normalize(42)}
+                                width={isCompactWidth ? '100%' : '48%'}
+                                loading={''}
+                                backgroundColor={Colorpath.white}
+                                borderRadius={normalize(5)}
+                                text={"Sign In"}
+                                color={Colorpath.black}
+                                fontSize={isCompactWidth ? 16 : 18}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                                borderColor={"#333333"}
+                                borderWidth={normalize(0.5)}
+                                fontWeight={"500"}
+                            />
+                            <Buttons
+                                onPress={() => {
+                                    if (codegt) {
+                                        props.navigation.navigate("SignUp", {
+                                            phoneCd: {
+                                                phoneCd: codegt,
+                                            }
+                                        });
+                                    } else {
+                                        props.navigation.navigate("Login");
+                                    }
+                                }}
+                                height={normalize(42)}
+                                width={isCompactWidth ? '100%' : '48%'}
+                                loading={''}
+                                backgroundColor={Colorpath.white}
+                                borderRadius={normalize(5)}
+                                text="Sign Up"
+                                color={Colorpath.black}
+                                fontSize={isCompactWidth ? 16 : 18}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                                borderColor={"#333333"}
+                                borderWidth={normalize(0.5)}
+                                fontWeight={"500"}
+                            />
+                        </View>
                     </View>
-                </View>
-            </ImageBackground>
+                </ImageBackground>
+            </SafeAreaView>
         </>
     );
 };
@@ -312,11 +315,15 @@ const styles = StyleSheet.create({
     imageBackground: {
         flex: 1,
     },
+    safeArea: {
+        flex: 1,
+        backgroundColor: Colorpath.white,
+    },
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: normalize(60),
-        height: normalize(50),
+        marginTop: normalize(24),
+        marginBottom: normalize(8),
     },
     logo: {
         height: normalize(170),
@@ -326,7 +333,7 @@ const styles = StyleSheet.create({
         height: normalize(40),
         width: normalize(260),
         resizeMode: "contain",
-        marginTop: normalize(70),
+        marginTop: normalize(30),
         alignSelf: "center",
     },
     sliderContainer: {
@@ -335,11 +342,11 @@ const styles = StyleSheet.create({
         // alignItems:"center"
     },
     slide: {
-        flex: 0.9,
-        justifyContent: 'center',
+        flex: 1,
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        width: normalize(330),
-        paddingho: normalize(10)
+        paddingHorizontal: normalize(10),
+        paddingBottom: normalize(20),
     },
     hText: {
         color: '#000000',
@@ -373,13 +380,13 @@ const styles = StyleSheet.create({
     guestButtonSlot: {
         width: '100%',
         minHeight: normalize(50),
-        marginTop: normalize(6),
+        marginTop: normalize(50),
         justifyContent: 'center',
         alignItems: 'center',
     },
     pagerRow: {
-        marginTop: normalize(2),
-        marginBottom: normalize(38),
+        marginTop: normalize(0),
+        marginBottom: normalize(0),
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -402,6 +409,11 @@ const styles = StyleSheet.create({
     textContainer: {
         paddingHorizontal: normalize(15), // 15 padding on both sides
         width: '100%',  // Take full width
+    },
+    textBlock: {
+        marginTop: normalize(12),
+        width: '100%',
+        alignItems: 'center',
     },
 });
 
