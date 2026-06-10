@@ -85,16 +85,15 @@ export default StyleSheet.create({
     paddingRight: 8,
   },
   hero: {
-    width: normalize(310),
-    // aspectRatio: Platform.OS === 'android' ? 1.2 : 1.8,
-    borderRadius: 40,
+    width: '100%',
     overflow: 'hidden',
-    padding: 20,
+    padding: 25,
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 0,
     alignSelf: 'center',
+    borderRadius: 0,
   },
-  heroRadius: { borderRadius: 20 },
+  heroRadius: { borderRadius: 0 },
   heroBadge: {
     position: 'absolute',
     right: 10,
@@ -243,7 +242,7 @@ export default StyleSheet.create({
   },
   shimmerHero: {
     height: normalize(175),
-    borderRadius: 20,
+    borderRadius: 0,
     padding: 20,
   },
   shimmerHeroBottom: {
@@ -1097,7 +1096,7 @@ export default StyleSheet.create({
   chipText: { fontFamily: Fonts.InterSemiBold, color: '#6B7280' },
   chipTextActive: { color: '#FFFFFF' },
   marketHeader:
-   { justifyContent: 'center', alignSelf: 'center', marginTop: 12, marginBottom: 10, width: normalize(185) },
+    { justifyContent: 'center', alignSelf: 'center', marginTop: 12, marginBottom: 10, width: normalize(185) },
   marketTitle: {
     fontFamily: Fonts.InterBold,
     color: '#111827',

@@ -97,10 +97,10 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
               : '');
           const displayMeta = splitMetaLine(
             parsedHtml.date ||
-              item.start_date ||
-              item.course_start_date ||
-              item.event_date ||
-              item.banner_date,
+            item.start_date ||
+            item.course_start_date ||
+            item.event_date ||
+            item.banner_date,
           );
           const displayDate = displayMeta.date;
           const displayCredits =
