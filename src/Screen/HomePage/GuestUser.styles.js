@@ -103,6 +103,7 @@ export default StyleSheet.create({
     borderTopRightRadius: 0,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
+    transform: [{ scale: 1.15 }],
   },
   heroBadge: {
     position: 'absolute',
