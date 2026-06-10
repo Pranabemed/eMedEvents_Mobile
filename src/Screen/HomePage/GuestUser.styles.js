@@ -85,7 +85,7 @@ export default StyleSheet.create({
     paddingRight: 8,
   },
   hero: {
-    width: normalize(320),
+    width: normalize(300),
     overflow: 'hidden',
     padding: 25,
     justifyContent: 'space-between',
@@ -103,7 +103,7 @@ export default StyleSheet.create({
     borderTopRightRadius: 0,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    transform: [{ scale: 1.15 }],
+    transform: [{ scale: 1.2 }],
   },
   heroBadge: {
     position: 'absolute',

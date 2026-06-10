@@ -131,6 +131,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
                 source={Imagepath.HomeUser}
                 imageStyle={styles.heroRadius}
                 style={styles.hero}
+                resizeMode="stretch"
               >
                 <View>
                   <Text style={styles.heroKicker}>{displayKicker}</Text>
