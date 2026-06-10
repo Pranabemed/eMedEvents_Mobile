@@ -24,6 +24,7 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { StateBundleLandingRequest } from '../../Redux/Reducers/GuestReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ProfessionDropdown from './ProfessionDropdown';
@@ -35,6 +36,28 @@ const professionMapping = {
   Nursing: 169,
   Dentist: 171,
   Pharmacist: 173,
+};
+
+const DEFAULT_US_STATE = { name: 'Alabama', state_id: 1, id: 1 };
+
+const getCountryFromIP = async ip => {
+  try {
+    if (!ip) {
+      return 'unknown';
+    }
+
+    const res = await fetch(`https://ipinfo.io/${ip}/json`);
+    const text = await res.text();
+    if (text.startsWith('<')) {
+      throw new Error('HTML response');
+    }
+
+    const data = JSON.parse(text);
+    return String(data?.country || 'unknown').trim().toUpperCase();
+  } catch (e) {
+    console.log('CMERequirement geo lookup failed:', e);
+    return 'unknown';
+  }
 };
 
 /**
@@ -322,13 +345,14 @@ const CMERequirement = props => {
     initialPassedProf || 'Physician',
   );
   const [selectedState, setSelectedState] = useState(
-    initialPassedState || { name: 'Alabama', state_id: 1, id: 1 },
+    DEFAULT_US_STATE,
   );
   const [statesList, setStatesList] = useState([]);
   const [cmeRequirementData, setCmeRequirementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showAllPairs, setShowAllPairs] = useState(false);
+  const [isUsaIpUser, setIsUsaIpUser] = useState(false);
 
   /**
    * Description: Fetches the master state list from API.
@@ -356,22 +380,42 @@ const CMERequirement = props => {
    */
   const fetchStates = useCallback(async () => {
     try {
+      const ipAddress = getPublicIP();
+      const countryCode = await getCountryFromIP(ipAddress);
+
+      if (countryCode !== 'US' && countryCode !== 'USA') {
+        setIsUsaIpUser(false);
+        setStatesList([]);
+        setSelectedState(null);
+        setCmeRequirementData(null);
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      setIsUsaIpUser(true);
       const response = await getApi('master/states?country_id=1');
       if (response?.data?.states) {
-        setStatesList(response.data.states);
+        const usaStates = response.data.states;
+        setStatesList(usaStates);
         if (initialPassedState) {
-          const match = response.data.states.find(
+          const match = usaStates.find(
             s =>
               String(s.name).toLowerCase() ===
               String(initialPassedState.name || initialPassedState).toLowerCase(),
           );
           if (match) {
             setSelectedState(match);
+            return;
           }
         }
+        setSelectedState(usaStates[0] || DEFAULT_US_STATE);
       }
     } catch (err) {
       console.warn('Failed to fetch states list:', err);
+      setStatesList([DEFAULT_US_STATE]);
+      setSelectedState(DEFAULT_US_STATE);
+      setIsUsaIpUser(true);
     }
   }, [initialPassedState]);
 
@@ -421,10 +465,10 @@ const CMERequirement = props => {
   }, [fetchStates]);
 
   useEffect(() => {
-    if (selectedState) {
+    if (isUsaIpUser && selectedState) {
       fetchRequirements(selectedProfession, selectedState);
     }
-  }, [fetchRequirements, selectedProfession, selectedState]);
+  }, [fetchRequirements, isUsaIpUser, selectedProfession, selectedState]);
 
   useEffect(() => {
     if (GuestReducer?.status === 'Guest/StateBundleLandingRequest') {
@@ -545,7 +589,9 @@ const CMERequirement = props => {
    */
   const getStateName = item => item?.name || item?.state_name || item?.title || 'Alabama';
 
-  const pageTitle = `${getStateName(selectedState)} CME Requirements`;
+  const pageTitle = selectedState
+    ? `${getStateName(selectedState)} CME Requirements`
+    : 'CME Requirements';
   const dynamicCourseSections = getDynamicCourseSections(cmeRequirementData);
   const pairedCourseSections = removeDuplicateCourseSections(
     prioritizeBundleGroups(getPairedCourseSections(dynamicCourseSections)),

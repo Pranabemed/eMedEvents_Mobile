@@ -127,7 +127,7 @@ const CheckMembership = (props) => {
                     {};
 
                 const ipAddress = getPublicIP();
-                const countryCode = 'US'||await getCountryFromIP(ipAddress);
+                const countryCode = await getCountryFromIP(ipAddress);
 
                 const [verifyRaw, professionRaw] = await Promise.all([
                     AsyncStorage.getItem(constants.VERIFYSTATEDATA),

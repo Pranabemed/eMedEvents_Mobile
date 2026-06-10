@@ -26,8 +26,9 @@ const GuestRequirementsPanelComponent = ({
   selectedState,
   handleStateSelect,
   stateList,
+  isUsaUser,
 }) => {
-  if (isHomeLoading) return null;
+  if (isHomeLoading || isUsaUser === false) return null;
 
   return (
     <View style={styles.panel}>

@@ -12,8 +12,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+import { getApi } from '../../Utils/Helpers/ApiRequest';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
-import { stateRequest } from '../../Redux/Reducers/AuthReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
@@ -21,6 +22,26 @@ import { StyleSheet, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
+
+const getCountryFromIP = async ip => {
+  try {
+    if (!ip) {
+      return 'unknown';
+    }
+
+    const res = await fetch(`https://ipinfo.io/${ip}/json`);
+    const text = await res.text();
+    if (text.startsWith('<')) {
+      throw new Error('HTML response');
+    }
+
+    const data = JSON.parse(text);
+    return String(data?.country || 'unknown').trim().toUpperCase();
+  } catch (e) {
+    console.log('GuestUser geo lookup failed:', e);
+    return 'unknown';
+  }
+};
 
 /**
  * Description: Guest user home container screen.
@@ -51,7 +72,6 @@ const GuestUser = props => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
   const GuestReducer = useSelector(state => state.GuestReducer);
-  const AuthReducer = useSelector(state => state.AuthReducer);
   const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
 
   const [profModalVisible, setProfModalVisible] = useState(false);
@@ -67,6 +87,8 @@ const GuestUser = props => {
   const [cmeRequestStarted, setCmeRequestStarted] = useState(false);
   const [isGuestHomeLoading, setIsGuestHomeLoading] = useState(true);
   const [handledGuestResetAt, setHandledGuestResetAt] = useState(null);
+  const [guestUsaStates, setGuestUsaStates] = useState([]);
+  const [isUsaUser, setIsUsaUser] = useState(null);
 
   const shouldResetRef = useRef(false);
   const guestHomeRequestInFlightRef = useRef(false);
@@ -106,8 +128,46 @@ const GuestUser = props => {
   }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
 
   useEffect(() => {
-    dispatch(stateRequest(1));
-  }, [dispatch]);
+    let isMounted = true;
+
+    const fetchGuestUsaStates = async () => {
+      try {
+        const ipAddress = getPublicIP();
+        const countryCode = await getCountryFromIP(ipAddress);
+
+        const isUS = countryCode === 'US' || countryCode === 'USA';
+        if (isMounted) {
+          setIsUsaUser(isUS);
+        }
+
+        if (!isUS) {
+          if (isMounted) {
+            setGuestUsaStates([]);
+          }
+          return;
+        }
+
+        const response = await getApi('master/states?country_id=1');
+        const states = Array.isArray(response?.data?.states) ? response.data.states : [];
+
+        if (isMounted) {
+          setGuestUsaStates(states);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setGuestUsaStates([]);
+          setIsUsaUser(false);
+        }
+        console.warn('Failed to fetch guest USA states:', err);
+      }
+    };
+
+    fetchGuestUsaStates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (
@@ -219,11 +279,7 @@ const GuestUser = props => {
       ? GuestReducer?.AboutusResponse?.data
       : GuestReducer?.AboutusResponse || {};
 
-  const stateList = Array.isArray(AuthReducer?.stateResponse?.data)
-    ? AuthReducer?.stateResponse?.data
-    : Array.isArray(AuthReducer?.stateResponse?.states)
-      ? AuthReducer?.stateResponse?.states
-      : [];
+  const stateList = guestUsaStates;
 
   const guest = {
     navigation: props.navigation,
@@ -232,6 +288,7 @@ const GuestUser = props => {
     homeStatus: GuestReducer?.status,
     isGuestHomeLoading,
     stateList,
+    isUsaUser,
     selectedProfession,
     selectedState,
     stateSearchText,
@@ -258,7 +315,6 @@ const GuestUser = props => {
       setStateSearchText('');
     },
     handleStatePress: () => {
-      dispatch(stateRequest(1));
       setStateSearchText('');
       setStateModalVisible(true);
     },

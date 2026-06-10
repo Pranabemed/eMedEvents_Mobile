@@ -127,6 +127,7 @@ const GuestUserContent = ({ guest }) => {
               selectedState={selectedState}
               stateCode={stateCode}
               onOpenStatePicker={() => openStatePicker('listing')}
+              isUsaUser={guest?.isUsaUser}
             />
 
             <GuestHeroSection
@@ -152,8 +153,8 @@ const GuestUserContent = ({ guest }) => {
             ) : null}
 
             {isHomeLoading ? (
-              <GuestRequirementsShimmer />
-            ) : (
+              guest?.isUsaUser === false ? null : <GuestRequirementsShimmer />
+            ) : guest?.isUsaUser ? (
               <GuestRequirementsPanel
                 isHomeLoading={isHomeLoading}
                 selectedProfession={selectedProfession}
@@ -161,8 +162,9 @@ const GuestUserContent = ({ guest }) => {
                 selectedState={selectedState}
                 handleStateSelect={handleStateSelect}
                 stateList={stateList}
+                isUsaUser={guest?.isUsaUser}
               />
-            )}
+            ) : null}
 
             {isHomeLoading ? (
               <GuestCarouselShimmer title="Most Popular Conferences" width={width} />

@@ -16,12 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
  * Description: Guest home header component.
  * Purpose: Displays logo, state selector, sign-in action, and search CTA.
  */
-const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode, onOpenStatePicker }) => {
+const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode, onOpenStatePicker, isUsaUser }) => {
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const [statesList, setStatesList] = useState([]);
 
   useEffect(() => {
+    if (isUsaUser === false) return;
     const fetchStates = async () => {
       try {
         const response = await getApi('master/states?country_id=1');
@@ -33,7 +34,7 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
       }
     };
     fetchStates();
-  }, []);
+  }, [isUsaUser]);
 
   const filteredStates = (statesList || []).filter(item => {
     const name = String(item?.name || item?.state_name || item?.title || '').toLowerCase();
@@ -101,10 +102,12 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
           resizeMode="contain"
         />
         <View style={styles.topActions}>
-          <TouchableOpacity style={styles.langPill} onPress={() => setStateModalVisible(true)}>
-            <Text style={styles.langText}>{stateCode || 'State'}</Text>
-            <Icon name="keyboard-arrow-down" size={20} color={Colorpath.black} />
-          </TouchableOpacity>
+          {isUsaUser !== false && (
+            <TouchableOpacity style={styles.langPill} onPress={() => setStateModalVisible(true)}>
+              <Text style={styles.langText}>{stateCode || 'State'}</Text>
+              <Icon name="keyboard-arrow-down" size={20} color={Colorpath.black} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.signInButton} onPress={handleSignInPress}>
             <Text style={styles.signInText}>SIGN IN</Text>
           </TouchableOpacity>

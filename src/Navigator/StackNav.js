@@ -626,8 +626,8 @@ const StackNav = props => {
       return;
     }
 
-    // Restrict /price-page/ and other specific URLs to open in the web browser only
-    if (normalizedUrl.includes('/price-page/')) {
+    // Restrict /price-page/, /cmepackages and other specific URLs to open in the web browser only
+    if (normalizedUrl.includes('/price-page/') || normalizedUrl.includes('/cmepackages')) {
       console.log('[DeepLink] Redirecting restricted URL to browser:', resolvedUrl);
       openExternalBrowser(resolvedUrl);
       return;
