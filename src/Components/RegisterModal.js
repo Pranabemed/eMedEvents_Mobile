@@ -6,6 +6,15 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const GUEST_PROMPT_KEYS = [
+    'GUEST_REGISTRATION_FLOW',
+    'GUEST_PRIME_VERIFICATION_PENDING',
+    'PrimeMembershipSkipped',
+    'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION',
+    'PrimeCardFlowComplete',
+];
 
 const RegisterModal = ({ isVisible, onClose, navigation }) => {
     return (
@@ -28,7 +37,12 @@ const RegisterModal = ({ isVisible, onClose, navigation }) => {
                 </Text>
                 
                 <TouchableOpacity
-                    onPress={() => {
+                    onPress={async () => {
+                        try {
+                            await AsyncStorage.multiRemove(GUEST_PROMPT_KEYS);
+                        } catch (error) {
+                            console.log('[RegisterModal] guest prompt cleanup error', error);
+                        }
                         navigation.dispatch(CommonActions.reset({
                             index: 0,
                             routes: [{ name: "TabNav" }]

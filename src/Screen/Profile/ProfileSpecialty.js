@@ -73,54 +73,46 @@ const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepi
 
         return (
             <>
-                <TouchableOpacity onPress={() => {
-                    setSpeids(item?.id);
-                    handlePress();
-                }} style={{ justifyContent: "center", alignItems: "center" }}>
-
-                    <View style={{
+                <TouchableOpacity
+                    onPress={() => {
+                        setSpeids(item?.id);
+                        handlePress();
+                    }}
+                    style={{
                         flexDirection: "row",
-                        justifyContent: "center",
                         alignItems: "center",
-                        height: normalize(43),
-                        width: normalize(295),
-                        margin: normalize(5),
-                        gap: normalize(10)
-                    }}>
-                        <View style={{ flexDirection: "row", marginLeft: normalize(15), gap: normalize(5) }}>
-                            <View>
-                                <TouchableOpacity onPress={() => {
-                                    handlePress();
-                                    setSpeids(item?.id);
-                                }}>
-                                    {formData?.speciality_ids?.includes(item.id) ? (
-                                        <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.black, borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), marginTop: normalize(5), borderWidth: 0.8 }}>
-                                            <TickMark name="checkmark" color={Colorpath.white} size={17} />
-                                        </View>
-                                    ) : (
-                                        <View style={{ borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), marginTop: normalize(5), borderWidth: 0.8}} />
-                                    )}
-                                </TouchableOpacity>
+                        minHeight: normalize(43),
+                        width: normalize(300),
+                        paddingHorizontal: normalize(10),
+                        marginVertical: normalize(5),
+                        alignSelf: "center",
+                    }}
+                >
+                    <View style={{ marginRight: normalize(10) }}>
+                        {formData?.speciality_ids?.includes(item.id) ? (
+                            <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.black, borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), borderWidth: 0.8 }}>
+                                <TickMark name="checkmark" color={Colorpath.white} size={17} />
                             </View>
-                            <View style={{ flexDirection: "row", paddingHorizontal: normalize(4), paddingVertical: normalize(6), width: normalize(280) }}>
-                                <Text numberOfLines={2}
-                                    style={{
-                                        fontSize: 16,
-                                        lineHeight: normalize(14),
-                                        textAlign: 'left',
-                                        color: Colorpath.black,
-                                        textTransform: 'capitalize',
-                                        fontFamily: Fonts.InterRegular,
-                                    }}
-                                >
-                                    {item?.name}
-                                </Text>
-                            </View>
-                        </View>
-
+                        ) : (
+                            <View style={{ borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), borderWidth: 0.8 }} />
+                        )}
                     </View>
-                    <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#DADADA" }} />
+                    <View style={{ flex: 1 }}>
+                        <Text numberOfLines={2}
+                            style={{
+                                fontSize: 16,
+                                lineHeight: normalize(20),
+                                textAlign: 'left',
+                                color: Colorpath.black,
+                                textTransform: 'capitalize',
+                                fontFamily: Fonts.InterRegular,
+                            }}
+                        >
+                            {item?.name}
+                        </Text>
+                    </View>
                 </TouchableOpacity>
+                <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#DADADA", alignSelf: "center" }} />
             </>
         );
     };

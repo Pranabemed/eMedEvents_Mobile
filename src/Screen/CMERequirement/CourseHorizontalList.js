@@ -147,20 +147,15 @@ const getButtonLabel = item =>
 const getPriceText = item => {
   const symbol = item?.currency_code || item?.display_currency_code || 'US$';
   const amount = String(item?.display_price || item?.ticketprice || '').trim();
-  const buttonLabel = getButtonLabel(item);
 
-  if (!amount || /interested/i.test(amount)) {
+  if (!amount || /interested/i.test(amount) || /free/i.test(amount) || /zero/i.test(amount)) {
     return '';
-  }
-
-  if (/free/i.test(amount)) {
-    return /interested/i.test(buttonLabel) ? 'Free' : 'FREE';
   }
 
   const numericAmount = Number(amount.replace(/[^0-9.]/g, ''));
   const containsDigits = /\d/.test(amount);
   if (containsDigits && !Number.isNaN(numericAmount) && numericAmount === 0) {
-    return /interested/i.test(buttonLabel) ? 'Free' : '';
+    return '';
   }
 
   return `${symbol}${amount}`;

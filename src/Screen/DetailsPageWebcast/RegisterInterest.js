@@ -14,7 +14,7 @@ import { searchStateNameFunction } from './SearchStatename'
 import { useDispatch, useSelector } from 'react-redux'
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import ProfessionComponent from '../Specialization/ProfessionComponent'
-import { licesensRequest, professionRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
+import { licesensRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import CalenderIcon from 'react-native-vector-icons/Feather';
@@ -32,14 +32,31 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import RegsiterModal from '../../Components/RegisterModal'
 import CustomInputTouchableX from '../Profile/CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 let status1 = "";
 let status = "";
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
 const RegisterInterest = (props) => {
     console.log(props?.route?.params, "dfghfh------")
     const intBack = () => {
         props.navigation.goBack();
     }
     const [togglecard, setTogglecard] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [touched, setTouched] = useState({
+        firstname: false,
+        lastname: false,
+        emailad: false,
+        licnumber: false,
+        licdate: false,
+        cellnumber: false,
+    });
     const [firstname, setFirstname] = useState("");
     const [lastname, setLastname] = useState("");
     const [speciality_id, setSpeciality_id] = useState([]);
@@ -106,6 +123,7 @@ const RegisterInterest = (props) => {
         setState_id("");
         setProftree(false);
         licData(did);
+        setTouched(prev => ({ ...prev, country: true }));
     }
     const licData = (hill) => {
         const obj = hill;
@@ -183,6 +201,7 @@ const RegisterInterest = (props) => {
         setstatepicker(false);
         setSearchState("");
         setSelectedSpecialities([]);
+        setTouched(prev => ({ ...prev, speciality: true }));
     };
     const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
@@ -196,6 +215,7 @@ const RegisterInterest = (props) => {
             speciality_ids: uniqueIds
         };
         setFormData(updatedFormData); // Update state
+        setTouched(prev => ({ ...prev, speciality: true }));
     };
     const removeSpeciality = (specialityId) => {
         const currentSpecialityIds = formData?.speciality_ids || [];
@@ -237,10 +257,72 @@ const RegisterInterest = (props) => {
         setLicdate("");
         setRdate("")
         setLicnumber("");
+        setTouched(prev => ({ ...prev, state: true }));
     }
     const toggleHand = () => {
         setTogglecard(!togglecard);
     }
+    const clearGuestPromptFlags = useCallback(async () => {
+        try {
+            await Promise.all([
+                AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
+                AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+                AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+                AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+                AsyncStorage.removeItem(PRIME_CARD_FLOW_COMPLETE_KEY),
+                AsyncStorage.setItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY, 'true'),
+            ]);
+        } catch (error) {
+            console.log('[RegisterInterest] clearGuestPromptFlags error', error);
+        }
+    }, []);
+    const persistGuestRegistrationSession = useCallback(async registrationResponse => {
+        const token =
+            registrationResponse?.token ||
+            AuthReducer?.token ||
+            AuthReducer?.loginResponse?.token ||
+            '';
+        const refreshToken = registrationResponse?.refresh_token;
+        const user = registrationResponse?.user;
+
+        if (token) {
+            await AsyncStorage.setItem(constants.TOKEN, token);
+            if (token !== AuthReducer?.token) {
+                dispatch(tokenSuccess(token));
+            }
+        }
+        if (refreshToken) {
+            await AsyncStorage.setItem(constants.REFRESH_TOKEN, refreshToken);
+        }
+        if (user) {
+            const userString = JSON.stringify(user);
+            await AsyncStorage.setItem(constants.VERIFYSTATEDATA, userString);
+            await AsyncStorage.setItem(constants.PROFESSION, userString);
+            await AsyncStorage.setItem(
+                GUEST_REGISTRATION_FLOW_KEY,
+                JSON.stringify({
+                    license_state_id: user?.license_state_id || state_id || '',
+                    license_number: user?.license_number || licnumber || '',
+                })
+            );
+        }
+    }, [AuthReducer?.loginResponse?.token, AuthReducer?.token, dispatch, state_id, licnumber]);
+
+    const customNavigation = useMemo(() => {
+        return {
+            ...props.navigation,
+            dispatch: (action) => {
+                persistGuestRegistrationSession(WebcastReducer?.RegisterIntResponse)
+                    .then(() => {
+                        props.navigation.dispatch(action);
+                    })
+                    .catch((err) => {
+                        console.log('[RegisterInterest] customNavigation dispatch error', err);
+                        props.navigation.dispatch(action);
+                    });
+            }
+        };
+    }, [props.navigation, persistGuestRegistrationSession, WebcastReducer?.RegisterIntResponse]);
     if (status == '' || AuthReducer.status != status) {
         switch (AuthReducer.status) {
             case 'Auth/licesensRequest':
@@ -306,6 +388,7 @@ const RegisterInterest = (props) => {
         const formattedDate = moment(val).format('YYYY-MM-DD');
         setLicdate(formattedDate);
         setOpendatelic(false);
+        setTouched(prev => ({ ...prev, licdate: true }));
     };
     useEffect(() => {
         if (DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.phone) {
@@ -417,10 +500,16 @@ const RegisterInterest = (props) => {
     const filteredTextcell = cellnumber && cellnumber?.length > 0 && cellnumber.replace(/[^\d]/g, '');
     const isValidcell = filteredTextcell?.length > 0 && !cellNoRegexwpdd.test(filteredTextcell);
     const interSubmit = () => {
+        setIsSubmitted(true);
         if (!country) {
             showErrorAlert("Please choose your profession ")
         } else if (formData?.speciality_ids?.length == 0) {
             showErrorAlert("Please choose your speciality(s)")
+        } else if (proftree && !state) {
+            showErrorAlert("Please choose your medical license state")
+        } else if (!zerocm) {
+            // Some inline text fields are empty/invalid.
+            // Inline error messages will render since isSubmitted is true.
         } else {
             const buildConferencePayload = () => {
                 const attendeeData = {
@@ -500,7 +589,14 @@ const RegisterInterest = (props) => {
                 //         }
                 //     });
                 // }
-                toggleHand();
+                persistGuestRegistrationSession(WebcastReducer?.RegisterIntResponse)
+                    .then(() => {
+                        toggleHand();
+                    })
+                    .catch(err => {
+                        console.log("[RegisterInterest] persistGuestRegistrationSession error", err);
+                        toggleHand();
+                    });
                 break;
             case 'WebCast/RegisterIntFailure':
                 status1 = WebcastReducer.status;
@@ -509,8 +605,8 @@ const RegisterInterest = (props) => {
         }
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -697,7 +793,11 @@ const RegisterInterest = (props) => {
                                     <InputField
                                         label='First Name*'
                                         value={firstname}
-                                        onChangeText={(val) => setFirstname(val)}
+                                        onChangeText={(val) => {
+                                            setFirstname(val);
+                                            setTouched(prev => ({ ...prev, firstname: true }));
+                                        }}
+                                        onBlur={() => setTouched(prev => ({ ...prev, firstname: true }))}
                                         placeholder=''
                                         placeholderTextColor="#949494"
                                         keyboardType="default"
@@ -706,7 +806,7 @@ const RegisterInterest = (props) => {
                                     />
                                 </View>
                             </View>
-                            {!firstname && <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
+                            {((touched.firstname || isSubmitted) && !firstname) && <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterRegular,
@@ -728,7 +828,11 @@ const RegisterInterest = (props) => {
                                     <InputField
                                         label='Last Name*'
                                         value={lastname}
-                                        onChangeText={(val) => setLastname(val)}
+                                        onChangeText={(val) => {
+                                            setLastname(val);
+                                            setTouched(prev => ({ ...prev, lastname: true }));
+                                        }}
+                                        onBlur={() => setTouched(prev => ({ ...prev, lastname: true }))}
                                         placeholder=''
                                         placeholderTextColor="#949494"
                                         keyboardType="default"
@@ -737,7 +841,7 @@ const RegisterInterest = (props) => {
                                     />
                                 </View>
                             </View>
-                            {!lastname && <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
+                            {((touched.lastname || isSubmitted) && !lastname) && <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterRegular,
@@ -760,8 +864,10 @@ const RegisterInterest = (props) => {
                                         label='Email ID*'
                                         value={emailad}
                                         onChangeText={(val) => {
-                                            setEmailad(val)
+                                            setEmailad(val);
+                                            setTouched(prev => ({ ...prev, emailad: true }));
                                         }}
+                                        onBlur={() => setTouched(prev => ({ ...prev, emailad: true }))}
                                         placeholder=''
                                         placeholderTextColor="#949494"
                                         keyboardType="default"
@@ -770,7 +876,7 @@ const RegisterInterest = (props) => {
                                     />
                                 </View>
                             </View>
-                            {!emailad ? <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
+                            {(touched.emailad || isSubmitted) && (!emailad ? <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterRegular,
@@ -790,7 +896,7 @@ const RegisterInterest = (props) => {
                                         {"Email address must be in correct format i.e. abc@gmail.com"}
                                     </Text>
                                 </View>
-                            )}
+                            ))}
                             <View style={{
                                 flexDirection: 'row',
                                 flex: 1
@@ -867,7 +973,11 @@ const RegisterInterest = (props) => {
                                     <InputField
                                         label='License Number*'
                                         value={licnumber}
-                                        onChangeText={(val) => setLicnumber(val)}
+                                        onChangeText={(val) => {
+                                            setLicnumber(val);
+                                            setTouched(prev => ({ ...prev, licnumber: true }));
+                                        }}
+                                        onBlur={() => setTouched(prev => ({ ...prev, licnumber: true }))}
                                         placeholder=''
                                         placeholderTextColor="#949494"
                                         keyboardType="default"
@@ -876,7 +986,7 @@ const RegisterInterest = (props) => {
                                     />
                                 </View>
                             </View>
-                            {!licnumber && (
+                            {((touched.licnumber || isSubmitted) && !licnumber) && (
                                 <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                     <Text
                                         style={{
@@ -904,13 +1014,19 @@ const RegisterInterest = (props) => {
                                         placeholder={''}
                                         placeholderTextColor="#949494"
                                         rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                                        onPress={() => setOpendatelic(!opendatelic)}
-                                        onIconpres={() => setOpendatelic(!opendatelic)}
+                                        onPress={() => {
+                                            setOpendatelic(!opendatelic);
+                                            setTouched(prev => ({ ...prev, licdate: true }));
+                                        }}
+                                        onIconpres={() => {
+                                            setOpendatelic(!opendatelic);
+                                            setTouched(prev => ({ ...prev, licdate: true }));
+                                        }}
                                     />
                                 </View>
                             </View>
 
-                            {!licdate && (
+                            {((touched.licdate || isSubmitted) && !licdate) && (
                                 <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                     <Text
                                         style={{
@@ -936,7 +1052,9 @@ const RegisterInterest = (props) => {
                                         onChangeText={(val) => {
                                             const formatted = formatPhoneNumber(val);
                                             setCellnumber(formatted);
+                                            setTouched(prev => ({ ...prev, cellnumber: true }));
                                         }}
+                                        onBlur={() => setTouched(prev => ({ ...prev, cellnumber: true }))}
                                         placeholder=""
                                         placeholderTextColor="#949494"
                                         keyboardType="phone-pad"
@@ -946,7 +1064,7 @@ const RegisterInterest = (props) => {
                                     />
                                 </View>
                             </View>
-                            {cellnumber?.length == 0 ? <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
+                            {(touched.cellnumber || isSubmitted) && (cellnumber?.length == 0 ? <View style={{ paddingHorizontal: normalize(0), bottom: normalize(10) }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterRegular,
@@ -966,7 +1084,7 @@ const RegisterInterest = (props) => {
                                         {"Please enter a valid Cell number"}
                                     </Text>
                                 </View>
-                            )}
+                            ))}
                         </View>
                         <Buttons
                             onPress={interSubmit}
@@ -979,7 +1097,7 @@ const RegisterInterest = (props) => {
                             fontSize={18}
                             fontFamily={Fonts.InterSemiBold}
                             marginTop={normalize(10)}
-                            disabled={!zerocm}
+                            disabled={false}
                         />
                     </ScrollView>
                 </KeyboardAvoidingView>}
@@ -1001,7 +1119,7 @@ const RegisterInterest = (props) => {
                 <RegsiterModal
                     isVisible={togglecard}
                     onClose={toggleHand}
-                    navigation={props.navigation}
+                    navigation={customNavigation}
                 />
             </SafeAreaView>
         </>

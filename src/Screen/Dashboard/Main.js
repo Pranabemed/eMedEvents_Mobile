@@ -33,6 +33,7 @@ const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
 const PRIME_CARD_TEST_COUNTRY_CODE = 'US';
 
 const normalizeProfessionHandle = (professionHandle) =>
@@ -227,6 +228,10 @@ const Main = (props) => {
     authProfessionInfo?.profession,
     authProfessionInfo?.profession_type
   );
+  const profFromSaved = buildProfessionLabel(
+    finalProfessionmain?.profession || finalverifyvaultmain?.profession,
+    finalProfessionmain?.profession_type || finalverifyvaultmain?.profession_type
+  );
   const resolvedProfessionHandle = profFromDashboard
     ? findMatchedProfessionHandle(
       [
@@ -236,13 +241,21 @@ const Main = (props) => {
       ],
       supportedProfessionHandles
     )
-    : findMatchedProfessionHandle(
-      [
-        profFromAuth,
-        `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
-      ],
-      supportedProfessionHandles
-    );
+    : profFromAuth
+      ? findMatchedProfessionHandle(
+        [
+          profFromAuth,
+          `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
+        ],
+        supportedProfessionHandles
+      )
+      : findMatchedProfessionHandle(
+        [
+          profFromSaved,
+          `${finalProfessionmain?.profession || finalverifyvaultmain?.profession || ''} ${finalProfessionmain?.profession_type || finalverifyvaultmain?.profession_type || ''}`.trim(),
+        ],
+        supportedProfessionHandles
+      );
   const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
@@ -535,6 +548,7 @@ const Main = (props) => {
           guestPrimeVerifyPendingRaw,
           primeMembershipSkippedRaw,
           primeCardFlowCompleteRaw,
+          suppressGuestPromptsOnceRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -542,7 +556,9 @@ const Main = (props) => {
           AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
           AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
           AsyncStorage.getItem('PrimeCardFlowComplete'),
+          AsyncStorage.getItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY),
         ]);
+        const suppressGuestPromptsOnce = suppressGuestPromptsOnceRaw === 'true';
         const guestFlowData = parseStoredJson(guestFlowRaw);
         const isGuestFlow = Boolean(guestFlowData);
         const isSkippedFlow = primeMembershipSkippedRaw === 'true';
@@ -554,6 +570,15 @@ const Main = (props) => {
           Boolean(verifyResponseData);
 
         if (!resolvedIpCountryCode) {
+          return;
+        }
+
+        if (suppressGuestPromptsOnce) {
+          await AsyncStorage.removeItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY);
+          setPrimeadd(false);
+          setShowGuestPrimePrompt(false);
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
           return;
         }
 

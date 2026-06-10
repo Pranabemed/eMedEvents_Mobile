@@ -16,6 +16,9 @@ import TokenManager from '../../Utils/Helpers/TokenManager';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
 const INVALID_TOKEN_MESSAGES = [
   'missing or invalid token',
   'invalid token',
@@ -63,6 +66,7 @@ export default function Splash(props) {
   const [emaiV, setEmaiV] = useState("");
   const [phoneV, setPhoneV] = useState("");
   const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
+  const [guestHomeGateActive, setGuestHomeGateActive] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
@@ -91,16 +95,32 @@ export default function Splash(props) {
   useEffect(() => {
     const handleNavigation = async () => {
       try {
-        const [emaileer, mobilevr, guestFlowRaw] = await Promise.all([
+        const [
+          emaileer,
+          mobilevr,
+          guestFlowRaw,
+          guestPrimePendingRaw,
+          primeMembershipSkippedRaw,
+          primeCardFlowCompleteRaw,
+        ] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
           AsyncStorage.getItem(constants.MOBVER),
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
+          AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+          AsyncStorage.getItem(PRIME_CARD_FLOW_COMPLETE_KEY),
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
         setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
+        setGuestHomeGateActive(
+          Boolean(guestFlowRaw) ||
+          guestPrimePendingRaw === 'true' ||
+          primeMembershipSkippedRaw === 'true' ||
+          primeCardFlowCompleteRaw === 'true'
+        );
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
@@ -347,7 +367,7 @@ export default function Splash(props) {
 
     console.log('[Splash] Nav Progress:', { allProfTake, bothVerified, isValidDashboard, isVerified, isPhoneVerified });
 
-    if (guestRegistrationFlowActive) {
+    if (guestHomeGateActive || guestRegistrationFlowActive) {
       hasNavigatedRef.current = true;
       props.navigation.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }] })
@@ -461,7 +481,8 @@ export default function Splash(props) {
     isFocus,
     loadingDashboard,
     spalsh,
-    guestRegistrationFlowActive
+    guestRegistrationFlowActive,
+    guestHomeGateActive
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

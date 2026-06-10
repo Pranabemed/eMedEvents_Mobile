@@ -153,18 +153,6 @@ function TabScreen() {
   }, [refreshLicensesAt, dispatch]);
 
   useEffect(() => {
-    const handleDeepLink = (event) => {
-      console.log("New URL received while app active:", event.url);
-      // Add your navigation logic here
-    };
-
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-  useEffect(() => {
     const token_error = () => {
       AsyncStorage.getItem(constants.PRODATA).then((profdatset) => {
         if (profdatset) {

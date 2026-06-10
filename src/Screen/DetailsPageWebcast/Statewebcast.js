@@ -99,6 +99,7 @@ const Statewebcast = props => {
             ""
         );
     }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
+    const hideGuestCartIcon = props?.route?.params?.webCastURL?.Realback === "guest";
 
     const resetToHome = useCallback(() => {
         props.navigation.dispatch(
@@ -538,10 +539,10 @@ const Statewebcast = props => {
             />
             {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} />
+                    <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} hideCart={hideGuestCartIcon} />
                 ) : (
                     <View>
-                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} />
+                        <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} hideCart={hideGuestCartIcon} />
                     </View>
                 )}
                 <Loader

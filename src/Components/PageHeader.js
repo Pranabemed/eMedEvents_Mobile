@@ -10,7 +10,7 @@ import showErrorAlert from '../Utils/Helpers/Toast';
 import Share from 'react-native-share';
 import constants from '../Utils/Helpers/constants';
 
-const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand }) => {
+const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand, hideCart = false }) => {
   console.log(cartcount, "fdgjhjfdghjh");
 
   const handleSearch = () => {
@@ -93,42 +93,44 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
         </Pressable>
 
         {/* Cart Icon with Badge */}
-        <Pressable
-          onPress={cartHand}
-          style={{
-            marginTop: normalize(3),
-            width: normalize(35),
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-          delayPressIn={0}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <View style={{ position: 'relative' }}>
-            <IconSh name="shopping-cart" size={25} color={"#000000"} />
-            {cartcount ? cartcount == 0 ? <></> : (
-              <View style={{
-                position: 'absolute',
-                top: -5,
-                right: -5,
-                height: normalize(13),
-                width: normalize(13),
-                borderRadius: normalize(13),
-                backgroundColor: "#008000",
-                justifyContent: "center",
-                alignItems: "center"
-              }}>
-                <Text style={{
-                  fontFamily: Fonts.InterBold,
-                  fontSize: 8,
-                  color: "#FFFFFF"
+        {!hideCart ? (
+          <Pressable
+            onPress={cartHand}
+            style={{
+              marginTop: normalize(3),
+              width: normalize(35),
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+            delayPressIn={0}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={{ position: 'relative' }}>
+              <IconSh name="shopping-cart" size={25} color={"#000000"} />
+              {cartcount ? cartcount == 0 ? <></> : (
+                <View style={{
+                  position: 'absolute',
+                  top: -5,
+                  right: -5,
+                  height: normalize(13),
+                  width: normalize(13),
+                  borderRadius: normalize(13),
+                  backgroundColor: "#008000",
+                  justifyContent: "center",
+                  alignItems: "center"
                 }}>
-                  {cartcount}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        </Pressable>
+                  <Text style={{
+                    fontFamily: Fonts.InterBold,
+                    fontSize: 8,
+                    color: "#FFFFFF"
+                  }}>
+                    {cartcount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </Pressable>
+        ) : null}
       </View>
     ) : (
       <View style={{

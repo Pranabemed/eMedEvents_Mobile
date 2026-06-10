@@ -92,6 +92,17 @@ const AuthSlice = createSlice({
       state.status = action.type;
       state.error = action.error;
     },
+    clearEmailexistState(state) {
+      state.emailexistResponse = {};
+      state.emailexistType = undefined;
+      if (
+        state.status === 'Auth/emailexistRequest' ||
+        state.status === 'Auth/emailexistSuccess' ||
+        state.status === 'Auth/emailexistFailure'
+      ) {
+        state.status = '';
+      }
+    },
     tokenRequest(state, action) {
       state.status = action.type;
     },
@@ -436,6 +447,7 @@ export const {
   emailexistRequest,
   emailexistSuccess,
   emailexistFailure,
+  clearEmailexistState,
   tokenRequest,
   tokenSuccess,
   tokenFailure,

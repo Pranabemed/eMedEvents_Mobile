@@ -6,7 +6,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Buttons from '../../Components/Button';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { emailexistRequest } from '../../Redux/Reducers/AuthReducer';
+import { clearEmailexistState, emailexistRequest } from '../../Redux/Reducers/AuthReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import TextFieldIn from '../../Components/Textfield';
@@ -16,6 +16,7 @@ import Imagepath from '../../Themes/Imagepath';
 import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native';
 const SignUp = (props) => {
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("")
@@ -136,6 +137,15 @@ const SignUp = (props) => {
   };
   console.log(gettrue, "hgfgfgj----------", cellno)
   const lastHandledStatusRef = React.useRef("");
+  useFocusEffect(
+    React.useCallback(() => {
+      lastHandledStatusRef.current = "";
+      dispatch(clearEmailexistState());
+      return () => {
+        lastHandledStatusRef.current = "";
+      };
+    }, [dispatch])
+  );
   useEffect(() => {
     if (AuthReducer.status === 'Auth/emailexistSuccess' && lastHandledStatusRef.current !== "Auth/emailexistSuccess") {
       if (AuthReducer?.emailexistResponse?.success === false) {
@@ -147,14 +157,34 @@ const SignUp = (props) => {
               text: 'Cancel', onPress: () => {
                 setMobileHd("");
                 setCellno("");
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
               }, style: 'cancel'
             },
-            { text: 'OK', onPress: () => props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" } }) },
+            {
+              text: 'OK', onPress: () => {
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" } })
+              }
+            },
           ]);
         } else if (AuthReducer?.emailexistType === 'email') {
           Alert.alert('eMedEvents', 'This email already exists in eMedEvents.', [
-            { text: 'Cancel', onPress: () => setEmail(""), style: 'cancel' },
-            { text: 'OK', onPress: () => props.navigation.navigate("Login", { "email": email }) },
+            {
+              text: 'Cancel', onPress: () => {
+                setEmail("");
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+              }, style: 'cancel'
+            },
+            {
+              text: 'OK', onPress: () => {
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+                props.navigation.navigate("Login", { "email": email })
+              }
+            },
           ]);
         }
       }

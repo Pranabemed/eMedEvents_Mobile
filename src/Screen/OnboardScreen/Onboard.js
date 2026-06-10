@@ -5,7 +5,8 @@ import {
     Text,
     View,
     StyleSheet,
-    BackHandler
+    BackHandler,
+    useWindowDimensions,
 } from 'react-native';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { CommonActions } from '@react-navigation/native';
@@ -58,12 +59,14 @@ const COUNTRY_DIAL_CODES = {
 };
 
 const Onboard = (props) => {
+    const { width } = useWindowDimensions();
     const [codegt, setCodegt] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
     const sliderRef = useRef(null);
     const autoScrollRef = useRef(null);
     const currentIndexRef = useRef(0);
     const isFocused = useIsFocused();
+    const isCompactWidth = width <= 350;
     // const isLastSlide = currentIndex === sliderData.length - 1;
     const SLIDE_INTERVAL = 4000;
 
@@ -234,20 +237,20 @@ const Onboard = (props) => {
                     <View style={styles.guestButtonSlot}>
                         <Buttons
                             onPress={continueAsGuest}
-                            height={normalize(44)}
+                            height={normalize(isCompactWidth ? 48 : 44)}
                             width={'100%'}
                             loading={''}
                             backgroundColor={Colorpath.ButtonColr}
                             borderRadius={normalize(5)}
                             text={"Start Exploring CME/CE"}
                             color={Colorpath.white}
-                            fontSize={17}
+                            fontSize={isCompactWidth ? 15 : 17}
                             fontFamily={Fonts.InterSemiBold}
                             marginTop={normalize(12)}
                             fontWeight={"500"}
                         />
                     </View>
-                    <View style={styles.authRow}>
+                    <View style={[styles.authRow, isCompactWidth && styles.authRowCompact]}>
                         <Buttons
                             onPress={() => {
                                 analytics().logEvent('emedevents', {
@@ -259,13 +262,13 @@ const Onboard = (props) => {
                                 props.navigation.navigate("Login");
                             }}
                             height={normalize(42)}
-                            width={normalize(130)}
+                            width={isCompactWidth ? '100%' : '48%'}
                             loading={''}
                             backgroundColor={Colorpath.white}
                             borderRadius={normalize(5)}
                             text={"Sign In"}
                             color={Colorpath.black}
-                            fontSize={18}
+                            fontSize={isCompactWidth ? 16 : 18}
                             fontFamily={Fonts.InterSemiBold}
                             marginTop={normalize(10)}
                             borderColor={"#333333"}
@@ -285,13 +288,13 @@ const Onboard = (props) => {
                                 }
                             }}
                             height={normalize(42)}
-                            width={normalize(130)}
+                            width={isCompactWidth ? '100%' : '48%'}
                             loading={''}
                             backgroundColor={Colorpath.white}
                             borderRadius={normalize(5)}
                             text="Sign Up"
                             color={Colorpath.black}
-                            fontSize={18}
+                            fontSize={isCompactWidth ? 16 : 18}
                             fontFamily={Fonts.InterSemiBold}
                             marginTop={normalize(10)}
                             borderColor={"#333333"}
@@ -363,9 +366,13 @@ const styles = StyleSheet.create({
         gap: normalize(12),
         width: '100%',
     },
+    authRowCompact: {
+        flexDirection: 'column',
+        gap: normalize(0),
+    },
     guestButtonSlot: {
         width: '100%',
-        minHeight: normalize(56),
+        minHeight: normalize(50),
         marginTop: normalize(6),
         justifyContent: 'center',
         alignItems: 'center',

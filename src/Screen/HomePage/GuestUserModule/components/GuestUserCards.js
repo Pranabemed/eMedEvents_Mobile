@@ -246,6 +246,7 @@ const PopularConferenceCardComponent = ({ item, width }) => {
 
 const LiveConferenceCardComponent = ({ item }) => {
   const handlePress = () => item?.onPress?.(item?.detailpageUrl);
+  const organizationLogo = getImageSource(item?.organizationLogo);
 
   return (
     <View style={styles.liveCardWrap}>
@@ -266,8 +267,8 @@ const LiveConferenceCardComponent = ({ item }) => {
                 activeOpacity={0.8}
                 style={styles.liveOrgLogo}
               >
-                {item?.organizationLogo ? (
-                  <Image source={item.organizationLogo} style={styles.liveOrgLogoImage} resizeMode="cover" />
+                {organizationLogo ? (
+                  <Image source={organizationLogo} style={styles.liveOrgLogoImage} resizeMode="cover" />
                 ) : (
                   <Text style={styles.liveOrgLogoFallback}>{getInitials(item.organization) || ' '}</Text>
                 )}

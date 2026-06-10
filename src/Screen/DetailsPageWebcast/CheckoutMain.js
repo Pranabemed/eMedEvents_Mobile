@@ -11,6 +11,7 @@ import CheckoutModalone from './CheckoutModalone';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 
 import moment from 'moment';
+import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 // import { useSelector } from 'react-redux';
 const CheckoutMain = ({
     savefull,
@@ -144,6 +145,19 @@ const CheckoutMain = ({
     const points2 = spanroute?.checkoutSpan?.cmeCreditsData[1]?.points || spanroute?.inpersonSpanrole?.cmeCreditsData[1]?.points;
     const name1 = spanroute?.checkoutSpan?.cmeCreditsData[0]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData[0]?.name;
     const name2 = spanroute?.checkoutSpan?.cmeCreditsData[1]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData[1]?.name;
+    const activeConference = spanroute?.checkoutSpan || spanroute?.inpersonSpanrole || {};
+    const conferenceStartDate =
+        activeConference?.startdate ||
+        activeConference?.start_date ||
+        activeConference?.startDate ||
+        activeConference?.key_dates?.conferenceStartdate ||
+        '';
+    const conferenceEndDate =
+        activeConference?.enddate ||
+        activeConference?.end_date ||
+        activeConference?.endDate ||
+        activeConference?.key_dates?.conferenceEnddate ||
+        '';
     const handleSoftDelete = (index) => {
         // Use slice to remove only the selected index
         setDisplayedTickets((prevTickets) => [
@@ -169,22 +183,59 @@ const CheckoutMain = ({
         setTotalcount(totalQuantity); // Update state with totalQuantity
     }, [spanroute]);
     useEffect(() => {
-        if (spanroute?.inpersonSpanrole) {
-            const formatDate = (dateStr) => {
-                const date = moment(dateStr, "DD MMM'YY");
-                return date.format("MMM  D").replace(' ', '');
-            };
-            const formattedDate = formatDate(spanroute?.inpersonSpanrole?.startdate);
-            const formatDateEnd = (dateStr) => {
-                console.log(dateStr, "datestr-------");
-                const date = moment(dateStr, "DMMM,YYYY");
-                return date.format("MMM D, YYYY");
-            };
-            const formattedDateend = formatDateEnd(spanroute?.inpersonSpanrole?.enddate);
-            setFormDate(formattedDate);
-            setEndDate(formattedDateend);
+        const parseDate = (dateStr) => {
+            if (!dateStr) return null;
+            const parsed = moment(dateStr, [
+                "DD MMM, YYYY",
+                "DD MMM YYYY",
+                "DD MMM'YY",
+                "D MMM, YYYY",
+                "D MMM YYYY",
+                "DMMM,YYYY",
+                moment.ISO_8601,
+            ], true);
+            return parsed.isValid() ? parsed : null;
+        };
+
+        const startMoment = parseDate(conferenceStartDate);
+        const endMoment = parseDate(conferenceEndDate);
+
+        setFormDate(startMoment ? startMoment.format("MMM D") : "");
+        setEndDate(endMoment ? endMoment.format("MMM D, YYYY") : "");
+    }, [conferenceEndDate, conferenceStartDate])
+
+    const conferenceDateLabel = (() => {
+        if (conferenceStartDate && conferenceEndDate) {
+            const formattedRange = FormatDateZone(conferenceStartDate, conferenceEndDate);
+            if (formattedRange) return formattedRange;
+            if (formDate && endDate) return `${formDate} - ${endDate}`;
         }
-    }, [spanroute?.inpersonSpanrole])
+        if (conferenceStartDate) {
+            const parsed = moment(conferenceStartDate, [
+                "DD MMM, YYYY",
+                "DD MMM YYYY",
+                "DD MMM'YY",
+                "D MMM, YYYY",
+                "D MMM YYYY",
+                "DMMM,YYYY",
+                moment.ISO_8601,
+            ], true);
+            if (parsed.isValid()) return parsed.format("MMM DD, YYYY");
+        }
+        if (conferenceEndDate) {
+            const parsed = moment(conferenceEndDate, [
+                "DD MMM, YYYY",
+                "DD MMM YYYY",
+                "DD MMM'YY",
+                "D MMM, YYYY",
+                "D MMM YYYY",
+                "DMMM,YYYY",
+                moment.ISO_8601,
+            ], true);
+            if (parsed.isValid()) return parsed.format("MMM DD, YYYY");
+        }
+        return "";
+    })();
     function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
@@ -266,7 +317,7 @@ const CheckoutMain = ({
                         {`${spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName}`}
                     </Text>
                 </View>
-                {spanroute?.inpersonSpanrole?.startdate ? <View
+                {conferenceDateLabel ? <View
                     style={{
                         paddingVertical: normalize(3)
                     }}>
@@ -277,7 +328,7 @@ const CheckoutMain = ({
                             color: '#000000',
                             paddingHorizontal: normalize(7),
                         }}>
-                        {spanroute?.inpersonSpanrole?.startdate ? `${formDate} - ${endDate}` : null}
+                        {conferenceDateLabel}
                     </Text>
                 </View> : null}
                 {spanroute?.inpersonSpanrole?.location ? <View

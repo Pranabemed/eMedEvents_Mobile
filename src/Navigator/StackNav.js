@@ -126,6 +126,7 @@ import AddMobile from '../Screen/Auth/AddMobile';
 import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
 import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Analytics';
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
+import { useSelector } from 'react-redux';
 const StackNav = props => {
   const [conn, setConn] = useState("")
   const Stack = createStackNavigator();
@@ -329,6 +330,9 @@ const StackNav = props => {
   const isRedirectingToWeb = useRef(false);
   const isExternalNavigationInProgress = useRef(false);
   const initialUrlHandled = useRef(false);
+  const lastProcessedUrl = useRef(null);
+  const lastProcessedTime = useRef(0);
+  const AuthReducer = useSelector(state => state.AuthReducer);
 
   const safeDecode = useCallback((value) => {
     try {
@@ -585,6 +589,16 @@ const StackNav = props => {
   const handleDeepLink = useCallback(async (url) => {
     if (!url) return;
     const trimmedUrl = url.trim();
+
+    // Prevent duplicate navigation / processing within 2 seconds for the same URL
+    const now = Date.now();
+    if (lastProcessedUrl.current === trimmedUrl && (now - lastProcessedTime.current) < 2000) {
+      console.log('[DeepLink] Ignoring duplicate URL trigger:', trimmedUrl);
+      return;
+    }
+    lastProcessedUrl.current = trimmedUrl;
+    lastProcessedTime.current = now;
+
     console.log('🌍 Incoming URL:', trimmedUrl);
 
     const {
@@ -624,18 +638,48 @@ const StackNav = props => {
       AsyncStorage.getItem(constants.WHOLEDATA),
     ]);
 
-    // 🔥 Only open in-app if URL is internal AND user is logged in
-    const shouldOpenStatewebcast = isInternalLink && !!token;
+    // Parse host to check if it is eMedEvents
+    let isEmedHost = false;
+    try {
+      const parsedUrl = new URL(resolvedUrl);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      isEmedHost = hostname.includes('emedevents.com') || hostname.includes('emedevents.net');
+    } catch (e) {
+      if (resolvedUrl.includes('emedevents.com') || resolvedUrl.includes('emedevents.net')) {
+        isEmedHost = true;
+      }
+    }
 
-    console.log('[DeepLink] Verification LOG:', {
-      url: normalizedUrl,
-      resolvedUrl,
-      isInternal: isInternalLink,
+    // If it's not an eMedEvents link, open in external browser
+    if (!isEmedHost) {
+      console.log('[DeepLink] External link redirected to browser:', resolvedUrl);
+      openExternalBrowser(resolvedUrl);
+      return;
+    }
+
+    // Determine if the screen/URL requires authentication
+    // Guest-permitted internal screens are the webcast/conference details pages
+    const isGuestPermitted = isInternalLink;
+    const requiresAuthentication = !isGuestPermitted;
+
+    console.log('[DeepLink] Authentication check:', {
       hasToken: !!token,
-      finalChoice: shouldOpenStatewebcast ? 'APP' : 'BROWSER'
+      isGuestPermitted,
+      requiresAuthentication,
     });
 
-    if (shouldOpenStatewebcast) {
+    if (requiresAuthentication && !token) {
+      // 🔒 Storing the pending deep link for post-login redirection
+      console.log('[DeepLink] Screen requires auth and no token. Storing pending deep link:', resolvedUrl);
+      await AsyncStorage.setItem('PENDING_DEEP_LINK', resolvedUrl);
+      
+      // Redirect to Login
+      navigateToScreen("Login");
+      return;
+    }
+
+    // If we reach here: either (1) user is logged in OR (2) screen is guest-permitted
+    if (isGuestPermitted) {
       // Check if navigation is ready (especially on cold launch)
       if (!isNavigationReady) {
         console.log('[DeepLink] Navigation not ready, storing pending link');
@@ -644,11 +688,18 @@ const StackNav = props => {
       }
 
       navigateToScreen("Statewebcast", {
-        webCastURL: { webCastURL: slug, creditData: dashboard, refID: refID }
+        webCastURL: {
+          webCastURL: slug,
+          creditData: dashboard,
+          refID: refID,
+          Realback: token ? undefined : 'guest'
+        }
       });
     } else {
-      console.log('[DeepLink] Link redirected to browser (either external or user not logged in)');
-      openExternalBrowser(resolvedUrl);
+      // If user is logged in and it's a protected internal link, map to appropriate authenticated screen
+      // Since it's a general protected page (like /profile or /dashboard), navigate to TabNav
+      console.log('[DeepLink] User logged in, navigating to TabNav for internal protected link:', resolvedUrl);
+      navigateToScreen("TabNav");
     }
   }, [isNavigationReady, navigateToScreen, openExternalBrowser, parseDeepLinkDetails]);
 
@@ -679,6 +730,28 @@ const StackNav = props => {
       setPendingDeepLink(null); // clear after processing
     }
   }, [handleDeepLink, isAuthReady, isNavigationReady, pendingDeepLink]);
+
+  const checkAndProcessPendingDeepLinkAfterLogin = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem(constants.TOKEN);
+      if (token) {
+        const pendingUrl = await AsyncStorage.getItem('PENDING_DEEP_LINK');
+        if (pendingUrl) {
+          console.log('[DeepLink] Found pending deep link after login:', pendingUrl);
+          await AsyncStorage.removeItem('PENDING_DEEP_LINK');
+          handleDeepLink(pendingUrl);
+        }
+      }
+    } catch (e) {
+      console.log('[DeepLink] Error checking pending link after login:', e);
+    }
+  }, [handleDeepLink]);
+
+  useEffect(() => {
+    if (isAuthReady && isNavigationReady) {
+      checkAndProcessPendingDeepLinkAfterLogin();
+    }
+  }, [AuthReducer?.status, isAuthReady, isNavigationReady, checkAndProcessPendingDeepLinkAfterLogin]);
 
   const linking = {
     prefixes: [
