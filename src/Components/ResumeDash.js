@@ -128,9 +128,9 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
                                 }}
                             >
                                 {`${parseFloat(d?.points) || 0} ${d?.name &&
-                                        d?.name?.toLowerCase() == "contact hour"
-                                        ? "Contact Hour(s)"
-                                        : d?.name || ""
+                                    d?.name?.toLowerCase() == "contact hour"
+                                    ? "Contact Hour(s)"
+                                    : d?.name || ""
                                     }`}
                             </Text>
                         </View>

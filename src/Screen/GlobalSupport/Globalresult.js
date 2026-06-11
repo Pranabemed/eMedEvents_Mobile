@@ -54,6 +54,50 @@ const getResultPriceLabel = item => {
     return `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}`;
 };
 
+const getResultTypeLabel = item => {
+    const rawType = String(
+        item?.eventType ||
+        item?.event_type ||
+        item?.conference_type ||
+        item?.conference_type_text ||
+        item?.type ||
+        ''
+    ).trim();
+    
+    const lower = rawType.toLowerCase();
+    if (lower === 'webcst' || lower === 'webcast') {
+        return 'Webcast';
+    }
+    if (lower === 'in-person' || lower === 'inperson') {
+        return 'In-person';
+    }
+    return rawType;
+};
+
+const getResultCreditLabel = item => {
+    const rawCme = item?.display_cme || item?.cmeLabel || item?.credit || item?.credits || '';
+    if (rawCme) {
+        const cleaned = String(rawCme).trim();
+        if (/^\d+(\.\d+)?$/.test(cleaned)) {
+            return `${cleaned} CME / CE Credit(s)`;
+        }
+        return cleaned.replace(/contact hour/ig, 'Contact Hour(s)').trim();
+    }
+    if (Array.isArray(item?.cme_points_popovar) && item.cme_points_popovar.length) {
+        return item.cme_points_popovar
+            .map(point => {
+                const count = parseFloat(point?.points) || 0;
+                const name = point?.name && point?.name.toLowerCase() === 'contact hour'
+                    ? 'Contact Hour(s)'
+                    : point?.name || '';
+                return `${count} ${name}`.trim();
+            })
+            .filter(Boolean)
+            .join(' | ');
+    }
+    return '';
+};
+
 const Globalresult = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -118,6 +162,13 @@ const Globalresult = (props) => {
         props?.route?.params?.trig?.creditData?.fromGuestSpecialitySearch ||
         props?.route?.params?.trig?.CreditData?.fromGuestSpecialitySearch ||
         (props?.route?.params?.trig?.Realback === 'guest' && props?.route?.params?.trig?.rqstType === 'specialityconferences')
+    );
+    const isGuestFlow = Boolean(
+        isGuestCmeFlow ||
+        isGuestSpecialityFlow ||
+        props?.route?.params?.trig?.Realback === 'guest' ||
+        props?.route?.params?.Realback === 'guest' ||
+        !AuthReducer?.loginResponse?.token
     );
     const stateList = Array.isArray(AuthReducer?.stateResponse?.data)
         ? AuthReducer?.stateResponse?.data
@@ -581,9 +632,12 @@ const Globalresult = (props) => {
         }
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
     const searchGlobalitem = ({ item, index }) => {
-        console.log(item, "item---------")
         const buttonLabel = getResultButtonLabel(item);
         const priceLabel = getResultPriceLabel(item);
+        const guestCreditLabel = getResultCreditLabel(item);
+        const guestTypeLabel = getResultTypeLabel(item);
+        const guestPrimaryLabel = guestCreditLabel;
+        const guestSecondaryLabel = guestTypeLabel;
         const hasBottomRow = Boolean(buttonLabel || priceLabel);
         const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
@@ -662,10 +716,10 @@ const Globalresult = (props) => {
         };
         return (
             <View>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize((isGuestCmeFlow || isGuestSpecialityFlow) ? 8 : 10) }}>
-                    <TouchableOpacity onPress={() => { handleUrl(item) }} style={(isGuestCmeFlow || isGuestSpecialityFlow) ? { width: '100%' } : null}>
+                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(isGuestFlow ? 8 : 10) }}>
+                    <TouchableOpacity onPress={() => { handleUrl(item) }} style={isGuestFlow ? { width: '100%' } : null}>
                         <View
-                            style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultCard : {
+                            style={isGuestFlow ? styles.guestResultCard : {
                                 flexDirection: "column",
                                 width: normalize(290),
                                 borderRadius: normalize(10),
@@ -681,12 +735,12 @@ const Globalresult = (props) => {
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                     alignItems: "center",
-                                    width: (isGuestCmeFlow || isGuestSpecialityFlow) ? '100%' : '106%'
+                                    width: isGuestFlow ? '100%' : '106%'
                                 }}>
                                     <View style={{ flex: 1, marginRight: 10 }}>
                                         <View>
                                             <Text
-                                                style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultTitle : {
+                                                style={isGuestFlow ? styles.guestResultTitle : {
                                                     fontFamily: Fonts.InterSemiBold,
                                                     fontSize: 16,
                                                     color: "#000000",
@@ -704,31 +758,63 @@ const Globalresult = (props) => {
                                 </View>
                             </View>
                             <View style={{ justifyContent: "flex-start", alignItems: "flex-start", paddingVertical: normalize(4) }}>
-                                <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultOrg : { fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}</Text>
+                                <Text style={isGuestFlow ? styles.guestResultOrg : { fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}</Text>
                             </View>
                             {(item?.startdate || item?.enddate || item?.location) && (<View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
                                 {renderLocationAndDates()}
                             </View>)}
-                            {hasBottomRow && <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
-                            {!hasBottomRow ? null : <View style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", alignItems: "center", marginTop: normalize(3) }}>
-                                <View style={{ flex: 1, justifyContent: 'center' }}>
+                            {(guestCreditLabel || guestTypeLabel) ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: normalize(4) }}>
+                                    {guestCreditLabel ? (
+                                        <Text style={{
+                                            fontFamily: Fonts.InterSemiBold,
+                                            fontSize: 14,
+                                            fontWeight: 'bold',
+                                            color: '#666666'
+                                        }}>
+                                            {guestCreditLabel}
+                                        </Text>
+                                    ) : null}
+                                    {guestCreditLabel && guestTypeLabel ? (
+                                        <View style={{
+                                            backgroundColor: Colorpath.ButtonColr,
+                                            height: normalize(10),
+                                            width: normalize(1),
+                                            marginHorizontal: normalize(10)
+                                        }} />
+                                    ) : null}
+                                    {guestTypeLabel ? (
+                                        <Text style={{
+                                            fontFamily: Fonts.InterSemiBold,
+                                            fontSize: 14,
+                                            fontWeight: 'bold',
+                                            color: '#666666'
+                                        }}>
+                                            {guestTypeLabel}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            ) : null}
+                            {hasBottomRow && <View style={isGuestFlow ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
+                            {!hasBottomRow ? null : <View style={isGuestFlow ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", alignItems: "center", marginTop: normalize(3) }}>
+                                <View style={isGuestFlow ? styles.guestResultPrimaryWrap : { flex: 1, justifyContent: 'center' }}>
                                     {buttonLabel ? (
                                         <Text
                                             numberOfLines={1}
-                                            style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultButtonText : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold" }}
+                                            style={isGuestFlow ? styles.guestResultButtonText : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold" }}
                                         >
                                             {buttonLabel}
                                         </Text>
                                     ) : null}
                                 </View>
-                                {buttonLabel && priceLabel ? (
-                                    <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPipe : { marginHorizontal: normalize(10), fontFamily: Fonts.InterBold, fontSize: 16, color: "#9CA3AF", fontWeight: "bold", textAlign: "center" }}>
+                                {(buttonLabel && priceLabel) ? (
+                                    <Text style={isGuestFlow ? styles.guestResultPipe : { marginHorizontal: normalize(10), fontFamily: Fonts.InterBold, fontSize: 16, color: "#9CA3AF", fontWeight: "bold", textAlign: "center" }}>
                                         |
                                     </Text>
                                 ) : null}
-                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                                <View style={isGuestFlow ? styles.guestResultSecondaryWrap : { flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
                                     {priceLabel ? (
-                                        <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                                        <Text numberOfLines={1} style={isGuestFlow ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
                                             {priceLabel}
                                         </Text>
                                     ) : null}
@@ -785,7 +871,7 @@ const Globalresult = (props) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: (isGuestCmeFlow || isGuestSpecialityFlow) ? '#DCEBFA' : Colorpath.Pagebg }}>
+            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: isGuestFlow ? '#DCEBFA' : Colorpath.Pagebg }}>
                 <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
@@ -843,22 +929,22 @@ const Globalresult = (props) => {
                                 setPageNum(0);
                                 setSortedFall(!sortedFall);
                             }}
-                            style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
+                            style={isGuestFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
                         >
                             <View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
                                 <Text style={[
-                                    (isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
+                                    isGuestFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
                                     { marginBottom: 0 }
                                 ]}>
                                     {`Showing (${totalResults || ""}) Results for`}
                                 </Text>
                                 <View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
-                                    <Text style={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
+                                    <Text style={isGuestFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
                                     <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
                                 </View>
                             </View>
                         </TouchableOpacity>
-                        {(isGuestCmeFlow || isGuestSpecialityFlow) && CMEReducer?.cmeCourseResponse?.header_title ? (
+                        {isGuestFlow && CMEReducer?.cmeCourseResponse?.header_title ? (
                             <View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
                                 <Text style={styles.guestSummaryTitle}>
                                     {CMEReducer?.cmeCourseResponse?.header_title}
@@ -867,7 +953,7 @@ const Globalresult = (props) => {
                         ) : null}
                     </>
                 )}
-                {!isRouteRefreshing && !isGuestCmeFlow && !isGuestSpecialityFlow && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && (
+                {!isRouteRefreshing && !isGuestFlow && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && (
                     <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
                         <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
                             {CMEReducer?.cmeCourseResponse?.header_title}
@@ -883,7 +969,7 @@ const Globalresult = (props) => {
                         keyExtractor={(item, index) => String(item?.id ?? item?.detailpage_url ?? index)}
                         onEndReached={fetchMore}
                         onEndReachedThreshold={0.3}
-                        contentContainerStyle={(isGuestCmeFlow || isGuestSpecialityFlow) ? styles.guestListContent : { paddingBottom: normalize(200) }}
+                        contentContainerStyle={isGuestFlow ? styles.guestListContent : { paddingBottom: normalize(200) }}
                         scrollEventThrottle={16}
                         ListFooterComponent={
                             loading ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
@@ -1188,30 +1274,44 @@ const styles = StyleSheet.create({
     },
     guestResultPriceRow: {
         flexDirection: "row",
-        justifyContent: "flex-end",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginTop: normalize(10),
+    },
+    guestResultPrimaryWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        minWidth: 0,
+    },
+    guestResultSecondaryWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        minWidth: 0,
     },
     guestResultPrice: {
         fontFamily: Fonts.InterBold,
-        fontSize: 16,
+        fontSize: 15,
         color: Colorpath.ButtonColr,
+        flexShrink: 1,
+        textAlign: 'right',
     },
     guestResultPipe: {
-        marginHorizontal: normalize(10),
+        marginHorizontal: normalize(8),
         fontFamily: Fonts.InterBold,
-        fontSize: 22,
+        fontSize: 18,
         color: '#9CA3AF',
         fontWeight: 'bold',
         textAlign: 'center',
-        lineHeight: normalize(24),
+        lineHeight: normalize(20),
     },
     guestResultButtonText: {
-        flex: 1,
-        marginRight: normalize(10),
+        marginRight: normalize(8),
         fontFamily: Fonts.InterSemiBold,
         fontSize: 15,
         color: '#111827',
         fontWeight: 'bold',
+        flexShrink: 1,
     },
     centerModal: {
         justifyContent: 'center',

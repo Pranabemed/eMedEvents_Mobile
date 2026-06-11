@@ -1,4 +1,4 @@
-import { Image, Text, View, Platform, TouchableOpacity, ScrollView, Dimensions, useWindowDimensions, Alert, StyleSheet, TextInput, BackHandler } from 'react-native';
+import { Image, Text, View, Platform, TouchableOpacity, ScrollView, Dimensions, useWindowDimensions, Alert, StyleSheet, TextInput, BackHandler, Linking } from 'react-native';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -55,6 +55,8 @@ const Statewebcast = props => {
     const isFocused = useIsFocused();
     console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
     const dispatch = useDispatch();
+    const browserFallbackInProgressRef = useRef(false);
+    const browserFallbackCompletedRef = useRef(false);
     const [refID, setRefID] = useState(props?.route?.params?.webCastURL?.refID || null);
     const [viewmore, setViewmore] = useState("");
     const [viewmoreac, setViewmoreac] = useState("");
@@ -100,6 +102,56 @@ const Statewebcast = props => {
         );
     }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
     const hideGuestCartIcon = props?.route?.params?.webCastURL?.Realback === "guest";
+    const isGuestWebcastFlow = props?.route?.params?.webCastURL?.Realback === "guest";
+
+    const normalizeUrlCandidate = useCallback((value) => {
+        if (typeof value !== "string") return "";
+
+        const trimmedValue = value.trim();
+        if (!trimmedValue) return "";
+
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmedValue)) {
+            return trimmedValue;
+        }
+
+        return `https://${trimmedValue}`;
+    }, []);
+
+    const isMeaningfulWebcastPayload = useCallback((payload) => {
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            return false;
+        }
+
+        if (payload?.success === false) {
+            return false;
+        }
+
+        return Boolean(
+            payload?.conferenceId ||
+            payload?.conferenceTypeText ||
+            payload?.detailpage_url ||
+            payload?.emed_url ||
+            payload?.conference_url ||
+            payload?.title ||
+            payload?.course_title ||
+            payload?.overView ||
+            (Array.isArray(payload?.registrationTickets) && payload.registrationTickets.length > 0) ||
+            (Array.isArray(payload?.topics) && payload.topics.length > 0) ||
+            (Array.isArray(payload?.speakers) && payload.speakers.length > 0)
+        );
+    }, []);
+
+    const getValidatedWebcastPayload = useCallback((responsePayload) => {
+        const candidates = [responsePayload?.data, responsePayload];
+
+        for (const candidate of candidates) {
+            if (isMeaningfulWebcastPayload(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }, [isMeaningfulWebcastPayload]);
 
     const resetToHome = useCallback(() => {
         props.navigation.dispatch(
@@ -118,6 +170,50 @@ const Statewebcast = props => {
 
         props.navigation.navigate('GuestUser');
     }, [props.navigation]);
+
+    const guestFallbackUrl = useMemo(() => {
+        return normalizeUrlCandidate(
+            props?.route?.params?.webCastURL?.detailpage_url ||
+            props?.route?.params?.webCastURL?.shareUrl ||
+            props?.route?.params?.webCastURL?.webCastURL ||
+            props?.route?.params?.newCast ||
+            webcastdeatils?.detailpage_url ||
+            webcastdeatils?.emed_url ||
+            ""
+        );
+    }, [normalizeUrlCandidate, props?.route?.params?.newCast, props?.route?.params?.webCastURL, webcastdeatils?.detailpage_url, webcastdeatils?.emed_url]);
+
+    const openGuestFallbackInBrowser = useCallback(async () => {
+        if (!isGuestWebcastFlow || !guestFallbackUrl) {
+            setLoading(false);
+            goBackToGuestUser();
+            return;
+        }
+
+        if (browserFallbackInProgressRef.current || browserFallbackCompletedRef.current) {
+            return;
+        }
+
+        browserFallbackInProgressRef.current = true;
+
+        try {
+            const supported = await Linking.canOpenURL(guestFallbackUrl);
+
+            if (!supported) {
+                throw new Error("Unsupported webcast URL");
+            }
+
+            await Linking.openURL(guestFallbackUrl);
+        } catch (error) {
+            console.log("Guest webcast fallback failed:", error);
+            showErrorAlert("Unable to open conference link", error?.message || error);
+        } finally {
+            browserFallbackCompletedRef.current = true;
+            browserFallbackInProgressRef.current = false;
+            setLoading(false);
+            goBackToGuestUser();
+        }
+    }, [goBackToGuestUser, guestFallbackUrl, isGuestWebcastFlow]);
 
     const boardCast = useCallback(() => {
         if (props?.route?.params?.webCastURL?.Realback === "guest") {
@@ -193,18 +289,22 @@ const Statewebcast = props => {
                 dispatch(webcastDeatilsRequest(obj));
             })
             .catch((err) => {
+                if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                    return;
+                }
                 setLoading(false);
                 showErrorAlert("Please connect to internet", err)
             });
-    }, [dispatch, requestedConferenceUrl]);
+    }, [dispatch, isGuestWebcastFlow, openGuestFallbackInBrowser, requestedConferenceUrl]);
     useEffect(() => {
         if (requestedConferenceUrl) return;
-        const cachedDetails = WebcastReducer?.webcastDeatilsResponse;
-        if (cachedDetails && Object.keys(cachedDetails).length > 0) {
+        const cachedDetails = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
+        if (cachedDetails) {
             setWebcastdeatils(cachedDetails);
         }
         setLoading(false);
-    }, [requestedConferenceUrl, WebcastReducer?.webcastDeatilsResponse]);
+    }, [getValidatedWebcastPayload, requestedConferenceUrl, WebcastReducer?.webcastDeatilsResponse]);
 
     // useEffect(() => {
     //     if (webcastdeatils) {
@@ -297,7 +397,7 @@ const Statewebcast = props => {
                 .then(() => {
                     dispatch(cartcountWebcastRequest({}));
                     // Silent background refresh — don't blank screen (no setLoading/setWebcastdeatils null)
-                    if (requestedConferenceUrl) {
+                    if (requestedConferenceUrl && !browserFallbackCompletedRef.current && !browserFallbackInProgressRef.current) {
                         dispatch(webcastDeatilsRequest({ "conference_url": requestedConferenceUrl }));
                     }
                 })
@@ -492,8 +592,8 @@ const Statewebcast = props => {
             : Number(finalPrice.toFixed(2));
     };
     const hasValidWebcastData = useMemo(() => {
-        return Boolean(webcastdeatils && typeof webcastdeatils === "object" && Object.keys(webcastdeatils).length > 0);
-    }, [webcastdeatils]);
+        return Boolean(getValidatedWebcastPayload(webcastdeatils));
+    }, [getValidatedWebcastPayload, webcastdeatils]);
     useEffect(() => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const ticket = webcastdeatils.registrationTickets?.[0];
@@ -511,14 +611,24 @@ const Statewebcast = props => {
             case 'WebCast/webcastDeatilsRequest':
                 setLoading(true);
                 break;
-            case 'WebCast/webcastDeatilsSuccess':
+            case 'WebCast/webcastDeatilsSuccess': {
                 console.log("webcastdeatilsfollowed>>>>", WebcastReducer?.webcastDeatilsResponse);
-                setLoading(false);
-                if (WebcastReducer?.webcastDeatilsResponse && Object.keys(WebcastReducer?.webcastDeatilsResponse).length > 0) {
-                    setWebcastdeatils(WebcastReducer?.webcastDeatilsResponse);
+                const validatedWebcastPayload = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
+                if (validatedWebcastPayload) {
+                    setWebcastdeatils(validatedWebcastPayload);
+                    setLoading(false);
+                } else if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                } else {
+                    setLoading(false);
                 }
                 break;
+            }
             case 'WebCast/webcastDeatilsFailure':
+                if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                    break;
+                }
                 setLoading(false);
                 Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel", onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save", onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
                 break;
@@ -530,7 +640,7 @@ const Statewebcast = props => {
                 }
                 break;
         }
-    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, webcastdeatils, urltrack, props.navigation]);
+    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, getValidatedWebcastPayload, isGuestWebcastFlow, openGuestFallbackInBrowser, webcastdeatils, urltrack, props.navigation]);
     return (
         <>
             <MyStatusBar

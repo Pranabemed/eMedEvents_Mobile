@@ -9,7 +9,7 @@ import StateRequireditem from './StateRequired';
 import ResumeDash from './ResumeDash';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 
-const Nonphysicianprofile = ({allNoDetData, addit, finddata, handleButtonPress, navigation, DashboardReducer }) => {
+const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress, navigation, DashboardReducer }) => {
     const stateHit = finddata?.my_recommendations?.mandatory_courses;
     const specHit = finddata?.my_recommendations?.speciality_courses;
     const [valourse, setValcourse] = useState(0);

@@ -7,7 +7,7 @@
  * Last Modified: 2026-06-03
  * Dependencies: react, react-native, @react-navigation/native, react-redux, ../../Utils/Helpers/NetInfo, ../../Utils/Helpers/Toast, ../../Redux/Reducers/GuestReducer, ../../Redux/Reducers/AuthReducer, ../../Redux/Reducers/CreditVaultReducer, ../../Redux/Reducers/CMEReducer, ./GuestUserView, ../../Themes/Colorpath
  */
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
@@ -20,6 +20,8 @@ import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
 import { StyleSheet, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
+import { AppContext } from '../GlobalSupport/AppContext';
+import IntOff from '../../Utils/Helpers/IntOff';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
@@ -71,6 +73,7 @@ const getCountryFromIP = async ip => {
 const GuestUser = props => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
+  const { isConnected } = useContext(AppContext);
   const GuestReducer = useSelector(state => state.GuestReducer);
   const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
 
@@ -92,6 +95,30 @@ const GuestUser = props => {
 
   const shouldResetRef = useRef(false);
   const guestHomeRequestInFlightRef = useRef(false);
+  const guestProtectedRoutes = useMemo(() => new Set([
+    'Statewebcast',
+    'Globalresult',
+    'BrowseScreen',
+    'GuestSpecialitySearch',
+    'SearchScreen',
+    'SearchResult',
+    'SpeakerProfile',
+    'CMERequirement',
+    'CheckMembership',
+  ]), []);
+
+  const canUseGuestNetworkFlow = isConnected !== false;
+
+  const navigateIfOnline = useCallback((screenName, params) => {
+    if (!screenName) return false;
+
+    if (!canUseGuestNetworkFlow && guestProtectedRoutes.has(screenName)) {
+      return false;
+    }
+
+    props.navigation.navigate(screenName, params);
+    return true;
+  }, [canUseGuestNetworkFlow, guestProtectedRoutes, props.navigation]);
 
   /** Description: Resets guest-only UI state. Purpose: Prevents stale selections across navigation sessions. */
   const resetGuestSelections = useCallback(() => {
@@ -131,7 +158,16 @@ const GuestUser = props => {
     let isMounted = true;
 
     const fetchGuestUsaStates = async () => {
+      if (!canUseGuestNetworkFlow) {
+        if (isMounted) {
+          setGuestUsaStates([]);
+          setIsUsaUser(false);
+        }
+        return;
+      }
+
       try {
+        await connectionrequest();
         const ipAddress = getPublicIP();
         const countryCode = await getCountryFromIP(ipAddress);
 
@@ -167,7 +203,7 @@ const GuestUser = props => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [canUseGuestNetworkFlow]);
 
   useEffect(() => {
     if (
@@ -204,6 +240,11 @@ const GuestUser = props => {
 
   useEffect(() => {
     if (!isFocused) return;
+    if (!canUseGuestNetworkFlow) {
+      guestHomeRequestInFlightRef.current = false;
+      setIsGuestHomeLoading(false);
+      return;
+    }
     setIsGuestHomeLoading(true);
     guestHomeRequestInFlightRef.current = true;
     connectionrequest()
@@ -216,7 +257,7 @@ const GuestUser = props => {
         setIsGuestHomeLoading(false);
         showErrorAlert('Please connect to internet', err);
       });
-  }, [dispatch, isFocused]);
+  }, [canUseGuestNetworkFlow, dispatch, isFocused]);
   useEffect(() => {
     if (GuestReducer?.status === 'Guest/HomelistRequest' && guestHomeRequestInFlightRef.current) {
       setIsGuestHomeLoading(true);
@@ -252,23 +293,31 @@ const GuestUser = props => {
   useEffect(() => {
     const stateId = getStateId(selectedState);
     if (shouldOpenCmeChecklist && selectedProfession && stateId != null) {
-      props.navigation.navigate('CMERequirement', {
+      const didNavigate = navigateIfOnline('CMERequirement', {
         initialState: selectedState,
         initialProfession: selectedProfession,
       });
-      resetGuestSelections();
+      if (didNavigate) {
+        resetGuestSelections();
+      }
     }
-  }, [props.navigation, selectedProfession, selectedState, shouldOpenCmeChecklist, resetGuestSelections]);
+  }, [navigateIfOnline, selectedProfession, selectedState, shouldOpenCmeChecklist, resetGuestSelections]);
 
   /** Description: Opens the featured activity detail screen. Purpose: Centralizes guest activity routing. */
   const openFeaturedActivity = detailpageUrl => {
+    if (!canUseGuestNetworkFlow) return;
     if (!detailpageUrl) return;
     const slug = String(detailpageUrl).split('/').pop();
     if (!slug) return;
-    props.navigation.navigate('Statewebcast', {
+    navigateIfOnline('Statewebcast', {
       webCastURL: { webCastURL: slug, shareUrl: detailpageUrl, detailpage_url: detailpageUrl, Realback: 'guest' },
     });
   };
+
+  const guestNavigation = useMemo(() => ({
+    ...props.navigation,
+    navigate: (screenName, params) => navigateIfOnline(screenName, params),
+  }), [navigateIfOnline, props.navigation]);
 
   const homeData =
     GuestReducer?.HomelistResponse?.data && typeof GuestReducer?.HomelistResponse?.data === 'object'
@@ -282,7 +331,7 @@ const GuestUser = props => {
   const stateList = guestUsaStates;
 
   const guest = {
-    navigation: props.navigation,
+    navigation: guestNavigation,
     homeData,
     aboutUsData,
     homeStatus: GuestReducer?.status,
@@ -331,7 +380,7 @@ const GuestUser = props => {
 
   return (
     <View style={styles.container}>
-      <GuestUserView guest={guest} />
+      {canUseGuestNetworkFlow ? <GuestUserView guest={guest} /> : <IntOff />}
     </View>
   );
 };

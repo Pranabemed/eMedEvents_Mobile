@@ -631,6 +631,7 @@ export default StyleSheet.create({
   popularCard: {
     width: '100%',
     maxWidth: normalize(390),
+    minHeight: normalize(220),
     borderRadius: 24,
     paddingHorizontal: 18,
     paddingVertical: 18,
@@ -692,6 +693,7 @@ export default StyleSheet.create({
   featureCard: {
     width: '100%',
     maxWidth: normalize(310),
+    minHeight: normalize(318),
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     borderWidth: 1,
@@ -1092,6 +1094,54 @@ export default StyleSheet.create({
   chipScrollContent: {
     paddingBottom: 10,
     paddingRight: 16,
+  },
+  specialityScrollWrap: {
+    position: 'relative',
+  },
+  specialityHintWrap: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 10,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    width: 72,
+  },
+  specialityHintFade: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 72,
+    backgroundColor: 'rgba(246, 247, 251, 0.96)',
+  },
+  specialityHintBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: '#D7E3FF',
+    marginRight: 6,
+  },
+  specialityHintText: {
+    fontFamily: Fonts.InterSemiBold,
+    color: '#2C4DB9',
+    fontSize: 11,
+  },
+  specialityHintArrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 3,
+  },
+  specialityHintArrowText: {
+    fontFamily: Fonts.InterBold,
+    color: '#2C4DB9',
+    fontSize: 12,
+    marginLeft: 2,
   },
   chipColumn: {
     marginRight: 10,

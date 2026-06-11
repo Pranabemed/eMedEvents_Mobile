@@ -8,8 +8,8 @@
  * Dependencies: react, react-native, react-native-vector-icons/MaterialIcons, ../../../Themes/Imagepath, ../../CMERequirement/ProfessionDropdown, ../../HomePage/GuestUser.styles, ./GuestUserShared
  */
 
-import React, { memo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { memo, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Imagepath from '../../../../Themes/Imagepath';
 import ProfessionDropdown from '../../../CMERequirement/ProfessionDropdown';
 import styles from '../../GuestUser.styles';
@@ -67,6 +67,91 @@ const GuestSpecialitySectionComponent = ({
   specialityColumns,
 }) => {
   const [activeSpecialty, setActiveSpecialty] = useState(0);
+  const [showScrollHint, setShowScrollHint] = useState(specialityColumns.length > 1);
+  const scrollViewRef = useRef(null);
+  const autoHintPlayedRef = useRef(false);
+  const userInteractedRef = useRef(false);
+  const hintOpacity = useRef(new Animated.Value(specialityColumns.length > 1 ? 1 : 0)).current;
+  const arrowShift = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const shouldShowHint = specialityColumns.length > 1;
+    setShowScrollHint(shouldShowHint);
+    hintOpacity.setValue(shouldShowHint ? 1 : 0);
+  }, [hintOpacity, specialityColumns.length]);
+
+  useEffect(() => {
+    if (specialityColumns.length <= 1 || autoHintPlayedRef.current) return;
+
+    autoHintPlayedRef.current = true;
+
+    const startTimer = setTimeout(() => {
+      if (userInteractedRef.current) return;
+      scrollViewRef.current?.scrollTo({ x: 44, animated: true });
+    }, 700);
+
+    const returnTimer = setTimeout(() => {
+      if (userInteractedRef.current) return;
+      scrollViewRef.current?.scrollTo({ x: 0, animated: true });
+    }, 1400);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(returnTimer);
+    };
+  }, [specialityColumns.length]);
+
+  useEffect(() => {
+    Animated.timing(hintOpacity, {
+      toValue: showScrollHint ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [hintOpacity, showScrollHint]);
+
+  useEffect(() => {
+    if (specialityColumns.length <= 1 || !showScrollHint) {
+      arrowShift.stopAnimation();
+      arrowShift.setValue(0);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowShift, {
+          toValue: 10,
+          duration: 700,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(arrowShift, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+      arrowShift.setValue(0);
+    };
+  }, [arrowShift, showScrollHint, specialityColumns.length]);
+
+  const handleUserInteraction = () => {
+    userInteractedRef.current = true;
+  };
+
+  const handleScroll = event => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const canScrollMore = (contentSize.width - (contentOffset.x + layoutMeasurement.width)) > 24;
+    setShowScrollHint(canScrollMore);
+  };
+
   if (!specialityItems.length) return null;
 
   return (
@@ -86,32 +171,56 @@ const GuestSpecialitySectionComponent = ({
           })
         }
       />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScrollContent}>
-        {specialityColumns.map((column, columnIndex) => (
-          <View key={`speciality-column-${columnIndex}`} style={styles.chipColumn}>
-            {column.map(item => (
-              <TagChip
-                key={`${item.label}-${item.index}`}
-                label={item.label}
-                active={item.index === activeSpecialty}
-                width={width}
-                onPress={() => {
-                  setActiveSpecialty(item.index);
-                  navigation.navigate('Globalresult', {
-                    trig: {
-                      trig: item.label.toLowerCase().replace(/\s+/g, '-'),
-                      rqstType: 'specialityconferences',
-                      mainKey: 'conference_specialitiy',
-                      CreditData: '',
-                      Realback: 'cont',
-                    },
-                  });
-                }}
-              />
-            ))}
-          </View>
-        ))}
-      </ScrollView>
+      <View style={styles.specialityScrollWrap}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipScrollContent}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
+          onScrollBeginDrag={handleUserInteraction}
+          onTouchStart={handleUserInteraction}
+        >
+          {specialityColumns.map((column, columnIndex) => (
+            <View key={`speciality-column-${columnIndex}`} style={styles.chipColumn}>
+              {column.map(item => (
+                <TagChip
+                  key={`${item.label}-${item.index}`}
+                  label={item.label}
+                  active={item.index === activeSpecialty}
+                  width={width}
+                  onPress={() => {
+                    setActiveSpecialty(item.index);
+                    navigation.navigate('Globalresult', {
+                      trig: {
+                        trig: item.label.toLowerCase().replace(/\s+/g, '-'),
+                        rqstType: 'specialityconferences',
+                        mainKey: 'conference_specialitiy',
+                        CreditData: '',
+                        Realback: 'cont',
+                      },
+                    });
+                  }}
+                />
+              ))}
+            </View>
+          ))}
+        </ScrollView>
+        {specialityColumns.length > 1 ? (
+          <Animated.View pointerEvents="none" style={[styles.specialityHintWrap, { opacity: hintOpacity }]}>
+            <View style={styles.specialityHintFade} />
+            <View style={styles.specialityHintBadge}>
+              <Text style={styles.specialityHintText}>Swipe</Text>
+              <Animated.View style={[styles.specialityHintArrowRow, { transform: [{ translateX: arrowShift }] }]}>
+                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
+                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
+                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
+              </Animated.View>
+            </View>
+          </Animated.View>
+        ) : null}
+      </View>
     </>
   );
 };

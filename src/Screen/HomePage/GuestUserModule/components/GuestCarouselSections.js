@@ -45,11 +45,11 @@ const CarouselSectionComponent = ({
       <Pagination
         dotsLength={data.length}
         activeDotIndex={activeIndex}
-        containerStyle={styles.paginationContainer}
-        dotStyle={styles.activeDot}
-        inactiveDotStyle={styles.inactiveDot}
-        inactiveDotOpacity={0.4}
-        inactiveDotScale={0.8}
+        containerStyle={styles.livePaginationContainer}
+        dotStyle={styles.liveActiveDot}
+        inactiveDotStyle={styles.liveInactiveDot}
+        inactiveDotOpacity={0.8}
+        inactiveDotScale={1}
       />
     </View>
   );

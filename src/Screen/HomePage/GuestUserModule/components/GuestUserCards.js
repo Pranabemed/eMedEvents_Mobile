@@ -85,11 +85,11 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
   const visibleSpecialities = item?.showSpecialities ? allSpecialities.slice(0, 4) : [];
   const organizationLogo = getImageSource(
     item?.organizationLogo ||
-      item?.organization_imagepath ||
-      item?.organization_image ||
-      item?.organization_logo ||
-      item?.logo ||
-      item?.image,
+    item?.organization_imagepath ||
+    item?.organization_image ||
+    item?.organization_logo ||
+    item?.logo ||
+    item?.image,
   );
   const detailUrl = getText(
     item?.detailpageUrl,

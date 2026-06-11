@@ -5,28 +5,17 @@ import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import Imagepath from '../../Themes/Imagepath'
 import normalize from '../Helpers/Dimen';
-import StackNav from '../../Navigator/StackNav'
 import { AppContext } from '../../Screen/GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
-import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 const IntOff = (props) => {
     const {
-        isConnected,
         setIsConnected,
     } = useContext(AppContext);
-    const navi = useNavigation();
     const handleRot = () => {
-        const unsubscribe = NetInfo.addEventListener(state => {
+        NetInfo.fetch().then(state => {
             setIsConnected(state.isConnected);
-            if (state.isConnected) {
-                <StackNav />
-            }else{
-              navi.navigate("TabNav");
-            }
         });
-
-        return () => unsubscribe();
     }
     return (
         <SafeAreaView style={stylesd.container}>

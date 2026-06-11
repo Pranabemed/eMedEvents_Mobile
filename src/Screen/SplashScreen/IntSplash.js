@@ -21,14 +21,21 @@ export default function SplashInt(props) {
     const handleNavigation = async () => {
       if (!isFocus) return; // Only run when actively in focus
       try {
-        const [wholeDashData, profdatset] = await Promise.all([
+        const [wholeDashData, profdatset, token, playerSession] = await Promise.all([
           AsyncStorage.getItem(constants.WHOLEDATA),
-          AsyncStorage.getItem(constants.PRODATA)
+          AsyncStorage.getItem(constants.PRODATA),
+          AsyncStorage.getItem(constants.TOKEN),
+          AsyncStorage.getItem('PLAYERSESSION'),
         ]);
         const parsedDashData = wholeDashData ? JSON.parse(wholeDashData) : null;
         const parsedProfData = profdatset ? JSON.parse(profdatset) : null;
+        const hasValidToken = Boolean(String(token || '').trim());
 
         const navigateTo = () => {
+          if (!hasValidToken) {
+            return playerSession ? "GuestUser" : "Onboard";
+          }
+
           if (parsedDashData !== null) {
             setAddit(wholeDashData);
             setFulldashbaord([parsedDashData]);

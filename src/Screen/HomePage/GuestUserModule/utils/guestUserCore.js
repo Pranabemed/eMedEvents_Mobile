@@ -129,7 +129,7 @@ export const formatGuestNumber = value => {
   const isNegative = raw.startsWith('-');
   const numericText = isNegative ? raw.slice(1) : raw;
   const [integerPart, decimalPart] = numericText.split('.');
-  const formattedInteger = Number(integerPart || 0).toLocaleString('en-IN');
+  const formattedInteger = Number(integerPart || 0).toLocaleString('en-US');
 
   return `${isNegative ? '-' : ''}${formattedInteger}${decimalPart != null ? `.${decimalPart}` : ''}`;
 };

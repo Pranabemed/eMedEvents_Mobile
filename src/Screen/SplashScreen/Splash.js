@@ -67,29 +67,38 @@ export default function Splash(props) {
   const [phoneV, setPhoneV] = useState("");
   const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
   const [guestHomeGateActive, setGuestHomeGateActive] = useState(false);
+  const [hasAuthToken, setHasAuthToken] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
 
-  const resetToOnboard = async () => {
+  const resetToSafeEntry = async () => {
     try {
+      const playerSession = await AsyncStorage.getItem('PLAYERSESSION');
       await Promise.all([
         AsyncStorage.removeItem(constants.TOKEN),
         AsyncStorage.removeItem(constants.REFRESH_TOKEN),
         AsyncStorage.removeItem(constants.VERIFYSTATEDATA),
         AsyncStorage.removeItem(constants.EMAVER),
         AsyncStorage.removeItem(constants.MOBVER),
-        AsyncStorage.removeItem('PLAYERSESSION'),
       ]);
+
+      if (!playerSession) {
+        await AsyncStorage.removeItem('PLAYERSESSION');
+      }
+
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: playerSession ? "GuestUser" : "Onboard" }]
+        })
+      );
     } catch (error) {
       console.log('[Splash] Failed to clear auth state:', error);
     }
-
-    if (hasNavigatedRef.current) return;
-    hasNavigatedRef.current = true;
-    props.navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: "Onboard" }] })
-    );
   };
 
   useEffect(() => {
@@ -137,6 +146,7 @@ export default function Splash(props) {
       setTimeout(async () => {
         try {
           const loginHandleProccess = await TokenManager.ensureValidToken('splash-bootstrap');
+          setHasAuthToken(Boolean(loginHandleProccess));
 
           if (loginHandleProccess) {
             startupRequestedRef.current = true;
@@ -165,7 +175,7 @@ export default function Splash(props) {
               }
             } else {
               setTimeout(() => {
-                resetToOnboard();
+                resetToSafeEntry();
               }, 500);
             }
           }
@@ -267,7 +277,7 @@ export default function Splash(props) {
     const verifyInvalid = isInvalidTokenFailure(AuthReducer?.verifyResponse);
 
     if (dashboardInvalid || verifyInvalid) {
-      resetToOnboard();
+      resetToSafeEntry();
     }
   }, [
     DashboardReducer?.dashboardResponse,
@@ -367,10 +377,10 @@ export default function Splash(props) {
 
     console.log('[Splash] Nav Progress:', { allProfTake, bothVerified, isValidDashboard, isVerified, isPhoneVerified });
 
-    if (guestHomeGateActive || guestRegistrationFlowActive) {
+    if (!hasAuthToken && (guestHomeGateActive || guestRegistrationFlowActive)) {
       hasNavigatedRef.current = true;
       props.navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }] })
+        CommonActions.reset({ index: 0, routes: [{ name: "GuestUser", params: { detectmain: "newadd" } }] })
       );
       return;
     }
@@ -482,7 +492,8 @@ export default function Splash(props) {
     loadingDashboard,
     spalsh,
     guestRegistrationFlowActive,
-    guestHomeGateActive
+    guestHomeGateActive,
+    hasAuthToken
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

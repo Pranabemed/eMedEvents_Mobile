@@ -128,7 +128,7 @@ import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Anal
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
 import { useSelector } from 'react-redux';
 const StackNav = props => {
-  const [conn, setConn] = useState("")
+  const [conn, setConn] = useState(null)
   const Stack = createStackNavigator();
   const mytheme = {
     ...DarkTheme,
@@ -138,24 +138,15 @@ const StackNav = props => {
   }
 
   useEffect(() => {
-    const token_error = () => {
-      AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-        if (loginHandleProccess) {
-          setConn(true);
-        }
-      });
-    };
-    try {
-      token_error();
-    } catch (error) {
+    NetInfo.fetch().then(state => {
+      setConn(Boolean(state?.isConnected));
+    }).catch(error => {
       console.log(error);
-    }
-  }, []);
-  useEffect(() => {
+      setConn(true);
+    });
+
     const unsubscribe = NetInfo.addEventListener(state => {
-      if (state.isConnected === false) {
-        setConn(state.isConnected)
-      }
+      setConn(Boolean(state?.isConnected));
     });
 
     return () => unsubscribe();
