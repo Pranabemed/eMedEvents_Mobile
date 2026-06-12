@@ -384,9 +384,11 @@ const AppUpdateHandler = () => {
     const sub = DeviceEventEmitter.addListener(
       'APP_UPDATE_NAVIGATION_CHANGE',
       ({ screenName }) => {
+        const isLanding = screenName === 'GuestUser' || screenName === 'TabNav' || screenName === 'Main';
         checkUpdate({
           reason: `navigation:${screenName || 'unknown'}`,
-          minIntervalMs: NAVIGATION_RECHECK_MS,
+          minIntervalMs: isLanding ? 0 : NAVIGATION_RECHECK_MS,
+          force: isLanding,
         });
       },
     );

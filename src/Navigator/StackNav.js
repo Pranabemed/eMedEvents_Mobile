@@ -118,6 +118,7 @@ import VerifyOTPEmail from '../Screen/Auth/SplashEmail';
 import ChangeMailSplash from '../Screen/Auth/SplashChangeMail';
 import LoginEmail from '../Screen/Auth/LoginEmail';
 import SplashMobile from '../Screen/Auth/SplashMobile';
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 import LoginChangeMail from '../Screen/Auth/LoginChangeMail';
 import SplashMobileChange from '../Screen/Auth/SplashMobileChange';
 import LoginMobile from '../Screen/Auth/LoginMobile';
@@ -300,8 +301,9 @@ const StackNav = props => {
         Promise.all([
           AsyncStorage.getItem(constants.TOKEN),
           AsyncStorage.getItem('PLAYERSESSION'),
-        ]).then(([token, playerSession]) => {
-          if (!token && !playerSession) {
+          AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
+        ]).then(([token, playerSession, guestFlow]) => {
+          if (!token && !playerSession && !guestFlow) {
             resetToSplashScreen();
           }
         });
@@ -503,19 +505,25 @@ const StackNav = props => {
   // 1. Move logic to a useCallback so it's stable
   const loadAuthData = useCallback(async () => {
     try {
-      const [dashboardData, token] = await Promise.all([
+      const [dashboardData, token, guestFlow] = await Promise.all([
         AsyncStorage.getItem(constants.WHOLEDATA),
         AsyncStorage.getItem(constants.TOKEN),
+        AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
       ]);
+      const hasGuestRegistrationFlow = Boolean(guestFlow);
+      const effectiveToken = hasGuestRegistrationFlow ? null : token;
 
       const authData = {
-        token: token || null,
+        token: effectiveToken || null,
         dashboard: dashboardData || null,
       };
 
-      if (token) {
+      if (effectiveToken) {
         setTokenever(true);
         if (dashboardData) setDashever(dashboardData);
+      } else {
+        setTokenever("");
+        setDashever("");
       }
 
       return authData;

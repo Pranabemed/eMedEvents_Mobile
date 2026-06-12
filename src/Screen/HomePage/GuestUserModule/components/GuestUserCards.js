@@ -141,7 +141,7 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
           </View>
         ) : null}
 
-        <Text numberOfLines={3} style={styles.featureTitle}>
+        <Text numberOfLines={2} style={styles.featureTitle}>
           {getText(item?.title, item?.course_title, item?.conference_name, item?.name, item?.banner_title, item?.heading)}
         </Text>
         {item?.date ? (

@@ -372,12 +372,12 @@ export default StyleSheet.create({
     fontSize: 13,
   },
   liveCardWrap: {
-    width: '93%',
+    width: '100%',
+    paddingHorizontal: 4,
     alignItems: 'center',
   },
   liveCard: {
     width: '100%',
-    maxWidth: normalize(390),
     borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
@@ -630,7 +630,6 @@ export default StyleSheet.create({
   },
   popularCard: {
     width: '100%',
-    maxWidth: normalize(390),
     minHeight: normalize(220),
     borderRadius: 24,
     paddingHorizontal: 18,
@@ -692,7 +691,6 @@ export default StyleSheet.create({
   },
   featureCard: {
     width: '100%',
-    maxWidth: normalize(310),
     minHeight: normalize(318),
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
@@ -865,7 +863,6 @@ export default StyleSheet.create({
   },
   freeCard: {
     width: '100%',
-    maxWidth: normalize(390),
     minHeight: normalize(205),
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
@@ -1206,7 +1203,7 @@ export default StyleSheet.create({
     borderRadius: 28,
     paddingTop: 30,
     paddingBottom: 20,
-    width: normalize(300),
+    width: '100%',
     minHeight: normalize(465),
     alignItems: 'center',
     alignSelf: 'center',

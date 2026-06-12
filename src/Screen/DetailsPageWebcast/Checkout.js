@@ -295,7 +295,7 @@ const Checkout = (props) => {
         if (props?.route?.params?.checkoutSpan?.cartData) {
             navigation.navigate("AddToCart");
         } else {
-            navigation.navigate("Statewebcast");
+            navigation.navigate("Statewebcast", guestCheckoutRouteParams || undefined);
         }
     }
     const [finalverifyvault, setFinalverifyvault] = useState(null);
@@ -346,6 +346,28 @@ const Checkout = (props) => {
     const isGuestCheckout = ['guest', 'guestuser'].includes(
         String(guestOrigin || '').toLowerCase()
     );
+    const guestCheckoutRouteParams = props?.route?.params?.checkoutSpan?.checkoutSpan
+        ? {
+            webCastURL: {
+                ...(props?.route?.params?.checkoutSpan?.checkoutSpan || {}),
+                Realback: 'guest',
+                creditData:
+                    props?.route?.params?.checkoutSpan?.checkoutSpan?.creditData ||
+                    props?.route?.params?.checkoutSpan?.creditData,
+            },
+        }
+        : props?.route?.params?.inPersonTicket?.inpersonSpanrole
+            ? {
+                webCastURL: {
+                    ...(props?.route?.params?.inPersonTicket?.inpersonSpanrole || {}),
+                    Realback: 'guest',
+                    creditData:
+                        props?.route?.params?.inPersonTicket?.inpersonSpanrole?.creditData ||
+                        props?.route?.params?.inPersonTicket?.creditData,
+                },
+            }
+            : null;
+    const checkoutCompletionRoute = isGuestCheckout ? 'GuestUser' : 'TabNav';
     const resetGuestCheckoutFields = () => {
         setFirstname("");
         setLastname("");
@@ -1867,7 +1889,7 @@ const Checkout = (props) => {
                     setPaymentcardfree={setPaymentcardfree}
                     content={ticketSave?.tickets?.[0]?.itemamt > 0 && !notadded ? "Your payment has been \n successfully completed." : "Your registration has been \n successfully confirmed."}
                     navigation={navigation}
-                    name={"TabNav"}
+                    name={checkoutCompletionRoute}
                     dataPayemnt={WebcastReducer?.StatusPaymentResponse}
                     maindata={props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole}
                 />
@@ -1876,7 +1898,7 @@ const Checkout = (props) => {
                     setPaymentfdfree={setPaymentfdfree}
                     content={ticketSave?.tickets?.[0]?.itemamt > 0 ? "Your payment has been \n successfully completed." : "Your registration has been \n successfully confirmed."}
                     navigation={navigation}
-                    name={"TabNav"} />
+                    name={checkoutCompletionRoute} />
             </SafeAreaView>
 
         </>

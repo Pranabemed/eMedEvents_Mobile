@@ -6,6 +6,10 @@ import Colorpath from '../../Themes/Colorpath';
 import HtmlTableRenderer from './HtmlTableRenderer';
 
 const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggleExpansionacc }) => {
+    const viewmore = webcastdeatils?.cme_accreditation || '';
+    const showButton = viewmore.replace(/<\/?[^>]+>/g, '').trim().length > 500;
+    const finalSource = showButton ? acc_source : { html: viewmore };
+
     return (
         <>
             <View
@@ -26,7 +30,7 @@ const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggl
             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(2), width: "100%" }}>
                 <HtmlTableRenderer
                     width={width}
-                    source={acc_source}
+                    source={finalSource}
                     tagsStyles={{
                         p: {
                             fontFamily: Fonts.InterMedium,
@@ -54,7 +58,7 @@ const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggl
                         color: '#000000',
                         // paddingVertical: normalize(5),
                     }}>
-                    {expandedacc &&
+                    {(expandedacc || !showButton) &&
                         Array.isArray(webcastdeatils?.cmeCreditsData) &&
                         webcastdeatils.cmeCreditsData
                             .filter(
@@ -67,20 +71,22 @@ const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggl
                             .join(' | ')}
                 </Text>
 
-                <TouchableOpacity
-                    onPress={toggleExpansionacc}
-                    style={{
-                        marginTop: normalize(3)
-                    }}>
-                    <Text
+                {showButton ? (
+                    <TouchableOpacity
+                        onPress={toggleExpansionacc}
                         style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 16,
-                            color: Colorpath.ButtonColr,
+                            marginTop: normalize(3)
                         }}>
-                        {expandedacc ? 'View less' : 'View more'}
-                    </Text>
-                </TouchableOpacity>
+                        <Text
+                            style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 16,
+                                color: Colorpath.ButtonColr,
+                            }}>
+                            {expandedacc ? 'View less' : 'View more'}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
             </View>
         </>
     )

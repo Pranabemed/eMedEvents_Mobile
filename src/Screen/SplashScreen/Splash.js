@@ -145,6 +145,23 @@ export default function Splash(props) {
     const token_error = () => {
       setTimeout(async () => {
         try {
+          const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
+          const hasGuestRegistrationFlow = Boolean(guestFlowRaw);
+
+          if (hasGuestRegistrationFlow) {
+            setHasAuthToken(false);
+            if (!hasNavigatedRef.current) {
+              hasNavigatedRef.current = true;
+              props.navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'GuestUser' }],
+                })
+              );
+            }
+            return;
+          }
+
           const loginHandleProccess = await TokenManager.ensureValidToken('splash-bootstrap');
           setHasAuthToken(Boolean(loginHandleProccess));
 

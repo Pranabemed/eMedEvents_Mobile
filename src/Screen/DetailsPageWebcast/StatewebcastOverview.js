@@ -29,6 +29,10 @@ const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpa
         });
     };
 
+    const htmlText = webcastdeatils?.overView || '';
+    const cleanText = htmlText.replace(/<\/?[^>]+>/g, '').trim();
+    const showButton = cleanText.length > 500 || htmlText.toLowerCase().includes('<table');
+
     return (
         <View>
             <View
@@ -65,7 +69,7 @@ const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpa
                 ) : (
                     <HtmlTableRenderer
                         width={width}
-                        source={source}
+                        source={showButton ? source : { html: htmlText }}
                         onLinkPress={handleOverviewLink}
                         tagsStyles={{
                             p: {
@@ -90,20 +94,22 @@ const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpa
                     />
                 )}
 
-                <TouchableOpacity
-                    onPress={toggleExpansion}
-                    style={{
-                        marginTop: normalize(5),
-                    }}>
-                    <Text
+                {showButton ? (
+                    <TouchableOpacity
+                        onPress={toggleExpansion}
                         style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 16,
-                            color: Colorpath.ButtonColr,
+                            marginTop: normalize(5),
                         }}>
-                        {expanded ? 'View less' : 'View more'}
-                    </Text>
-                </TouchableOpacity>
+                        <Text
+                            style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 16,
+                                color: Colorpath.ButtonColr,
+                            }}>
+                            {expanded ? 'View less' : 'View more'}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
             </View>
         </View>
     )

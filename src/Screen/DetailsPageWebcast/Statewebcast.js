@@ -665,7 +665,11 @@ const Statewebcast = props => {
                         </View>
                     ) : (
                         <>
-                            <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white }}>
+                            <ScrollView
+                                ref={scrollViewRef}
+                                nestedScrollEnabled={true}
+                                contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white, flexGrow: 1 }}
+                            >
                                 <View style={{ backgroundColor: Colorpath.Pagebg, padding: 10 }}>
                                     <StatewebcastPrice refID={refID} calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
                                     <StatewebcastAddTocart refID={refID} urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={WebcastReducer?.status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />

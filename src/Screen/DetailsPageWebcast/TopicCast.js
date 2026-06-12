@@ -50,7 +50,7 @@ const TopicCast = ({ topics, expandedtopic, toggleTopic, topiccast }) => {
           )}
           showsHorizontalScrollIndicator={false}
         />
-        {topics?.length > 4 && <FlatList
+        {topics?.length > 3 && <FlatList
           scrollEnabled={false}
           data={expandedtopic ? topics?.slice(3) : []}
           renderItem={({ item }) => (

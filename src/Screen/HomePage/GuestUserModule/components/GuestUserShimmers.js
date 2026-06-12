@@ -54,6 +54,7 @@ const GuestCarouselShimmerComponent = ({
             styles.shimmerCard,
             variant === 'live' && styles.shimmerLiveCard,
             variant === 'free' && styles.shimmerFreeCard,
+            { width: width - 40 },
           ]}
         >
           <View style={styles.shimmerRow}>

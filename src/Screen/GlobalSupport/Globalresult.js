@@ -1,4 +1,4 @@
-import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput } from 'react-native'
+import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput, Dimensions } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
@@ -63,7 +63,7 @@ const getResultTypeLabel = item => {
         item?.type ||
         ''
     ).trim();
-    
+
     const lower = rawType.toLowerCase();
     if (lower === 'webcst' || lower === 'webcast') {
         return 'Webcast';
@@ -717,7 +717,7 @@ const Globalresult = (props) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(isGuestFlow ? 8 : 10) }}>
-                    <TouchableOpacity onPress={() => { handleUrl(item) }} style={isGuestFlow ? { width: '100%' } : null}>
+                    <TouchableOpacity onPress={() => { handleUrl(item) }}>
                         <View
                             style={isGuestFlow ? styles.guestResultCard : {
                                 flexDirection: "column",
@@ -764,35 +764,18 @@ const Globalresult = (props) => {
                                 {renderLocationAndDates()}
                             </View>)}
                             {(guestCreditLabel || guestTypeLabel) ? (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: normalize(4) }}>
-                                    {guestCreditLabel ? (
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            fontWeight: 'bold',
-                                            color: '#666666'
-                                        }}>
-                                            {guestCreditLabel}
-                                        </Text>
-                                    ) : null}
-                                    {guestCreditLabel && guestTypeLabel ? (
-                                        <View style={{
-                                            backgroundColor: Colorpath.ButtonColr,
-                                            height: normalize(10),
-                                            width: normalize(1),
-                                            marginHorizontal: normalize(10)
-                                        }} />
-                                    ) : null}
-                                    {guestTypeLabel ? (
-                                        <Text style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            fontWeight: 'bold',
-                                            color: '#666666'
-                                        }}>
-                                            {guestTypeLabel}
-                                        </Text>
-                                    ) : null}
+                                <View style={{ paddingVertical: normalize(4) }}>
+                                    <Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14,
+                                        fontWeight: 'bold',
+                                        color: '#666666',
+                                        lineHeight: 20
+                                    }}>
+                                        {guestCreditLabel}
+                                        {guestCreditLabel && guestTypeLabel ? '  |  ' : ''}
+                                        {guestTypeLabel}
+                                    </Text>
                                 </View>
                             ) : null}
                             {hasBottomRow && <View style={isGuestFlow ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
@@ -1240,12 +1223,13 @@ const styles = StyleSheet.create({
         color: '#333333',
     },
     guestListContent: {
-        paddingHorizontal: normalize(12),
+        paddingHorizontal: normalize(14),
         paddingBottom: normalize(200),
+        alignItems: 'center',
     },
     guestResultCard: {
         flexDirection: 'column',
-        width: '100%',
+        width: Dimensions.get('window').width - normalize(28),
         borderRadius: normalize(12),
         backgroundColor: '#FFFFFF',
         paddingHorizontal: normalize(14),

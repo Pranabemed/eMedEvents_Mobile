@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
@@ -22,59 +22,16 @@ const StatewebcastSpeciality = ({ allSpecailities, specailityChange, expandspeca
         )
     }
     return (
-        <View style={{ paddingVertical: normalize(0), marginLeft: normalize(6) }}>
-            {!expandspecail && <FlatList
-                scrollEnabled={false}
-                horizontal
-                data={allSpecailities?.slice(0, 3)}
-                renderItem={specialityShow}
-                keyExtractor={(item, index) => index.toString()}
-                showsHorizontalScrollIndicator={false}
-                ListFooterComponent={
-                    allSpecailities?.length > 4 && <TouchableOpacity onPress={specailityChange}>
-                        <View style={{
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            width: "100%",
-                        }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 16,
-                                    color: Colorpath.ButtonColr,
-                                }}>
-                                {"View more"}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                }
-
-            />}
-            {allSpecailities?.length > 4 && expandspecail && <FlatList
-                data={expandspecail ? allSpecailities : []}
-                renderItem={specialityShow}
-                horizontal
-                keyExtractor={(item, index) => index.toString()}
-                showsVerticalScrollIndicator={false}
-                ListFooterComponent={
-                    <TouchableOpacity onPress={specailityChange}>
-                        <View style={{
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            width: "100%"
-                        }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 16,
-                                    color: Colorpath.ButtonColr,
-                                }}>
-                                {expandspecail ? "View less" : null}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                }
-            />}
+        <View style={{ paddingVertical: normalize(0), marginLeft: normalize(6), paddingRight: normalize(15) }}>
+            {allSpecailities?.length > 0 ? (
+                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                    {allSpecailities.map((item, index) => (
+                        <React.Fragment key={`${item}-${index}`}>
+                            {specialityShow({ item, index })}
+                        </React.Fragment>
+                    ))}
+                </ScrollView>
+            ) : null}
         </View>
     )
 }

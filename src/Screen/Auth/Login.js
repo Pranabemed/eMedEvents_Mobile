@@ -227,7 +227,7 @@ const Login = (props) => {
     if (!loginSignInResponse || Object.keys(loginSignInResponse).length == 0) return;
     if (lastHandledSigninResponseRef.current == loginSignInResponse) return;
     lastHandledSigninResponseRef.current = loginSignInResponse;
-    
+
     const normalizedPhoneCode = String(phoneCountryCode || "").trim();
     const isUSUser = normalizedPhoneCode == "+1";
     const isEmailVerified = isTrueFlag(loginSignInResponse?.is_verified);
@@ -471,7 +471,7 @@ const Login = (props) => {
       setFulldashbaord(0);
       setGtprof(false);
       setNonloader(false);
-       dispatch(mainprofileRequest({}))
+      dispatch(mainprofileRequest({}))
       props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
     }
   }, [DashboardReducer?.dashboardResponse?.data, allProfTake])
@@ -501,7 +501,30 @@ const Login = (props) => {
     }
   }
   const backEra = () => {
-    props.navigation.navigate("Onboard");
+    if (props.navigation.canGoBack()) {
+      props.navigation.goBack();
+    } else {
+      props.navigation.navigate("Onboard");
+    }
+  }
+  const goToGuestPage = async () => {
+    try {
+      const session = await AsyncStorage.getItem('PLAYERSESSION');
+      if (session && props.navigation.canGoBack()) {
+        props.navigation.goBack();
+      } else {
+        const guestSessionId = `guest_session_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+        await AsyncStorage.setItem('PLAYERSESSION', guestSessionId);
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'GuestUser' }],
+          })
+        );
+      }
+    } catch (err) {
+      props.navigation.navigate("Onboard");
+    }
   }
   useEffect(() => {
     const onBackPress = () => {
@@ -697,6 +720,11 @@ const Login = (props) => {
                 </Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={goToGuestPage} style={{ marginTop: normalize(15), alignSelf: "center" }}>
+              <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.black, fontWeight: "bold" }}>
+                {"Back to Guest Page"}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

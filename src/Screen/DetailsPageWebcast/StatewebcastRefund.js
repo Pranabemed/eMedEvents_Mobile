@@ -23,7 +23,7 @@ const StatewebcastRefund = ({conferenceText,conferenceHtml,expandcon,conferShows
                                 {"Conference & Summary"}
                             </Text>
                         </View>
-                        <ConferenceSummary conferenceHtml={conferenceHtml} expandcon={expandcon} conferShows={conferShows} width={width} />
+                        <ConferenceSummary conferenceHtml={conferenceHtml} expandcon={expandcon} conferShows={conferShows} width={width} conferenceText={conferenceText} />
                     </>) : null}
                     {webcastdeatils?.refund_policy && webcastdeatils?.disclaimer ? (<>
                         <View
@@ -41,7 +41,7 @@ const StatewebcastRefund = ({conferenceText,conferenceHtml,expandcon,conferShows
                                 {"Refund,Cancellation Policy & Disclaimer"}
                             </Text>
                         </View>
-                        <RefundHtml refundtext={refundtext} disclaimerText={disclaimerText} refunded={refunded} refundExpand={refundExpand} width={width} />
+                        <RefundHtml refundtext={refundtext} disclaimerText={disclaimerText} refunded={refunded} refundExpand={refundExpand} width={width} webcastdeatils={webcastdeatils} />
                     </>) : null}
     </View>
   )

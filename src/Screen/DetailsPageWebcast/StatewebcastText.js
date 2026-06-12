@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -39,58 +39,14 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
                     {'Target Audience'}
                 </Text>
             </View>
-                <View style={{ marginLeft: normalize(6) }}>
-                    {!expandspecailtar && <FlatList
-                        scrollEnabled={false}
-                        data={webcastdeatils?.targetAudience?.slice(0, 3)}
-                        horizontal
-                        renderItem={specialityShow}
-                        keyExtractor={(item, index) => index.toString()}
-                        showsHorizontalScrollIndicator={false}
-                        ListFooterComponent={
-                            webcastdeatils?.targetAudience?.length > 4 && <TouchableOpacity onPress={targetChange}>
-                                <View style={{
-                                    paddingHorizontal: normalize(10),
-                                    paddingVertical: normalize(10),
-                                    width: "100%",
-                                }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 16,
-                                            color: Colorpath.ButtonColr,
-                                        }}>
-                                        {"View more"}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        }
-                    />}
-                    {webcastdeatils?.targetAudience?.length > 4 && expandspecailtar && <FlatList
-                        data={expandspecailtar ? webcastdeatils?.targetAudience : []}
-                        renderItem={specialityShow}
-                        keyExtractor={(item, index) => index.toString()}
-                        horizontal
-                        showsVerticalScrollIndicator={false}
-                        ListFooterComponent={
-                            <TouchableOpacity onPress={targetChange}>
-                                <View style={{
-                                    paddingHorizontal: normalize(10),
-                                    paddingVertical: normalize(10),
-                                    width: "100%"
-                                }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 16,
-                                            color: Colorpath.ButtonColr,
-                                        }}>
-                                        {expandspecailtar ? "View less" : null}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        }
-                    />}
+                <View style={{ marginLeft: normalize(6), paddingRight: normalize(15) }}>
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                        {webcastdeatils?.targetAudience?.map((item, index) => (
+                            <React.Fragment key={`${item}-${index}`}>
+                                {specialityShow({ item, index })}
+                            </React.Fragment>
+                        ))}
+                    </ScrollView>
                 </View>
             </> : null}
             {allSpecailities?.length > 0 ? <View

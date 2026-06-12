@@ -43,8 +43,8 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
         layout="default"
         data={topBanners}
         onSnapToItem={index => setActiveBannerIndex(index)}
-        sliderWidth={width}
-        itemWidth={width}
+        sliderWidth={width - 32}
+        itemWidth={width - 32}
         inactiveSlideScale={1}
         inactiveSlideOpacity={1}
         renderItem={({ item }) => {
@@ -126,7 +126,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
           };
 
           return (
-            <View style={[localStyles.heroSlideWrap, { width: width - 30 }]}>
+            <View style={[localStyles.heroSlideWrap, { width: width - 32 }]}>
               <ImageBackground
                 source={Imagepath.HomeUser}
                 imageStyle={styles.heroRadius}
