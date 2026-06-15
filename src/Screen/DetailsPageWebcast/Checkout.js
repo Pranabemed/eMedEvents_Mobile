@@ -1045,13 +1045,13 @@ const Checkout = (props) => {
     const iseMededDo =
         (emededAcc == "1" || emededAcc == 1) &&
         (professionType == "DO" || professionType == "MD" || professionType == "DPM");
-    const requiredFields = [
+    const baseRequiredFields = [
         "firstname", "lastname", "emailad", "professionad", "license_state_id",
         "speciality", "license_number", "license_expiry_date", "address", "country", "state",
         "city", "zipcode", "cellno"
     ];
     if (iseMededDo) {
-        requiredFields.push("dateofbirth");
+        baseRequiredFields.push("dateofbirth");
     }
     const detectField = props?.route?.params?.checkoutSpan?.inPersonTicket?.custom_fields || props?.route?.params?.inPersonTicket?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
     console.log(detectField, "customField-------123", formData, iseMededDo)
@@ -1065,7 +1065,28 @@ const Checkout = (props) => {
             }
         });
     }
-    console.log(requiredFields, "requiredFields-------", detectField, formData)
+    const isUSASelected = (attendee = {}) => {
+        const countryName = String(attendee?.country || '').trim().toLowerCase();
+        const countryIdentifier = String(attendee?.country_id || '').trim();
+        const phoneDialCode = String(attendee?.dialcode || '').trim();
+
+        return (
+            countryName === 'usa' ||
+            countryName === 'united states' ||
+            countryName === 'united states of america' ||
+            countryIdentifier === '1' ||
+            phoneDialCode === '+1' ||
+            phoneDialCode === '1'
+        );
+    };
+    const getRequiredFieldsForAttendee = (attendee = {}) => {
+        if (isUSASelected(attendee)) {
+            return baseRequiredFields;
+        }
+
+        return baseRequiredFields.filter(field => field !== 'license_state_id');
+    };
+    console.log(baseRequiredFields, "requiredFields-------", detectField, formData)
     const nonbillings = [
         "firstname", "lastname", "emailad", "address", "country", "state",
         "city", "zipcode", "cellno"
@@ -1108,6 +1129,7 @@ const Checkout = (props) => {
     const attendeesFilledStatus = formData.map((attendee, index) => {
         let isAttendeeValid = true;
         // Check if all required fields are filled
+        const requiredFields = getRequiredFieldsForAttendee(attendee);
         const missingFields = requiredFields.filter(field => {
             const value = attendee[field];
             return !value || (typeof value == 'string' && value.trim() == '');

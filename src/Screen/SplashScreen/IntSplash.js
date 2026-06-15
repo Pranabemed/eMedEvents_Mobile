@@ -8,6 +8,7 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import { AppContext } from '../GlobalSupport/AppContext';
+const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
 export default function SplashInt(props) {
   const {
     setFulldashbaord,
@@ -20,14 +21,18 @@ export default function SplashInt(props) {
     let timeoutId;
     const handleNavigation = async () => {
       if (!isFocus) return; // Only run when actively in focus
-      try {
-        const [wholeDashData, profdatset, token, playerSession] = await Promise.all([
-          AsyncStorage.getItem(constants.WHOLEDATA),
-          AsyncStorage.getItem(constants.PRODATA),
-          AsyncStorage.getItem(constants.TOKEN),
-          AsyncStorage.getItem('PLAYERSESSION'),
-        ]);
-        const parsedDashData = wholeDashData ? JSON.parse(wholeDashData) : null;
+        try {
+          const [wholeDashData, profdatset, token, playerSession] = await Promise.all([
+            AsyncStorage.getItem(constants.WHOLEDATA),
+            AsyncStorage.getItem(constants.PRODATA),
+            AsyncStorage.getItem(constants.TOKEN),
+            AsyncStorage.getItem('PLAYERSESSION'),
+          ]);
+          const deepLinkBootstrap = await AsyncStorage.getItem(DEEPLINK_BOOTSTRAP_KEY);
+          if (deepLinkBootstrap === 'true') {
+            return;
+          }
+          const parsedDashData = wholeDashData ? JSON.parse(wholeDashData) : null;
         const parsedProfData = profdatset ? JSON.parse(profdatset) : null;
         const hasValidToken = Boolean(String(token || '').trim());
 

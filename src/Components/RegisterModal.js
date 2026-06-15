@@ -7,6 +7,7 @@ import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../Utils/Helpers/constants';
 
 const GUEST_PROMPT_KEYS = [
     'GUEST_REGISTRATION_FLOW',
@@ -17,6 +18,24 @@ const GUEST_PROMPT_KEYS = [
 ];
 
 const RegisterModal = ({ isVisible, onClose, navigation }) => {
+    const handleDismiss = async () => {
+        try {
+            await AsyncStorage.multiRemove(GUEST_PROMPT_KEYS);
+            const token = await AsyncStorage.getItem(constants.TOKEN);
+
+            if (token) {
+                navigation.dispatch(CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav" }]
+                }));
+            }
+        } catch (error) {
+            console.log('[RegisterModal] guest prompt cleanup error', error);
+        }
+
+        onClose();
+    };
+
     return (
         <Modal
             isVisible={isVisible}
@@ -25,6 +44,8 @@ const RegisterModal = ({ isVisible, onClose, navigation }) => {
             backdropTransitionOutTiming={0}
             useNativeDriver={true}
             hideModalContentWhileAnimating={true}
+            onBackButtonPress={handleDismiss}
+            onBackdropPress={handleDismiss}
             style={styles.modal}
         >
             <View style={styles.container}>
@@ -37,18 +58,7 @@ const RegisterModal = ({ isVisible, onClose, navigation }) => {
                 </Text>
                 
                 <TouchableOpacity
-                    onPress={async () => {
-                        try {
-                            await AsyncStorage.multiRemove(GUEST_PROMPT_KEYS);
-                        } catch (error) {
-                            console.log('[RegisterModal] guest prompt cleanup error', error);
-                        }
-                        navigation.dispatch(CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: "TabNav" }]
-                        }));
-                        onClose();
-                    }}
+                    onPress={handleDismiss}
                     style={styles.button}
                 >
                     <Text style={styles.buttonText}>{"Done"}</Text>

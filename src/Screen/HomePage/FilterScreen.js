@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -53,6 +53,23 @@ const FilterScreen = (props) => {
     const [slider1Max, setSlider1Max] = useState(Max_Price);
     const [slider2Min, setSlider2Min] = useState(MIN_DEFAULT);
     const [slider2Max, setSlider2Max] = useState(Min_DPrice);
+    const buildGlobalResultParams = useCallback(() => {
+        const originRoute = props?.route?.params?.wholeDats?.mainKeyAll || {};
+
+        return {
+            ...originRoute,
+            filterDatSh: {
+                filterDatSh: selectedItems,
+                returnTake: originRoute,
+                selectedIt: selectedItm,
+                minVal: minValue,
+                maxVal: maxValue,
+                minValP: minValuep,
+                maxValp: maxValuep,
+                selectedItem: selectedFilter,
+            },
+        };
+    }, [maxValue, maxValuep, minValue, minValuep, props?.route?.params?.wholeDats?.mainKeyAll, selectedFilter, selectedItems, selectedItm]);
     const FilterBack = () => {
         if (props?.route?.params?.wholeDats?.norm == "ghgh") {
             props.navigation.dispatch(
@@ -65,7 +82,7 @@ const FilterScreen = (props) => {
                     ],
                 }));
         } else if (selectedItems?.length > 0) {
-            props.navigation.navigate("Globalresult", { filterDatSh: { filterDatSh: selectedItems, returnTake: props?.route?.params?.wholeDats?.mainKeyAll, selectedIt: selectedItm, minVal: minValue, maxVal: maxValue, minValP: minValuep, maxValp: maxValuep, selectedItem: selectedFilter } })
+            props.navigation.replace("Globalresult", buildGlobalResultParams())
         } else {
             props.navigation.goBack();
         }
@@ -953,7 +970,7 @@ useLayoutEffect(() => {
                         }}>{"Reset"}</Text>
                     </TouchableOpacity>
                     <View style={{ height: normalize(20), width: 1, backgroundColor: "#ECECEC" }} />
-                    <TouchableOpacity onPress={() => { props.navigation.navigate("Globalresult", { filterDatSh: { filterDatSh: selectedItems, returnTake: props?.route?.params?.wholeDats?.mainKeyAll, selectedIt: selectedItm, minVal: minValue, maxVal: maxValue, minValP: minValuep, maxValp: maxValuep, selectedItem: selectedFilter } }) }} disabled={selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? false : true} style={styles.footerButton}>
+                    <TouchableOpacity onPress={() => { props.navigation.replace("Globalresult", buildGlobalResultParams()) }} disabled={selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? false : true} style={styles.footerButton}>
                         <Text style={{
                             fontSize: 18,
                             color: selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? Colorpath.ButtonColr : "#000",

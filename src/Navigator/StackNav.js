@@ -128,6 +128,7 @@ import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
 import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Analytics';
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
 import { useSelector } from 'react-redux';
+const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
 const StackNav = props => {
   const [conn, setConn] = useState(null)
   const Stack = createStackNavigator();
@@ -562,6 +563,7 @@ const StackNav = props => {
         }]
       })
     );
+    AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
   }, []);
 
   const openExternalBrowser = useCallback(async (url) => {
@@ -714,7 +716,10 @@ const StackNav = props => {
       if (url && !initialUrlHandled.current) {
         initialUrlHandled.current = true;
         console.log('Initial URL handled:', url);
+        AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
         handleDeepLink(url);
+      } else {
+        AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
       }
     });
 
@@ -725,6 +730,7 @@ const StackNav = props => {
   useEffect(() => {
     if (isAuthReady && isNavigationReady && pendingDeepLink) {
       console.log('Context ready, processing pending deep link:', pendingDeepLink);
+      lastProcessedUrl.current = null;
       handleDeepLink(pendingDeepLink.url || pendingDeepLink.slug);
       setPendingDeepLink(null); // clear after processing
     }
@@ -738,6 +744,8 @@ const StackNav = props => {
         if (pendingUrl) {
           console.log('[DeepLink] Found pending deep link after login:', pendingUrl);
           await AsyncStorage.removeItem('PENDING_DEEP_LINK');
+          lastProcessedUrl.current = null;
+          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
           handleDeepLink(pendingUrl);
         }
       }

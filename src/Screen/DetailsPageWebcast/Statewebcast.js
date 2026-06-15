@@ -51,6 +51,7 @@ const Statewebcast = props => {
     } = useContext(AppContext);
     const { width } = useWindowDimensions();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isFocused = useIsFocused();
     console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
@@ -101,7 +102,14 @@ const Statewebcast = props => {
             ""
         );
     }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
-    const hideGuestCartIcon = props?.route?.params?.webCastURL?.Realback === "guest";
+    const hasAuthToken = Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
+    const hideGuestCartIcon = Boolean(
+        !hasAuthToken ||
+        props?.route?.params?.webCastURL?.Realback === "guest" ||
+        props?.route?.params?.webCastURL?.guestOrigin === "guest" ||
+        props?.route?.params?.webCastURL?.fromGuestSpecialitySearch === true ||
+        props?.route?.params?.webCastURL?.guestCmeFlow === true
+    );
     const isGuestWebcastFlow = props?.route?.params?.webCastURL?.Realback === "guest";
 
     const normalizeUrlCandidate = useCallback((value) => {
@@ -168,7 +176,12 @@ const Statewebcast = props => {
             return;
         }
 
-        props.navigation.navigate('GuestUser');
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'GuestUser' }],
+            })
+        );
     }, [props.navigation]);
 
     const guestFallbackUrl = useMemo(() => {
@@ -219,6 +232,12 @@ const Statewebcast = props => {
         if (props?.route?.params?.webCastURL?.Realback === "guest") {
             goBackToGuestUser();
             return;
+        }
+        if (props?.route?.params?.webCastURL?.speaks === "speaker" || props?.route?.params?.webCastURL?.speaks === "organ") {
+            if (props.navigation.canGoBack?.()) {
+                props.navigation.goBack();
+                return;
+            }
         }
         if (props?.route?.params?.webCastURL?.takeUrl) {
             props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.webCastURL?.textHo, speaks: props?.route?.params?.webCastURL?.speaks, hitDat: props?.route?.params?.webCastURL?.highText, fullUrl: props?.route?.params?.webCastURL?.takeUrl, creditData: props?.route?.params?.webCastURL?.creditData } })

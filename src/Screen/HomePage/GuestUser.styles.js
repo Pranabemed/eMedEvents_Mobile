@@ -691,13 +691,13 @@ export default StyleSheet.create({
   },
   featureCard: {
     width: '100%',
-    minHeight: normalize(318),
+    minHeight: normalize(246),
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#FF8A00',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     overflow: 'hidden',
   },
   featureCardDark: {
@@ -711,7 +711,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   featureLogoCircle: {
     width: 42,
@@ -756,7 +756,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
     gap: 6,
   },
   featureSpecialityPill: {
@@ -793,7 +793,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 10,
+    marginTop: 6,
   },
   featureMetaText: {
     flex: 1,
@@ -809,7 +809,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    marginTop: 14,
+    marginTop: 8,
   },
   featureCmePill: {
     flex: 1,
@@ -843,11 +843,11 @@ export default StyleSheet.create({
     fontSize: 14,
   },
   featureButton: {
-    marginTop: 12,
+    marginTop: 8,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#FF8A00',
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   featureButtonText: {

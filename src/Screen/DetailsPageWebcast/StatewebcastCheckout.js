@@ -17,6 +17,36 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const [finalcheck, setFinalcheck] = useState("");
+  const videoNavigationData = useCallback((dataItem = webcastdeatils) => {
+    const existingActivityData = Array.isArray(dataItem?.activityData) ? dataItem.activityData : [];
+    const youtubeVideoId = dataItem?.video_audio_details?.[0]?.youtube_video_id
+      || existingActivityData?.[0]?.youtube_video_id
+      || "";
+
+    if (!youtubeVideoId && existingActivityData.length === 0) {
+      return dataItem;
+    }
+
+    const mergedActivityData = existingActivityData.length > 0
+      ? existingActivityData.map((activity, index) => (
+        index === 0
+          ? {
+            ...activity,
+            ...(dataItem?.video_audio_details?.[0] || {}),
+            youtube_video_id: youtubeVideoId || activity?.youtube_video_id || "",
+          }
+          : activity
+      ))
+      : [{
+        ...(dataItem?.video_audio_details?.[0] || {}),
+        youtube_video_id: youtubeVideoId,
+      }];
+
+    return {
+      ...dataItem,
+      activityData: mergedActivityData,
+    };
+  }, [webcastdeatils]);
   const isCheckoutCta = (
     webcastdeatils?.conferenceTypeText == "Webcast" ||
     webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
@@ -36,7 +66,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   const dispatch = useDispatch();
   const fullAction = (dataItem) => {
     if (dataItem?.current_activity_api == "activitysession") {
-      navigation.navigate("VideoComponent", { RoleData: dataItem });
+      navigation.navigate("VideoComponent", { RoleData: videoNavigationData(dataItem) });
     } else if (dataItem?.current_activity_api == "introduction") {
       navigation.navigate("StartTest", { conference: dataItem?.conferenceId })
     } else if (dataItem?.current_activity_api == "startTest") {
@@ -433,7 +463,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                             <Buttons
                               onPress={() => {
                                 if (webcastdeatils?.current_activity_api == "activitysession") {
-                                  navigation.navigate("VideoComponent", { RoleData: webcastdeatils });
+                                  navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
                                 } else if (webcastdeatils?.current_activity_api == "introduction") {
                                   navigation.navigate("StartTest", { conference: webcastdeatils?.conferenceId })
                                 } else if (webcastdeatils?.current_activity_api == "startTest") {
@@ -517,7 +547,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
         <View style={{ backgroundColor: "#FFFFFF" }}>
           <Buttons
             onPress={() => {
-              navigation.navigate("VideoComponent", { RoleData: webcastdeatils });
+              navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
             }}
             height={normalize(45)}
             width={normalize(140)}

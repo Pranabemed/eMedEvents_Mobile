@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View, Text } from 'react-native';
+import { Alert, StyleSheet, View, Text, Linking } from 'react-native';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -19,6 +19,7 @@ const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
 const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
 const INVALID_TOKEN_MESSAGES = [
   'missing or invalid token',
   'invalid token',
@@ -68,6 +69,7 @@ export default function Splash(props) {
   const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
   const [guestHomeGateActive, setGuestHomeGateActive] = useState(false);
   const [hasAuthToken, setHasAuthToken] = useState(false);
+  const [deepLinkBootstrapActive, setDeepLinkBootstrapActive] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
@@ -111,6 +113,8 @@ export default function Splash(props) {
           guestPrimePendingRaw,
           primeMembershipSkippedRaw,
           primeCardFlowCompleteRaw,
+          deepLinkBootstrapRaw,
+          initialUrl,
         ] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
           AsyncStorage.getItem(constants.MOBVER),
@@ -118,6 +122,8 @@ export default function Splash(props) {
           AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
           AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
           AsyncStorage.getItem(PRIME_CARD_FLOW_COMPLETE_KEY),
+          AsyncStorage.getItem(DEEPLINK_BOOTSTRAP_KEY),
+          Linking.getInitialURL(),
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
@@ -130,6 +136,7 @@ export default function Splash(props) {
           primeMembershipSkippedRaw === 'true' ||
           primeCardFlowCompleteRaw === 'true'
         );
+        setDeepLinkBootstrapActive(Boolean(deepLinkBootstrapRaw) || Boolean(initialUrl));
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
@@ -145,6 +152,12 @@ export default function Splash(props) {
     const token_error = () => {
       setTimeout(async () => {
         try {
+          const initialUrl = await Linking.getInitialURL();
+          if (deepLinkBootstrapActive || initialUrl) {
+            console.log('[Splash] Deep link launch detected, bypassing token_error reset');
+            return;
+          }
+
           const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
           const hasGuestRegistrationFlow = Boolean(guestFlowRaw);
 
@@ -206,7 +219,7 @@ export default function Splash(props) {
     } catch (error) {
       console.log(error);
     }
-  }, [isFocus]);
+  }, [deepLinkBootstrapActive, isFocus]);
 
   useEffect(() => {
     const token_handle = () => {
@@ -392,6 +405,10 @@ export default function Splash(props) {
 
     if (loadingDashboard) return;
 
+    if (deepLinkBootstrapActive) {
+      return;
+    }
+
     console.log('[Splash] Nav Progress:', { allProfTake, bothVerified, isValidDashboard, isVerified, isPhoneVerified });
 
     if (!hasAuthToken && (guestHomeGateActive || guestRegistrationFlowActive)) {
@@ -511,6 +528,7 @@ export default function Splash(props) {
     guestRegistrationFlowActive,
     guestHomeGateActive,
     hasAuthToken
+    , deepLinkBootstrapActive
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

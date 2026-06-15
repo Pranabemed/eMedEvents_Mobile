@@ -4,14 +4,15 @@
  * Purpose: Renders the guest home top-banner carousel and its loading state.
  * Author: Codex
  * Created Date: 2026-06-03
- * Last Modified: 2026-06-03
- * Dependencies: react, react-native, react-native-snap-carousel, react-native-vector-icons/MaterialIcons, ../../../Themes/Imagepath, ../../HomePage/GuestUser.styles, ../utils/guestUserContentParsers
+ * Last Modified: 2026-06-15
+ * Dependencies: react, react-native, react-native-snap-carousel, react-native-vector-icons/MaterialIcons, react-native-linear-gradient, ../../../Themes/Imagepath, ../../HomePage/GuestUser.styles, ../utils/guestUserContentParsers
  */
 
 import React, { memo, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import Imagepath from '../../../../Themes/Imagepath';
 import styles from '../../GuestUser.styles';
 import {
@@ -21,6 +22,7 @@ import {
   splitMetaLine,
 } from '../utils/guestUserContentParsers';
 import { GuestHeroShimmer } from './GuestUserShimmers';
+import normalize from '../../../../Utils/Helpers/Dimen';
 
 /**
  * Description: Guest hero carousel section.
@@ -37,17 +39,24 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
     return null;
   }
 
+  const slideWidth = normalize(300);
+  const cardWidth = normalize(288);
+  const cardHeight = normalize(190);
+
   return (
     <>
-      <Carousel
-        layout="default"
-        data={topBanners}
-        onSnapToItem={index => setActiveBannerIndex(index)}
-        sliderWidth={width - 32}
-        itemWidth={width - 32}
-        inactiveSlideScale={1}
-        inactiveSlideOpacity={1}
-        renderItem={({ item }) => {
+      <View style={{ marginHorizontal: -16, width }}>
+        <Carousel
+          layout="default"
+          data={topBanners}
+          onSnapToItem={index => setActiveBannerIndex(index)}
+          sliderWidth={width}
+          itemWidth={slideWidth}
+          firstItem={0}
+          activeSlideAlignment="center"
+          inactiveSlideScale={1}
+          inactiveSlideOpacity={1}
+          renderItem={({ item }) => {
           let parsedHtml = {};
           if (item.html_content) {
             const html = item.html_content;
@@ -126,12 +135,12 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
           };
 
           return (
-            <View style={[localStyles.heroSlideWrap, { width: width - 32 }]}>
-              <ImageBackground
-                source={Imagepath.HomeUser}
-                imageStyle={styles.heroRadius}
-                style={styles.hero}
-                resizeMode="stretch"
+            <View style={{ width: slideWidth, alignItems: 'center', justifyContent: 'center' }}>
+              <LinearGradient
+                colors={['#2C4DB9', '#7A22B8']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.hero, { width: cardWidth, height: cardHeight, borderRadius: 16 }]}
               >
                 <View>
                   <Text style={styles.heroKicker}>{displayKicker}</Text>
@@ -170,11 +179,12 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
                     )}
                   </View>
                 </View>
-              </ImageBackground>
+              </LinearGradient>
             </View>
           );
         }}
       />
+      </View>
       <View style={styles.bannerCounterWrap}>
         <Text style={styles.bannerCounterText}>
           {`${Math.min(activeBannerIndex + 1, topBanners.length || 1)}/${topBanners.length || 1}`}

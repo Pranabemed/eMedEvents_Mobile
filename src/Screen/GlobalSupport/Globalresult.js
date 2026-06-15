@@ -81,13 +81,13 @@ const getResultCreditLabel = item => {
         if (/^\d+(\.\d+)?$/.test(cleaned)) {
             return `${cleaned} CME / CE Credit(s)`;
         }
-        return cleaned.replace(/contact hour/ig, 'Contact Hour(s)').trim();
+        return cleaned.replace(/contact hours?(\(s\))?/ig, 'Contact Hour(s)').trim();
     }
     if (Array.isArray(item?.cme_points_popovar) && item.cme_points_popovar.length) {
         return item.cme_points_popovar
             .map(point => {
                 const count = parseFloat(point?.points) || 0;
-                const name = point?.name && point?.name.toLowerCase() === 'contact hour'
+                const name = point?.name && /contact\s*hours?(\(s\))?/i.test(point.name)
                     ? 'Contact Hour(s)'
                     : point?.name || '';
                 return `${count} ${name}`.trim();
@@ -143,6 +143,42 @@ const Globalresult = (props) => {
     const lastFilterRef = useRef();
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
+    const isFreeOnlyResults = useMemo(() => {
+        if (!Array.isArray(storeAlldata) || storeAlldata.length === 0) {
+            return false;
+        }
+
+        return storeAlldata.every(item => {
+            const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? item?.displayPrice ?? '';
+            const normalizedPrice = String(rawPrice).trim().toLowerCase();
+
+            return (
+                !normalizedPrice ||
+                normalizedPrice === '0' ||
+                normalizedPrice === '0.0' ||
+                normalizedPrice === '0.00' ||
+                normalizedPrice === 'free'
+            );
+        });
+    }, [storeAlldata]);
+    const sortOptions = useMemo(() => {
+        const baseOptions = props?.route?.params?.trig?.newCt ? sorteddataforCity : sortedData;
+
+        if (!isFreeOnlyResults) {
+            return baseOptions;
+        }
+
+        return baseOptions.filter(option => !option?.type?.startsWith('PRICE_'));
+    }, [isFreeOnlyResults, props?.route?.params?.trig?.newCt]);
+    const sortModalHeight = useMemo(() => {
+        const maxHeight = props?.route?.params?.trig?.newCt ? normalize(240) : normalize(340);
+        const itemHeight = normalize(50);
+        const paddingHeight = normalize(28);
+        const calculatedHeight = paddingHeight + (sortOptions.length * itemHeight);
+
+        return Math.max(normalize(160), Math.min(calculatedHeight, maxHeight));
+    }, [props?.route?.params?.trig?.newCt, sortOptions.length]);
+    const hasAuthToken = Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
     const guestSelection = props?.route?.params?.guestSelection;
     const isGuestCmeRouteType = props?.route?.params?.trig?.rqstType === 'professionlandingpage';
     const hasGuestSelectionData = Boolean(
@@ -152,23 +188,27 @@ const Globalresult = (props) => {
         guestSelection?.state,
     );
     const isGuestCmeFlow = Boolean(
-        isGuestCmeRouteType ||
-        props?.route?.params?.guestCmeFlow === true ||
-        props?.route?.params?.trig?.guestCmeFlow === true ||
-        hasGuestSelectionData
+        !hasAuthToken && (
+            isGuestCmeRouteType ||
+            props?.route?.params?.guestCmeFlow === true ||
+            props?.route?.params?.trig?.guestCmeFlow === true ||
+            hasGuestSelectionData
+        )
     );
     const isGuestSpecialityFlow = Boolean(
-        props?.route?.params?.trig?.fromGuestSpecialitySearch ||
-        props?.route?.params?.trig?.creditData?.fromGuestSpecialitySearch ||
-        props?.route?.params?.trig?.CreditData?.fromGuestSpecialitySearch ||
-        (props?.route?.params?.trig?.Realback === 'guest' && props?.route?.params?.trig?.rqstType === 'specialityconferences')
+        !hasAuthToken && (
+            props?.route?.params?.trig?.fromGuestSpecialitySearch ||
+            props?.route?.params?.trig?.creditData?.fromGuestSpecialitySearch ||
+            props?.route?.params?.trig?.CreditData?.fromGuestSpecialitySearch ||
+            (props?.route?.params?.trig?.Realback === 'guest' && props?.route?.params?.trig?.rqstType === 'specialityconferences')
+        )
     );
     const isGuestFlow = Boolean(
         isGuestCmeFlow ||
         isGuestSpecialityFlow ||
         props?.route?.params?.trig?.Realback === 'guest' ||
         props?.route?.params?.Realback === 'guest' ||
-        !AuthReducer?.loginResponse?.token
+        !hasAuthToken
     );
     const stateList = Array.isArray(AuthReducer?.stateResponse?.data)
         ? AuthReducer?.stateResponse?.data
@@ -346,7 +386,9 @@ const Globalresult = (props) => {
         });
     }, [props.navigation]);
     const SearchBack = useCallback(() => {
-        if (isGuestCmeFlow) {
+        if (props.navigation.canGoBack?.()) {
+            props.navigation.goBack();
+        } else if (isGuestCmeFlow) {
             goBackToGuestUser();
         } else if (props?.route?.params?.trig?.Realback == "cont") {
             props.navigation.goBack();
@@ -532,13 +574,19 @@ const Globalresult = (props) => {
                 return;
             }
 
+            if (isGuestFlow) {
+                resetResultsView({ loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType });
+                return;
+            }
+
             if (props?.route?.params?.trig?.Realback === "cont") {
                 resetResultsView({ loadingState: true });
                 fetchHandle(undefined, { pageNum: 0 });
             }
         });
         return unsubscribe;
-    }, [props.navigation, props?.route?.params?.trig, resetResultsView, fetchHandle]);
+    }, [fetchHandle, isGuestFlow, props.navigation, props?.route?.params?.trig, resetResultsView, sortType]);
 
     const fetchMore = useCallback(() => {
         if (!apiReq && !loading && canLoadMore && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
@@ -571,14 +619,20 @@ const Globalresult = (props) => {
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-            });
+        });
         if (result) {
+            const resolvedRealback =
+                props?.route?.params?.trig?.Realback ||
+                props?.route?.params?.filterDatSh?.returnTake?.trig?.Realback ||
+                props?.route?.params?.filterDatSh?.returnTake?.webCastURL?.Realback ||
+                (isGuestFlow ? 'guest' : undefined);
+
             props.navigation.navigate("Statewebcast", {
                 webCastURL: {
                     webCastURL: result,
                     shareUrl: url,
                     creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll,
-                    Realback: props?.route?.params?.trig?.Realback
+                    Realback: resolvedRealback
                 }
             })
         }
@@ -1014,14 +1068,14 @@ const Globalresult = (props) => {
                         <View
                             style={props?.route?.params?.trig?.newCt ? {
                                 borderRadius: normalize(7),
-                                height: Platform.OS === 'ios' ? normalize(240) : normalize(240),
+                                height: sortModalHeight,
                                 position: 'absolute',
                                 bottom: 0,
                                 width: '100%',
                                 backgroundColor: '#fff',
                             } : {
                                 borderRadius: normalize(7),
-                                height: Platform.OS === 'ios' ? normalize(340) : normalize(340),
+                                height: sortModalHeight,
                                 position: 'absolute',
                                 bottom: 0,
                                 width: '100%',
@@ -1029,12 +1083,12 @@ const Globalresult = (props) => {
                             }}>
                             <FlatList
                                 contentContainerStyle={{
-                                    paddingBottom: normalize(70),
+                                    paddingBottom: normalize(12),
                                     paddingTop: normalize(7),
                                 }}
                                 showsVerticalScrollIndicator={false}
                                 keyExtractor={item => item.id.toString()}
-                                data={props?.route?.params?.trig?.newCt ? sorteddataforCity : sortedData}
+                                data={sortOptions}
                                 renderItem={({ item }) => {
                                     const handlePress = (dd) => {
                                         fetchHandle(dd, { pageNum: 0, sortType: dd?.type });

@@ -271,6 +271,20 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     setActiveIndexslic(index);
     setLicstatepratice(true)
   }
+  const shouldShowMedicalLicenseState = (index) => {
+    const countryName = String(formData?.[index]?.country || country || '').trim().toLowerCase();
+    const countryIdentifier = String(formData?.[index]?.country_id || country_id || '').trim();
+    const phoneDialCode = String(formData?.[index]?.dialcode || dialcode || '').trim();
+
+    return (
+      countryName === 'usa' ||
+      countryName === 'united states' ||
+      countryName === 'united states of america' ||
+      countryIdentifier === '1' ||
+      phoneDialCode === '+1' ||
+      phoneDialCode === '1'
+    );
+  };
   const normalizeCountryName = (country) => {
     // Normalize country names to align with entries in countryall
     const countryMap = {
@@ -790,25 +804,27 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                 />
               </View>
             </View>
-            <View style={{
-              flexDirection: 'row',
-              flex: 1
-            }}>
+            {shouldShowMedicalLicenseState(index) ? (
               <View style={{
-                flex: 1,
-                paddingRight: normalize(0)
+                flexDirection: 'row',
+                flex: 1
               }}>
-                <CustomInputTouchable
-                  label={"Medical License State*"}
-                  value={formData[index]?.medicallics || ''}
-                  placeholder={""}
-                  placeholderTextColor="#949494"
-                  rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                  onPress={() => medicalState(index)}
-                  onIconpres={() => medicalState(index)}
-                />
+                <View style={{
+                  flex: 1,
+                  paddingRight: normalize(0)
+                }}>
+                  <CustomInputTouchable
+                    label={"Medical License State*"}
+                    value={formData[index]?.medicallics || ''}
+                    placeholder={""}
+                    placeholderTextColor="#949494"
+                    rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                    onPress={() => medicalState(index)}
+                    onIconpres={() => medicalState(index)}
+                  />
+                </View>
               </View>
-            </View>
+            ) : null}
             <View style={{
               flexDirection: 'row',
               flex: 1

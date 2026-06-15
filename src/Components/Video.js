@@ -29,11 +29,23 @@ import { extractVttCandidates, findCueForTime, parseThumbnailVtt, resolveUrl } f
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { WebView } from 'react-native-webview';
 
 const normalizeVideoSource = (url) => {
     if (!url) return null;
     return url.trim().replace(/&amp;/g, '&');
 };
+
+const getEmbedUrl = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+        return `https://www.youtube.com/embed/${match[2]}?autoplay=0&rel=0`;
+    }
+    return null;
+};
+
 
 
 const getExternalVideoUrl = (source) => {
@@ -86,7 +98,7 @@ const VideoComponent = (props) => {
     const [loading, setLoading] = useState(true);
     const [videoHeight, setVideoHeight] = useState(normalize(200));
     const [videoAspectRatio, setVideoAspectRatio] = useState(16 / 9);
-    const [videoDic, setVideoDic] = useState([]);
+    const [videoDic, setVideoDic] = useState(props?.route?.params?.RoleData || []);
     const [videoUrl, setVideoUrl] = useState(null);
     const [externalVideoUrl, setExternalVideoUrl] = useState(null);
     const [loadingdown, setLoadingdown] = useState(false);
@@ -892,25 +904,39 @@ const VideoComponent = (props) => {
     }, []);
 
     useEffect(() => {
-        if (!videoDic || !videoDic.activityData || videoDic.activityData.length === 0) {
+        const activeDic = (videoDic && videoDic.activityData && videoDic.activityData.length > 0)
+            ? videoDic
+            : (props?.route?.params?.RoleData && props?.route?.params?.RoleData.activityData && props?.route?.params?.RoleData.activityData.length > 0)
+                ? props.route.params.RoleData
+                : null;
+
+        if (!activeDic) {
             setVideoUrl(null);
             setExternalVideoUrl(null);
             setThumbnailVttCandidates([]);
             setThumbnailCues([]);
             setPreviewVideoReady(false);
             setInitialVideoThumbnail(null);
+            setShowLoader(false);
             return;
         }
 
-        const descriptionHtml = videoDic?.activityData?.[0]?.description || '';
+        const descriptionHtml = activeDic?.activityData?.[0]?.description || '';
         const descriptionUrl = extractVideoUrl(descriptionHtml);
-        const rawVideoId = videoDic?.activityData?.[0]?.youtube_video_id || '';
+        const rawVideoId = activeDic?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.RoleData?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.RoleData?.video_audio_details?.[0]?.youtube_video_id
+            || '';
         const candidateSource = descriptionUrl || rawVideoId;
+
+        if (!candidateSource && !activeDic?.activityData?.[0]?.flipbook) {
+            setShowLoader(false);
+        }
 
         // The baseUrl for VTT resolution: prefer a real HTTP URL (from description
         // or onlineDisplayPath) so that relative VTT paths can be resolved.
         // A bare YouTube video ID is NOT a valid base URL, so we skip it.
-        const onlineBase = videoDic?.onlineDisplayPath || '';
+        const onlineBase = activeDic?.onlineDisplayPath || '';
         const isYouTubeId = candidateSource && /^[\w-]{11}$/.test(candidateSource.trim());
         const vttBaseUrl = /^https?:\/\//i.test(onlineBase)
             ? onlineBase
@@ -931,7 +957,7 @@ const VideoComponent = (props) => {
             setExternalVideoUrl(getExternalVideoUrl(candidateSource));
         }
 
-        const activityData = videoDic?.activityData?.[0] || {};
+        const activityData = activeDic?.activityData?.[0] || {};
         const posterUri = activityData?.poster
             || activityData?.thumbnail
             || activityData?.thumb
@@ -939,7 +965,7 @@ const VideoComponent = (props) => {
             || activityData?.image
             || null;
         if (posterUri) {
-            setInitialVideoThumbnail(resolveUrl(videoDic?.onlineDisplayPath || resolvedVideoUrl || candidateSource, posterUri));
+            setInitialVideoThumbnail(resolveUrl(activeDic?.onlineDisplayPath || resolvedVideoUrl || candidateSource, posterUri));
         } else {
             setInitialVideoThumbnail(null);
         }
@@ -952,7 +978,7 @@ const VideoComponent = (props) => {
         });
         setThumbnailVttCandidates(vttCandidates);
         setPreviewVideoReady(false);
-    }, [videoDic, routeVttParam]);
+    }, [videoDic, routeVttParam, props?.route?.params?.RoleData]);
 
     useEffect(() => {
         let isActive = true;
@@ -1253,99 +1279,111 @@ const VideoComponent = (props) => {
                 </View>}
 
                 {conn == false ? <IntOff /> : <ScrollView scrollEnabled={!fullscreen} contentContainerStyle={{ paddingBottom: fullscreen ? normalize(320) : normalize(120) }}>
-                    {hasVideoSource ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
-                        <Pressable
-                            style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
-                            onPress={() => {
-                                setShowThumb((prev) => !prev);
-                                if (!showThumb) {
-                                    showControlsBriefly();
-                                }
-                            }}
-                        >
-                            <Video
-                                ref={videoRef}
-                                source={{ uri: videoUrl }}
-                                style={fullscreen ? styles.fullscreenVideo : styles.video}
-                                paused={paused}
-                                onLoad={onLoad}
-                                onProgress={onProgress}
-                                onEnd={onEnd}
-                                onReadyForDisplay={onReadyForDisplay}
-                                bufferConfig={{
-                                    minBufferMs: 15000,
-                                    maxBufferMs: 50000,
-                                    bufferForPlaybackMs: 2500,
-                                    bufferForPlaybackAfterRebufferMs: 5000,
-                                }}
-                                resizeMode="contain"
-                                shutterColor="transparent"
-                                hideShutterView={true}
-                                onVideoLoadStart={() => {
-                                    if (!fullscreenTransitionRef.current) {
-                                        setLoading(true);
+                    {(hasVideoSource || (externalVideoUrl && getEmbedUrl(externalVideoUrl))) ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
+                        {hasVideoSource ? (
+                            <Pressable
+                                style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
+                                onPress={() => {
+                                    setShowThumb((prev) => !prev);
+                                    if (!showThumb) {
+                                        showControlsBriefly();
                                     }
                                 }}
-                            />
-                            {loading && initialVideoThumbnail && (
-                                <View pointerEvents="none" style={styles.loadingThumbWrap}>
-                                    <Image
-                                        source={{ uri: initialVideoThumbnail }}
-                                        style={styles.loadingThumbImage}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            )}
-                            {showTransitionCover && transitionCoverFrame?.uri && (
-                                <View pointerEvents="none" style={styles.transitionCoverWrap}>
-                                    {transitionCoverFrame?.crop && transitionCoverFrame?.spriteSize?.width && transitionCoverFrame?.spriteSize?.height ? (
-                                        <View style={styles.transitionCoverCropWrap}>
-                                            <Image
-                                                source={{ uri: transitionCoverFrame.uri }}
-                                                style={[
-                                                    styles.transitionCoverCropImage,
-                                                    {
-                                                        width: transitionCoverFrame.spriteSize.width,
-                                                        height: transitionCoverFrame.spriteSize.height,
-                                                        transform: [
-                                                            { translateX: -(transitionCoverFrame.crop.x || 0) },
-                                                            { translateY: -(transitionCoverFrame.crop.y || 0) },
-                                                        ],
-                                                    },
-                                                ]}
-                                            />
-                                        </View>
-                                    ) : (
+                            >
+                                <Video
+                                    ref={videoRef}
+                                    source={{ uri: videoUrl }}
+                                    style={fullscreen ? styles.fullscreenVideo : styles.video}
+                                    paused={paused}
+                                    onLoad={onLoad}
+                                    onProgress={onProgress}
+                                    onEnd={onEnd}
+                                    onReadyForDisplay={onReadyForDisplay}
+                                    bufferConfig={{
+                                        minBufferMs: 15000,
+                                        maxBufferMs: 50000,
+                                        bufferForPlaybackMs: 2500,
+                                        bufferForPlaybackAfterRebufferMs: 5000,
+                                    }}
+                                    resizeMode="contain"
+                                    shutterColor="transparent"
+                                    hideShutterView={true}
+                                    onVideoLoadStart={() => {
+                                        if (!fullscreenTransitionRef.current) {
+                                            setLoading(true);
+                                        }
+                                    }}
+                                />
+                                {loading && initialVideoThumbnail && (
+                                    <View pointerEvents="none" style={styles.loadingThumbWrap}>
                                         <Image
-                                            source={{ uri: transitionCoverFrame.uri }}
-                                            style={styles.transitionCoverImage}
+                                            source={{ uri: initialVideoThumbnail }}
+                                            style={styles.loadingThumbImage}
                                             resizeMode="contain"
                                         />
-                                    )}
-                                </View>
-                            )}
-                            {loading && (
-                                <ActivityIndicator
-                                    style={styles.playText}
-                                    size="large"
-                                    color={Colorpath.white}
+                                    </View>
+                                )}
+                                {showTransitionCover && transitionCoverFrame?.uri && (
+                                    <View pointerEvents="none" style={styles.transitionCoverWrap}>
+                                        {transitionCoverFrame?.crop && transitionCoverFrame?.spriteSize?.width && transitionCoverFrame?.spriteSize?.height ? (
+                                            <View style={styles.transitionCoverCropWrap}>
+                                                <Image
+                                                    source={{ uri: transitionCoverFrame.uri }}
+                                                    style={[
+                                                        styles.transitionCoverCropImage,
+                                                        {
+                                                            width: transitionCoverFrame.spriteSize.width,
+                                                            height: transitionCoverFrame.spriteSize.height,
+                                                            transform: [
+                                                                { translateX: -(transitionCoverFrame.crop.x || 0) },
+                                                                { translateY: -(transitionCoverFrame.crop.y || 0) },
+                                                            ],
+                                                        },
+                                                    ]}
+                                                />
+                                            </View>
+                                        ) : (
+                                            <Image
+                                                source={{ uri: transitionCoverFrame.uri }}
+                                                style={styles.transitionCoverImage}
+                                                resizeMode="contain"
+                                            />
+                                        )}
+                                    </View>
+                                )}
+                                {loading && (
+                                    <ActivityIndicator
+                                        style={styles.playText}
+                                        size="large"
+                                        color={Colorpath.white}
+                                    />
+                                )}
+                                {showThumb && !loading && (
+                                    <Pressable onPress={() => {
+                                        setPaused(!paused);
+                                        showControlsBriefly();
+                                    }} style={styles.playText}>
+                                        <PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
+                                    </Pressable>
+                                )}
+                                {!loading && (
+                                    <Pressable style={fullscreen ? styles.fullscreenButton : styles.nfullmode} onPress={toggleFullscreen}>
+                                        <FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={22} color="#FFFFFF" />
+                                    </Pressable>
+                                )}
+                            </Pressable>
+                        ) : (
+                            <View style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}>
+                                <WebView
+                                    style={fullscreen ? styles.fullscreenVideo : styles.video}
+                                    source={{ uri: getEmbedUrl(externalVideoUrl) }}
+                                    javaScriptEnabled={true}
+                                    domStorageEnabled={true}
+                                    allowsFullscreenVideo={true}
                                 />
-                            )}
-                            {showThumb && !loading && (
-                                <Pressable onPress={() => {
-                                    setPaused(!paused);
-                                    showControlsBriefly();
-                                }} style={styles.playText}>
-                                    <PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
-                                </Pressable>
-                            )}
-                            {!loading && (
-                                <Pressable style={fullscreen ? styles.fullscreenButton : styles.nfullmode} onPress={toggleFullscreen}>
-                                    <FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={22} color="#FFFFFF" />
-                                </Pressable>
-                            )}
-                        </Pressable>
-                        {!fullscreen && !loading ? (
+                            </View>
+                        )}
+                        {!fullscreen && !loading && hasVideoSource ? (
                             <View style={styles.controls}>
                                 <Text style={[styles.timeLabel, styles.leftTime]}>
                                     {formatTime(displayedTime)}
@@ -1372,7 +1410,7 @@ const VideoComponent = (props) => {
                                     {formatTime(duration)}
                                 </Text>
                             </View>
-                        ) : !loading && showThumb && (
+                        ) : !loading && showThumb && hasVideoSource && (
                             <View style={styles.fullscreencontrols}>
                                 <Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
                                     <Text style={[
@@ -1408,17 +1446,20 @@ const VideoComponent = (props) => {
                                 </Pressable>
                             </View>
                         )}
-                    </View> : nonVideoContent && !fullscreen ? <><RenderHTML
-                        contentWidth={300}
-                        source={{ html: nonVideoContent }}
-                        tagsStyles={{
-                            p: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
-                            h3: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
-                            h4: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
-                            h1: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
-                            h2: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }
-                        }}
-                    />
+                    </View> : (nonVideoContent || externalVideoUrl) && !fullscreen ? <View style={{ padding: normalize(15) }}>
+                        {nonVideoContent && (
+                            <RenderHTML
+                                contentWidth={300}
+                                source={{ html: nonVideoContent }}
+                                tagsStyles={{
+                                    p: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h3: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h4: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h1: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h2: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }
+                                }}
+                            />
+                        )}
 
                         {externalVideoUrl ? (
                             <Pressable
@@ -1428,7 +1469,7 @@ const VideoComponent = (props) => {
                                 <Text style={styles.openExternalButtonText}>Open Video in Browser</Text>
                             </Pressable>
                         ) : null}
-                    </> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen ? (<View>
+                    </View> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen ? (<View>
                         <FlipbookComponent path={CMEReducer?.cmeactivityResponse?.onlineDisplayPath} link={CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook} />
                     </View>
                     ) : showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : <View style={{ height: normalize(50), width: normalize(290), paddingVertical: normalize(10) }}><Text style={{ justifyContent: "center", alignSelf: "center", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{"No content available"}</Text></View>
