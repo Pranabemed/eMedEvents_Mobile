@@ -915,16 +915,18 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                 flex: 1,
                 paddingRight: normalize(0)
               }}>
-                <InputField
-                  label='License Number*'
-                  value={formData[index]?.license_number || ''}
-                  onChangeText={(val) => handleInputChange(index, 'license_number', val)}
-                  placeholder=""
-                  placeholderTextColor="#949494"
-                  keyboardType="default"
-                  showCountryCode={false}
-                  maxlength={10}
-                />
+                {shouldShowMedicalLicenseState(index) ? (
+                  <InputField
+                    label='License Number*'
+                    value={formData[index]?.license_number || ''}
+                    onChangeText={(val) => handleInputChange(index, 'license_number', val)}
+                    placeholder=""
+                    placeholderTextColor="#949494"
+                    keyboardType="default"
+                    showCountryCode={false}
+                    maxlength={10}
+                  />
+                ) : null}
               </View>
             </View>
             {custom_fieldsTake && custom_fieldsTake.length > 0 && custom_fieldsTake.map((field, openIndx) => (
@@ -1256,17 +1258,19 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                 flex: 1,
                 paddingRight: normalize(0)
               }}>
-                <CustomInputTouchable
-                  label={'License Expiry Date*'}
-                  value={formData[index]?.license_expiry_date && moment(formData[index]?.license_expiry_date, "YYYY-MM-DD", true).isValid()
-                    ? moment(formData[index]?.license_expiry_date).format("MM-DD-YYYY")
-                    : "" || ''}
-                  placeholder={''}
-                  placeholderTextColor="#949494"
-                  rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                  onPress={() => DatePick(index)}
-                  onIconpres={() => DatePick(index)}
-                />
+                {shouldShowMedicalLicenseState(index) ? (
+                  <CustomInputTouchable
+                    label={'License Expiry Date*'}
+                    value={formData[index]?.license_expiry_date && moment(formData[index]?.license_expiry_date, "YYYY-MM-DD", true).isValid()
+                      ? moment(formData[index]?.license_expiry_date).format("MM-DD-YYYY")
+                      : "" || ''}
+                    placeholder={''}
+                    placeholderTextColor="#949494"
+                    rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
+                    onPress={() => DatePick(index)}
+                    onIconpres={() => DatePick(index)}
+                  />
+                ) : null}
               </View>
             </View>
             <View style={styles.inputGroup}>

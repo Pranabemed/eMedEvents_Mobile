@@ -1061,7 +1061,7 @@ const Checkout = (props) => {
             // Check if the item has a field_name property
             if (item.required == 1) {
                 // Add the field_name value to the requiredFields array
-                requiredFields.push(item.field_name);
+                baseRequiredFields.push(item.field_name);
             }
         });
     }
@@ -1084,7 +1084,11 @@ const Checkout = (props) => {
             return baseRequiredFields;
         }
 
-        return baseRequiredFields.filter(field => field !== 'license_state_id');
+        return baseRequiredFields.filter(field =>
+            field !== 'license_state_id' &&
+            field !== 'license_number' &&
+            field !== 'license_expiry_date'
+        );
     };
     console.log(baseRequiredFields, "requiredFields-------", detectField, formData)
     const nonbillings = [
