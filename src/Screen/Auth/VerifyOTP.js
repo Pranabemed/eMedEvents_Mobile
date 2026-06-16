@@ -12,10 +12,11 @@ import { resendemailotpRequest, verifyemailRequest } from '../../Redux/Reducers/
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 const persistEmailVerifiedStatus = async () => {
@@ -42,6 +43,7 @@ const VerifyOTP = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const isNonUsaUser = Boolean(props?.route?.params?.verifyemail?.isNonUsaUser || props?.route?.params?.nonUsaUser);
     console.log(props?.route?.params, AuthReducer?.signupResponse?.email_otp, "AuthReducer======", AuthReducer?.resendemailotpResponse?.email_otp, props?.route?.params?.verifyemail?.verifyemail, "props?.route?.params?.verifyemail?.phone")
     const isFocus = useIsFocused();
     const [allotpcheck, setAllotpcheck] = useState();
@@ -258,7 +260,22 @@ const VerifyOTP = (props) => {
             case 'Auth/verifyemailSuccess':
                 status = AuthReducer.status;
                 persistEmailVerifiedStatus();
-                toggleModal();
+                if (isNonUsaUser) {
+                    writeNonUsaFlowState({
+                        userType: 'non_usa',
+                        isNonUsa: true,
+                        emailVerified: true,
+                        professionCompleted: true,
+                    });
+                    props.navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'TabNav' }],
+                        })
+                    );
+                } else {
+                    toggleModal();
+                }
                 // props.navigation.navigate("VerifyMobileOTP");
                 break;
             case 'Auth/verifyemailFailure':

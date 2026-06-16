@@ -13,6 +13,7 @@ import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -39,6 +40,12 @@ const getTokenErrorMessage = (value) => (
 const isInvalidTokenFailure = (value) => {
   const msg = getTokenErrorMessage(value);
   return INVALID_TOKEN_MESSAGES.some(pattern => msg === pattern || msg.startsWith(pattern));
+};
+
+const isEmedDeepLink = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const lowerUrl = url.toLowerCase().trim();
+  return lowerUrl.includes('emedevents.com') || lowerUrl.includes('emedevents.net');
 };
 
 export default function Splash(props) {
@@ -70,6 +77,9 @@ export default function Splash(props) {
   const [guestHomeGateActive, setGuestHomeGateActive] = useState(false);
   const [hasAuthToken, setHasAuthToken] = useState(false);
   const [deepLinkBootstrapActive, setDeepLinkBootstrapActive] = useState(false);
+  const [nonUsaState, setNonUsaState] = useState(null);
+  const [bootstrapChecked, setBootstrapChecked] = useState(false);
+  const [professionState, setProfessionState] = useState(null);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
@@ -109,24 +119,35 @@ export default function Splash(props) {
         const [
           emaileer,
           mobilevr,
+          currentToken,
+          playerSession,
           guestFlowRaw,
           guestPrimePendingRaw,
           primeMembershipSkippedRaw,
           primeCardFlowCompleteRaw,
           deepLinkBootstrapRaw,
           initialUrl,
+          nonUsaFlowState,
+          professionRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
           AsyncStorage.getItem(constants.MOBVER),
+          AsyncStorage.getItem(constants.TOKEN),
+          AsyncStorage.getItem('PLAYERSESSION'),
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
           AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
           AsyncStorage.getItem(PRIME_CARD_FLOW_COMPLETE_KEY),
           AsyncStorage.getItem(DEEPLINK_BOOTSTRAP_KEY),
           Linking.getInitialURL(),
+          readNonUsaFlowState(),
+          AsyncStorage.getItem(constants.PROFESSION),
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
+        const professionData = professionRaw ? JSON.parse(professionRaw) : null;
+        setNonUsaState(nonUsaFlowState);
+        setProfessionState(professionData);
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
         setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
@@ -136,7 +157,76 @@ export default function Splash(props) {
           primeMembershipSkippedRaw === 'true' ||
           primeCardFlowCompleteRaw === 'true'
         );
-        setDeepLinkBootstrapActive(Boolean(deepLinkBootstrapRaw) || Boolean(initialUrl));
+        setDeepLinkBootstrapActive(Boolean(deepLinkBootstrapRaw) || isEmedDeepLink(initialUrl));
+
+        if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && !hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Onboard' }],
+            })
+          );
+          return;
+        }
+
+        if (nonUsaFlowState?.isNonUsa && !currentToken) {
+          const draft = nonUsaFlowState?.signupDraft || {};
+          const nonUsaEmail = draft?.email || nonUsaFlowState?.email || '';
+          const nonUsaProfessionDone = nonUsaFlowState?.professionCompleted === true;
+          const nonUsaEmailVerified = nonUsaFlowState?.emailVerified === true;
+
+          if (!nonUsaProfessionDone) {
+            if (!hasNavigatedRef.current) {
+              hasNavigatedRef.current = true;
+              props.navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'AllSpecial', params: { Alldata: { ...draft, isNonUsaUser: true } } }],
+                })
+              );
+            }
+            return;
+          }
+
+          if (!nonUsaEmailVerified) {
+            if (!hasNavigatedRef.current) {
+              hasNavigatedRef.current = true;
+              props.navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{
+                    name: 'VerifyOTPEmail',
+                    params: {
+                      nonUsaUser: true,
+                      newMail: nonUsaEmail,
+                      NewEmail: {
+                        email: nonUsaEmail,
+                        returnDat: draft,
+                      },
+                      verifyemail: {
+                        verifyemail: draft,
+                        isNonUsaUser: true,
+                      },
+                    },
+                  }],
+                })
+              );
+            }
+            return;
+          }
+
+          if (!hasNavigatedRef.current) {
+            hasNavigatedRef.current = true;
+            props.navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'TabNav' }],
+              })
+            );
+          }
+          return;
+        }
       } catch (error) {
         console.error('Error handling navigation:', error);
       }
@@ -153,16 +243,19 @@ export default function Splash(props) {
       setTimeout(async () => {
         try {
           const initialUrl = await Linking.getInitialURL();
-          if (deepLinkBootstrapActive || initialUrl) {
+          if (deepLinkBootstrapActive || isEmedDeepLink(initialUrl)) {
             console.log('[Splash] Deep link launch detected, bypassing token_error reset');
+            setBootstrapChecked(true);
             return;
           }
 
+          const currentToken = await AsyncStorage.getItem(constants.TOKEN);
           const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
           const hasGuestRegistrationFlow = Boolean(guestFlowRaw);
 
-          if (hasGuestRegistrationFlow) {
+          if (hasGuestRegistrationFlow && !currentToken) {
             setHasAuthToken(false);
+            setBootstrapChecked(true);
             if (!hasNavigatedRef.current) {
               hasNavigatedRef.current = true;
               props.navigation.dispatch(
@@ -177,6 +270,7 @@ export default function Splash(props) {
 
           const loginHandleProccess = await TokenManager.ensureValidToken('splash-bootstrap');
           setHasAuthToken(Boolean(loginHandleProccess));
+          setBootstrapChecked(true);
 
           if (loginHandleProccess) {
             startupRequestedRef.current = true;
@@ -211,6 +305,7 @@ export default function Splash(props) {
           }
         } catch (error) {
           console.log(error);
+          setBootstrapChecked(true);
         }
       }, 500);
     };
@@ -379,6 +474,7 @@ export default function Splash(props) {
   }, [filteredStates]);
 
   useEffect(() => {
+    if (!bootstrapChecked) return;
     if (hasNavigatedRef.current) return;
 
     const loginResponse = AuthReducer?.loginResponse || {};
@@ -398,6 +494,60 @@ export default function Splash(props) {
     const noPhoneDt = !phone;
     const bothVerified = isVerified && isPhoneVerified;
     const handleVerify = spalsh || bothVerified;
+
+    const isNonUsa =
+      isNonUsaAccount(verifyData) ||
+      (nonUsaState?.isNonUsa === true) ||
+      (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0');
+
+    if (isNonUsa) {
+      const isGuestNonUsaWithToken = (guestRegistrationFlowActive || guestHomeGateActive) && hasAuthToken;
+      if (isGuestNonUsaWithToken) {
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'TabNav' }],
+            })
+          );
+        }
+      } else if (!isVerified) {
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{
+                name: "VerifyOTPEmail",
+                params: {
+                  nonUsaUser: true,
+                  newMail: email || loginResponse?.email || nonUsaState?.email || professionState?.email,
+                  NewEmail: {
+                    email: email || loginResponse?.email || nonUsaState?.email || professionState?.email,
+                  },
+                  verifyemail: {
+                    verifyemail: verifyData,
+                    isNonUsaUser: true,
+                  },
+                }
+              }]
+            })
+          );
+        }
+      } else {
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'TabNav' }],
+            })
+          );
+        }
+      }
+      return;
+    }
 
     const isValidDashboard = !loadingDashboard &&
       Array.isArray(dashboard) &&
@@ -527,8 +677,11 @@ export default function Splash(props) {
     spalsh,
     guestRegistrationFlowActive,
     guestHomeGateActive,
-    hasAuthToken
-    , deepLinkBootstrapActive
+    hasAuthToken,
+    deepLinkBootstrapActive,
+    nonUsaState,
+    bootstrapChecked,
+    professionState,
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

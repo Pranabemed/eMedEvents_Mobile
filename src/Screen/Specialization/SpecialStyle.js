@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
         backgroundColor: Colorpath.white,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: normalize(10),
+        marginHorizontal: normalize(5),
         borderWidth: 1,
         borderColor: '#AAAAAA',
     },

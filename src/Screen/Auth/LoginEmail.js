@@ -17,10 +17,11 @@ import { resendemailotpRequest, verifyemailRequest } from '../../Redux/Reducers/
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 // ─── Module-level OTP send guard ─────────────────────────────────────────────
 // Stored OUTSIDE the component so it:
@@ -37,6 +38,7 @@ const LoginEmail = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isFocus = useIsFocused();
+    const isNonUsaUser = Boolean(props?.route?.params?.verifyemail?.isNonUsaUser || props?.route?.params?.nonUsaUser);
 
     // ─── State ────────────────────────────────────────────────────────────────
     const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -188,7 +190,22 @@ const LoginEmail = (props) => {
         ) {
             // Reset the module-level guard so a future login email flow works correctly
             _loginOTPSentForEmail = null;
-            setModalVisible(true);
+            if (isNonUsaUser) {
+                writeNonUsaFlowState({
+                    userType: 'non_usa',
+                    isNonUsa: true,
+                    emailVerified: true,
+                    professionCompleted: true,
+                });
+                props.navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'TabNav' }],
+                    })
+                );
+            } else {
+                setModalVisible(true);
+            }
         }
         prevAuthStatus.current = AuthReducer.status;
     }, [AuthReducer.status]);

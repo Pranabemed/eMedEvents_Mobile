@@ -23,6 +23,7 @@ import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -47,10 +48,17 @@ const Login = (props) => {
   const [choosePr, setChoosePr] = useState(false);
   const isFocus = useIsFocused();
   const [fcm, setFcm] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [isNonUsaFlow, setIsNonUsaFlow] = useState(Boolean(props?.route?.params?.isNonUsaUser || String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1"));
   const handleInputChange = (val) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
     setEmail(val);
+    if (isNonUsaFlow) {
+      setMobile(false);
+      setIsPasswordFieldVisible(true);
+      return;
+    }
     // Block input after first digit if no location permission
     if (mobile && !locationPermission && val.length > 0) {
       setEmail(val);
@@ -101,6 +109,11 @@ const Login = (props) => {
     return strInput;
   };
   useEffect(() => {
+    if (props?.route?.params?.isNonUsaUser) {
+      setIsNonUsaFlow(true);
+      setMobile(false);
+      setPhoneCountryCode('');
+    }
     if (props?.route?.params?.email) {
       setEmail(props?.route?.params?.email);
       setIsPasswordFieldVisible(true);
@@ -108,6 +121,45 @@ const Login = (props) => {
     }
   }, [props?.route?.params?.email])
   useEffect(() => {
+    let mounted = true;
+    readNonUsaFlowState().then(state => {
+      if (!mounted) return;
+      setNonUsaFlowState(state);
+      const isNonUsa = isNonUsaAccount({}, state);
+      setIsNonUsaFlow(isNonUsa);
+      if (isNonUsa) {
+        setMobile(false);
+        setPhoneCountryCode('');
+        setIsPasswordFieldVisible(true);
+      }
+    });
+
+    const detectFromIp = async () => {
+      try {
+        const ipAddress = await getPublicIP();
+        const countryCode = await getCountryFromIP(ipAddress);
+        const isNonUsaIp = countryCode && countryCode !== 'US' && countryCode !== 'USA';
+        if (mounted && isNonUsaIp) {
+          setIsNonUsaFlow(true);
+          setMobile(false);
+          setPhoneCountryCode('');
+          setIsPasswordFieldVisible(true);
+        }
+      } catch (error) {
+        console.log('Login non-USA detect failed', error);
+      }
+    };
+
+    detectFromIp();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (isNonUsaFlow) {
+      setMobile(false);
+      return;
+    }
     if (props?.route?.params?.phone && phoneCountryCode == "+1") {
       const formatted = formatPhoneNumber(props?.route?.params?.phone?.phone);
       setMobileHd(formatted);
@@ -128,25 +180,26 @@ const Login = (props) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
     if (!email) {
-      showErrorAlert("Please enter your email or mobile number!");
-    } else if (!emailRegex.test(email) && !mobileRegex.test(email)) {
+      showErrorAlert(isNonUsaFlow ? "Please enter your email address!" : "Please enter your email or mobile number!");
+    } else if (isNonUsaFlow && !emailRegex.test(email)) {
+      showErrorAlert("Please enter a valid email address!");
+    } else if (!isNonUsaFlow && !emailRegex.test(email) && !mobileRegex.test(email)) {
       showErrorAlert("Please enter a valid email address or 10 digit mobile number!");
-    } else if (isPasswordFieldVisible && !password) {
+    } else if ((isPasswordFieldVisible || isNonUsaFlow) && !password) {
       showErrorAlert("Please enter your password to continue");
     } else {
       let formattedEmail = email;
       let finalFormattedPhone = "";
-      if (phoneCountryCode == "+1" && email) {
+      if (!isNonUsaFlow && phoneCountryCode == "+1" && email) {
         const finalCont = processPhoneNumberUSA(email.trim());
         finalFormattedPhone = finalCont?.formattedNumber || "";
       }
-      if (mobileRegex.test(email)) {
+      if (!isNonUsaFlow && mobileRegex.test(email)) {
         formattedEmail = `${phoneCountryCode}${email}`;
       }
-      let obj = isPasswordFieldVisible ? {
+      let obj = (isPasswordFieldVisible || isNonUsaFlow) ? {
         "username": formattedEmail.trim(),
         "password": password.trim(),
-        "usa_user": 1,
         "deviceToken": fcm,
         "deviceType": Platform.OS
       } : {
@@ -154,7 +207,7 @@ const Login = (props) => {
       };
       connectionrequest()
         .then(() => {
-          dispatch(isPasswordFieldVisible ? loginRequest(obj) : loginsiginRequest(obj));
+          dispatch((isPasswordFieldVisible || isNonUsaFlow) ? loginRequest(obj) : loginsiginRequest(obj));
         })
         .catch(err => {
           showErrorAlert("Please connect to the internet", err);
@@ -173,9 +226,9 @@ const Login = (props) => {
   };
 
   const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
-  const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
+  const isValidEmail = !mobile && email?.length > 0 && !validateEmail.test(email);
   const mobileReg = /^\d{10}$/;
-  const isMobile = mobile && email?.length > 0 && mobile && !mobileReg.test(email);
+  const isMobile = !isNonUsaFlow && mobile && email?.length > 0 && !mobileReg.test(email);
   const isTrueFlag = (value) => value == true || value == 1 || value == "1" || value == "true";
   const isFalseFlag = (value) => value == false || value == 0 || value == "0" || value == "false";
   const lastHandledSigninResponseRef = useRef(null);
@@ -207,7 +260,20 @@ const Login = (props) => {
       case 'Auth/verifySuccess': {
         status = AuthReducer.status;
         const wholeData = AuthReducer?.verifyResponse;
-        if (wholeData?.is_verified !== "1" && wholeData?.phone_verified !== "1") {
+        if (isNonUsaFlow) {
+          if (wholeData?.is_verified !== "1") {
+            props?.navigation.navigate("LoginEmail", {
+              nonUsaUser: true,
+              user: {
+                emailid: wholeData?.email,
+              },
+              verifyemail: {
+                verifyemail: wholeData,
+                isNonUsaUser: true,
+              },
+            });
+          }
+        } else if (wholeData?.is_verified !== "1" && wholeData?.phone_verified !== "1") {
           props?.navigation.navigate("LoginEmail", {
             user: {
               emailid: wholeData?.email,
@@ -239,6 +305,7 @@ const Login = (props) => {
     // OTP generation response often only has success/msg/phone_otp.
     // Handle this first so it always navigates to OTP screen.
     if (isSuccess && hasPhoneOtp) {
+      if (isNonUsaFlow) return;
       props.navigation.navigate("MobileLoginOTP", {
         "mobileNo": {
           mobileNo: isUSUser ? mobileHd : email,
@@ -246,6 +313,28 @@ const Login = (props) => {
         }
       });
       return;
+    }
+    if (isNonUsaFlow) {
+      if (isEmailNotVerified) {
+        props.navigation.navigate("LoginEmail", {
+          nonUsaUser: true,
+          user: {
+            emailid: loginSignInResponse?.email || email,
+          },
+          verifyemail: {
+            verifyemail: loginSignInResponse,
+            isNonUsaUser: true,
+          },
+        });
+        return;
+      }
+      if (isEmailVerified) {
+        let objToken = { "token": loginSignInResponse?.token, "key": {} };
+        dispatch(dashboardRequest(objToken));
+        setNonloader(true);
+        setGtprof(false);
+        return;
+      }
     }
     if (isEmailNotVerified && isPhoneNotVerified) {
       verifyHandle();
@@ -301,7 +390,6 @@ const Login = (props) => {
   };
   const ipAddress = getPublicIP(); // global value
   useEffect(() => {
-    if (!ipAddress) return; // ⛔ wait until IP exists
     const fetchCountry = async () => {
       const countryCode = await getCountryFromIP(ipAddress);
       if (countryCode) {
@@ -387,6 +475,37 @@ const Login = (props) => {
         stateLicenseCheckComplete.current = true;
       }
     };
+
+    const isNonUsa = isNonUsaAccount(user) || isNonUsaFlow;
+    if (isNonUsa) {
+      if (isEmailNotVerified) {
+        handleNavigation("LoginEmail", {
+          nonUsaUser: true,
+          user: {
+            emailid: loginResponse?.email,
+          },
+          verifyemail: {
+            verifyemail: loginResponse,
+            isNonUsaUser: true,
+          },
+        });
+        return;
+      }
+      writeNonUsaFlowState({
+        userType: 'non_usa',
+        isNonUsa: true,
+        emailVerified: true,
+        professionCompleted: true,
+      });
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'TabNav' }],
+        })
+      );
+      return;
+    }
+
     if (isEmailNotVerified && isPhoneNotVerified) {
       handleNavigation("LoginEmail", {
         user: {
@@ -541,7 +660,9 @@ const Login = (props) => {
   }, []);
   const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
   const mobileRegex = /^\d{10}$/;
-  const isButtonEnabled = emailRegex.test(email) || mobileRegex.test(email);
+  const isButtonEnabled = isNonUsaFlow
+    ? emailRegex.test(email)
+    : (emailRegex.test(email) || mobileRegex.test(email));
   useEffect(() => {
     if (DashboardReducer?.dashboardResponse?.data) {
       setNonloader(false);
@@ -597,9 +718,9 @@ const Login = (props) => {
             <View>
               <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(15) }}>
 
-                <View style={styles.content}>
+            <View style={styles.content}>
                   <View style={styles.formContainer}>
-                    {mobile ? <InputField
+                    {mobile && !isNonUsaFlow ? <InputField
                       ref={phoneInputRef}
                       label="Email / Cell Number"
                       value={mobileHd}
@@ -625,7 +746,7 @@ const Login = (props) => {
                       countryCode={phoneCountryCode || "+91"}
                       maxlength={14}
                     /> : <InputField
-                      label="Email / Cell Number"
+                      label={isNonUsaFlow ? "Email Address" : "Email / Cell Number"}
                       value={email}
                       onChangeText={handleInputChange}
                       placeholder=""
@@ -682,7 +803,7 @@ const Login = (props) => {
                     )}
                   </View>
                 </View>
-                {(!mobile && phoneCountryCode) ? <View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
+                {(!mobile && phoneCountryCode && !isNonUsaFlow) ? <View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
                   <TouchableOpacity onPress={() => { props.navigation.navigate("ForgotMPIN", { phoneCode: phoneCountryCode }) }}>
                     <Text style={styles.forgotText}>Forgot Password?</Text>
                   </TouchableOpacity>
@@ -694,7 +815,7 @@ const Login = (props) => {
                 width={normalize(290)}
                 backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#CCC"}
                 borderRadius={normalize(9)}
-                text={isPasswordFieldVisible ? "Sign In" : "Proceed"}
+                text={(isPasswordFieldVisible || isNonUsaFlow) ? "Sign In" : "Proceed"}
                 color={Colorpath.white}
                 fontSize={18}
                 fontFamily={Fonts.InterSemiBold}
@@ -709,7 +830,9 @@ const Login = (props) => {
                 </Text>
               </View>
               <TouchableOpacity onPress={() => {
-                if (phoneCountryCode) {
+                if (isNonUsaFlow) {
+                  props.navigation.navigate('SignUp', { phoneCd: { phoneCd: '' }, isNonUsaUser: true });
+                } else if (phoneCountryCode) {
                   props.navigation.navigate('SignUp', { phoneCd: { phoneCd: phoneCountryCode } });
                 } else {
                   setInputBlocked(true);

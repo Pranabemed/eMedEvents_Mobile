@@ -132,7 +132,7 @@ const Onboard = (props) => {
     }, [props.navigation]);
 
     const continueAsGuest = useCallback(() => {
-        const guestSessionId = `guest_session_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+        const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
         AsyncStorage.setItem('PLAYERSESSION', guestSessionId)
             .then(() => {
                 props.navigation.dispatch(

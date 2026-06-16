@@ -38,6 +38,7 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
+import { isNonUsaAccount, readNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
 let status = "";
 let status1 = "";
 export default function DrawerModal(props) {
@@ -60,6 +61,7 @@ export default function DrawerModal(props) {
   const [nettruedr, setNettruedr] = useState("")
   const [primeSkipped, setPrimeSkipped] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
@@ -76,6 +78,15 @@ export default function DrawerModal(props) {
     if (isFocus) {
       checkPrimeSkipped();
     }
+  }, [isFocus]);
+  useEffect(() => {
+    let mounted = true;
+    readNonUsaFlowState().then(state => {
+      if (mounted) setNonUsaFlowState(state);
+    });
+    return () => {
+      mounted = false;
+    };
   }, [isFocus]);
   const navigateSmooth = (name, params) => {
     props.drawerPress?.();
@@ -157,7 +168,13 @@ export default function DrawerModal(props) {
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
-  const modalKey = allProfTake ? [
+  const isNonUsaUser = isNonUsaAccount(allHandled, nonUsaFlowState);
+  const modalKey = isNonUsaUser ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+  ] : allProfTake ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
@@ -555,7 +572,7 @@ export default function DrawerModal(props) {
                     {stableProfileMetaText}
                   </Text>
                 </View>}
-                {allProfTake && (
+                {!isNonUsaUser && allProfTake && (
                   <Pressable
                     style={{
                       alignSelf: 'flex-start', // Let content determine width

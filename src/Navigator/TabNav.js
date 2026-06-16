@@ -448,7 +448,7 @@ function TabScreen() {
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center",
-                        width: normalize(30),
+                        width: normalize(50),
                       }}
                     >
                       {item?.label}
@@ -482,7 +482,7 @@ function TabScreen() {
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
-                  width: normalize(30),
+                  width: normalize(50),
                 }}
               >
                 {"Menu"}
@@ -557,18 +557,20 @@ function TabScreen() {
                       source={item.icon}
                       style={{
                         height: normalize(23),
-                        width: normalize(23),
+                        width: normalize(25),
                         tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                        resizeMode: "contain"
+                        resizeMode: "contain",
+                        top: normalize(7)
                       }}
                     />
                     <Text
                       style={{
                         color: focused ? Colorpath.ButtonColr : "#999999",
-                        marginTop: normalize(3),
+                        marginTop: normalize(7),
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
-                        textAlign: "center"
+                        textAlign: "center",
+                        width: normalize(50)
                       }}
                     >
                       {item?.label}
@@ -582,18 +584,20 @@ function TabScreen() {
                     source={item.icon}
                     style={{
                       height: normalize(23),
-                      width: normalize(23),
+                      width: normalize(25),
                       tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                      resizeMode: "contain"
+                      resizeMode: "contain",
+                      top: normalize(7)
                     }}
                   />
                   <Text
                     style={{
                       color: focused ? Colorpath.ButtonColr : "#999999",
-                      marginTop: normalize(3),
+                      marginTop: normalize(7),
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
-                      textAlign: "center"
+                      textAlign: "center",
+                      width: normalize(50)
                     }}
                   >
                     {item?.label}
@@ -615,19 +619,21 @@ function TabScreen() {
               <Image
                 source={Imagepath.Menubar}
                 style={{
-                  height: normalize(23),
-                  width: normalize(23),
+                  height: normalize(22),
+                  width: normalize(19),
                   resizeMode: "contain",
-                  tintColor: visible ? Colorpath.ButtonColr : "#999999"
+                  tintColor: visible ? Colorpath.ButtonColr : "#999999",
+                  top: normalize(7)
                 }}
               />
               <Text
                 style={{
                   color: visible ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(3),
+                  marginTop: normalize(7),
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
-                  textAlign: "center"
+                  textAlign: "center",
+                  width: normalize(50)
                 }}
               >
                 {"Menu"}
@@ -702,19 +708,20 @@ function TabScreen() {
                       source={item.icon}
                       style={{
                         height: normalize(23),
-                        width: normalize(23),
+                        width: normalize(25),
                         tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                        top: normalize(7),
-                        resizeMode: "contain"
+                        resizeMode: "contain",
+                        top: normalize(7)
                       }}
                     />
                     <Text
                       style={{
                         color: focused ? Colorpath.ButtonColr : "#999999",
-                        marginTop: normalize(10),
+                        marginTop: normalize(7),
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
-                        textAlign: "center"
+                        textAlign: "center",
+                        width: normalize(50)
                       }}
                     >
                       {item?.label}
@@ -728,20 +735,20 @@ function TabScreen() {
                     source={item.icon}
                     style={{
                       height: normalize(23),
-                      width: normalize(23),
+                      width: normalize(25),
                       tintColor: focused ? Colorpath.ButtonColr : "#999999",
                       resizeMode: "contain",
-                      top: normalize(10)
+                      top: normalize(7)
                     }}
                   />
                   <Text
                     style={{
                       color: focused ? Colorpath.ButtonColr : "#999999",
-                      marginTop: normalize(12),
+                      marginTop: normalize(7),
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
                       textAlign: "center",
-                      width: normalize(30),
+                      width: normalize(50)
                     }}
                   >
                     {item?.label}
@@ -763,21 +770,21 @@ function TabScreen() {
               <Image
                 source={Imagepath.Menubar}
                 style={{
-                  height: normalize(23),
-                  width: normalize(23),
+                  height: normalize(22),
+                  width: normalize(19),
                   resizeMode: "contain",
                   tintColor: visible ? Colorpath.ButtonColr : "#999999",
-                  top: normalize(10)
+                  top: normalize(7)
                 }}
               />
               <Text
                 style={{
                   color: visible ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(12),
+                  marginTop: normalize(7),
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
-                  width: normalize(30),
+                  width: normalize(50),
                 }}
               >
                 {"Menu"}

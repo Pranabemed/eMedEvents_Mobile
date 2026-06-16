@@ -24,6 +24,7 @@ import { tokenRequest } from '../../Redux/Reducers/AuthReducer.js';
 import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow.js';
 
 const ProfileMain = (props) => {
     const {
@@ -46,6 +47,7 @@ const ProfileMain = (props) => {
     const [allProf, setAllProf] = useState("");
     const [nettrue, setNettrue] = useState("");
     const [primeSkipped, setPrimeSkipped] = useState(false);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
         const checkPrimeSkipped = async () => {
             try {
@@ -58,6 +60,15 @@ const ProfileMain = (props) => {
         if (isFoucs) {
             checkPrimeSkipped();
         }
+    }, [isFoucs]);
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaFlowState().then(state => {
+            if (mounted) setNonUsaFlowState(state);
+        });
+        return () => {
+            mounted = false;
+        };
     }, [isFoucs]);
     const read = (value) => (value == null ? "" : String(value).trim());
     const getDisplayName = (source) => {
@@ -138,7 +149,12 @@ const ProfileMain = (props) => {
     const profFromDashboard = getDisplayProfession(allHandle);
     const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
     const allNoDetData = otherRestrict.has(profFromDashboard);
-    const profileData = allProfTake ? [
+    const isNonUsaUser = isNonUsaAccount(allHandle, nonUsaFlowState);
+    const profileData = isNonUsaUser ? [
+        { id: 0, name: "Contact Information", Img: Imagepath.Profile },
+        { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
+        { id: 5, name: "Change Password", Img: Imagepath.PassChange }
+    ] : allProfTake ? [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },
         { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
         { id: 2, name: "State Licenses", Img: Imagepath.StateImg },
@@ -461,7 +477,7 @@ const ProfileMain = (props) => {
                         {allProfTake && <View style={{ paddingVertical: normalize(5), justifyContent: 'center', alignItems: "center" }}>
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#6a82ce", textAlign: "center",fontWeight:"5s00" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
                         </View>}
-                        {allProfTake && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
+                        {!isNonUsaUser && allProfTake && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
                             <View
                                 style={{
                                     height: normalize(40),
@@ -503,7 +519,7 @@ const ProfileMain = (props) => {
                                         }}
                                     />
                                 </View>
-                                <Text
+                                {!isNonUsaUser && <Text
                                     style={{
                                         fontFamily: Fonts.InterBold,
                                         fontSize: 16,
@@ -512,7 +528,7 @@ const ProfileMain = (props) => {
                                     }}
                                 >
                                     {primeitprof ? "Become a Prime Member" : primeitprofs && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ? "Become a Prime Member" : "Prime Member"}
-                                </Text>
+                                </Text>}
                             </View>
                         </TouchableOpacity>}
                     </View>

@@ -67,6 +67,9 @@ import {
   refreshTokenFailure,
 } from '../Reducers/AuthReducer';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
+import axios from 'axios';
+import { getBasicAuthorizationHeader } from '../../Utils/Helpers/BasicAuth';
+import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 let getItem = state => state.AuthReducer;
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -76,6 +79,7 @@ import { fetchAndStoreBasicAuthToken } from '../../Utils/Helpers/BasicAuth';
 import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { isNonUsaAccount, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 
 ///token
@@ -150,6 +154,27 @@ export function* signupSaga(action) {
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
       if (response?.data?.refresh_token) {
         yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
+      const userData = response?.data?.user || response?.data || {};
+      const isNonUsa = isNonUsaAccount({
+        ...action?.payload,
+        ...userData,
+        countryCode: action?.payload?.countryCode || action?.payload?.country_code,
+        callingCode: action?.payload?.countryCode || action?.payload?.country_code,
+        usa_user: action?.payload?.signup_usa === false ? false : userData?.usa_user,
+      });
+      if (isNonUsa) {
+        yield call(writeNonUsaFlowState, {
+          userType: 'non_usa',
+          isNonUsa: true,
+          signupCompleted: true,
+          professionCompleted: true,
+          emailVerified: Boolean(userData?.is_verified === 1 || userData?.is_verified === '1' || userData?.email_verified === 1 || userData?.email_verified === '1'),
+          email: userData?.email || action?.payload?.email || '',
+          profession: action?.payload?.profession || userData?.profession || '',
+          profession_type: action?.payload?.profession_type || userData?.profession_type || '',
+          countryCode: action?.payload?.countryCode || action?.payload?.country_code || '',
+        });
       }
       showErrorAlert(response?.data?.msg);
     } else {
@@ -237,6 +262,20 @@ export function* verifyEmalOTPSaga(action) {
     let response = yield call(postApi, 'user/verifyOTP', action.payload, header);
     if (response?.status == 200) {
       yield put(verifyemailSuccess(response?.data));
+      const userData = response?.data?.user || response?.data || {};
+      const isNonUsa = isNonUsaAccount(userData);
+      if (isNonUsa) {
+        yield call(writeNonUsaFlowState, {
+          userType: 'non_usa',
+          isNonUsa: true,
+          emailVerified: true,
+          professionCompleted: true,
+          signupCompleted: true,
+          email: userData?.email || action?.payload?.email || '',
+          profession: userData?.profession || '',
+          profession_type: userData?.profession_type || '',
+        });
+      }
       // showErrorAlert(response.data.message);
     } else {
       yield put(verifyemailFailure(response.data));
@@ -429,17 +468,56 @@ export function* login_Saga(action) {
   }
 }
 //Profession 
-export function* ProfessionSaga() {
+export function* ProfessionSaga(action) {
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
   };
   try {
-    let response = yield call(getApi, 'master/professionCredentials', header);
-    if (response?.status == 200) {
-      yield put(professionSuccess(response?.data));
+    const isOtherCountry = action?.payload?.other_country == 1 || action?.payload?.other_country === 1;
+    if (isOtherCountry) {
+      let data = null;
+      let success = false;
+      const basicAuthToken = yield call(getBasicAuthorizationHeader);
+      const userAgentHeader = getUserAgentJSON();
+      const reqHeaders = {
+        Accept: 'application/json',
+        'Content-type': 'application/json',
+        ...(basicAuthToken ? { Authorization: basicAuthToken } : {}),
+        ...(userAgentHeader ? { userAgent: userAgentHeader } : {}),
+      };
+      try {
+        console.log('Fetching professions from Primary API...');
+        let response = yield call(axios.get, 'https://newdev.emedevents.com/master/professionCredentials?other_country=1', { headers: reqHeaders });
+        if (response?.status == 200) {
+          data = response.data;
+          success = true;
+        }
+      } catch (err) {
+        console.log('Primary API failed, trying Fallback API...', err);
+      }
+
+      if (!success) {
+        let response = yield call(axios.get, 'https://v2api.emedevents.com/master/professionCredentials?other_country=1', { headers: reqHeaders });
+        if (response?.status == 200) {
+          data = response.data;
+          success = true;
+        }
+      }
+
+      if (success) {
+        yield put(professionSuccess(data));
+      } else {
+        yield put(professionFailure({ message: 'Failed to fetch professions' }));
+      }
     } else {
-      yield put(professionFailure(response?.data));
+      const endpoint = 'master/professionCredentials';
+      let response = yield call(getApi, endpoint, header);
+      if (response?.status == 200) {
+        yield put(professionSuccess(response?.data));
+      } else {
+        yield put(professionFailure(response?.data));
+      }
     }
   } catch (error) {
     yield put(professionFailure(error));

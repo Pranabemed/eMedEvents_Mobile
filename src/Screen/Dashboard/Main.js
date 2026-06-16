@@ -28,6 +28,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
@@ -70,7 +71,8 @@ const buildProfessionLabel = (profession, professionType) => {
 
 const getCountryFromIP = async (ip) => {
   try {
-    const res = await fetch(`https://ipinfo.io/${ip}/json`);
+    const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+    const res = await fetch(url);
     const text = await res.text();
     if (text.startsWith('<')) {
       throw new Error('HTML response');
@@ -133,11 +135,11 @@ const parseStoredJson = (value) => {
   }
 };
 
-const requiresVerification = (user) => {
+const requiresVerification = (user, isNonUsa = false) => {
   if (!user) return false;
   const isEmailVerified = String(user?.is_verified ?? user?.email_verified ?? '0') === '1';
   const isPhoneVerified = String(user?.phone_verified ?? '0') === '1';
-  return !isEmailVerified || !isPhoneVerified;
+  return isNonUsa ? !isEmailVerified : (!isEmailVerified || !isPhoneVerified);
 };
 const Main = (props) => {
   const insets = useSafeAreaInsets();
@@ -428,7 +430,6 @@ const Main = (props) => {
       setResolvedIpCountryCode(PRIME_CARD_TEST_COUNTRY_CODE);
       return;
     }
-    if (!ipAddress) return;
     let isMounted = true;
     const fetchCountry = async () => {
       const countryCode = await getCountryFromIP(ipAddress);
@@ -647,12 +648,14 @@ const Main = (props) => {
           isUsaBasedUser(user, resolvedIpCountryCode);
 
         const isUSAAndPhysician = isEligibleGuestPhysician && isEligibleCountry;
+        const isNonUsaGuest = !isEligibleCountry;
 
         const shouldShowPrimeFirst =
           !hasActivePrimeMembership &&
           !isVerificationPending &&
           !isPrimeCardFlowComplete &&
           !primeCardSessionSkipped &&
+          !isNonUsaGuest &&
           (isUSAAndPhysician || isSkippedFlow);
 
         console.log({
@@ -699,7 +702,7 @@ const Main = (props) => {
             setShowGuestPrimePrompt(false);
             return;
           }
-          if (requiresVerification(user)) {
+          if (requiresVerification(user, isNonUsaGuest)) {
             await openGuestVerificationAlert(user, true);
           } else {
             await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
@@ -710,7 +713,7 @@ const Main = (props) => {
           return;
         }
 
-        if (hasFreshVerifyResponse && user && requiresVerification(user)) {
+        if (hasFreshVerifyResponse && user && requiresVerification(user, isNonUsaGuest)) {
           setShowGuestPrimePrompt(false);
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(true);
@@ -735,6 +738,12 @@ const Main = (props) => {
 
   const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
   const hsdSub = !hasActivePrimeMembership && (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
+  const isNonUsaIpUser = Boolean(
+    resolvedIpCountryCode &&
+    resolvedIpCountryCode !== 'US' &&
+    resolvedIpCountryCode !== 'USA' &&
+    resolvedIpCountryCode !== 'unknown'
+  );
   const endDateStringMain =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
@@ -823,6 +832,12 @@ const Main = (props) => {
       (verifyPayload?.usa_user ? '+1' : '');
     const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
     const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
+    const isNonUsaUser =
+      isNonUsaAccount(verifyPayload) ||
+      isNonUsaIpUser ||
+      finalProfessionmain?.usa_user === false ||
+      finalProfessionmain?.usa_user === 0 ||
+      finalProfessionmain?.usa_user === '0';
     const phoneValue =
       verifyPayload?.phone ||
       verifyPayload?.mobile ||
@@ -836,7 +851,9 @@ const Main = (props) => {
     await closeGuestVerifyModal();
 
     if (!isEmailVerified) {
-      props.navigation.navigate('VerifyOTP', {
+      props.navigation.navigate(isNonUsaUser ? 'VerifyOTPEmail' : 'VerifyOTP', {
+        nonUsaUser: isNonUsaUser,
+        newMail: verifyPayload?.email,
         NewEmail: {
           email: verifyPayload?.email,
           phoneNo: phoneValue,
@@ -849,11 +866,16 @@ const Main = (props) => {
           emailid: verifyPayload?.email,
           phoneData: phoneValue,
         },
+        verifyemail: {
+          verifyemail: verifyPayload,
+          profession: verifyPayload?.profession,
+          isNonUsaUser,
+        },
       });
       return;
     }
 
-    if (!isPhoneVerified) {
+    if (!isNonUsaUser && !isPhoneVerified) {
       props.navigation.navigate('VerifyMobileOTP', {
         validPh: {
           validPh: phoneValue,
@@ -1004,7 +1026,7 @@ const Main = (props) => {
             )}
           </View>
 
-          {enables && allProfTake ? <View style={{
+          {enables && allProfTake && !isNonUsaIpUser ? <View style={{
             position: 'absolute',
             height: normalize(100),
             bottom: normalize(0),
@@ -1018,7 +1040,7 @@ const Main = (props) => {
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : !hasActivePrimeMembership && freeTrail ? <View
+          </View> : !hasActivePrimeMembership && freeTrail && !isNonUsaIpUser ? <View
             style={{
               position: 'absolute',
               bottom: normalize(0),

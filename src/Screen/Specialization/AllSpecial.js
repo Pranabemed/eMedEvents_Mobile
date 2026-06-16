@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Fonts from '../../Themes/Fonts';
@@ -22,6 +22,7 @@ import CustomInputTouchable from '../../Components/IconTextIn';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 let status = "";
 const professionalTypes = [
@@ -38,8 +39,15 @@ const professionalTypes = [
     { id: 11, label: 'PharmD', name: "Pharmacist - Pharmacist" },
     { id: 12, label: 'Other' },
 ];
+const nonUsaProfessionalTypes = [
+    { id: 1, label: 'Physician', name: 'Physician' },
+    { id: 2, label: 'Nursing', name: 'Nursing' },
+    { id: 3, label: 'Dentist', name: 'Dentist' },
+    { id: 4, label: 'Other', name: 'Other' },
+];
 const AllSpecial = (props) => {
     console.log(props?.route?.params?.Alldata, "props=====")
+    const isNonUsaUser = Boolean(props?.route?.params?.Alldata?.isNonUsaUser || props?.route?.params?.isNonUsaUser);
     const [selectedId, setSelectedId] = useState(null);
     const [clist, setClist] = useState('');
     const [selectCountry, setSelectCountry] = useState([]);
@@ -62,6 +70,8 @@ const AllSpecial = (props) => {
     const [statelistpratice, setStatelistpratice] = useState([]);
     const [selectStatepratice, setSelectStatepratice] = useState([]);
     const [countryId, setCountryId] = useState("1")
+    const [otherProfessionValue, setOtherProfessionValue] = useState('');
+    const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState('');
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const animatedValuespass = useRef(new Animated.Value(1)).current;
@@ -70,11 +80,30 @@ const AllSpecial = (props) => {
     const scaleValuesesprof = useRef(new Animated.Value(0)).current;
     const animatedValuestate = useRef(new Animated.Value(1)).current;
     const scaleValuesestate = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const onBackPress = () => {
+            if (props.navigation.canGoBack()) {
+                props.navigation.goBack();
+            } else {
+                props.navigation.navigate('SignUp', {
+                    phoneCd: { phoneCd: props?.route?.params?.Alldata?.countryCode || '' },
+                    isNonUsaUser,
+                });
+            }
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => backHandler.remove();
+    }, [isNonUsaUser, props.navigation, props?.route?.params?.Alldata?.countryCode]);
     const handlePress = (all) => {
-        licData(all?.name)
+        const professionName = all?.name || all?.label || '';
+        licData(professionName)
         setSelectedId(all?.id);
-        setLabel(all?.name);
-        specaillized(all?.name?.split(' - ')?.[0]);
+        setLabel(professionName);
+        setSelectedProfessionalGroup(professionName);
+        setOtherProfessionValue('');
+        specaillized(professionName?.split(' - ')?.[0]);
     };
 
     useEffect(() => {
@@ -129,11 +158,16 @@ const AllSpecial = (props) => {
         ]).start();
     }, [statepratice]);
     console.log(label, "md========")
-    const groupedData = [
-        professionalTypes.slice(0, 4),
-        professionalTypes.slice(4, 8),
-        professionalTypes.slice(8)
-    ];
+    const groupedData = isNonUsaUser
+        ? [
+            nonUsaProfessionalTypes.slice(0, 3),
+            nonUsaProfessionalTypes.slice(3)
+          ]
+        : [
+            professionalTypes.slice(0, 4),
+            professionalTypes.slice(4, 8),
+            professionalTypes.slice(8)
+        ];
     const isfocused = useIsFocused();
     const searchCountryName = text => {
         console.log(text, 'text12333');
@@ -198,13 +232,13 @@ const AllSpecial = (props) => {
     useEffect(() => {
         connectionrequest()
             .then(() => {
-                dispatch(professionRequest());
+                dispatch(professionRequest(isNonUsaUser ? { other_country: 1 } : {}));
             })
             .catch(err => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [isfocused]);
+    }, [isfocused, isNonUsaUser]);
     const specaillized = (data) => {
         const obj = data
         connectionrequest()
@@ -238,6 +272,12 @@ const AllSpecial = (props) => {
         licData(did);
         setLabel(did);
         setCountry(did);
+        if (isNonUsaUser && selectedId === 4) {
+            setOtherProfessionValue(did);
+        } else {
+            setSelectedProfessionalGroup(did);
+            setOtherProfessionValue('');
+        }
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
     }
@@ -246,6 +286,11 @@ const AllSpecial = (props) => {
         setSpecailidpratice(draw?.id)
         setPratice(false);
     }
+    const professionValueForNonUsa = () => (
+        selectedProfessionalGroup === 'Other'
+            ? otherProfessionValue.trim()
+            : selectedProfessionalGroup || label || country
+    );
     console.log(selectedId ? selectedId === 12 : undefined, "heloo -------", country,statelist?.length);
      const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -262,22 +307,58 @@ const AllSpecial = (props) => {
   };
     console.log("statepicker====", statepicker, country)
     const signupHandle = () => {
-        if (!selectedId && !country) {
-            showErrorAlert("Select Your Profession")
-        } else if (!country && selectedId === 12) {
-            showErrorAlert("Select Your Profession")
-        } else if (!state) {
-            showErrorAlert("Choose Your Specialty")
-        } else if (!statepratice && statelistpratice?.length > 0) {
-            showErrorAlert("Select Your State of Practice")
+        const professionValue = isNonUsaUser
+            ? (selectedProfessionalGroup === 'Other' ? otherProfessionValue.trim() : selectedProfessionalGroup || label || country)
+            : (selectedId === 12 ? country : label);
+        if (isNonUsaUser) {
+            if (!selectedProfessionalGroup) {
+                showErrorAlert("Select Your Profession");
+                return;
+            }
+            if (selectedProfessionalGroup === 'Other' && !otherProfessionValue.trim()) {
+                showErrorAlert("Enter your profession");
+                return;
+            }
+            if (!state) {
+                showErrorAlert("Choose Your Specialty");
+                return;
+            }
         } else {
+            if (!selectedId && !country) {
+                showErrorAlert("Select Your Profession")
+                return;
+            } else if (!country && selectedId === 12) {
+                showErrorAlert("Select Your Profession")
+                return;
+            } else if (!state) {
+                showErrorAlert("Choose Your Specialty")
+                return;
+            } else if (!statepratice && statelistpratice?.length > 0) {
+                showErrorAlert("Select Your State of Practice")
+                return;
+            }
+        }
+        {
             let finalFormattedPhone = "";
-            if (props?.route?.params?.Alldata?.countryCode == "+1" && props?.route?.params?.Alldata?.phone) {
+            if (!isNonUsaUser && props?.route?.params?.Alldata?.countryCode == "+1" && props?.route?.params?.Alldata?.phone) {
                 const finalCont = formatPhoneNumber(props?.route?.params?.Alldata?.phone);
                 finalFormattedPhone = finalCont || "";
                 console.log(finalFormattedPhone,"finalFormattedPhone++++++++")
             }
-            let obj = finalFormattedPhone ? {
+            let obj = isNonUsaUser ? {
+                "first_name": props?.route?.params?.Alldata?.first_name,
+                "last_name": props?.route?.params?.Alldata?.last_name,
+                "email": props?.route?.params?.Alldata?.email,
+                "password": props?.route?.params?.Alldata?.password,
+                "role": 4,
+                "state_id": "",
+                "profession": professionValue,
+                "npi_number": "",
+                "specialities": [specialid],
+                "signup_usa": false,
+                "is_mobile": 0,
+                "accept_updates": 1
+            } : finalFormattedPhone ? {
                 "first_name": props?.route?.params?.Alldata?.first_name,
                 "last_name": props?.route?.params?.Alldata?.last_name,
                 "email": props?.route?.params?.Alldata?.email,
@@ -400,7 +481,32 @@ const AllSpecial = (props) => {
                 break;
             case 'Auth/signupSuccess':
                 status = AuthReducer.status;
-                props?.navigation.navigate("VerifyOTP", { verifyemail: { verifyemail: props?.route?.params?.Alldata, profession: label || country } });
+                if (isNonUsaUser) {
+                    writeNonUsaFlowState({
+                        userType: 'non_usa',
+                        isNonUsa: true,
+                        signupCompleted: true,
+                        professionCompleted: true,
+                        emailVerified: false,
+                        email: props?.route?.params?.Alldata?.email || '',
+                        profession: professionValueForNonUsa(),
+                        profession_type: state || '',
+                    });
+                    props?.navigation.navigate("VerifyOTPEmail", {
+                        NewEmail: {
+                            email: props?.route?.params?.Alldata?.email,
+                            returnDat: props?.route?.params?.Alldata,
+                        },
+                        verifyemail: {
+                            verifyemail: props?.route?.params?.Alldata,
+                            profession: professionValueForNonUsa(),
+                            isNonUsaUser: true,
+                        },
+                        nonUsaUser: true,
+                    });
+                } else {
+                    props?.navigation.navigate("VerifyOTP", { verifyemail: { verifyemail: props?.route?.params?.Alldata, profession: label || country } });
+                }
                 break;
             case 'Auth/signupFailure':
                 status = AuthReducer.status;
@@ -492,7 +598,42 @@ const AllSpecial = (props) => {
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
                         <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                            {selectedId === 12 ? (<View style={{
+                            {isNonUsaUser && selectedProfessionalGroup === 'Other' ? (
+                                <View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    <View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        <InputField
+                                            label={otherProfessionValue ? "Profession*" : "Profession*"}
+                                            value={otherProfessionValue}
+                                            placeholder=""
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            maxLength={300}
+                                            editable={false}
+                                            leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                            onLeftIconPress={() => {
+                                                setcountrypicker(!countrypicker);
+                                                setState('');
+                                                setStatepratice('');
+                                            }}
+                                            onwholePress={() => {
+                                                setcountrypicker(!countrypicker);
+                                                setState('');
+                                                setStatepratice('');
+                                            }}
+                                            marginleft={normalize(280)}
+                                            multiline={true}
+                                            spaceneeded={true}
+                                        />
+                                    </View>
+                                </View>
+                            ) : selectedId === 12 ? (<View style={{
                                 flexDirection: 'row',
                                 flex: 1
                             }}>
@@ -588,7 +729,7 @@ const AllSpecial = (props) => {
                                 </View>
                             </View>
 
-                            {statelistpratice?.length > 0 && <View style={{
+                            {!isNonUsaUser && statelistpratice?.length > 0 && <View style={{
                                 flexDirection: 'row',
                                 flex: 1
                             }}>
@@ -644,4 +785,3 @@ const AllSpecial = (props) => {
     );
 };
 export default AllSpecial;
-

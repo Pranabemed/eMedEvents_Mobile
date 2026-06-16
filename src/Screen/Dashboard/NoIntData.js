@@ -95,9 +95,9 @@ const MainInt = (props) => {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-        <View style={Platform.OS === 'android' ? { marginTop: normalize(40) } : {}}>
-          <Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212) }} resizeMode="contain" />
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+        <View style={Platform.OS === 'android' ? { marginTop: normalize(0), paddingHorizontal: normalize(6) } : { paddingHorizontal: normalize(10) }}>
+          <Image source={Imagepath.Logo} style={{ height: normalize(40), width: normalize(40) }} resizeMode="contain" />
         </View>
         <HandleTextInput showLine={showLine} nav={props.navigation} takestate={takestate} addit={addit} setFocusedInput={setFocusedInput} focusedInput={focusedInput} />
         <ScrollView contentContainerStyle={{ paddingBottom: normalize(90) }} scrollEventThrottle={16}>

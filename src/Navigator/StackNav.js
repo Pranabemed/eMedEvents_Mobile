@@ -129,6 +129,13 @@ import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Anal
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
 import { useSelector } from 'react-redux';
 const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
+
+const isEmedDeepLink = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const lowerUrl = url.toLowerCase().trim();
+  return lowerUrl.includes('emedevents.com') || lowerUrl.includes('emedevents.net');
+};
+
 const StackNav = props => {
   const [conn, setConn] = useState(null)
   const Stack = createStackNavigator();
@@ -716,7 +723,11 @@ const StackNav = props => {
       if (url && !initialUrlHandled.current) {
         initialUrlHandled.current = true;
         console.log('Initial URL handled:', url);
-        AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
+        if (isEmedDeepLink(url)) {
+          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
+        } else {
+          AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
+        }
         handleDeepLink(url);
       } else {
         AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});

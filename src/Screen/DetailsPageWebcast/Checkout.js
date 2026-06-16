@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import constants from '../../Utils/Helpers/constants';
 import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
+import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { cancelcouponRequest, cartCheckoutRequest, couponWebcastRequest, FreeTransRequest, saveRegistRequest, StatusPaymentRequest, TransemailcheckRequest } from '../../Redux/Reducers/WebcastReducer';
@@ -90,6 +91,8 @@ const Checkout = (props) => {
     const [cityPicker, setCityPicker] = useState(false);
     const [ticketSave, setTicketSave] = useState(null);
     const [formData, setFormData] = useState([]);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [playerSessionID, setPlayerSessionID] = useState("");
     const [activeIndex, setActiveIndex] = useState(null);
     const [activeIndexc, setActiveIndexc] = useState(null);
     const [activeIndexs, setActiveIndexs] = useState(null);
@@ -275,16 +278,30 @@ const Checkout = (props) => {
             await AsyncStorage.setItem(constants.REFRESH_TOKEN, refreshToken);
         }
         if (user) {
-            const userString = JSON.stringify(user);
+            const updatedUser = {
+                ...user,
+                usa_user: isNonUsaUser ? false : (user?.usa_user ?? !isNonUsaUser),
+            };
+            const userString = JSON.stringify(updatedUser);
             await AsyncStorage.setItem(constants.VERIFYSTATEDATA, userString);
             await AsyncStorage.setItem(constants.PROFESSION, userString);
             await AsyncStorage.setItem(
                 GUEST_REGISTRATION_FLOW_KEY,
                 JSON.stringify({
-                    license_state_id: user?.license_state_id || '',
-                    license_number: user?.license_number || '',
+                    license_state_id: updatedUser?.license_state_id || '',
+                    license_number: updatedUser?.license_number || '',
                 })
             );
+            if (isNonUsaUser) {
+                await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
+                await writeNonUsaFlowState({
+                    userType: 'non_usa',
+                    isNonUsa: true,
+                    emailVerified: false,
+                    professionCompleted: true,
+                    email: updatedUser?.email || '',
+                });
+            }
         }
     };
     const checkoutClear = () => {
@@ -1004,13 +1021,16 @@ const Checkout = (props) => {
     }, [ticketSave, slistpraticelic])
     console.log(ticketSave, "ticketSave===========122", formData, DashboardReducer?.mainprofileResponse);
     useEffect(() => {
-        connectionrequest()
-            .then(() => {
-                dispatch(professionRequest());
-            })
-            .catch(err => {
-                showErrorAlert('Please connect to Internet', err);
-            });
+        let mounted = true;
+        readNonUsaFlowState().then(state => {
+            if (mounted) setNonUsaFlowState(state);
+        });
+        AsyncStorage.getItem('PLAYERSESSION').then(session => {
+            if (mounted && session) setPlayerSessionID(session);
+        }).catch(err => console.log('Error reading PLAYERSESSION', err));
+        return () => {
+            mounted = false;
+        };
     }, [isfocus]);
     const showModal = () => {
         setIsVisibletext(true);
@@ -1079,6 +1099,31 @@ const Checkout = (props) => {
             phoneDialCode === '1'
         );
     };
+
+    const attendeeCountry = formData?.[0]?.country;
+    const attendeeCountryId = formData?.[0]?.country_id;
+    const attendeeDialcode = formData?.[0]?.dialcode;
+
+    const hasSelectedCountry = Boolean(attendeeCountry || attendeeCountryId || attendeeDialcode);
+    const tempAttendee = {
+        country: attendeeCountry,
+        country_id: attendeeCountryId,
+        dialcode: attendeeDialcode
+    };
+    const isNonUsaUser = hasSelectedCountry
+        ? !isUSASelected(tempAttendee)
+        : (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allProfession || {}));
+
+    useEffect(() => {
+        connectionrequest()
+            .then(() => {
+                dispatch(professionRequest(isNonUsaUser ? { other_country: 1 } : {}));
+            })
+            .catch(err => {
+                showErrorAlert('Please connect to Internet', err);
+            });
+    }, [isfocus, dispatch, isNonUsaUser]);
+
     const getRequiredFieldsForAttendee = (attendee = {}) => {
         if (isUSASelected(attendee)) {
             return baseRequiredFields;
@@ -1357,16 +1402,13 @@ const Checkout = (props) => {
                 return dateObj.toISOString();
             }
             const ticket = attendees[index] || {}; // Get the ticket at the same index or an empty object if none exists
-            return {
+            const attendeeItem = {
                 ticket_id: ticket.ticket_id || '', // Ensure ticket_id is available
                 payment_ticket_id: ticket.payment_ticket_id || null, // Ensure payment_ticket_id is available
                 firstname: data?.firstname || '', // Get the first name from formData
                 lastname: data?.lastname || '', // Get the last name from formData
                 email: data?.emailad || '', // Get the email from formData
                 profession: data?.professionad || '', // Get profession from formData
-                license_state_id: data?.license_state_id || null,
-                license_expiry_date: convertToISODate(data?.license_expiry_date || null),
-                license_number: data?.license_number || null, // Use state_id from formData
                 speciality: data?.speciality_ids || [], // Use speciality IDs from formData
                 address: data?.address || '', // Use address from formData
                 npi_number: data?.npino || '', // Assuming this is a constant value
@@ -1375,8 +1417,19 @@ const Checkout = (props) => {
                 city_id: data?.city_id || null, // Use city_id from formData
                 zipcode: data?.zipcode || '', // Use zipcode from formData
                 phone: data?.cellno || '', // Use cell phone number from formData,
-                dob: data?.dateofbirth || ''
+                dob: data?.dateofbirth || '',
+                ...(isGuestCheckout && playerSessionID ? { playerSessionID } : {})
             };
+
+            if (!isNonUsaUser) {
+                attendeeItem.license_state_id = data?.license_state_id || null;
+                attendeeItem.license_number = data?.license_number || null;
+                attendeeItem.license_expiry_date = data?.license_expiry_date ? convertToISODate(data?.license_expiry_date) : "";
+            } else {
+                attendeeItem.license_expiry_date = "";
+            }
+
+            return attendeeItem;
         });
 
         // Prepare the billing information, using the first formData entry as the reference
@@ -1409,6 +1462,9 @@ const Checkout = (props) => {
         };
         if (customFieldCheked && customFieldCheked?.length > 0) {
             obj.jsonWithoutBraces = jsonWithoutBraces;
+        }
+        if (isGuestCheckout && playerSessionID) {
+            obj.playerSessionID = playerSessionID;
         }
         console.log(obj, "Multiple data pushing", customFieldCheked);
         connectionrequest()

@@ -17,10 +17,11 @@ import { resendemailotpRequest, verifyemailRequest } from '../../Redux/Reducers/
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 // ─── Module-level OTP send guard ────────────────────────────────────────────
 // Stored OUTSIDE the component so it:
@@ -37,6 +38,7 @@ const VerifyOTPEmail = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isFocus = useIsFocused();
+    const isNonUsaUser = Boolean(props?.route?.params?.verifyemail?.isNonUsaUser || props?.route?.params?.nonUsaUser);
 
     // ─── State ────────────────────────────────────────────────────────────────
     const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -138,7 +140,10 @@ const VerifyOTPEmail = (props) => {
             }
         };
         restore();
-        return () => clearInterval(timerRef.current);
+        return () => {
+            clearInterval(timerRef.current);
+            _autoOTPSentForEmail = null;
+        };
     }, []);
 
     const resendOTP = useCallback(() => {
@@ -168,6 +173,11 @@ const VerifyOTPEmail = (props) => {
         const newMail = props?.route?.params?.newMail;
         if (!newMail) return;
 
+        const forceResend = props?.route?.params?.NewEmail?.forceResend;
+        if (forceResend) {
+            _autoOTPSentForEmail = null;
+        }
+
         // Synchronous check + set — no await, no race condition possible
         if (_autoOTPSentForEmail === newMail) return;
         _autoOTPSentForEmail = newMail; // locked before any async work
@@ -177,7 +187,7 @@ const VerifyOTPEmail = (props) => {
         resendOTP();
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props?.route?.params?.newMail]);
+    }, [props?.route?.params?.newMail, props?.route?.params?.NewEmail?.forceResend]);
 
 
 
@@ -189,7 +199,22 @@ const VerifyOTPEmail = (props) => {
         ) {
             // Reset the module-level guard so a future newMail flow works correctly
             _autoOTPSentForEmail = null;
-            setModalVisible(true);
+            if (isNonUsaUser) {
+                writeNonUsaFlowState({
+                    userType: 'non_usa',
+                    isNonUsa: true,
+                    emailVerified: true,
+                    professionCompleted: true,
+                });
+                props.navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'TabNav' }],
+                    })
+                );
+            } else {
+                setModalVisible(true);
+            }
         }
         prevAuthStatus.current = AuthReducer.status;
     }, [AuthReducer.status]);
@@ -240,7 +265,7 @@ const VerifyOTPEmail = (props) => {
         } else if (props?.route?.params?.NewEmail?.verifyotp) {
             serverOTP = props.route.params.NewEmail.verifyotp;
         } else {
-            serverOTP = AuthReducer?.resendemailotpResponse?.email_otp;
+            serverOTP = AuthReducer?.signupResponse?.email_otp || AuthReducer?.resendemailotpResponse?.email_otp;
         }
 
         if (enteredOTP == serverOTP) {

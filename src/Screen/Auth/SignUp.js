@@ -17,6 +17,8 @@ import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
 const SignUp = (props) => {
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("")
@@ -28,9 +30,29 @@ const SignUp = (props) => {
   const [error, setError] = useState(false);
   const [gettrue, setGettrue] = useState(false);
   const [mobileHd, setMobileHd] = useState("");
+  const [isNonUsaFlow, setIsNonUsaFlow] = useState(String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1");
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log(AuthReducer, "Auth========", props?.route?.params?.phoneCd)
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const ip = getPublicIP();
+        const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+        const res = await fetch(url);
+        const text = await res.text();
+        if (text.startsWith('<')) return;
+        const data = JSON.parse(text);
+        const ipCountry = String(data?.country || '').trim().toUpperCase();
+        if (ipCountry && ipCountry !== 'US' && ipCountry !== 'USA') {
+          setIsNonUsaFlow(true);
+        }
+      } catch (error) {
+        console.log('SignUp geo lookup failed', error);
+      }
+    };
+    detectCountry();
+  }, []);
   const CreateAccount = () => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;;
     const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
@@ -39,9 +61,9 @@ const SignUp = (props) => {
       showErrorAlert("Please enter your first name.");
     } else if (!lname || lname?.length < 3) {
       showErrorAlert("Please enter your last name.");
-    } else if (!cellno) {
+    } else if (!isNonUsaFlow && !cellno) {
       showErrorAlert("Please enter your cell number.");
-    } else if (!mobilePattern.test(cellno)) {
+    } else if (!isNonUsaFlow && !mobilePattern.test(cellno)) {
       showErrorAlert("Cell number must be 10 digits ");
     } else if (!email) {
       showErrorAlert("Please enter your email address.");
@@ -55,14 +77,31 @@ const SignUp = (props) => {
     } else if (checked) {
       showErrorAlert("You must accept the Terms & Privacy Policy to continue.");
     } else {
+      if (isNonUsaFlow) {
+        writeNonUsaFlowState({
+          userType: 'non_usa',
+          isNonUsa: true,
+          signupCompleted: false,
+          professionCompleted: false,
+          emailVerified: false,
+          signupDraft: {
+            first_name: fname.trim(),
+            last_name: lname.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            countryCode: props?.route?.params?.phoneCd?.phoneCd || '',
+          },
+        });
+      }
       props.navigation.navigate("AllSpecial", {
         Alldata: {
           "first_name": fname.trim(),
           "last_name": lname.trim(),
-          "phone": cellno.trim(),
+          "phone": isNonUsaFlow ? "" : cellno.trim(),
           "email": email.trim(),
           "password": password.trim(),
-          "countryCode": props?.route?.params?.phoneCd?.phoneCd
+          "countryCode": props?.route?.params?.phoneCd?.phoneCd,
+          "isNonUsaUser": isNonUsaFlow,
         }
       })
     }
@@ -165,7 +204,7 @@ const SignUp = (props) => {
               text: 'OK', onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
-                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" } })
+                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
               }
             },
           ]);
@@ -182,7 +221,7 @@ const SignUp = (props) => {
               text: 'OK', onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
-                props.navigation.navigate("Login", { "email": email })
+                props.navigation.navigate("Login", { "email": email, isNonUsaUser: isNonUsaFlow })
               }
             },
           ]);
@@ -193,7 +232,11 @@ const SignUp = (props) => {
     }
   }, [AuthReducer.status, AuthReducer.emailexistResponse, AuthReducer.emailexistType, cellno, email]);
   const backSingUp = () => {
-    props.navigation.goBack();
+    if (props.navigation.canGoBack()) {
+      props.navigation.goBack();
+    } else {
+      props.navigation.navigate('Login', { isNonUsaUser: isNonUsaFlow });
+    }
   }
   useEffect(() => {
     const onBackPress = () => {
@@ -304,40 +347,42 @@ const SignUp = (props) => {
                     </Text>
                   </View>
                 )}
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1
-                }}>
+                {!isNonUsaFlow && (
                   <View style={{
-                    flex: 1,
-                    paddingRight: normalize(0)
+                    flexDirection: 'row',
+                    flex: 1
                   }}>
-                    <InputField
-                      label="Cell Number*"
-                      value={mobileHd}
-                      onChangeText={(text) => {
-                        if (props?.route?.params?.phoneCd?.phoneCd == "+1") {
-                          const formatted = formatPhoneNumber(text);
-                          setMobileHd(formatted);
-                          const rawDigits = formatted.replace(/\D/g, '');
-                          setMobileNo(rawDigits);
-                        } else if (props?.route?.params?.phoneCd?.phoneCd == "+91") {
-                          const formatted = formatIndianPhoneNumber(text);
-                          setMobileHd(formatted);
-                          const rawDigits = formatted.replace(/\D/g, '');
-                          setMobileNo(rawDigits);
-                        }
-                      }}
-                      placeholder=""
-                      placeholderTextColor="#949494"
-                      keyboardType="phone-pad"
-                      showCountryCode={true}
-                      countryCode={props?.route?.params?.phoneCd?.phoneCd}
-                      maxlength={14}
-                    />
+                    <View style={{
+                      flex: 1,
+                      paddingRight: normalize(0)
+                    }}>
+                      <InputField
+                        label="Cell Number*"
+                        value={mobileHd}
+                        onChangeText={(text) => {
+                          if (props?.route?.params?.phoneCd?.phoneCd == "+1") {
+                            const formatted = formatPhoneNumber(text);
+                            setMobileHd(formatted);
+                            const rawDigits = formatted.replace(/\D/g, '');
+                            setMobileNo(rawDigits);
+                          } else if (props?.route?.params?.phoneCd?.phoneCd == "+91") {
+                            const formatted = formatIndianPhoneNumber(text);
+                            setMobileHd(formatted);
+                            const rawDigits = formatted.replace(/\D/g, '');
+                            setMobileNo(rawDigits);
+                          }
+                        }}
+                        placeholder=""
+                        placeholderTextColor="#949494"
+                        keyboardType="phone-pad"
+                        showCountryCode={true}
+                        countryCode={props?.route?.params?.phoneCd?.phoneCd}
+                        maxlength={14}
+                      />
+                    </View>
                   </View>
-                </View>
-                {isValidWhatsappNodd && (
+                )}
+                {!isNonUsaFlow && isValidWhatsappNodd && (
                   <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
                     <Text
                       style={{

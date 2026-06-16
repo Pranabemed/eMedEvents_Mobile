@@ -10,6 +10,8 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BackHandler } from 'react-native';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
@@ -153,6 +155,37 @@ const GuestUser = props => {
       unsubscribeFocus();
     };
   }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
+
+  useEffect(() => {
+    const initPlayerSession = async () => {
+      try {
+        const session = await AsyncStorage.getItem('PLAYERSESSION');
+        if (!session) {
+          const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
+          await AsyncStorage.setItem('PLAYERSESSION', guestSessionId);
+        }
+      } catch (err) {
+        console.log('Error initializing guest player session ID:', err);
+      }
+    };
+    if (isFocused) {
+      initPlayerSession();
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (props.navigation.canGoBack()) {
+        props.navigation.goBack();
+      } else {
+        props.navigation.navigate('Onboard');
+      }
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [props.navigation]);
 
   useEffect(() => {
     let isMounted = true;
