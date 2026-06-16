@@ -66,6 +66,7 @@ function TabScreen() {
     stateCount,
     isConnected,
     setIsConnected,
+    primeCardSessionSkipped,
   } = useContext(AppContext);
   const [visible, setVisible] = useState(false);
   const [tabtooltip, setTabtooltip] = useState("closeit");
@@ -242,7 +243,7 @@ function TabScreen() {
     dashboardProfession && dashboardProfessionType
       ? `${dashboardProfession} - ${dashboardProfessionType}`
       : '';
-  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
+  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped && !primeCardSessionSkipped;
   useEffect(() => {
     const loadLastActiveTab = async () => {
       try {

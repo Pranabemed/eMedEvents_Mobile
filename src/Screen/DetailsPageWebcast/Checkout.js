@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import constants from '../../Utils/Helpers/constants';
 import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { cancelcouponRequest, cartCheckoutRequest, couponWebcastRequest, FreeTransRequest, saveRegistRequest, StatusPaymentRequest, TransemailcheckRequest } from '../../Redux/Reducers/WebcastReducer';
@@ -292,8 +293,8 @@ const Checkout = (props) => {
                     license_number: updatedUser?.license_number || '',
                 })
             );
+            await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
             if (isNonUsaUser) {
-                await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
                 await writeNonUsaFlowState({
                     userType: 'non_usa',
                     isNonUsa: true,
@@ -510,6 +511,30 @@ const Checkout = (props) => {
             resetGuestCheckoutFields();
         }
     }, [isGuestCheckout, guestRegistrationFlowActive]);
+
+    useEffect(() => {
+        if (!isGuestCheckout || !Array.isArray(countryall) || countryall.length === 0) return;
+        if (country || country_id) return; // country already selected/initialized
+
+        const defaultCountryToUsa = () => {
+            try {
+                // Default directly to United States for USA location guest checkout
+                const usa = countryall.find(c => 
+                    String(c?.id) === '1' || 
+                    String(c?.name).toLowerCase() === 'united states' || 
+                    String(c?.code).toUpperCase() === 'US' ||
+                    String(c?.shortname).toUpperCase() === 'US'
+                );
+                if (usa) {
+                    console.log('[Checkout] Automatically defaulting country to USA for guest:', usa.name);
+                    handleCountrySet(usa, 0);
+                }
+            } catch (err) {
+                console.log('[Checkout] Failed to default country to USA:', err);
+            }
+        };
+        defaultCountryToUsa();
+    }, [countryall, isGuestCheckout]);
 
     useEffect(() => {
         if (allProfession?.personal_information?.firstname || allProfession?.firstname) {

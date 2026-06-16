@@ -189,6 +189,25 @@ const Main = (props) => {
   const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
   const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
   const [forceNewProfession, setForceNewProfession] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  useEffect(() => {
+    let mounted = true;
+    if (isFocus) {
+      readNonUsaFlowState().then(state => {
+        if (mounted) {
+          setNonUsaFlowState(state);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+
+  const isNonUsaUser = useMemo(() => {
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+    return nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
   const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
   const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
   const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
@@ -550,6 +569,7 @@ const Main = (props) => {
           primeMembershipSkippedRaw,
           primeCardFlowCompleteRaw,
           suppressGuestPromptsOnceRaw,
+          isGuestConvertedUserRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -558,10 +578,13 @@ const Main = (props) => {
           AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
           AsyncStorage.getItem('PrimeCardFlowComplete'),
           AsyncStorage.getItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY),
+          AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
         ]);
         const suppressGuestPromptsOnce = suppressGuestPromptsOnceRaw === 'true';
         const guestFlowData = parseStoredJson(guestFlowRaw);
         const isGuestFlow = Boolean(guestFlowData);
+        const isGuestConvertedUser = isGuestConvertedUserRaw === 'true';
+        const isAnyGuestFlow = isGuestFlow || isGuestConvertedUser;
         const isSkippedFlow = primeMembershipSkippedRaw === 'true';
         const isVerificationPending = guestPrimeVerifyPendingRaw === 'true';
         const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
@@ -583,7 +606,7 @@ const Main = (props) => {
           return;
         }
 
-        if (!isGuestFlow && !isSkippedFlow) {
+        if (!isAnyGuestFlow && !isSkippedFlow) {
           setGuestVerifyModalVisible(false);
           setGuestVerifyData(null);
           setShowGuestPrimePrompt(false);
@@ -655,8 +678,9 @@ const Main = (props) => {
           !isVerificationPending &&
           !isPrimeCardFlowComplete &&
           !primeCardSessionSkipped &&
+          !isSkippedFlow &&
           !isNonUsaGuest &&
-          (isUSAAndPhysician || isSkippedFlow);
+          isUSAAndPhysician;
 
         console.log({
           shouldShowPrimeFirst,
@@ -675,7 +699,7 @@ const Main = (props) => {
           return;
         }
 
-        if (!isGuestFlow) {
+        if (!isAnyGuestFlow) {
           setPrimeadd(false);
           setShowGuestPrimePrompt(false);
           return;
@@ -705,6 +729,9 @@ const Main = (props) => {
           if (requiresVerification(user, isNonUsaGuest)) {
             await openGuestVerificationAlert(user, true);
           } else {
+            await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+            await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
             setGuestVerifyModalVisible(false);
             setGuestVerifyData(null);
@@ -718,6 +745,12 @@ const Main = (props) => {
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(true);
         } else {
+          if (hasFreshVerifyResponse) {
+            await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+            await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+          }
           setGuestVerifyModalVisible(false);
           setGuestVerifyData(null);
           setShowGuestPrimePrompt(false);
@@ -888,6 +921,9 @@ const Main = (props) => {
 
     try {
       await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+      await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+      await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+      await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
     } catch (error) {
       console.log('handleGuestVerifyAccount cleanup error', error);
     }
@@ -1006,7 +1042,7 @@ const Main = (props) => {
               >
                 <View>
                   <View style={{ bottom: normalize(10) }}>
-                    {forceNewProfession
+                    {forceNewProfession || isNonUsaUser
                       ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                       : isPhysicianFlow
                         ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />

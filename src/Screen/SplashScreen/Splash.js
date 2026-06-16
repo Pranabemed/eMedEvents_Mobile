@@ -80,6 +80,7 @@ export default function Splash(props) {
   const [nonUsaState, setNonUsaState] = useState(null);
   const [bootstrapChecked, setBootstrapChecked] = useState(false);
   const [professionState, setProfessionState] = useState(null);
+  const [isGuestConvertedUser, setIsGuestConvertedUser] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
@@ -129,6 +130,7 @@ export default function Splash(props) {
           initialUrl,
           nonUsaFlowState,
           professionRaw,
+          isGuestConvertedUserRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(constants.EMAVER),
           AsyncStorage.getItem(constants.MOBVER),
@@ -142,6 +144,7 @@ export default function Splash(props) {
           Linking.getInitialURL(),
           readNonUsaFlowState(),
           AsyncStorage.getItem(constants.PROFESSION),
+          AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
         ]);
         const emailEver = emaileer ? JSON.parse(emaileer) : null;
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
@@ -158,6 +161,7 @@ export default function Splash(props) {
           primeCardFlowCompleteRaw === 'true'
         );
         setDeepLinkBootstrapActive(Boolean(deepLinkBootstrapRaw) || isEmedDeepLink(initialUrl));
+        setIsGuestConvertedUser(isGuestConvertedUserRaw === 'true');
 
         if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && !hasNavigatedRef.current) {
           hasNavigatedRef.current = true;
@@ -495,6 +499,20 @@ export default function Splash(props) {
     const bothVerified = isVerified && isPhoneVerified;
     const handleVerify = spalsh || bothVerified;
 
+    // Guest Converted User redirect: Bypass all direct verification redirects and go straight to TabNav
+    if (isGuestConvertedUser && hasAuthToken) {
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'TabNav' }],
+          })
+        );
+      }
+      return;
+    }
+
     const isNonUsa =
       isNonUsaAccount(verifyData) ||
       (nonUsaState?.isNonUsa === true) ||
@@ -682,6 +700,7 @@ export default function Splash(props) {
     nonUsaState,
     bootstrapChecked,
     professionState,
+    isGuestConvertedUser,
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

@@ -17,6 +17,7 @@ import InputField from '../../Components/CellInput';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 const ForgotMPIN = (props) => {
+    const isNonUsaUser = Boolean(props?.route?.params?.isNonUsaUser);
     const [mobilhd, setMobilhd] = useState("");
     const [cellCountry, setCellCountry] = useState("");
     const [mobile, setMobile] = useState("");
@@ -29,13 +30,15 @@ const ForgotMPIN = (props) => {
         const mobileRegex = /^\d{10}$/;
         const cleVal = email && email.trim().replace(/\D/g, '');
         if (!email) {
-            showErrorAlert("Please enter your email or cell number!");
-        } else if (!emailRegex.test(email) && !mobileRegex.test(cleVal)) {
+            showErrorAlert(isNonUsaUser ? "Please enter your email address!" : "Please enter your email or cell number!");
+        } else if (isNonUsaUser && !emailRegex.test(email)) {
+            showErrorAlert("Please enter a valid email address!");
+        } else if (!isNonUsaUser && !emailRegex.test(email) && !mobileRegex.test(cleVal)) {
             showErrorAlert("Please enter a valid email address or 10 digit cell number!");
         } else {
             const phoneCode = props?.route?.params?.phoneCode;
             const phoneValue = phoneCode == '+91' ? cleVal : email;
-            let obj = showPassword ? { "email": email } : {
+            let obj = (showPassword || isNonUsaUser) ? { "email": email } : {
                 "phone": `${props?.route?.params?.phoneCode}${phoneValue}`
             }
             connectionrequest()
@@ -51,8 +54,9 @@ const ForgotMPIN = (props) => {
     const mobileRegex = /^\d{10}$/;
     const trimmedValue = email ? email.trim() : '';
     const cleanValue = trimmedValue.replace(/\D/g, '');
-    const isButtonEnabled =
-        emailRegex.test(trimmedValue) || mobileRegex.test(cleanValue);
+    const isButtonEnabled = isNonUsaUser
+        ? emailRegex.test(trimmedValue)
+        : (emailRegex.test(trimmedValue) || mobileRegex.test(cleanValue));
     const animatedValuephone = useRef(new Animated.Value(1)).current;
     const scaleValuephone = useRef(new Animated.Value(0)).current;
     useEffect(() => {
@@ -83,7 +87,7 @@ const ForgotMPIN = (props) => {
                 break;
             case 'Auth/forgotFailure':
                 status = AuthReducer.status;
-                showErrorAlert(`Your ${showPassword ? "email" : "cell number"} is not registered with us. Please use your email and password to log in if you already have an account.`);
+                showErrorAlert(`Your ${showPassword || isNonUsaUser ? "email" : "cell number"} is not registered with us. Please use your email and password to log in if you already have an account.`);
                 setTimeout(() => {
                     props.navigation.navigate("SignUp", { phoneCd: { phoneCd: props?.route?.params?.phoneCode } });
                 }, 1000);
@@ -135,9 +139,7 @@ const ForgotMPIN = (props) => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
     useEffect(() => {
-        if (props?.route?.params?.phoneCode) {
-            setCellCountry(props?.route?.params?.phoneCode);
-        }
+        setCellCountry(props?.route?.params?.phoneCode || "+1");
     }, [props?.route?.params?.phoneCode])
     useEffect(() => {
         if (mobilhd && cellCountry == "+1") {
@@ -160,6 +162,11 @@ const ForgotMPIN = (props) => {
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const mobileRegex = /^\d{10}$/;
         setEmail(val);
+        if (isNonUsaUser) {
+            setMobile(false);
+            setShowPassword(true);
+            return;
+        }
         if (mobile && val.length > 0) {
             setEmail(val);
         }
@@ -263,7 +270,7 @@ const ForgotMPIN = (props) => {
                                         maxlength={14}
                                         labelStyle={{ top: 10 }}
                                     /> : <InputField
-                                        label="Email / Cell Number"
+                                        label={isNonUsaUser ? "Email Address" : "Email / Cell Number"}
                                         value={email}
                                         onChangeText={handleInputChange}
                                         placeholder=""

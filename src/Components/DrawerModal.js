@@ -173,6 +173,7 @@ export default function DrawerModal(props) {
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
   ] : allProfTake ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },

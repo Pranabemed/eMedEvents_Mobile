@@ -37,6 +37,8 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 const Statewebcast = props => {
     const {
@@ -324,6 +326,39 @@ const Statewebcast = props => {
         }
         setLoading(false);
     }, [getValidatedWebcastPayload, requestedConferenceUrl, WebcastReducer?.webcastDeatilsResponse]);
+
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaFlowState().then(state => {
+            if (mounted) {
+                setNonUsaFlowState(state);
+            }
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+
+    useEffect(() => {
+        if (webcastdeatils?.conferenceId && isNonUsaUser) {
+            let obj = {
+                "conference_id": webcastdeatils.conferenceId,
+                "action_type": "view",
+                "status": 1
+            };
+            connectionrequest()
+                .then(() => {
+                    dispatch(ConfActRequest(obj));
+                })
+                .catch((err) => {
+                    console.log("ConfActRequest error: ", err);
+                });
+        }
+    }, [webcastdeatils?.conferenceId, isNonUsaUser, dispatch]);
 
     // useEffect(() => {
     //     if (webcastdeatils) {

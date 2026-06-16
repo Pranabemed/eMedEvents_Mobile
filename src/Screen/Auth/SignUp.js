@@ -18,7 +18,7 @@ import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 const SignUp = (props) => {
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("")
@@ -30,22 +30,26 @@ const SignUp = (props) => {
   const [error, setError] = useState(false);
   const [gettrue, setGettrue] = useState(false);
   const [mobileHd, setMobileHd] = useState("");
-  const [isNonUsaFlow, setIsNonUsaFlow] = useState(String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1");
+  const [signupCountryCode, setSignupCountryCode] = useState(props?.route?.params?.phoneCd?.phoneCd || '');
+  const [isNonUsaFlow, setIsNonUsaFlow] = useState(
+    props?.route?.params?.phoneCd?.phoneCd 
+      ? String(props?.route?.params?.phoneCd?.phoneCd).trim() !== "+1"
+      : true
+  );
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log(AuthReducer, "Auth========", props?.route?.params?.phoneCd)
   useEffect(() => {
     const detectCountry = async () => {
       try {
-        const ip = getPublicIP();
-        const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
-        const res = await fetch(url);
-        const text = await res.text();
-        if (text.startsWith('<')) return;
-        const data = JSON.parse(text);
-        const ipCountry = String(data?.country || '').trim().toUpperCase();
-        if (ipCountry && ipCountry !== 'US' && ipCountry !== 'USA') {
-          setIsNonUsaFlow(true);
+        const geoInfo = await getCountryAndDialCode();
+        if (geoInfo) {
+          const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
+          const isNonUsaIp = ipCountry && ipCountry !== 'US' && ipCountry !== 'USA';
+          setIsNonUsaFlow(isNonUsaIp);
+          if (!signupCountryCode) {
+            setSignupCountryCode(geoInfo.dialCode || '+1');
+          }
         }
       } catch (error) {
         console.log('SignUp geo lookup failed', error);
@@ -89,7 +93,7 @@ const SignUp = (props) => {
             last_name: lname.trim(),
             email: email.trim(),
             password: password.trim(),
-            countryCode: props?.route?.params?.phoneCd?.phoneCd || '',
+            countryCode: signupCountryCode || '',
           },
         });
       }
@@ -100,7 +104,7 @@ const SignUp = (props) => {
           "phone": isNonUsaFlow ? "" : cellno.trim(),
           "email": email.trim(),
           "password": password.trim(),
-          "countryCode": props?.route?.params?.phoneCd?.phoneCd,
+          "countryCode": signupCountryCode,
           "isNonUsaUser": isNonUsaFlow,
         }
       })
@@ -119,7 +123,7 @@ const SignUp = (props) => {
     setGettrue(true);
     const mobilePattern = /^\d{10}$/;
     if (mobilePattern.test(text)) {
-      let obj = { phone: `${props?.route?.params?.phoneCd?.phoneCd}${text}` };
+      let obj = { phone: `${signupCountryCode}${text}` };
       connectionrequest()
         .then(() => {
           dispatch(emailexistRequest(obj));
@@ -204,7 +208,7 @@ const SignUp = (props) => {
               text: 'OK', onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
-                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: props?.route?.params?.phoneCd?.phoneCd, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
+                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: signupCountryCode, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
               }
             },
           ]);
@@ -360,12 +364,12 @@ const SignUp = (props) => {
                         label="Cell Number*"
                         value={mobileHd}
                         onChangeText={(text) => {
-                          if (props?.route?.params?.phoneCd?.phoneCd == "+1") {
+                          if (signupCountryCode == "+1") {
                             const formatted = formatPhoneNumber(text);
                             setMobileHd(formatted);
                             const rawDigits = formatted.replace(/\D/g, '');
                             setMobileNo(rawDigits);
-                          } else if (props?.route?.params?.phoneCd?.phoneCd == "+91") {
+                          } else if (signupCountryCode == "+91") {
                             const formatted = formatIndianPhoneNumber(text);
                             setMobileHd(formatted);
                             const rawDigits = formatted.replace(/\D/g, '');
@@ -376,7 +380,7 @@ const SignUp = (props) => {
                         placeholderTextColor="#949494"
                         keyboardType="phone-pad"
                         showCountryCode={true}
-                        countryCode={props?.route?.params?.phoneCd?.phoneCd}
+                        countryCode={signupCountryCode}
                         maxlength={14}
                       />
                     </View>

@@ -27,6 +27,7 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import CustomInputTouchable from '../../Components/IconTextIn'
 import CustomInputTouchableX from './CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
@@ -88,6 +89,22 @@ const PersonalInfo = (props) => {
     const [countrypicker, setcountrypicker] = useState(false);
     const [noloaderext, setNoloaderext] = useState(false);
     const [speids, setSpeids] = useState("");
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaFlowState().then(state => {
+            if (mounted) {
+                setNonUsaFlowState(state);
+            }
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const userObj = props?.route?.params?.personal || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+
     const SearchBack = () => {
         props.navigation.goBack();
     }
@@ -128,13 +145,17 @@ const PersonalInfo = (props) => {
     useEffect(() => {
         connectionrequest()
             .then(() => {
-                dispatch(professionRequest());
+                if (isNonUsaUser) {
+                    dispatch(professionRequest({ other_country: 1 }));
+                } else {
+                    dispatch(professionRequest());
+                }
             })
             .catch(err => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [props?.route?.params?.personal]);
+    }, [props?.route?.params?.personal, isNonUsaUser]);
     useEffect(() => {
         if (country) {
             setSearchtext("");
@@ -308,7 +329,7 @@ const PersonalInfo = (props) => {
             showErrorAlert("Please choose profession ")
         } else if (!makeDid) {
             showErrorAlert("Please choose specialty")
-        } else if (!selectedOption) {
+        } else if (!selectedOption && !isNonUsaUser) {
             showErrorAlert("Please choose DEA Registered")
         } else if (isValidWhatsappNodd) {
             showErrorAlert("NPI must be 10 digits only ")
@@ -322,7 +343,7 @@ const PersonalInfo = (props) => {
                 "profession": country,
                 "profession_type": result,
                 "designation": result,
-                "dea_registered": selectedOption,
+                "dea_registered": isNonUsaUser ? "0" : selectedOption,
                 "specialities": formData?.speciality_ids
             }
             console.log(obj, "obj===============");
@@ -567,30 +588,32 @@ useLayoutEffect(() => {
                                         }
                                     }} 
                                 />
-                                <View style={{ paddingVertical: normalize(7) }}>
-                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000" }}>{"*Drug Enforcement Administration (DEA) Registered ?"}</Text>
-                                    <View style={styles.container}>
-                                        {/* Yes Option */}
-                                        <View style={styles.optionContainer}>
-                                            <CustomRadioButton
-                                                selected={selectedOption === '1'}
-                                                onPress={() => setSelectedOption('1')}
-                                            />
-                                            <TouchableOpacity onPress={() => setSelectedOption('1')}>
-                                                <Text style={styles.optionText}>{"Yes"}</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <View style={styles.optionContainer}>
-                                            <CustomRadioButton
-                                                selected={selectedOption === '0'}
-                                                onPress={() => setSelectedOption('0')}
-                                            />
-                                            <TouchableOpacity onPress={() => setSelectedOption('0')}>
-                                                <Text style={styles.optionText}>{"No"}</Text>
-                                            </TouchableOpacity>
+                                {!isNonUsaUser && (
+                                    <View style={{ paddingVertical: normalize(7) }}>
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000" }}>{"*Drug Enforcement Administration (DEA) Registered ?"}</Text>
+                                        <View style={styles.container}>
+                                            {/* Yes Option */}
+                                            <View style={styles.optionContainer}>
+                                                <CustomRadioButton
+                                                    selected={selectedOption === '1'}
+                                                    onPress={() => setSelectedOption('1')}
+                                                />
+                                                <TouchableOpacity onPress={() => setSelectedOption('1')}>
+                                                    <Text style={styles.optionText}>{"Yes"}</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={styles.optionContainer}>
+                                                <CustomRadioButton
+                                                    selected={selectedOption === '0'}
+                                                    onPress={() => setSelectedOption('0')}
+                                                />
+                                                <TouchableOpacity onPress={() => setSelectedOption('0')}>
+                                                    <Text style={styles.optionText}>{"No"}</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
+                                )}
                             </View>
                             <Buttons
                                 onPress={() => { makeUpdateProf(); }}

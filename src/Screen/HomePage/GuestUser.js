@@ -93,7 +93,7 @@ const GuestUser = props => {
   const [isGuestHomeLoading, setIsGuestHomeLoading] = useState(true);
   const [handledGuestResetAt, setHandledGuestResetAt] = useState(null);
   const [guestUsaStates, setGuestUsaStates] = useState([]);
-  const [isUsaUser, setIsUsaUser] = useState(null);
+  const [isUsaUser, setIsUsaUser] = useState(true);
 
   const shouldResetRef = useRef(false);
   const guestHomeRequestInFlightRef = useRef(false);
@@ -194,26 +194,15 @@ const GuestUser = props => {
       if (!canUseGuestNetworkFlow) {
         if (isMounted) {
           setGuestUsaStates([]);
-          setIsUsaUser(false);
+          setIsUsaUser(true);
         }
         return;
       }
 
       try {
         await connectionrequest();
-        const ipAddress = getPublicIP();
-        const countryCode = await getCountryFromIP(ipAddress);
-
-        const isUS = countryCode === 'US' || countryCode === 'USA';
         if (isMounted) {
-          setIsUsaUser(isUS);
-        }
-
-        if (!isUS) {
-          if (isMounted) {
-            setGuestUsaStates([]);
-          }
-          return;
+          setIsUsaUser(true);
         }
 
         const response = await getApi('master/states?country_id=1');
@@ -225,7 +214,7 @@ const GuestUser = props => {
       } catch (err) {
         if (isMounted) {
           setGuestUsaStates([]);
-          setIsUsaUser(false);
+          setIsUsaUser(true);
         }
         console.warn('Failed to fetch guest USA states:', err);
       }

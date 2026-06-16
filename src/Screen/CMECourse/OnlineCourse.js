@@ -1,5 +1,5 @@
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Alert } from 'react-native';
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import Fonts from '../../Themes/Fonts';
 import IconDot from 'react-native-vector-icons/Entypo';
 import Colorpath from '../../Themes/Colorpath';
@@ -7,7 +7,7 @@ import Imagepath from '../../Themes/Imagepath';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
-import { cmeCourseRequest } from '../../Redux/Reducers/CMEReducer';
+import { cmeCourseRequest, clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Modal from 'react-native-modal';
 import ScheduleCourse from './ScheduleCourse';
@@ -16,7 +16,8 @@ import FileViewer from "react-native-file-viewer";
 import Calend from 'react-native-vector-icons/AntDesign';
 import Loader from '../../Utils/Helpers/Loader';
 import { AppContext } from '../GlobalSupport/AppContext';
-let status = "";
+import normalize from '../../Utils/Helpers/Dimen';
+
 const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdownst, setLoadingdownst, filteredItems, setFilteredItems, setPendingall, pendingall, setCompltall, compltall, dataAll, setDataAll }) => {
     const {
         statepush,
@@ -26,6 +27,7 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const CMEReducer = useSelector(state => state.CMEReducer);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
+    const statusRef = useRef("");
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
     const [pageNum, setPageNum] = useState(0);
@@ -50,9 +52,7 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const Fulldata = (needReview == 1 && certificate) ? threeDotData :
         (needReview == 1 && !certificate) ? duplicateDataReview :
             (needReview == 0 && certificate) ? duplicateData : null;
-    useEffect(() => {
-        fetchHandle();
-    }, [fetchname, isFocus]);
+
     const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
@@ -94,9 +94,9 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
         }
     }
-    const fetchHandle = () => {
+    const fetchHandle = (page = pageNum) => {
         let obj = {
-            "pageno": pageNum,
+            "pageno": page,
             "limit": limit,
             "request_type": "normallist",
             "listby_type": "myactivities"
@@ -112,88 +112,85 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     };
     useFocusEffect(
         useCallback(() => {
+            dispatch(clearCmeCourseData());
+            statusRef.current = "";
             setStoreAlldata([]); // Reset stored data on focus
             setPageNum(0); // Reset pagination
-            fetchHandle(); // Fetch fresh data
-        }, [])
+            fetchHandle(0); // Fetch fresh data specifically for page 0
+        }, [dispatch])
     );
     const fetchMore = useCallback(() => {
         if (!apiReq && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-            setPageNum(pageNum + 1);
-            fetchHandle();
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            fetchHandle(nextPage);
         }
-    }, [apiReq]);
+    }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
 
     const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
-        fetchHandle();
+        fetchHandle(0);
     };
 
-    if (status === '' || CMEReducer.status !== status) {
-        switch (CMEReducer.status) {
-            case 'CME/cmeCourseRequest':
-                status = CMEReducer.status;
+    useEffect(() => {
+        if (CMEReducer.status && CMEReducer.status !== statusRef.current) {
+            statusRef.current = CMEReducer.status;
+            if (CMEReducer.status === 'CME/cmeCourseRequest') {
                 setApiReq(true);
                 setLoading(true);
-                break;
-            case 'CME/cmeCourseSuccess':
-                status = CMEReducer.status;
+            } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
                 setLoading(false);
                 const newData = CMEReducer?.cmeCourseResponse?.conferences || [];
-                if (newData.length > 0) {
-                    const modifiedData = [
-                        ...storeAlldata,
-                        ...newData,
-                    ]?.filter(
-                        (value, index, self) =>
-                            index === self.findIndex(t => t?.id === value?.id),
-                    );
-                    setStoreAlldata(modifiedData);
+                if (pageNum === 0) {
+                    setStoreAlldata(newData);
+                } else {
+                    setStoreAlldata(prevData => {
+                        const merged = [...prevData, ...newData];
+                        return merged.filter(
+                            (value, index, self) =>
+                                index === self.findIndex(t => t?.id === value?.id)
+                        );
+                    });
                 }
-                break;
-            case 'CME/cmeCourseFailure':
-                status = CMEReducer.status;
+            } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
                 setLoading(false);
-                break;
+            }
+        } else if (CMEReducer.status === '') {
+            statusRef.current = '';
         }
-    }
+    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum]);
+
     useEffect(() => {
-        if (storeAlldata?.length > 0) {
-            const filteredData = storeAlldata?.filter(item => {
-                const type = parseInt(item?.conference_type);
-                const excludedTypes = [1, 6, 34];
-                return !excludedTypes.includes(type);
-            });
-            setFilteredItems(filteredData);
-        }
+        const filteredData = storeAlldata?.filter(item => {
+            const type = parseInt(item?.conference_type);
+            const excludedTypes = [1, 6, 34];
+            return !excludedTypes.includes(type);
+        }) || [];
+        setFilteredItems(filteredData);
     }, [storeAlldata]);
     useEffect(() => {
-        if (storeAlldata?.length > 0) {
-            const filteredDataComplt = filteredItems?.filter(item => {
-                return item?.completed_percentage === 100;
-            });
-            setCompltall(filteredDataComplt);
-        }
-    }, [fetchname, storeAlldata])
+        const filteredDataComplt = filteredItems?.filter(item => {
+            return item?.completed_percentage === 100;
+        }) || [];
+        setCompltall(filteredDataComplt);
+    }, [fetchname, filteredItems]);
     useEffect(() => {
-        if (storeAlldata?.length > 0) {
-            const filteredDataPending = filteredItems?.filter(item => {
-                return item?.completed_percentage >= 0 && item?.completed_percentage <= 99;
-            });
-            setPendingall(filteredDataPending);
-        }
-    }, [fetchname, storeAlldata])
+        const filteredDataPending = filteredItems?.filter(item => {
+            return item?.completed_percentage >= 0 && item?.completed_percentage <= 99;
+        }) || [];
+        setPendingall(filteredDataPending);
+    }, [fetchname, filteredItems]);
     useEffect(() => {
         const resultData = fetchname === "All" ? filteredItems :
             fetchname === "Pending" ? pendingall :
                 fetchname === "Completed" ? compltall :
                     [];
         setDataAll(resultData);
-    }, [fetchname, storeAlldata, pendingall, compltall]);
+    }, [fetchname, filteredItems, pendingall, compltall]);
     const handleLinkst = (link) => {
         if (link) {
             const showPDF = async () => {

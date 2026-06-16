@@ -492,6 +492,88 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </TouchableOpacity>
                         </View>
                     )}
+                    {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && (
+                        <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [
+                                                {
+                                                    name: "NonMain",
+                                                    params: {
+                                                        myact: {
+                                                            realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                            creditData: creditData,
+                                                            recnt: "recnt"
+                                                        }
+                                                    },
+                                                }
+                                            ]
+                                        })
+                                    );
+                                }}
+                                style={{
+                                    flexDirection: "row",
+                                    height: normalize(95),
+                                    width: normalize(300),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    paddingHorizontal: normalize(10),
+                                    alignItems: "center",
+                                    borderWidth: 0.5,
+                                    borderColor: "#DADADA"
+                                }}
+                            >
+                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                    <Text
+                                        style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 14,
+                                            color: "#000000",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {"Your recently viewed courses are listed below for easy access and continued learning."}
+                                    </Text>
+                                    <View style={{ marginTop: normalize(10) }}>
+                                        <Buttons
+                                            onPress={() => {
+                                                const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "NonMain",
+                                                                params: {
+                                                                    myact: {
+                                                                        realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                                        creditData: creditData,
+                                                                        recnt: "recnt"
+                                                                    }
+                                                                },
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }}
+                                            height={normalize(40)}
+                                            width={normalize(270)}
+                                            backgroundColor={Colorpath.ButtonColr}
+                                            borderRadius={normalize(5)}
+                                            text="Recently viewed"
+                                            color={Colorpath.white}
+                                            fontSize={16}
+                                            fontFamily={Fonts.InterSemiBold}
+                                        />
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                     {nettrue === false ?
                         <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}</Text>

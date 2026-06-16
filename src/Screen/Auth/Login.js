@@ -19,10 +19,10 @@ import InputField from '../../Components/CellInput';
 let status = "";
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Login = (props) => {
   const {
@@ -37,7 +37,7 @@ const Login = (props) => {
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const [isPasswordFieldVisible, setIsPasswordFieldVisible] = useState(false);
   const [mobile, setMobile] = useState(false);
-  const [phoneCountryCode, setPhoneCountryCode] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+1');
   const [wholeD, setWholeD] = useState("");
   const [Usph, setUsph] = useState("")
   const [mobileHd, setMobileHd] = useState("");
@@ -113,6 +113,8 @@ const Login = (props) => {
       setIsNonUsaFlow(true);
       setMobile(false);
       setPhoneCountryCode('');
+    } else {
+      setPhoneCountryCode(prev => prev || '+1');
     }
     if (props?.route?.params?.email) {
       setEmail(props?.route?.params?.email);
@@ -122,39 +124,40 @@ const Login = (props) => {
   }, [props?.route?.params?.email])
   useEffect(() => {
     let mounted = true;
-    readNonUsaFlowState().then(state => {
+    readNonUsaFlowState().then(async (state) => {
       if (!mounted) return;
       setNonUsaFlowState(state);
       const isNonUsa = isNonUsaAccount({}, state);
-      setIsNonUsaFlow(isNonUsa);
+      
+      let geoInfo = null;
+      try {
+        geoInfo = await getCountryAndDialCode();
+      } catch (err) {
+        console.log('[Login] IP lookup failed:', err);
+      }
+
       if (isNonUsa) {
+        setIsNonUsaFlow(true);
         setMobile(false);
-        setPhoneCountryCode('');
         setIsPasswordFieldVisible(true);
+      } else if (geoInfo) {
+        const isNonUsaIp = geoInfo.country && geoInfo.country !== 'US' && geoInfo.country !== 'USA';
+        setIsNonUsaFlow(isNonUsaIp);
+        if (isNonUsaIp) {
+          setMobile(false);
+          setIsPasswordFieldVisible(true);
+        } else {
+          setPhoneCountryCode(geoInfo.dialCode || '+1');
+        }
+      } else {
+        setIsNonUsaFlow(false);
+        setPhoneCountryCode('+1');
       }
     });
-
-    const detectFromIp = async () => {
-      try {
-        const ipAddress = await getPublicIP();
-        const countryCode = await getCountryFromIP(ipAddress);
-        const isNonUsaIp = countryCode && countryCode !== 'US' && countryCode !== 'USA';
-        if (mounted && isNonUsaIp) {
-          setIsNonUsaFlow(true);
-          setMobile(false);
-          setPhoneCountryCode('');
-          setIsPasswordFieldVisible(true);
-        }
-      } catch (error) {
-        console.log('Login non-USA detect failed', error);
-      }
-    };
-
-    detectFromIp();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isFocus]);
   useEffect(() => {
     if (isNonUsaFlow) {
       setMobile(false);
@@ -176,6 +179,7 @@ const Login = (props) => {
       setMobile(true);
     }
   }, [props?.route?.params?.phone])
+
   const handleLogin = () => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
@@ -366,39 +370,6 @@ const Login = (props) => {
     }
     showErrorAlert(loginSignInResponse?.msg || "something went wrong !");
   }, [AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
-  const COUNTRY_DIAL_CODES = {
-    IN: '+91',
-    US: '+1',
-    GB: '+44',
-    AU: '+61',
-    CA: '+1',
-    SG: '+65',
-  };
-  const getCountryFromIP = async (ip) => {
-    try {
-      const res = await fetch(`https://ipinfo.io/${ip}/json`);
-      const text = await res.text();
-      if (text.startsWith('<')) {
-        throw new Error('HTML response');
-      }
-      const data = JSON.parse(text);
-      return data?.country || null; // "IN"
-    } catch (e) {
-      console.log('Geo lookup failed:', e);
-      return null;
-    }
-  };
-  const ipAddress = getPublicIP(); // global value
-  useEffect(() => {
-    const fetchCountry = async () => {
-      const countryCode = await getCountryFromIP(ipAddress);
-      if (countryCode) {
-        const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
-        setPhoneCountryCode(dialCode); // ✅ push dial code instead of country code
-      }
-    };
-    fetchCountry();
-  }, [ipAddress]);
   const validHandles = useMemo(() => new Set([
     "Physician - MD",
     "Physician - DO",
@@ -629,19 +600,18 @@ const Login = (props) => {
   const goToGuestPage = async () => {
     try {
       const session = await AsyncStorage.getItem('PLAYERSESSION');
-      if (session && props.navigation.canGoBack()) {
-        props.navigation.goBack();
-      } else {
-        const guestSessionId = `guest_session_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+      if (!session) {
+        const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
         await AsyncStorage.setItem('PLAYERSESSION', guestSessionId);
-        props.navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'GuestUser' }],
-          })
-        );
       }
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'GuestUser' }],
+        })
+      );
     } catch (err) {
+      console.log('goToGuestPage error', err);
       props.navigation.navigate("Onboard");
     }
   }
@@ -678,10 +648,6 @@ const Login = (props) => {
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
-  useEffect(() => {
-    const ipAddress = getPublicIP();
-    console.log(ipAddress, "ipAddress+======")
-  }, [])
   useEffect(() => {
     generateDeviceToken()
       .then((res) => {
@@ -803,8 +769,8 @@ const Login = (props) => {
                     )}
                   </View>
                 </View>
-                {(!mobile && phoneCountryCode && !isNonUsaFlow) ? <View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
-                  <TouchableOpacity onPress={() => { props.navigation.navigate("ForgotMPIN", { phoneCode: phoneCountryCode }) }}>
+                {(isNonUsaFlow || (!mobile && phoneCountryCode)) ? <View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
+                  <TouchableOpacity onPress={() => { props.navigation.navigate("ForgotMPIN", { phoneCode: phoneCountryCode || "+1", isNonUsaUser: isNonUsaFlow }) }}>
                     <Text style={styles.forgotText}>Forgot Password?</Text>
                   </TouchableOpacity>
                 </View> : <></>}

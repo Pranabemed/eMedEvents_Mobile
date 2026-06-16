@@ -1,5 +1,5 @@
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import Fonts from '../../Themes/Fonts'
 import IconDot from 'react-native-vector-icons/Entypo';
 import Colorpath from '../../Themes/Colorpath';
@@ -7,17 +7,17 @@ import Imagepath from '../../Themes/Imagepath';
 import Calender from 'react-native-vector-icons/EvilIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native';
-import { cmeCourseRequest } from '../../Redux/Reducers/CMEReducer';
+import { cmeCourseRequest, clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import moment from 'moment';
 import Modal from 'react-native-modal';
 import RNFS from "react-native-fs";
 import FileViewer from "react-native-file-viewer";
-import { normalizeColor } from 'react-native-reanimated/lib/typescript/Colors';
+import normalize from '../../Utils/Helpers/Dimen';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
-let status = "";
+
 const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadingdownstlv }) => {
     const {
         statepush,
@@ -27,6 +27,7 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     const CMEReducer = useSelector(state => state.CMEReducer);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
+    const statusRef = useRef("");
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -49,8 +50,14 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
         (needReviewlive == 1 && !certificatelive) ? duplicateDataReviewlive :
             (needReviewlive == 0 && certificatelive) ? duplicateDatalive : null;
     useEffect(() => {
-        fetchHandle();
-    }, [fetchnamelive, isFocus]);
+        if (isFocus) {
+            dispatch(clearCmeCourseData());
+            statusRef.current = "";
+            setStoreAlldata([]);
+            setPageNum(0);
+            fetchHandle(0);
+        }
+    }, [isFocus, dispatch]);
     const fullActionlive = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
@@ -124,9 +131,9 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             openFileViewerst();
         }
     }, [pdfUrist]);
-    const fetchHandle = () => {
+    const fetchHandle = (page = pageNum) => {
         let obj = {
-            "pageno": pageNum,
+            "pageno": page,
             "limit": limit,
             "request_type": "normallist",
             "listby_type": "myactivities"
@@ -143,77 +150,77 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
 
     const fetchMore = useCallback(() => {
         if (!apiReq && !CMEReducer?.cmeCourseResponse?.conferences) {
-            setPageNum(pageNum + 1);
-            fetchHandle();
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            fetchHandle(nextPage);
         }
-    }, [apiReq]);
+    }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
 
     const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
-        fetchHandle();
+        fetchHandle(0);
     };
 
-    if (status === '' || CMEReducer.status !== status) {
-        switch (CMEReducer.status) {
-            case 'CME/cmeCourseRequest':
-                status = CMEReducer.status;
+    useEffect(() => {
+        if (CMEReducer.status && CMEReducer.status !== statusRef.current) {
+            statusRef.current = CMEReducer.status;
+            if (CMEReducer.status === 'CME/cmeCourseRequest') {
                 setApiReq(true);
                 setLoading(true);
-                break;
-            case 'CME/cmeCourseSuccess':
-                status = CMEReducer.status;
+            } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
                 setLoading(false);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-                    let modifiedData = [
-                        ...storeAlldata,
-                        ...CMEReducer?.cmeCourseResponse?.conferences,
-                    ]?.filter(
-                        (value, index, self) =>
-                            index === self.findIndex(t => t?.id === value?.id),
-                    );
-                    setStoreAlldata(modifiedData);
+                    const newData = CMEReducer?.cmeCourseResponse?.conferences || [];
+                    if (pageNum === 0) {
+                        setStoreAlldata(newData);
+                    } else {
+                        setStoreAlldata(prevData => {
+                            const merged = [...prevData, ...newData];
+                            return merged.filter(
+                                (value, index, self) =>
+                                    index === self.findIndex(t => t?.id === value?.id)
+                            );
+                        });
+                    }
                 } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
+                    if (pageNum === 0) {
+                        setStoreAlldata([]);
+                    }
                     setApiReq(false);
                     setLoading(false);
                 }
-                break;
-            case 'CME/cmeCourseFailure':
-                status = CMEReducer.status;
+            } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
                 setLoading(false);
-                break;
+            }
+        } else if (CMEReducer.status === '') {
+            statusRef.current = '';
         }
-    }
+    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum]);
 
     useEffect(() => {
-        if (storeAlldata?.length > 0) {
-            const filteredData = storeAlldata?.filter(item => {
-                const type = parseInt(item?.conference_type);
-                const targetTypes = [1, 6, 34];
-                return targetTypes?.includes(type);
-            });
-            setFilteredItems(filteredData);
-        }
+        const filteredData = storeAlldata?.filter(item => {
+            const type = parseInt(item?.conference_type);
+            const targetTypes = [1, 6, 34];
+            return targetTypes?.includes(type);
+        }) || [];
+        setFilteredItems(filteredData);
     }, [storeAlldata]);
     useEffect(() => {
-        if (filteredItems?.length > 0) {
-            const filteredDataComplt = filteredItems?.filter(item => {
-                return item?.event_happening_text == "";
-            });
-            setCompltall(filteredDataComplt);
-        }
-    }, [fetchnamelive])
+        const filteredDataComplt = filteredItems?.filter(item => {
+            return item?.event_happening_text == "";
+        }) || [];
+        setCompltall(filteredDataComplt);
+    }, [fetchnamelive, filteredItems]);
     useEffect(() => {
-        if (filteredItems?.length > 0) {
-            const filteredDataPending = filteredItems?.filter(item => {
-                return item?.event_happening_text;
-            });
-            setPendingall(filteredDataPending);
-        }
-    }, [fetchnamelive])
+        const filteredDataPending = filteredItems?.filter(item => {
+            return item?.event_happening_text;
+        }) || [];
+        setPendingall(filteredDataPending);
+    }, [fetchnamelive, filteredItems]);
     useEffect(() => {
         const resultData = fetchnamelive === "All" ? filteredItems :
             fetchnamelive === "Pending" ? pendingall :
