@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
  * Description: Guest home header component.
  * Purpose: Displays logo, state selector, sign-in action, and search CTA.
  */
-const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode, onOpenStatePicker, isUsaUser }) => {
+const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode, onOpenStatePicker, isUsaUser, renderTopOnly, renderSearchOnly }) => {
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const [statesList, setStatesList] = useState([]);
@@ -92,6 +92,120 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
 
     navigation.navigate('Login');
   };
+
+  if (renderTopOnly) {
+    return (
+      <>
+        <View style={styles.topBar}>
+          <Image
+            source={Imagepath.Logo}
+            style={[styles.logo, { width: scale(width, 40), height: scale(width, 40) }]}
+            resizeMode="contain"
+          />
+          <View style={styles.topActions}>
+            {isUsaUser !== false && (
+              <TouchableOpacity style={styles.langPill} onPress={() => setStateModalVisible(true)}>
+                <Text style={styles.langText}>{stateCode || 'State'}</Text>
+                <Icon name="keyboard-arrow-down" size={20} color={Colorpath.black} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.signInButton} onPress={handleSignInPress}>
+              <Text style={styles.signInText}>SIGN IN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Modal visible={stateModalVisible} transparent animationType="slide">
+          <SafeAreaView style={modalStyles.stateModalContainer}>
+            <View style={modalStyles.stateModalHeader}>
+              <TouchableOpacity
+                onPress={() => {
+                  setStateModalVisible(false);
+                  setStateSearch('');
+                }}
+                style={modalStyles.backButton}
+              >
+                <Icon name="close" size={normalize(24)} color="#333333" />
+              </TouchableOpacity>
+              <Text style={modalStyles.stateModalTitle}>Select State</Text>
+              <View style={{ width: normalize(24) }} />
+            </View>
+
+            <View style={modalStyles.searchBarContainer}>
+              <Icon
+                name="search"
+                size={normalize(20)}
+                color="#9CA3AF"
+                style={modalStyles.searchIcon}
+              />
+              <TextInput
+                style={modalStyles.searchInput}
+                placeholder="Search State"
+                placeholderTextColor="#9CA3AF"
+                value={stateSearch}
+                onChangeText={setStateSearch}
+              />
+              {stateSearch.length > 0 ? (
+                <TouchableOpacity onPress={() => setStateSearch('')}>
+                  <Icon name="clear" size={normalize(20)} color="#9CA3AF" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <FlatList
+              data={filteredStates}
+              keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? index)}
+              contentContainerStyle={modalStyles.stateList}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={<Text style={modalStyles.emptyText}>No states found</Text>}
+              renderItem={({ item }) => {
+                const name = getStateName(item);
+                return (
+                  <TouchableOpacity
+                    style={modalStyles.stateItem}
+                    onPress={() => handleStateSelect(item)}
+                  >
+                    <Text style={modalStyles.stateItemText}>{name}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </SafeAreaView>
+        </Modal>
+      </>
+    );
+  }
+
+  if (renderSearchOnly) {
+    return (
+      <Pressable
+        style={styles.searchBar}
+        onPress={() =>
+          navigation.navigate('GuestSpecialitySearch', {
+            taskData: {
+              statid: selectedState?.id ?? '',
+              creditID: selectedState ?? null,
+              isGuest: true,
+            },
+          })
+        }
+      >
+        <SearchIcon name="search" size={20} color="#9CA3AF" />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.searchTextScrollContent}
+          style={styles.searchTextScroll}
+        >
+          <Text numberOfLines={1} style={styles.searchText}>
+            Search CME, conferences, specialties
+          </Text>
+        </ScrollView>
+        <Icon name="mic-none" size={20} color="#9CA3AF" />
+      </Pressable>
+    );
+  }
 
   return (
     <>

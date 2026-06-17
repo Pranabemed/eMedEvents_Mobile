@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import normalize from '../Utils/Helpers/Dimen';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 import Colorpath from '../Themes/Colorpath';
@@ -11,6 +12,38 @@ import Share from 'react-native-share';
 import constants from '../Utils/Helpers/constants';
 
 const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand, hideCart = false }) => {
+  const navigation = useNavigation();
+  const cleanTitle = (title || '').replace(/\*/g, '').toLowerCase().trim();
+
+  const placeholders = useMemo(() => [
+    "Search for CME/CE courses",
+    "Search for your state required courses ",
+    "Search for topic",
+    "Search for specialty",
+    "Search for medical conferences",
+    "Search for conferences by location "
+  ], []);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [placeholders]);
+  const isPaymentOrCheckout = cleanTitle === 'payment' || 
+                              cleanTitle === 'checkout' || 
+                              cleanTitle.includes('payment') || 
+                              cleanTitle.includes('checkout') ||
+                              cleanTitle.includes('profession') ||
+                              cleanTitle.includes('specialty') ||
+                              cleanTitle.includes('speciality') ||
+                              cleanTitle.includes('specialities') ||
+                              cleanTitle.includes('state') ||
+                              cleanTitle.includes('country') ||
+                              cleanTitle.includes('city') ||
+                              cleanTitle.includes('medical license state');
+
   console.log(cartcount, "fdgjhjfdghjh");
 
   const handleSearch = () => {
@@ -41,7 +74,7 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
 
   console.log(search, "search=========", "https://v2.emedevents.com/online-cme-courses/webcasts");
 
-   return (
+  return (
     sharetrue ? (
       <View style={{
         height: normalize(40),
@@ -58,8 +91,8 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
           flex: 1,
         }}>
           {!avoid && (
-            <TouchableOpacity 
-              onPress={onBackPress} 
+            <TouchableOpacity
+              onPress={onBackPress}
               style={{ marginRight: normalize(5) }}
               delayPressIn={0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -67,24 +100,54 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
               <ArrowIcons name="keyboard-arrow-left" size={35} color={Colorpath.black} />
             </TouchableOpacity>
           )}
-          <Text
-            numberOfLines={1}
-            style={{
-              fontFamily: Fonts.InterBold,
-              fontSize: 18,
-              color: "#000000",
-              marginLeft: avoid ? normalize(15) : normalize(3),
-              flexShrink: 1,
-              fontWeight: "bold"
-            }}
-          >
-            {title}
-          </Text>
+          {!isPaymentOrCheckout ? (
+            <TouchableOpacity
+              onPress={() => navigation.navigate("HeaderSearch")}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderRadius: normalize(5),
+                height: normalize(32),
+                width: '60%',
+                paddingHorizontal: normalize(8),
+                backgroundColor: '#F5F5F5',
+                gap: normalize(5)
+              }}
+            >
+              <SearchIcn name="search" size={16} color="#AAAAAA" />
+              <Text 
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontFamily: Fonts.InterRegular,
+                  fontSize: 14,
+                  color: '#AAAAAA',
+                  flex: 1
+                }}
+              >
+                {placeholders[placeholderIndex]}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text
+              numberOfLines={1}
+              style={{
+                fontFamily: Fonts.InterBold,
+                fontSize: 18,
+                color: "#000000",
+                marginLeft: avoid ? normalize(15) : normalize(3),
+                flexShrink: 1,
+                fontWeight: "bold"
+              }}
+            >
+              {title}
+            </Text>
+          )}
         </View>
 
         {/* Share Icon */}
-        <Pressable 
-          onPress={handleSearch} 
+        <Pressable
+          onPress={handleSearch}
           style={{ marginTop: normalize(10), width: normalize(35) }}
           delayPressIn={0}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -135,47 +198,93 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
     ) : (
       <View style={{
         height: normalize(40),
-        width: normalize(340),
+        width: '100%',
         backgroundColor: "#FFFFFF",
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: "space-between",
-        paddingHorizontal: normalize(3)
+        paddingHorizontal: normalize(10)
       }}>
-        {/* Back arrow and title container */}
-        <TouchableOpacity 
-          onPress={onBackPress} 
-          style={{
+        {/* Back arrow and title container / search box */}
+        {!isPaymentOrCheckout && !search ? (
+          <View style={{
             flexDirection: 'row',
             alignItems: 'center',
-            flex: 1
-          }}
-          delayPressIn={0}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          {!avoid && (
-            <ArrowIcons name="keyboard-arrow-left" size={30} color={Colorpath.black} />
-          )}
-          <Text
-            numberOfLines={nol == "yes" ? 2 : 1}
+            flex: 1,
+          }}>
+            {!avoid && (
+              <TouchableOpacity
+                onPress={onBackPress}
+                style={{ marginRight: normalize(5) }}
+                delayPressIn={0}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <ArrowIcons name="keyboard-arrow-left" size={30} color={Colorpath.black} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => navigation.navigate("HeaderSearch")}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderRadius: normalize(5),
+                height: normalize(32),
+                width: '60%',
+                paddingHorizontal: normalize(8),
+                backgroundColor: '#F5F5F5',
+                gap: normalize(5)
+              }}
+            >
+              <SearchIcn name="search" size={16} color="#AAAAAA" />
+              <Text 
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontFamily: Fonts.InterRegular,
+                  fontSize: 14,
+                  color: '#AAAAAA',
+                  flex: 1
+                }}
+              >
+                {placeholders[placeholderIndex]}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={onBackPress}
             style={{
-              fontFamily: Fonts.InterBold,
-              fontSize: 18,
-              color: "#000000",
-              marginLeft: avoid ? normalize(15) : normalize(3),
-              flexShrink: 1,
-              bottom: 1,
-              fontWeight: "bold"
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1
             }}
+            delayPressIn={0}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            {title}
-          </Text>
-        </TouchableOpacity>
+            {!avoid && (
+              <ArrowIcons name="keyboard-arrow-left" size={30} color={Colorpath.black} />
+            )}
+            <Text
+              numberOfLines={nol == "yes" ? 2 : 1}
+              style={{
+                fontFamily: Fonts.InterBold,
+                fontSize: 18,
+                color: "#000000",
+                marginLeft: avoid ? normalize(15) : normalize(3),
+                flexShrink: 1,
+                bottom: 1,
+                fontWeight: "bold"
+              }}
+            >
+              {title}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Search Icon */}
         {search && (
-          <TouchableOpacity 
-            onPress={() => { setSearch(true); }} 
+          <TouchableOpacity
+            onPress={() => { setSearch(true); }}
             style={{ paddingLeft: normalize(5) }}
             delayPressIn={0}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

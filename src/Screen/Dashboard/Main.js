@@ -240,6 +240,8 @@ const Main = (props) => {
     AuthReducer?.loginResponse?.user ||
     AuthReducer?.againloginsiginResponse?.user ||
     AuthReducer?.signupResponse?.user ||
+    AuthReducer?.verifymobileResponse?.user ||
+    AuthReducer?.verifyemailResponse?.user ||
     {};
   const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
   const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
@@ -417,6 +419,9 @@ const Main = (props) => {
   const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || (!isPhysicianFlow && !isNursingFlow));
+  const shouldRenderNewProfession =
+    forceNewProfession ||
+    (isNonUsaUser && !isPhysicianFlow);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   useEffect(() => {
     setFreeze(false);
@@ -593,6 +598,14 @@ const Main = (props) => {
           AuthReducer?.status === 'Auth/verifySuccess' &&
           Boolean(verifyResponseData);
 
+        if (isSkippedFlow) {
+          setPrimeadd(false);
+          setShowGuestPrimePrompt(false);
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          return;
+        }
+
         if (!resolvedIpCountryCode) {
           return;
         }
@@ -614,7 +627,7 @@ const Main = (props) => {
         }
         const verifyData = parseStoredJson(verifyRaw);
         const professionData = parseStoredJson(professionRaw);
-        const user = verifyResponseData || verifyData || professionData;
+        const user = verifyResponseData || verifyData || professionData || authProfessionInfo;
         const professionType = String(
           verifyData?.profession_type || professionData?.profession_type ||
           user?.profession_type ||
@@ -1042,7 +1055,7 @@ const Main = (props) => {
               >
                 <View>
                   <View style={{ bottom: normalize(10) }}>
-                    {forceNewProfession || isNonUsaUser
+                    {shouldRenderNewProfession
                       ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                       : isPhysicianFlow
                         ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
@@ -1153,7 +1166,7 @@ const Main = (props) => {
             </Pressable>
           </View>
             : null}
-           {(primeadd && !isDrawerVisible) && <PrimeCard
+          {(primeadd && !isDrawerVisible) && <PrimeCard
             primeadd={primeadd}
             setPrimeadd={setPrimeadd}
             primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30 Days' : undefined}

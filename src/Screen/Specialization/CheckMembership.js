@@ -1,4 +1,4 @@
-import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, ActivityIndicator } from 'react-native';
 import React, { useLayoutEffect, useState, useContext, useEffect } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
@@ -17,6 +17,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import constants from '../../Utils/Helpers/constants';
+import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
@@ -37,75 +38,75 @@ const getCountryFromIP = async (ip) => {
 };
 
 const normalizeProfessionHandle = (professionHandle) =>
-  String(professionHandle || '')
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .trim();
+    String(professionHandle || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
 
 const findMatchedProfessionHandle = (candidates, supportedHandles) => {
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalizeProfessionHandle(candidate);
-    if (!normalizedCandidate) continue;
+    for (const candidate of candidates) {
+        const normalizedCandidate = normalizeProfessionHandle(candidate);
+        if (!normalizedCandidate) continue;
 
-    for (const handle of supportedHandles) {
-      if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
-        return handle;
-      }
+        for (const handle of supportedHandles) {
+            if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
+                return handle;
+            }
+        }
     }
-  }
-  return '';
+    return '';
 };
 
 const buildProfessionLabel = (profession, professionType) => {
-  const cleanProfession = String(profession || '').trim();
-  const cleanProfessionType = String(professionType || '').trim();
+    const cleanProfession = String(profession || '').trim();
+    const cleanProfessionType = String(professionType || '').trim();
 
-  if (!cleanProfession || !cleanProfessionType) {
-    return '';
-  }
+    if (!cleanProfession || !cleanProfessionType) {
+        return '';
+    }
 
-  return `${cleanProfession} - ${cleanProfessionType}`;
+    return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
 const isUsaBasedUser = (user, ipCountryCode = '') => {
-  const countryId = String(
-    user?.country_id ||
-    user?.billing_address?.country_id ||
-    user?.user_billing_address?.country_id ||
-    user?.user_address?.country_id ||
-    ''
-  ).trim();
-  const countryName = String(
-    user?.country_name ||
-    user?.billing_address?.country_name ||
-    user?.user_billing_address?.country_name ||
-    user?.user_address?.country_name ||
-    ''
-  ).trim().toLowerCase();
-  const usaUser = String(user?.usa_user || '').trim().toLowerCase();
-  const ipCountry = String(user?.ip_country || user?.country_code || '').trim().toLowerCase();
-  const callingCode = String(user?.callingCode || user?.countryCode || '').trim();
-  const normalizedResolvedIpCountry = String(ipCountryCode || '').trim().toLowerCase();
+    const countryId = String(
+        user?.country_id ||
+        user?.billing_address?.country_id ||
+        user?.user_billing_address?.country_id ||
+        user?.user_address?.country_id ||
+        ''
+    ).trim();
+    const countryName = String(
+        user?.country_name ||
+        user?.billing_address?.country_name ||
+        user?.user_billing_address?.country_name ||
+        user?.user_address?.country_name ||
+        ''
+    ).trim().toLowerCase();
+    const usaUser = String(user?.usa_user || '').trim().toLowerCase();
+    const ipCountry = String(user?.ip_country || user?.country_code || '').trim().toLowerCase();
+    const callingCode = String(user?.callingCode || user?.countryCode || '').trim();
+    const normalizedResolvedIpCountry = String(ipCountryCode || '').trim().toLowerCase();
 
-  if (countryId && countryId !== '1' && countryId !== '233' && countryId !== '0') {
-    return false;
-  }
-  if (countryName && !countryName.includes('usa') && !countryName.includes('united states') && !countryName.includes('us')) {
-    return false;
-  }
+    if (countryId && countryId !== '1' && countryId !== '233' && countryId !== '0') {
+        return false;
+    }
+    if (countryName && !countryName.includes('usa') && !countryName.includes('united states') && !countryName.includes('us')) {
+        return false;
+    }
 
-  return (
-    usaUser === '1' ||
-    usaUser === 'true' ||
-    countryId === '1' ||
-    countryName.includes('usa') ||
-    countryName.includes('united states') ||
-    callingCode === '+1' ||
-    normalizedResolvedIpCountry === 'us' ||
-    normalizedResolvedIpCountry === 'usa' ||
-    ipCountry === 'us' ||
-    ipCountry === 'usa'
-  );
+    return (
+        usaUser === '1' ||
+        usaUser === 'true' ||
+        countryId === '1' ||
+        countryName.includes('usa') ||
+        countryName.includes('united states') ||
+        callingCode === '+1' ||
+        normalizedResolvedIpCountry === 'us' ||
+        normalizedResolvedIpCountry === 'usa' ||
+        ipCountry === 'us' ||
+        ipCountry === 'usa'
+    );
 };
 
 const CheckMembership = (props) => {
@@ -119,11 +120,25 @@ const CheckMembership = (props) => {
         let isMounted = true;
         const checkEligibility = async () => {
             try {
+                const skipped = await AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+                if (skipped === 'true') {
+                    if (isMounted) {
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
+                            })
+                        );
+                    }
+                    return;
+                }
                 const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
                 const authProfessionInfo =
                     AuthReducer?.loginResponse?.user ||
                     AuthReducer?.againloginsiginResponse?.user ||
                     AuthReducer?.signupResponse?.user ||
+                    AuthReducer?.verifymobileResponse?.user ||
+                    AuthReducer?.verifyemailResponse?.user ||
                     {};
 
                 const ipAddress = getPublicIP();
@@ -146,7 +161,7 @@ const CheckMembership = (props) => {
                 const verifyData = parseStoredJson(verifyRaw);
                 const professionData = parseStoredJson(professionRaw);
                 const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
-                const user = verifyResponseData || verifyData || professionData;
+                const user = verifyResponseData || verifyData || professionData || authProfessionInfo;
 
                 const rawProfession =
                     verifyData?.profession ||
@@ -285,6 +300,7 @@ const CheckMembership = (props) => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+            await clearNonUsaFlowState();
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -304,6 +320,7 @@ const CheckMembership = (props) => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+            await clearNonUsaFlowState();
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -318,6 +335,7 @@ const CheckMembership = (props) => {
         try {
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
+            await clearNonUsaFlowState();
         } catch (error) {
             console.log('CheckMembership skip flag error', error);
         }
@@ -413,7 +431,7 @@ const CheckMembership = (props) => {
                             </View>}
                         </ScrollView>
                     </View>
-                    {isEligible ? (
+                    {!isGuestUserFlow ? (
                         <View style={styles.buttonContainer}>
                             <Buttons
                                 onPress={handleClk}
@@ -574,6 +592,19 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
     },
     buttonContainerOriginal: {
+        position: 'absolute',
+        height: normalize(100),
+        bottom: -40,
+        left: 0,
+        right: 0,
+        backgroundColor: Colorpath.white,
+        borderColor: "#DDDDDD",
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: normalize(20),
+    },
+    loadingContainer: {
         position: 'absolute',
         height: normalize(100),
         bottom: -40,

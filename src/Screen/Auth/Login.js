@@ -23,7 +23,7 @@ import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -475,6 +475,8 @@ const Login = (props) => {
         })
       );
       return;
+    } else {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
     }
 
     if (isEmailNotVerified && isPhoneNotVerified) {

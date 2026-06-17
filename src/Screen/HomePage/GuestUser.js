@@ -15,7 +15,7 @@ import { BackHandler } from 'react-native';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
@@ -201,15 +201,24 @@ const GuestUser = props => {
 
       try {
         await connectionrequest();
+        const geoInfo = await getCountryAndDialCode();
+        const countryCode = geoInfo?.country || 'US';
+        const isUsa = countryCode === 'US';
+
         if (isMounted) {
-          setIsUsaUser(true);
+          setIsUsaUser(isUsa);
         }
 
-        const response = await getApi('master/states?country_id=1');
-        const states = Array.isArray(response?.data?.states) ? response.data.states : [];
-
-        if (isMounted) {
-          setGuestUsaStates(states);
+        if (isUsa) {
+          const response = await getApi('master/states?country_id=1');
+          const states = Array.isArray(response?.data?.states) ? response.data.states : [];
+          if (isMounted) {
+            setGuestUsaStates(states);
+          }
+        } else {
+          if (isMounted) {
+            setGuestUsaStates([]);
+          }
         }
       } catch (err) {
         if (isMounted) {

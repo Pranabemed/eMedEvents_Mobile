@@ -10,7 +10,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 let status = "";
-const CertificatModal = ({takeboard,setStateget,stateget,statename,fakedata, dataFull, setDataFull, deleteIndex, setDeleteIndex, CreditVaultReducer, dispatch, certificatefecthed, setCertificatefecthed, navigation, styles, creditModal, setCreditModal, dommyData, particular, setParticular }) => {
+const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename,fakedata, dataFull, setDataFull, deleteIndex, setDeleteIndex, CreditVaultReducer, dispatch, certificatefecthed, setCertificatefecthed, navigation, styles, creditModal, setCreditModal, dommyData, particular, setParticular }) => {
     console.log(particular,stateget, "particular>>>>>>>>>>>", certificatefecthed, deleteIndex, dataFull,statename);
     function detectFileType(file) {
         if (!file?.certificate || file?.certificate == null) {
@@ -86,8 +86,12 @@ const boardTake=()=>{
             case 'CreditVault/deletevaultSuccess':
                 status = CreditVaultReducer.status;
                 console.log(CreditVaultReducer, ">>>>>>>deletevaultReducer1233");
-                hanldeState();
-                boardTake();
+                if (isNonUsaUser) {
+                    dispatch(stateMandatoryRequest({}));
+                } else {
+                    hanldeState();
+                    boardTake();
+                }
                 break;
             case 'CreditVault/deletevaultFailure':
                 status = CreditVaultReducer.status;
@@ -139,7 +143,7 @@ const boardTake=()=>{
                                 console.log(particular, "id=====122", data)
                                 // setCreditModal(false);
                                 if (item?.id == 0) {
-                                    navigation.navigate("AddCredits", { fulldata: { fulldata: particular, certiPath: certificatefecthed, statenamefull: statename, takeboardall:takeboard} })
+                                    navigation.navigate("AddCredits", { isNonUsaUser, fulldata: { fulldata: particular, certiPath: certificatefecthed, statenamefull: statename, takeboardall:takeboard} })
                                     setCreditModal(false)
                                 } else if (item?.id == 1) {
                                     detectFileType(particular);

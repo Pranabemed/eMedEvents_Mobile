@@ -168,7 +168,7 @@ export default function DrawerModal(props) {
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
-  const isNonUsaUser = isNonUsaAccount(allHandled, nonUsaFlowState);
+  const isNonUsaUser = isNonUsaAccount(allHandled, null);
   const modalKey = isNonUsaUser ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },

@@ -260,9 +260,9 @@ const StateInformation = (props) => {
         finalverify?.renewal_date ||
         formattedDate?.dayMonth,
         []);
-        useLayoutEffect(() => {
-                    props.navigation.setOptions({ gestureEnabled: false });
-                }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />

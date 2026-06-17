@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, ImageBackground, Animated, Alert, Linking, KeyboardAvoidingView } from 'react-native';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -16,6 +16,7 @@ import CMEChecklistModal from './CMEChecklistModal';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { creditvaultRequest, downloadTranscriptRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import { stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import CertificatModal from './CertificatModal';
 import Loader from '../../Utils/Helpers/Loader';
@@ -28,6 +29,8 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 let status = "";
 const dommyData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }, { id: 1, name: "View & Download", Icon: "eye" }]
 const fakedata = [{ id: 1, name: "View & Download", Icon: "eye" }]
@@ -46,6 +49,8 @@ const CertficateHandle = (props) => {
     const [zippath, setZippath] = useState("");
     const dispatch = useDispatch();
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
     console.log(props?.route?.params?.boardID, props?.route?.params?.boardCert, "route=========");
     // console.log(props?.route?.params?.boardID?.certificates,"array of data " ,typeof props?.route?.params?.boardID?.certificates);
     const wrapDataInDoubleArray = () => {
@@ -55,7 +60,37 @@ const CertficateHandle = (props) => {
         }
         return [[]];
     };
-    const fetchCreditVaultData = useCallback(() => {
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [isNonUsaLoading, setIsNonUsaLoading] = useState(false);
+    const [primeSkipped, setPrimeSkipped] = useState(false);
+    useEffect(() => {
+        const checkPrimeSkipped = async () => {
+            try {
+                const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+                setPrimeSkipped(skipped === 'true');
+            } catch (e) {
+                console.log(e);
+            }
+        };
+        checkPrimeSkipped();
+    }, [props?.route?.params]);
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+    const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
+    const isNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;
+    const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
+        if (resolvedIsNonUsaUser) {
+            setIsNonUsaLoading(true);
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateMandatoryRequest({}));
+                })
+                .catch((err) => {
+                    setIsNonUsaLoading(false);
+                    showErrorAlert("Please connect to ineternet", err)
+                });
+            return;
+        }
         let obj = {
             "board_id": props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_id : props?.route?.params?.boardCert?.board_id,
             "type": "certificate"
@@ -73,13 +108,28 @@ const CertficateHandle = (props) => {
             .catch((err) => {
                 showErrorAlert("Please connect to ineternet", err)
             });
-    }, [dispatch, props?.route?.params?.boardID, props?.route?.params?.boardCert]);
+    }, [dispatch, props?.route?.params?.boardID, props?.route?.params?.boardCert, isNonUsaUser]);
 
     useFocusEffect(
         useCallback(() => {
-            status = "";  // reset so the render-time switch re-processes on return
-            fetchCreditVaultData();
-        }, [fetchCreditVaultData])
+            let mounted = true;
+            readNonUsaFlowState().then(async state => {
+                if (mounted) {
+                    setNonUsaFlowState(state);
+                    status = "";
+                    const resolvedUserObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+                    const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
+                    const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
+                    const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+                    const resolvedIsNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp) || (skipped === 'true');
+                    fetchCreditVaultData(resolvedIsNonUsaUser);
+                }
+            });
+            return () => {
+                mounted = false;
+            };
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [fetchCreditVaultData, props?.route?.params?.isNonUsaUser])
     );
     const certificatpress = () => {
         props.navigation.goBack();
@@ -212,6 +262,20 @@ const CertficateHandle = (props) => {
         }
     };
     const downloadTrans = () => {
+        if (isNonUsaUser) {
+            const statedown = {
+                "type": "certificate",
+                "statedown": true
+            }
+            connectionrequest()
+                .then(() => {
+                    dispatch(downloadTranscriptRequest(statedown))
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err)
+                })
+            return;
+        }
         let obj = {
             "board_id": props?.route?.params?.boardID?.board_data?.board_id || props?.route?.params?.boardCert?.board_data?.board_id,
             "type": props?.route?.params?.boardCert?.board_data?.board_id ? "certificate" : "licensure"
@@ -239,6 +303,54 @@ const CertficateHandle = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
+    const nonUsaCertificateRows = useMemo(() => {
+        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+        if (!stateData) {
+            return [];
+        }
+
+        if (primeSkipped) {
+            const allCertificates = [];
+            Object.keys(stateData).forEach((key) => {
+                const certs = stateData[key]?.certificates;
+                if (certs) {
+                    if (Array.isArray(certs)) {
+                        allCertificates.push(...certs);
+                    } else if (typeof certs === 'object') {
+                        allCertificates.push(...Object.values(certs).flatMap((val) => (Array.isArray(val) ? val : [val])).filter(Boolean));
+                    }
+                }
+            });
+            if (allCertificates.length > 0) {
+                return allCertificates;
+            }
+        }
+
+        const certificates = stateData?.['-1']?.certificates;
+        if (!certificates) {
+            return [];
+        }
+        if (Array.isArray(certificates)) {
+            return certificates;
+        }
+        if (typeof certificates === 'object') {
+            return Object.values(certificates).flatMap((value) => (Array.isArray(value) ? value : [value])).filter(Boolean);
+        }
+        return [];
+    }, [DashboardReducer?.stateMandatoryResponse?.state_data, DashboardReducer?.stateMandatorySuccess?.state_data, primeSkipped]);
+    const hasNonUsaCertificateRows = nonUsaCertificateRows.length > 0;
+    useEffect(() => {
+        if (!isNonUsaUser) {
+            setIsNonUsaLoading(false);
+            return;
+        }
+        if (DashboardReducer?.status === 'Dashboard/stateMandatoryRequest') {
+            setIsNonUsaLoading(true);
+        }
+        if (DashboardReducer?.status === 'Dashboard/stateMandatorySuccess' || DashboardReducer?.status === 'Dashboard/stateMandatoryFailure') {
+            setIsNonUsaLoading(false);
+        }
+    }, [DashboardReducer?.status, isNonUsaUser]);
     useEffect(() => {
         const doubleArrayCertificates = wrapDataInDoubleArray();
         const fulFinal = doubleArrayCertificates[0];
@@ -493,6 +605,161 @@ const CertficateHandle = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    if (isNonUsaUser) {
+        return (
+            <SafeAreaView style={styles.container}>
+                {Platform.OS === 'ios' ? (
+                    <PageHeader nol="yes" title={props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_data?.board_name : props?.route?.params?.boardID?.board_data?.board_name || "Credit Vault"} onBackPress={certificatpress} />
+                ) : (
+                    <View>
+                        <PageHeader nol="yes" title={props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_data?.board_name : props?.route?.params?.boardID?.board_data?.board_name || "Credit Vault"} onBackPress={certificatpress} />
+                    </View>
+                )}
+                {conn == false ? <IntOff /> : <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                >
+                    <Loader visible={isNonUsaLoading || DashboardReducer?.status == 'Dashboard/stateMandatoryRequest'} />
+                    <ScrollView contentContainerStyle={styles.scrollContent}>
+                        <View style={{ flex: 1 }}>
+                            {!isNonUsaLoading && (
+                                hasNonUsaCertificateRows ? (
+                                    <View style={{ marginTop: normalize(10) }}>
+                                        <View style={styles.yearContainer}>
+                                            <View style={styles.headerContainer}>
+                                                <TouchableOpacity
+                                                    onPress={downloadTrans}
+                                                    style={{
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        gap: normalize(5)
+                                                    }}
+                                                >
+                                                    <DownloadIcn name="download" size={20} color={Colorpath.ButtonColr} />
+                                                    <Text style={styles.yearText}>{"All Transcripts"}</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        props.navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                                    }}
+                                                    style={{
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        height: normalize(35),
+                                                        width: normalize(130),
+                                                        backgroundColor: Colorpath.ButtonColr,
+                                                        borderRadius: normalize(5),
+                                                        gap: normalize(5),
+                                                        paddingHorizontal: normalize(10)
+                                                    }}
+                                                >
+                                                    <Search name="plus" color={Colorpath.white} size={18} />
+                                                    <Text style={{
+                                                        color: Colorpath.white,
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 14,
+                                                        fontWeight: "bold"
+                                                    }}>
+                                                        {"Add Credits"}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                        <FlatList
+                                            data={nonUsaCertificateRows}
+                                            renderItem={({ item }) => renderCertificateCard(item, 'certificate')}
+                                            keyExtractor={(item, index) => String(item?.id ?? item?._id ?? index)}
+                                            ListEmptyComponent={
+                                                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                                                    <ImageBackground source={Imagepath.DottedImg} style={{ height: normalize(65), width: normalize(300), resizeMode: "contain", justifyContent: 'center' }}>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#AAAAAA" }}>
+                                                                {"No data found"}
+                                                            </Text>
+                                                        </View>
+                                                    </ImageBackground>
+                                                </View>
+                                            }
+                                        />
+                                    </View>
+                                ) : (
+                                    <View style={styles.nonUsaContainer}>
+                                        <View style={styles.nonUsaCard}>
+                                            <View style={styles.nonUsaBanner}>
+                                                <Text style={styles.nonUsaBannerText}>Credit Vault</Text>
+                                            </View>
+                                            <View style={styles.nonUsaBody}>
+                                                <Text style={styles.nonUsaDescription}>
+                                                    You can view credits and certificates of all the activities you fulfilled at eMedEvents.{"\n\n"}
+                                                    You can also add credits and certificates of activities you attended elsewhere.
+                                                </Text>
+                                                <TouchableOpacity
+                                                    style={styles.nonUsaButton}
+                                                    onPress={() => {
+                                                        props.navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                                    }}
+                                                >
+                                                    <Text style={styles.nonUsaButtonText}>Add Credits</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )
+                            )}
+                        </View>
+                    </ScrollView>
+                    <View style={{
+                        position: 'absolute',
+                        bottom: 70,
+                        right: 0,
+                        paddingHorizontal: normalize(20),
+                        zIndex: 999
+                    }}>
+                        <TouchableOpacity onPress={() => {
+                            props.navigation.navigate("AddCredits", { isNonUsaUser: true });
+                        }} style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: normalize(50),
+                            width: normalize(50),
+                            backgroundColor: Colorpath.ButtonColr,
+                            borderWidth: 0.5,
+                            borderColor: "#AAAAAA",
+                            borderRadius: normalize(50),
+                            paddingHorizontal: normalize(15)
+                        }}>
+                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={25} />
+                        </TouchableOpacity>
+                    </View>
+                    <CertificatModal
+                        isNonUsaUser={isNonUsaUser}
+                        setStateget={setStateget}
+                        stateget={stateget}
+                        statename={props?.route?.params?.boardID}
+                        takeboard={props?.route?.params?.boardCert}
+                        fakedata={fakedata}
+                        setDataFull={setDataFull}
+                        dataFull={dataFull}
+                        CreditVaultReducer={CreditVaultReducer}
+                        setDeleteIndex={setDeleteIndex}
+                        deleteIndex={deleteIndex}
+                        dispatch={dispatch}
+                        certificatefecthed={isNonUsaUser ? DashboardReducer?.stateMandatoryResponse : certificatefecthed}
+                        setCertificatefecthed={setCertificatefecthed}
+                        navigation={props.navigation}
+                        setParticular={setParticular}
+                        particular={particular}
+                        styles={styles}
+                        creditModal={creditModal}
+                        setCreditModal={setCreditModal}
+                        dommyData={dommyData}
+                    />
+                </KeyboardAvoidingView>}
+            </SafeAreaView>
+        );
+    }
     return (
         <SafeAreaView style={styles.container}>
             {Platform.OS === 'ios' ? (
@@ -898,6 +1165,69 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         padding: 5
+    },
+    nonUsaContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: normalize(20),
+        backgroundColor: Colorpath.Pagebg,
+        marginTop: normalize(100),
+    },
+    nonUsaCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
+        elevation: 2,
+    },
+    nonUsaBanner: {
+        backgroundColor: '#E8F0FE',
+        paddingVertical: normalize(16),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#D3E2FD',
+    },
+    nonUsaBannerText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: '#1E60F2',
+        fontWeight: '600',
+    },
+    nonUsaBody: {
+        paddingHorizontal: normalize(20),
+        paddingVertical: normalize(24),
+        alignItems: 'center',
+    },
+    nonUsaDescription: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: '#4A5568',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: normalize(24),
+    },
+    nonUsaButton: {
+        backgroundColor: '#1E60F2',
+        paddingVertical: normalize(12),
+        paddingHorizontal: normalize(24),
+        borderRadius: normalize(6),
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '60%',
+    },
+    nonUsaButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
 });
 

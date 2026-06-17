@@ -149,8 +149,8 @@ const ProfileMain = (props) => {
     const profFromDashboard = getDisplayProfession(allHandle);
     const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
     const allNoDetData = otherRestrict.has(profFromDashboard);
-    const isNonUsaUser = isNonUsaAccount(allHandle, nonUsaFlowState);
-    const profileData = isNonUsaUser ? [
+    const isNonUsaUser = isNonUsaAccount(allHandle, null);
+    const profileData = isNonUsaUser && !allProfTake ? [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },
         { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
         { id: 5, name: "Change Password", Img: Imagepath.PassChange }

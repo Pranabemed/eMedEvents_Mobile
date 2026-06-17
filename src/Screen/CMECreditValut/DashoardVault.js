@@ -30,6 +30,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 let status = "";
 let status1 = "";
@@ -348,6 +349,32 @@ const DashoardVault = (props) => {
 
         token_handle_vault();
     }, [certificatedata]);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        if (isfocused) {
+            readNonUsaFlowState().then(state => {
+                if (mounted) {
+                    setNonUsaFlowState(state);
+                }
+            });
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isfocused]);
+
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const getDisplayProfession = (source) => {
+        if (!source) return "";
+        const profession = String(source?.professional_information?.profession || source?.profession || '').trim();
+        const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
+        return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
+    };
+    const allProfTake = validHandles.has(getDisplayProfession(userObj));
+
     const allProfession = AuthReducer?.loginResponse?.user?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
     useEffect(() => {
         if (certificatedata) {
@@ -505,7 +532,7 @@ const DashoardVault = (props) => {
 
         return () => unsubscribe();
     }
-     useLayoutEffect(() => {
+    useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
     return (
@@ -567,203 +594,229 @@ const DashoardVault = (props) => {
 
                             )}
                         </View>
-                        <Loader visible={creditwise == null} />
-                        <View style={{ marginTop: normalize(10) }}>
-                            <View style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between", // Changed from space-evenly to space-between
-                                width: normalize(300),
-                                height: normalize(48),
-                                backgroundColor: "#FFFFFF",
-                                borderRadius: normalize(5),
-                                paddingHorizontal: normalize(2), // Added padding to prevent overflow
-                                alignSelf: 'center',
-                            }}>
-                                <TouchableOpacity
-                                    style={[
-                                        {
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            flex: 1,
-                                            height: normalize(41),
-                                            borderRadius: normalize(5),
-                                            marginTop: normalize(3),
-                                            marginHorizontal: normalize(2),
-                                        },
-                                        valuttext && {
-                                            backgroundColor: "#DCE4FF"
-                                        }
-                                    ]}
-                                    onPress={() => { setValuttext(true); }}
-                                >
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
-                                        color: valuttext ? Colorpath.ButtonColr : "#000000",
-                                        fontWeight:"500"
+                        <Loader visible={!isNonUsaUser && creditwise == null} />
+                        {isNonUsaUser && !allProfTake ? (
+                            <View style={stylesd.nonUsaContainer}>
+                                <View style={stylesd.nonUsaCard}>
+                                    <View style={stylesd.nonUsaBanner}>
+                                        <Text style={stylesd.nonUsaBannerText}>Credit Vault</Text>
+                                    </View>
+                                    <View style={stylesd.nonUsaBody}>
+                                        <Text style={stylesd.nonUsaDescription}>
+                                            You can view credits and certificates of all the activities you fulfilled at eMedEvents.{"\n\n"}
+                                            You can also add credits and certificates of activities you attended elsewhere.
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={stylesd.nonUsaButton}
+                                            onPress={() => {
+                                                navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                            }}
+                                        >
+                                            <Text style={stylesd.nonUsaButtonText}>Add Credits</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={{ marginTop: normalize(10) }}>
+                                    <View style={{
+                                        flexDirection: "row",
+                                        justifyContent: "space-between", // Changed from space-evenly to space-between
+                                        width: normalize(300),
+                                        height: normalize(48),
+                                        backgroundColor: "#FFFFFF",
+                                        borderRadius: normalize(5),
+                                        paddingHorizontal: normalize(2), // Added padding to prevent overflow
+                                        alignSelf: 'center',
                                     }}>
-                                        State License{
-                                            AuthReducer?.staticdataResponse?.state ? ` (${AuthReducer.staticdataResponse.state})` :
-                                                selectCountrytopic ? ` (${selectCountrytopic?.length})` :
-                                                    ''
-                                        }
-                                    </Text>
-                                </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[
+                                                {
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    flex: 1,
+                                                    height: normalize(41),
+                                                    borderRadius: normalize(5),
+                                                    marginTop: normalize(3),
+                                                    marginHorizontal: normalize(2),
+                                                },
+                                                valuttext && {
+                                                    backgroundColor: "#DCE4FF"
+                                                }
+                                            ]}
+                                            onPress={() => { setValuttext(true); }}
+                                        >
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: valuttext ? Colorpath.ButtonColr : "#000000",
+                                                fontWeight: "500"
+                                            }}>
+                                                State License{
+                                                    AuthReducer?.staticdataResponse?.state ? ` (${AuthReducer.staticdataResponse.state})` :
+                                                        selectCountrytopic ? ` (${selectCountrytopic?.length})` :
+                                                            ''
+                                                }
+                                            </Text>
+                                        </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={[
-                                        {
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            flex: 1,
-                                            height: normalize(41),
-                                            borderRadius: normalize(5),
-                                            marginTop: normalize(3),
-                                            marginHorizontal: normalize(-1),
-                                        },
-                                        !valuttext && {
-                                            backgroundColor: "#DCE4FF"
-                                        }
-                                    ]}
-                                    onPress={() => { setValuttext(false) }}
-                                >
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
-                                        color: !valuttext ? Colorpath.ButtonColr : "#000000",
-                                        fontWeight:"500"
-                                    }}>
-                                        Board Certifications{DashboardReducer?.dashboardResponse?.data?.boards ? `(${Object.keys(DashboardReducer?.dashboardResponse?.data?.boards || {}).length})`:
-                                            AuthReducer?.staticdataResponse?.board && AuthReducer.staticdataResponse.board.length > 0
-                                                ? ` (${AuthReducer.staticdataResponse.board})`
-                                                : DashboardReducer?.dashboardResponse?.data?.board_certifications &&
-                                                    DashboardReducer.dashboardResponse.data.board_certifications.length > 0
-                                                    ? ` (${DashboardReducer.dashboardResponse.data.board_certifications.length})`
-                                                    : '(0)'
-                                        }
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(0) }}>
-                            <View>
-                                <View style={{ bottom: normalize(10) }}>
-                                    {valuttext && <Statevault
-                                        modalshow={modalshow}
-                                        setModalShow={setModalShow}
-                                        allProfession={allProfession}
-                                        count={AuthReducer?.staticdataResponse?.state}
-                                        onhandle={onhandle}
-                                        oncmeModalclose={oncmeModalclose}
-                                        navigation={navigation}
-                                        dispatch={dispatch}
-                                        DashboardReducer={DashboardReducer}
-                                        CreditVaultReducer={CreditVaultReducer}
-                                        AuthReducer={AuthReducer}
-                                        statewise={statewise}
-                                        setStatewise={setStatewise}
-                                        clisttopic={clisttopic}
-                                        setClisttopic={setClisttopic}
-                                        statepick={statepick}
-                                        selectCountrytopic={selectCountrytopic}
-                                        setSelectCountrytopic={setSelectCountrytopic}
-                                        searchtexttopic={searchtexttopic}
-                                        setSearchtexttopic={setSearchtexttopic}
-                                        searchTopicName={searchTopicName}
-                                        stateid={stateid}
-                                        setStateid={setStateid}
-                                        creditwise={creditwise}
-                                        setCreditwise={setCreditwise}
-                                        expireDatecredit={expireDatecredit}
-                                        setExpireDatecredit={setExpireDatecredit}
-                                        countdownMessagecredit={countdownMessagecredit}
-                                        setCountdownMessagecredit={setCountdownMessagecredit}
-                                        loadingCreditwise={loadingCreditwise}
-                                        setLoadingCreditwise={setLoadingCreditwise}
-                                        loadingStatewise={loadingStatewise}
-                                        setLoadingStatewise={setLoadingStatewise}
-                                        boardname={boardname}
-                                        setBoardname={setBoardname}
-                                        licesense={licesense}
-                                        setLicesense={setLicesense}
-                                        totalCredit={totalCredit}
-                                        setTotalCredit={setTotalCredit}
-                                        mancredit={mancredit}
-                                        setMancredit={setMancredit}
-                                        mantopiccredit={mantopiccredit}
-                                        setMantopiccredit={setMantopiccredit}
-                                        gencredit={gencredit}
-                                        setGencredit={setGencredit}
-                                        gentopiccredit={gentopiccredit}
-                                        setGentopiccredit={setGentopiccredit}
-                                        expirelicno={expirelicno}
-                                        setExpirelicno={setExpirelicno}
-                                        certificatedata={certificatedata}
-                                        setCertificatedata={setCertificatedata}
-                                        cmemodal={cmemodal}
-                                        setCmemodal={setCmemodal}
-                                        allProfessionData={allProfessionData}
-                                        setAllProfessionData={setAllProfessionData}
-                                        renewalvault={renewalvault}
-                                        setRenewalvault={setRenewalvault}
-                                        isfocused={isfocused}
-                                        setStatepick={setStatepick}
-                                        vaultState={vaultState}
-                                        renewalCheck={renewalCheck} />}
+                                        <TouchableOpacity
+                                            style={[
+                                                {
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    flex: 1,
+                                                    height: normalize(41),
+                                                    borderRadius: normalize(5),
+                                                    marginTop: normalize(3),
+                                                    marginHorizontal: normalize(-1),
+                                                },
+                                                !valuttext && {
+                                                    backgroundColor: "#DCE4FF"
+                                                }
+                                            ]}
+                                            onPress={() => { setValuttext(false) }}
+                                        >
+                                            <Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: !valuttext ? Colorpath.ButtonColr : "#000000",
+                                                fontWeight: "500"
+                                            }}>
+                                                Board Certifications{DashboardReducer?.dashboardResponse?.data?.boards ? `(${Object.keys(DashboardReducer?.dashboardResponse?.data?.boards || {}).length})` :
+                                                    AuthReducer?.staticdataResponse?.board && AuthReducer.staticdataResponse.board.length > 0
+                                                        ? ` (${AuthReducer.staticdataResponse.board})`
+                                                        : DashboardReducer?.dashboardResponse?.data?.board_certifications &&
+                                                            DashboardReducer.dashboardResponse.data.board_certifications.length > 0
+                                                            ? ` (${DashboardReducer.dashboardResponse.data.board_certifications.length})`
+                                                            : '(0)'
+                                                }
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <View style={{ bottom: normalize(10) }}>
-                                    {!valuttext && <Boardvault
-                                        isfocused={isfocused}
-                                        navigation={navigation}
-                                        dispatch={dispatch}
-                                        statepickboard={statepickboard}
-                                        setStatepickboard={setStatepickboard}
-                                        statewiseboard={statewiseboard}
-                                        setStatewiseboard={setStatewiseboard}
-                                        clisttopicboard={clisttopicboard}
-                                        setClisttopicboard={setClisttopicboard}
-                                        selectCountrytopicboard={selectCountrytopicboard}
-                                        setSelectCountrytopicboard={setSelectCountrytopicboard}
-                                        searchtexttopicboard={searchtexttopicboard}
-                                        setSearchtexttopicboard={setSearchtexttopicboard}
-                                        stateidboard={stateidboard}
-                                        setStateidboard={setStateidboard}
-                                        expireDatecreditboard={expireDatecreditboard}
-                                        setExpireDatecreditboard={setExpireDatecreditboard}
-                                        countdownMessagecreditboard={countdownMessagecreditboard}
-                                        setCountdownMessagecreditboard={setCountdownMessagecreditboard}
-                                        loadingCreditwiseboard={loadingCreditwiseboard}
-                                        setLoadingCreditwiseboard={setLoadingCreditwiseboard}
-                                        loadingStatewiseboard={loadingStatewiseboard}
-                                        setLoadingStatewiseboard={setLoadingStatewiseboard}
-                                        boardnameboard={boardnameboard}
-                                        setBoardnameboard={setBoardnameboard}
-                                        licesenseboard={licesenseboard}
-                                        setLicesenseboard={setLicesenseboard}
-                                        totalCreditboard={totalCreditboard}
-                                        setTotalCreditboard={setTotalCreditboard}
-                                        mancreditboard={mancreditboard}
-                                        setMancreditboard={setMancreditboard}
-                                        mantopiccreditboard={mantopiccreditboard}
-                                        setMantopiccreditboard={setMantopiccreditboard}
-                                        gencreditboard={gencreditboard}
-                                        setGencreditboard={setGencreditboard}
-                                        gentopiccreditboard={gentopiccreditboard}
-                                        setGentopiccreditboard={setGentopiccreditboard}
-                                        boardexpiredate={boardexpiredate}
-                                        setBoardexpiredate={setBoardexpiredate}
-                                        certificateboard={certificateboard}
-                                        setCertificatebaord={setCertificatebaord}
-                                        lengthcheck={lengthcheck}
-                                        setLengthcheck={setLengthcheck}
-                                        searchTopicNameboard={searchTopicNameboard}
-                                        handleBoardname={handleBoardname}
-                                        styles={styles}
-                                        takeID={CreditVaultReducer?.boardvaultResponse?.board_data}
-                                    />}
-                                </View>
-                            </View>
-                        </ScrollView>
+                                <ScrollView contentContainerStyle={{ paddingBottom: normalize(0) }}>
+                                    <View>
+                                        <View style={{ bottom: normalize(10) }}>
+                                            {valuttext && <Statevault
+                                                modalshow={modalshow}
+                                                setModalShow={setModalShow}
+                                                allProfession={allProfession}
+                                                count={AuthReducer?.staticdataResponse?.state}
+                                                onhandle={onhandle}
+                                                oncmeModalclose={oncmeModalclose}
+                                                navigation={navigation}
+                                                dispatch={dispatch}
+                                                DashboardReducer={DashboardReducer}
+                                                CreditVaultReducer={CreditVaultReducer}
+                                                AuthReducer={AuthReducer}
+                                                statewise={statewise}
+                                                setStatewise={setStatewise}
+                                                clisttopic={clisttopic}
+                                                setClisttopic={setClisttopic}
+                                                statepick={statepick}
+                                                selectCountrytopic={selectCountrytopic}
+                                                setSelectCountrytopic={setSelectCountrytopic}
+                                                searchtexttopic={searchtexttopic}
+                                                setSearchtexttopic={setSearchtexttopic}
+                                                searchTopicName={searchTopicName}
+                                                stateid={stateid}
+                                                setStateid={setStateid}
+                                                creditwise={creditwise}
+                                                setCreditwise={setCreditwise}
+                                                expireDatecredit={expireDatecredit}
+                                                setExpireDatecredit={setExpireDatecredit}
+                                                countdownMessagecredit={countdownMessagecredit}
+                                                setCountdownMessagecredit={setCountdownMessagecredit}
+                                                loadingCreditwise={loadingCreditwise}
+                                                setLoadingCreditwise={setLoadingCreditwise}
+                                                loadingStatewise={loadingStatewise}
+                                                setLoadingStatewise={setLoadingStatewise}
+                                                boardname={boardname}
+                                                setBoardname={setBoardname}
+                                                licesense={licesense}
+                                                setLicesense={setLicesense}
+                                                totalCredit={totalCredit}
+                                                setTotalCredit={setTotalCredit}
+                                                mancredit={mancredit}
+                                                setMancredit={setMancredit}
+                                                mantopiccredit={mantopiccredit}
+                                                setMantopiccredit={setMantopiccredit}
+                                                gencredit={gencredit}
+                                                setGencredit={setGencredit}
+                                                gentopiccredit={gentopiccredit}
+                                                setGentopiccredit={setGentopiccredit}
+                                                expirelicno={expirelicno}
+                                                setExpirelicno={setExpirelicno}
+                                                certificatedata={certificatedata}
+                                                setCertificatedata={setCertificatedata}
+                                                cmemodal={cmemodal}
+                                                setCmemodal={setCmemodal}
+                                                allProfessionData={allProfessionData}
+                                                setAllProfessionData={setAllProfessionData}
+                                                renewalvault={renewalvault}
+                                                setRenewalvault={setRenewalvault}
+                                                isfocused={isfocused}
+                                                setStatepick={setStatepick}
+                                                vaultState={vaultState}
+                                                renewalCheck={renewalCheck} />}
+                                        </View>
+                                        <View style={{ bottom: normalize(10) }}>
+                                            {!valuttext && <Boardvault
+                                                isfocused={isfocused}
+                                                navigation={navigation}
+                                                dispatch={dispatch}
+                                                statepickboard={statepickboard}
+                                                setStatepickboard={setStatepickboard}
+                                                statewiseboard={statewiseboard}
+                                                setStatewiseboard={setStatewiseboard}
+                                                clisttopicboard={clisttopicboard}
+                                                setClisttopicboard={setClisttopicboard}
+                                                selectCountrytopicboard={selectCountrytopicboard}
+                                                setSelectCountrytopicboard={setSelectCountrytopicboard}
+                                                searchtexttopicboard={searchtexttopicboard}
+                                                setSearchtexttopicboard={setSearchtexttopicboard}
+                                                stateidboard={stateidboard}
+                                                setStateidboard={setStateidboard}
+                                                expireDatecreditboard={expireDatecreditboard}
+                                                setExpireDatecreditboard={setExpireDatecreditboard}
+                                                countdownMessagecreditboard={countdownMessagecreditboard}
+                                                setCountdownMessagecreditboard={setCountdownMessagecreditboard}
+                                                loadingCreditwiseboard={loadingCreditwiseboard}
+                                                setLoadingCreditwiseboard={setLoadingCreditwiseboard}
+                                                loadingStatewiseboard={loadingStatewiseboard}
+                                                setLoadingStatewiseboard={setLoadingStatewiseboard}
+                                                boardnameboard={boardnameboard}
+                                                setBoardnameboard={setBoardnameboard}
+                                                licesenseboard={licesenseboard}
+                                                setLicesenseboard={setLicesenseboard}
+                                                totalCreditboard={totalCreditboard}
+                                                setTotalCreditboard={setTotalCreditboard}
+                                                mancreditboard={mancreditboard}
+                                                setMancreditboard={setMancreditboard}
+                                                mantopiccreditboard={mantopiccreditboard}
+                                                setMantopiccreditboard={setMantopiccreditboard}
+                                                gencreditboard={gencreditboard}
+                                                setGencreditboard={setGencreditboard}
+                                                gentopiccreditboard={gentopiccreditboard}
+                                                setGentopiccreditboard={setGentopiccreditboard}
+                                                boardexpiredate={boardexpiredate}
+                                                setBoardexpiredate={setBoardexpiredate}
+                                                certificateboard={certificateboard}
+                                                setCertificatebaord={setCertificatebaord}
+                                                lengthcheck={lengthcheck}
+                                                setLengthcheck={setLengthcheck}
+                                                searchTopicNameboard={searchTopicNameboard}
+                                                handleBoardname={handleBoardname}
+                                                styles={styles}
+                                                takeID={CreditVaultReducer?.boardvaultResponse?.board_data}
+                                            />}
+                                        </View>
+                                    </View>
+                                </ScrollView>
+                            </>
+                        )}
                     </>)}
 
             </SafeAreaView>}
@@ -817,5 +870,67 @@ const stylesd = StyleSheet.create({
         color: "#000000",
         fontFamily: Fonts.InterSemiBold,
         fontSize: 20,
+    },
+    nonUsaContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: normalize(20),
+        backgroundColor: Colorpath.Pagebg,
+    },
+    nonUsaCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
+        elevation: 2,
+    },
+    nonUsaBanner: {
+        backgroundColor: '#E8F0FE',
+        paddingVertical: normalize(16),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#D3E2FD',
+    },
+    nonUsaBannerText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: '#1E60F2',
+        fontWeight: '600',
+    },
+    nonUsaBody: {
+        paddingHorizontal: normalize(20),
+        paddingVertical: normalize(24),
+        alignItems: 'center',
+    },
+    nonUsaDescription: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: '#4A5568',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: normalize(24),
+    },
+    nonUsaButton: {
+        backgroundColor: '#1E60F2',
+        paddingVertical: normalize(12),
+        paddingHorizontal: normalize(24),
+        borderRadius: normalize(6),
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '60%',
+    },
+    nonUsaButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
 });

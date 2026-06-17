@@ -15,9 +15,21 @@ import Modal from 'react-native-modal'
 import { useSelector } from 'react-redux';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import Search from 'react-native-vector-icons/AntDesign';
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch }) => {
     const [loads, setLoads] = useState(false);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        readNonUsaFlowState().then(state => {
+            setNonUsaFlowState(state);
+        });
+    }, []);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+    const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
+    const isNonUsaUser = (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData;
     useEffect(() => {
         if (statewise) {
             setLoadingCreditwise(true);
@@ -428,7 +440,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
 
                 </View>
                 {certificatedata?.certificates?.length > 0 && <Buttons
-                    onPress={() => { navigation.navigate("CertficateHandle", { boardID: certificatedata }); }}
+                    onPress={() => { navigation.navigate("CertficateHandle", { boardID: certificatedata, isNonUsaUser }); }}
                     height={normalize(45)}
                     width={normalize(273)}
                     backgroundColor={Colorpath.white}
@@ -447,7 +459,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                     left: 0,
                     top: 9
                 }}>
-                    <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalut: certificatedata })} style={{
+                    <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalut: certificatedata, isNonUsaUser })} style={{
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",

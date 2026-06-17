@@ -22,6 +22,7 @@ import { dashMbRequest, mainprofileRequest, stateDashboardRequest, stateReportin
 import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 let status = "";
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -279,6 +280,7 @@ const VerifyMobileOTP = (props) => {
                 status = AuthReducer.status;
                 setNoload(false);
                 (async () => {
+                    await clearNonUsaFlowState();
                     const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
                     const guestFlow = guestFlowRaw ? JSON.parse(guestFlowRaw) : null;
                     const verifiedUser = AuthReducer?.verifymobileResponse?.user || {};

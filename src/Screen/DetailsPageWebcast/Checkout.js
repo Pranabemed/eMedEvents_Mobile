@@ -94,6 +94,7 @@ const Checkout = (props) => {
     const [formData, setFormData] = useState([]);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [playerSessionID, setPlayerSessionID] = useState("");
+    const [detectedCountry, setDetectedCountry] = useState(null);
     const [activeIndex, setActiveIndex] = useState(null);
     const [activeIndexc, setActiveIndexc] = useState(null);
     const [activeIndexs, setActiveIndexs] = useState(null);
@@ -515,26 +516,29 @@ const Checkout = (props) => {
     useEffect(() => {
         if (!isGuestCheckout || !Array.isArray(countryall) || countryall.length === 0) return;
         if (country || country_id) return; // country already selected/initialized
+        if (detectedCountry === null) return; // Wait until we know the detected country
 
-        const defaultCountryToUsa = () => {
+        const defaultCountryToGeo = () => {
             try {
-                // Default directly to United States for USA location guest checkout
-                const usa = countryall.find(c => 
-                    String(c?.id) === '1' || 
-                    String(c?.name).toLowerCase() === 'united states' || 
-                    String(c?.code).toUpperCase() === 'US' ||
-                    String(c?.shortname).toUpperCase() === 'US'
+                const targetCode = detectedCountry.toUpperCase();
+                const matchedCountry = countryall.find(c => 
+                    String(c?.code).toUpperCase() === targetCode ||
+                    String(c?.shortname).toUpperCase() === targetCode ||
+                    (targetCode === 'US' && (
+                        String(c?.id) === '1' || 
+                        String(c?.name).toLowerCase() === 'united states'
+                    ))
                 );
-                if (usa) {
-                    console.log('[Checkout] Automatically defaulting country to USA for guest:', usa.name);
-                    handleCountrySet(usa, 0);
+                if (matchedCountry) {
+                    console.log('[Checkout] Automatically defaulting country for guest:', matchedCountry.name);
+                    handleCountrySet(matchedCountry, 0);
                 }
             } catch (err) {
-                console.log('[Checkout] Failed to default country to USA:', err);
+                console.log('[Checkout] Failed to default country for guest:', err);
             }
         };
-        defaultCountryToUsa();
-    }, [countryall, isGuestCheckout]);
+        defaultCountryToGeo();
+    }, [countryall, isGuestCheckout, detectedCountry]);
 
     useEffect(() => {
         if (allProfession?.personal_information?.firstname || allProfession?.firstname) {
@@ -1053,6 +1057,11 @@ const Checkout = (props) => {
         AsyncStorage.getItem('PLAYERSESSION').then(session => {
             if (mounted && session) setPlayerSessionID(session);
         }).catch(err => console.log('Error reading PLAYERSESSION', err));
+        getCountryAndDialCode().then(info => {
+            if (mounted && info?.country) {
+                setDetectedCountry(info.country);
+            }
+        }).catch(err => console.log('Error reading country', err));
         return () => {
             mounted = false;
         };
@@ -1137,7 +1146,7 @@ const Checkout = (props) => {
     };
     const isNonUsaUser = hasSelectedCountry
         ? !isUSASelected(tempAttendee)
-        : (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allProfession || {}));
+        : (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allProfession || {}) || (detectedCountry && detectedCountry !== 'US'));
 
     useEffect(() => {
         connectionrequest()

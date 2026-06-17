@@ -16,7 +16,7 @@ import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
-import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 const persistEmailVerifiedStatus = async () => {
@@ -274,6 +274,9 @@ const VerifyOTP = (props) => {
                         })
                     );
                 } else {
+                    (async () => {
+                        await clearNonUsaFlowState();
+                    })().catch(err => console.log('clearNonUsaFlowState error', err));
                     toggleModal();
                 }
                 // props.navigation.navigate("VerifyMobileOTP");

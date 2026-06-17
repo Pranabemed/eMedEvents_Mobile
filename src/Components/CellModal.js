@@ -61,6 +61,8 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
                     routes: [{ name: "TabNav", params: { initialRoute: "Contact", detectmain: "main" } }],
                 })
             );
+        } else if (name == "CertficateHandle") {
+            navigation.navigate("CertficateHandle", { isNonUsaUser: true });
         } else {
             navigation?.navigate(name);
         }

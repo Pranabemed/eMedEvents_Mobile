@@ -120,8 +120,8 @@ const GuestUserContent = ({ guest }) => {
     <>
       <MyStatusBar barStyle="dark-content" backgroundColor={Colorpath.Pagebg} translucent={false} />
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.page, { width }]}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} stickyHeaderIndices={[1]}>
+          <View style={[styles.page, { width, paddingBottom: 0 }]}>
             <GuestHomeHeader
               width={width}
               navigation={navigation}
@@ -129,8 +129,23 @@ const GuestUserContent = ({ guest }) => {
               stateCode={stateCode}
               onOpenStatePicker={() => openStatePicker('listing')}
               isUsaUser={guest?.isUsaUser}
+              renderTopOnly={true}
             />
+          </View>
 
+          <View style={[styles.page, { width, paddingTop: 4, paddingBottom: 4, backgroundColor: Colorpath.Pagebg || '#eaf5ff' }]}>
+            <GuestHomeHeader
+              width={width}
+              navigation={navigation}
+              selectedState={selectedState}
+              stateCode={stateCode}
+              onOpenStatePicker={() => openStatePicker('listing')}
+              isUsaUser={guest?.isUsaUser}
+              renderSearchOnly={true}
+            />
+          </View>
+
+          <View style={[styles.page, { width, paddingTop: 0 }]}>
             <GuestHeroSection
               topBanners={topBanners}
               isHomeLoading={isHomeLoading}

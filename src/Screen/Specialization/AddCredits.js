@@ -28,6 +28,7 @@ import ImagePicker from 'react-native-image-crop-picker';
 import CrossIcon from 'react-native-vector-icons/AntDesign'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import DropdownInput from '../../Components/DropdownInput';
 import CreditTypeComponent from './CreditTypeComponent';
 import ChooseMandatoryComponent from './ChooseMandatoryComponent';
@@ -40,6 +41,24 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 let status = "";
 const AddCredits = (props) => {
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        if (isfocused) {
+            readNonUsaFlowState().then(state => {
+                if (mounted) {
+                    setNonUsaFlowState(state);
+                }
+            });
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isfocused]);
+
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyadd || finalProfession;
+    const isNonUsaUser = props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+
     console.log(props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard, "jjjjjjj", props?.route?.params?.creditvalutstate?.state_name, "Props111", props?.route?.params?.creditvalutboard?.board_data?.board_id, ocrData, props?.route?.params?.FullBoard, props?.route?.params?.boardCert);
     console.log("Propsfulldata=====", props?.route?.params, props?.route?.params?.fulldata, "hjhh", props?.route?.params?.fulldata?.fulldata);
     console.log("mainAdd=====1223", props?.route?.params?.mainAdd, props?.route?.params?.mainAdd?.state_name);
@@ -191,7 +210,7 @@ const AddCredits = (props) => {
     const addcreditAgain = () => {
         const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
             AuthReducer?.loginResponse?.user?.profession ||
-            AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession;
+            AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
         connectionrequest()
             .then(() => {
                 dispatch(addCreditsRequest(profession));
@@ -201,22 +220,23 @@ const AddCredits = (props) => {
                 showErrorAlert('Please connect to Internet');
             });
     }
-    // useEffect(() => {
-    //     const profession = AuthReducer?.verifymobileResponse?.user?.profession ||
-    //         AuthReducer?.loginResponse?.user?.profession ||
-    //         AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession ;
-    //     connectionrequest()
-    //         .then(() => {
-    //             dispatch(addCreditsRequest(profession));
-    //         })
-    //         .catch(err => {
-    //             console.log(err);
-    //             showErrorAlert('Please connect to Internet');
-    //         });
-    // }, [isfocused,props?.route?.params?.creditvalut]);
+    useEffect(() => {
+        if (isNonUsaUser && isfocused) {
+            const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
+                AuthReducer?.loginResponse?.user?.profession ||
+                AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
+            connectionrequest()
+                .then(() => {
+                    dispatch(addCreditsRequest(profession));
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        }
+    }, [isNonUsaUser, isfocused, finalProfession, finalverifyadd]);
     const StateMandatoryDat = [{ id: 0, name: "No" }, { id: 1, name: "Yes" }]
     const handleAddCredits = () => {
-        if (!ProfilePicObj1) {
+        if (!ProfilePicObj1 && !isNonUsaUser) {
             showErrorAlert("Please upload a valid file (accepted formats: .docx, .pptx, .word, .jpg, .png, .jpeg)");
         } else if (!activitytitle) {
             showErrorAlert("Enter your activity title.");
@@ -226,21 +246,36 @@ const AddCredits = (props) => {
             showErrorAlert("Select your credit type");
         } else if (!creditscount) {
             showErrorAlert("Enter your credits");
+        } else if (!isNonUsaUser && finalstate === "Yes" && !stopic) {
+            showErrorAlert("Select your topic")
         } else if (!cdate) {
             showErrorAlert("Select your issue date ");
-        } else if (finalstate === "Yes" && !stopic) {
-            showErrorAlert("Select your topic")
         } else {
             let obj = new FormData();
-            obj.append("id", props?.route?.params?.creditvalutstate?.id || props?.route?.params?.mainAdd?.creditID?.id || props?.route?.params?.creditvalut?.id || props?.route?.params?.fulldata?.fulldata?.id || props?.route?.params?.mainAdd?.id || props?.route?.params?.mainAdd?.state_data?.id || "");
+            obj.append("id", props?.route?.params?.creditvalutstate?.id || props?.route?.params?.mainAdd?.creditID?.id || props?.route?.params?.creditvalut?.id || props?.route?.params?.fulldata?.fulldata?.id || props?.route?.params?.mainAdd?.id || props?.route?.params?.mainAdd?.state_data?.id || 0);
             obj.append("course_title", activitytitle);
             obj.append("credit_type", creditId);
             obj.append("credits", +(creditscount));
             obj.append("completion_date", cdate);
-            obj.append("certificate", ProfilePicObj1);
-            obj.append("board_id", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.creditvalutstate?.board_data?.board_id || props?.route?.params?.fulldata?.statenamefull?.board_data?.board_id || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalut?.board_data?.board_id || props?.route?.params?.fulldata?.fulldata?.state_board_id || props?.route?.params?.mainAdd?.board_data?.board_id || props?.route?.params?.mainAdd?.state_data?.board_data?.board_id || props?.route?.params?.mainAdd?.statid || props?.route?.params?.mainAdd?.creditID?.board_id || props?.route?.params?.mainAdd?.board_id || "");
-            obj.append("source_type", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? "certificate" : "licensure");
-            obj.append("mandatory_topic", finalstate == "Yes" ? topicId : "");
+            if (ProfilePicObj1) {
+                obj.append("certificate", ProfilePicObj1);
+            }
+            if (isNonUsaUser) {
+                const isGuestUser = !Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
+                if (isGuestUser) {
+                    obj.append("board_id", "");
+                    obj.append("source_type", "certificate");
+                    obj.append("mandatory_topic", "");
+                } else {
+                    obj.append("board_id", 0);
+                    obj.append("source_type", "licensure");
+                    obj.append("mandatory_topic", 0);
+                }
+            } else {
+                obj.append("board_id", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.creditvalutstate?.board_data?.board_id || props?.route?.params?.fulldata?.statenamefull?.board_data?.board_id || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalut?.board_data?.board_id || props?.route?.params?.fulldata?.fulldata?.state_board_id || props?.route?.params?.mainAdd?.board_data?.board_id || props?.route?.params?.mainAdd?.state_data?.board_data?.board_id || props?.route?.params?.mainAdd?.statid || props?.route?.params?.mainAdd?.creditID?.board_id || props?.route?.params?.mainAdd?.board_id || 0 || "");
+                obj.append("source_type", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? "certificate" : "licensure");
+                obj.append("mandatory_topic", finalstate == "Yes" ? topicId : "");
+            }
             obj.append("course_provider", provideName)
             obj.append("ocr_format_id", ocrData ? ocrData?.ocr_format_id : "")
             console.log(obj, "add credits");
@@ -703,8 +738,8 @@ const AddCredits = (props) => {
         setCreditscount(numericValue);
     };
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     console.log(clisttopic?.length == 0, DashboardReducer?.stateCourseResponse?.data?.state_data, "creditvault123", props?.route?.params?.creditvalut, clisttopic)
     return (
         <>
@@ -732,13 +767,14 @@ const AddCredits = (props) => {
                         visible={DashboardReducer?.status == 'Dashboard/addCreditVaultRequest' || DashboardReducer?.status == 'Dashboard/OCRCertificateRequest'} />
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), backgroundColor: "#FF6D68", justifyContent: "center", alignItems: "center" }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#FFFFFF" }}>{"Upload/Scan the document first to fill the form"}
-                                </Text>
-                            </View>
+                            {!isNonUsaUser && (
+                                <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), backgroundColor: "#FF6D68", justifyContent: "center", alignItems: "center" }}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#FFFFFF" }}>{"Upload/Scan the document first to fill the form"}</Text>
+                                </View>
+                            )}
                             <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                <Text style={styles.headerText}>{`Add New Credit for ${props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name || props?.route?.params?.creditvalutboard?.board_data?.board_name || props?.route?.params?.FullBoard?.boardtakefinal || props?.route?.params?.mainAdd?.creditID?.state || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null
-                                    }`}
+                                <Text style={isNonUsaUser ? styles.nonusaheaderText : styles.headerText}>
+                                    {isNonUsaUser ? "To record previous or external continuning education activities just complete the form. This informatiotion will be restored in your vault and help us create better suggestions for you." : `Add New Credit for ${props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name || props?.route?.params?.creditvalutboard?.board_data?.board_name || props?.route?.params?.FullBoard?.boardtakefinal || props?.route?.params?.mainAdd?.creditID?.state || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null}`}
                                 </Text>
                             </View>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
@@ -835,7 +871,7 @@ const AddCredits = (props) => {
                                             keyboardType="default"
                                             showCountryCode={false}
                                             maxlength={100}
-                                            editable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_title ? true : false}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_title ? true : false}
                                         />
                                     </View>
                                 </View>
@@ -848,7 +884,7 @@ const AddCredits = (props) => {
                                         paddingRight: normalize(0)
                                     }}>
                                         <InputField
-                                            label={props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? 'Organizer Name*' : 'Provider Name*'}
+                                            label={isNonUsaUser || props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? 'Organizer Name*' : 'Provider Name*'}
                                             value={provideName}
                                             onChangeText={setProvideName}
                                             placeholder={""}
@@ -856,11 +892,11 @@ const AddCredits = (props) => {
                                             keyboardType="default"
                                             showCountryCode={false}
                                             maxlength={100}
-                                            editable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_provider ? true : false}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_provider ? true : false}
                                         />
                                     </View>
                                 </View>
-                                <Pressable disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true} onPress={() => {
+                                <Pressable disabled={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true} onPress={() => {
                                     setcountrypicker(!countrypicker);
                                     addcreditAgain();
                                 }}>
@@ -873,7 +909,7 @@ const AddCredits = (props) => {
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField
-                                                icondisable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true}
+                                                icondisable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true}
                                                 label={"Credit Type*"}
                                                 value={country}
                                                 placeholder=""
@@ -914,7 +950,7 @@ const AddCredits = (props) => {
                                             keyboardType="phone-pad"
                                             showCountryCode={false}
                                             maxlength={100}
-                                            editable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.cmepoints ? true : false}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.cmepoints ? true : false}
                                         />
                                     </View>
                                 </View>
@@ -924,7 +960,7 @@ const AddCredits = (props) => {
                                     } else {
                                         setOpendate(!opendate)
                                     }
-                                }} disabled={ProfilePicObj1 || cdate ? false : true}>
+                                }} disabled={isNonUsaUser || ProfilePicObj1 || cdate ? false : true}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -934,7 +970,7 @@ const AddCredits = (props) => {
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField
-                                                icondisable={ProfilePicObj1 || cdate ? false : true}
+                                                icondisable={isNonUsaUser || ProfilePicObj1 || cdate ? false : true}
                                                 label={"Issue Date*"}
                                                 value={cdate ? moment(cdate).format("MM-DD-YYYY") : cdate}
                                                 placeholder=""
@@ -982,126 +1018,98 @@ const AddCredits = (props) => {
                                         </View>
                                     </View>
                                 </Pressable>
-                                {(clisttopic?.length == 0 || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id) ?
-                                    <View style={{
-                                        flexDirection: 'row',
-                                        flex: 1
-                                    }}>
-                                        <View style={{
-                                            flex: 1,
-                                            paddingRight: normalize(0)
-                                        }}>
-                                            <Pressable disabled={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false} onPress={() => setStateMan(true)}>
-                                                <InputField
-                                                    icondisable={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false}
-                                                    label={"State Mandated Course*"}
-                                                    value={finalstate ? finalstate : undefined}
-                                                    placeholder=""
-                                                    placeholderTextColor="#949494"
-                                                    keyboardType="default"
-                                                    showCountryCode={false}
-                                                    editable={false}
-                                                    leftIcon={<DropdownIcon name="chevron-small-down" style={{ bottom: -13 }} size={25} color="#949494" />}
-                                                    onLeftIconPress={() => {
-                                                        setStateMan(true);
-                                                    }}
-                                                    onwholePress={() => setStateMan(true)}
-                                                    marginleft={normalize(270)}
-                                                    bgv={true}
-                                                    notext={"State Mandated Course*"}
-                                                />
-                                            </Pressable>
-                                        </View>
-                                    </View> : <View style={{
+                                {!isNonUsaUser && (
+                                    <>
+                                        {(clisttopic?.length == 0 || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name) ?
+                                            <View style={{
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                <View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0)
+                                                }}>
+                                                    <Pressable disabled={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false} onPress={() => setStateMan(true)}>
+                                                        <InputField
+                                                            icondisable={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false}
+                                                            label={"State Mandated Course*"}
+                                                            value={finalstate ? finalstate : undefined}
+                                                            placeholder=""
+                                                            placeholderTextColor="#949494"
+                                                            keyboardType="default"
+                                                            showCountryCode={false}
+                                                            editable={false}
+                                                            leftIcon={<DropdownIcon name="chevron-small-down" style={{ bottom: -13 }} size={25} color="#949494" />}
+                                                            onLeftIconPress={() => {
+                                                                setStateMan(true);
+                                                            }}
+                                                            onwholePress={() => setStateMan(true)}
+                                                            marginleft={normalize(270)}
+                                                            bgv={true}
+                                                            notext={"State Mandated Course*"}
+                                                        />
+                                                    </Pressable>
+                                                </View>
+                                            </View> : <View style={{
 
-                                        flexDirection: 'row',
-                                        flex: 1
-                                    }}>
-                                        <View style={{
-                                            flex: 1,
-                                            paddingRight: normalize(0)
-                                        }}>
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                <View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0)
+                                                }}>
+                                                    <Pressable disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true} onPress={() => setStateMan(true)}>
+                                                        <InputField
+                                                            icondisable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true}
+                                                            label={"State Mandated Course*"}
+                                                            value={finalstate ? finalstate : undefined}
+                                                            placeholder=""
+                                                            placeholderTextColor="#949494"
+                                                            keyboardType="default"
+                                                            showCountryCode={false}
+                                                            editable={false}
+                                                            leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                            onLeftIconPress={() => {
+                                                                setStateMan(true);
+                                                            }}
+                                                            onwholePress={() => setStateMan(true)}
+                                                            marginleft={normalize(270)}
+                                                            spaceneeded={true}
+                                                        />
+                                                    </Pressable>
+                                                </View>
+                                            </View>}
 
-                                            {/* <CustomInputTouchable
-                                                label={"State Mandated Course*"}
-                                                value={finalstate ? finalstate : undefined}
-                                                placeholder={""}
-                                                placeholderTextColor="#949494"
-                                                rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                onPress={() => {
-                                                    setStateMan(true);
-                                                }}
-                                                onIconpres={() => {
-                                                    setStateMan(true);
-                                                }}
-                                                disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true}
-                                            /> */}
-                                            <Pressable disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true} onPress={() => setStateMan(true)}>
-                                                <InputField
-                                                    icondisable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true}
-                                                    label={"State Mandated Course*"}
-                                                    value={finalstate ? finalstate : undefined}
-                                                    placeholder=""
-                                                    placeholderTextColor="#949494"
-                                                    keyboardType="default"
-                                                    showCountryCode={false}
-                                                    editable={false}
-                                                    leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                    onLeftIconPress={() => {
-                                                        setStateMan(true);
-                                                    }}
-                                                    onwholePress={() => setStateMan(true)}
-                                                    marginleft={normalize(270)}
-                                                    spaceneeded={true}
-                                                />
-                                            </Pressable>
-                                        </View>
-                                    </View>}
-
-                                <Pressable disabled={finalstate === "Yes" ? false : true} onPress={() => setStatetopicpicker(!statetopicpicker)}>
-                                    <View style={{
-                                        flexDirection: 'row',
-                                        flex: 1
-                                    }}>
-                                        <View style={{
-                                            flex: 1,
-                                            paddingRight: normalize(0),
-                                        }}>
-                                            <CustomInputTouchable
-                                                label={"Choose State Mandatory Topic*"}
-                                                value={stopic}
-                                                placeholder={finalstate === "Yes" ? "" : "Choose State Mandatory Topic*"}
-                                                placeholderTextColor="#949494"
-                                                // wrapperStyle={{ backgroundColor:finalstate === "Yes"  ? Colorpath.Pagebg:"#E6ECF2" }}
-                                                newstyle={finalstate === "Yes" ? "Yes" : "No"}
-                                                rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                onPress={() => {
-                                                    setStatetopicpicker(!statetopicpicker);
-                                                }}
-                                                onIconpres={() => {
-                                                    setStatetopicpicker(!statetopicpicker);
-                                                }}
-                                                disabled={finalstate === "Yes" ? false : true}
-                                            />
-                                            {/* <InputField
-                                                icondisable={finalstate === "Yes" ? false : true}
-                                                label={"Choose State Mandatory Topic*"}
-                                                value={stopic}
-                                                addnewtyle={{backgroundColor:"#DADADA"}}
-                                                labelStyle={{color:"green"}}
-                                                // newstyle={finalstate === "Yes" ? "Yes" : "No"}
-                                                placeholder={""}
-                                                placeholderTextColor="#949494"
-                                                keyboardType="default"
-                                                showCountryCode={false}
-                                                editable={false}
-                                                leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                onLeftIconPress={() => setStatetopicpicker(!statetopicpicker)}
-                                                marginleft={normalize(270)}
-                                            /> */}
-                                        </View>
-                                    </View>
-                                </Pressable>
+                                        <Pressable disabled={finalstate === "Yes" ? false : true} onPress={() => setStatetopicpicker(!statetopicpicker)}>
+                                            <View style={{
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                <View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0),
+                                                }}>
+                                                    <CustomInputTouchable
+                                                        label={"Choose State Mandatory Topic*"}
+                                                        value={stopic}
+                                                        placeholder={finalstate === "Yes" ? "" : "Choose State Mandatory Topic*"}
+                                                        placeholderTextColor="#949494"
+                                                        newstyle={finalstate === "Yes" ? "Yes" : "No"}
+                                                        rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                        onPress={() => {
+                                                            setStatetopicpicker(!statetopicpicker);
+                                                        }}
+                                                        onIconpres={() => {
+                                                            setStatetopicpicker(!statetopicpicker);
+                                                        }}
+                                                        disabled={finalstate === "Yes" ? false : true}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </Pressable>
+                                    </>
+                                )}
                             </View>
                             <Buttons
                                 onPress={handleAddCredits}
@@ -1134,9 +1142,9 @@ const AddCredits = (props) => {
                             <CellModal
                                 isVisible={isModalVisiblecred}
                                 onClose={toggleModalcred}
-                                content={props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully."}
+                                content={isNonUsaUser ? "Credit details \n added successfully." : (props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully.")}
                                 navigation={props.navigation}
-                                name={returnToDashboardVault ? "DashoardVault" : "goBack"}
+                                name={isNonUsaUser ? "CertficateHandle" : returnToDashboardVault ? "DashoardVault" : "goBack"}
                             />
 
 
@@ -1277,6 +1285,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: "#000000",
         fontWeight: "bold",
+    },
+    nonusaheaderText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 12,
+        color: "#000000",
     },
     centered: {
         justifyContent: "center",

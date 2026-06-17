@@ -3,8 +3,9 @@ import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { OCRCertificateFailure, OCRCertificateSuccess, addCreditVaultFailure, addCreditVaultSuccess, addCreditsFailure, addCreditsSuccess, boardSpecialityFailure, boardSpecialitySuccess, boardcertificateFailure, boardcertificateSuccess, boardcountFailure, boardcountSuccess, changePasswordFailure, changePasswordSuccess, countFailure, countSuccess, dashMbFailure, dashMbSuccess, dashPerFailure, dashPerSuccess, dashboardFailure, dashboardSuccess, mainprofileFailure, mainprofileSuccess, specailtyFailure, specailtySuccess, stateCourseFailure, stateCourseSuccess, stateDashboardFailure, stateDashboardSuccess, stateLicesenseFailure, stateLicesenseSuccess, stateMandatoryFailure, stateMandatorySuccess, stateReportingFailure, stateReportingSuccess } from '../Reducers/DashboardReducer';
+import { OCRCertificateFailure, OCRCertificateSuccess, addCreditVaultFailure, addCreditVaultSuccess, addCreditsFailure, addCreditsSuccess, boardSpecialityFailure, boardSpecialitySuccess, boardcertificateFailure, boardcertificateSuccess, boardcountFailure, boardcountSuccess, changePasswordFailure, changePasswordSuccess, countFailure, countSuccess, dashMbFailure, dashMbSuccess, dashPerFailure, dashPerSuccess, dashboardFailure, dashboardSuccess, mainprofileFailure, mainprofileSuccess, specailtyFailure, specailtySuccess, stateCourseFailure, stateCourseSuccess, stateDashboardFailure, stateDashboardSuccess, stateLicesenseFailure, stateLicesenseSuccess, stateMandatoryFailure, stateMandatoryRequest, stateMandatorySuccess, stateReportingFailure, stateReportingSuccess } from '../Reducers/DashboardReducer';
 let getItem = state => state.AuthReducer;
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 ////////Dashboard
 const wholeDatHo = async (data) => {
@@ -186,6 +187,14 @@ export function* AddCreditVaultSaga(action) {
     let response = yield call(postApi, 'creditVault/addEdit', action.payload, header);
     if (response?.data?.success == true) {
       yield put(addCreditVaultSuccess(response?.data));
+      const authState = yield select(state => state.AuthReducer);
+      const dashboardState = yield select(state => state.DashboardReducer);
+      const userObj = dashboardState?.mainprofileResponse || authState?.loginResponse?.user || authState?.againloginsiginResponse?.user || authState?.verifymobileResponse?.user;
+      const nonUsaFlowState = yield call(readNonUsaFlowState);
+      const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+      if (isNonUsaUser) {
+        yield put(stateMandatoryRequest({}));
+      }
       //   showErrorAlert(response?.data?.msg);
     } else {
       yield put(addCreditVaultFailure(response?.data));

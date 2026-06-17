@@ -12,6 +12,7 @@ import Fonts from '../Themes/Fonts';
 import StateCourse from '../Screen/StateRequiredCourse/StateCourse';
 import DrawerModal from '../Components/DrawerModal';
 import DashoardVault from '../Screen/CMECreditValut/DashoardVault';
+import CertficateHandle from '../Screen/CMECreditValut/FileCheck';
 import Statewebcast from '../Screen/DetailsPageWebcast/Statewebcast';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import ProfileMain from '../Screen/Profile/ProfileMain';
@@ -34,6 +35,7 @@ import MainInt from '../Screen/Dashboard/NoIntData';
 import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
+import { isNonUsaAccount, readNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
 let status1 = "";
 
 const buildProfessionLabel = (profession, professionType) => {
@@ -71,6 +73,20 @@ function TabScreen() {
   const [visible, setVisible] = useState(false);
   const [tabtooltip, setTabtooltip] = useState("closeit");
   const [nettrue, setNettrue] = useState("");
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  useEffect(() => {
+    let mounted = true;
+    if (isFoucs) {
+      readNonUsaFlowState().then(state => {
+        if (mounted) {
+          setNonUsaFlowState(state);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [isFoucs]);
   const navigation = useNavigation();
   const isFoucs = useIsFocused();
   const route = useRoute();
@@ -326,6 +342,8 @@ function TabScreen() {
       // Handle error case appropriately (maybe setEnables(false))
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
+  const userObj = AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
+  const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
   const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
@@ -404,7 +422,7 @@ function TabScreen() {
             initialParams={{ detectmain: "newadd" }}
             options={{
               tabBarIcon: ({ focused }) => {
-                if (item?.label == "CVault" && tabsub) {
+                if (item?.label?.trim() == "CVault" && tabsub) {
                   return (
                     <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                       <Image
@@ -532,9 +550,19 @@ function TabScreen() {
             toggleDrawerModal();
             return;
           }
+          if (route.name == "Contact" && tabsub) {
+            e.preventDefault();
+            setTabmodal(true);
+            return;
+          }
           handleTabPress(route.name);
         },
-        focus: () => {
+        focus: (e) => {
+          if (route.name == "Contact" && tabsub) {
+            e.preventDefault();
+            setTabmodal(true);
+            return;
+          }
           handleTabPress(route.name);
         },
       })}
@@ -542,7 +570,7 @@ function TabScreen() {
       {[
         { name: "Home", component: MainInt, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        // { name: "Profile", component: CMEExDashboard, icon: Imagepath.CreditValut, label: "Expenses" },
+        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -551,7 +579,7 @@ function TabScreen() {
           initialParams={{ detectmain: "newadd" }}
           options={{
             tabBarIcon: ({ focused }) => {
-              if (item?.label == "CVault" && tabsub) {
+              if (item?.label?.trim() == "CVault" && tabsub) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                     <Image
@@ -683,9 +711,19 @@ function TabScreen() {
             toggleDrawerModal();
             return;
           }
+          if (route.name == "Contact" && tabsub) {
+            e.preventDefault();
+            setTabmodal(true);
+            return;
+          }
           handleTabPress(route.name);
         },
-        focus: () => {
+        focus: (e) => {
+          if (route.name == "Contact" && tabsub) {
+            e.preventDefault();
+            setTabmodal(true);
+            return;
+          }
           handleTabPress(route.name);
         },
       })}
@@ -693,7 +731,7 @@ function TabScreen() {
       {[
         { name: "Home", component: Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        // { name: "Profile", component: CMEExDashboard, icon: Imagepath.CreditValut, label: "Expenses" },
+        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -702,7 +740,7 @@ function TabScreen() {
           initialParams={{ detectmain: "newadd" }}
           options={{
             tabBarIcon: ({ focused }) => {
-              if (item?.label == "CVault" && tabsub) {
+              if (item?.label?.trim() == "CVault" && tabsub) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                     <Image
