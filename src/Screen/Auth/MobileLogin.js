@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
+import { readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 let status1 = "";
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -39,6 +40,10 @@ const MobileLoginOTP = (props) => {
     const [otpphone, setOtpphone] = useState(new Array(6).fill(''));
     const inputsphone = useRef([]);
     const [nonloader, setNonloader] = useState(false);
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
     useEffect(() => {
         let mounted = true;
         const restoreTimerState = async () => {
@@ -252,6 +257,17 @@ const MobileLoginOTP = (props) => {
     // Track if we have valid state license data
     const hasStateLicenseData = useRef(false);
     const stateLicenseCheckComplete = useRef(false);
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaPermanentFlags().then((flags) => {
+            if (mounted) {
+                setNonUsaPermanentFlags(flags);
+            }
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Dispatch license request on token change
     useEffect(() => {
@@ -332,7 +348,11 @@ const MobileLoginOTP = (props) => {
             }
             else {
                 setNonloader(true);
-                handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
+                if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
+                    handleNavigation("TabNav");
+                } else {
+                    handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
+                }
             }
         }
         else if (isSuccess) {
@@ -350,6 +370,7 @@ const MobileLoginOTP = (props) => {
         loginResponse,
         user?.license_number,
         chooseStatecardResponse, // Now watching the entire response object
+        nonUsaPermanentFlags,
         tokenObj
     ]);
     useEffect(() => {

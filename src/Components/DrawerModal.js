@@ -310,15 +310,29 @@ export default function DrawerModal(props) {
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvault, finalProfession, takeSub, endDateStringTake]);
   const resolvedSpecialityText = useMemo(() => {
-    const specialitiesObject = allHandled?.specialities || resolvedProfessionSource?.specialities;
+    const specialitiesObject =
+      allHandled?.specialities ||
+      resolvedProfessionSource?.professional_information?.specialities ||
+      resolvedProfessionSource?.specialities;
     if (!specialitiesObject) return '';
     const valuesArray = Object.values(specialitiesObject).filter(Boolean);
     return valuesArray.join(', ');
   }, [allHandled?.specialities, resolvedProfessionSource]);
   const [stableProfileMetaText, setStableProfileMetaText] = useState('');
+  const readProfileText = (value) => (value == null ? '' : String(value).trim());
+  const buildProfessionLabel = (source) => {
+    if (!source) return '';
+    const profession = readProfileText(source?.professional_information?.profession || source?.profession);
+    const professionType = readProfileText(source?.professional_information?.profession_type || source?.profession_type);
+    if (profession && professionType) {
+      return `${profession} - ${professionType}`;
+    }
+    return profession || professionType || '';
+  };
   const currentProfileMetaText = useMemo(() => {
-    return [resolvedProfessionText, resolvedSpecialityText].filter(Boolean).join(' | ');
-  }, [resolvedProfessionText, resolvedSpecialityText]);
+    const professionLabel = buildProfessionLabel(resolvedProfessionSource);
+    return [professionLabel || resolvedProfessionText, resolvedSpecialityText].filter(Boolean).join(' | ');
+  }, [resolvedProfessionSource, resolvedProfessionText, resolvedSpecialityText]);
   useEffect(() => {
     if (currentProfileMetaText) {
       setStableProfileMetaText(currentProfileMetaText);

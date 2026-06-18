@@ -6,6 +6,7 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
+import { readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
     console.log(profMerge, "profiletake=====", key,name)
     const pressed = useRef(false);
@@ -24,9 +25,18 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
         );
     };
 
-    const handleDone = () => {
+    const handleDone = async () => {
         if (pressed.current) return;
         pressed.current = true;
+
+        const permanentFlags = await readNonUsaPermanentFlags();
+        if (name == "CreateStateInfor" && permanentFlags?.stateLicenseFlowCompleted) {
+            resetToTabHome();
+            setTimeout(() => {
+                onClose();
+            }, 450);
+            return;
+        }
 
         if (profMerge == "freetrail") {
             navigation.navigate("TabNav");

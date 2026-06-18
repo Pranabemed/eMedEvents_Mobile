@@ -897,7 +897,7 @@ const AddLicense = (props) => {
                                 onClose={toggleModalcred}
                                 content={isEditLicenseFlow ? "State license information \n updated successfully." : "State license information \n added successfully."}
                                 navigation={props.navigation}
-                                profile={props?.route?.params?.myTaskask?.BackMyTask ? "" : props?.route?.params?.myTaskask?.Back ? "" : props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile ? "text" : ""}
+                                profile={props?.route?.params?.myTaskask?.BackMyTask ? "" : props?.route?.params?.myTaskask?.Back ? "" : props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile === "text" ? "text" : ""}
                             />
                             <CameraPicker
                                 cropping={true}

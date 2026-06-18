@@ -1,4 +1,4 @@
-import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Easing, Animated } from 'react-native'
+import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Easing, Animated, Modal } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
@@ -30,6 +30,8 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import AddressInput from '../../Components/AutoData'
 import AddressField from '../../Components/AutoData';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
+import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 let status = "";
@@ -64,6 +66,7 @@ const ContactProfile = (props) => {
     const [country_id, setCountry_id] = useState("");
     const AuthReducer = useSelector(state => state.AuthReducer);
     const ProfileReducer = useSelector(state => state.ProfileReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
     const [pratice, setPratice] = useState(false);
     const [searchpratice, setSearchpratice] = useState('');
     const [state_id, setState_id] = useState("");
@@ -71,7 +74,22 @@ const ContactProfile = (props) => {
     const [searchcity, setSearchcity] = useState('');
     const [dialcode, setDialcode] = useState("");
     const [loading, setLoading] = useState(false);
+    const [isNonUsaFlow, setIsNonUsaFlow] = useState(false);
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
+    const [professionModalVisible, setProfessionModalVisible] = useState(false);
+    const [pendingPersonal, setPendingPersonal] = useState(null);
     const dispatch = useDispatch();
+    const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+    const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
+    const dashboardProfessionHandle = String(
+        dashboardProfessionalInformation?.profession && dashboardProfessionalInformation?.profession_type
+            ? `${dashboardProfessionalInformation?.profession} - ${dashboardProfessionalInformation?.profession_type}`
+            : dashboardProfessionalInformation?.profession || ''
+    ).trim().toLowerCase().replace(/\s+/g, '');
+    const hasExistingPhysicianDashboardProfile = physicianHandles.has(dashboardProfessionHandle);
     const cellNoRegexwp = /^\d{10,15}$/;
     const filteredText = whatsappno && whatsappno?.length > 0 && whatsappno.replace(/[^\d]/g, '');
     const isValidWhatsappNo = filteredText?.length > 0 && !cellNoRegexwp.test(filteredText);
@@ -125,8 +143,22 @@ const ContactProfile = (props) => {
                 status1 = ProfileReducer.status;
                 setLoading(false);
                 if (ProfileReducer?.contactInfoResponse?.msg == "Contact inforamtion updated successfully.") {
-                    showErrorAlert("Contact information updated successfully.");
-                    props.navigation.goBack();
+                    const nextPersonal = ProfileReducer?.personalInfoResponse?.user ||
+                        ProfileReducer?.contactInfoResponse?.user ||
+                        props?.route?.params?.wholedata ||
+                        {};
+                    if (
+                        !nonUsaPermanentFlags?.stateLicenseFlowCompleted &&
+                        (isNonUsaFlow || isNonUsaAccount(nextPersonal || props?.route?.params?.wholedata || {}))
+                    ) {
+                        markNonUsaProfessionUpdateRequired();
+                        setPendingPersonal(nextPersonal);
+                        setProfessionModalVisible(true);
+                    } else if (hasExistingPhysicianDashboardProfile) {
+                        props.navigation.goBack();
+                    } else {
+                        props.navigation.navigate("PersonalInfo", { personal: nextPersonal });
+                    }
                 }
                 console.log(ProfileReducer?.contactInfoResponse, "log-----------");
                 break;
@@ -149,6 +181,34 @@ const ContactProfile = (props) => {
             useNativeDriver: false,
         }).start();
     }, [address, isFieldFocused]);
+
+    useEffect(() => {
+        const detectCountry = async () => {
+            try {
+                const geoInfo = await getCountryAndDialCode();
+                if (geoInfo) {
+                    const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
+                    const isNonUsaIp = ipCountry && ipCountry !== 'US' && ipCountry !== 'USA';
+                    setIsNonUsaFlow(!!isNonUsaIp);
+                }
+            } catch (error) {
+                console.log('Contact geo lookup failed', error);
+            }
+        };
+        detectCountry();
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaPermanentFlags().then(flags => {
+            if (mounted) {
+                setNonUsaPermanentFlags(flags);
+            }
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const getLabelStyle = () => {
         const isActive = isFieldFocused || !!address;
@@ -194,6 +254,16 @@ const ContactProfile = (props) => {
             }).start();
         }
         setIsFieldFocused(false);
+    };
+    const closeProfessionModal = () => {
+        setProfessionModalVisible(false);
+        if (pendingPersonal) {
+            if (hasExistingPhysicianDashboardProfile) {
+                props.navigation.goBack();
+            } else {
+                props.navigation.navigate("PersonalInfo", { personal: pendingPersonal });
+            }
+        }
     };
     const handleContactTake = () => {
         const cellNoRegex = /^\d{10,15}$/;
@@ -298,6 +368,7 @@ const ContactProfile = (props) => {
             setZipcode(props?.route?.params?.wholedata?.user_address?.zipcode)
             setWhatsappno(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
             setDobdate(formatDobWithMoment(props?.route?.params?.wholedata?.personal_information?.dob && props?.route?.params?.wholedata?.personal_information?.dob !== "0000-00-00" ? props?.route?.params?.wholedata?.personal_information?.dob : ""));
+            setIsNonUsaFlow(isNonUsaAccount(props?.route?.params?.wholedata || {}));
         }
     }, [props?.route?.params?.wholedata])
     const handlePlaceSelected = async (data, details) => {
@@ -383,6 +454,7 @@ const ContactProfile = (props) => {
         stateRequest(didi?.id);
         setCountry_id(didi?.id);
         setDialcode(didi?.callingcode);
+        setIsNonUsaFlow(!isUsaCountryCode(didi?.callingcode));
         if (didi?.callingcode && cellno) {
             const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
             const formattedNumber = formatPhoneNumber(cellno, isUSA);
@@ -901,6 +973,38 @@ const ContactProfile = (props) => {
                         </>}
 
             </SafeAreaView>
+            <Modal
+                visible={professionModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={closeProfessionModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <TouchableOpacity
+                            onPress={closeProfessionModal}
+                            style={styles.modalClose}
+                            activeOpacity={0.8}
+                        >
+                            <ArrowIcon name="close" size={20} color={Colorpath.white} />
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>eMedEvents</Text>
+                        <Text style={styles.modalMessage}>Please change your Profession & Specialty.</Text>
+                        <Buttons
+                            onPress={closeProfessionModal}
+                            height={normalize(42)}
+                            width={normalize(120)}
+                            backgroundColor={Colorpath.ButtonColr}
+                            borderRadius={normalize(9)}
+                            text="Done"
+                            color={Colorpath.white}
+                            fontSize={16}
+                            fontFamily={Fonts.InterSemiBold}
+                            marginTop={normalize(18)}
+                        />
+                    </View>
+                </View>
+            </Modal>
             <DateTimePickerModal
                 isVisible={dobpicker}
                 mode="date"
@@ -916,5 +1020,50 @@ const ContactProfile = (props) => {
         </>
     )
 }
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: normalize(24),
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: Colorpath.white,
+        borderRadius: normalize(16),
+        paddingHorizontal: normalize(18),
+        paddingTop: normalize(18),
+        paddingBottom: normalize(22),
+        alignItems: 'center',
+    },
+    modalClose: {
+        position: 'absolute',
+        right: normalize(10),
+        top: normalize(10),
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        backgroundColor: Colorpath.ButtonColr,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        marginTop: normalize(8),
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: Colorpath.black,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        marginTop: normalize(12),
+        fontFamily: Fonts.InterRegular,
+        fontSize: 15,
+        color: Colorpath.black,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+});
 
 export default ContactProfile

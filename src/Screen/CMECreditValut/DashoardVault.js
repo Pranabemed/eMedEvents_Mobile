@@ -30,7 +30,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 let status = "";
 let status1 = "";
@@ -98,6 +98,10 @@ const DashoardVault = (props) => {
     const [certificateboard, setCertificatebaord] = useState(null);
     const [lengthcheck, setLengthcheck] = useState("");
     const [conn, setConn] = useState("")
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -358,14 +362,22 @@ const DashoardVault = (props) => {
                     setNonUsaFlowState(state);
                 }
             });
+            readNonUsaPermanentFlags().then(flags => {
+                if (mounted) {
+                    setNonUsaPermanentFlags(flags);
+                }
+            });
         }
         return () => {
             mounted = false;
         };
     }, [isfocused]);
 
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
     const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+    const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
+    const shouldShowAddLicenseCard = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true && !hasAnyLicenseData;
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const getDisplayProfession = (source) => {
         if (!source) return "";
@@ -595,7 +607,28 @@ const DashoardVault = (props) => {
                             )}
                         </View>
                         <Loader visible={!isNonUsaUser && creditwise == null} />
-                        {isNonUsaUser && !allProfTake ? (
+                        {shouldShowAddLicenseCard ? (
+                            <View style={stylesd.nonUsaContainer}>
+                                <View style={stylesd.nonUsaCard}>
+                                    <View style={stylesd.nonUsaBanner}>
+                                        <Text style={stylesd.nonUsaBannerText}>Add License</Text>
+                                    </View>
+                                    <View style={stylesd.nonUsaBody}>
+                                        <Text style={stylesd.nonUsaDescription}>
+                                            Add at least one valid state license to unlock Credit Vault access.
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={stylesd.nonUsaButton}
+                                            onPress={() => {
+                                                navigation.navigate("AddLicense", { profile: "main" });
+                                            }}
+                                        >
+                                            <Text style={stylesd.nonUsaButtonText}>Add License</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : isNonUsaUser && !allProfTake ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>

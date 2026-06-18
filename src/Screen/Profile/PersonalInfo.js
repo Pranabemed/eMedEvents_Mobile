@@ -13,11 +13,14 @@ import connectionrequest from '../../Utils/Helpers/NetInfo'
 import { licesensRequest, professionRequest, specializationRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { useDispatch, useSelector } from 'react-redux'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 import { searchStateNameFunction } from '../DetailsPageWebcast/SearchStatename'
 import ProfileSpeciality from './ProfileSpecialty';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ProfessionComponent from '../Specialization/ProfessionComponent'
 import { professionInfoRequest } from '../../Redux/Reducers/ProfileReducer'
+import { chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer'
 import Loader from '../../Utils/Helpers/Loader'
 import Video from 'react-native-video'
 import { dashPerRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
@@ -27,7 +30,7 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import CustomInputTouchable from '../../Components/IconTextIn'
 import CustomInputTouchableX from './CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, markNonUsaStateLicenseFlowCompleted } from '../../Utils/Helpers/nonUsaFlow';
 
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
@@ -90,12 +93,19 @@ const PersonalInfo = (props) => {
     const [noloaderext, setNoloaderext] = useState(false);
     const [speids, setSpeids] = useState("");
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
     useEffect(() => {
         let mounted = true;
-        readNonUsaFlowState().then(state => {
-            if (mounted) {
-                setNonUsaFlowState(state);
-            }
+        Promise.all([
+            readNonUsaFlowState(),
+            readNonUsaPermanentFlags(),
+        ]).then(([state, flags]) => {
+            if (!mounted) return;
+            setNonUsaFlowState(state);
+            setNonUsaPermanentFlags(flags);
         });
         return () => {
             mounted = false;
@@ -104,6 +114,16 @@ const PersonalInfo = (props) => {
 
     const userObj = props?.route?.params?.personal || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const isNonUsaUpdateFlow = nonUsaPermanentFlags?.professionUpdateRequired === true;
+    const hasCompletedStateLicenseFlow = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
+    const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+    const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
+    const dashboardProfessionHandle = String(
+        dashboardProfessionalInformation?.profession && dashboardProfessionalInformation?.profession_type
+            ? `${dashboardProfessionalInformation?.profession} - ${dashboardProfessionalInformation?.profession_type}`
+            : dashboardProfessionalInformation?.profession || ''
+    ).trim().toLowerCase().replace(/\s+/g, '');
+    const hasExistingPhysicianDashboardProfile = physicianHandles.has(dashboardProfessionHandle);
 
     const SearchBack = () => {
         props.navigation.goBack();
@@ -145,17 +165,24 @@ const PersonalInfo = (props) => {
     useEffect(() => {
         connectionrequest()
             .then(() => {
-                if (isNonUsaUser) {
-                    dispatch(professionRequest({ other_country: 1 }));
-                } else {
+                if (isNonUsaUpdateFlow || !isNonUsaUser) {
                     dispatch(professionRequest());
+                } else {
+                    dispatch(professionRequest({ other_country: 1 }));
                 }
             })
             .catch(err => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [props?.route?.params?.personal, isNonUsaUser]);
+    }, [props?.route?.params?.personal, isNonUsaUser, isNonUsaUpdateFlow]);
+    useEffect(() => {
+        const loadStateCards = async () => {
+            const token = AuthReducer?.token || await AsyncStorage.getItem(constants.TOKEN);
+            dispatch(chooseStatecardRequest(token ? { token, key: {} } : {}));
+        };
+        loadStateCards();
+    }, [dispatch, AuthReducer?.token]);
     useEffect(() => {
         if (country) {
             setSearchtext("");
@@ -207,11 +234,29 @@ const PersonalInfo = (props) => {
                         ProfileReducer?.latestProfessionInfo?.profession,
                         ProfileReducer?.latestProfessionInfo?.profession_type
                     );
+                    const stateLicensures = AuthReducer?.chooseStatecardResponse?.state_licensures;
+                    const hasStateLicensures = Array.isArray(stateLicensures) && stateLicensures.length > 0;
                     showErrorAlert("Professional information updated successfully.")
                     dispatch(mainprofileRequest({}));
                     dispatch(dashPerRequest({}))
                     if (latestProfessionLabel) {
                         dispatch(licesensRequest(latestProfessionLabel));
+                    }
+                    if (hasExistingPhysicianDashboardProfile) {
+                        props.navigation.goBack();
+                        return;
+                    }
+                    if (isNonUsaUser && isNonUsaUpdateFlow && !hasCompletedStateLicenseFlow && !hasStateLicensures) {
+                        markNonUsaStateLicenseFlowCompleted();
+                        props.navigation.navigate("CreateStateInfor", {
+                            dataVerify: {
+                                dataVerify: "Nodasta",
+                                allDat: ProfileReducer?.personalInfoResponse?.user ||
+                                    ProfileReducer?.contactInfoResponse?.user ||
+                                    userObj,
+                            }
+                        });
+                        return;
                     }
                     props.navigation.goBack();
                 }
@@ -588,32 +633,30 @@ useLayoutEffect(() => {
                                         }
                                     }} 
                                 />
-                                {!isNonUsaUser && (
-                                    <View style={{ paddingVertical: normalize(7) }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000" }}>{"*Drug Enforcement Administration (DEA) Registered ?"}</Text>
-                                        <View style={styles.container}>
-                                            {/* Yes Option */}
-                                            <View style={styles.optionContainer}>
-                                                <CustomRadioButton
-                                                    selected={selectedOption === '1'}
-                                                    onPress={() => setSelectedOption('1')}
-                                                />
-                                                <TouchableOpacity onPress={() => setSelectedOption('1')}>
-                                                    <Text style={styles.optionText}>{"Yes"}</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                            <View style={styles.optionContainer}>
-                                                <CustomRadioButton
-                                                    selected={selectedOption === '0'}
-                                                    onPress={() => setSelectedOption('0')}
-                                                />
-                                                <TouchableOpacity onPress={() => setSelectedOption('0')}>
-                                                    <Text style={styles.optionText}>{"No"}</Text>
-                                                </TouchableOpacity>
-                                            </View>
+                                <View style={{ paddingVertical: normalize(7) }}>
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000" }}>{"*Drug Enforcement Administration (DEA) Registered ?"}</Text>
+                                    <View style={styles.container}>
+                                        {/* Yes Option */}
+                                        <View style={styles.optionContainer}>
+                                            <CustomRadioButton
+                                                selected={selectedOption === '1'}
+                                                onPress={() => setSelectedOption('1')}
+                                            />
+                                            <TouchableOpacity onPress={() => setSelectedOption('1')}>
+                                                <Text style={styles.optionText}>{"Yes"}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.optionContainer}>
+                                            <CustomRadioButton
+                                                selected={selectedOption === '0'}
+                                                onPress={() => setSelectedOption('0')}
+                                            />
+                                            <TouchableOpacity onPress={() => setSelectedOption('0')}>
+                                                <Text style={styles.optionText}>{"No"}</Text>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
-                                )}
+                                </View>
                             </View>
                             <Buttons
                                 onPress={() => { makeUpdateProf(); }}

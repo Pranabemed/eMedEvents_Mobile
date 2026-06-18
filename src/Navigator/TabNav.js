@@ -342,7 +342,7 @@ function TabScreen() {
       // Handle error case appropriately (maybe setEnables(false))
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
-  const userObj = AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
+  const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
   const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
   const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;

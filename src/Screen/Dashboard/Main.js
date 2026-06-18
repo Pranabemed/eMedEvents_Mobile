@@ -28,7 +28,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
@@ -190,12 +190,21 @@ const Main = (props) => {
   const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
   const [forceNewProfession, setForceNewProfession] = useState(false);
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
   useEffect(() => {
     let mounted = true;
     if (isFocus) {
       readNonUsaFlowState().then(state => {
         if (mounted) {
           setNonUsaFlowState(state);
+        }
+      });
+      readNonUsaPermanentFlags().then(flags => {
+        if (mounted) {
+          setNonUsaPermanentFlags(flags);
         }
       });
     }
@@ -283,6 +292,16 @@ const Main = (props) => {
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
   const shouldHoldSkeleton = (isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady;
+  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
+    DashboardReducer?.mainprofileResponse?.licensures?.length ||
+    DashboardReducer?.mainprofileResponse?.license_number ||
+    finalverifyvaultmain?.license_number ||
+    finalProfessionmain?.license_number
+  );
+  const shouldShowMainAddLicenseCard =
+    nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+    !hasAnyLicenseData;
   const bottomBannerSpacing = useMemo(() => {
     if (enables && allProfTake) {
       return normalize(96);
@@ -423,6 +442,67 @@ const Main = (props) => {
     forceNewProfession ||
     (isNonUsaUser && !isPhysicianFlow);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
+  const renderMainAddLicenseCard = () => (
+    <View style={{
+      marginHorizontal: normalize(10),
+      marginTop: normalize(4),
+      marginBottom: normalize(12),
+    }}>
+      <View style={{
+        borderRadius: normalize(18),
+        backgroundColor: '#FFF8EC',
+        borderWidth: 1,
+        borderColor: '#F5D39B',
+        overflow: 'hidden',
+      }}>
+        <View style={{
+          backgroundColor: '#FFEDCA',
+          paddingVertical: normalize(12),
+          paddingHorizontal: normalize(16),
+        }}>
+          <Text style={{
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 16,
+            color: '#000000',
+          }}>
+            {'Add License'}
+          </Text>
+        </View>
+        <View style={{
+          paddingHorizontal: normalize(16),
+          paddingVertical: normalize(16),
+        }}>
+          <Text style={{
+            fontFamily: Fonts.InterRegular,
+            fontSize: 14,
+            lineHeight: 20,
+            color: '#1F2937',
+          }}>
+            {'Add at least one valid state license to unlock Credit Vault access.'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => props.navigation.navigate('AddLicense', { profile: 'main' })}
+            style={{
+              marginTop: normalize(14),
+              alignSelf: 'flex-start',
+              backgroundColor: Colorpath.ButtonColr,
+              borderRadius: normalize(8),
+              paddingHorizontal: normalize(16),
+              paddingVertical: normalize(10),
+            }}
+          >
+            <Text style={{
+              fontFamily: Fonts.InterSemiBold,
+              fontSize: 14,
+              color: Colorpath.white,
+            }}>
+              {'Add License'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
   useEffect(() => {
     setFreeze(false);
     enableFreeze(false);
@@ -1055,6 +1135,7 @@ const Main = (props) => {
               >
                 <View>
                   <View style={{ bottom: normalize(10) }}>
+                    {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
                     {shouldRenderNewProfession
                       ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                       : isPhysicianFlow

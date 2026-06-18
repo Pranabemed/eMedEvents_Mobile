@@ -32,6 +32,7 @@ import CustomInput from '../../Components/NewTextIn';
 import CustomInputTouchable from '../../Components/IconTextIn';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput';
+import { markNonUsaStateLicenseFlowCompleted, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 import { SafeAreaView } from 'react-native-safe-area-context'
 let status = "";
 let status1 = "";
@@ -485,6 +486,11 @@ const CreateStateInfor = (props) => {
                 status = AuthReducer.status;
                 setGtprof(true);
                 setNoloadnew(true);
+                readNonUsaPermanentFlags().then((flags) => {
+                    if (flags?.professionUpdateRequired) {
+                        markNonUsaStateLicenseFlowCompleted();
+                    }
+                });
                 setTimeout(async () => {
                     const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
                     let objToken = { "token": loginHandleProccess || AuthReducer?.loginsiginResponse?.token, "key": {} }

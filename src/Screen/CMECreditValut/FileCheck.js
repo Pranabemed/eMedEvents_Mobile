@@ -74,7 +74,7 @@ const CertficateHandle = (props) => {
         };
         checkPrimeSkipped();
     }, [props?.route?.params]);
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
     const isNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;

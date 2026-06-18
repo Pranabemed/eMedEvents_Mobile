@@ -13,7 +13,7 @@ import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
-import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -78,6 +78,10 @@ export default function Splash(props) {
   const [hasAuthToken, setHasAuthToken] = useState(false);
   const [deepLinkBootstrapActive, setDeepLinkBootstrapActive] = useState(false);
   const [nonUsaState, setNonUsaState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
   const [bootstrapChecked, setBootstrapChecked] = useState(false);
   const [professionState, setProfessionState] = useState(null);
   const [isGuestConvertedUser, setIsGuestConvertedUser] = useState(false);
@@ -129,6 +133,7 @@ export default function Splash(props) {
           deepLinkBootstrapRaw,
           initialUrl,
           nonUsaFlowState,
+          nonUsaPermanentFlagsRaw,
           professionRaw,
           isGuestConvertedUserRaw,
         ] = await Promise.all([
@@ -143,6 +148,7 @@ export default function Splash(props) {
           AsyncStorage.getItem(DEEPLINK_BOOTSTRAP_KEY),
           Linking.getInitialURL(),
           readNonUsaFlowState(),
+          readNonUsaPermanentFlags(),
           AsyncStorage.getItem(constants.PROFESSION),
           AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
         ]);
@@ -150,6 +156,10 @@ export default function Splash(props) {
         const mobileEver = mobilevr ? JSON.parse(mobilevr) : null;
         const professionData = professionRaw ? JSON.parse(professionRaw) : null;
         setNonUsaState(nonUsaFlowState);
+        setNonUsaPermanentFlags(nonUsaPermanentFlagsRaw || {
+          professionUpdateRequired: false,
+          stateLicenseFlowCompleted: false,
+        });
         setProfessionState(professionData);
         setEmaiV(emailEver);
         setPhoneV(mobileEver);
@@ -513,12 +523,29 @@ export default function Splash(props) {
       return;
     }
 
+    const hasNonUsaPermanentFlow =
+      nonUsaPermanentFlags?.professionUpdateRequired === true ||
+      nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
     const isNonUsa =
       isNonUsaAccount(verifyData) ||
       (nonUsaState?.isNonUsa === true) ||
-      (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0');
+      (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0') ||
+      hasNonUsaPermanentFlow;
+    const isNonUsaStateLicenseFlowCompleted = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
 
     if (isNonUsa) {
+      if (isNonUsaStateLicenseFlowCompleted) {
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'TabNav' }],
+            })
+          );
+        }
+        return;
+      }
       const isGuestNonUsaWithToken = (guestRegistrationFlowActive || guestHomeGateActive) && hasAuthToken;
       if (isGuestNonUsaWithToken) {
         if (!hasNavigatedRef.current) {
@@ -698,6 +725,7 @@ export default function Splash(props) {
     hasAuthToken,
     deepLinkBootstrapActive,
     nonUsaState,
+    nonUsaPermanentFlags,
     bootstrapChecked,
     professionState,
     isGuestConvertedUser,

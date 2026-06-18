@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 
 export const NON_USA_USER_TYPE = 'non_usa';
+export const NON_USA_PROFESSION_UPDATE_REQUIRED_KEY = 'nonUSAProfessionUpdateRequired';
+export const NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY = 'nonUSAStateLicenseFlowCompleted';
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
@@ -84,5 +86,42 @@ export const clearNonUsaFlowState = async () => {
     await AsyncStorage.removeItem(constants.NON_USA_FLOW_STATE);
   } catch (error) {
     return null;
+  }
+};
+
+export const readNonUsaPermanentFlags = async () => {
+  try {
+    const [professionUpdateRequired, stateLicenseFlowCompleted] = await Promise.all([
+      AsyncStorage.getItem(NON_USA_PROFESSION_UPDATE_REQUIRED_KEY),
+      AsyncStorage.getItem(NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY),
+    ]);
+
+    return {
+      professionUpdateRequired: professionUpdateRequired === 'true',
+      stateLicenseFlowCompleted: stateLicenseFlowCompleted === 'true',
+    };
+  } catch (error) {
+    return {
+      professionUpdateRequired: false,
+      stateLicenseFlowCompleted: false,
+    };
+  }
+};
+
+export const markNonUsaProfessionUpdateRequired = async () => {
+  try {
+    await AsyncStorage.setItem(NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, 'true');
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+export const markNonUsaStateLicenseFlowCompleted = async () => {
+  try {
+    await AsyncStorage.setItem(NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, 'true');
+    return true;
+  } catch (error) {
+    return false;
   }
 };

@@ -23,7 +23,7 @@ import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -49,6 +49,10 @@ const Login = (props) => {
   const isFocus = useIsFocused();
   const [fcm, setFcm] = useState(false);
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
   const [isNonUsaFlow, setIsNonUsaFlow] = useState(Boolean(props?.route?.params?.isNonUsaUser || String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1"));
   const handleInputChange = (val) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
@@ -152,6 +156,17 @@ const Login = (props) => {
       } else {
         setIsNonUsaFlow(false);
         setPhoneCountryCode('+1');
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+  useEffect(() => {
+    let mounted = true;
+    readNonUsaPermanentFlags().then((flags) => {
+      if (mounted) {
+        setNonUsaPermanentFlags(flags);
       }
     });
     return () => {
@@ -348,17 +363,21 @@ const Login = (props) => {
       props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: normalizedPhoneCode } });
       return;
     }
-    if (isPhoneVerified) {
-      if (isUSUser) {
-        let objToken = { "token": loginSignInResponse?.token, "key": {} }
-        dispatch(dashboardRequest(objToken));
-        setNonloader(true);
-        setGtprof(false);
-      } else {
-        props?.navigation.navigate("CreateStateInfor");
+      if (isPhoneVerified) {
+        if (isUSUser) {
+          let objToken = { "token": loginSignInResponse?.token, "key": {} }
+          dispatch(dashboardRequest(objToken));
+          setNonloader(true);
+          setGtprof(false);
+        } else {
+        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
+          props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+        } else {
+          props?.navigation.navigate("CreateStateInfor");
+        }
+        }
+        return;
       }
-      return;
-    }
     if (isSuccess) {
       props.navigation.navigate("MobileLoginOTP", {
         "mobileNo": {
@@ -514,7 +533,11 @@ const Login = (props) => {
       }
       else {
         setNonloader(true);
-        handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
+        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
+          handleNavigation("TabNav");
+        } else {
+          handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
+        }
       }
     }
     else if (loginResponse.success) {
@@ -531,6 +554,7 @@ const Login = (props) => {
     loginResponse,
     user?.license_number,
     chooseStatecardResponse,
+    nonUsaPermanentFlags,
     phoneCountryCode,
     tokenObj,
     AuthReducer?.verifyResponse

@@ -31,6 +31,7 @@ import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
 import moment from 'moment';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 
 const normalizeProfessionHandle = (professionHandle) =>
     String(professionHandle || '')
@@ -101,6 +102,11 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const [limit, setLimit] = useState(9);
     const [wholeNo, setWholeNo] = useState(false);
     const [cachedLastName, setCachedLastName] = useState('');
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
     const stableNameRef = useRef({ first: '', last: '' });
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
@@ -147,7 +153,23 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const nextFirstName = resolvedFirstName || fallbackFirstName;
     if (nextLastName) stableNameRef.current.last = nextLastName;
     if (nextFirstName) stableNameRef.current.first = nextFirstName;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalProfessionmain || {};
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
     const isFocus = useIsFocused();
+    useEffect(() => {
+        let mounted = true;
+        Promise.all([
+            readNonUsaFlowState(),
+            readNonUsaPermanentFlags(),
+        ]).then(([state, flags]) => {
+            if (!mounted) return;
+            setNonUsaFlowState(state);
+            setNonUsaPermanentFlags(flags);
+        });
+        return () => {
+            mounted = false;
+        };
+    }, [isFocus]);
     useEffect(() => {
         const hydrateCachedName = async () => {
             try {
@@ -599,6 +621,70 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     }, [fulldashbaord?.length, initialIndex]);
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
+    const shouldShowAddLicenseCard =
+        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+        !fulldashbaord?.length;
+    const renderAddLicenseCard = () => (
+        <View style={{
+            marginHorizontal: normalize(10),
+            marginTop: normalize(4),
+            marginBottom: normalize(12),
+        }}>
+            <View style={{
+                borderRadius: normalize(18),
+                backgroundColor: '#FFF8EC',
+                borderWidth: 1,
+                borderColor: '#F5D39B',
+                overflow: 'hidden',
+            }}>
+                <View style={{
+                    backgroundColor: '#FFEDCA',
+                    paddingVertical: normalize(12),
+                    paddingHorizontal: normalize(16),
+                }}>
+                    <Text style={{
+                        fontFamily: Fonts.InterSemiBold,
+                        fontSize: 16,
+                        color: '#000000',
+                    }}>
+                        {'Add License'}
+                    </Text>
+                </View>
+                <View style={{
+                    paddingHorizontal: normalize(16),
+                    paddingVertical: normalize(16),
+                }}>
+                    <Text style={{
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 14,
+                        lineHeight: 20,
+                        color: '#1F2937',
+                    }}>
+                        {'Add at least one valid state license to unlock Credit Vault access.'}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('AddLicense', { profile: 'main' })}
+                        style={{
+                            marginTop: normalize(14),
+                            alignSelf: 'flex-start',
+                            backgroundColor: Colorpath.ButtonColr,
+                            borderRadius: normalize(8),
+                            paddingHorizontal: normalize(16),
+                            paddingVertical: normalize(10),
+                        }}
+                    >
+                        <Text style={{
+                            fontFamily: Fonts.InterSemiBold,
+                            fontSize: 14,
+                            color: Colorpath.white,
+                        }}>
+                            {'Add License'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
     return (
         <>
 
@@ -796,7 +882,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />
                         <Cmemodal setCmemodal={setCmemodal} isModal={cmemodal} onCmeFalse={cmeModalFalse} />
                         <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />
-                    </View> : <HomeShimmer />}
+                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <HomeShimmer />)}
             </View>
         </>
     );
