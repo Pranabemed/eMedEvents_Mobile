@@ -9,8 +9,8 @@
  */
 
 import React, { useCallback } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
@@ -64,6 +64,7 @@ import { GuestSelectionModals } from './GuestUserModule/components/GuestSelectio
  * Falls back to shimmer or empty-safe rendering when section data is missing.
  */
 const GuestUserContent = ({ guest }) => {
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const contentWidth = Math.max(width - 32, 0);
   const {
@@ -116,11 +117,28 @@ const GuestUserContent = ({ guest }) => {
   const renderFreeCard = useCallback(({ item }) => <FreeConferenceCard item={item} />, []);
   const renderLiveCard = useCallback(({ item }) => <LiveConferenceCard item={item} />, []);
 
+  const Wrapper = Platform.OS === 'ios' ? View : SafeAreaView;
+  const wrapperStyle = Platform.OS === 'ios' ? [styles.safeArea, { paddingBottom: insets.bottom }] : styles.safeArea;
+  const scrollViewProps = {
+    stickyHeaderIndices: [1],
+    ...(Platform.OS === 'ios'
+      ? {
+          contentInsetAdjustmentBehavior: 'never',
+          automaticallyAdjustContentInsets: false,
+          style: { flex: 1, marginTop: insets.top },
+        }
+      : {}),
+  };
+
   return (
     <>
       <MyStatusBar barStyle="dark-content" backgroundColor={Colorpath.Pagebg} translucent={false} />
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} stickyHeaderIndices={[1]}>
+      <Wrapper style={wrapperStyle}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          {...scrollViewProps}
+        >
           <View style={[styles.page, { width, paddingBottom: 0 }]}>
             <GuestHomeHeader
               width={width}
@@ -277,7 +295,7 @@ const GuestUserContent = ({ guest }) => {
             ) : null}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </Wrapper>
 
       <GuestSelectionModals
         profModalVisible={profModalVisible}

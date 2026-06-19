@@ -74,7 +74,7 @@ const CertficateHandle = (props) => {
         };
         checkPrimeSkipped();
     }, [props?.route?.params]);
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
     const isNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;
@@ -117,7 +117,7 @@ const CertficateHandle = (props) => {
                 if (mounted) {
                     setNonUsaFlowState(state);
                     status = "";
-                    const resolvedUserObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+                    const resolvedUserObj = DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
                     const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
                     const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
                     const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");

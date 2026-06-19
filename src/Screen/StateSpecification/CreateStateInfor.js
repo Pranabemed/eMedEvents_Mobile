@@ -133,6 +133,23 @@ const CreateStateInfor = (props) => {
     const [citypickeryear, setCitypickeryear] = useState(false);
     const [yearOnly, setYearOnly] = useState(false);
     console.log("final verify", finalverify)
+    useEffect(() => {
+        const sourceObj = props?.route?.params?.dataVerify?.allDat || finalverify;
+        if (sourceObj) {
+            if (sourceObj.npi_number || sourceObj.npi) {
+                setNpino(String(sourceObj.npi_number || sourceObj.npi || ""));
+            }
+            if (sourceObj.license_number || sourceObj.license) {
+                setLicno(String(sourceObj.license_number || sourceObj.license || ""));
+            }
+            if (sourceObj.zip_code || sourceObj.zipcode) {
+                setZipcode(String(sourceObj.zip_code || sourceObj.zipcode || ""));
+            }
+            if (sourceObj.city) {
+                setCity(String(sourceObj.city || ""));
+            }
+        }
+    }, [props?.route?.params?.dataVerify, finalverify]);
     const shouldCallPracticeState = useMemo(() => {
         return (
             !AuthReducer?.verifymobileResponse?.user?.license_state_id ||
@@ -511,6 +528,7 @@ const CreateStateInfor = (props) => {
                     );
                 });
                 setNoloadnew(false);
+                AsyncStorage.removeItem('stateLicenseFlowRequired').catch(e => console.log(e));
                 dispatch(mainprofileRequest({}))
                 setFulldashbaord(uniqueStates);
                 props.navigation.navigate("CheckMembership");
@@ -597,14 +615,21 @@ const CreateStateInfor = (props) => {
                             <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                                 <View
                                     style={{
-                                        width: normalize(290),
-                                        borderRadius: normalize(10),
+                                        width: normalize(320),
+                                        borderRadius: normalize(12),
                                         backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(10),
+                                        paddingHorizontal: normalize(15),
+                                        paddingVertical: normalize(15),
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.05,
+                                        shadowRadius: 8,
+                                        elevation: 3,
+                                        borderWidth: 1,
+                                        borderColor: '#E2E8F0',
                                     }}
                                 >
-                                    <View style={{ width: normalize(230) }}>
+                                    <View style={{ width: '100%' }}>
                                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: normalize(2) }}>
                                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>
                                                 {"First Name"}
@@ -622,7 +647,7 @@ const CreateStateInfor = (props) => {
                                             </Text>
                                         </View>
                                     </View>
-                                    <View style={{ width: normalize(230) }}>
+                                    <View style={{ width: '100%' }}>
                                         <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
                                             {/* Header Row */}
                                             <View style={{

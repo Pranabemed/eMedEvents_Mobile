@@ -449,10 +449,12 @@ const CheckMembership = (props) => {
                                 onPress={handlePrimeMembership}
                                 height={normalize(45)}
                                 width={normalize(288)}
-                                backgroundColor={Colorpath.ButtonColr}
+                                backgroundColor={Colorpath.white}
+                                borderWidth={1}
+                                borderColor={Colorpath.ButtonColr}
                                 borderRadius={normalize(5)}
                                 text={"Get Prime Membership"}
-                                color={Colorpath.white}
+                                color={Colorpath.ButtonColr}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(12)}
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         position: 'absolute',
-        height: normalize(180),
+        height: Platform.OS === 'ios' ? normalize(140) : normalize(180),
         bottom: -20,
         left: 0,
         right: 0,

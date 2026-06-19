@@ -19,21 +19,67 @@ export const isUsaCountryCode = (value) => {
 
 export const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
   if (fallbackFlowState?.isNonUsa === true) return true;
-  if (user?.is_non_usa === true || user?.is_non_usa === 1 || user?.is_non_usa === '1') return true;
-  if (user?.usa_user === false || user?.usa_user === 0 || user?.usa_user === '0') return true;
 
-  const countryId = String(user?.country_id || user?.countryId || '').trim();
+  const targetUser = user?.user || user || {};
+
+  if (
+    targetUser?.is_non_usa === true ||
+    targetUser?.is_non_usa === 1 ||
+    targetUser?.is_non_usa === '1' ||
+    user?.is_non_usa === true ||
+    user?.is_non_usa === 1 ||
+    user?.is_non_usa === '1'
+  ) {
+    return true;
+  }
+
+  if (
+    targetUser?.usa_user === false ||
+    targetUser?.usa_user === 0 ||
+    targetUser?.usa_user === '0' ||
+    user?.usa_user === false ||
+    user?.usa_user === 0 ||
+    user?.usa_user === '0'
+  ) {
+    return true;
+  }
+
+  const countryId = String(
+    targetUser?.country_id ||
+    targetUser?.countryId ||
+    user?.country_id ||
+    user?.countryId ||
+    targetUser?.user_address?.country_id ||
+    user?.user_address?.country_id ||
+    ''
+  ).trim();
+
   const countryName = normalizeText(
+    targetUser?.country_name ||
+    targetUser?.countryName ||
+    targetUser?.country ||
+    targetUser?.nationality ||
     user?.country_name ||
     user?.countryName ||
     user?.country ||
-    user?.nationality
+    user?.nationality ||
+    targetUser?.user_address?.country_name ||
+    user?.user_address?.country_name ||
+    ''
   );
+
   const countryCode = normalizeText(
+    targetUser?.country_code ||
+    targetUser?.countryCode ||
+    targetUser?.callingCode ||
+    targetUser?.calling_code ||
     user?.country_code ||
     user?.countryCode ||
     user?.callingCode ||
-    user?.calling_code
+    user?.calling_code ||
+    targetUser?.user_address?.calling_code ||
+    user?.user_address?.calling_code ||
+    ''
   );
 
   if (countryId && !['1', '233', '0'].includes(countryId)) {
@@ -49,6 +95,26 @@ export const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
   }
 
   return false;
+};
+
+const hasLicensureRecords = (...sources) => sources.some(source => Array.isArray(source) && source.length > 0);
+
+export const shouldRequireStateLicenseFlow = ({
+  isNonUsaUser = false,
+  storedValue = false,
+  dashboardLicensures,
+  profileLicensures,
+} = {}) => {
+  if (storedValue === true) return true;
+  if (!isNonUsaUser) return false;
+
+  const hasKnownLicenseData =
+    dashboardLicensures != null ||
+    profileLicensures != null;
+
+  if (!hasKnownLicenseData) return false;
+
+  return !hasLicensureRecords(dashboardLicensures, profileLicensures);
 };
 
 export const readNonUsaFlowState = async () => {

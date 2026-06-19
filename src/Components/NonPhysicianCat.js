@@ -420,18 +420,187 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                             : null}
                         <Nonphysicianprofile allNoDetData={allNoDetData} addit={addit} finddata={finddata} handleButtonPress={getCurrentItem()} navigation={navigation} DashboardReducer={DashboardReducer} />
                     </View> : hasResolvedDashboard ? (
-                        <RestProfession
-                            finalProfessionmain={finalProfessionmain}
-                            setPrimeadd={setPrimeadd}
-                            enables={enables}
-                            addit={addit}
-                            takestate={takestate}
-                            navigation={navigation}
-                            completedCount={completedCount}
-                            pendingCount={pendingCount}
-                            DashboardReducer={DashboardReducer}
-                            CMEReducer={CMEReducer}
-                        />
+                        <View style={{ flex: 1 }}>
+                            <View style={{
+                                width: '92%',
+                                alignSelf: 'center',
+                                marginTop: normalize(15),
+                                backgroundColor: '#F0F8FF',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: '#E1EDFB',
+                                paddingHorizontal: normalize(15),
+                                paddingVertical: normalize(15),
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                shadowColor: '#2C4DB9',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 4,
+                                elevation: 2,
+                            }}>
+                                {/* Left Column: Text & Button */}
+                                <View style={{ flex: 1.8, paddingRight: normalize(8) }}>
+                                    <Text style={{
+                                        fontFamily: Fonts.InterBold || 'System',
+                                        fontSize: normalize(15),
+                                        fontWeight: '700',
+                                        color: '#1E293B',
+                                        marginBottom: normalize(6),
+                                    }}>
+                                        ADD ALL YOUR STATE LICENSES
+                                    </Text>
+                                    <Text style={{
+                                        fontFamily: Fonts.InterRegular || 'System',
+                                        fontSize: normalize(12),
+                                        color: '#475569',
+                                        lineHeight: 18,
+                                        marginBottom: normalize(15),
+                                    }}>
+                                        Easily monitor CME requirements across states — all in one dashboard.
+                                    </Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            navigation.navigate("AddLicense", { newData: "yes" });
+                                        }}
+                                        style={{
+                                            backgroundColor: '#2C4DB9',
+                                            paddingVertical: normalize(10),
+                                            paddingHorizontal: normalize(10),
+                                            borderRadius: 6,
+                                            width: '100%',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <Text
+                                            numberOfLines={1}
+                                            adjustsFontSizeToFit={true}
+                                            minimumFontScale={0.8}
+                                            style={{
+                                                color: '#FFFFFF',
+                                                fontFamily: Fonts.InterSemiBold || 'System',
+                                                fontSize: normalize(13),
+                                                fontWeight: '600',
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            + Add my License(s)
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Right Column: Graphic Mockup */}
+                                <View style={{ flex: 0.8, alignItems: 'flex-end', justifyContent: 'center' }}>
+                                    <View style={{ position: 'relative', width: normalize(110), height: normalize(80) }}>
+                                        {/* Soft background glow */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            width: normalize(70),
+                                            height: normalize(70),
+                                            borderRadius: normalize(35),
+                                            backgroundColor: '#E0EEFF',
+                                            opacity: 0.6,
+                                            left: normalize(15),
+                                            top: normalize(5),
+                                        }} />
+
+                                        {/* Background card stacked behind */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            width: normalize(85),
+                                            height: normalize(55),
+                                            borderRadius: 6,
+                                            backgroundColor: '#FFFFFF',
+                                            borderWidth: 1,
+                                            borderColor: '#E2E8F0',
+                                            left: normalize(10),
+                                            top: normalize(15),
+                                            opacity: 0.7,
+                                        }} />
+
+                                        {/* Main Foreground Card Mockup */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            width: normalize(85),
+                                            height: normalize(55),
+                                            borderRadius: 6,
+                                            backgroundColor: '#FFFFFF',
+                                            borderWidth: 1,
+                                            borderColor: '#E2E8F0',
+                                            left: normalize(15),
+                                            top: normalize(10),
+                                            padding: 6,
+                                            shadowColor: '#000',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 3,
+                                            elevation: 1,
+                                        }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                                {/* Tiny Avatar/Profile placeholder */}
+                                                <View style={{
+                                                    width: 14,
+                                                    height: 14,
+                                                    borderRadius: 7,
+                                                    backgroundColor: '#93C5FD',
+                                                    marginRight: 4,
+                                                }} />
+                                                {/* Header bar */}
+                                                <View style={{
+                                                    width: 35,
+                                                    height: 4,
+                                                    borderRadius: 2,
+                                                    backgroundColor: '#93C5FD',
+                                                }} />
+                                            </View>
+                                            {/* Horizontal line placeholders */}
+                                            <View style={{ width: '90%', height: 3, borderRadius: 1.5, backgroundColor: '#E2E8F0', marginBottom: 4 }} />
+                                            <View style={{ width: '75%', height: 3, borderRadius: 1.5, backgroundColor: '#E2E8F0', marginBottom: 4 }} />
+                                            <View style={{ width: '50%', height: 3, borderRadius: 1.5, backgroundColor: '#E2E8F0' }} />
+                                        </View>
+
+                                        {/* Blue Plus Button on top-right of main card */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            right: normalize(5),
+                                            top: normalize(2),
+                                            width: 24,
+                                            height: 24,
+                                            borderRadius: 12,
+                                            backgroundColor: '#0084FF',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            shadowColor: '#000',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.1,
+                                            shadowRadius: 2,
+                                            elevation: 3,
+                                        }}>
+                                            <Text style={{
+                                                color: '#FFFFFF',
+                                                fontSize: 15,
+                                                fontWeight: 'bold',
+                                                lineHeight: 16,
+                                            }}>+</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <RestProfession
+                                finalProfessionmain={finalProfessionmain}
+                                setPrimeadd={setPrimeadd}
+                                enables={enables}
+                                addit={addit}
+                                takestate={takestate}
+                                navigation={navigation}
+                                completedCount={completedCount}
+                                pendingCount={pendingCount}
+                                DashboardReducer={DashboardReducer}
+                                CMEReducer={CMEReducer}
+                            />
+                        </View>
                     ) : <HomeShimmer />}
             </View>
         </>

@@ -1,4 +1,4 @@
-import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Alert, Image } from 'react-native'
+import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Alert, Image, BackHandler } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
@@ -10,7 +10,7 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import Fonts from '../../Themes/Fonts'
 import Buttons from '../../Components/Button';
 import connectionrequest from '../../Utils/Helpers/NetInfo'
-import { licesensRequest, professionRequest, specializationRequest } from '../../Redux/Reducers/AuthReducer'
+import { licesensRequest, professionRequest, specializationRequest, chooseStatecardRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { useDispatch, useSelector } from 'react-redux'
 import { searchStateNameFunction } from '../DetailsPageWebcast/SearchStatename'
@@ -28,6 +28,8 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import CustomInputTouchableX from './CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
@@ -102,8 +104,56 @@ const PersonalInfo = (props) => {
         };
     }, []);
 
+    useEffect(() => {
+        if (isNonUsaUser) {
+            const zipCode =
+                userObj?.user_address?.zipcode ||
+                userObj?.zipcode ||
+                userObj?.postal_code ||
+                '';
+            const chooseStatePayload = zipCode ? { zip_code: String(zipCode).trim() } : {};
+            connectionrequest()
+                .then(() => {
+                    dispatch(chooseStatecardRequest(chooseStatePayload));
+                })
+                .catch((err) => {
+                    console.log("Failed to dispatch chooseStatecardRequest on mount", err);
+                });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isNonUsaUser, dispatch]);
+
+    useEffect(() => {
+        if (!props?.route?.params?.fromCountryChange) return;
+
+        const backAction = () => {
+            return true; // Prevents back navigation
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [props?.route?.params?.fromCountryChange]);
+
     const userObj = props?.route?.params?.personal || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
-    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const isNonUsaUser = (() => {
+        const hasCountryInfo = !!(
+            userObj?.country_id ||
+            userObj?.user_address?.country_id ||
+            userObj?.country ||
+            userObj?.country_name ||
+            userObj?.user_address?.country_name ||
+            userObj?.is_non_usa !== undefined ||
+            userObj?.usa_user !== undefined
+        );
+        if (hasCountryInfo) {
+            return isNonUsaAccount(userObj, null);
+        }
+        return nonUsaFlowState?.isNonUsa === true;
+    })();
 
     const SearchBack = () => {
         props.navigation.goBack();
@@ -130,6 +180,19 @@ const PersonalInfo = (props) => {
             setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
         }
     }, [props?.route?.params?.personal])
+
+    useEffect(() => {
+        if (props?.route?.params?.fromCountryChange) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(chooseStatecardRequest({}));
+                })
+                .catch((err) => {
+                    console.log("Failed to dispatch chooseStatecardRequest in PersonalInfo", err);
+                });
+        }
+    }, [props?.route?.params?.fromCountryChange, dispatch]);
+
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
     const specaillized = (data) => {
         const obj = data
@@ -155,7 +218,7 @@ const PersonalInfo = (props) => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [props?.route?.params?.personal, isNonUsaUser]);
+    }, [props?.route?.params?.personal, isNonUsaUser, dispatch]);
     useEffect(() => {
         if (country) {
             setSearchtext("");
@@ -165,7 +228,7 @@ const PersonalInfo = (props) => {
         if (!searchtext && AuthReducer?.professionResponse?.profession_credentials) {
             setClist(AuthReducer?.professionResponse?.profession_credentials);
         }
-    }, [searchtext])
+    }, [searchtext, AuthReducer?.professionResponse?.profession_credentials]);
     const [take, setTake] = useState("");
     const cellNoRegexwpdd = /^\d{10}$/;
     const isValidWhatsappNodd = take?.length > 0 && !cellNoRegexwpdd.test(take);
@@ -213,7 +276,13 @@ const PersonalInfo = (props) => {
                     if (latestProfessionLabel) {
                         dispatch(licesensRequest(latestProfessionLabel));
                     }
-                    props.navigation.goBack();
+                    if (props?.route?.params?.fromCountryChange) {
+                        props.navigation.navigate("CreateStateInfor", {
+                            dataVerify: props?.route?.params?.dataVerify
+                        });
+                    } else {
+                        props.navigation.goBack();
+                    }
                 }
                 console.log(ProfileReducer?.professionInfoResponse, "log-----------");
                 break;
@@ -357,9 +426,9 @@ const PersonalInfo = (props) => {
         }
     }
     const videoRef = useRef(null);
-useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, [props.navigation]);
     return (
         <>
             <MyStatusBar
@@ -399,11 +468,13 @@ useLayoutEffect(() => {
                             <PageHeader
                                 title="Professional Information"
                                 onBackPress={SearchBack}
+                                avoid={props?.route?.params?.fromCountryChange ? true : false}
                             />
                         ) : (
                             <PageHeader
                                 title="Professional Information"
                                 onBackPress={SearchBack}
+                                avoid={props?.route?.params?.fromCountryChange ? true : false}
                             />
 
                         )}
@@ -627,17 +698,19 @@ useLayoutEffect(() => {
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(0)}
                             />
-                            <Buttons
-                                onPress={() => { props.navigation.goBack() }}
-                                height={normalize(45)}
-                                width={normalize(310)}
-                                borderRadius={normalize(9)}
-                                text="Cancel"
-                                color={Colorpath.ButtonColr}
-                                fontSize={14}
-                                fontFamily={Fonts.InterSemiBold}
-                                marginTop={normalize(0)}
-                            />
+                            {!props?.route?.params?.fromCountryChange && (
+                                <Buttons
+                                    onPress={() => { props.navigation.goBack() }}
+                                    height={normalize(45)}
+                                    width={normalize(310)}
+                                    borderRadius={normalize(9)}
+                                    text="Cancel"
+                                    color={Colorpath.ButtonColr}
+                                    fontSize={14}
+                                    fontFamily={Fonts.InterSemiBold}
+                                    marginTop={normalize(0)}
+                                />
+                            )}
                         </ScrollView>
                     </KeyboardAvoidingView>
                 </>}

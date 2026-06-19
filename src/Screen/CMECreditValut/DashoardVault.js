@@ -350,6 +350,7 @@ const DashoardVault = (props) => {
         token_handle_vault();
     }, [certificatedata]);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [stateLicenseFlowRequired, setStateLicenseFlowRequired] = useState(false);
     useEffect(() => {
         let mounted = true;
         if (isfocused) {
@@ -358,13 +359,18 @@ const DashoardVault = (props) => {
                     setNonUsaFlowState(state);
                 }
             });
+            AsyncStorage.getItem('stateLicenseFlowRequired').then((val) => {
+                if (mounted) {
+                    setStateLicenseFlowRequired(val === 'true');
+                }
+            });
         }
         return () => {
             mounted = false;
         };
     }, [isfocused]);
 
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
     const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const getDisplayProfession = (source) => {
@@ -373,9 +379,9 @@ const DashoardVault = (props) => {
         const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
-    const allProfTake = validHandles.has(getDisplayProfession(userObj));
+    const allProfTake = validHandles.has(getDisplayProfession(userObj)) && !stateLicenseFlowRequired;
 
-    const allProfession = AuthReducer?.loginResponse?.user?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
+    const allProfession = AuthReducer?.verifyResponse?.user?.profession || AuthReducer?.loginResponse?.user?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
     useEffect(() => {
         if (certificatedata) {
             let obj = {
@@ -594,8 +600,8 @@ const DashoardVault = (props) => {
 
                             )}
                         </View>
-                        <Loader visible={!isNonUsaUser && creditwise == null} />
-                        {isNonUsaUser && !allProfTake ? (
+                        <Loader visible={!isNonUsaUser && !stateLicenseFlowRequired && creditwise == null} />
+                        {(isNonUsaUser || stateLicenseFlowRequired) && !allProfTake ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>

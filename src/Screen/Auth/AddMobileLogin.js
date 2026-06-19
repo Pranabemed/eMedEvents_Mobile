@@ -179,7 +179,7 @@ const AddMobileLogin = (props) => {
                         <View style={{ width: normalize(40) }} />
                     </View>
                     <View style={styles.headerContainer}>
-                        <Text style={styles.headerText}>{"Add your cell number"}</Text>
+                        <Text style={styles.headerText}>{props?.route?.params?.headerText || "Add your cell number"}</Text>
                         {/* <Text style={styles.subHeaderText}>
                             {"You've requested to update your \nCell number for all communications."}
                         </Text> */}

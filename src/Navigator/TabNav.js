@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useContext, useRef, useMemo } from 'react';
 import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
@@ -24,6 +24,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import { dashPerRequest, mainprofileRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
+import Loader from '../Utils/Helpers/Loader';
 import VoiceSearchBar from '../Screen/GlobalSupport/Voice';
 import NativeVoice from '../Screen/GlobalSupport/NativeVoice';
 import { PrimeCheckRequest } from '../Redux/Reducers/WebcastReducer';
@@ -35,7 +36,7 @@ import MainInt from '../Screen/Dashboard/NoIntData';
 import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
-import { isNonUsaAccount, readNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, shouldRequireStateLicenseFlow } from '../Utils/Helpers/nonUsaFlow';
 let status1 = "";
 
 const buildProfessionLabel = (profession, professionType) => {
@@ -70,10 +71,40 @@ function TabScreen() {
     setIsConnected,
     primeCardSessionSkipped,
   } = useContext(AppContext);
+  const navigation = useNavigation();
+  const isFoucs = useIsFocused();
+  const route = useRoute();
+  const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const WebcastReducer = useSelector(state => state.WebcastReducer);
+
   const [visible, setVisible] = useState(false);
   const [tabtooltip, setTabtooltip] = useState("closeit");
   const [nettrue, setNettrue] = useState("");
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [addressChangedNonUsa, setAddressChangedNonUsa] = useState(false);
+  const [checkingNpiForTab, setCheckingNpiForTab] = useState(null);
+  const [lastActiveTab, setLastActiveTab] = useState(null);
+  const [stateLicenseFlowRequired, setStateLicenseFlowRequired] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    if (isFoucs) {
+      AsyncStorage.getItem('stateLicenseFlowRequired').then((val) => {
+        console.log('[TabNav] stateLicenseFlowRequired key value from local storage:', val);
+        if (mounted) {
+          setStateLicenseFlowRequired(val === 'true');
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [isFoucs]);
+
   useEffect(() => {
     let mounted = true;
     if (isFoucs) {
@@ -87,16 +118,41 @@ function TabScreen() {
       mounted = false;
     };
   }, [isFoucs]);
-  const navigation = useNavigation();
-  const isFoucs = useIsFocused();
-  const route = useRoute();
-  const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
-  const DashboardReducer = useSelector(state => state.DashboardReducer);
-  const ProfileReducer = useSelector(state => state.ProfileReducer);
-  const [lastActiveTab, setLastActiveTab] = useState(null);
-  const dispatch = useDispatch();
-  const AuthReducer = useSelector(state => state.AuthReducer);
-  const WebcastReducer = useSelector(state => state.WebcastReducer);
+
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    const sub = emitter.addListener('ADDRESS_CHANGED_NON_USA_EVENT', (val) => {
+      setAddressChangedNonUsa(val);
+    });
+    AsyncStorage.getItem('ADDRESS_CHANGED_NON_USA').then((val) => {
+      setAddressChangedNonUsa(val === 'true');
+    });
+    return () => sub.remove();
+  }, [isFoucs]);
+
+  useEffect(() => {
+    if (checkingNpiForTab) {
+      if (AuthReducer.status === 'Auth/chooseStatecardSuccess') {
+        const stateLicensures = AuthReducer?.chooseStatecardResponse?.state_licensures;
+        const targetTab = checkingNpiForTab;
+        setCheckingNpiForTab(null);
+        setAddressChangedNonUsa(false);
+        AsyncStorage.removeItem('ADDRESS_CHANGED_NON_USA');
+
+        if (!stateLicensures || stateLicensures.length === 0) {
+          navigation.navigate('CreateStateInfor');
+        } else {
+          navigation.navigate(targetTab);
+        }
+      } else if (AuthReducer.status === 'Auth/chooseStatecardFailure') {
+        const targetTab = checkingNpiForTab;
+        setCheckingNpiForTab(null);
+        setAddressChangedNonUsa(false);
+        AsyncStorage.removeItem('ADDRESS_CHANGED_NON_USA');
+        navigation.navigate(targetTab);
+      }
+    }
+  }, [AuthReducer.status, AuthReducer?.chooseStatecardResponse?.state_licensures, checkingNpiForTab, navigation]);
   const [finalverifyvaulttab, setFinalverifyvaulttab] = useState(null);
   const [finalProfessiontab, setFinalProfessiontab] = useState(null);
   const [tabsub, setTabsub] = useState(false);
@@ -282,6 +338,25 @@ function TabScreen() {
       console.error('Failed to save last active tab', error);
     }
   };
+  const handleTabPressIntercept = (e, tabName) => {
+    if (tabName == "Volts") {
+      e.preventDefault();
+      toggleDrawerModal();
+      return;
+    }
+    if (tabName == "Contact" && tabsub) {
+      e.preventDefault();
+      setTabmodal(true);
+      return;
+    }
+    if ((tabName === "Home" || tabName === "Contact") && addressChangedNonUsa) {
+      e.preventDefault();
+      setCheckingNpiForTab(tabName);
+      dispatch(chooseStatecardRequest({}));
+      return;
+    }
+    handleTabPress(tabName);
+  };
   useLayoutEffect(() => {
     if (initialRoute) {
       setTabtooltip("did");
@@ -342,8 +417,61 @@ function TabScreen() {
       // Handle error case appropriately (maybe setEnables(false))
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
-  const userObj = AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
+  const userObj = AuthReducer?.verifyResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
   const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+  const dashboardLicensures = DashboardReducer?.dashPerResponse?.data?.licensures;
+  const profileLicensures = DashboardReducer?.mainprofileResponse?.licensures;
+  const chooseStateLicensures = AuthReducer?.chooseStatecardResponse?.state_licensures;
+  const effectiveStateLicenseFlowRequired = useMemo(() => shouldRequireStateLicenseFlow({
+    isNonUsaUser,
+    storedValue: stateLicenseFlowRequired,
+    dashboardLicensures,
+    profileLicensures,
+    chooseStatecardLicensures: chooseStateLicensures,
+  }), [
+    isNonUsaUser,
+    stateLicenseFlowRequired,
+    dashboardLicensures,
+    profileLicensures,
+    chooseStateLicensures,
+  ]);
+
+  useEffect(() => {
+    if (!isFoucs) return;
+
+    const syncStateLicenseFlag = async () => {
+      try {
+        if (effectiveStateLicenseFlowRequired && !stateLicenseFlowRequired) {
+          setStateLicenseFlowRequired(true);
+          await AsyncStorage.setItem('stateLicenseFlowRequired', 'true');
+          return;
+        }
+
+        const hasKnownLicenseData =
+          dashboardLicensures != null ||
+          profileLicensures != null ||
+          chooseStateLicensures != null;
+
+        if (!effectiveStateLicenseFlowRequired && stateLicenseFlowRequired && hasKnownLicenseData) {
+          setStateLicenseFlowRequired(false);
+          await AsyncStorage.removeItem('stateLicenseFlowRequired');
+        }
+      } catch (error) {
+        console.log('[TabNav] Failed to sync stateLicenseFlowRequired:', error);
+      }
+    };
+
+    syncStateLicenseFlag();
+  }, [
+    isFoucs,
+    effectiveStateLicenseFlowRequired,
+    stateLicenseFlowRequired,
+    dashboardLicensures,
+    profileLicensures,
+    chooseStateLicensures,
+  ]);
+
+  console.log('[TabNav] RENDER stateLicenseFlowRequired:', effectiveStateLicenseFlowRequired, 'allProfTake:', allProfTake, 'fulldashbaord length:', fulldashbaord?.length);
   const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
@@ -371,7 +499,10 @@ function TabScreen() {
 
     return () => unsubscribe();
   }, [isConnected]);
-  return ((allProfTake && fulldashbaord?.length !== 0) ? <>
+  return (
+    <>
+      <Loader visible={!!checkingNpiForTab} />
+      {((allProfTake && fulldashbaord?.length !== 0 && !effectiveStateLicenseFlowRequired) ? <>
     <Tab.Navigator
       initialRouteName={initialRoute || lastActiveTab || "Home"}
       screenOptions={{
@@ -387,17 +518,7 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
-          if (route.name == "Volts") {
-            e.preventDefault();
-            toggleDrawerModal();
-            return;
-          }
-          if (route.name == "Contact" && tabsub) {
-            e.preventDefault();
-            setTabmodal(true);
-            return;
-          }
-          handleTabPress(route.name);
+          handleTabPressIntercept(e, route.name);
         },
         focus: (e) => {
           if (route.name == "Contact" && tabsub) {
@@ -545,17 +666,7 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
-          if (route.name == "Volts") {
-            e.preventDefault();
-            toggleDrawerModal();
-            return;
-          }
-          if (route.name == "Contact" && tabsub) {
-            e.preventDefault();
-            setTabmodal(true);
-            return;
-          }
-          handleTabPress(route.name);
+          handleTabPressIntercept(e, route.name);
         },
         focus: (e) => {
           if (route.name == "Contact" && tabsub) {
@@ -570,7 +681,7 @@ function TabScreen() {
       {[
         { name: "Home", component: MainInt, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: (isNonUsaUser || primeSkipped || effectiveStateLicenseFlowRequired) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -706,17 +817,7 @@ function TabScreen() {
       }}
       screenListeners={({ route }) => ({
         tabPress: (e) => {
-          if (route.name == "Volts") {
-            e.preventDefault();
-            toggleDrawerModal();
-            return;
-          }
-          if (route.name == "Contact" && tabsub) {
-            e.preventDefault();
-            setTabmodal(true);
-            return;
-          }
-          handleTabPress(route.name);
+          handleTabPressIntercept(e, route.name);
         },
         focus: (e) => {
           if (route.name == "Contact" && tabsub) {
@@ -731,7 +832,7 @@ function TabScreen() {
       {[
         { name: "Home", component: Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: (isNonUsaUser || primeSkipped || effectiveStateLicenseFlowRequired) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -851,8 +952,8 @@ function TabScreen() {
       interestedNav={closeDrawerModal}
       drawerPress={closeDrawerModal}
     />
-  </>
-
+  </>)}
+    </>
   );
 }
 

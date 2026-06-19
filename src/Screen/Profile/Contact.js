@@ -14,7 +14,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import ChecktwoCountry from '../DetailsPageWebcast/CheckoutModaltwo'
 import CheckThreeCity from '../DetailsPageWebcast/CheckoutModalFourth'
 import { useDispatch, useSelector } from 'react-redux';
-import { cityRequest, countryRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
+import { cityRequest, countryRequest, stateRequest, verifyRequest, chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { searchCountryNameFunction } from '../DetailsPageWebcast/SearchCountryname'
@@ -31,6 +31,8 @@ import AddressInput from '../../Components/AutoData'
 import AddressField from '../../Components/AutoData';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isNonUsaAccount } from '../../Utils/Helpers/nonUsaFlow';
 
 let status = "";
 let status1 = "";
@@ -64,6 +66,7 @@ const ContactProfile = (props) => {
     const [country_id, setCountry_id] = useState("");
     const AuthReducer = useSelector(state => state.AuthReducer);
     const ProfileReducer = useSelector(state => state.ProfileReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
     const [pratice, setPratice] = useState(false);
     const [searchpratice, setSearchpratice] = useState('');
     const [state_id, setState_id] = useState("");
@@ -71,6 +74,52 @@ const ContactProfile = (props) => {
     const [searchcity, setSearchcity] = useState('');
     const [dialcode, setDialcode] = useState("");
     const [loading, setLoading] = useState(false);
+    const [isAddressUpdating, setIsAddressUpdating] = useState(false);
+    const [isAddressCheckingNpi, setIsAddressCheckingNpi] = useState(false);
+    const [showProfessionAlert, setShowProfessionAlert] = useState(false);
+    const savedVerifyDataRef = useRef(null);
+    const alertTimeoutRef = useRef(null);
+    const hasDispatchedVerifyRef = useRef(false);
+    const hasDispatchedRequestRef = useRef(false);
+
+    const handleAlertDismiss = () => {
+        if (alertTimeoutRef.current) {
+            clearTimeout(alertTimeoutRef.current);
+            alertTimeoutRef.current = null;
+        }
+        setShowProfessionAlert(false);
+        const data = savedVerifyDataRef.current;
+        if (data) {
+            props.navigation.navigate("PersonalInfo", {
+                personal: data,
+                fromCountryChange: true,
+                dataVerify: { dataVerify: "Nodasta", allDat: data }
+            });
+        }
+    };
+
+    const triggerProfessionAlert = (verifyData) => {
+        AsyncStorage.setItem(constants.VERIFYSTATEDATA, JSON.stringify(verifyData))
+            .then(() => console.log("Stored ContactProfile data in VERIFYSTATEDATA"))
+            .catch(err => console.error("Error storing ContactProfile data", err));
+
+        savedVerifyDataRef.current = verifyData;
+        setShowProfessionAlert(true);
+        if (alertTimeoutRef.current) {
+            clearTimeout(alertTimeoutRef.current);
+        }
+        alertTimeoutRef.current = setTimeout(() => {
+            handleAlertDismiss();
+        }, 2000);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (alertTimeoutRef.current) {
+                clearTimeout(alertTimeoutRef.current);
+            }
+        };
+    }, []);
     const dispatch = useDispatch();
     const cellNoRegexwp = /^\d{10,15}$/;
     const filteredText = whatsappno && whatsappno?.length > 0 && whatsappno.replace(/[^\d]/g, '');
@@ -118,19 +167,35 @@ const ContactProfile = (props) => {
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
             case 'Profile/contactInfoRequest':
+            case 'Profile/personalInfoRequest':
                 status1 = ProfileReducer.status;
                 setLoading(true);
                 break;
             case 'Profile/contactInfoSuccess':
+            case 'Profile/personalInfoSuccess':
                 status1 = ProfileReducer.status;
-                setLoading(false);
                 if (ProfileReducer?.contactInfoResponse?.msg == "Contact inforamtion updated successfully.") {
-                    showErrorAlert("Contact information updated successfully.");
-                    props.navigation.goBack();
+                    if (!hasDispatchedVerifyRef.current) {
+                        hasDispatchedVerifyRef.current = true;
+                        showErrorAlert("Contact information updated successfully.");
+                        setIsAddressUpdating(true);
+                        connectionrequest()
+                            .then(() => {
+                                dispatch(verifyRequest({ token: AuthReducer?.token, key: {} }));
+                            })
+                            .catch((err) => {
+                                setLoading(false);
+                                showErrorAlert("Please connect to internet", err);
+                                props.navigation.goBack();
+                            });
+                    }
+                } else {
+                    setLoading(false);
                 }
                 console.log(ProfileReducer?.contactInfoResponse, "log-----------");
                 break;
             case 'Profile/contactInfoFailure':
+            case 'Profile/personalInfoFailure':
                 status1 = ProfileReducer.status;
                 setLoading(false);
                 break;
@@ -241,6 +306,9 @@ const ContactProfile = (props) => {
                 "last_name": lastname,
                 "dob": dobdate
             }
+            hasDispatchedVerifyRef.current = false;
+            hasDispatchedRequestRef.current = true;
+            setIsAddressUpdating(true);
             connectionrequest()
                 .then(() => {
                     dispatch(contactInfoRequest(obj));

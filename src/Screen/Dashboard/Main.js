@@ -205,9 +205,9 @@ const Main = (props) => {
   }, [isFocus]);
 
   const isNonUsaUser = useMemo(() => {
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
     return nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
-  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
+  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.user, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
   const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
   const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
   const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
@@ -241,6 +241,7 @@ const Main = (props) => {
     AuthReducer?.againloginsiginResponse?.user ||
     AuthReducer?.signupResponse?.user ||
     AuthReducer?.verifymobileResponse?.user ||
+    AuthReducer?.verifyResponse?.user ||
     AuthReducer?.verifyemailResponse?.user ||
     {};
   const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();

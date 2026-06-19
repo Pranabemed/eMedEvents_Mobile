@@ -226,6 +226,7 @@ const StateInformation = (props) => {
                     );
                 });
                 setNoloadnew(false);
+                AsyncStorage.removeItem('stateLicenseFlowRequired').catch(e => console.log(e));
                 dispatch(mainprofileRequest({}))
                 setFulldashbaord(uniqueStates);
                 props.navigation.navigate("CheckMembership");
