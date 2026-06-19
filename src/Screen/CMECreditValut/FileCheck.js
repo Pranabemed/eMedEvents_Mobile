@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/AntDesign'
 import CMEChecklistModal from './CMEChecklistModal';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { creditvaultRequest, downloadTranscriptRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import { creditvaultRequest, downloadTranscriptRequest, downloadTranscriptNonUsaRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import CertificatModal from './CertificatModal';
@@ -77,7 +77,8 @@ const CertficateHandle = (props) => {
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
-    const isNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;
+    const forcedNonUsaRoute = props?.route?.params?.isNonUsaUser === true;
+    const isNonUsaUser = forcedNonUsaRoute || ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;
     const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
         if (resolvedIsNonUsaUser) {
             setIsNonUsaLoading(true);
@@ -121,7 +122,7 @@ const CertficateHandle = (props) => {
                     const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
                     const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
                     const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
-                    const resolvedIsNonUsaUser = ((props?.route?.params?.isNonUsaUser === true || state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp) || (skipped === 'true');
+                    const resolvedIsNonUsaUser = (props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp) || (skipped === 'true');
                     fetchCreditVaultData(resolvedIsNonUsaUser);
                 }
             });
@@ -173,6 +174,7 @@ const CertficateHandle = (props) => {
                 status = CreditVaultReducer.status;
                 break;
             case 'CreditVault/downloadTranscriptRequest':
+            case 'CreditVault/downloadTranscriptNonUsaRequest':
                 status = CreditVaultReducer.status;
                 break;
             case 'CreditVault/downloadTranscriptSuccess':
@@ -183,7 +185,16 @@ const CertficateHandle = (props) => {
                     showErrorAlert(CreditVaultReducer?.downloadTranscriptResponse?.msg)
                 }
                 break;
+            case 'CreditVault/downloadTranscriptNonUsaSuccess':
+                status = CreditVaultReducer.status;
+                setZippath(CreditVaultReducer?.downloadTranscriptNonUsaResponse);
+                console.log(CreditVaultReducer?.downloadTranscriptNonUsaResponse, "CreditVaultReducer?.downloadTranscriptNonUsaResponse")
+                if (CreditVaultReducer?.downloadTranscriptNonUsaResponse?.msg == "There are no certificates.") {
+                    showErrorAlert(CreditVaultReducer?.downloadTranscriptNonUsaResponse?.msg)
+                }
+                break;
             case 'CreditVault/downloadTranscriptFailure':
+            case 'CreditVault/downloadTranscriptNonUsaFailure':
                 status = CreditVaultReducer.status;
                 break;
         }
@@ -191,12 +202,18 @@ const CertficateHandle = (props) => {
 
     useEffect(() => {
         if (CreditVaultReducer?.downloadTranscriptResponse?.archive_file) {
-            downloadZipFile();
+            downloadZipFile(CreditVaultReducer?.downloadTranscriptResponse);
         }
     }, [CreditVaultReducer?.downloadTranscriptResponse])
-    const downloadZipFile = async () => {
-        const fileUrl = `${zippath?.archive_file_path}${zippath?.archive_file}`
-        const filePath = `${RNFS.DocumentDirectoryPath}/${zippath?.archive_file}`;
+
+    useEffect(() => {
+        if (CreditVaultReducer?.downloadTranscriptNonUsaResponse?.archive_file) {
+            downloadZipFile(CreditVaultReducer?.downloadTranscriptNonUsaResponse);
+        }
+    }, [CreditVaultReducer?.downloadTranscriptNonUsaResponse])
+    const downloadZipFile = async (data = zippath) => {
+        const fileUrl = `${data?.archive_file_path}${data?.archive_file}`
+        const filePath = `${RNFS.DocumentDirectoryPath}/${data?.archive_file}`;
         try {
             const response = await fetch(fileUrl);
             if (!response.ok) {
@@ -264,12 +281,12 @@ const CertficateHandle = (props) => {
     const downloadTrans = () => {
         if (isNonUsaUser) {
             const statedown = {
-                "type": "certificate",
-                "statedown": true
+                "board_id": 0,
+                "type": "licensure"
             }
             connectionrequest()
                 .then(() => {
-                    dispatch(downloadTranscriptRequest(statedown))
+                    dispatch(downloadTranscriptNonUsaRequest(statedown))
                 })
                 .catch((err) => {
                     showErrorAlert("Please connect to internet", err)
@@ -619,7 +636,7 @@ const CertficateHandle = (props) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <Loader visible={isNonUsaLoading || DashboardReducer?.status == 'Dashboard/stateMandatoryRequest'} />
+                    <Loader visible={isNonUsaLoading || DashboardReducer?.status == 'Dashboard/stateMandatoryRequest' || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptNonUsaRequest'} />
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={{ flex: 1 }}>
                             {!isNonUsaLoading && (

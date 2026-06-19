@@ -26,6 +26,9 @@ import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 let status = "";
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
 const VerifyMobileOTP = (props) => {
     const {
         setFulldashbaord,
@@ -289,7 +292,14 @@ const VerifyMobileOTP = (props) => {
                     );
 
                     if (guestFlow && hasLicenseInfo) {
-                        await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+                        await Promise.all([
+                            AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
+                            AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+                            AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+                            AsyncStorage.removeItem(PRIME_CARD_FLOW_COMPLETE_KEY),
+                            AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
+                            AsyncStorage.removeItem('PLAYERSESSION'),
+                        ]);
                         props.navigation.reset({
                             index: 0,
                             routes: [{ name: 'TabNav', params: { initialRoute: 'Home', detectmain: 'newadd' } }],

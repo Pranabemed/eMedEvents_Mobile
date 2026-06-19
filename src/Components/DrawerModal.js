@@ -38,7 +38,8 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
-import { isNonUsaAccount, readNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { navigationRef } from '../Navigator/RootNavigation';
+import { isNonUsaAccount, readNonUsaFlowState, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY } from '../Utils/Helpers/nonUsaFlow';
 let status = "";
 let status1 = "";
 export default function DrawerModal(props) {
@@ -120,10 +121,10 @@ export default function DrawerModal(props) {
     if (AuthReducer.status === 'Auth/logoutSuccess') {
       setLogoutPending(false);
       props.onBackdropPress?.();
-      navigation.dispatch(
+      navigationRef.current?.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Splash' }]
+          routes: [{ name: 'Login' }],
         })
       );
       return;
@@ -168,7 +169,7 @@ export default function DrawerModal(props) {
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
-  const isNonUsaUser = isNonUsaAccount(allHandled, null);
+  const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allHandled || {}, nonUsaFlowState);
   const modalKey = isNonUsaUser ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
@@ -454,17 +455,22 @@ export default function DrawerModal(props) {
   }
   const clearAllAsyncStorage = async () => {
     try {
-      const skipFlag = await AsyncStorage.getItem('PRIME_CARD_SKIPPED_ONCE');
-      const skippedKey = await AsyncStorage.getItem('PrimeMembershipSkipped');
+      const keepKeys = [
+        'PRIME_CARD_SKIPPED_ONCE',
+        'PrimeMembershipSkipped',
+        constants.NON_USA_FLOW_STATE,
+        NON_USA_PROFESSION_UPDATE_REQUIRED_KEY,
+        NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY,
+      ];
+      const preservedEntries = await AsyncStorage.multiGet(keepKeys);
       await AsyncStorage.removeItem('lastActiveTab')
       await AsyncStorage.removeItem('WHOLEDATA');
       await AsyncStorage.removeItem('PRODATA');
       await AsyncStorage.clear();
-      if (skipFlag !== null) {
-        await AsyncStorage.setItem('PRIME_CARD_SKIPPED_ONCE', skipFlag);
-      }
-      if (skippedKey !== null) {
-        await AsyncStorage.setItem('PrimeMembershipSkipped', skippedKey);
+      for (const [key, value] of preservedEntries) {
+        if (value !== null) {
+          await AsyncStorage.setItem(key, value);
+        }
       }
       console.log('All AsyncStorage keys cleared successfully!');
     } catch (e) {

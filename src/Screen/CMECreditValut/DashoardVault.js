@@ -31,6 +31,7 @@ import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import CertficateHandle from './FileCheck';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 let status = "";
 let status1 = "";
@@ -38,9 +39,11 @@ const DashoardVault = (props) => {
     const {
         isConnected,
         setIsConnected,
+        fulldashbaord,
     } = useContext(AppContext);
     // const [avoid, setAvoid] = useState(false);
     const isfocused = useIsFocused();
+    const isFocus = isfocused;
     const [valuttext, setValuttext] = useState(true);
     const [width, setWidth] = useState(true);
     const [statepick, setStatepick] = useState("");
@@ -356,28 +359,29 @@ const DashoardVault = (props) => {
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
         let mounted = true;
-        if (isfocused) {
-            readNonUsaFlowState().then(state => {
-                if (mounted) {
-                    setNonUsaFlowState(state);
-                }
-            });
-            readNonUsaPermanentFlags().then(flags => {
-                if (mounted) {
-                    setNonUsaPermanentFlags(flags);
-                }
+        if (isFocus) {
+            Promise.all([
+                readNonUsaFlowState(),
+                readNonUsaPermanentFlags(),
+            ]).then(([state, flags]) => {
+                if (!mounted) return;
+                setNonUsaFlowState(state);
+                setNonUsaPermanentFlags(flags);
             });
         }
         return () => {
             mounted = false;
         };
-    }, [isfocused]);
+    }, [isFocus]);
 
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
     const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
     const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
-    const shouldShowAddLicenseCard = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true && !hasAnyLicenseData;
+    const shouldShowAddLicenseCard =
+        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+        !fulldashbaord?.length &&
+        !isNonUsaUser;
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const getDisplayProfession = (source) => {
         if (!source) return "";
@@ -386,6 +390,16 @@ const DashoardVault = (props) => {
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     const allProfTake = validHandles.has(getDisplayProfession(userObj));
+    const nonUsaStateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+    const nonUsaCertificates = nonUsaStateData?.['-1']?.certificates;
+    let hasNonUsaCertificates = false;
+    if (nonUsaCertificates) {
+        if (Array.isArray(nonUsaCertificates)) {
+            hasNonUsaCertificates = nonUsaCertificates.length > 0;
+        } else if (typeof nonUsaCertificates === 'object') {
+            hasNonUsaCertificates = Object.values(nonUsaCertificates).flatMap((value) => (Array.isArray(value) ? value : [value])).filter(Boolean).length > 0;
+        }
+    }
 
     const allProfession = AuthReducer?.loginResponse?.user?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
     useEffect(() => {
@@ -592,21 +606,22 @@ const DashoardVault = (props) => {
                     searchtexttopicboard={searchtexttopicboard}
                     searchTopicNameboard={searchTopicNameboard}
                     clisttopicboard={clisttopicboard} />) : (<>
-                        <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
-                            {Platform.OS === "ios" ? (
-                                <PageHeader
-                                    title="Credit Vault"
-                                    onBackPress={downCredit}
-                                />
-                            ) : (
-                                <PageHeader
-                                    title="Credit Vault"
-                                    onBackPress={downCredit}
-                                />
-
-                            )}
-                        </View>
-                        <Loader visible={!isNonUsaUser && creditwise == null} />
+                        {!(isNonUsaUser && hasNonUsaCertificates) && (
+                            <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
+                                {Platform.OS === "ios" ? (
+                                    <PageHeader
+                                        title="Credit Vault"
+                                        onBackPress={downCredit}
+                                    />
+                                ) : (
+                                    <PageHeader
+                                        title="Credit Vault"
+                                        onBackPress={downCredit}
+                                    />
+                                )}
+                            </View>
+                        )}
+                        <Loader visible={(!isNonUsaUser && creditwise == null) || (isNonUsaUser && loadingStatewise)} />
                         {shouldShowAddLicenseCard ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
@@ -628,7 +643,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : isNonUsaUser && !allProfTake ? (
+                        ) : isNonUsaUser && !hasNonUsaCertificates ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -650,6 +665,8 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
+                        ) : isNonUsaUser ? (
+                            <CertficateHandle navigation={navigation} route={{ params: { isNonUsaUser: true } }} />
                         ) : (
                             <>
                                 <View style={{ marginTop: normalize(10) }}>

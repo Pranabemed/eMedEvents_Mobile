@@ -125,3 +125,12 @@ export const markNonUsaStateLicenseFlowCompleted = async () => {
     return false;
   }
 };
+
+export const clearNonUsaStateLicenseFlowCompleted = async () => {
+  try {
+    await AsyncStorage.removeItem(NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};

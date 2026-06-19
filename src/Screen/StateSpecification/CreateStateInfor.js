@@ -482,21 +482,30 @@ const CreateStateInfor = (props) => {
             case 'Auth/stateInformSaveRequest':
                 status = AuthReducer.status;
                 break;
-            case 'Auth/stateInformSaveSuccess':
+            case 'Auth/stateInformSaveSuccess': {
                 status = AuthReducer.status;
                 setGtprof(true);
                 setNoloadnew(true);
-                readNonUsaPermanentFlags().then((flags) => {
-                    if (flags?.professionUpdateRequired) {
-                        markNonUsaStateLicenseFlowCompleted();
+                const saveFlagsAndRequestDashboard = async () => {
+                    try {
+                        const flags = await readNonUsaPermanentFlags();
+                        if (flags?.professionUpdateRequired) {
+                            await markNonUsaStateLicenseFlowCompleted();
+                        }
+                    } catch (err) {
+                        console.log("Error checking/updating permanent flags on save state:", err);
                     }
-                });
-                setTimeout(async () => {
-                    const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
-                    let objToken = { "token": loginHandleProccess || AuthReducer?.loginsiginResponse?.token, "key": {} }
-                    dispatch(dashMbRequest(objToken));
-                }, 10);
+                    try {
+                        const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
+                        let objToken = { "token": loginHandleProccess || AuthReducer?.loginsiginResponse?.token, "key": {} }
+                        dispatch(dashMbRequest(objToken));
+                    } catch (err) {
+                        console.log("Error dispatching dashMbRequest:", err);
+                    }
+                };
+                saveFlagsAndRequestDashboard();
                 break;
+            }
             case 'Auth/stateInformSaveFailure':
                 status = AuthReducer.status;
                 break;

@@ -623,64 +623,61 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     const shouldShowAddLicenseCard =
         nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
-        !fulldashbaord?.length;
+        !fulldashbaord?.length &&
+        !isNonUsaUser;
     const renderAddLicenseCard = () => (
-        <View style={{
-            marginHorizontal: normalize(10),
-            marginTop: normalize(4),
-            marginBottom: normalize(12),
-        }}>
-            <View style={{
-                borderRadius: normalize(18),
-                backgroundColor: '#FFF8EC',
-                borderWidth: 1,
-                borderColor: '#F5D39B',
-                overflow: 'hidden',
-            }}>
-                <View style={{
-                    backgroundColor: '#FFEDCA',
-                    paddingVertical: normalize(12),
-                    paddingHorizontal: normalize(16),
-                }}>
-                    <Text style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 16,
-                        color: '#000000',
-                    }}>
-                        {'Add License'}
-                    </Text>
-                </View>
-                <View style={{
-                    paddingHorizontal: normalize(16),
-                    paddingVertical: normalize(16),
-                }}>
-                    <Text style={{
-                        fontFamily: Fonts.InterRegular,
-                        fontSize: 14,
-                        lineHeight: 20,
-                        color: '#1F2937',
-                    }}>
-                        {'Add at least one valid state license to unlock Credit Vault access.'}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('AddLicense', { profile: 'main' })}
-                        style={{
-                            marginTop: normalize(14),
-                            alignSelf: 'flex-start',
-                            backgroundColor: Colorpath.ButtonColr,
-                            borderRadius: normalize(8),
-                            paddingHorizontal: normalize(16),
-                            paddingVertical: normalize(10),
-                        }}
-                    >
-                        <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 14,
-                            color: Colorpath.white,
-                        }}>
-                            {'Add License'}
+        <View style={styles.addLicenseCardShell}>
+            <View style={styles.addLicenseCard}>
+                <View style={styles.addLicenseAccentCircle} />
+                <View style={styles.addLicenseContentRow}>
+                    <View style={styles.addLicenseCopyColumn}>
+                        <Text style={styles.addLicenseEyebrow}>
+                            {'STATE LICENSES'}
                         </Text>
-                    </TouchableOpacity>
+                        <Text style={styles.addLicenseTitle}>
+                            {'ADD ALL YOUR STATE LICENSES'}
+                        </Text>
+                        <Text style={styles.addLicenseDescription}>
+                            {'Easily monitor CME requirements across states - all in one dashboard.'}
+                        </Text>
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => navigation.navigate('AddLicense', { profile: 'main' })}
+                            style={styles.addLicenseButton}
+                        >
+                            <Text numberOfLines={1} style={styles.addLicenseButtonText}>
+                                {'+ Add my License(s)'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.addLicenseArtworkColumn}>
+                        <View style={styles.addLicenseHalo} />
+                        <View style={styles.addLicenseIllustration}>
+                            <View style={styles.addLicenseCardPreview}>
+                                <View style={styles.addLicenseCardPreviewHeader}>
+                                    <Image
+                                        source={Imagepath.ProfileMan}
+                                        style={styles.addLicenseAvatar}
+                                    />
+                                    <View style={styles.addLicenseHeaderTextGroup}>
+                                        <View style={styles.addLicenseHeaderLine} />
+                                        <View style={styles.addLicenseHeaderLineShort} />
+                                    </View>
+                                </View>
+                                <View style={styles.addLicenseCardPreviewBody}>
+                                    <View style={styles.addLicenseBodyLine} />
+                                    <View style={styles.addLicenseBodyLine} />
+                                    <View style={styles.addLicenseBodyLineShort} />
+                                    <View style={styles.addLicenseBodyLine} />
+                                </View>
+                            </View>
+                            <View style={styles.addLicensePlusBadge}>
+                                <Text style={styles.addLicensePlusText}>
+                                    {'+'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
                 </View>
             </View>
         </View>
@@ -912,5 +909,185 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 10,
         backgroundColor: Colorpath.white, // make active dot longer for effect
-    }
+    },
+    addLicenseCardShell: {
+        marginHorizontal: normalize(10),
+        marginTop: normalize(6),
+        marginBottom: normalize(14),
+    },
+    addLicenseCard: {
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: normalize(16),
+        borderWidth: 1,
+        borderColor: '#C8DDFB',
+        backgroundColor: '#F7FBFF',
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(16),
+        minHeight: normalize(156),
+        shadowColor: '#9ABCF9',
+        shadowOpacity: 0.18,
+        shadowOffset: { width: 0, height: 8 },
+        shadowRadius: 18,
+        elevation: 3,
+    },
+    addLicenseAccentCircle: {
+        position: 'absolute',
+        top: -normalize(18),
+        right: -normalize(12),
+        width: normalize(120),
+        height: normalize(120),
+        borderRadius: normalize(60),
+        backgroundColor: 'rgba(128, 169, 255, 0.14)',
+    },
+    addLicenseContentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: normalize(12),
+        flex: 1,
+    },
+    addLicenseCopyColumn: {
+        flex: 1,
+        paddingRight: normalize(6),
+    },
+    addLicenseEyebrow: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        letterSpacing: 0.9,
+        color: '#28417B',
+        marginBottom: normalize(8),
+    },
+    addLicenseTitle: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 16,
+        lineHeight: 22,
+        color: '#1C2430',
+        textTransform: 'uppercase',
+    },
+    addLicenseDescription: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 13,
+        lineHeight: 19,
+        color: '#4E5C73',
+        marginTop: normalize(8),
+        maxWidth: normalize(225),
+    },
+    addLicenseButton: {
+        alignSelf: 'stretch',
+        backgroundColor: Colorpath.ButtonColr,
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(9),
+        marginTop: normalize(14),
+        width: normalize(180),
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addLicenseButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        textAlign: 'center',
+        letterSpacing: 0.2,
+        color: Colorpath.white,
+        width: '100%',
+    },
+    addLicenseArtworkColumn: {
+        width: normalize(155),
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    addLicenseHalo: {
+        position: 'absolute',
+        right: normalize(2),
+        top: normalize(2),
+        width: normalize(126),
+        height: normalize(126),
+        borderRadius: normalize(63),
+        backgroundColor: 'rgba(70, 112, 255, 0.08)',
+    },
+    addLicenseIllustration: {
+        width: normalize(145),
+        height: normalize(106),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addLicenseCardPreview: {
+        width: normalize(122),
+        borderRadius: normalize(12),
+        backgroundColor: Colorpath.white,
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(10),
+        shadowColor: '#98A9C9',
+        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 6 },
+        shadowRadius: 12,
+        elevation: 2,
+    },
+    addLicenseCardPreviewHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(8),
+        marginBottom: normalize(10),
+    },
+    addLicenseAvatar: {
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(14),
+        resizeMode: 'cover',
+    },
+    addLicenseHeaderTextGroup: {
+        flex: 1,
+    },
+    addLicenseHeaderLine: {
+        height: normalize(6),
+        borderRadius: normalize(3),
+        backgroundColor: '#8FA5F8',
+        marginBottom: normalize(6),
+        width: '68%',
+    },
+    addLicenseHeaderLineShort: {
+        height: normalize(4),
+        borderRadius: normalize(2),
+        backgroundColor: '#D7DDEA',
+        width: '42%',
+    },
+    addLicenseCardPreviewBody: {
+        gap: normalize(7),
+    },
+    addLicenseBodyLine: {
+        height: normalize(4),
+        borderRadius: normalize(2),
+        backgroundColor: '#D7DDEA',
+        width: '100%',
+    },
+    addLicenseBodyLineShort: {
+        height: normalize(4),
+        borderRadius: normalize(2),
+        backgroundColor: '#D7DDEA',
+        width: '72%',
+    },
+    addLicensePlusBadge: {
+        position: 'absolute',
+        top: normalize(-8),
+        right: normalize(-2),
+        width: normalize(34),
+        height: normalize(34),
+        borderRadius: normalize(17),
+        backgroundColor: Colorpath.ButtonColr,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#28417B',
+        shadowOpacity: 0.22,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    addLicensePlusText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 24,
+        lineHeight: 24,
+        color: Colorpath.white,
+        marginTop: -2,
+    },
 })

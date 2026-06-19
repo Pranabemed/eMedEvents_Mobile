@@ -235,7 +235,7 @@ export default function Splash(props) {
             props.navigation.dispatch(
               CommonActions.reset({
                 index: 0,
-                routes: [{ name: 'TabNav' }],
+                routes: [{ name: 'Onboard' }],
               })
             );
           }
@@ -534,6 +534,9 @@ export default function Splash(props) {
     const isNonUsaStateLicenseFlowCompleted = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
 
     if (isNonUsa) {
+      if (!hasAuthToken) {
+        return;
+      }
       if (isNonUsaStateLicenseFlowCompleted) {
         if (!hasNavigatedRef.current) {
           hasNavigatedRef.current = true;

@@ -481,18 +481,25 @@ const Login = (props) => {
         });
         return;
       }
-      writeNonUsaFlowState({
-        userType: 'non_usa',
-        isNonUsa: true,
-        emailVerified: true,
-        professionCompleted: true,
-      });
-      props.navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'TabNav' }],
-        })
-      );
+      const proceedNonUsaLogin = async () => {
+        try {
+          await writeNonUsaFlowState({
+            userType: 'non_usa',
+            isNonUsa: true,
+            emailVerified: true,
+            professionCompleted: true,
+          });
+        } catch (e) {
+          console.log('Error writing nonUsaFlowState:', e);
+        }
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'TabNav' }],
+          })
+        );
+      };
+      proceedNonUsaLogin();
       return;
     } else {
       clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));

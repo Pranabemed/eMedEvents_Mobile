@@ -30,13 +30,20 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import AddressInput from '../../Components/AutoData'
 import AddressField from '../../Components/AutoData';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
-import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 let status = "";
 let status1 = "";
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
+const isPhysicianProfessionalInformation = (info = {}) => {
+    const profession = String(info?.profession || '').trim().toLowerCase();
+    const professionType = String(info?.profession_type || '').trim().toLowerCase();
+
+    if (profession !== 'physician') return false;
+    return ['md', 'do', 'dpm'].includes(professionType);
+};
 const ContactProfile = (props) => {
     const SearchBack = () => {
         props.navigation.goBack();
@@ -75,6 +82,7 @@ const ContactProfile = (props) => {
     const [dialcode, setDialcode] = useState("");
     const [loading, setLoading] = useState(false);
     const [isNonUsaFlow, setIsNonUsaFlow] = useState(false);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
         professionUpdateRequired: false,
         stateLicenseFlowCompleted: false,
@@ -82,14 +90,8 @@ const ContactProfile = (props) => {
     const [professionModalVisible, setProfessionModalVisible] = useState(false);
     const [pendingPersonal, setPendingPersonal] = useState(null);
     const dispatch = useDispatch();
-    const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
-    const dashboardProfessionHandle = String(
-        dashboardProfessionalInformation?.profession && dashboardProfessionalInformation?.profession_type
-            ? `${dashboardProfessionalInformation?.profession} - ${dashboardProfessionalInformation?.profession_type}`
-            : dashboardProfessionalInformation?.profession || ''
-    ).trim().toLowerCase().replace(/\s+/g, '');
-    const hasExistingPhysicianDashboardProfile = physicianHandles.has(dashboardProfessionHandle);
+    const hasExistingPhysicianDashboardProfile = isPhysicianProfessionalInformation(dashboardProfessionalInformation);
     const cellNoRegexwp = /^\d{10,15}$/;
     const filteredText = whatsappno && whatsappno?.length > 0 && whatsappno.replace(/[^\d]/g, '');
     const isValidWhatsappNo = filteredText?.length > 0 && !cellNoRegexwp.test(filteredText);
@@ -133,6 +135,7 @@ const ContactProfile = (props) => {
                 break;
         }
     }
+    console.log(DashboardReducer?.mainprofileResponse?.professional_information,"ertrkjred===")
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
             case 'Profile/contactInfoRequest':
@@ -143,24 +146,29 @@ const ContactProfile = (props) => {
                 status1 = ProfileReducer.status;
                 setLoading(false);
                 if (ProfileReducer?.contactInfoResponse?.msg == "Contact inforamtion updated successfully.") {
-                    const nextPersonal = ProfileReducer?.personalInfoResponse?.user ||
+                    const nextPersonal = DashboardReducer?.mainprofileResponse || ProfileReducer?.personalInfoResponse?.user ||
                         ProfileReducer?.contactInfoResponse?.user ||
                         props?.route?.params?.wholedata ||
                         {};
+                    console.log(nextPersonal, "log-----------", nonUsaPermanentFlags);
                     if (
-                        !nonUsaPermanentFlags?.stateLicenseFlowCompleted &&
-                        (isNonUsaFlow || isNonUsaAccount(nextPersonal || props?.route?.params?.wholedata || {}))
+                        hasExistingPhysicianDashboardProfile ||
+                        isPhysicianProfessionalInformation(nextPersonal?.professional_information)
                     ) {
-                        markNonUsaProfessionUpdateRequired();
-                        setPendingPersonal(nextPersonal);
-                        setProfessionModalVisible(true);
-                    } else if (hasExistingPhysicianDashboardProfile) {
                         props.navigation.goBack();
                     } else {
-                        props.navigation.navigate("PersonalInfo", { personal: nextPersonal });
+                        const shouldPromptNonUsaProfessionUpdate =
+                            isNonUsaFlow ||
+                            !isUsaCountryCode(dialcode)
+                            ;
+                        console.log(shouldPromptNonUsaProfessionUpdate, "shouldPromptNonUsaProfessionUpdate", isNonUsaFlow)
+                        if (shouldPromptNonUsaProfessionUpdate) {
+                            markNonUsaProfessionUpdateRequired();
+                            setPendingPersonal(nextPersonal);
+                            setProfessionModalVisible(true);
+                        }
                     }
                 }
-                console.log(ProfileReducer?.contactInfoResponse, "log-----------");
                 break;
             case 'Profile/contactInfoFailure':
                 status1 = ProfileReducer.status;
@@ -189,7 +197,8 @@ const ContactProfile = (props) => {
                 if (geoInfo) {
                     const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
                     const isNonUsaIp = ipCountry && ipCountry !== 'US' && ipCountry !== 'USA';
-                    setIsNonUsaFlow(!!isNonUsaIp);
+                    console.log(isNonUsaIp, "dgjjfg")
+                    setIsNonUsaFlow(isNonUsaIp);
                 }
             } catch (error) {
                 console.log('Contact geo lookup failed', error);
@@ -200,8 +209,12 @@ const ContactProfile = (props) => {
 
     useEffect(() => {
         let mounted = true;
-        readNonUsaPermanentFlags().then(flags => {
+        Promise.all([
+            readNonUsaFlowState(),
+            readNonUsaPermanentFlags(),
+        ]).then(([state, flags]) => {
             if (mounted) {
+                setNonUsaFlowState(state);
                 setNonUsaPermanentFlags(flags);
             }
         });
@@ -368,9 +381,13 @@ const ContactProfile = (props) => {
             setZipcode(props?.route?.params?.wholedata?.user_address?.zipcode)
             setWhatsappno(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
             setDobdate(formatDobWithMoment(props?.route?.params?.wholedata?.personal_information?.dob && props?.route?.params?.wholedata?.personal_information?.dob !== "0000-00-00" ? props?.route?.params?.wholedata?.personal_information?.dob : ""));
-            setIsNonUsaFlow(isNonUsaAccount(props?.route?.params?.wholedata || {}));
+            const resolvedUser = {
+                ...(props?.route?.params?.wholedata || {}),
+                ...(props?.route?.params?.wholedata?.user_address || {})
+            };
+            setIsNonUsaFlow(nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(resolvedUser, nonUsaFlowState));
         }
-    }, [props?.route?.params?.wholedata])
+    }, [props?.route?.params?.wholedata, nonUsaFlowState])
     const handlePlaceSelected = async (data, details) => {
         console.log(details, "details==========");
         if (details) {
@@ -454,7 +471,8 @@ const ContactProfile = (props) => {
         stateRequest(didi?.id);
         setCountry_id(didi?.id);
         setDialcode(didi?.callingcode);
-        setIsNonUsaFlow(!isUsaCountryCode(didi?.callingcode));
+        const tempAccount = { country_id: didi?.id, country_name: didi?.name, country_code: didi?.callingcode };
+        setIsNonUsaFlow(nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(tempAccount, nonUsaFlowState));
         if (didi?.callingcode && cellno) {
             const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
             const formattedNumber = formatPhoneNumber(cellno, isUSA);

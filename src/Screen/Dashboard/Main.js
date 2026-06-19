@@ -135,10 +135,36 @@ const parseStoredJson = (value) => {
   }
 };
 
-const requiresVerification = (user, isNonUsa = false) => {
+const requiresVerification = (user, isNonUsa = false, verifyResponse = null, verifyData = null) => {
   if (!user) return false;
-  const isEmailVerified = String(user?.is_verified ?? user?.email_verified ?? '0') === '1';
-  const isPhoneVerified = String(user?.phone_verified ?? '0') === '1';
+  const primarySource = verifyResponse || {};
+  const secondarySource = user || {};
+  const tertiarySource = verifyData || {};
+
+  const isEmailVerified = [
+    primarySource?.is_verified,
+    primarySource?.email_verified,
+    primarySource?.user?.is_verified,
+    primarySource?.user?.email_verified,
+    secondarySource?.is_verified,
+    secondarySource?.email_verified,
+    secondarySource?.user?.is_verified,
+    secondarySource?.user?.email_verified,
+    tertiarySource?.is_verified,
+    tertiarySource?.email_verified,
+    tertiarySource?.user?.is_verified,
+    tertiarySource?.user?.email_verified
+  ].some(val => String(val) === '1' || val === true || val === 1);
+
+  const isPhoneVerified = [
+    primarySource?.phone_verified,
+    primarySource?.user?.phone_verified,
+    secondarySource?.phone_verified,
+    secondarySource?.user?.phone_verified,
+    tertiarySource?.phone_verified,
+    tertiarySource?.user?.phone_verified
+  ].some(val => String(val) === '1' || val === true || val === 1);
+
   return isNonUsa ? !isEmailVerified : (!isEmailVerified || !isPhoneVerified);
 };
 const Main = (props) => {
@@ -182,6 +208,7 @@ const Main = (props) => {
   const [primeadd, setPrimeadd] = useState(false);
   const [finalverifyvaultmain, setFinalverifyvaultmain] = useState(null);
   const [finalProfessionmain, setFinalProfessionmain] = useState(null);
+  const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
   const [freeTrail, setFreeTrail] = useState(false);
   const [daysleft, setDaysleft] = useState(false);
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
@@ -291,7 +318,7 @@ const Main = (props) => {
   const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
-  const shouldHoldSkeleton = (isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady;
+  const shouldHoldSkeleton = !isAsyncStorageLoaded || ((isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady);
   const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
     DashboardReducer?.mainprofileResponse?.licensures?.length ||
@@ -439,8 +466,7 @@ const Main = (props) => {
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || (!isPhysicianFlow && !isNursingFlow));
   const shouldRenderNewProfession =
-    forceNewProfession ||
-    (isNonUsaUser && !isPhysicianFlow);
+    !isPhysicianFlow && (forceNewProfession || (isNonUsaUser && !isPhysicianFlow));
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   const renderMainAddLicenseCard = () => (
     <View style={{
@@ -520,8 +546,10 @@ const Main = (props) => {
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           setFinalverifyvaultmain(board_special_json);
           setFinalProfessionmain(profession_data_json);
+          setIsAsyncStorageLoaded(true);
         } catch (error) {
           console.log('Error fetching data:', error);
+          setIsAsyncStorageLoaded(true);
         }
       })();
     };
@@ -646,6 +674,9 @@ const Main = (props) => {
         if (guestVerifyNavigationRef.current) {
           return;
         }
+        if (AuthReducer?.status === 'Auth/verifyRequest') {
+          return;
+        }
         const [
           guestFlowRaw,
           verifyRaw,
@@ -675,16 +706,7 @@ const Main = (props) => {
         const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
         const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
         const hasFreshVerifyResponse =
-          AuthReducer?.status === 'Auth/verifySuccess' &&
-          Boolean(verifyResponseData);
-
-        if (isSkippedFlow) {
-          setPrimeadd(false);
-          setShowGuestPrimePrompt(false);
-          setGuestVerifyModalVisible(false);
-          setGuestVerifyData(null);
-          return;
-        }
+          Boolean(verifyResponseData && Object.keys(verifyResponseData).length > 0);
 
         if (!resolvedIpCountryCode) {
           return;
@@ -699,7 +721,7 @@ const Main = (props) => {
           return;
         }
 
-        if (!isAnyGuestFlow && !isSkippedFlow) {
+        if (!isAnyGuestFlow) {
           setGuestVerifyModalVisible(false);
           setGuestVerifyData(null);
           setShowGuestPrimePrompt(false);
@@ -819,7 +841,7 @@ const Main = (props) => {
             setShowGuestPrimePrompt(false);
             return;
           }
-          if (requiresVerification(user, isNonUsaGuest)) {
+          if (requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
             await openGuestVerificationAlert(user, true);
           } else {
             await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
@@ -833,7 +855,7 @@ const Main = (props) => {
           return;
         }
 
-        if (hasFreshVerifyResponse && user && requiresVerification(user, isNonUsaGuest)) {
+        if (hasFreshVerifyResponse && user && requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
           setShowGuestPrimePrompt(false);
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(true);

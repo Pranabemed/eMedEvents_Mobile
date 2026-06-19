@@ -35,7 +35,7 @@ import MainInt from '../Screen/Dashboard/NoIntData';
 import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
-import { isNonUsaAccount, readNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 let status1 = "";
 
 const buildProfessionLabel = (profession, professionType) => {
@@ -74,13 +74,20 @@ function TabScreen() {
   const [tabtooltip, setTabtooltip] = useState("closeit");
   const [nettrue, setNettrue] = useState("");
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
   useEffect(() => {
     let mounted = true;
     if (isFoucs) {
-      readNonUsaFlowState().then(state => {
-        if (mounted) {
-          setNonUsaFlowState(state);
-        }
+      Promise.all([
+        readNonUsaFlowState(),
+        readNonUsaPermanentFlags(),
+      ]).then(([state, flags]) => {
+        if (!mounted) return;
+        setNonUsaFlowState(state);
+        setNonUsaPermanentFlags(flags);
       });
     }
     return () => {
@@ -344,6 +351,9 @@ function TabScreen() {
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
   const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
   const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+  const creditVaultComponent = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true
+    ? DashoardVault
+    : ((isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault);
   const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
@@ -570,7 +580,7 @@ function TabScreen() {
       {[
         { name: "Home", component: MainInt, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -731,7 +741,7 @@ function TabScreen() {
       {[
         { name: "Home", component: Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: (isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault " },
       ].map((item, index) => (
         <Tab.Screen
           key={index}

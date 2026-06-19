@@ -1,6 +1,6 @@
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { boardvaultFailure, boardvaultSuccess, creditvaultFailure, creditvaultSuccess, deletevaultFailure, deletevaultSuccess, downloadTranscriptFailure, downloadTranscriptSuccess, professionvaultFailure, professionvaultSuccess } from '../Reducers/CreditVaultReducer';
+import { boardvaultFailure, boardvaultSuccess, creditvaultFailure, creditvaultSuccess, deletevaultFailure, deletevaultSuccess, downloadTranscriptFailure, downloadTranscriptSuccess, downloadTranscriptNonUsaFailure, downloadTranscriptNonUsaSuccess, professionvaultFailure, professionvaultSuccess } from '../Reducers/CreditVaultReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 let getItem = state => state.AuthReducer;
 
@@ -100,7 +100,7 @@ export function* downloadTransSaga(action) {
     authorization: items.token,
   };
   try {
-    let response = yield call(postApi,action?.payload?.statedown ? 'creditVault/downloadArchiveTranscript':'creditVault/downloadTranscript', action.payload, header);
+    let response = yield call(postApi, (action?.payload?.statedown || action?.payload?.board_id === 0) ? 'creditVault/downloadArchiveTranscript' : 'creditVault/downloadTranscript', action.payload, header);
     console.log('downloadTranscript response: ', response);
     if (response?.status == 200) {
       yield put(downloadTranscriptSuccess(response?.data));
@@ -111,6 +111,27 @@ export function* downloadTransSaga(action) {
   } catch (error) {
     console.log('downloadTranscript error:', error);
     yield put(downloadTranscriptFailure(error));
+  }
+}
+export function* downloadTransNonUsaSaga(action) {
+  console.log('downloadTransNonUsaSaga saga hi');
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items.token,
+  };
+  try {
+    let response = yield call(postApi, 'creditVault/downloadTranscript', action.payload, header);
+    console.log('downloadTransNonUsaSaga response: ', response);
+    if (response?.status == 200) {
+      yield put(downloadTranscriptNonUsaSuccess(response?.data));
+    } else {
+      yield put(downloadTranscriptNonUsaFailure(response?.data));
+    }
+  } catch (error) {
+    console.log('downloadTransNonUsaSaga error:', error);
+    yield put(downloadTranscriptNonUsaFailure(error));
   }
 }
 const watchFunction = [
@@ -128,6 +149,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('CreditVault/downloadTranscriptRequest', downloadTransSaga);
+  })(),
+  (function* () {
+    yield takeLatest('CreditVault/downloadTranscriptNonUsaRequest', downloadTransNonUsaSaga);
   })()
 ];
 

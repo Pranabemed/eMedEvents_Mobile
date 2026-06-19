@@ -44,6 +44,13 @@ const buildProfessionLabel = (profession, professionType) => {
 
     return `${cleanProfession} - ${cleanProfessionType}`;
 };
+const isPhysicianProfessionalInformation = (info = {}) => {
+    const profession = String(info?.profession || '').trim().toLowerCase();
+    const professionType = String(info?.profession_type || '').trim().toLowerCase();
+
+    if (profession !== 'physician') return false;
+    return ['md', 'do', 'dpm'].includes(professionType);
+};
 
 const CustomRadioButton = ({ selected, onPress }) => (
     <TouchableOpacity
@@ -116,14 +123,8 @@ const PersonalInfo = (props) => {
     const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
     const isNonUsaUpdateFlow = nonUsaPermanentFlags?.professionUpdateRequired === true;
     const hasCompletedStateLicenseFlow = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
-    const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
-    const dashboardProfessionHandle = String(
-        dashboardProfessionalInformation?.profession && dashboardProfessionalInformation?.profession_type
-            ? `${dashboardProfessionalInformation?.profession} - ${dashboardProfessionalInformation?.profession_type}`
-            : dashboardProfessionalInformation?.profession || ''
-    ).trim().toLowerCase().replace(/\s+/g, '');
-    const hasExistingPhysicianDashboardProfile = physicianHandles.has(dashboardProfessionHandle);
+    const hasExistingPhysicianDashboardProfile = isPhysicianProfessionalInformation(dashboardProfessionalInformation);
 
     const SearchBack = () => {
         props.navigation.goBack();
@@ -230,9 +231,10 @@ const PersonalInfo = (props) => {
             case 'Profile/professionInfoSuccess':
                 status1 = ProfileReducer.status;
                 if (ProfileReducer?.professionInfoResponse?.msg == "Professional inforamtion updated successfully.") {
+                    const latestProfessionInfo = ProfileReducer?.latestProfessionInfo || {};
                     const latestProfessionLabel = buildProfessionLabel(
-                        ProfileReducer?.latestProfessionInfo?.profession,
-                        ProfileReducer?.latestProfessionInfo?.profession_type
+                        latestProfessionInfo?.profession,
+                        latestProfessionInfo?.profession_type
                     );
                     const stateLicensures = AuthReducer?.chooseStatecardResponse?.state_licensures;
                     const hasStateLicensures = Array.isArray(stateLicensures) && stateLicensures.length > 0;
@@ -242,10 +244,13 @@ const PersonalInfo = (props) => {
                     if (latestProfessionLabel) {
                         dispatch(licesensRequest(latestProfessionLabel));
                     }
-                    if (hasExistingPhysicianDashboardProfile) {
-                        props.navigation.goBack();
-                        return;
-                    }
+                    // if (
+                    //     hasExistingPhysicianDashboardProfile ||
+                    //     isPhysicianProfessionalInformation(latestProfessionInfo)
+                    // ) {
+                    //     props.navigation.goBack();
+                    //     return;
+                    // }
                     if (isNonUsaUser && isNonUsaUpdateFlow && !hasCompletedStateLicenseFlow && !hasStateLicensures) {
                         markNonUsaStateLicenseFlowCompleted();
                         props.navigation.navigate("CreateStateInfor", {

@@ -13,7 +13,11 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { changePasswordRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { allreducerRequest, logoutRequest } from '../../Redux/Reducers/AuthReducer';
+import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
+import { NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY } from '../../Utils/Helpers/nonUsaFlow';
+import { navigationRef } from '../../Navigator/RootNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context'
 let status1 = "";
 const ChangePassword = (props) => {
@@ -34,17 +38,22 @@ const ChangePassword = (props) => {
     const dispatch = useDispatch();
     const clearAllAsyncStorage = async () => {
         try {
-            const skipFlag = await AsyncStorage.getItem('PRIME_CARD_SKIPPED_ONCE');
-            const skippedKey = await AsyncStorage.getItem('PrimeMembershipSkipped');
+            const keepKeys = [
+                'PRIME_CARD_SKIPPED_ONCE',
+                'PrimeMembershipSkipped',
+                constants.NON_USA_FLOW_STATE,
+                NON_USA_PROFESSION_UPDATE_REQUIRED_KEY,
+                NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY,
+            ];
+            const preservedEntries = await AsyncStorage.multiGet(keepKeys);
             await AsyncStorage.removeItem('lastActiveTab')
             await AsyncStorage.removeItem('WHOLEDATA');
             await AsyncStorage.removeItem('PRODATA');
             await AsyncStorage.clear();
-            if (skipFlag !== null) {
-                await AsyncStorage.setItem('PRIME_CARD_SKIPPED_ONCE', skipFlag);
-            }
-            if (skippedKey !== null) {
-                await AsyncStorage.setItem('PrimeMembershipSkipped', skippedKey);
+            for (const [key, value] of preservedEntries) {
+                if (value !== null) {
+                    await AsyncStorage.setItem(key, value);
+                }
             }
             console.log('All AsyncStorage keys cleared successfully!');
         } catch (e) {
@@ -55,6 +64,14 @@ const ChangePassword = (props) => {
         clearAllAsyncStorage()
             .then(() => dispatch(logoutRequest()))
             .then(() => dispatch(allreducerRequest({ "obj": "" })))
+            .then(() => {
+                navigationRef.current?.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                    })
+                );
+            })
             .catch(err => console.log("Logout flow error:", err));
     }
     const finalHit = () => {

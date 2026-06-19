@@ -200,18 +200,25 @@ const VerifyOTPEmail = (props) => {
             // Reset the module-level guard so a future newMail flow works correctly
             _autoOTPSentForEmail = null;
             if (isNonUsaUser) {
-                writeNonUsaFlowState({
-                    userType: 'non_usa',
-                    isNonUsa: true,
-                    emailVerified: true,
-                    professionCompleted: true,
-                });
-                props.navigation.dispatch(
-                    CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'TabNav' }],
-                    })
-                );
+                const proceedNonUsaLogin = async () => {
+                    try {
+                        await writeNonUsaFlowState({
+                            userType: 'non_usa',
+                            isNonUsa: true,
+                            emailVerified: true,
+                            professionCompleted: true,
+                        });
+                    } catch (e) {
+                        console.log('Error writing nonUsaFlowState:', e);
+                    }
+                    props.navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'TabNav' }],
+                        })
+                    );
+                };
+                proceedNonUsaLogin();
             } else {
                 setModalVisible(true);
             }

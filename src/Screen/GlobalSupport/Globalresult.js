@@ -219,8 +219,8 @@ const Globalresult = (props) => {
         String(getStateLabel(item)).toLowerCase().includes(stateSearchText.trim().toLowerCase()),
     );
     const totalResults = Number(
-        props?.route?.params?.trig?.totalDaa?.count ??
         CMEReducer?.cmeCourseResponse?.conferences_count ??
+        props?.route?.params?.trig?.totalDaa?.count ??
         0,
     );
     const canLoadMore = totalResults > 0 && storeAlldata.length < totalResults;

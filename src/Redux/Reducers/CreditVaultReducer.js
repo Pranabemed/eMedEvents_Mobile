@@ -8,7 +8,8 @@ const initialState = {
   boardvaultResponse:{},
   deletevaultResponse:{},
   professionvaultResponse:{},
-  downloadTranscriptResponse:{}
+  downloadTranscriptResponse:{},
+  downloadTranscriptNonUsaResponse:{}
 };
 
 const CreditVaultSlice = createSlice({
@@ -69,6 +70,17 @@ const CreditVaultSlice = createSlice({
     downloadTranscriptFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
+    },
+    downloadTranscriptNonUsaRequest(state, action) {
+      state.status = action.type;
+    },
+    downloadTranscriptNonUsaSuccess(state, action) {
+      state.downloadTranscriptNonUsaResponse = action.payload;
+      state.status = action.type;
+    },
+    downloadTranscriptNonUsaFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
     }
   },
 });
@@ -88,6 +100,9 @@ export const {
   professionvaultSuccess,
   downloadTranscriptFailure,
   downloadTranscriptRequest,
-  downloadTranscriptSuccess
+  downloadTranscriptSuccess,
+  downloadTranscriptNonUsaFailure,
+  downloadTranscriptNonUsaRequest,
+  downloadTranscriptNonUsaSuccess
 } = CreditVaultSlice.actions;
 export default CreditVaultSlice.reducer;

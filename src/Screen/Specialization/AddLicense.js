@@ -30,6 +30,7 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { clearNonUsaStateLicenseFlowCompleted } from '../../Utils/Helpers/nonUsaFlow';
 const AddLicense = (props) => {
     const {
         setFulldashbaord,
@@ -469,6 +470,9 @@ const AddLicense = (props) => {
         }
         if (DashboardReducer.status == 'Dashboard/stateLicesenseSuccess' && isSaving) {
             setIsSaving(false);
+            clearNonUsaStateLicenseFlowCompleted().catch(err => {
+                console.log('clearNonUsaStateLicenseFlowCompleted error', err);
+            });
             dispatch(dashboardRequest({}));
             setModalVisiblecred(true);
         }
