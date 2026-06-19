@@ -30,7 +30,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import CertficateHandle from './FileCheck';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 let status = "";
@@ -336,37 +336,33 @@ const DashoardVault = (props) => {
 
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
-    useEffect(() => {
-        const token_handle_vault = () => {
-            setTimeout(async () => {
-                try {
-                    const [board_special, profession_data] = await Promise.all([
-                        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-                        AsyncStorage.getItem(constants.PROFESSION)
-                    ]);
-                    const board_special_json = board_special ? JSON.parse(board_special) : null;
-                    const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
-                    setFinalverifyvault(board_special_json);
-                    setFinalProfession(profession_data_json);
-                } catch (error) {
-                    console.log('Error fetching data:', error);
-                }
-            }, 100);
-        };
-
-        token_handle_vault();
-    }, [certificatedata]);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
+
     useEffect(() => {
         let mounted = true;
         if (isFocus) {
             Promise.all([
                 readNonUsaFlowState(),
                 readNonUsaPermanentFlags(),
-            ]).then(([state, flags]) => {
+                AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                AsyncStorage.getItem(constants.PROFESSION)
+            ]).then(([state, flags, board_special, profession_data]) => {
                 if (!mounted) return;
+
+                const board_special_json = board_special ? JSON.parse(board_special) : null;
+                const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+
                 setNonUsaFlowState(state);
                 setNonUsaPermanentFlags(flags);
+                setFinalverifyvault(board_special_json);
+                setFinalProfession(profession_data_json);
+                setIsAsyncStorageLoaded(true);
+            }).catch(err => {
+                console.log('Error loading AsyncStorage vault data', err);
+                if (mounted) {
+                    setIsAsyncStorageLoaded(true);
+                }
             });
         }
         return () => {
@@ -375,7 +371,22 @@ const DashoardVault = (props) => {
     }, [isFocus]);
 
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
-    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const isUsaProfile =
+        userObj?.usa_user === true ||
+        userObj?.usa_user === 1 ||
+        userObj?.usa_user === '1' ||
+        userObj?.is_non_usa === false ||
+        userObj?.is_non_usa === 0 ||
+        userObj?.is_non_usa === '0';
+
+    const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+
+    useEffect(() => {
+        if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
+            clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+            setNonUsaFlowState(null);
+        }
+    }, [isUsaProfile, nonUsaFlowState]);
     const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
     const shouldShowAddLicenseCard =
@@ -621,7 +632,7 @@ const DashoardVault = (props) => {
                                 )}
                             </View>
                         )}
-                        <Loader visible={(!isNonUsaUser && creditwise == null) || (isNonUsaUser && loadingStatewise)} />
+                        <Loader visible={!isAsyncStorageLoaded || (!isNonUsaUser && creditwise == null) || (isNonUsaUser && loadingStatewise)} />
                         {shouldShowAddLicenseCard ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>

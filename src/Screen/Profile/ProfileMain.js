@@ -147,7 +147,7 @@ const ProfileMain = (props) => {
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
     const profFromDashboard = getDisplayProfession(allHandle);
-    const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
+    const allProfTake = validHandles.has(profFromDashboard);
     const allNoDetData = otherRestrict.has(profFromDashboard);
     const isNonUsaUser = isNonUsaAccount(allHandle, null);
     const profileData = isNonUsaUser && !allProfTake ? [

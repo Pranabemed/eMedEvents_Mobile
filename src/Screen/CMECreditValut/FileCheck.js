@@ -78,7 +78,7 @@ const CertficateHandle = (props) => {
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
     const forcedNonUsaRoute = props?.route?.params?.isNonUsaUser === true;
-    const isNonUsaUser = forcedNonUsaRoute || ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData) || primeSkipped;
+    const isNonUsaUser = forcedNonUsaRoute || ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData);
     const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
         if (resolvedIsNonUsaUser) {
             setIsNonUsaLoading(true);
@@ -122,7 +122,7 @@ const CertficateHandle = (props) => {
                     const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
                     const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
                     const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
-                    const resolvedIsNonUsaUser = (props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp) || (skipped === 'true');
+                    const resolvedIsNonUsaUser = (props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp);
                     fetchCreditVaultData(resolvedIsNonUsaUser);
                 }
             });

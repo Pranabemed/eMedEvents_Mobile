@@ -39,7 +39,7 @@ import NetInfo from '@react-native-community/netinfo';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
-import { isNonUsaAccount, readNonUsaFlowState, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
 let status = "";
 let status1 = "";
 export default function DrawerModal(props) {
@@ -116,7 +116,7 @@ export default function DrawerModal(props) {
       DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
       ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
       : null;
-  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped;
+  const allProfTake = validHandles.has(profFromDashboard);
   useEffect(() => {
     if (AuthReducer.status === 'Auth/logoutSuccess') {
       setLogoutPending(false);
@@ -169,7 +169,22 @@ export default function DrawerModal(props) {
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
-  const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allHandled || {}, nonUsaFlowState);
+  const isUsaProfile =
+    allHandled?.usa_user === true ||
+    allHandled?.usa_user === 1 ||
+    allHandled?.usa_user === '1' ||
+    allHandled?.is_non_usa === false ||
+    allHandled?.is_non_usa === 0 ||
+    allHandled?.is_non_usa === '0';
+
+  const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allHandled || {}, nonUsaFlowState));
+
+  useEffect(() => {
+    if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+      setNonUsaFlowState(null);
+    }
+  }, [isUsaProfile, nonUsaFlowState]);
   const modalKey = isNonUsaUser ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },

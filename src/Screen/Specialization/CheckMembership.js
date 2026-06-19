@@ -299,6 +299,7 @@ const CheckMembership = (props) => {
     const handleClk = () => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.removeItem('SessionPrimeSkipped');
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
             await clearNonUsaFlowState();
             props.navigation.dispatch(
@@ -319,6 +320,7 @@ const CheckMembership = (props) => {
     const handlePrimeMembership = () => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.removeItem('SessionPrimeSkipped');
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
             await clearNonUsaFlowState();
             props.navigation.dispatch(
@@ -334,6 +336,7 @@ const CheckMembership = (props) => {
     const handleSkip = async () => {
         try {
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+            await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
             await clearNonUsaFlowState();
         } catch (error) {

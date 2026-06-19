@@ -20,6 +20,17 @@ export const isUsaCountryCode = (value) => {
 };
 
 export const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
+  if (
+    user?.usa_user === true ||
+    user?.usa_user === 1 ||
+    user?.usa_user === '1' ||
+    user?.is_non_usa === false ||
+    user?.is_non_usa === 0 ||
+    user?.is_non_usa === '0'
+  ) {
+    return false;
+  }
+
   if (fallbackFlowState?.isNonUsa === true) return true;
   if (user?.is_non_usa === true || user?.is_non_usa === 1 || user?.is_non_usa === '1') return true;
   if (user?.usa_user === false || user?.usa_user === 0 || user?.usa_user === '0') return true;

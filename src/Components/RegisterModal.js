@@ -12,9 +12,7 @@ import constants from '../Utils/Helpers/constants';
 const GUEST_PROMPT_KEYS = [
     'GUEST_REGISTRATION_FLOW',
     'GUEST_PRIME_VERIFICATION_PENDING',
-    'PrimeMembershipSkipped',
     'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION',
-    'PrimeCardFlowComplete',
 ];
 
 const RegisterModal = ({ isVisible, onClose, navigation }) => {

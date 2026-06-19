@@ -266,7 +266,7 @@ function TabScreen() {
     dashboardProfession && dashboardProfessionType
       ? `${dashboardProfession} - ${dashboardProfessionType}`
       : '';
-  const allProfTake = validHandles.has(profFromDashboard) && !primeSkipped && !primeCardSessionSkipped;
+  const allProfTake = validHandles.has(profFromDashboard);
   useEffect(() => {
     const loadLastActiveTab = async () => {
       try {
@@ -350,10 +350,17 @@ function TabScreen() {
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
   const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
-  const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+  const isUsaProfile =
+    userObj?.usa_user === true ||
+    userObj?.usa_user === 1 ||
+    userObj?.usa_user === '1' ||
+    userObj?.is_non_usa === false ||
+    userObj?.is_non_usa === 0 ||
+    userObj?.is_non_usa === '0';
+  const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
   const creditVaultComponent = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true
     ? DashoardVault
-    : ((isNonUsaUser || primeSkipped) ? CertficateHandle : DashoardVault);
+    : (isNonUsaUser ? CertficateHandle : DashoardVault);
   const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;

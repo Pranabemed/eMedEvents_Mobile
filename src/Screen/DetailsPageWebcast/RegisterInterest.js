@@ -267,9 +267,7 @@ const RegisterInterest = (props) => {
             await Promise.all([
                 AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                 AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
-                AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
                 AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
-                AsyncStorage.removeItem(PRIME_CARD_FLOW_COMPLETE_KEY),
                 AsyncStorage.setItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY, 'true'),
             ]);
         } catch (error) {

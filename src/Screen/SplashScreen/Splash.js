@@ -13,7 +13,7 @@ import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -526,11 +526,37 @@ export default function Splash(props) {
     const hasNonUsaPermanentFlow =
       nonUsaPermanentFlags?.professionUpdateRequired === true ||
       nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
-    const isNonUsa =
+    const isUsaProfile =
+      verifyData?.usa_user === true ||
+      verifyData?.usa_user === 1 ||
+      verifyData?.usa_user === '1' ||
+      verifyData?.is_non_usa === false ||
+      verifyData?.is_non_usa === 0 ||
+      verifyData?.is_non_usa === '0' ||
+      professionState?.usa_user === true ||
+      professionState?.usa_user === 1 ||
+      professionState?.usa_user === '1' ||
+      professionState?.is_non_usa === false ||
+      professionState?.is_non_usa === 0 ||
+      professionState?.is_non_usa === '0' ||
+      loginResponse?.user?.usa_user === true ||
+      loginResponse?.user?.usa_user === 1 ||
+      loginResponse?.user?.usa_user === '1' ||
+      loginResponse?.user?.is_non_usa === false ||
+      loginResponse?.user?.is_non_usa === 0 ||
+      loginResponse?.user?.is_non_usa === '0';
+
+    if (isUsaProfile && nonUsaState?.isNonUsa) {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+      setNonUsaState(null);
+    }
+
+    const isNonUsa = !isUsaProfile && (
       isNonUsaAccount(verifyData) ||
       (nonUsaState?.isNonUsa === true) ||
       (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0') ||
-      hasNonUsaPermanentFlow;
+      hasNonUsaPermanentFlow
+    );
     const isNonUsaStateLicenseFlowCompleted = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
 
     if (isNonUsa) {

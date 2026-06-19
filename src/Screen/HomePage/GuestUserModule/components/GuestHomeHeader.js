@@ -82,9 +82,7 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
       await Promise.all([
         AsyncStorage.removeItem('GUEST_REGISTRATION_FLOW'),
         AsyncStorage.removeItem('GUEST_PRIME_VERIFICATION_PENDING'),
-        AsyncStorage.removeItem('PrimeMembershipSkipped'),
         AsyncStorage.removeItem('CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION'),
-        AsyncStorage.removeItem('PrimeCardFlowComplete'),
       ]);
     } catch (err) {
       console.warn('Failed to clear guest sign-in flags:', err);

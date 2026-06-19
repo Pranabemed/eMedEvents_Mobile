@@ -291,12 +291,10 @@ const VerifyMobileOTP = (props) => {
                         verifiedUser?.license_state_id && verifiedUser?.license_number
                     );
 
-                    if (guestFlow && hasLicenseInfo) {
+                    if (guestFlow) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                             AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
-                            AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
-                            AsyncStorage.removeItem(PRIME_CARD_FLOW_COMPLETE_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
                             AsyncStorage.removeItem('PLAYERSESSION'),
                         ]);
@@ -305,9 +303,6 @@ const VerifyMobileOTP = (props) => {
                             routes: [{ name: 'TabNav', params: { initialRoute: 'Home', detectmain: 'newadd' } }],
                         });
                         return;
-                    }
-                    if (guestFlow) {
-                        await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
                     }
 
                     if (allProfTake) {

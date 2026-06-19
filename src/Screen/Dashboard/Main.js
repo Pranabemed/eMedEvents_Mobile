@@ -28,7 +28,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
@@ -212,6 +212,7 @@ const Main = (props) => {
   const [freeTrail, setFreeTrail] = useState(false);
   const [daysleft, setDaysleft] = useState(false);
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
+  const [isSkippedFlow, setIsSkippedFlow] = useState(false);
   const [guestVerifyData, setGuestVerifyData] = useState(null);
   const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
   const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
@@ -241,9 +242,20 @@ const Main = (props) => {
   }, [isFocus]);
 
   const isNonUsaUser = useMemo(() => {
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
-    return nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
-  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+    const isUsaProfile =
+      userObj?.usa_user === true ||
+      userObj?.usa_user === 1 ||
+      userObj?.usa_user === '1' ||
+      userObj?.is_non_usa === false ||
+      userObj?.is_non_usa === 0 ||
+      userObj?.is_non_usa === '0';
+    if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+      setNonUsaFlowState(null);
+    }
+    return !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.loginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
   const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
   const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
   const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
@@ -275,9 +287,13 @@ const Main = (props) => {
   const authProfessionInfo =
     AuthReducer?.loginResponse?.user ||
     AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.loginsiginResponse?.user ||
     AuthReducer?.signupResponse?.user ||
     AuthReducer?.verifymobileResponse?.user ||
     AuthReducer?.verifyemailResponse?.user ||
+    AuthReducer?.verifyResponse?.user ||
+    AuthReducer?.verifyResponse?.data ||
+    (AuthReducer?.verifyResponse && typeof AuthReducer.verifyResponse === 'object' ? AuthReducer.verifyResponse : null) ||
     {};
   const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
   const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
@@ -466,7 +482,7 @@ const Main = (props) => {
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || (!isPhysicianFlow && !isNursingFlow));
   const shouldRenderNewProfession =
-    !isPhysicianFlow && (forceNewProfession || (isNonUsaUser && !isPhysicianFlow));
+    !isPhysicianFlow && !isNursingFlow && (forceNewProfession || isNonUsaUser);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   const renderMainAddLicenseCard = () => (
     <View style={{
@@ -636,6 +652,8 @@ const Main = (props) => {
     await setGuestPrimeVerificationPending();
     try {
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+      await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
+      setIsSkippedFlow(true);
       setForceNewProfession(true);
       await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
       setPrimeCardSessionSkipped(true);
@@ -647,7 +665,6 @@ const Main = (props) => {
     await requestGuestVerificationCheck();
   };
   const handleGuestPrimeExploreTrial = async () => {
-    await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
     await setGuestPrimeVerificationPending();
     setPrimeadd(false);
@@ -655,7 +672,6 @@ const Main = (props) => {
     await requestGuestVerificationCheck();
   };
   const handleGuestPrimeMembership = async () => {
-    await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
     await setGuestPrimeVerificationPending();
     setPrimeadd(false);
@@ -686,6 +702,7 @@ const Main = (props) => {
           primeCardFlowCompleteRaw,
           suppressGuestPromptsOnceRaw,
           isGuestConvertedUserRaw,
+          sessionPrimeSkippedRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -695,13 +712,19 @@ const Main = (props) => {
           AsyncStorage.getItem('PrimeCardFlowComplete'),
           AsyncStorage.getItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY),
           AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
+          AsyncStorage.getItem('SessionPrimeSkipped'),
         ]);
         const suppressGuestPromptsOnce = suppressGuestPromptsOnceRaw === 'true';
         const guestFlowData = parseStoredJson(guestFlowRaw);
         const isGuestFlow = Boolean(guestFlowData);
         const isGuestConvertedUser = isGuestConvertedUserRaw === 'true';
         const isAnyGuestFlow = isGuestFlow || isGuestConvertedUser;
-        const isSkippedFlow = primeMembershipSkippedRaw === 'true';
+        const isSkippedFlowVal = primeMembershipSkippedRaw === 'true';
+        setIsSkippedFlow(isSkippedFlowVal);
+        const isSessionSkippedVal = sessionPrimeSkippedRaw === 'true';
+        if (isSessionSkippedVal && !primeCardSessionSkipped) {
+          setPrimeCardSessionSkipped(true);
+        }
         const isVerificationPending = guestPrimeVerifyPendingRaw === 'true';
         const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
         const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
@@ -721,7 +744,7 @@ const Main = (props) => {
           return;
         }
 
-        if (!isAnyGuestFlow) {
+        if (!isAnyGuestFlow && !isSkippedFlowVal) {
           setGuestVerifyModalVisible(false);
           setGuestVerifyData(null);
           setShowGuestPrimePrompt(false);
@@ -729,7 +752,7 @@ const Main = (props) => {
         }
         const verifyData = parseStoredJson(verifyRaw);
         const professionData = parseStoredJson(professionRaw);
-        const user = verifyResponseData || verifyData || professionData || authProfessionInfo;
+        const user = verifyResponseData || verifyData || professionData || DashboardReducer?.mainprofileResponse || authProfessionInfo;
         const professionType = String(
           verifyData?.profession_type || professionData?.profession_type ||
           user?.profession_type ||
@@ -793,7 +816,7 @@ const Main = (props) => {
           !isVerificationPending &&
           !isPrimeCardFlowComplete &&
           !primeCardSessionSkipped &&
-          !isSkippedFlow &&
+          !isSessionSkippedVal &&
           !isNonUsaGuest &&
           isUSAAndPhysician;
 
@@ -814,7 +837,7 @@ const Main = (props) => {
           return;
         }
 
-        if (!isAnyGuestFlow) {
+        if (!isAnyGuestFlow && !isSkippedFlowVal) {
           setPrimeadd(false);
           setShowGuestPrimePrompt(false);
           return;
@@ -846,7 +869,6 @@ const Main = (props) => {
           } else {
             await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
             await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
-            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
             setGuestVerifyModalVisible(false);
             setGuestVerifyData(null);
@@ -863,7 +885,6 @@ const Main = (props) => {
           if (hasFreshVerifyResponse) {
             await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
             await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
-            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
           }
           setGuestVerifyModalVisible(false);
@@ -875,7 +896,7 @@ const Main = (props) => {
       }
     };
     loadGuestVerifyModal();
-  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped]);
+  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
   const isPrimePaymentSuccess =
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
@@ -884,7 +905,7 @@ const Main = (props) => {
     return !hasActivePrimeMembership && subscription == false && allProfTake;
   }, [subscription, allProfTake, hasActivePrimeMembership]);
 
-  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
+  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || AuthReducer?.loginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
   const hsdSub = !hasActivePrimeMembership && (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
   const isNonUsaIpUser = Boolean(
     resolvedIpCountryCode &&
@@ -894,13 +915,13 @@ const Main = (props) => {
   );
   const endDateStringMain =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
-    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     finalProfessionmain?.subscriptions?.[0]?.end_date;
   useEffect(() => {
     if (endDateStringMain && allProfTake) {
       const endDateString =
         WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
-        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
         finalProfessionmain?.subscriptions?.[0]?.end_date;
       if (!endDateString) return;
       try {
@@ -1037,7 +1058,6 @@ const Main = (props) => {
     try {
       await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
       await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
-      await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
       await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
     } catch (error) {
       console.log('handleGuestVerifyAccount cleanup error', error);
@@ -1272,7 +1292,7 @@ const Main = (props) => {
           {(primeadd && !isDrawerVisible) && <PrimeCard
             primeadd={primeadd}
             setPrimeadd={setPrimeadd}
-            primaryButtonText={showGuestPrimePrompt ? 'Explore Free Trial 30 Days' : undefined}
+            primaryButtonText={showGuestPrimePrompt ? (isSkippedFlow ? 'Explore Free Trial 0 Days' : 'Explore Free Trial 30 Days') : undefined}
             onPrimaryAction={showGuestPrimePrompt ? handleGuestPrimeExploreTrial : undefined}
             secondaryButtonText={showGuestPrimePrompt ? 'Get Prime Membership' : undefined}
             onSecondaryAction={showGuestPrimePrompt ? handleGuestPrimeMembership : undefined}
