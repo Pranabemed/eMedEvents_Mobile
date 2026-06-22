@@ -176,6 +176,8 @@ const StackNav = props => {
     EnterOTP: EnterOTP,
     ResetMPIN: ResetMPIN,
     Main: Main,
+    StateLicensePage: Main,
+    PrimeCard: Main,
     CheckMembership: CheckMembership,
     TabNav: TabNavigator,
     ChooseSpecailization: ChooseSpecailization,

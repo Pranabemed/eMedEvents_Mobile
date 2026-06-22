@@ -23,6 +23,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 let status = "";
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -61,7 +62,8 @@ const VerifyMobileOTP = (props) => {
         if (AuthReducer?.signupResponse?.token) {
             let objToken = { "token": AuthReducer?.signupResponse?.token, "key": {} }
             connectionrequest()
-                .then(() => {
+                .then(async () => {
+                    await AsyncStorage.setItem('activeProfile', 'PrimeCard');
                     dispatch(walletCheckRequest(objToken))
                     dispatch(PrimeCheckRequest(objToken))
                     dispatch(mainprofileRequest(objToken))
@@ -76,6 +78,9 @@ const VerifyMobileOTP = (props) => {
             setTimeout(async () => {
                 const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
                 let objToken = { "token": loginHandleProccess, "key": {} }
+                if (loginHandleProccess) {
+                    await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+                }
                 dispatch(walletCheckRequest(objToken))
                 dispatch(PrimeCheckRequest(objToken));
                 dispatch(mainprofileRequest(objToken));
@@ -517,8 +522,8 @@ const VerifyMobileOTP = (props) => {
         }, 200);
     }, [props?.route?.params?.forceResend, resendMobile]);
     const isPrimeTrial = useMemo(() => {
-        return !!WebcastReducer?.PrimeCheckResponse?.subscription;
-    }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
+        return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
+    }, [WebcastReducer?.PrimeCheckResponse]);
 
     const hasWalletBalance = useMemo(() => {
         const raw = WebcastReducer?.walletCheckResponse?.balance;

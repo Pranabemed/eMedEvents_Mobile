@@ -31,6 +31,7 @@ import {
 import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 // ─── Module-level OTP send guard ─────────────────────────────────────────────
 // Same pattern as SplashEmail / LoginMobile. Stored outside the component so:
@@ -109,7 +110,8 @@ const SplashMobile = (props) => {
         if (AuthReducer?.signupResponse?.token) {
             const objToken = { token: AuthReducer.signupResponse.token, key: {} };
             connectionrequest()
-                .then(() => {
+                .then(async () => {
+                    await AsyncStorage.setItem('activeProfile', 'PrimeCard');
                     dispatch(walletCheckRequest(objToken));
                     dispatch(PrimeCheckRequest(objToken));
                     dispatch(mainprofileRequest(objToken));
@@ -123,6 +125,9 @@ const SplashMobile = (props) => {
         setTimeout(async () => {
             const token = await AsyncStorage.getItem(constants.TOKEN);
             const objToken = { token, key: {} };
+            if (token) {
+                await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+            }
             dispatch(walletCheckRequest(objToken));
             dispatch(PrimeCheckRequest(objToken));
             dispatch(mainprofileRequest(objToken));
@@ -444,8 +449,8 @@ const SplashMobile = (props) => {
     useEffect(() => { setStateCount(filteredStates); }, [filteredStates]);
 
     const isPrimeTrial = useMemo(() =>
-        !!WebcastReducer?.PrimeCheckResponse?.subscription,
-        [WebcastReducer?.PrimeCheckResponse?.subscription]
+        isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse),
+        [WebcastReducer?.PrimeCheckResponse]
     );
 
     const hasWalletBalance = useMemo(() => {

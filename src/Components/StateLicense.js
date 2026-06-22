@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
 import Dashboardmain from './Dashboardmain';
+import RestProfession from './RestProfession';
 import { licesensRequest, staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
@@ -72,8 +73,9 @@ const buildProfessionLabel = (profession, professionType) => {
 };
 
 let status = "";
-export default function StateLicense({ propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
+export default function StateLicense({ profileType, propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
+    const isSkipProfile = profileType === 'SkipProfile';
     const dispatch = useDispatch();
     const {
         setTakedata,
@@ -363,6 +365,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     }, [AuthReducer?.licesensResponse?.licensure_states, fulldashbaord]);
 
     const canAddLicenses =
+        profileType !== 'SkipProfile' &&
         allProfTake &&
         (() => {
             const isGlobalLoading =
@@ -491,6 +494,12 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
             restOfProfession();
         }
     }, [fulldashbaord])
+    useEffect(() => {
+        if (profileType === 'SkipProfile' && isFocus) {
+            restOfProfession();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileType, isFocus, resolvedProfessionHandle]);
     const useActivityCounts = () => {
         const responseData = DashboardReducer?.stateDashboardResponse?.data;
 
@@ -550,6 +559,9 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     );
     const hidetext = (!enables && !bothNoRequirement);
     const getDynamicHeight = () => {
+        if (profileType === 'SkipProfile') {
+            return normalize(225);
+        }
         if (enables) {
             return normalize(355)
         }
@@ -622,7 +634,7 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     const shouldShowAddLicenseCard =
-        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+        (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
         !fulldashbaord?.length &&
         !isNonUsaUser;
     const renderAddLicenseCard = () => (
@@ -692,8 +704,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                 {fulldashbaord?.length > 0 ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
                         <View style={{ height: getDynamicHeight(), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
-                            <View style={{ height: normalize(40), justifyContent: 'center' }}>
-                                {canAddLicenses ? (
+                            {canAddLicenses ? (
+                                <View style={{ height: normalize(40), justifyContent: 'center' }}>
                                     <TouchableOpacity
                                         onPress={() => {
                                             if (enables) {
@@ -727,8 +739,8 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                             fontWeight: "bold"
                                         }}>{"Add Licenses"}</Text>
                                     </TouchableOpacity>
-                                ) : null}
-                            </View>
+                                </View>
+                            ) : null}
                             <Carousel
                                 ref={carouselRef}
                                 layout={'default'}
@@ -758,127 +770,171 @@ export default function StateLicense({ propsData, setRenewal, renewal, setStatei
                                     />
                                 ))}
                             </View>
-                            {(!enables && !bothNoRequirement) ? <View>
-                                <Buttons
-                                    onPress={() => {
-                                        if (enables) {
-                                            setPrimeadd(true);
-                                        } else {
-                                            setStatepush(addit);
-                                            navigation.dispatch(
-                                                CommonActions.reset({
-                                                    index: 0,
-                                                    routes: [
-                                                        {
-                                                            name: "ChooseSpecailization",
-                                                            params: { stateID: getCurrentItem() }
-                                                        }
-                                                    ]
-                                                })
-                                            );
-                                        }
-                                    }}
-                                    height={normalize(40)}
-                                    width={normalize(300)}
-                                    backgroundColor={"#2896CD"}
-                                    borderRadius={normalize(5)}
-                                    text={`View Courses for ${finalDatCD} State Compliance`}
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterSemiBold}
-                                    fontWeight={"bold"}
-                                    marginBottom={normalize(10)}
-                                    source={"arrow-right"}
-                                    image={true}
-                                    size={20}
-                                    imageMarginLeft={normalize(277)}
-                                    loading={false}
-                                    imarginRight={normalize(20)}
-                                    iconPress={() => {
-                                        if (enables) {
-                                            setPrimeadd(true);
-                                        } else {
-                                            navigation.dispatch(
-                                                CommonActions.reset({
-                                                    index: 0,
-                                                    routes: [
-                                                        {
-                                                            name: "ChooseSpecailization",
-                                                            params: { stateID: getCurrentItem() }
-                                                        }
-                                                    ]
-                                                })
-                                            );
-                                        }
-                                    }}
-                                />
-                            </View> : (!bothNoRequirement && enables) ? <View>
-                                <Buttons
-                                    onPress={() => {
-                                        if (enables) {
-                                            setPrimeadd(true);
-                                        } else {
-                                            setStatepush(addit);
-                                            navigation.dispatch(
-                                                CommonActions.reset({
-                                                    index: 0,
-                                                    routes: [
-                                                        {
-                                                            name: "ChooseSpecailization",
-                                                            params: { stateID: getCurrentItem() }
-                                                        }
-                                                    ]
-                                                })
-                                            );
-                                        }
-                                    }}
-                                    height={normalize(40)}
-                                    width={normalize(300)}
-                                    backgroundColor={"#2896CD"}
-                                    borderRadius={normalize(5)}
-                                    text={`View Courses for ${finalDatCD} State Compliance`}
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterSemiBold}
-                                    fontWeight={"bold"}
-                                    marginBottom={normalize(10)}
-                                    source={"arrow-right"}
-                                    image={true}
-                                    size={20}
-                                    imageMarginLeft={normalize(277)}
-                                    loading={false}
-                                    imarginRight={normalize(20)}
-                                    iconPress={() => {
-                                        if (enables) {
-                                            setPrimeadd(true);
-                                        } else {
-                                            navigation.dispatch(
-                                                CommonActions.reset({
-                                                    index: 0,
-                                                    routes: [
-                                                        {
-                                                            name: "ChooseSpecailization",
-                                                            params: { stateID: getCurrentItem() }
-                                                        }
-                                                    ]
-                                                })
-                                            );
-                                        }
-                                    }}
-                                />
-                            </View> : null}
+                            {profileType !== 'SkipProfile' ? (
+                                (!enables && !bothNoRequirement) ? <View>
+                                    <Buttons
+                                        onPress={() => {
+                                            if (enables) {
+                                                setPrimeadd(true);
+                                            } else {
+                                                setStatepush(addit);
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "ChooseSpecailization",
+                                                                params: { stateID: getCurrentItem() }
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }
+                                        }}
+                                        height={normalize(40)}
+                                        width={normalize(300)}
+                                        backgroundColor={"#2896CD"}
+                                        borderRadius={normalize(5)}
+                                        text={`View Courses for ${finalDatCD} State Compliance`}
+                                        color={Colorpath.white}
+                                        fontSize={16}
+                                        fontFamily={Fonts.InterSemiBold}
+                                        fontWeight={"bold"}
+                                        marginBottom={normalize(10)}
+                                        source={"arrow-right"}
+                                        image={true}
+                                        size={20}
+                                        imageMarginLeft={normalize(277)}
+                                        loading={false}
+                                        imarginRight={normalize(20)}
+                                        iconPress={() => {
+                                            if (enables) {
+                                                setPrimeadd(true);
+                                            } else {
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "ChooseSpecailization",
+                                                                params: { stateID: getCurrentItem() }
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }
+                                        }}
+                                    />
+                                </View> : (!bothNoRequirement && enables) ? <View>
+                                    <Buttons
+                                        onPress={() => {
+                                            if (enables) {
+                                                setPrimeadd(true);
+                                            } else {
+                                                setStatepush(addit);
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "ChooseSpecailization",
+                                                                params: { stateID: getCurrentItem() }
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }
+                                        }}
+                                        height={normalize(40)}
+                                        width={normalize(300)}
+                                        backgroundColor={"#2896CD"}
+                                        borderRadius={normalize(5)}
+                                        text={`View Courses for ${finalDatCD} State Compliance`}
+                                        color={Colorpath.white}
+                                        fontSize={16}
+                                        fontFamily={Fonts.InterSemiBold}
+                                        fontWeight={"bold"}
+                                        marginBottom={normalize(10)}
+                                        source={"arrow-right"}
+                                        image={true}
+                                        size={20}
+                                        imageMarginLeft={normalize(277)}
+                                        loading={false}
+                                        imarginRight={normalize(20)}
+                                        iconPress={() => {
+                                            if (enables) {
+                                                setPrimeadd(true);
+                                            } else {
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "ChooseSpecailization",
+                                                                params: { stateID: getCurrentItem() }
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }
+                                        }}
+                                    />
+                                </View> : null
+                            ) : null}
                         </View>
-                        {allProfTake ? <View
-                            style={{
-                                width: normalize(320),
-                                alignSelf: 'center',
-                            }}>
-                            <Dashboardmain statepush={statepush} allProfTake={allProfTake} finddata={finddata} setPrimeadd={setPrimeadd} enables={enables} handleButtonPress={getCurrentItem()} setAddit={setAddit} addit={addit} setTakestate={setTakestate} takestate={takestate} cmecourse={cmecourse} tasksData={tasksData} cmeValult={cmeValult} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} hasTasks={hasTasks} DashboardReducer={DashboardReducer} totalcard={totalcard} />
-                        </View> : null}
+                        {isSkipProfile ? (
+                            <View
+                                style={{
+                                    width: normalize(320),
+                                    alignSelf: 'center',
+                                }}>
+                                <RestProfession
+                                    finalProfessionmain={finalProfessionmain}
+                                    setPrimeadd={setPrimeadd}
+                                    enables={enables}
+                                    addit={addit}
+                                    takestate={takestate}
+                                    navigation={navigation}
+                                    completedCount={completedCount}
+                                    pendingCount={pendingCount}
+                                    DashboardReducer={DashboardReducer}
+                                    CMEReducer={CMEReducer}
+                                    profileType={profileType}
+                                />
+                            </View>
+                        ) : allProfTake ? (
+                            <View
+                                style={{
+                                    width: normalize(320),
+                                    alignSelf: 'center',
+                                }}>
+                                <Dashboardmain
+                                    statepush={statepush}
+                                    allProfTake={allProfTake}
+                                    finddata={finddata}
+                                    setPrimeadd={setPrimeadd}
+                                    enables={enables}
+                                    handleButtonPress={getCurrentItem()}
+                                    setAddit={setAddit}
+                                    addit={addit}
+                                    setTakestate={setTakestate}
+                                    takestate={takestate}
+                                    cmecourse={cmecourse}
+                                    tasksData={tasksData}
+                                    cmeValult={cmeValult}
+                                    navigation={navigation}
+                                    completedCount={completedCount}
+                                    pendingCount={pendingCount}
+                                    hasTasks={hasTasks}
+                                    DashboardReducer={DashboardReducer}
+                                    totalcard={totalcard}
+                                />
+                            </View>
+                        ) : null}
 
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />
                         <Cmemodal setCmemodal={setCmemodal} isModal={cmemodal} onCmeFalse={cmeModalFalse} />
-                        <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />
+                        {!isSkipProfile && <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />}
                     </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <HomeShimmer />)}
             </View>
         </>

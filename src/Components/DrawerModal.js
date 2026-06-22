@@ -40,6 +40,7 @@ import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
 import { isNonUsaAccount, readNonUsaFlowState, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 let status = "";
 let status1 = "";
 export default function DrawerModal(props) {
@@ -288,8 +289,8 @@ export default function DrawerModal(props) {
       : profession || professionType || '';
   }, [resolvedProfessionSource]);
   const isPrimeTrial = useMemo(() => {
-    return !WebcastReducer?.PrimeCheckResponse?.subscription;
-  }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
+    return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
+  }, [WebcastReducer?.PrimeCheckResponse]);
   const takeSub = isPrimeTrial || finalProfession?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
   const endDateStringTake =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||

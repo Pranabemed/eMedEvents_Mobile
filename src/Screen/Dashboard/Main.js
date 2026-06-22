@@ -29,6 +29,7 @@ import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
@@ -222,6 +223,7 @@ const Main = (props) => {
     professionUpdateRequired: false,
     stateLicenseFlowCompleted: false,
   });
+  const [currentProfile, setCurrentProfile] = useState(null);
   useEffect(() => {
     let mounted = true;
     if (isFocus) {
@@ -572,6 +574,115 @@ const Main = (props) => {
 
     token_handle_vault();
   }, [isFocus]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await AsyncStorage.getItem('activeProfile');
+        setCurrentProfile(profile);
+      } catch (error) {
+        console.log('Error loading activeProfile', error);
+      }
+    };
+    if (isFocus) {
+      loadProfile();
+    }
+  }, [isFocus]);
+
+  useEffect(() => {
+    const hasDashboardData = !!DashboardReducer?.dashboardResponse?.data;
+    const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+
+    console.log('[PrimeRedirection] Check:', {
+      isFocus,
+      hasDashboardData,
+      user_usa: user?.usa_user,
+      userExists: !!user,
+    });
+    if (isFocus && hasDashboardData && user?.usa_user === true && isPhysicianFlow) {
+      const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0);
+      const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+      const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
+      const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(primeCheckResponse);
+      const primeCheckCompleted = Object.keys(primeCheckResponse || {}).length > 0 || WebcastReducer?.status === 'WebCast/PrimeCheckFailure';
+
+      console.log('[PrimeRedirection] Inside Condition:', {
+        primeTrailSuccess,
+        PrimePaymentSuccess,
+        isPrimeActive,
+        primeCheckCompleted,
+        isPrimeSubscriptionMissing: isPrimeSubscriptionMissing(primeCheckResponse),
+        primeCheckResponse
+      });
+
+      if (isPrimeActive) {
+        console.log('[PrimeRedirection] Prime Active, route:', props.route.name);
+        AsyncStorage.removeItem('activeProfile').then(() => {
+          setCurrentProfile(null);
+        }).catch(err => console.log('Error removing activeProfile', err));
+        if (props.route.name !== 'Home') {
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'TabNav' }]
+            })
+          );
+        }
+      } else if (primeCheckCompleted || isPrimeSubscriptionMissing(primeCheckResponse)) {
+        AsyncStorage.getItem('activeProfile').then((activeProfile) => {
+          console.log('[PrimeRedirection] activeProfile read:', activeProfile);
+          if (activeProfile !== 'SkipProfile') {
+            console.log('[PrimeRedirection] Navigating to PrimeCard');
+            return AsyncStorage.setItem('activeProfile', 'PrimeCard').then(() => {
+              props.navigation.navigate("PrimeCard");
+            });
+          } else {
+            console.log('[PrimeRedirection] SkipProfile active, not navigating');
+          }
+        }).catch(err => console.log('Error reading/setting activeProfile', err));
+      }
+    }
+  }, [isFocus, DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer.status, AuthReducer.primeTrailResponse, WebcastReducer.status, WebcastReducer.PrimePaymentResponse, WebcastReducer.PrimeCheckResponse, isPhysicianFlow]);
+
+  useEffect(() => {
+    const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
+    console.log('[PrimeCheckResponse Effect] Fired:', {
+      hasResponse: !!primeCheckResponse,
+      responseKeys: Object.keys(primeCheckResponse || {}).length,
+      msg: primeCheckResponse?.msg
+    });
+    if (!primeCheckResponse || Object.keys(primeCheckResponse).length === 0) return;
+    if (primeCheckResponse?.msg == 'No active subscription is there.') {
+      AsyncStorage.getItem('activeProfile').then((activeProfile) => {
+        console.log('[PrimeCheckResponse Effect] activeProfile read:', activeProfile);
+        if (activeProfile !== 'SkipProfile') {
+          console.log('[PrimeCheckResponse Effect] Setting activeProfile to PrimeCard');
+          return AsyncStorage.setItem('activeProfile', 'PrimeCard');
+        }
+      }).catch(err => {
+        console.log('Error setting activeProfile for PrimeCard', err);
+      });
+    }
+  }, [WebcastReducer?.PrimeCheckResponse]);
+
+  useEffect(() => {
+    if (isFocus && props.route.name === 'PrimeCard') {
+      const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+      const isUsa = user?.usa_user === true || user?.usa_user === 1 || user?.usa_user === '1';
+      console.log('[PrimeCard Route Effect] Fired. User USA:', isUsa);
+      if (isUsa) {
+        const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0);
+        const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+        const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse);
+        console.log('[PrimeCard Route Effect] isPrimeActive:', isPrimeActive);
+        if (!isPrimeActive) {
+          console.log('[PrimeCard Route Effect] Showing Guest Prime Prompt Modal');
+          setShowGuestPrimePrompt(true);
+          setPrimeadd(true);
+        }
+      }
+    }
+  }, [isFocus, props.route.name, DashboardReducer?.dashboardResponse?.data, DashboardReducer.mainprofileResponse, AuthReducer.status, WebcastReducer.status, WebcastReducer.PrimeCheckResponse]);
   const ipAddress = getPublicIP();
   useEffect(() => {
     if (PRIME_CARD_TEST_COUNTRY_CODE) {
@@ -657,6 +768,14 @@ const Main = (props) => {
       setForceNewProfession(true);
       await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
       setPrimeCardSessionSkipped(true);
+
+      const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+      const isUsa = user?.usa_user === true || user?.usa_user === 1 || user?.usa_user === '1';
+      if (isUsa) {
+        await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+        setCurrentProfile('SkipProfile');
+        props.navigation.navigate("TabNav");
+      }
     } catch (error) {
       console.log('handleGuestPrimeSkip flag error', error);
     }
@@ -1178,13 +1297,17 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
-                    {shouldRenderNewProfession
-                      ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : isPhysicianFlow
-                        ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : isNursingFlow
-                          ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                          : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                    {currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'
+                      ? (isPhysicianFlow
+                        ? <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                      : shouldRenderNewProfession
+                        ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                        : isPhysicianFlow
+                          ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          : isNursingFlow
+                            ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                            : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
                   </View>
                 </View>
               </ScrollView>
@@ -1289,16 +1412,19 @@ const Main = (props) => {
             </Pressable>
           </View>
             : null}
-          {(primeadd && !isDrawerVisible) && <PrimeCard
-            primeadd={primeadd}
-            setPrimeadd={setPrimeadd}
-            primaryButtonText={showGuestPrimePrompt ? (isSkippedFlow ? 'Explore Free Trial 0 Days' : 'Explore Free Trial 30 Days') : undefined}
-            onPrimaryAction={showGuestPrimePrompt ? handleGuestPrimeExploreTrial : undefined}
-            secondaryButtonText={showGuestPrimePrompt ? 'Get Prime Membership' : undefined}
-            onSecondaryAction={showGuestPrimePrompt ? handleGuestPrimeMembership : undefined}
-            showSkip={showGuestPrimePrompt}
-            onSkip={showGuestPrimePrompt ? handleGuestPrimeSkip : undefined}
-          />}
+          {(() => {
+            const shouldShowPrimeCardActions = showGuestPrimePrompt || props?.route?.name === 'PrimeCard';
+            return (primeadd && !isDrawerVisible) && <PrimeCard
+              primeadd={primeadd}
+              setPrimeadd={setPrimeadd}
+              primaryButtonText={shouldShowPrimeCardActions ? (isSkippedFlow ? 'Explore Free Trial 30 Days' : 'Explore Free Trial 30 Days') : undefined}
+              onPrimaryAction={shouldShowPrimeCardActions ? handleGuestPrimeExploreTrial : undefined}
+              secondaryButtonText={shouldShowPrimeCardActions ? 'Get Prime Membership' : undefined}
+              onSecondaryAction={shouldShowPrimeCardActions ? handleGuestPrimeMembership : undefined}
+              showSkip={shouldShowPrimeCardActions}
+              onSkip={shouldShowPrimeCardActions ? handleGuestPrimeSkip : undefined}
+            />;
+          })()}
           <Modal
             isVisible={guestVerifyModalVisible && !isDrawerVisible}
             onBackdropPress={() => { }}

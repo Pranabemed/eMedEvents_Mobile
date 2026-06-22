@@ -339,6 +339,8 @@ const DashoardVault = (props) => {
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
 
+    const [currentProfile, setCurrentProfile] = useState(null);
+
     useEffect(() => {
         let mounted = true;
         if (isFocus) {
@@ -346,8 +348,9 @@ const DashoardVault = (props) => {
                 readNonUsaFlowState(),
                 readNonUsaPermanentFlags(),
                 AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-                AsyncStorage.getItem(constants.PROFESSION)
-            ]).then(([state, flags, board_special, profession_data]) => {
+                AsyncStorage.getItem(constants.PROFESSION),
+                AsyncStorage.getItem('activeProfile')
+            ]).then(([state, flags, board_special, profession_data, activeProfile]) => {
                 if (!mounted) return;
 
                 const board_special_json = board_special ? JSON.parse(board_special) : null;
@@ -357,6 +360,7 @@ const DashoardVault = (props) => {
                 setNonUsaPermanentFlags(flags);
                 setFinalverifyvault(board_special_json);
                 setFinalProfession(profession_data_json);
+                setCurrentProfile(activeProfile);
                 setIsAsyncStorageLoaded(true);
             }).catch(err => {
                 console.log('Error loading AsyncStorage vault data', err);
@@ -389,10 +393,6 @@ const DashoardVault = (props) => {
     }, [isUsaProfile, nonUsaFlowState]);
     const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
-    const shouldShowAddLicenseCard =
-        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
-        !fulldashbaord?.length &&
-        !isNonUsaUser;
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const getDisplayProfession = (source) => {
         if (!source) return "";
@@ -401,6 +401,12 @@ const DashoardVault = (props) => {
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     const allProfTake = validHandles.has(getDisplayProfession(userObj));
+    const shouldShowAddLicenseCard =
+        allProfTake &&
+        currentProfile !== 'SkipProfile' &&
+        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+        !fulldashbaord?.length &&
+        !isNonUsaUser;
     const nonUsaStateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
     const nonUsaCertificates = nonUsaStateData?.['-1']?.certificates;
     let hasNonUsaCertificates = false;
@@ -654,7 +660,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : isNonUsaUser && !hasNonUsaCertificates ? (
+                        ) : (isNonUsaUser && !hasNonUsaCertificates) || (currentProfile === 'SkipProfile' && !fulldashbaord?.length) || (!allProfTake && !fulldashbaord?.length) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -668,7 +674,7 @@ const DashoardVault = (props) => {
                                         <TouchableOpacity
                                             style={stylesd.nonUsaButton}
                                             onPress={() => {
-                                                navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                                navigation.navigate("AddCredits", { isNonUsaUser: isNonUsaUser });
                                             }}
                                         >
                                             <Text style={stylesd.nonUsaButtonText}>Add Credits</Text>

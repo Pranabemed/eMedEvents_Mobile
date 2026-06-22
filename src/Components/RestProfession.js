@@ -19,7 +19,7 @@ import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../Navigator/StackNav';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
-const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer }) => {
+const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
     // Start as true so shimmer shows immediately on mount (before API fires)
     const [loading, setLoading] = useState(true);
@@ -280,10 +280,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         .trim()
         .replace(/\s+/g, '-');
     return (
-        <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-            <View style={{ marginTop: normalize(5) }}>
-                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
-            </View>
+        <View style={{ paddingHorizontal: normalize(10), paddingVertical: profileType === 'SkipProfile' ? 0 : normalize(10) }}>
+            {profileType !== 'SkipProfile' && (
+                <View style={{ marginTop: normalize(5) }}>
+                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
+                </View>
+            )}
             {completedCount == 1 ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), paddingHorizontal: normalize(10) }}>
                 <TouchableOpacity onPress={() => {
                     if (enables) {
@@ -387,7 +389,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     </TouchableOpacity>
                 </TouchableOpacity>
             </View> : null}
-            {CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && <View style={{ paddingHorizontal: normalize(0), paddingVertical: (completedCount == 0 && pendingCount == 0) ? normalize(10) : normalize(5) }}>
+            {profileType !== 'SkipProfile' && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && <View style={{ paddingHorizontal: normalize(0), paddingVertical: (completedCount == 0 && pendingCount == 0) ? normalize(10) : normalize(5) }}>
                 <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}</Text>
             </View>}
             <View>

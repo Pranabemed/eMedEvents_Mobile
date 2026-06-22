@@ -25,6 +25,7 @@ import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow.js';
+import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 const ProfileMain = (props) => {
     const {
@@ -237,8 +238,8 @@ const ProfileMain = (props) => {
         setAllProf(getDisplayProfession(allHandle));
     }, [allHandle])
     const isPrimeTrial = useMemo(() => {
-            return !WebcastReducer?.PrimeCheckResponse?.subscription;
-        }, [WebcastReducer?.PrimeCheckResponse?.subscription]);
+            return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
+        }, [WebcastReducer?.PrimeCheckResponse]);
     const takeSub = isPrimeTrial || finalProfessionprof?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultprof?.subscription_user == "non-subscribed";
     console.log(takeSub, "yakegfjghjf-------", allProfTake, "sfgdjkghf=====");
     const endDateStringProfile =

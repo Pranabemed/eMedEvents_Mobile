@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, Linking, ActivityIndicator, Animated, Easing, Alert, StyleSheet, Image, Platform, Pressable } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colorpath from '../../Themes/Colorpath';
 import CustomTextField from '../../Components/CustomTextfiled';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -18,6 +19,20 @@ import Search from 'react-native-vector-icons/AntDesign';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch }) => {
     const [loads, setLoads] = useState(false);
+    const [currentProfile, setCurrentProfile] = useState('');
+    useEffect(() => {
+        const checkProfile = async () => {
+            try {
+                const profile = await AsyncStorage.getItem("activeProfile");
+                setCurrentProfile(profile || '');
+            } catch (e) {
+                console.log(e);
+            }
+        };
+        if (isfocused) {
+            checkProfile();
+        }
+    }, [isfocused]);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
@@ -452,31 +467,33 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                     borderWidth={0}
                     borderColor={Colorpath.ButtonColr}
                 />}
-                <View style={{
-                    bottom: 0,
-                    right: 0,
-                    marginLeft: normalize(170),
-                    left: 0,
-                    top: 9
-                }}>
-                    <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalut: certificatedata, isNonUsaUser })} style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: normalize(35),
-                        width: normalize(140),
-                        backgroundColor: "#2896CD",
-                        borderWidth: 0.5,
-                        borderColor: "#AAAAAA",
-                        borderRadius: normalize(10),
-                        paddingHorizontal: normalize(0)
+                {currentProfile !== 'SkipProfile' && (
+                    <View style={{
+                        bottom: 0,
+                        right: 0,
+                        marginLeft: normalize(170),
+                        left: 0,
+                        top: 9
                     }}>
-                        <View style={{gap:normalize(5),flexDirection:"row"}}>
-                        <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
-                        <Text style={{fontFamily:Fonts.InterMedium,fontSize:15,color:"#FFFFFF"}}>{"Add Credits"}</Text>
-                        </View>
-                    </Pressable>
-                </View>
+                        <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalut: certificatedata, isNonUsaUser })} style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: normalize(35),
+                            width: normalize(140),
+                            backgroundColor: "#2896CD",
+                            borderWidth: 0.5,
+                            borderColor: "#AAAAAA",
+                            borderRadius: normalize(10),
+                            paddingHorizontal: normalize(0)
+                        }}>
+                            <View style={{gap:normalize(5),flexDirection:"row"}}>
+                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
+                            <Text style={{fontFamily:Fonts.InterMedium,fontSize:15,color:"#FFFFFF"}}>{"Add Credits"}</Text>
+                            </View>
+                        </Pressable>
+                    </View>
+                )}
             </>
         </>
         {expireDatecredit ? <Modal
