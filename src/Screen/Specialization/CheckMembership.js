@@ -335,6 +335,7 @@ const CheckMembership = (props) => {
     };
     const handleSkip = async () => {
         try {
+            dispatch(primeTrailRequest({}));
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');

@@ -15,7 +15,7 @@ import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
-import { licesensRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
+import { licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -762,6 +762,7 @@ const Main = (props) => {
   const handleGuestPrimeSkip = async () => {
     await setGuestPrimeVerificationPending();
     try {
+      dispatch(primeTrailRequest({}));
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
       setIsSkippedFlow(true);

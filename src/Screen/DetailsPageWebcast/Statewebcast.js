@@ -81,6 +81,7 @@ const Statewebcast = props => {
     const [conferenceText, setConferenceText] = useState(null);
     const [addtocartload, setAddtocartload] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
     const [downlinkdt, setDownlinkdt] = useState(false);
     const [loadingdowndt, setLoadingdowndt] = useState(false);
     const [pdfUridt, setPdfUridt] = useState("");
@@ -307,6 +308,7 @@ const Statewebcast = props => {
         }
         connectionrequest()
             .then(() => {
+                setIsWaitingForResponse(true);
                 dispatch(webcastDeatilsRequest(obj));
             })
             .catch((err) => {
@@ -663,22 +665,30 @@ const Statewebcast = props => {
 
         switch (WebcastReducer.status) {
             case 'WebCast/webcastDeatilsRequest':
-                setLoading(true);
+                if (isWaitingForResponse) {
+                    setLoading(true);
+                }
                 break;
             case 'WebCast/webcastDeatilsSuccess': {
+                if (!isWaitingForResponse) break;
                 console.log("webcastdeatilsfollowed>>>>", WebcastReducer?.webcastDeatilsResponse);
                 const validatedWebcastPayload = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
                 if (validatedWebcastPayload) {
                     setWebcastdeatils(validatedWebcastPayload);
                     setLoading(false);
+                    setIsWaitingForResponse(false);
                 } else if (isGuestWebcastFlow) {
                     openGuestFallbackInBrowser();
+                    setIsWaitingForResponse(false);
                 } else {
                     setLoading(false);
+                    setIsWaitingForResponse(false);
                 }
                 break;
             }
             case 'WebCast/webcastDeatilsFailure':
+                if (!isWaitingForResponse) break;
+                setIsWaitingForResponse(false);
                 if (isGuestWebcastFlow) {
                     openGuestFallbackInBrowser();
                     break;
@@ -694,7 +704,7 @@ const Statewebcast = props => {
                 }
                 break;
         }
-    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, getValidatedWebcastPayload, isGuestWebcastFlow, openGuestFallbackInBrowser, webcastdeatils, urltrack, props.navigation]);
+    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, getValidatedWebcastPayload, isGuestWebcastFlow, openGuestFallbackInBrowser, webcastdeatils, urltrack, props.navigation, isWaitingForResponse]);
     return (
         <>
             <MyStatusBar

@@ -272,33 +272,31 @@ const Boardvaultcomponent = ({ takeID, handleBoardname, lengthcheck, certificate
                                     borderWidth={0}
                                     borderColor={Colorpath.ButtonColr}
                                 />}
-                                {currentProfile !== 'SkipProfile' && (
-                                    <View style={{
-                                        bottom: 0,
-                                        right: 0,
-                                        marginLeft: normalize(170),
-                                        left: 0,
-                                        top: 10
+                                <View style={{
+                                    bottom: 0,
+                                    right: 0,
+                                    marginLeft: normalize(170),
+                                    left: 0,
+                                    top: 10
+                                }}>
+                                    <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalutboard: certificateboard })} style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        height: normalize(35),
+                                        width: normalize(140),
+                                        backgroundColor: "#2896CD",
+                                        borderWidth: 0.5,
+                                        borderColor: "#AAAAAA",
+                                        borderRadius: normalize(10),
+                                        paddingHorizontal: normalize(0)
                                     }}>
-                                        <Pressable onPress={() => navigation.navigate("AddCredits", { creditvalutboard: certificateboard })} style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            height: normalize(35),
-                                            width: normalize(140),
-                                            backgroundColor: "#2896CD",
-                                            borderWidth: 0.5,
-                                            borderColor: "#AAAAAA",
-                                            borderRadius: normalize(10),
-                                            paddingHorizontal: normalize(0)
-                                        }}>
-                                            <View style={{ gap: normalize(5), flexDirection: "row" }}>
-                                                <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
-                                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 15, color: "#FFFFFF" }}>{"Add Credits"}</Text>
-                                            </View>
-                                        </Pressable>
-                                    </View>
-                                )}
+                                        <View style={{ gap: normalize(5), flexDirection: "row" }}>
+                                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
+                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 15, color: "#FFFFFF" }}>{"Add Credits"}</Text>
+                                        </View>
+                                    </Pressable>
+                                </View>
                             </View>
                         </>
                     )}
