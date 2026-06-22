@@ -14,6 +14,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -85,9 +86,33 @@ export default function Splash(props) {
   const [bootstrapChecked, setBootstrapChecked] = useState(false);
   const [professionState, setProfessionState] = useState(null);
   const [isGuestConvertedUser, setIsGuestConvertedUser] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState(null);
+  const [loadingCountry, setLoadingCountry] = useState(true);
+  const [loadingVerify, setLoadingVerify] = useState(false);
 
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const detectCountry = async () => {
+      try {
+        const geoInfo = await getCountryAndDialCode();
+        if (mounted && geoInfo) {
+          const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
+          setDetectedCountry(ipCountry);
+        }
+        if (mounted) setLoadingCountry(false);
+      } catch (error) {
+        console.log('[Splash] geo lookup failed', error);
+        if (mounted) setLoadingCountry(false);
+      }
+    };
+    detectCountry();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const resetToSafeEntry = async () => {
     try {
@@ -289,6 +314,7 @@ export default function Splash(props) {
           if (loginHandleProccess) {
             startupRequestedRef.current = true;
             let objToken = { "token": loginHandleProccess, "key": {} };
+            setLoadingVerify(true);
             connectionrequest()
               .then(() => {
                 dispatch(tokenRequest(objToken));
@@ -298,7 +324,10 @@ export default function Splash(props) {
                 dispatch(verifyRequest(objToken));
                 setLoadingDashboard(true);
               })
-              .catch((err) => showErrorAlert("Please connect to internet", err));
+              .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+                setLoadingVerify(false);
+              });
           } else {
             const playerSession = await AsyncStorage.getItem('PLAYERSESSION');
             if (playerSession) {
@@ -329,6 +358,12 @@ export default function Splash(props) {
       console.log(error);
     }
   }, [deepLinkBootstrapActive, isFocus]);
+
+  useEffect(() => {
+    if (AuthReducer?.status === 'Auth/verifySuccess' || AuthReducer?.status === 'Auth/verifyFailure') {
+      setLoadingVerify(false);
+    }
+  }, [AuthReducer?.status]);
 
   useEffect(() => {
     const token_handle = () => {
@@ -490,6 +525,9 @@ export default function Splash(props) {
   useEffect(() => {
     if (!bootstrapChecked) return;
     if (hasNavigatedRef.current) return;
+    if (loadingDashboard) return;
+    if (loadingVerify) return;
+    if (loadingCountry) return;
 
     const loginResponse = AuthReducer?.loginResponse || {};
     const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
@@ -551,12 +589,17 @@ export default function Splash(props) {
       setNonUsaState(null);
     }
 
-    const isNonUsa = !isUsaProfile && (
-      isNonUsaAccount(verifyData) ||
-      (nonUsaState?.isNonUsa === true) ||
-      (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0') ||
-      hasNonUsaPermanentFlow
-    );
+    const ipCountry = String(detectedCountry || '').trim().toUpperCase();
+    const isNonUsaIp = ipCountry && ipCountry !== 'US' && ipCountry !== 'USA';
+
+    const isNonUsa = (
+      !isUsaProfile && (
+        isNonUsaAccount(verifyData) ||
+        (nonUsaState?.isNonUsa === true) ||
+        (professionState?.usa_user === false || professionState?.usa_user === 0 || professionState?.usa_user === '0') ||
+        hasNonUsaPermanentFlow
+      )
+    ) || isNonUsaIp;
     const isNonUsaStateLicenseFlowCompleted = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
 
     if (isNonUsa) {
@@ -722,7 +765,7 @@ export default function Splash(props) {
       } else if (noPhoneDt) {
         hasNavigatedRef.current = true;
         props.navigation.dispatch(
-          CommonActions.reset({ index: 0, routes: [{ name: "AddMobile" }] })
+          CommonActions.reset({ index: 0, routes: [{ name: isNonUsa ? "TabNav" : "AddMobile" }] })
         );
       } else if (!isPhoneVerified) {
         hasNavigatedRef.current = true;
@@ -758,6 +801,10 @@ export default function Splash(props) {
     bootstrapChecked,
     professionState,
     isGuestConvertedUser,
+    AuthReducer?.status,
+    detectedCountry,
+    loadingCountry,
+    loadingVerify,
   ]);
 
   const splashJson = require('../../Lottie/Splash-Screen-Intro.json');

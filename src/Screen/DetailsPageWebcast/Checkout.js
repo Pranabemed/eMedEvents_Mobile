@@ -150,8 +150,11 @@ const Checkout = (props) => {
         ];
 
         const hideStatuses = [
+            'WebCast/saveRegistSuccess',
             'WebCast/saveRegistFailure',
+            'WebCast/cartCheckoutSuccess',
             'WebCast/cartCheckoutFailure',
+            'WebCast/FreeTransSuccess',
             'WebCast/FreeTransFailure',
             'WebCast/StatusPaymentSuccess',
             'WebCast/StatusPaymentFailure',
@@ -876,7 +879,7 @@ const Checkout = (props) => {
                 console.log(WebcastReducer?.TransemailcheckResponse?.data?.isRegistered == true, "TransemailcheckResponse=====");
                 if (WebcastReducer?.TransemailcheckResponse?.data?.isRegistered == true) {
                     setAllmsg(formData && formData[0]?.emailad);
-                    setIsVisibletext(!isVisibletext);
+                    showModal();
                     // showErrorAlert(`This user ${(formData && formData[0]?.emailad)} is already registered for the selected ticket.`);
 
                     // Alert.alert("eMedEvents",`This user ${(formData && formData[0]?.emailad)} is already registered for the selected ticket.`,
@@ -1070,6 +1073,7 @@ const Checkout = (props) => {
         setIsVisibletext(true);
         setTimeout(() => {
             setIsVisibletext(false);
+            setAllmsg("");
         }, 5000);
     };
 
@@ -1956,6 +1960,14 @@ const Checkout = (props) => {
                 </KeyboardAvoidingView>
                 {allmsg ? <Modal
                     isVisible={isVisibletext}
+                    onBackdropPress={() => {
+                        setIsVisibletext(false);
+                        setAllmsg("");
+                    }}
+                    onBackButtonPress={() => {
+                        setIsVisibletext(false);
+                        setAllmsg("");
+                    }}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                     backdropTransitionOutTiming={0}

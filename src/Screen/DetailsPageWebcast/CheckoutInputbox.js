@@ -732,7 +732,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={isGuestCheckout || index !== 0}
+                  editable={true}
                 />
               </View>
             </View>
@@ -753,7 +753,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={isGuestCheckout || index !== 0}
+                  editable={true}
                 />
               </View>
             </View>
@@ -1497,7 +1497,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={isGuestCheckout || index !== 0}
+                  editable={true}
                 />
               </View>
             </View>
@@ -1518,7 +1518,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   keyboardType="default"
                   showCountryCode={false}
                   maxlength={100}
-                  editable={isGuestCheckout || index !== 0}
+                  editable={true}
                 />
               </View>
             </View>
