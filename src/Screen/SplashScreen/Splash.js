@@ -15,6 +15,7 @@ import LottieView from 'lottie-react-native';
 import TokenManager from '../../Utils/Helpers/TokenManager';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { loginSuccess, signupSuccess, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
@@ -291,6 +292,18 @@ export default function Splash(props) {
           const currentToken = await AsyncStorage.getItem(constants.TOKEN);
           const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
           const hasGuestRegistrationFlow = Boolean(guestFlowRaw);
+          const persistedAuthRaw = await AsyncStorage.getItem(constants.AUTH_USER_DATA);
+          if (persistedAuthRaw && (!AuthReducer?.loginResponse || Object.keys(AuthReducer.loginResponse || {}).length === 0)) {
+            try {
+              const persistedAuthData = JSON.parse(persistedAuthRaw);
+              if (persistedAuthData) {
+                dispatch(loginSuccess(persistedAuthData));
+                dispatch(signupSuccess(persistedAuthData));
+              }
+            } catch (error) {
+              console.log('[Splash] Failed to restore persisted auth data:', error);
+            }
+          }
 
           if (hasGuestRegistrationFlow && !currentToken) {
             setHasAuthToken(false);
@@ -309,6 +322,9 @@ export default function Splash(props) {
 
           const loginHandleProccess = await TokenManager.ensureValidToken('splash-bootstrap');
           setHasAuthToken(Boolean(loginHandleProccess));
+          if (loginHandleProccess) {
+            dispatch(tokenSuccess(loginHandleProccess));
+          }
           setBootstrapChecked(true);
 
           if (loginHandleProccess) {

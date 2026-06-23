@@ -24,6 +24,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+const normalizeProfessionHandle = (professionHandle) =>
+  String(professionHandle || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -397,6 +402,18 @@ const Login = (props) => {
 
   const loginResponse = AuthReducer?.loginResponse || {};
   const user = loginResponse?.user || {};
+  const normalizedProfessionHandle = normalizeProfessionHandle(
+    user?.profession && user?.profession_type ? `${user.profession}-${user.profession_type}` : `${user?.profession || ''}-${user?.profession_type || ''}`
+  );
+  const subscriptionList = Array.isArray(user?.subscription) ? user.subscription : [];
+  const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+  const shouldShowPrimeCardForLogin =
+    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
+    subscriptionUser === 'non-subscribed' &&
+    subscriptionList.length === 0;
+  const shouldShowStateLicenseForLogin =
+    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
+    subscriptionList.length > 0;
   const chooseStatecardResponse = AuthReducer?.chooseStatecardResponse || {};
 
   // Memoized derived values
@@ -520,6 +537,13 @@ const Login = (props) => {
     }
     if (isEmailVerified && isPhoneNotVerified) {
       handleNavigation("LoginMobile", { validPh: { cellno: loginResponse?.phone, phonecode: phoneCountryCode } });
+      return;
+    }
+    if (allProfTake && (shouldShowPrimeCardForLogin || shouldShowStateLicenseForLogin)) {
+      handleNavigation("PrimeCard", {
+        ...props?.route?.params,
+        subscriptionDataExists: shouldShowStateLicenseForLogin || undefined,
+      });
       return;
     }
     if (allProfTake && !hasLicense && !hasStateLicenseData.current) {

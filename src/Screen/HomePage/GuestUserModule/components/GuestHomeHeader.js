@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View, Modal, FlatList, TextInput, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import SearchIcon from 'react-native-vector-icons/Ionicons';
@@ -20,6 +20,23 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const [statesList, setStatesList] = useState([]);
+
+  const placeholders = useMemo(() => [
+    "Search for CME/CE courses",
+    "Search for your state required courses ",
+    "Search for topic",
+    "Search for specialty",
+    "Search for medical conferences",
+    "Search for conferences by location "
+  ], []);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex(prevIndex => (prevIndex + 1) % placeholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [placeholders]);
 
   useEffect(() => {
     if (isUsaUser === false) return;
@@ -190,16 +207,11 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
         }
       >
         <SearchIcon name="search" size={20} color="#9CA3AF" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.searchTextScrollContent}
-          style={styles.searchTextScroll}
-        >
-          <Text numberOfLines={1} style={styles.searchText}>
-            Search CME, conferences, specialties
+        <View style={styles.searchTextScroll}>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={styles.searchText}>
+            {placeholders[placeholderIndex]}
           </Text>
-        </ScrollView>
+        </View>
         <Icon name="mic-none" size={20} color="#9CA3AF" />
       </Pressable>
     );
@@ -239,16 +251,11 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
         }
       >
         <SearchIcon name="search" size={20} color="#9CA3AF" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.searchTextScrollContent}
-          style={styles.searchTextScroll}
-        >
-          <Text numberOfLines={1} style={styles.searchText}>
-            Search CME, conferences, specialties
+        <View style={styles.searchTextScroll}>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={styles.searchText}>
+            {placeholders[placeholderIndex]}
           </Text>
-        </ScrollView>
+        </View>
         <Icon name="mic-none" size={20} color="#9CA3AF" />
       </Pressable>
 

@@ -1,5 +1,5 @@
 import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, ActivityIndicator } from 'react-native';
-import React, { useLayoutEffect, useState, useContext, useEffect } from 'react'
+import React, { useLayoutEffect, useState, useContext, useEffect, useRef } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -115,6 +115,7 @@ const CheckMembership = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isGuestUserFlow = props?.route?.params?.fromGuestUser === true;
     const [isEligible, setIsEligible] = useState(null);
+    const pendingFreeTrialNavigationRef = useRef(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -297,22 +298,8 @@ const CheckMembership = (props) => {
     ]
     const [linearText, setLinearText] = useState(true);
     const handleClk = () => {
-        (async () => {
-            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
-            await AsyncStorage.removeItem('SessionPrimeSkipped');
-            await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
-            await clearNonUsaFlowState();
-            props.navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        { name: isGuestUserFlow ? "GuestUser" : "TabNav" }
-                    ],
-                })
-            );
-        })().catch(error => {
-            console.log('CheckMembership free trial flag error', error);
-        });
+        pendingFreeTrialNavigationRef.current = true;
+        dispatch(primeTrailRequest({}));
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
@@ -335,10 +322,11 @@ const CheckMembership = (props) => {
     };
     const handleSkip = async () => {
         try {
-            dispatch(primeTrailRequest({}));
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
+            await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+            require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'SkipProfile');
             await clearNonUsaFlowState();
         } catch (error) {
             console.log('CheckMembership skip flag error', error);
@@ -351,6 +339,18 @@ const CheckMembership = (props) => {
             })
         );
     };
+
+    useEffect(() => {
+        if (!pendingFreeTrialNavigationRef.current) return;
+        if (AuthReducer?.status !== 'Auth/primeTrailSuccess') return;
+        pendingFreeTrialNavigationRef.current = false;
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "PrimeCard", params: { ...props?.route?.params, exploreTrialClicked: true } }],
+            })
+        );
+    }, [AuthReducer?.status, props.navigation, props?.route?.params]);
 
     return (
         <>

@@ -1,5 +1,5 @@
 import { View, Text, Platform, TouchableOpacity, FlatList, ScrollView, Image, KeyboardAvoidingView, Alert, BackHandler } from 'react-native'
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -36,22 +36,22 @@ const HeaderSearch = (props) => {
     const [searchkey, setSearchkey] = useState("");
     const [hadtr, setHadtr] = useState(true);
     console.log(props?.route?.params?.taskData, "fdmlsdklmg------1233344", searchText, WebcastReducer?.webcastsearchResponse)
-    const placeholders = [
+    const placeholders = useMemo(() => [
         "Search for CME/CE courses",
         "Search for your state required courses ",
         "Search for topic",
         "Search for specialty",
         "Search for medical conferences",
         "Search for conferences by location "
-    ];
+    ], []);
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
-    // useEffect(() => {
-    //     const timeoutId = setTimeout(() => {
-    //         setPlaceholderIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
-    //     }, 3000);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPlaceholderIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
+        }, 3000);
 
-    //     return () => clearTimeout(timeoutId);
-    // }, [placeholderIndex]);
+        return () => clearInterval(interval);
+    }, [placeholders]);
     useEffect(() => {
         if (searchText == "") {
             setHadtr(true);

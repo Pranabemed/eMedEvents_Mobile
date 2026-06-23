@@ -210,8 +210,7 @@ const Main = (props) => {
   const [finalverifyvaultmain, setFinalverifyvaultmain] = useState(null);
   const [finalProfessionmain, setFinalProfessionmain] = useState(null);
   const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
-  const [freeTrail, setFreeTrail] = useState(false);
-  const [daysleft, setDaysleft] = useState(false);
+  // freeTrail and daysleft state variables are replaced with synchronous memoized values below
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
   const [isSkippedFlow, setIsSkippedFlow] = useState(false);
   const [guestVerifyData, setGuestVerifyData] = useState(null);
@@ -224,6 +223,44 @@ const Main = (props) => {
     stateLicenseFlowCompleted: false,
   });
   const [currentProfile, setCurrentProfile] = useState(null);
+  const [hasAllProfTake, setHasAllProfTake] = useState(false);
+  const [hasEnables, setHasEnables] = useState(false);
+  const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
+  useEffect(() => {
+    const loadExploreTrialClicked = async () => {
+      try {
+        const val = await AsyncStorage.getItem('ExploreTrialClicked');
+        setExploreTrialClicked(val === 'true');
+      } catch (error) {
+        console.log('loadExploreTrialClicked error', error);
+      }
+    };
+    if (isFocus) {
+      loadExploreTrialClicked();
+    }
+  }, [isFocus]);
+  const endDateStringMain =
+    WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+    finalProfessionmain?.subscriptions?.[0]?.end_date;
+  const startDateStringMain =
+    WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+    finalProfessionmain?.subscriptions?.[0]?.start_date;
+  const isSubscriptionExpiredSync = useMemo(() => {
+    if (!endDateStringMain) return false;
+    try {
+      const endDate = new Date(endDateStringMain);
+      const startDate = startDateStringMain ? new Date(startDateStringMain) : null;
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      return normalizedCurrentDate >= normalizedEndDate && (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate);
+    } catch (e) {
+      return false;
+    }
+  }, [endDateStringMain, startDateStringMain]);
   useEffect(() => {
     let mounted = true;
     if (isFocus) {
@@ -267,6 +304,7 @@ const Main = (props) => {
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const primeTrailNavigateRef = useRef(false);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
@@ -336,6 +374,18 @@ const Main = (props) => {
   const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
   const isPhysicianFlow = allProfTake;
   const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+
+  useEffect(() => {
+    if (allProfTake) {
+      setHasAllProfTake(true);
+    }
+  }, [allProfTake]);
+
+  useEffect(() => {
+    if (enables) {
+      setHasEnables(true);
+    }
+  }, [enables]);
   const shouldHoldSkeleton = !isAsyncStorageLoaded || ((isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady);
   const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
@@ -348,14 +398,14 @@ const Main = (props) => {
     nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
     !hasAnyLicenseData;
   const bottomBannerSpacing = useMemo(() => {
-    if (enables && allProfTake) {
+    if ((enables || isSubscriptionExpiredSync) && allProfTake) {
       return normalize(96);
     }
     if (freeTrail) {
       return normalize(150);
     }
     return Platform.OS === 'ios' ? normalize(16) : normalize(80);
-  }, [allProfTake, enables, freeTrail]);
+  }, [allProfTake, enables, freeTrail, isSubscriptionExpiredSync]);
   const homeBottomSpacing = useMemo(
     () => bottomBannerSpacing + (Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, normalize(8))),
     [bottomBannerSpacing, insets.bottom]
@@ -603,7 +653,8 @@ const Main = (props) => {
       const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0);
       const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
       const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
-      const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(primeCheckResponse);
+      const hasSubscriptionData = Array.isArray(user?.subscription) && user.subscription.length > 0;
+      const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(primeCheckResponse) || hasSubscriptionData;
       const primeCheckCompleted = Object.keys(primeCheckResponse || {}).length > 0 || WebcastReducer?.status === 'WebCast/PrimeCheckFailure';
 
       console.log('[PrimeRedirection] Inside Condition:', {
@@ -615,11 +666,15 @@ const Main = (props) => {
         primeCheckResponse
       });
 
-      if (isPrimeActive) {
-        console.log('[PrimeRedirection] Prime Active, route:', props.route.name);
-        AsyncStorage.removeItem('activeProfile').then(() => {
-          setCurrentProfile(null);
-        }).catch(err => console.log('Error removing activeProfile', err));
+      if (isPrimeActive || enables || isSubscriptionExpiredSync) {
+        console.log('[PrimeRedirection] Prime Active or Expired (enables/sync), route:', props.route.name);
+        AsyncStorage.getItem('activeProfile').then((activeProfile) => {
+          if (activeProfile !== 'SkipProfile') {
+            AsyncStorage.removeItem('activeProfile').then(() => {
+              setCurrentProfile(null);
+            }).catch(err => console.log('Error removing activeProfile', err));
+          }
+        }).catch(err => console.log('Error checking activeProfile on redirection', err));
         if (props.route.name !== 'Home') {
           props.navigation.dispatch(
             CommonActions.reset({
@@ -628,7 +683,7 @@ const Main = (props) => {
             })
           );
         }
-      } else if (primeCheckCompleted || isPrimeSubscriptionMissing(primeCheckResponse)) {
+      } else if ((primeCheckCompleted || isPrimeSubscriptionMissing(primeCheckResponse)) && !isSubscriptionExpiredSync) {
         AsyncStorage.getItem('activeProfile').then((activeProfile) => {
           console.log('[PrimeRedirection] activeProfile read:', activeProfile);
           if (activeProfile !== 'SkipProfile') {
@@ -642,7 +697,7 @@ const Main = (props) => {
         }).catch(err => console.log('Error reading/setting activeProfile', err));
       }
     }
-  }, [isFocus, DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer.status, AuthReducer.primeTrailResponse, WebcastReducer.status, WebcastReducer.PrimePaymentResponse, WebcastReducer.PrimeCheckResponse, isPhysicianFlow]);
+  }, [isFocus, DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer.status, AuthReducer.primeTrailResponse, WebcastReducer.status, WebcastReducer.PrimePaymentResponse, WebcastReducer.PrimeCheckResponse, isPhysicianFlow, enables, isSubscriptionExpiredSync]);
 
   useEffect(() => {
     const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
@@ -652,7 +707,7 @@ const Main = (props) => {
       msg: primeCheckResponse?.msg
     });
     if (!primeCheckResponse || Object.keys(primeCheckResponse).length === 0) return;
-    if (primeCheckResponse?.msg == 'No active subscription is there.') {
+    if (primeCheckResponse?.msg == 'No active subscription is there.' && !isSubscriptionExpiredSync) {
       AsyncStorage.getItem('activeProfile').then((activeProfile) => {
         console.log('[PrimeCheckResponse Effect] activeProfile read:', activeProfile);
         if (activeProfile !== 'SkipProfile') {
@@ -663,7 +718,7 @@ const Main = (props) => {
         console.log('Error setting activeProfile for PrimeCard', err);
       });
     }
-  }, [WebcastReducer?.PrimeCheckResponse]);
+  }, [WebcastReducer?.PrimeCheckResponse, isSubscriptionExpiredSync]);
 
   useEffect(() => {
     if (isFocus && props.route.name === 'PrimeCard') {
@@ -673,16 +728,17 @@ const Main = (props) => {
       if (isUsa) {
         const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0);
         const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
-        const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse);
+        const hasSubscriptionData = props?.route?.params?.subscriptionDataExists === true;
+        const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse) || hasSubscriptionData;
         console.log('[PrimeCard Route Effect] isPrimeActive:', isPrimeActive);
-        if (!isPrimeActive) {
+        if (!isPrimeActive && AuthReducer?.status !== 'Auth/primeTrailRequest' && currentProfile !== 'SkipProfile') {
           console.log('[PrimeCard Route Effect] Showing Guest Prime Prompt Modal');
           setShowGuestPrimePrompt(true);
           setPrimeadd(true);
         }
       }
     }
-  }, [isFocus, props.route.name, DashboardReducer?.dashboardResponse?.data, DashboardReducer.mainprofileResponse, AuthReducer.status, WebcastReducer.status, WebcastReducer.PrimeCheckResponse]);
+  }, [isFocus, props.route.name, DashboardReducer?.dashboardResponse?.data, DashboardReducer.mainprofileResponse, AuthReducer.status, WebcastReducer.status, WebcastReducer.PrimeCheckResponse, currentProfile]);
   const ipAddress = getPublicIP();
   useEffect(() => {
     if (PRIME_CARD_TEST_COUNTRY_CODE) {
@@ -762,21 +818,22 @@ const Main = (props) => {
   const handleGuestPrimeSkip = async () => {
     await setGuestPrimeVerificationPending();
     try {
-      dispatch(primeTrailRequest({}));
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
       setIsSkippedFlow(true);
       setForceNewProfession(true);
       await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
       setPrimeCardSessionSkipped(true);
-
-      const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
-      const isUsa = user?.usa_user === true || user?.usa_user === 1 || user?.usa_user === '1';
-      if (isUsa) {
-        await AsyncStorage.setItem('activeProfile', 'SkipProfile');
-        setCurrentProfile('SkipProfile');
-        props.navigation.navigate("TabNav");
-      }
+      setExploreTrialClicked(false);
+      await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+      setCurrentProfile('SkipProfile');
+      require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'SkipProfile');
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'TabNav' }],
+        })
+      );
     } catch (error) {
       console.log('handleGuestPrimeSkip flag error', error);
     }
@@ -785,11 +842,15 @@ const Main = (props) => {
     await requestGuestVerificationCheck();
   };
   const handleGuestPrimeExploreTrial = async () => {
-    await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
     await setGuestPrimeVerificationPending();
+    try {
+      primeTrailNavigateRef.current = true;
+      dispatch(primeTrailRequest({}));
+    } catch (error) {
+      console.log('handleGuestPrimeExploreTrial flag error', error);
+    }
     setPrimeadd(false);
     setShowGuestPrimePrompt(false);
-    await requestGuestVerificationCheck();
   };
   const handleGuestPrimeMembership = async () => {
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
@@ -1027,29 +1088,55 @@ const Main = (props) => {
 
   const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || AuthReducer?.loginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
   const hsdSub = !hasActivePrimeMembership && (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
+  const { freeTrail, daysleft } = useMemo(() => {
+    if (!endDateStringMain) {
+      return { freeTrail: takeSub, daysleft: false };
+    }
+    try {
+      const endDate = new Date(endDateStringMain);
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+      const timeDifference = normalizedEndDate - normalizedCurrentDate;
+      const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
+      if (daysDifference <= 30) {
+        return { freeTrail: true, daysleft: daysDiff };
+      }
+      return { freeTrail: false, daysleft: false };
+    } catch (e) {
+      return { freeTrail: takeSub, daysleft: false };
+    }
+  }, [endDateStringMain, takeSub]);
+  const setFreeTrail = () => { };
+  const setDaysleft = () => { };
   const isNonUsaIpUser = Boolean(
     resolvedIpCountryCode &&
     resolvedIpCountryCode !== 'US' &&
     resolvedIpCountryCode !== 'USA' &&
     resolvedIpCountryCode !== 'unknown'
   );
-  const endDateStringMain =
-    WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
-    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
-    finalProfessionmain?.subscriptions?.[0]?.end_date;
   useEffect(() => {
     if (endDateStringMain && allProfTake) {
       const endDateString =
         WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
         AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
         finalProfessionmain?.subscriptions?.[0]?.end_date;
+      const startDateString =
+        WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+        finalProfessionmain?.subscriptions?.[0]?.start_date;
       if (!endDateString) return;
       try {
         const endDate = new Date(endDateString);
+        const startDate = startDateString ? new Date(startDateString) : null;
         const currentDate = new Date();
         const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+        const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
         const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
-        if (normalizedCurrentDate >= normalizedEndDate) {
+        if (normalizedCurrentDate >= normalizedEndDate && (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate)) {
           setEnables(true);
           setPushnew(true);
         } else {
@@ -1104,6 +1191,26 @@ const Main = (props) => {
       console.log('prime success verify trigger error', error);
     });
   }, [isFocus, isPrimePaymentSuccess]);
+  useEffect(() => {
+    if (AuthReducer?.status === 'Auth/primeTrailSuccess') {
+      if (primeTrailNavigateRef.current) {
+        primeTrailNavigateRef.current = false;
+        setExploreTrialClicked(true);
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'PrimeCard', params: { ...props?.route?.params, exploreTrialClicked: true } }],
+          })
+        );
+        return;
+      }
+      connectionrequest()
+        .then(() => {
+          dispatch(PrimeCheckRequest({}));
+        })
+        .catch(err => console.log('Prime check refresh on success failed', err));
+    }
+  }, [AuthReducer?.status, props.navigation, props?.route?.params]);
   const closeGuestVerifyModal = async () => {
     setGuestVerifyModalVisible(false);
   };
@@ -1270,6 +1377,7 @@ const Main = (props) => {
     }
     setGuestVerifyCheckRequested(false);
   }, [guestVerifyCheckRequested, AuthReducer?.status]);
+  console.log(enables && allProfTake && !isNonUsaIpUser, "dgdfkjgjkjk")
   return (
     <>
       <MyStatusBar
@@ -1298,17 +1406,19 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
-                    {currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'
-                      ? (isPhysicianFlow
-                        ? <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
-                      : shouldRenderNewProfession
-                        ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                    {shouldRenderNewProfession
+                      ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'
+                        ? (isPhysicianFlow
+                          ? ((exploreTrialClicked || props?.route?.params?.exploreTrialClicked || props?.route?.params?.subscriptionDataExists)
+                            ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                            : <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                          : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
                         : isPhysicianFlow
-                          ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                           : isNursingFlow
-                            ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                            : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                            ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                            : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
                   </View>
                 </View>
               </ScrollView>
@@ -1322,29 +1432,29 @@ const Main = (props) => {
             )}
           </View>
 
-          {enables && allProfTake && !isNonUsaIpUser ? <View style={{
+          {(enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake) && (!isNonUsaUser || isSubscriptionExpiredSync) ? <View style={{
             position: 'absolute',
-            height: normalize(100),
-            bottom: normalize(0),
+            height: normalize(56),
+            bottom: 0,
             left: 0,
             right: 0,
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
             alignItems: 'center',
-            paddingBottom: Math.max(insets.bottom, normalize(2)),
+            paddingBottom: 0,
           }}>
             <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25), marginBottom: normalize(-2) }}>
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : !hasActivePrimeMembership && freeTrail && !isNonUsaIpUser ? <View
+          </View> : freeTrail && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date && !isNonUsaUser && exploreTrialClicked ? <View
             style={{
               position: 'absolute',
-              bottom: normalize(0),
+              bottom: 0,
               left: 0,
               right: 0,
-              justifyContent: 'center',
+              justifyContent: 'flex-end',
               alignItems: 'center',
-              paddingBottom: Math.max(insets.bottom, normalize(2)),
+              paddingBottom: 0,
             }}
           >
             <Pressable
@@ -1414,16 +1524,17 @@ const Main = (props) => {
           </View>
             : null}
           {(() => {
-            const shouldShowPrimeCardActions = showGuestPrimePrompt || props?.route?.name === 'PrimeCard';
+            const shouldShowPrimeCardActions = showGuestPrimePrompt || props?.route?.name === 'PrimeCard' || isSubscriptionExpiredSync;
             return (primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
-              primaryButtonText={shouldShowPrimeCardActions ? (isSkippedFlow ? 'Explore Free Trial 30 Days' : 'Explore Free Trial 30 Days') : undefined}
+              primaryButtonText={(enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake) && (!isNonUsaUser || isSubscriptionExpiredSync) ? undefined : (shouldShowPrimeCardActions ? (isSkippedFlow ? 'Explore Free Trial 30 Days' : 'Explore Free Trial 30 Days') : undefined)}
               onPrimaryAction={shouldShowPrimeCardActions ? handleGuestPrimeExploreTrial : undefined}
               secondaryButtonText={shouldShowPrimeCardActions ? 'Get Prime Membership' : undefined}
               onSecondaryAction={shouldShowPrimeCardActions ? handleGuestPrimeMembership : undefined}
               showSkip={shouldShowPrimeCardActions}
-              onSkip={shouldShowPrimeCardActions ? handleGuestPrimeSkip : undefined}
+              onSkip={isSubscriptionExpiredSync ? () => setPrimeadd(false) : (shouldShowPrimeCardActions ? handleGuestPrimeSkip : undefined)}
+              hidePrimaryButton={(enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake) && (!isNonUsaUser || isSubscriptionExpiredSync)}
             />;
           })()}
           <Modal

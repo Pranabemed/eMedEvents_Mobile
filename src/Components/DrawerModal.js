@@ -39,10 +39,9 @@ import NetInfo from '@react-native-community/netinfo';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
-import { isNonUsaAccount, readNonUsaFlowState, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
-let status = "";
-let status1 = "";
+
 export default function DrawerModal(props) {
   const {
     takedata,
@@ -64,6 +63,31 @@ export default function DrawerModal(props) {
   const [primeSkipped, setPrimeSkipped] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [isProfileReady, setIsProfileReady] = useState(false);
+  const [storedAuthUser, setStoredAuthUser] = useState(null);
+  const hasActiveSession =
+    AuthReducer?.signupResponse?.user ||
+    AuthReducer?.loginResponse?.user ||
+    AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.verifymobileResponse?.user ||
+    storedAuthUser;
+
+  const resolvedUser = hasActiveSession
+    ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
+    : null;
+
+  const resolvedDrawerUser = resolvedUser;
+  const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser;
+  const activeUser = loginUser?.user ? loginUser.user : loginUser;
+  const isNonSubscribedNoSubscription =
+    activeUser?.subscription_user == "non-subscribed" &&
+    (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
+    (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
@@ -77,15 +101,38 @@ export default function DrawerModal(props) {
         console.log(e);
       }
     };
-    if (isFocus) {
+    if (isFocus || props.isVisible) {
       checkPrimeSkipped();
     }
-  }, [isFocus]);
+  }, [isFocus, props.isVisible]);
   useEffect(() => {
     let mounted = true;
-    readNonUsaFlowState().then(state => {
-      if (mounted) setNonUsaFlowState(state);
-    });
+    if (isFocus) {
+      setIsProfileReady(false);
+      Promise.all([
+        readNonUsaFlowState(),
+        readNonUsaPermanentFlags(),
+        AsyncStorage.getItem(constants.AUTH_USER_DATA),
+        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+        AsyncStorage.getItem(constants.PROFESSION),
+        AsyncStorage.getItem('activeProfile')
+      ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
+        if (!mounted) return;
+
+        const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
+
+        setNonUsaFlowState(state);
+        setNonUsaPermanentFlags(flags);
+        setStoredAuthUser(auth_user_json);
+        setCurrentProfile(activeProfile);
+        setIsProfileReady(true);
+      }).catch(err => {
+        console.log('Error loading AsyncStorage drawer data', err);
+        if (mounted) {
+          setIsProfileReady(true);
+        }
+      });
+    }
     return () => {
       mounted = false;
     };
@@ -113,19 +160,20 @@ export default function DrawerModal(props) {
   }, [isFocus]);
   const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
   const profFromDashboard =
-    DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-      DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-      ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
+    resolvedDrawerUser?.professional_information?.profession != null &&
+      resolvedDrawerUser?.professional_information?.profession_type != null
+      ? `${resolvedDrawerUser?.professional_information?.profession} - ${resolvedDrawerUser?.professional_information?.profession_type}`
       : null;
-  const allProfTake = validHandles.has(profFromDashboard);
+  const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(profFromDashboard);
   useEffect(() => {
     if (AuthReducer.status === 'Auth/logoutSuccess') {
       setLogoutPending(false);
+      setSubit(false);
       props.onBackdropPress?.();
       navigationRef.current?.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Login' }],
+          routes: [{ name: 'GuestUser' }],
         })
       );
       return;
@@ -151,34 +199,37 @@ export default function DrawerModal(props) {
       })
       .catch((err) => showErrorAlert("Please connect to internet", err))
   }, [isFocus])
-  if (status1 == '' || DashboardReducer.status != status1) {
-    switch (DashboardReducer.status) {
-      case 'Dashboard/mainprofileRequest':
-        status1 = DashboardReducer.status;
-        break;
-      case 'Dashboard/mainprofileSuccess':
-        status1 = DashboardReducer.status;
-        setAllHandled(DashboardReducer?.mainprofileResponse);
-        break;
-      case 'Dashboard/mainprofileFailure':
-        status1 = DashboardReducer.status;
-        break;
+  useEffect(() => {
+    if (resolvedDrawerUser) {
+      setAllHandled(resolvedDrawerUser);
     }
-  }
+  }, [resolvedDrawerUser]);
+
+  useEffect(() => {
+    if (props.isVisible) {
+      connectionrequest()
+        .then(() => {
+          dispatch(mainprofileRequest({}));
+          dispatch(PrimeCheckRequest({}));
+        })
+        .catch((err) => showErrorAlert("Please connect to internet", err));
+    }
+  }, [props.isVisible]);
   const getInitials = (firstname, lastname) => {
     const firstInitial = firstname ? firstname.charAt(0).toUpperCase() : "";
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
   };
+  const userObj = resolvedUser || null;
   const isUsaProfile =
-    allHandled?.usa_user === true ||
-    allHandled?.usa_user === 1 ||
-    allHandled?.usa_user === '1' ||
-    allHandled?.is_non_usa === false ||
-    allHandled?.is_non_usa === 0 ||
-    allHandled?.is_non_usa === '0';
+    userObj?.usa_user === true ||
+    userObj?.usa_user === 1 ||
+    userObj?.usa_user === '1' ||
+    userObj?.is_non_usa === false ||
+    userObj?.is_non_usa === 0 ||
+    userObj?.is_non_usa === '0';
 
-  const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allHandled || {}, nonUsaFlowState));
+  const isNonUsaUser = isProfileReady && currentProfile !== 'SkipProfile' && !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
 
   useEffect(() => {
     if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
@@ -186,7 +237,25 @@ export default function DrawerModal(props) {
       setNonUsaFlowState(null);
     }
   }, [isUsaProfile, nonUsaFlowState]);
-  const modalKey = isNonUsaUser ? [
+  const modalKey = isNonSubscribedNoSubscription ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
+    { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
+    // { id: 3, name: "Document Vault",img: Imagepath.Folder},
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    // { id: 5, name: "CME/CE Planner",img:Imagepath.CalenderCheck},
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
+    // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
+    // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
+    // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
+  ] : currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+  ] : isNonUsaUser ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
@@ -205,7 +274,7 @@ export default function DrawerModal(props) {
     // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
     // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
     // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
-  ] : !DashboardReducer?.mainprofileResponse?.licensures?.[0]?.board_id
+  ] : !resolvedDrawerUser?.licensures?.[0]?.board_id
     ? [
       { id: 0, name: "Dashboard", img: Imagepath.FourDot },
       { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
@@ -250,8 +319,10 @@ export default function DrawerModal(props) {
       }, 100);
     };
 
-    token_handle_vault();
-  }, [isFocus]);
+    if (isFocus || props.isVisible) {
+      token_handle_vault();
+    }
+  }, [isFocus, props.isVisible]);
   useEffect(() => {
     connectionrequest()
       .then(() => {
@@ -261,7 +332,7 @@ export default function DrawerModal(props) {
   }, [])
   const resolvedProfessionSource = useMemo(() => {
     return (
-      allHandled?.professional_information ||
+      resolvedDrawerUser?.professional_information ||
       AuthReducer?.loginResponse?.user ||
       AuthReducer?.againloginsiginResponse?.user ||
       AuthReducer?.verifymobileResponse?.user ||
@@ -270,7 +341,7 @@ export default function DrawerModal(props) {
       null
     );
   }, [
-    allHandled?.professional_information,
+    resolvedDrawerUser?.professional_information,
     AuthReducer?.loginResponse?.user,
     AuthReducer?.againloginsiginResponse?.user,
     AuthReducer?.verifymobileResponse?.user,
@@ -291,7 +362,7 @@ export default function DrawerModal(props) {
   const isPrimeTrial = useMemo(() => {
     return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
   }, [WebcastReducer?.PrimeCheckResponse]);
-  const takeSub = isPrimeTrial || finalProfession?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
+  const takeSub = isPrimeTrial || isNonSubscribedNoSubscription || finalProfession?.subscription_user == "free" || activeUser?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
   const endDateStringTake =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfession?.subscriptions?.[0]?.end_date;
@@ -328,13 +399,13 @@ export default function DrawerModal(props) {
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvault, finalProfession, takeSub, endDateStringTake]);
   const resolvedSpecialityText = useMemo(() => {
     const specialitiesObject =
-      allHandled?.specialities ||
+      resolvedDrawerUser?.specialities ||
       resolvedProfessionSource?.professional_information?.specialities ||
       resolvedProfessionSource?.specialities;
     if (!specialitiesObject) return '';
     const valuesArray = Object.values(specialitiesObject).filter(Boolean);
     return valuesArray.join(', ');
-  }, [allHandled?.specialities, resolvedProfessionSource]);
+  }, [resolvedDrawerUser?.specialities, resolvedProfessionSource]);
   const [stableProfileMetaText, setStableProfileMetaText] = useState('');
   const readProfileText = (value) => (value == null ? '' : String(value).trim());
   const buildProfessionLabel = (source) => {
@@ -356,13 +427,13 @@ export default function DrawerModal(props) {
     }
   }, [currentProfileMetaText]);
   useEffect(() => {
-    if (DashboardReducer?.mainprofileResponse || resolvedProfessionSource) {
-      const firstName = DashboardReducer?.mainprofileResponse?.personal_information?.firstname || resolvedProfessionSource?.firstname;
-      const lastName = DashboardReducer?.mainprofileResponse?.personal_information?.lastname || resolvedProfessionSource?.lastname;
+    if (resolvedDrawerUser || resolvedProfessionSource) {
+      const firstName = resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname;
+      const lastName = resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname;
       const initials = getInitials(firstName, lastName);
       setAlphaimg(initials)
     }
-  }, [DashboardReducer?.mainprofileResponse, resolvedProfessionSource])
+  }, [resolvedDrawerUser, resolvedProfessionSource])
   const renderNestedItem = ({ item, index }) => {
     return (
       <>
@@ -401,7 +472,7 @@ export default function DrawerModal(props) {
               taskData: { statid: takedata?.board_id, creditID: takedata },
             });
           } else if (item?.id == 2) {
-            if (primeit) {
+            if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
               // props.expensesNav();
             } else {
@@ -410,14 +481,14 @@ export default function DrawerModal(props) {
             }
           } else if (item?.id == 3) {
             // props.expensesNav();
-            if (primeit) {
+            if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
             } else {
               navigateSmooth("BoardCourseSlide");
             }
           } else if (item?.id == 4) {
             // props.expensesNav();
-            if (primeit) {
+            if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
             } else {
               navigateSmooth("SpecialityCourseSlide");
@@ -583,10 +654,10 @@ export default function DrawerModal(props) {
               <Pressable onPress={() => {
                 navigateSmooth("TabNav", { initialRoute: "Profiles" });
               }}>
-                {DashboardReducer?.mainprofileResponse?.personal_information?.image_name && DashboardReducer?.mainprofileResponse?.personal_information?.image_path ? <ImageBackground source={DashboardReducer?.mainprofileResponse?.personal_information?.image_name == null || DashboardReducer?.mainprofileResponse?.personal_information?.image_name == "" || !DashboardReducer?.mainprofileResponse?.personal_information?.image_name ||
-                  DashboardReducer?.mainprofileResponse?.personal_information?.image_path == null || !DashboardReducer?.mainprofileResponse?.personal_information?.image_path || DashboardReducer?.mainprofileResponse?.personal_information?.image_path == ""
+                {resolvedDrawerUser?.personal_information?.image_name && resolvedDrawerUser?.personal_information?.image_path ? <ImageBackground source={resolvedDrawerUser?.personal_information?.image_name == null || resolvedDrawerUser?.personal_information?.image_name == "" || !resolvedDrawerUser?.personal_information?.image_name ||
+                  resolvedDrawerUser?.personal_information?.image_path == null || !resolvedDrawerUser?.personal_information?.image_path || resolvedDrawerUser?.personal_information?.image_path == ""
                   ? Imagepath.HumanIcn
-                  : { uri: `${DashboardReducer?.mainprofileResponse?.personal_information?.image_path}${DashboardReducer?.mainprofileResponse?.personal_information?.image_name}` }
+                  : { uri: `${resolvedDrawerUser?.personal_information?.image_path}${resolvedDrawerUser?.personal_information?.image_name}` }
                 } resizeMode="cover" style={{ height: normalize(35), width: normalize(35) }} imageStyle={{ borderRadius: normalize(35) }} /> : <View style={{
                   width: 50,
                   height: 50,
@@ -603,19 +674,19 @@ export default function DrawerModal(props) {
                 </View>}
               </Pressable>
               <View style={{ flexDirection: "column" }}>
-                {(DashboardReducer?.mainprofileResponse?.personal_information?.firstname || DashboardReducer?.mainprofileResponse?.personal_information?.lastname) && <View style={{ flexDirection: "column" }}>
-                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${DashboardReducer?.mainprofileResponse?.personal_information?.firstname} ${DashboardReducer?.mainprofileResponse?.personal_information?.lastname}`}</Text>
+                {(resolvedDrawerUser?.personal_information?.firstname || resolvedDrawerUser?.personal_information?.lastname) && <View style={{ flexDirection: "column" }}>
+                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${resolvedDrawerUser?.personal_information?.firstname} ${resolvedDrawerUser?.personal_information?.lastname}`}</Text>
                   <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>
                     {stableProfileMetaText}
                   </Text>
                 </View>}
-                {!isNonUsaUser && allProfTake && (
+                {(isNonSubscribedNoSubscription || !isNonUsaUser && allProfTake) && (
                   <Pressable
                     style={{
                       alignSelf: 'flex-start', // Let content determine width
                       marginTop: normalize(8),
                     }}
-                    disabled={primeit ? !primeit : !primeits}
+                    disabled={isNonSubscribedNoSubscription ? false : (primeit ? !primeit : !primeits)}
                     onPress={() => setSubit(true)}
                   >
                     <View
@@ -666,7 +737,7 @@ export default function DrawerModal(props) {
                           fontWeight: "500"
                         }}
                       >
-                        {primeit || (primeits && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date)
+                        {isNonSubscribedNoSubscription || primeit || (primeits && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date)
                           ? "Become a Prime Member"
                           : "Prime Member"}
                       </Text>

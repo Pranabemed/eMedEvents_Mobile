@@ -16,6 +16,7 @@ const PrimeCard = ({
   onSecondaryAction,
   showSkip = false,
   onSkip,
+  hidePrimaryButton = false,
 }) => {
   const navigate = useNavigation();
   const handlePrimaryAction = () => {
@@ -165,18 +166,20 @@ const PrimeCard = ({
             </View>
           ))}
         </View>
-        <TouchableOpacity onPress={handlePrimaryAction} style={{ justifyContent: "center", alignItems: "center", gap:normalize(10),flexDirection: "row", height: normalize(42), width: normalize(270), marginTop: normalize(16), backgroundColor: Colorpath.ButtonColr, borderRadius: normalize(5) }}>
-          <Text style={{ fontFamily: Fonts.InterSemiBold,fontWeight:"bold", fontSize: 16, color: "#FFFFFF" }}>{primaryButtonText || "Get Prime Membership"}</Text>
-          {!secondaryButtonText && <View style={{ backgroundColor: Colorpath.white, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }}
-          >
-            <ArrowIconsAnt
-              name="arrowright"
-              size={17}
-              color={Colorpath.ButtonColr}
-              style={{ alignSelf: "center" }}
-            />
-          </View>}
-        </TouchableOpacity>
+        {!hidePrimaryButton && (
+          <TouchableOpacity onPress={handlePrimaryAction} style={{ justifyContent: "center", alignItems: "center", gap:normalize(10),flexDirection: "row", height: normalize(42), width: normalize(270), marginTop: normalize(16), backgroundColor: Colorpath.ButtonColr, borderRadius: normalize(5) }}>
+            <Text style={{ fontFamily: Fonts.InterSemiBold,fontWeight:"bold", fontSize: 16, color: "#FFFFFF" }}>{primaryButtonText || "Get Prime Membership"}</Text>
+            {!secondaryButtonText && <View style={{ backgroundColor: Colorpath.white, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }}
+            >
+              <ArrowIconsAnt
+                name="arrowright"
+                size={17}
+                color={Colorpath.ButtonColr}
+                style={{ alignSelf: "center" }}
+              />
+            </View>}
+          </TouchableOpacity>
+        )}
         {secondaryButtonText ? (
           <TouchableOpacity onPress={handleSecondaryAction} style={{ justifyContent: "center", alignItems: "center", gap:normalize(10),flexDirection: "row", height: normalize(42), width: normalize(270), marginTop: normalize(10), backgroundColor: Colorpath.ButtonColr, borderRadius: normalize(5) }}>
             <Text style={{ fontFamily: Fonts.InterSemiBold,fontWeight:"bold", fontSize: 16, color: "#FFFFFF" }}>{secondaryButtonText}</Text>

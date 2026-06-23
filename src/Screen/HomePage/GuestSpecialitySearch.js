@@ -85,6 +85,23 @@ const GuestSpecialitySearch = props => {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceText, setVoiceText] = useState('');
 
+  const placeholders = useMemo(() => [
+    "Search for CME/CE courses",
+    "Search for your state required courses ",
+    "Search for topic",
+    "Search for specialty",
+    "Search for medical conferences",
+    "Search for conferences by location "
+  ], []);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex(prevIndex => (prevIndex + 1) % placeholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [placeholders]);
+
   const specialtyData = useMemo(() => {
     const list = browseData?.allspecialities || browseData?.allSpecialities;
     return Array.isArray(list) ? list.filter(item => getLabel(item)) : [];
@@ -320,7 +337,7 @@ const GuestSpecialitySearch = props => {
                       width={normalize(275)}
                       backgroundColor={Colorpath.Pagebg}
                       color="#000000"
-                      placeholder="Search for CME/CE courses"
+                      placeholder={placeholders[placeholderIndex]}
                       placeholderTextColor="#AAAAAA"
                       fontSize={16}
                       fontFamily={Fonts.InterRegular}
@@ -381,7 +398,7 @@ const GuestSpecialitySearch = props => {
                       width={normalize(275)}
                       backgroundColor={Colorpath.Pagebg}
                       color="#000000"
-                      placeholder="Search for CME/CE courses"
+                      placeholder={placeholders[placeholderIndex]}
                       placeholderTextColor="#AAAAAA"
                       fontSize={16}
                       fontFamily={Fonts.InterRegular}

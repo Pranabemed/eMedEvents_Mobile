@@ -11,7 +11,8 @@ import Statevault from './Statevault'
 import Boardvault from './Boardvault'
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
+import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Statevaultcomponet from './Statevaultcomponet';
 import { styles } from './Statevaultstyes';
@@ -33,8 +34,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import CertficateHandle from './FileCheck';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
-let status = "";
-let status1 = "";
+
 const DashoardVault = (props) => {
     const {
         isConnected,
@@ -112,37 +112,37 @@ const DashoardVault = (props) => {
         return () => unsubscribe();
     }, [isConnected]);
     useEffect(() => {
-        connectionrequest()
-            .then(() => {
-                dispatch(boardvaultRequest({}))
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }, [isfocused])
-    if (status1 == '' || CreditVaultReducer.status != status1) {
-        switch (CreditVaultReducer.status) {
-            case 'CreditVault/boardvaultRequest':
-                status1 = CreditVaultReducer.status;
-                setLoadingStatewiseboard(true);
-                break;
-            case 'CreditVault/boardvaultSuccess':
-                status1 = CreditVaultReducer.status;
-                setLoadingStatewiseboard(false);
-                const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
+        if (isFocus) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(boardvaultRequest({}));
+                    dispatch(mainprofileRequest({}));
+                    dispatch(PrimeCheckRequest({}));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err);
+                });
+        }
+    }, [isFocus]);
+
+    useEffect(() => {
+        if (CreditVaultReducer.status === 'CreditVault/boardvaultRequest') {
+            setLoadingStatewiseboard(true);
+        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultSuccess') {
+            setLoadingStatewiseboard(false);
+            const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
+            if (finalboard) {
                 const takeFinalBoard = Object.keys(finalboard).map(key => ({
                     ...finalboard[key],
                     board_id: key,
                 }));
                 setSelectCountrytopicboard(takeFinalBoard);
                 setClisttopicboard(takeFinalBoard);
-                break;
-            case 'CreditVault/boardvaultFailure':
-                status1 = CreditVaultReducer.status;
-                setLoadingStatewiseboard(false);
-                break;
+            }
+        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultFailure') {
+            setLoadingStatewiseboard(false);
         }
-    }
+    }, [CreditVaultReducer.status, CreditVaultReducer?.boardvaultResponse]);
     useEffect(() => {
         if (clisttopicboard?.length > 0) {
             const defaultStated = clisttopicboard[0];
@@ -244,64 +244,39 @@ const DashoardVault = (props) => {
             };
         }, [])
     );
-    if (status == '' || DashboardReducer.status != status) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/stateMandatoryRequest':
-                status = DashboardReducer.status;
-                setLoadingStatewise(true);
-                break;
-            case 'Dashboard/stateMandatorySuccess':
-                status = DashboardReducer.status;
-                setLoadingStatewise(false);
-                break;
-            case 'Dashboard/stateMandatoryFailure':
-                status = DashboardReducer.status;
-                setLoadingStatewise(false);
-                break;
-            case 'Dashboard/stateCourseRequest':
-                status = DashboardReducer.status;
-                setLoadingCreditwise(true);
-                break;
-            case 'Dashboard/stateCourseSuccess':
-                status = DashboardReducer.status;
-                setLoadingCreditwise(false);
-                setCreditwise(DashboardReducer?.stateCourseResponse?.data?.state_data);
-                break;
-            case 'Dashboard/stateCourseFailure':
-                status = DashboardReducer.status;
-                setLoadingCreditwise(false);
-                break;
-            case 'Dashboard/stateReportingRequest':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateReportingSuccess':
-                status = DashboardReducer.status;
-                setRenewalCheck(DashboardReducer?.stateReportingResponse?.renewal_report);
-                if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
-                    setRenewalvault(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
-                } else {
-                    setRenewalvault(null);
-                }
-                break;
-            case 'Dashboard/stateReportingFailure':
-                status = DashboardReducer.status;
-                break;
+    useEffect(() => {
+        if (DashboardReducer.status === 'Dashboard/stateMandatoryRequest') {
+            setLoadingStatewise(true);
+        } else if (DashboardReducer.status === 'Dashboard/stateMandatorySuccess') {
+            setLoadingStatewise(false);
+        } else if (DashboardReducer.status === 'Dashboard/stateMandatoryFailure') {
+            setLoadingStatewise(false);
         }
-    }
-    if (status1 == '' || CreditVaultReducer.status != status1) {
-        switch (CreditVaultReducer.status) {
-            case 'CreditVault/professionvaultRequest':
-                status1 = CreditVaultReducer.status;
-                break;
-            case 'CreditVault/professionvaultSuccess':
-                status1 = CreditVaultReducer.status;
-                setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
-                break;
-            case 'CreditVault/professionvaultFailure':
-                status1 = CreditVaultReducer.status;
-                break;
+
+        if (DashboardReducer.status === 'Dashboard/stateCourseRequest') {
+            setLoadingCreditwise(true);
+        } else if (DashboardReducer.status === 'Dashboard/stateCourseSuccess') {
+            setLoadingCreditwise(false);
+            setCreditwise(DashboardReducer?.stateCourseResponse?.data?.state_data);
+        } else if (DashboardReducer.status === 'Dashboard/stateCourseFailure') {
+            setLoadingCreditwise(false);
         }
-    }
+
+        if (DashboardReducer.status === 'Dashboard/stateReportingSuccess') {
+            setRenewalCheck(DashboardReducer?.stateReportingResponse?.renewal_report);
+            if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
+                setRenewalvault(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
+            } else {
+                setRenewalvault(null);
+            }
+        }
+    }, [DashboardReducer.status, DashboardReducer?.stateCourseResponse, DashboardReducer?.stateReportingResponse]);
+
+    useEffect(() => {
+        if (CreditVaultReducer.status === 'CreditVault/professionvaultSuccess') {
+            setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
+        }
+    }, [CreditVaultReducer.status, CreditVaultReducer?.professionvaultResponse]);
     useEffect(() => {
         const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
 
@@ -336,36 +311,45 @@ const DashoardVault = (props) => {
 
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
+    const [storedAuthUser, setStoredAuthUser] = useState(null);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
+    const [isProfileReady, setIsProfileReady] = useState(false);
 
     const [currentProfile, setCurrentProfile] = useState(null);
 
     useEffect(() => {
         let mounted = true;
         if (isFocus) {
+            setIsAsyncStorageLoaded(false);
+            setIsProfileReady(false);
             Promise.all([
                 readNonUsaFlowState(),
                 readNonUsaPermanentFlags(),
+                AsyncStorage.getItem(constants.AUTH_USER_DATA),
                 AsyncStorage.getItem(constants.VERIFYSTATEDATA),
                 AsyncStorage.getItem(constants.PROFESSION),
                 AsyncStorage.getItem('activeProfile')
-            ]).then(([state, flags, board_special, profession_data, activeProfile]) => {
+            ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
                 if (!mounted) return;
 
+                const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
                 const board_special_json = board_special ? JSON.parse(board_special) : null;
                 const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
 
                 setNonUsaFlowState(state);
                 setNonUsaPermanentFlags(flags);
+                setStoredAuthUser(auth_user_json);
                 setFinalverifyvault(board_special_json);
                 setFinalProfession(profession_data_json);
                 setCurrentProfile(activeProfile);
                 setIsAsyncStorageLoaded(true);
+                setIsProfileReady(true);
             }).catch(err => {
                 console.log('Error loading AsyncStorage vault data', err);
                 if (mounted) {
                     setIsAsyncStorageLoaded(true);
+                    setIsProfileReady(true);
                 }
             });
         }
@@ -373,8 +357,33 @@ const DashoardVault = (props) => {
             mounted = false;
         };
     }, [isFocus]);
+    useEffect(() => {
+        const emitter = require('react-native').DeviceEventEmitter;
+        const sub = emitter.addListener('ACTIVE_PROFILE_CHANGED', (profile) => {
+            setCurrentProfile(profile);
+            setIsProfileReady(true);
+        });
+        return () => sub.remove();
+    }, []);
 
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvault || finalProfession;
+    const hasActiveSession =
+        AuthReducer?.signupResponse?.user ||
+        AuthReducer?.loginResponse?.user ||
+        AuthReducer?.againloginsiginResponse?.user ||
+        AuthReducer?.verifymobileResponse?.user ||
+        storedAuthUser;
+
+    const resolvedUser = hasActiveSession
+        ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
+        : null;
+
+    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser ;  
+    const activeUser = loginUser?.user ? loginUser.user : loginUser;
+    const isNonSubscribedNoSubscription = 
+    activeUser?.subscription_user == "non-subscribed" &&
+    (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
+    (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+    const userObj = resolvedUser || finalverifyvault || finalProfession;
     const isUsaProfile =
         userObj?.usa_user === true ||
         userObj?.usa_user === 1 ||
@@ -400,7 +409,7 @@ const DashoardVault = (props) => {
         const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
-    const allProfTake = validHandles.has(getDisplayProfession(userObj));
+    const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj));
     const shouldShowAddLicenseCard =
         allProfTake &&
         currentProfile !== 'SkipProfile' &&
@@ -418,7 +427,7 @@ const DashoardVault = (props) => {
         }
     }
 
-    const allProfession = AuthReducer?.loginResponse?.user?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
+    const allProfession = AuthReducer?.loginResponse?.user?.profession || storedAuthUser?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
     useEffect(() => {
         if (certificatedata) {
             let obj = {
@@ -660,7 +669,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : (isNonUsaUser && !hasNonUsaCertificates) || (currentProfile === 'SkipProfile' && !fulldashbaord?.length) || (!allProfTake && !fulldashbaord?.length) ? (
+                        ) : (isNonUsaUser && !hasNonUsaCertificates) || (currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription) || (!allProfTake && !fulldashbaord?.length && !isNonSubscribedNoSubscription) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -827,7 +836,8 @@ const DashoardVault = (props) => {
                                                 isfocused={isfocused}
                                                 setStatepick={setStatepick}
                                                 vaultState={vaultState}
-                                                renewalCheck={renewalCheck} />}
+                                                renewalCheck={renewalCheck}
+                                                hideCertificateAction={isNonSubscribedNoSubscription} />}
                                         </View>
                                         <View style={{ bottom: normalize(10) }}>
                                             {!valuttext && <Boardvault
@@ -878,6 +888,7 @@ const DashoardVault = (props) => {
                                                 handleBoardname={handleBoardname}
                                                 styles={styles}
                                                 takeID={CreditVaultReducer?.boardvaultResponse?.board_data}
+                                                hideCertificateAction={isNonSubscribedNoSubscription}
                                             />}
                                         </View>
                                     </View>

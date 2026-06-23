@@ -108,7 +108,8 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
                 alignItems: 'center',
                 borderRadius: normalize(5),
                 height: normalize(32),
-                width: '60%',
+                flex: 1,
+                marginRight: normalize(10),
                 paddingHorizontal: normalize(8),
                 backgroundColor: '#F5F5F5',
                 gap: normalize(5)
@@ -229,7 +230,8 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
                 alignItems: 'center',
                 borderRadius: normalize(5),
                 height: normalize(32),
-                width: '60%',
+                flex: 1,
+                marginRight: 0,
                 paddingHorizontal: normalize(8),
                 backgroundColor: '#F5F5F5',
                 gap: normalize(5)

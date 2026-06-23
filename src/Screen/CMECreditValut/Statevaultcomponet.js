@@ -17,7 +17,7 @@ import { useSelector } from 'react-redux';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import Search from 'react-native-vector-icons/AntDesign';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
-const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch }) => {
+const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch, hideCertificateAction }) => {
     const [loads, setLoads] = useState(false);
     const [currentProfile, setCurrentProfile] = useState('');
     useEffect(() => {
@@ -318,7 +318,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                                     fontFamily={Fonts.InterSemiBold}
                                     fontWeight={"bold"} />
                             </View>
-                            {certificatedata?.certificates?.length > 0 ? <View style={styles.buttonContainer}>
+                            {!props?.hideCertificateAction && certificatedata?.certificates?.length > 0 ? <View style={styles.buttonContainer}>
                                 <Buttons
                                     onPress={() => { navigation.navigate("CertficateHandle", { boardID: certificatedata }); }}
                                     height={normalize(45)}
@@ -332,7 +332,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                                     borderWidth={1}
                                     borderColor={Colorpath.ButtonColr}
                                 />
-                            </View> : null}
+                                </View> : null}
                         </View> */}
                     <View style={stylesmodal.cardContainer}>
                         <View style={stylesmodal.card}>
@@ -454,7 +454,7 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
                     </View>
 
                 </View>
-                {certificatedata?.certificates?.length > 0 && <Buttons
+                {!hideCertificateAction && certificatedata?.certificates?.length > 0 && <Buttons
                     onPress={() => { navigation.navigate("CertficateHandle", { boardID: certificatedata, isNonUsaUser }); }}
                     height={normalize(45)}
                     width={normalize(273)}
@@ -742,5 +742,4 @@ const stylesmodal = StyleSheet.create({
         fontSize: 13,
     },
 });
-
 

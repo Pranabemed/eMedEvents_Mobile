@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useContext, useRef } from 'react';
-import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking } from 'react-native';
+import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking, DeviceEventEmitter } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -139,7 +139,7 @@ function TabScreen() {
     } : {}),
   };
   useEffect(() => {
-    const token_error = () => {
+    const hydrateDashboardState = () => {
       AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
         if (loginHandleProccess) {
           hydratedStateIdRef.current = null; // ensure state dashboard fetch re-hydrates for new account
@@ -157,11 +157,30 @@ function TabScreen() {
       });
     };
     try {
-      token_error();
+      hydrateDashboardState();
     } catch (error) {
       console.log(error);
     }
   }, [lastActiveTab]);
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', () => {
+      AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+        if (!loginHandleProccess) return;
+        hydratedStateIdRef.current = null;
+        const objToken = { token: loginHandleProccess, key: {} };
+        connectionrequest()
+          .then(() => {
+            dispatch(tokenRequest(objToken));
+            dispatch(mainprofileRequest(objToken));
+            dispatch(dashPerRequest(objToken));
+            dispatch(chooseStatecardRequest(objToken));
+            dispatch(verifyRequest(objToken));
+          })
+          .catch((err) => showErrorAlert("Please connect to internet", err));
+      });
+    });
+    return () => sub.remove();
+  }, [dispatch]);
   useEffect(() => {
     if (!refreshLicensesAt) return;
     if (processedRefreshAtRef.current === refreshLicensesAt) return;
@@ -333,22 +352,46 @@ function TabScreen() {
     const endDateString =
       WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
       AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfessiontab?.subscriptions?.[0]?.end_date;
+    const startDateString =
+      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || finalProfessiontab?.subscriptions?.[0]?.start_date;
     if (!endDateString) return;
     try {
       const endDate = new Date(endDateString);
+      const startDate = startDateString ? new Date(startDateString) : null;
       const currentDate = new Date();
       const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
       const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
-      if (normalizedCurrentDate >= normalizedEndDate) {
+      if (normalizedCurrentDate >= normalizedEndDate && (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate)) {
         setTabsub(true);
       } else {
         setTabsub(false);
       }
     } catch (error) {
       console.error('Error parsing date:', error);
-      // Handle error case appropriately (maybe setEnables(false))
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
+  const isSubscriptionExpiredSync = React.useMemo(() => {
+    const endDateString =
+      WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfessiontab?.subscriptions?.[0]?.end_date;
+    const startDateString =
+      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || finalProfessiontab?.subscriptions?.[0]?.start_date;
+    if (!endDateString) return false;
+    try {
+      const endDate = new Date(endDateString);
+      const startDate = startDateString ? new Date(startDateString) : null;
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      return normalizedCurrentDate >= normalizedEndDate && (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate);
+    } catch (error) {
+      return false;
+    }
+  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessiontab]);
   const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
   const isUsaProfile =
     userObj?.usa_user === true ||
@@ -409,7 +452,7 @@ function TabScreen() {
             toggleDrawerModal();
             return;
           }
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -417,7 +460,7 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: (e) => {
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -429,7 +472,7 @@ function TabScreen() {
       {[
         { name: "Home", component: nettrue == false ? MainInt : Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: DashoardVault, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: DashoardVault, icon: Imagepath.DocVault, label: "CVault" },
       ]
         .map((item, index) => (
           <Tab.Screen
@@ -439,7 +482,7 @@ function TabScreen() {
             initialParams={{ detectmain: "newadd" }}
             options={{
               tabBarIcon: ({ focused }) => {
-                if (item?.label?.trim() == "CVault" && tabsub) {
+                if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                   return (
                     <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                       <Image
@@ -457,7 +500,8 @@ function TabScreen() {
                           marginTop: normalize(3),
                           fontSize: 10,
                           fontFamily: Fonts.InterSemiBold,
-                          textAlign: "center"
+                          textAlign: "center",
+                          width: normalize(80),
                         }}
                       >
                         {item?.label}
@@ -484,7 +528,7 @@ function TabScreen() {
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center",
-                        width: normalize(50),
+                        width: normalize(80),
                       }}
                     >
                       {item?.label}
@@ -518,7 +562,7 @@ function TabScreen() {
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
-                  width: normalize(50),
+                  width: normalize(80),
                 }}
               >
                 {"Menu"}
@@ -567,7 +611,7 @@ function TabScreen() {
             toggleDrawerModal();
             return;
           }
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -575,7 +619,7 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: (e) => {
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -587,7 +631,7 @@ function TabScreen() {
       {[
         { name: "Home", component: MainInt, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault" },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -596,7 +640,7 @@ function TabScreen() {
           initialParams={{ detectmain: "newadd" }}
           options={{
             tabBarIcon: ({ focused }) => {
-              if (item?.label?.trim() == "CVault" && tabsub) {
+              if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                     <Image
@@ -616,7 +660,7 @@ function TabScreen() {
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center",
-                        width: normalize(50)
+                        width: normalize(80)
                       }}
                     >
                       {item?.label}
@@ -643,7 +687,7 @@ function TabScreen() {
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
                       textAlign: "center",
-                      width: normalize(50)
+                      width: normalize(80)
                     }}
                   >
                     {item?.label}
@@ -679,7 +723,7 @@ function TabScreen() {
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
-                  width: normalize(50)
+                  width: normalize(80)
                 }}
               >
                 {"Menu"}
@@ -728,7 +772,7 @@ function TabScreen() {
             toggleDrawerModal();
             return;
           }
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -736,7 +780,7 @@ function TabScreen() {
           handleTabPress(route.name);
         },
         focus: (e) => {
-          if (route.name == "Contact" && tabsub) {
+          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
             return;
@@ -748,7 +792,7 @@ function TabScreen() {
       {[
         { name: "Home", component: Main, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault " },
+        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault" },
       ].map((item, index) => (
         <Tab.Screen
           key={index}
@@ -757,7 +801,7 @@ function TabScreen() {
           initialParams={{ detectmain: "newadd" }}
           options={{
             tabBarIcon: ({ focused }) => {
-              if (item?.label?.trim() == "CVault" && tabsub) {
+              if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                     <Image
@@ -777,7 +821,7 @@ function TabScreen() {
                         fontSize: 10,
                         fontFamily: Fonts.InterSemiBold,
                         textAlign: "center",
-                        width: normalize(50)
+                        width: normalize(80)
                       }}
                     >
                       {item?.label}
@@ -804,7 +848,7 @@ function TabScreen() {
                       fontSize: 10,
                       fontFamily: Fonts.InterSemiBold,
                       textAlign: "center",
-                      width: normalize(50)
+                      width: normalize(80)
                     }}
                   >
                     {item?.label}
@@ -840,7 +884,7 @@ function TabScreen() {
                   fontSize: 10,
                   fontFamily: Fonts.InterSemiBold,
                   textAlign: "center",
-                  width: normalize(50),
+                  width: normalize(80),
                 }}
               >
                 {"Menu"}

@@ -40,6 +40,53 @@ const FilterScreen = (props) => {
     const [minValuep, setMinValuep] = useState("");
     const [maxValuep, setMaxValuep] = useState("");
     const [filtertake, setFiltertake] = useState(null);
+
+    const getPlaceholderText = useCallback(() => {
+        if (!selectedFilter) return 'Search here';
+        const friendlyNames = {
+            conf_types: "course format",
+            organizers_types: "organizer",
+            speakers_types: "speaker",
+            profession_types: "profession",
+            date_types: "date",
+            location_types: "location",
+            mandate_states: "state",
+            credit_types: "credit type",
+            topic_types: "topic",
+            count_specilaities: "speciality",
+        };
+        const name = friendlyNames[selectedFilter] || selectedFilter.toLowerCase();
+        return `Search by ${name}`;
+    }, [selectedFilter]);
+
+    const renderBrowseSearchInput = () => {
+        if (selectedFilter === 'get_cme_points_to_stat' ||
+            selectedFilter === 'get_price_to_stat' ||
+            selectedFilter === 'cme_type_flags') {
+            return null;
+        }
+        return (
+            <View style={styles.stickySearchWrap}>
+                <Icon name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+                <TextInput
+                    placeholderTextColor={"#999999"}
+                    placeholder={getPlaceholderText()}
+                    style={styles.stickySearchInput}
+                    onChangeText={updateSearch}
+                    value={search}
+                />
+                {search.length > 0 && (
+                    <TouchableOpacity
+                        onPress={() => setSearch('')}
+                        style={styles.clearIconWrap}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Icon name="x" size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    };
     const [combinedData, setCombinedData] = useState([]);
     const [selectedItm, setSelectedItm] = useState([]);
     const [resetOn, setResetOn] = useState(false);
@@ -70,6 +117,41 @@ const FilterScreen = (props) => {
             },
         };
     }, [maxValue, maxValuep, minValue, minValuep, props?.route?.params?.wholeDats?.mainKeyAll, selectedFilter, selectedItems, selectedItm]);
+
+    const navigateToResults = useCallback((params) => {
+        props.navigation.dispatch(state => {
+            const globalResultIndex = state.routes.findIndex(r => r.name === 'Globalresult');
+            if (globalResultIndex !== -1) {
+                const newRoutes = state.routes.slice(0, globalResultIndex + 1).map((route, idx) => {
+                    if (idx === globalResultIndex) {
+                        return {
+                            ...route,
+                            params: {
+                                ...route.params,
+                                ...params
+                            }
+                        };
+                    }
+                    return route;
+                });
+                return CommonActions.reset({
+                    ...state,
+                    routes: newRoutes,
+                    index: newRoutes.length - 1
+                });
+            } else {
+                const newRoutes = [...state.routes.slice(0, -1), {
+                    name: 'Globalresult',
+                    params: params
+                }];
+                return CommonActions.reset({
+                    ...state,
+                    routes: newRoutes,
+                    index: newRoutes.length - 1
+                });
+            }
+        });
+    }, [props.navigation]);
     const FilterBack = () => {
         if (props?.route?.params?.wholeDats?.norm == "ghgh") {
             props.navigation.dispatch(
@@ -82,7 +164,7 @@ const FilterScreen = (props) => {
                     ],
                 }));
         } else if (selectedItems?.length > 0) {
-            props.navigation.replace("Globalresult", buildGlobalResultParams())
+            navigateToResults(buildGlobalResultParams());
         } else {
             props.navigation.goBack();
         }
@@ -328,7 +410,10 @@ const FilterScreen = (props) => {
             )}
             <TouchableOpacity
                 style={[styles.filterOption, selectedFilter === item && styles.selectedFilterOption]}
-                onPress={() => setSelectedFilter(item)}
+                onPress={() => {
+                    setSearch('');
+                    setSelectedFilter(item);
+                }}
             >
                 <Text style={styles.filterOptionText}>{item == "conf_types" ? "Course Format" : item == "organizers_types" ? "Organizers" : item == "speakers_types" ? "Speakers" : item == "profession_types" ? "Choose Profession" : item == "get_cme_points_to_stat" ? 'No. of credits' : item == "get_price_to_stat" ? "Price range" : item == "cme_type_flags" ? "Course Type" : item == "date_types" ? "Dates" : item == "location_types" ? "Location" : item == "mandate_states" ? 'State-required Courses' : item == 'credit_types' ? 'Credit type' : item == 'topic_types' ? "Topics" : item == 'count_specilaities' ? "Choose Specailities" : item}</Text>
             </TouchableOpacity>
@@ -337,11 +422,10 @@ const FilterScreen = (props) => {
     useEffect(() => {
         if (selectedFilter) {
             setCombinedData([
-                { type: "search", data: search },
                 { type: selectedFilter, data: filtertake[selectedFilter] },
             ]);
         }
-    }, [selectedFilter, filtertake, search])
+    }, [selectedFilter, filtertake])
     const renderProfessionItem = ({ item, index, types, selectedFilters, reqItem }) => {
         console.log(reqItem, "reqitem======", item)
         const hasReqItem = reqItem && reqItem.length > 0;
@@ -450,26 +534,7 @@ const FilterScreen = (props) => {
         );
     };
     const renderItem = ({ item, index }) => {
-        if (item?.type === 'search') {
-            return (
-                <View>
-                    <TextInput
-                        placeholderTextColor={"#999999"}
-                        placeholder='Search here'
-                        style={{
-                            height: normalize(40),
-                            width: normalize(160),
-                            borderRadius: 5,
-                            borderWidth: 1,
-                            borderColor: "#DADADA",
-                            paddingHorizontal: normalize(8),
-                        }}
-                        onChangeText={updateSearch}
-                        value={search}
-                    />
-                </View>
-            );
-        } else if (item?.type == selectedFilter) {
+        if (item?.type == selectedFilter) {
             const type = selectedFilter;
             const hitDat = finalds ? "" : props?.route?.params?.wholeDats?.ClearText || props?.route?.params?.wholeDats?.PriceDrop?.minget || props?.route?.params?.wholeDats?.PriceDrop?.maxget || props?.route?.params?.wholeDats?.PriceDrop?.mingetp || props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
             const hasData = typeof hitDat == "object" && hitDat.some(item => {
@@ -921,18 +986,40 @@ const FilterScreen = (props) => {
                 return null;
         }
     };
-useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+
+    const initialCme = props?.route?.params?.wholeDats?.PriceDrop?.CME;
+    const initialMinGet = props?.route?.params?.wholeDats?.PriceDrop?.minget;
+    const initialMaxGet = props?.route?.params?.wholeDats?.PriceDrop?.maxget;
+    const initialMinGetP = props?.route?.params?.wholeDats?.PriceDrop?.mingetp;
+    const initialMaxGetP = props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
+
+    const isResetActive =
+        selectedItems?.length > 0 ||
+        selectedItm?.length > 0 ||
+        (cmetype && cmetype.length > 0) ||
+        (minValue !== undefined && minValue !== null && minValue !== "") ||
+        (maxValue !== undefined && maxValue !== null && maxValue !== "") ||
+        (minValuep !== undefined && minValuep !== null && minValuep !== "") ||
+        (maxValuep !== undefined && maxValuep !== null && maxValuep !== "") ||
+        (initialCme && initialCme.length > 0) ||
+        (initialMinGet !== undefined && initialMinGet !== null && initialMinGet !== "") ||
+        (initialMaxGet !== undefined && initialMaxGet !== null && initialMaxGet !== "") ||
+        (initialMinGetP !== undefined && initialMinGetP !== null && initialMinGetP !== "") ||
+        (initialMaxGetP !== undefined && initialMaxGetP !== null && initialMaxGetP !== "");
+
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
-            {conn == false ? <IntOff/> :<SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     <PageHeader title="Filter Results" onBackPress={FilterBack} />
                 </View>
                 <Loader visible={CMEReducer?.status == 'CME/cmeCourseRequest'} />
                 <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }} behavior={Platform.OS === 'ios' ? "padding" : undefined}>
+                    {renderBrowseSearchInput()}
                     <View style={styles.content}>
                         <FlatList
                             data={validFiltersd}
@@ -946,16 +1033,33 @@ useLayoutEffect(() => {
                     </View>
                 </KeyboardAvoidingView>
                 <View style={styles.footer}>
-                    <TouchableOpacity disabled={selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? false : true} onPress={() => {
+                    <TouchableOpacity disabled={!isResetActive} onPress={() => {
                         Alert.alert('eMedEvent', 'Are you sure want to clear all the data ?', [{
                             text: "Yes", onPress: () => {
                                 setResetOn(!resetOn);
                                 setSelectedItems([]);
                                 setSelectedItm([]);
+                                setCmetype([]);
                                 setMinValue("");
                                 setMaxValue("");
                                 setMinValuep("");
                                 setMaxValuep("");
+
+                                const originRoute = props?.route?.params?.wholeDats?.mainKeyAll || {};
+                                const clearedParams = {
+                                    ...originRoute,
+                                    filterDatSh: {
+                                        filterDatSh: [],
+                                        returnTake: originRoute,
+                                        selectedIt: [],
+                                        minVal: "",
+                                        maxVal: "",
+                                        minValP: "",
+                                        maxValp: "",
+                                        selectedItem: selectedFilter,
+                                    },
+                                };
+                                navigateToResults(clearedParams);
                             }, style: "cancel"
                         }, {
                             text: "No", onPress: () => {
@@ -965,15 +1069,15 @@ useLayoutEffect(() => {
                     }} style={styles.footerButton}>
                         <Text style={{
                             fontSize: 18,
-                            color: selectedItems?.length > 0 ? '#999999' : '#CCC',
+                            color: isResetActive ? '#000000' : '#CCC',
                             fontFamily: Fonts.InterSemiBold
                         }}>{"Reset"}</Text>
                     </TouchableOpacity>
                     <View style={{ height: normalize(20), width: 1, backgroundColor: "#ECECEC" }} />
-                    <TouchableOpacity onPress={() => { props.navigation.replace("Globalresult", buildGlobalResultParams()) }} disabled={selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? false : true} style={styles.footerButton}>
+                    <TouchableOpacity onPress={() => { navigateToResults(buildGlobalResultParams()) }} disabled={false} style={styles.footerButton}>
                         <Text style={{
                             fontSize: 18,
-                            color: selectedItems?.length > 0 || selectedItm?.length > 0 || minValue || maxValue || minValuep || maxValuep ? Colorpath.ButtonColr : "#000",
+                            color: Colorpath.ButtonColr,
                             fontFamily: Fonts.InterSemiBold
                         }}>{"Apply"}</Text>
                     </TouchableOpacity>
@@ -1068,6 +1172,41 @@ const styles = StyleSheet.create({
         height: normalize(20),
         width: normalize(140),
         alignItems: 'center',
+    },
+    stickySearchWrap: {
+        height: normalize(56),
+        width: '100%',
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: normalize(15),
+        paddingVertical: normalize(8),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        justifyContent: 'center',
+    },
+    stickySearchInput: {
+        height: normalize(40),
+        width: '100%',
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: "#DADADA",
+        paddingLeft: normalize(38),
+        paddingRight: normalize(38),
+        color: '#111111',
+        fontFamily: Fonts.InterMedium,
+        fontSize: 15,
+        backgroundColor: '#F3F4F6',
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
+    },
+    clearIconWrap: {
+        position: 'absolute',
+        right: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
     },
     separator: {
         height: 0.8,

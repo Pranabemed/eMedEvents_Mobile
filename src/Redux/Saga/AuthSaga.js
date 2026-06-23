@@ -156,6 +156,8 @@ export function* signupSaga(action) {
         yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
       }
       const userData = response?.data?.user || response?.data || {};
+      yield call(AsyncStorage.setItem, constants.PROFESSION, JSON.stringify(userData));
+      yield call(AsyncStorage.setItem, constants.AUTH_USER_DATA, JSON.stringify(response?.data));
       const isNonUsa = isNonUsaAccount({
         ...action?.payload,
         ...userData,
@@ -440,8 +442,24 @@ export function* login_Saga(action) {
   try {
     let response = yield call(postApi, 'user/signin', action.payload, header);
     if (response?.data?.success == true) {
-      const userData = JSON.stringify(response?.data?.user);
+      const existingProfessionRaw = yield call(AsyncStorage.getItem, constants.PROFESSION);
+      let updatedUser = response?.data?.user;
+      if (existingProfessionRaw && updatedUser) {
+        try {
+          const existingProfession = JSON.parse(existingProfessionRaw);
+          if (existingProfession?.subscriptions && !updatedUser.subscriptions) {
+            updatedUser = {
+              ...updatedUser,
+              subscriptions: existingProfession.subscriptions
+            };
+          }
+        } catch (e) {
+          console.log('Error parsing existing profession data:', e);
+        }
+      }
+      const userData = JSON.stringify(updatedUser);
       yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
+      yield call(AsyncStorage.setItem, constants.AUTH_USER_DATA, JSON.stringify(response?.data));
       yield put(loginSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
       yield put(tokenSuccess(response?.data?.token));
@@ -624,6 +642,23 @@ export function* mobileLoginSaga(action) {
     const token = normalizedData?.token;
     const refreshToken = normalizedData?.refresh_token;
     if (normalizedData?.success == true) {
+      const existingProfessionRaw = yield call(AsyncStorage.getItem, constants.PROFESSION);
+      let updatedUser = normalizedData?.user;
+      if (existingProfessionRaw && updatedUser) {
+        try {
+          const existingProfession = JSON.parse(existingProfessionRaw);
+          if (existingProfession?.subscriptions && !updatedUser.subscriptions) {
+            updatedUser = {
+              ...updatedUser,
+              subscriptions: existingProfession.subscriptions
+            };
+          }
+        } catch (e) {
+          console.log('Error parsing existing profession data:', e);
+        }
+      }
+      yield call(AsyncStorage.setItem, constants.PROFESSION, JSON.stringify(updatedUser || normalizedData || {}));
+      yield call(AsyncStorage.setItem, constants.AUTH_USER_DATA, JSON.stringify(normalizedData));
       yield put(loginsiginSuccess(normalizedData));
       yield put(tokenSuccess(token || null));
       if (token) {
@@ -671,8 +706,24 @@ export function* againmobileLoginSaga(action) {
     const token = normalizedData?.token;
     const refreshToken = normalizedData?.refresh_token;
     if (normalizedData?.success == true) {
-      const userData = JSON.stringify(normalizedData?.user);
+      const existingProfessionRaw = yield call(AsyncStorage.getItem, constants.PROFESSION);
+      let updatedUser = normalizedData?.user;
+      if (existingProfessionRaw && updatedUser) {
+        try {
+          const existingProfession = JSON.parse(existingProfessionRaw);
+          if (existingProfession?.subscriptions && !updatedUser.subscriptions) {
+            updatedUser = {
+              ...updatedUser,
+              subscriptions: existingProfession.subscriptions
+            };
+          }
+        } catch (e) {
+          console.log('Error parsing existing profession data:', e);
+        }
+      }
+      const userData = JSON.stringify(updatedUser || normalizedData || {});
       yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
+      yield call(AsyncStorage.setItem, constants.AUTH_USER_DATA, JSON.stringify(normalizedData));
       yield put(againloginsiginSuccess(normalizedData));
       yield put(tokenSuccess(token || null));
       if (token) {
