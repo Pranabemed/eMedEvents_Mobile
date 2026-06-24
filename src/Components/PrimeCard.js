@@ -1,4 +1,4 @@
-import { View, Text, Platform, TouchableOpacity, Image, StyleSheet, ImageBackground } from 'react-native'
+import { View, Text, Platform, TouchableOpacity, Image, ImageBackground, ScrollView, useWindowDimensions } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
 import normalize from '../Utils/Helpers/Dimen';
@@ -19,6 +19,8 @@ const PrimeCard = ({
   hidePrimaryButton = false,
 }) => {
   const navigate = useNavigation();
+  const { height: windowHeight } = useWindowDimensions();
+  const cardHeight = Math.min(normalize(500), Math.round(windowHeight * 0.9));
   const handlePrimaryAction = () => {
     if (typeof onPrimaryAction === 'function') {
       onPrimaryAction();
@@ -49,32 +51,30 @@ const PrimeCard = ({
       }}
       animationInTiming={800}
       animationOutTiming={1000}
-      onBackdropPress={() => {
-        if (!showSkip) {
-          setPrimeadd(false);
-        }
-      }}
+      onBackdropPress={() => {}}
+      onBackButtonPress={() => {}}
       useNativeDriver={true}
       useNativeDriverForBackdrop={true}
       coverScreen={true}
     >
-      <ImageBackground
-        source={Imagepath.NonPrime}
-        style={{
-          width: '100%',
-          height: showSkip ? normalize(500) : normalize(455),
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-          paddingTop: normalize(28),
-          paddingBottom: Platform.OS === 'ios' ? normalize(24) : normalize(18),
-        }}
-        imageStyle={{
-          width: '100%',
-          height: '100%',
-          resizeMode: "stretch",
-          backgroundColor: '#FFF7EA',
-        }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+        <ImageBackground
+          source={Imagepath.NonPrime}
+          style={{
+            width: '100%',
+            minHeight: showSkip ? cardHeight : Math.min(normalize(455), Math.round(windowHeight * 0.9)),
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            paddingTop: normalize(28),
+            paddingBottom: Platform.OS === 'ios' ? normalize(24) : normalize(18),
+          }}
+          imageStyle={{
+            width: '100%',
+            height: '100%',
+            resizeMode: "stretch",
+            backgroundColor: '#FFF7EA',
+          }}
+        >
         <View style={{
           flexDirection: "column",
           justifyContent: "center",
@@ -199,7 +199,8 @@ const PrimeCard = ({
             <Text style={{ fontFamily: Fonts.InterSemiBold, fontWeight: "bold", fontSize: 16, color: "#000000" }}>{"Skip"}</Text>
           </TouchableOpacity>
         ) : null}
-      </ImageBackground>
+        </ImageBackground>
+      </ScrollView>
     </Modal>
   )
 }

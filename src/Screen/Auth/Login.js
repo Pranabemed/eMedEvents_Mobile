@@ -402,6 +402,12 @@ const Login = (props) => {
 
   const loginResponse = AuthReducer?.loginResponse || {};
   const user = loginResponse?.user || {};
+  const isGuestPrimeUser = useMemo(() => {
+    const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+    const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+    return subscriptionUser == 'non-subscribed' && subscriptions.length == 0;
+  }, [user?.subscription_user, user?.subscriptions]);
+  console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
   const normalizedProfessionHandle = normalizeProfessionHandle(
     user?.profession && user?.profession_type ? `${user.profession}-${user.profession_type}` : `${user?.profession || ''}-${user?.profession_type || ''}`
   );
@@ -409,8 +415,8 @@ const Login = (props) => {
   const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
   const shouldShowPrimeCardForLogin =
     ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
-    subscriptionUser === 'non-subscribed' &&
-    subscriptionList.length === 0;
+    subscriptionUser == 'non-subscribed' &&
+    subscriptionList.length == 0;
   const shouldShowStateLicenseForLogin =
     ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
     subscriptionList.length > 0;
@@ -458,6 +464,9 @@ const Login = (props) => {
   // Main navigation logic
   useEffect(() => {
     if (!token) return;
+    AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(isGuestPrimeUser)).catch(err => {
+      console.log('Error storing guest prime flag', err);
+    });
     const isEmailNotVerified = loginResponse.is_verified == "0";
     const isPhoneNotVerified = loginResponse.phone_verified == "0";
     const isEmailVerified = loginResponse.is_verified == "1";
@@ -546,12 +555,17 @@ const Login = (props) => {
       });
       return;
     }
-    if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
+    const activeResponse = (AuthReducer?.verifyResponse && Object.keys(AuthReducer.verifyResponse).length > 0)
+      ? AuthReducer.verifyResponse
+      : loginResponse;
+    const isFullyVerified = activeResponse?.is_verified == "1" && activeResponse?.phone_verified == "1";
+
+    if (allProfTake && !hasLicense && !hasStateLicenseData.current && !isFullyVerified) {
       return;
     }
 
     if (allProfTake) {
-      if (hasLicense) {
+      if (hasLicense || isFullyVerified) {
         setNonloader(true);
         dispatch(dashboardRequest(tokenObj));
         setGtprof(true);
@@ -588,7 +602,8 @@ const Login = (props) => {
     nonUsaPermanentFlags,
     phoneCountryCode,
     tokenObj,
-    AuthReducer?.verifyResponse
+    AuthReducer?.verifyResponse,
+    isGuestPrimeUser
   ]);
   useEffect(() => {
     if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 && allProfTake) {
@@ -639,7 +654,7 @@ const Login = (props) => {
         });
         dispatch(mainprofileRequest({}))
         setFulldashbaord(uniqueStates);
-        props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+        props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav",params: { detectmain:isGuestPrimeUser ? "Prime" : "main" } }] }));
         break;
       case 'Dashboard/dashboardFailure':
         status1 = DashboardReducer.status;

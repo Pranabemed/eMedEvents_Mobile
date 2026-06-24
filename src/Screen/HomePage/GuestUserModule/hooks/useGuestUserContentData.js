@@ -245,6 +245,8 @@ export const useGuestUserContentData = guest => {
     c => {
       const parsedHtml = parseBannerMeta(String(c?.html_content || ''));
       const detailpageUrl = getDetailPageUrl(c) || getBannerUrl(c);
+      const currencyPrefix = getText(c?.display_currency_code, c?.currency_code, 'US$');
+      const rawPrice = getText(c?.display_price, c?.price, c?.amount);
       return {
         title:
           getText(c?.course_title, c?.title, c?.conference_name, c?.name, c?.banner_title, c?.heading) ||
@@ -256,7 +258,9 @@ export const useGuestUserContentData = guest => {
         date: getDateRange(c) || parsedHtml.date,
         location: getText(c?.course_location, c?.location, c?.venue, c?.city, getHtmlLocation(c)),
         cmeLabel: getCmeLabel(c) || parsedHtml.credits,
-        price: getPriceLabel(c),
+        price: String(rawPrice).trim().toUpperCase() === 'FREE'
+          ? 'FREE'
+          : `${currencyPrefix}${rawPrice}`,
         buttonText: getText(c?.buttonText, c?.button_text, c?.button, c?.cta_text) || getHtmlButtonText(c) || 'Register Now',
         detailpageUrl,
         onOrganizerPress: () => {

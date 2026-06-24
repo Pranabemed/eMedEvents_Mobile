@@ -15,7 +15,7 @@ import {
   InteractionManager
 } from 'react-native';
 import { takeLatest, select, put, call } from 'redux-saga/effects';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import propstype from 'prop-types';
 import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
@@ -43,6 +43,7 @@ import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA
 import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 
 export default function DrawerModal(props) {
+  const insets = useSafeAreaInsets();
   const {
     takedata,
     setIsConnected,
@@ -78,16 +79,26 @@ export default function DrawerModal(props) {
     storedAuthUser;
 
   const resolvedUser = hasActiveSession
-    ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
+    ? DashboardReducer?.mainprofileResponse || hasActiveSession
     : null;
 
   const resolvedDrawerUser = resolvedUser;
-  const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser;
-  const activeUser = loginUser?.user ? loginUser.user : loginUser;
+
+  const loginUser =
+    storedAuthUser ||
+    AuthReducer?.loginResponse?.user ||
+    resolvedUser;
+
+  const activeUser = loginUser?.user
+    ? loginUser.user
+    : loginUser;
+
   const isNonSubscribedNoSubscription =
     activeUser?.subscription_user == "non-subscribed" &&
-    (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
-    (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+    (!activeUser?.subscription ||
+      activeUser?.subscription?.length === 0) &&
+    (!activeUser?.subscriptions ||
+      activeUser?.subscriptions?.length === 0);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
@@ -648,7 +659,7 @@ export default function DrawerModal(props) {
               style={{
                 flexDirection: 'row',
                 paddingLeft: normalize(32),
-                paddingTop: normalize(10),
+                paddingTop: Platform.OS === 'ios' ? normalize(20) : normalize(10),
                 gap: 10
               }}>
               <Pressable onPress={() => {

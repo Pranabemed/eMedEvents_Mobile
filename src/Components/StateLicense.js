@@ -560,7 +560,7 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
     const hidetext = (!enables && !bothNoRequirement);
     const getDynamicHeight = () => {
         if (profileType === 'SkipProfile') {
-            return fulldashbaord?.length > 1 ? normalize(250) : normalize(225);
+            return fulldashbaord?.length > 1 ? normalize(250) : normalize(230);
         }
         if (enables) {
             return normalize(355)

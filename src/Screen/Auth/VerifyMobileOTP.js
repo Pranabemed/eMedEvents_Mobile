@@ -48,6 +48,17 @@ const VerifyMobileOTP = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const stableGuestPrimeUser = useMemo(() => {
+        const user =
+            AuthReducer?.signupResponse?.user ||
+            AuthReducer?.loginResponse?.user ||
+            AuthReducer?.againloginsiginResponse?.user ||
+            AuthReducer?.verifymobileResponse?.user ||
+            {};
+        const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+        const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+        return subscriptionUser === 'non-subscribed' && subscriptions.length === 0;
+    }, [AuthReducer?.signupResponse?.user, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user]);
     console.log(AuthReducer?.chooseStatecardResponse?.state_licensures, "state_licensures ===>====>", props?.route?.params, AuthReducer)
     console.log("1st", AuthReducer?.signupResponse?.phone_otp, "2nd", AuthReducer?.resendmobileotpResponse?.phone_otp, "3rd", props?.route?.params)
     const [mobiletrue, setMobiletrue] = useState(false);
@@ -63,6 +74,7 @@ const VerifyMobileOTP = (props) => {
             let objToken = { "token": AuthReducer?.signupResponse?.token, "key": {} }
             connectionrequest()
                 .then(async () => {
+                    await AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(stableGuestPrimeUser));
                     await AsyncStorage.setItem('activeProfile', 'PrimeCard');
                     dispatch(walletCheckRequest(objToken))
                     dispatch(PrimeCheckRequest(objToken))
@@ -79,6 +91,7 @@ const VerifyMobileOTP = (props) => {
                 const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
                 let objToken = { "token": loginHandleProccess, "key": {} }
                 if (loginHandleProccess) {
+                    await AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(stableGuestPrimeUser));
                     await AsyncStorage.setItem('activeProfile', 'PrimeCard');
                 }
                 dispatch(walletCheckRequest(objToken))
@@ -93,7 +106,7 @@ const VerifyMobileOTP = (props) => {
         } catch (error) {
             console.log(error);
         }
-    }, [isFocus]);
+    }, [isFocus, stableGuestPrimeUser]);
     console.log(DashboardReducer?.mainprofileResponse, "mainprofile---------", props?.route?.params)
     const handleChange = (text, index) => {
         if (text?.length > 1) {

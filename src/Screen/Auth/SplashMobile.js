@@ -62,6 +62,17 @@ const SplashMobile = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const stableGuestPrimeUser = useMemo(() => {
+        const user =
+            AuthReducer?.signupResponse?.user ||
+            AuthReducer?.loginResponse?.user ||
+            AuthReducer?.againloginsiginResponse?.user ||
+            AuthReducer?.verifymobileResponse?.user ||
+            {};
+        const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+        const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+        return subscriptionUser === 'non-subscribed' && subscriptions.length === 0;
+    }, [AuthReducer?.signupResponse?.user, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user]);
 
     const isFocus = useIsFocused();
 
@@ -111,6 +122,7 @@ const SplashMobile = (props) => {
             const objToken = { token: AuthReducer.signupResponse.token, key: {} };
             connectionrequest()
                 .then(async () => {
+                    await AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(stableGuestPrimeUser));
                     await AsyncStorage.setItem('activeProfile', 'PrimeCard');
                     dispatch(walletCheckRequest(objToken));
                     dispatch(PrimeCheckRequest(objToken));
@@ -126,13 +138,14 @@ const SplashMobile = (props) => {
             const token = await AsyncStorage.getItem(constants.TOKEN);
             const objToken = { token, key: {} };
             if (token) {
+                await AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(stableGuestPrimeUser));
                 await AsyncStorage.setItem('activeProfile', 'PrimeCard');
             }
             dispatch(walletCheckRequest(objToken));
             dispatch(PrimeCheckRequest(objToken));
             dispatch(mainprofileRequest(objToken));
         }, 500);
-    }, [isFocus]);
+    }, [isFocus, stableGuestPrimeUser]);
 
     // ─── Timer ────────────────────────────────────────────────────────────────
     // startTimer has NO deps — reads refs directly so it NEVER recreates.

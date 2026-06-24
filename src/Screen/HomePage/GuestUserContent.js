@@ -65,7 +65,7 @@ import { GuestSelectionModals } from './GuestUserModule/components/GuestSelectio
  */
 const GuestUserContent = ({ guest }) => {
   const { width } = useWindowDimensions();
-  const contentWidth = Math.max(width - 32, 0);
+  const carouselItemWidth = Math.max(width - 32, 0);
   const {
     navigation,
     profModalVisible,
@@ -161,8 +161,8 @@ const GuestUserContent = ({ guest }) => {
                 action=""
                 data={featuredConferenceItems}
                 renderItem={renderFeaturedCard}
-                sliderWidth={contentWidth}
-                itemWidth={contentWidth}
+                sliderWidth={width}
+                itemWidth={carouselItemWidth}
                 width={width}
                 onAction={() => ''}
               />
@@ -190,8 +190,8 @@ const GuestUserContent = ({ guest }) => {
                 action=""
                 data={popularConferenceItems}
                 renderItem={renderPopularCard}
-                sliderWidth={contentWidth}
-                itemWidth={contentWidth}
+                sliderWidth={width}
+                itemWidth={carouselItemWidth}
                 width={width}
                 onAction={() => ''}
               />
@@ -216,8 +216,8 @@ const GuestUserContent = ({ guest }) => {
                 action="View all"
                 data={specialtyFeaturedItems}
                 renderItem={renderFeaturedCard}
-                sliderWidth={contentWidth}
-                itemWidth={contentWidth}
+                sliderWidth={width}
+                itemWidth={carouselItemWidth}
                 width={width}
                 onAction={() =>
                   navigation.navigate('BrowseScreen', {
@@ -238,8 +238,9 @@ const GuestUserContent = ({ guest }) => {
               <LiveConferenceSection
                 data={liveWebinarItems}
                 renderItem={renderLiveCard}
-                sliderWidth={contentWidth}
-                itemWidth={contentWidth}
+                sliderWidth={width}
+                itemWidth={carouselItemWidth}
+                width={width}
                 onAction={() =>
                   navigation.navigate('Globalresult', {
                     trig: {
@@ -261,8 +262,8 @@ const GuestUserContent = ({ guest }) => {
                 action="View all"
                 data={freeConferenceItems}
                 renderItem={renderFreeCard}
-                sliderWidth={contentWidth}
-                itemWidth={contentWidth}
+                sliderWidth={width}
+                itemWidth={carouselItemWidth}
                 width={width}
                 onAction={() =>
                   navigation.navigate('Globalresult', {

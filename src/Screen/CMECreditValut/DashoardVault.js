@@ -1,5 +1,5 @@
 import { View, Text, Platform, ScrollView, TouchableOpacity, Dimensions, StyleSheet, Image } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -32,6 +32,7 @@ import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionActive } from '../../Utils/Helpers/primeSubscription';
 import CertficateHandle from './FileCheck';
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 
@@ -51,6 +52,7 @@ const DashoardVault = (props) => {
     const dispatch = useDispatch();
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const [statewise, setStatewise] = useState("");
     const [clisttopic, setClisttopic] = useState('');
@@ -105,6 +107,7 @@ const DashoardVault = (props) => {
         professionUpdateRequired: false,
         stateLicenseFlowCompleted: false,
     });
+    const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -329,8 +332,9 @@ const DashoardVault = (props) => {
                 AsyncStorage.getItem(constants.AUTH_USER_DATA),
                 AsyncStorage.getItem(constants.VERIFYSTATEDATA),
                 AsyncStorage.getItem(constants.PROFESSION),
+                AsyncStorage.getItem('ExploreTrialClicked'),
                 AsyncStorage.getItem('activeProfile')
-            ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
+            ]).then(([state, flags, auth_user, board_special, profession_data, exploreTrialClickedRaw, activeProfile]) => {
                 if (!mounted) return;
 
                 const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
@@ -342,6 +346,7 @@ const DashoardVault = (props) => {
                 setStoredAuthUser(auth_user_json);
                 setFinalverifyvault(board_special_json);
                 setFinalProfession(profession_data_json);
+                setExploreTrialClicked(exploreTrialClickedRaw === 'true');
                 setCurrentProfile(activeProfile);
                 setIsAsyncStorageLoaded(true);
                 setIsProfileReady(true);
@@ -377,12 +382,18 @@ const DashoardVault = (props) => {
         ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
         : null;
 
-    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser ;  
+    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser;
     const activeUser = loginUser?.user ? loginUser.user : loginUser;
-    const isNonSubscribedNoSubscription = 
-    activeUser?.subscription_user == "non-subscribed" &&
-    (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
-    (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+    const isNonSubscribedNoSubscription =
+        activeUser?.subscription_user == "non-subscribed" &&
+        (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
+        (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+    const isPrimeTrialOrActive = useMemo(() => (
+        exploreTrialClicked ||
+        isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse) ||
+        Boolean(WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.')
+    ), [exploreTrialClicked, WebcastReducer?.PrimeCheckResponse, WebcastReducer?.PrimePaymentResponse]);
+    const shouldHideCertificateAction = isNonSubscribedNoSubscription && !isPrimeTrialOrActive;
     const userObj = resolvedUser || finalverifyvault || finalProfession;
     const isUsaProfile =
         userObj?.usa_user === true ||
@@ -411,11 +422,9 @@ const DashoardVault = (props) => {
     };
     const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj));
     const shouldShowAddLicenseCard =
-        allProfTake &&
-        currentProfile !== 'SkipProfile' &&
-        nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
+        !isNonUsaUser &&
         !fulldashbaord?.length &&
-        !isNonUsaUser;
+        (currentProfile === 'SkipProfile' || !allProfTake || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true);
     const nonUsaStateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
     const nonUsaCertificates = nonUsaStateData?.['-1']?.certificates;
     let hasNonUsaCertificates = false;
@@ -669,7 +678,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : (isNonUsaUser && !hasNonUsaCertificates) || (currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription) || (!allProfTake && !fulldashbaord?.length && !isNonSubscribedNoSubscription) ? (
+                        ) : (isNonUsaUser && !hasNonUsaCertificates) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -837,7 +846,7 @@ const DashoardVault = (props) => {
                                                 setStatepick={setStatepick}
                                                 vaultState={vaultState}
                                                 renewalCheck={renewalCheck}
-                                                hideCertificateAction={isNonSubscribedNoSubscription} />}
+                                                hideCertificateAction={shouldHideCertificateAction} />}
                                         </View>
                                         <View style={{ bottom: normalize(10) }}>
                                             {!valuttext && <Boardvault
@@ -888,7 +897,7 @@ const DashoardVault = (props) => {
                                                 handleBoardname={handleBoardname}
                                                 styles={styles}
                                                 takeID={CreditVaultReducer?.boardvaultResponse?.board_data}
-                                                hideCertificateAction={isNonSubscribedNoSubscription}
+                                                hideCertificateAction={shouldHideCertificateAction}
                                             />}
                                         </View>
                                     </View>

@@ -29,19 +29,29 @@ const CarouselSectionComponent = ({
   width,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const viewportWidth = Math.max(width || sliderWidth || 0, 0);
+  const cardWidth = Math.max(itemWidth || viewportWidth - 32, 0);
+
   return (
     <View style={styles.carouselContainer}>
       <SectionTitle title={title} action={action} onAction={onAction} width={width} />
-      <Carousel
-        layout="default"
-        data={data}
-        renderItem={renderItem}
-        sliderWidth={sliderWidth}
-        itemWidth={itemWidth}
-        onSnapToItem={index => setActiveIndex(index)}
-        inactiveSlideScale={1}
-        inactiveSlideOpacity={1}
-      />
+      <View style={{ marginHorizontal: -16, width: viewportWidth, overflow: 'visible' }}>
+        <Carousel
+          layout="default"
+          data={data}
+          renderItem={renderItem}
+          sliderWidth={viewportWidth}
+          itemWidth={cardWidth}
+          onSnapToItem={index => setActiveIndex(index)}
+          inactiveSlideScale={1}
+          inactiveSlideOpacity={1}
+          useScrollView={false}
+          removeClippedSubviews={false}
+          activeSlideAlignment="center"
+          containerCustomStyle={{ overflow: 'visible' }}
+          contentContainerCustomStyle={{ overflow: 'visible' }}
+        />
+      </View>
       <Pagination
         dotsLength={data.length}
         activeDotIndex={activeIndex}
@@ -65,9 +75,12 @@ const LiveConferenceSectionComponent = ({
   sliderWidth,
   itemWidth,
   onAction,
+  width,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   if (!data.length) return null;
+  const viewportWidth = Math.max(width || sliderWidth || 0, 0);
+  const cardWidth = Math.max(itemWidth || viewportWidth - 32, 0);
 
   return (
     <View style={styles.liveSection}>
@@ -77,16 +90,23 @@ const LiveConferenceSectionComponent = ({
           <Text style={styles.liveViewAll}>View All</Text>
         </TouchableOpacity>
       </View>
-      <Carousel
-        layout="default"
-        data={data}
-        renderItem={renderItem}
-        sliderWidth={sliderWidth}
-        itemWidth={itemWidth}
-        onSnapToItem={index => setActiveIndex(index)}
-        inactiveSlideScale={1}
-        inactiveSlideOpacity={1}
-      />
+      <View style={{ marginHorizontal: -16, width: viewportWidth, overflow: 'visible' }}>
+        <Carousel
+          layout="default"
+          data={data}
+          renderItem={renderItem}
+          sliderWidth={viewportWidth}
+          itemWidth={cardWidth}
+          onSnapToItem={index => setActiveIndex(index)}
+          inactiveSlideScale={1}
+          inactiveSlideOpacity={1}
+          useScrollView={false}
+          removeClippedSubviews={false}
+          activeSlideAlignment="center"
+          containerCustomStyle={{ overflow: 'visible' }}
+          contentContainerCustomStyle={{ overflow: 'visible' }}
+        />
+      </View>
       <Pagination
         dotsLength={data.length}
         activeDotIndex={activeIndex}

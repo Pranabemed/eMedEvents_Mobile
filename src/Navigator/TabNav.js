@@ -98,6 +98,7 @@ function TabScreen() {
   const isFoucs = useIsFocused();
   const route = useRoute();
   const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
+  console.log(route.params ,detectmain,"route.params =====")
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [lastActiveTab, setLastActiveTab] = useState(null);

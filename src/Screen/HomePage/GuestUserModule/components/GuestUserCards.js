@@ -107,55 +107,57 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
   return (
     <View style={styles.featureCardOuter}>
       <Pressable onPress={handlePress} style={styles.featureCard}>
-        {showOrganization ? (
-          <View style={styles.featureHeader}>
-            <TouchableOpacity
-              onPress={item?.onOrganizerPress}
-              disabled={!item?.organizationUrl}
-              activeOpacity={0.8}
-              style={styles.featureLogoCircle}
-            >
-              {organizationLogo ? (
-                <Image source={organizationLogo} style={styles.featureLogoImage} resizeMode="cover" />
-              ) : (
-                <Text style={styles.featureLogoFallback}>{getInitials(organizationName) || ' '}</Text>
-              )}
-            </TouchableOpacity>
-            <Text numberOfLines={1} style={styles.featureOrgName}>{organizationName}</Text>
-          </View>
-        ) : null}
+        <View style={{ flex: 1 }}>
+          {showOrganization ? (
+            <View style={styles.featureHeader}>
+              <TouchableOpacity
+                onPress={item?.onOrganizerPress}
+                disabled={!item?.organizationUrl}
+                activeOpacity={0.8}
+                style={styles.featureLogoCircle}
+              >
+                {organizationLogo ? (
+                  <Image source={organizationLogo} style={styles.featureLogoImage} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.featureLogoFallback}>{getInitials(organizationName) || ' '}</Text>
+                )}
+              </TouchableOpacity>
+              <Text numberOfLines={1} style={styles.featureOrgName}>{organizationName}</Text>
+            </View>
+          ) : null}
 
-        {visibleSpecialities.length ? (
-          <View style={styles.featureSpecialityWrap}>
-            {visibleSpecialities.map(label => (
-              <View key={label} style={styles.featureSpecialityPill}>
-                <Icon name="favorite-border" size={13} color="#111827" />
-                <Text numberOfLines={1} style={styles.featureSpecialityText}>{getSpecialityLabel(label)}</Text>
-              </View>
-            ))}
-            {item?.showSpecialities && allSpecialities.length > visibleSpecialities.length ? (
-              <View style={styles.featureSpecialityMore}>
-                <Text style={styles.featureSpecialityMoreText}>...</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+          {visibleSpecialities.length ? (
+            <View style={styles.featureSpecialityWrap}>
+              {visibleSpecialities.map(label => (
+                <View key={label} style={styles.featureSpecialityPill}>
+                  <Icon name="favorite-border" size={13} color="#111827" />
+                  <Text numberOfLines={1} style={styles.featureSpecialityText}>{getSpecialityLabel(label)}</Text>
+                </View>
+              ))}
+              {item?.showSpecialities && allSpecialities.length > visibleSpecialities.length ? (
+                <View style={styles.featureSpecialityMore}>
+                  <Text style={styles.featureSpecialityMoreText}>...</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
-        <Text numberOfLines={2} style={styles.featureTitle}>
-          {getText(item?.title, item?.course_title, item?.conference_name, item?.name, item?.banner_title, item?.heading)}
-        </Text>
-        {item?.date ? (
-          <View style={styles.featureMetaRow}>
-            <Icon name="event" size={17} color="#333333" />
-            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureMetaText}>{item.date}</Text>
-          </View>
-        ) : null}
-        {item?.location ? (
-          <View style={styles.featureMetaRow}>
-            <Icon name="place" size={18} color="#333333" />
-            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureMetaText}>{item.location}</Text>
-          </View>
-        ) : null}
+          <Text numberOfLines={2} style={styles.featureTitle}>
+            {getText(item?.title, item?.course_title, item?.conference_name, item?.name, item?.banner_title, item?.heading)}
+          </Text>
+          {item?.date ? (
+            <View style={styles.featureMetaRow}>
+              <Icon name="event" size={17} color="#333333" />
+              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureMetaText}>{item.date}</Text>
+            </View>
+          ) : null}
+          {item?.location ? (
+            <View style={styles.featureMetaRow}>
+              <Icon name="place" size={18} color="#333333" />
+              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureMetaText}>{item.location}</Text>
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.featureBottomRow}>
           {item?.cmeLabel ? (
@@ -228,7 +230,16 @@ const PopularConferenceCardComponent = ({ item, width }) => {
         <View style={styles.popularMetaGroup}>
           {item?.date ? <InfoRow icon="calendar-today" text={item.date} width={width} /> : null}
           {item?.location ? <InfoRow icon="place" text={item.location} width={width} /> : null}
-          {item?.credit ? <InfoRow icon="place" text={item.credit} width={width} /> : null}
+          {item?.credit ? (
+            <View style={styles.creditRow}>
+              <Image
+                source={Imagepath.CreditValut}
+                style={[styles.creditIcon, { tintColor: '#000000' }]}
+                resizeMode="contain"
+              />
+              <Text numberOfLines={1} style={styles.infoText}>{item.credit}</Text>
+            </View>
+          ) : null}
         </View>
         <View style={styles.popularDivider} />
         <View style={styles.popularFooterRow}>
