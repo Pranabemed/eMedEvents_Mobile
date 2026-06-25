@@ -15,37 +15,18 @@ import { BackHandler } from 'react-native';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
+import constants from '../../Utils/Helpers/constants';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
-import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
 import { StyleSheet, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
-
-const getCountryFromIP = async ip => {
-  try {
-    if (!ip) {
-      return 'unknown';
-    }
-
-    const res = await fetch(`https://ipinfo.io/${ip}/json`);
-    const text = await res.text();
-    if (text.startsWith('<')) {
-      throw new Error('HTML response');
-    }
-
-    const data = JSON.parse(text);
-    return String(data?.country || 'unknown').trim().toUpperCase();
-  } catch (e) {
-    console.log('GuestUser geo lookup failed:', e);
-    return 'unknown';
-  }
-};
 
 /**
  * Description: Guest user home container screen.
@@ -94,6 +75,14 @@ const GuestUser = props => {
   const [handledGuestResetAt, setHandledGuestResetAt] = useState(null);
   const [guestUsaStates, setGuestUsaStates] = useState([]);
   const [isUsaUser, setIsUsaUser] = useState(true);
+  const [showGuestProfessionPopup, setShowGuestProfessionPopup] = useState(false);
+  const [guestDeviceData, setGuestDeviceData] = useState({
+    playerSessionID: '',
+    ip: '',
+    country: '',
+    deviceToken: '',
+    email: ''
+  });
 
   const shouldResetRef = useRef(false);
   const guestHomeRequestInFlightRef = useRef(false);
@@ -157,19 +146,45 @@ const GuestUser = props => {
   }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
 
   useEffect(() => {
-    const initPlayerSession = async () => {
+    const initGuestData = async () => {
       try {
-        const session = await AsyncStorage.getItem('PLAYERSESSION');
-        if (!session) {
-          const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
+        let guestSessionId = await AsyncStorage.getItem('PLAYERSESSION');
+        if (!guestSessionId) {
+          guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
           await AsyncStorage.setItem('PLAYERSESSION', guestSessionId);
         }
+        
+        let token = '';
+        try {
+          token = await generateDeviceToken();
+        } catch (e) {
+          console.log('Firebase token error:', e);
+        }
+
+        const email = await AsyncStorage.getItem(constants.EMAIL);
+
+        const ip = getPublicIP() || '';
+        const geoInfo = await getCountryAndDialCode();
+        const country = geoInfo?.country || 'unknown';
+
+        setGuestDeviceData({
+          playerSessionID: guestSessionId,
+          ip: ip,
+          country: country,
+          deviceToken: token,
+          email: email || ''
+        });
+
+        const isPopupShown = await AsyncStorage.getItem('GUEST_PROFESSION_POPUP_SHOWN');
+        if (isPopupShown !== 'true') {
+          setShowGuestProfessionPopup(true);
+        }
       } catch (err) {
-        console.log('Error initializing guest player session ID:', err);
+        console.log('Error initializing guest data:', err);
       }
     };
     if (isFocused) {
-      initPlayerSession();
+      initGuestData();
     }
   }, [isFocused]);
 
@@ -407,6 +422,9 @@ const GuestUser = props => {
     onSaved: () => setCmeModalVisible(false),
     cmeRealback: 'guest',
     onFeaturedActivityPress: openFeaturedActivity,
+    showGuestProfessionPopup,
+    setShowGuestProfessionPopup,
+    guestDeviceData,
   };
 
   return (

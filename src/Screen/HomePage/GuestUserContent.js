@@ -36,6 +36,7 @@ import {
   GuestSpecialitySection,
 } from './GuestUserModule/components/GuestPanels';
 import { GuestSelectionModals } from './GuestUserModule/components/GuestSelectionModals';
+import { GuestProfessionPopup } from './GuestUserModule/components/GuestProfessionPopup';
 
 /**
  * Description: Guest user home content component.
@@ -86,6 +87,10 @@ const GuestUserContent = ({ guest }) => {
     allProfession,
     onCMEClose,
     onSaved,
+    showGuestProfessionPopup,
+    setShowGuestProfessionPopup,
+    guestDeviceData,
+    isUsaUser,
   } = guest;
 
   const {
@@ -308,6 +313,13 @@ const GuestUserContent = ({ guest }) => {
             initialProfession: selectedProfession || 'Physician',
           })
         }
+      />
+
+      <GuestProfessionPopup 
+        visible={showGuestProfessionPopup} 
+        onClose={() => setShowGuestProfessionPopup(false)} 
+        isUsaUser={isUsaUser} 
+        guestData={guestDeviceData} 
       />
     </>
   );

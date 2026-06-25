@@ -5,6 +5,8 @@ import {
   AboutusSuccess,
   HomelistFailure,
   HomelistSuccess,
+  professionSaveFailure,
+  professionSaveSuccess,
   StateBundleLandingFailure,
   StateBundleLandingSuccess,
 } from '../Reducers/GuestReducer';
@@ -71,6 +73,25 @@ export function* StateBundleLandingSaga(action) {
   }
 }
 
+export function* professionSaveSaga(action) {
+  const ipAddress = action?.payload?.ip || getPublicIP();
+  const header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    IPADDRESS: ipAddress ? ipAddress : '',
+  };
+  try {
+    const response = yield call(postApi, 'Master/saveProfessionSpecialityViews', action.payload, header);
+    if (response?.status === 200) {
+      yield put(professionSaveSuccess(response?.data));
+    } else {
+      yield put(professionSaveFailure(response?.data));
+    }
+  } catch (error) {
+    yield put(professionSaveFailure(error));
+  }
+}
+
 const watchFunction = [
   (function* () {
     yield takeLatest('Guest/HomelistRequest', HomelistSaga);
@@ -80,6 +101,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Guest/StateBundleLandingRequest', StateBundleLandingSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Guest/professionSaveRequest', professionSaveSaga);
   })(),
 ];
 

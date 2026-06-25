@@ -8,6 +8,7 @@ const initialState = {
   AboutusResponse:{},
   StateBundleLandingResponse:{},
   stateBundleLandingLoading:false,
+  professionSaveResponse:{},
 };
 
 const GuestSlice = createSlice({
@@ -53,6 +54,21 @@ const GuestSlice = createSlice({
       state.error = action.error || action.payload;
       state.isLoading = false;
       state.stateBundleLandingLoading = false;
+    },
+    professionSaveRequest(state, action) {
+      state.status = action.type;
+      state.isLoading = true;
+      state.professionSaveResponse = {};
+    },
+    professionSaveSuccess(state, action) {
+      state.professionSaveResponse = action.payload;
+      state.status = action.type;
+      state.isLoading = false;
+    },
+    professionSaveFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error || action.payload;
+      state.isLoading = false;
     }
   },
 });
@@ -67,5 +83,8 @@ export const {
   StateBundleLandingRequest,
   StateBundleLandingFailure,
   StateBundleLandingSuccess,
+  professionSaveFailure,
+  professionSaveRequest,
+  professionSaveSuccess,
 } = GuestSlice.actions;
 export default GuestSlice.reducer;
