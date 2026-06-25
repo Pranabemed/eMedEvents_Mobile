@@ -106,7 +106,7 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
 
   return (
     <View style={styles.featureCardOuter}>
-      <Pressable onPress={handlePress} style={styles.featureCard}>
+      <Pressable onPress={handlePress} style={styles.specailtyfeatureCard}>
         <View style={{ flex: 1 }}>
           {showOrganization ? (
             <View style={styles.featureHeader}>

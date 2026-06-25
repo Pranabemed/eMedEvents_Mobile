@@ -1010,7 +1010,9 @@ const Main = (props) => {
         console.log(professionRaw, activeUser, isNonSubscribedNoSubscription, "isNonSubscribedNoSubscription", physicianHandles, "physicianHandles", isEligibleCountry, "isEligibleCountry", isUsa, "isUsa", userProfession, "userProfession", professionType, "professionType", professionLabel, "professionLabel", resolvedIpCountryCode, "resolvedIpCountryCode");
         if (
           isNonSubscribedNoSubscription &&
-          physicianHandles
+          physicianHandles &&
+          !isSkippedFlowVal &&
+          !isSessionSkippedVal
         ) {
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(false);

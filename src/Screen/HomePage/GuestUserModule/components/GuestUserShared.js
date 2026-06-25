@@ -9,7 +9,7 @@
  */
 
 import React, { memo } from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, View, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Imagepath from '../../../../Themes/Imagepath';
@@ -98,7 +98,7 @@ const StatsGridComponent = ({ width, stats }) => {
  * Description: Prime membership banner.
  * Purpose: Promotes membership benefits and routes the guest user to the membership screen.
  */
-const MembershipBannerComponent = ({ width, onPress }) => (
+const MembershipBannerComponent = ({ width }) => (
   <LinearGradient
     colors={['#1E40AF', '#1D4ED8']}
     start={{ x: 0, y: 0 }}
@@ -123,9 +123,6 @@ const MembershipBannerComponent = ({ width, onPress }) => (
         </View>
       ))}
     </View>
-    <TouchableOpacity onPress={onPress} style={styles.membershipButton}>
-      <Text style={styles.membershipButtonText}>Explore Now</Text>
-    </TouchableOpacity>
   </LinearGradient>
 );
 

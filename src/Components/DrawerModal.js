@@ -60,7 +60,7 @@ export default function DrawerModal(props) {
   const [primeit, setPrimeit] = useState(false);
   const [primeits, setPrimeits] = useState(false);
   const [subit, setSubit] = useState(false);
-  const [nettruedr, setNettruedr] = useState("")
+  const [nettruedr, setNettruedr] = useState(true)
   const [primeSkipped, setPrimeSkipped] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
@@ -685,12 +685,12 @@ export default function DrawerModal(props) {
                 </View>}
               </Pressable>
               <View style={{ flexDirection: "column" }}>
-                {(resolvedDrawerUser?.personal_information?.firstname || resolvedDrawerUser?.personal_information?.lastname) && <View style={{ flexDirection: "column" }}>
-                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${resolvedDrawerUser?.personal_information?.firstname} ${resolvedDrawerUser?.personal_information?.lastname}`}</Text>
+                <View style={{ flexDirection: "column" }}>
+                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname || AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || 'Guest'} ${resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname || AuthReducer?.loginResponse?.user?.lastname || AuthReducer?.againloginsiginResponse?.user?.lastname || 'User'}`}</Text>
                   <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>
-                    {stableProfileMetaText}
+                    {stableProfileMetaText || 'Guest Profile'}
                   </Text>
-                </View>}
+                </View>
                 {(isNonSubscribedNoSubscription || !isNonUsaUser && allProfTake) && (
                   <Pressable
                     style={{

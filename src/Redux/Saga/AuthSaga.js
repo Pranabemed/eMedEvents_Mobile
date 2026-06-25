@@ -316,7 +316,7 @@ const storeVerifyStateData = async (data) => {
   try {
     if (data == undefined || data == null) {
       console.warn('Cannot store undefined/null in AsyncStorage');
-      return; 
+      return;
     }
     const existing = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
     let finalUpdate = data;
@@ -843,6 +843,13 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, constants.TOKEN);
     yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
     yield call(AsyncStorage.removeItem, 'PLAYERSESSION');
+    yield call(AsyncStorage.removeItem, 'PrimeMembershipSkipped');
+    yield call(AsyncStorage.removeItem, 'SessionPrimeSkipped');
+    yield call(AsyncStorage.removeItem, 'PrimeCardFlowComplete');
+    yield call(AsyncStorage.removeItem, 'ExploreTrialClicked');
+    yield call(AsyncStorage.removeItem, 'GuestPrimeVerifyPending');
+    yield call(AsyncStorage.removeItem, 'CheckMembershipForceNewProfession');
+    yield call(AsyncStorage.removeItem, 'activeProfile');
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
     yield put(dashMbSuccess(null));
@@ -893,8 +900,8 @@ export function* verifyTokenSaga(action) {
     let response = yield call(postApi, 'user/verifyToken', action?.payload?.key ? action?.payload?.key : action?.payload, header);
     const resData = response?.data;
     const isSuccess = response?.status == 200 || resData?.success == true || resData?.success == 1 || resData?.success == "true";
-    console.log('verifyTokenSaga response:====', response,isSuccess);
-    
+    console.log('verifyTokenSaga response:====', response, isSuccess);
+
     if (isSuccess) {
       const user = resData?.user || resData?.data || resData;
       const verified = user?.is_verified ?? user?.email_verified;

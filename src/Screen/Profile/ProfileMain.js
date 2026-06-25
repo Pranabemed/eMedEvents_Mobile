@@ -115,6 +115,10 @@ const ProfileMain = (props) => {
         return () => unsubscribe();
     }, [isFoucs]);
     const profileBack = () => {
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+            return;
+        }
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -123,7 +127,6 @@ const ProfileMain = (props) => {
                 ],
             })
         );
-
     }
     useEffect(() => {
         const fallbackProfile =
@@ -238,8 +241,8 @@ const ProfileMain = (props) => {
         setAllProf(getDisplayProfession(allHandle));
     }, [allHandle])
     const isPrimeTrial = useMemo(() => {
-            return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
-        }, [WebcastReducer?.PrimeCheckResponse]);
+        return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
+    }, [WebcastReducer?.PrimeCheckResponse]);
     const takeSub = isPrimeTrial || finalProfessionprof?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultprof?.subscription_user == "non-subscribed";
     console.log(takeSub, "yakegfjghjf-------", allProfTake, "sfgdjkghf=====");
     const endDateStringProfile =
@@ -311,7 +314,7 @@ const ProfileMain = (props) => {
                         );
                     } else if (item?.id == 4) {
                         props.navigation.navigate("EmpInfo", { EmpData: allHandle });
-                    }else if (item?.id == 5) {
+                    } else if (item?.id == 5) {
                         props.navigation.navigate("ChangePassword");
                     }
 
@@ -359,7 +362,7 @@ const ProfileMain = (props) => {
                             fontFamily: Fonts.InterSemiBold,
                             fontSize: 16,
                             color: "#333",
-                            fontWeight:"bold"
+                            fontWeight: "bold"
                         }}
                     >
                         {item?.name}
@@ -387,8 +390,8 @@ const ProfileMain = (props) => {
         return () => unsubscribe();
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     const displayName = getDisplayName(allHandle);
     return (
         <>
@@ -439,7 +442,7 @@ const ProfileMain = (props) => {
                     <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(10) }}>
                         <CircleLoader allProfTake={allProfTake} percentage={DashboardReducer?.mainprofileResponse?.profile_complete_percentage} mainData={DashboardReducer?.mainprofileResponse} />
                         {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF",fontWeight:"bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
+                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF", fontWeight: "bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
                             <View style={{
                                 width: "60%",
                                 justifyContent: "center",
@@ -453,7 +456,7 @@ const ProfileMain = (props) => {
                                         color: "#FFFFFF",
                                         textAlign: "center",
                                         lineHeight: 20,
-                                        fontWeight:"bold"
+                                        fontWeight: "bold"
                                     }}
                                 >
                                     {allProf}
@@ -467,7 +470,7 @@ const ProfileMain = (props) => {
                                             color: "#FFFFFF",
                                             textAlign: "center",
                                             lineHeight: 20,
-                                            fontWeight:"700"
+                                            fontWeight: "700"
                                         }}
                                     >
                                         {text}
@@ -476,7 +479,7 @@ const ProfileMain = (props) => {
                             </View>
                         </View>}
                         {allProfTake && <View style={{ paddingVertical: normalize(5), justifyContent: 'center', alignItems: "center" }}>
-                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#6a82ce", textAlign: "center",fontWeight:"5s00" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#6a82ce", textAlign: "center", fontWeight: "5s00" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
                         </View>}
                         {!isNonUsaUser && allProfTake && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
                             <View

@@ -633,7 +633,7 @@ export default StyleSheet.create({
   },
   popularCard: {
     width: '100%',
-    minHeight: normalize(220),
+    minHeight:Platform.OS === 'ios'?normalize(190) : normalize(220),
     borderRadius: 24,
     paddingHorizontal: 18,
     paddingTop: 18,
@@ -695,7 +695,19 @@ export default StyleSheet.create({
   },
   featureCard: {
     width: '100%',
-    minHeight: normalize(246),
+    minHeight:Platform.OS === 'ios'?normalize(210) : normalize(246),
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#FF8A00',
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 22 : 12,
+    overflow: 'hidden',
+  },
+    specailtyfeatureCard: {
+    width: '100%',
+    minHeight:Platform.OS === 'ios'?normalize(195) : normalize(246),
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     borderWidth: 1,
@@ -751,7 +763,7 @@ export default StyleSheet.create({
   featureTitle: {
     fontFamily: Fonts.InterBold,
     color: '#111827',
-    fontSize: 20,
+    fontSize:Platform.OS === 'ios' ? 21 : 20,
     lineHeight: 26,
   },
   featureTitleDark: {
@@ -780,7 +792,7 @@ export default StyleSheet.create({
     flexShrink: 1,
     color: '#111827',
     fontFamily: Fonts.InterMedium,
-    fontSize: 12,
+    fontSize: Platform.OS === 'ios' ? 14 : 12,
   },
   featureSpecialityMore: {
     minHeight: 24,
@@ -1207,10 +1219,10 @@ export default StyleSheet.create({
   },
   membershipCard: {
     borderRadius: 28,
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingTop: 24,
+    paddingBottom: 14,
     width: '100%',
-    minHeight: normalize(465),
+    minHeight: normalize(395),
     alignItems: 'center',
     alignSelf: 'center',
     overflow: 'hidden',
@@ -1233,8 +1245,8 @@ export default StyleSheet.create({
     alignItems: "center"
   },
   membershipPointsList: {
-    marginTop: 16,
-    gap: 12,
+    marginTop: 12,
+    gap: 10,
     alignItems: 'center',
   },
   membershipPoint: {
@@ -1289,15 +1301,15 @@ export default StyleSheet.create({
   },
   membershipArtwork: {
     width: '100%',
-    height: Platform.OS === 'android' ? normalize(120) : normalize(180),
+    height: Platform.OS === 'android' ? normalize(108) : normalize(150),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   membershipImage: {
-    width: Platform.OS === 'android' ? normalize(180) : normalize(240),
-    height: Platform.OS === 'android' ? normalize(110) : normalize(160),
+    width: Platform.OS === 'android' ? normalize(168) : normalize(220),
+    height: Platform.OS === 'android' ? normalize(100) : normalize(140),
     alignSelf: 'center',
   },
   membershipOrb: {
