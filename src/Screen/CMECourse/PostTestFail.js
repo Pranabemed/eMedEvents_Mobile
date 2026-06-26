@@ -48,7 +48,7 @@ const PostTestFail = (props) => {
                 dispatch(evaulatecalculateRequest(obj));
             })
             .catch((err) => { showErrorAlert("Please connect to internet", err); });
-    }, [props?.route?.params]);
+    }, [props?.route?.params?.examID]);
     useEffect(() => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;

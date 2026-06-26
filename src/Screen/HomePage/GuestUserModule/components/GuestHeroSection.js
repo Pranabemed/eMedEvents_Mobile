@@ -146,7 +146,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
                   end={{ x: 1, y: 1 }}
                   style={[styles.hero, { width: cardWidth, height: cardHeight, borderRadius: 16 }]}
                 >
-                  <View style={{ flex: 0.7 }}>
+                  <View style={Platform.OS === 'ios' ? { flex: 0.7 } : {}}>
                     <Text style={styles.heroKicker}>{displayKicker}</Text>
                     <Text numberOfLines={2} style={styles.heroTitle}>{displayTitle}</Text>
                   </View>

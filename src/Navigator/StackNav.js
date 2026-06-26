@@ -490,7 +490,8 @@ const StackNav = props => {
       'course-bundle',
       'mandatory-topic',
       '/conference/',
-      '/conferences/'
+      '/conferences/',
+      '/activity-fulfillment/assessment'
     ];
 
     const hasInternalPattern = internalPathPatterns.some(pattern =>
@@ -669,7 +670,7 @@ const StackNav = props => {
 
     // Determine if the screen/URL requires authentication
     // Guest-permitted internal screens are the webcast/conference details pages
-    const isGuestPermitted = isInternalLink;
+    const isGuestPermitted = isInternalLink && !pathname.includes('/activity-fulfillment/assessment');
     const requiresAuthentication = !isGuestPermitted;
 
     console.log('[DeepLink] Authentication check:', {
@@ -707,6 +708,23 @@ const StackNav = props => {
       });
     } else {
       // If user is logged in and it's a protected internal link, map to appropriate authenticated screen
+      if (pathname.includes('/activity-fulfillment/assessment')) {
+        const parsedUrl = new URL(resolvedUrl);
+        const con = parsedUrl.searchParams.get('con') || parsedUrl.searchParams.get('conferenceId') || parsedUrl.searchParams.get('conference_id');
+        const act = parsedUrl.searchParams.get('act') || parsedUrl.searchParams.get('activityId') || parsedUrl.searchParams.get('activity_id');
+        
+        console.log('[DeepLink] User logged in, navigating to PreTest for assessment URL:', resolvedUrl);
+        navigateToScreen("PreTest", {
+           activityID: {
+             activityID: act,
+             conference_id: con
+           },
+           conferenceId: con,
+           fromNotification: true
+        });
+        return;
+      }
+
       // Since it's a general protected page (like /profile or /dashboard), navigate to TabNav
       console.log('[DeepLink] User logged in, navigating to TabNav for internal protected link:', resolvedUrl);
       navigateToScreen("TabNav");

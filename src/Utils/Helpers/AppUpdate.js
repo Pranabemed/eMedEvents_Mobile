@@ -49,8 +49,8 @@ const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/ap
 const ANDROID_PACKAGE = 'com.emedevents.newapp';
 const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
 const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
-const UPDATE_RECHECK_MS = 10 * 60 * 1000; // 10 min periodic check while app is open
-const NAVIGATION_RECHECK_MS = 10 * 60 * 1000; // Avoid repeated API hits during fast screen changes
+const UPDATE_RECHECK_MS = 30 * 1000; // Re-check often so the popup can appear on any screen
+const NAVIGATION_RECHECK_MS = 30 * 1000; // Avoid repeated API hits during fast screen changes
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -364,6 +364,10 @@ const AppUpdateHandler = () => {
   useEffect(() => {
     checkUpdate({ force: true, reason: 'mount' });
 
+    const retryTimeoutId = setTimeout(() => {
+      checkUpdate({ force: true, reason: 'mount-retry' });
+    }, 5000);
+
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         checkUpdate({ reason: 'app-active' });
@@ -376,6 +380,7 @@ const AppUpdateHandler = () => {
     return () => {
       sub.remove();
       clearInterval(intervalId);
+      clearTimeout(retryTimeoutId);
     };
   }, [checkUpdate]);
 

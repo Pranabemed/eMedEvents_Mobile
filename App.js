@@ -11,6 +11,7 @@ import { initPublicIP } from './src/Utils/Helpers/IPServer'
 import AppUpdateHandler from './src/Utils/Helpers/AppUpdate';
 import TokenManager from './src/Utils/Helpers/TokenManager';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { registerPushNotificationListeners } from './src/Utils/Helpers/PushNotifications';
 
 const App = () => {
   const dispatch = useDispatch()
@@ -35,10 +36,15 @@ const App = () => {
       .catch(err => {
         showErrorAlert('Please connect to Internet', err);
       });
-  }, [])
+  }, [dispatch])
 
   useEffect(() => {
     initPublicIP(); // 🔥 runs once
+  }, []);
+
+  useEffect(() => {
+    const cleanupPushListeners = registerPushNotificationListeners();
+    return cleanupPushListeners;
   }, []);
 
   useEffect(() => {

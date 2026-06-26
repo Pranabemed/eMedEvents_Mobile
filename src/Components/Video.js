@@ -72,6 +72,11 @@ const extractVideoUrl = (htmlString) => {
     return null;
 };
 
+const getFirstIncompleteModule = (modules) => {
+    if (!Array.isArray(modules)) return null;
+    return modules.find((item) => Number(item?.completedSection) === 0) || null;
+};
+
 const VideoComponent = (props) => {
     const {
         statepush,
@@ -129,6 +134,7 @@ const VideoComponent = (props) => {
     const [isSeeking, setIsSeeking] = useState(false);
     const didSetInitialFullscreenRef = useRef(false);
     const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
+    const preserveVideoContent = !!props?.route?.params?.preserveVideoContent;
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -156,21 +162,31 @@ const VideoComponent = (props) => {
         }
     }
     useEffect(() => {
-        const ActivityId = props?.route?.params?.postdata?.next_activity_id
+        if (preserveVideoContent) return;
+        let ActivityId = activeCourseModuleId
+            || props?.route?.params?.postdata?.next_activity_id
             || props?.route?.params?.RoleData?.current_activity_id
             || props?.route?.params?.activityID?.next_activity_id
             || props?.route?.params?.FullID?.previous_activity_id;
+
+        const activeNextActionFallback = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
+        const btnTextFallback = String(activeNextActionFallback?.next_activity_button_text || '').trim().toLowerCase();
+
+        if (btnTextFallback === 'proceed to section 1' && activeNextActionFallback?.next_activity_id) {
+            ActivityId = activeNextActionFallback.next_activity_id;
+        }
+
         let obj = {
             "ActivityId": ActivityId
-            // "ActivityId":props?.route?.params?.postdata?.next_activity_id || props?.route?.params?.RoleData?.current_activity_id ? props?.route?.params?.RoleData?.current_activity_id : props?.route?.params?.FullID?.next_activity_id || props?.route?.params?.activityID?.next_activity_id
         }
         connectionrequest()
             .then(() => {
                 dispatch(cmeactivityRequest(obj));
             })
             .catch((err) => { showErrorAlert("Please connect to internet", err) })
-    }, [isFocus])
+    }, [isFocus, activeCourseModuleId, preserveVideoContent])
     useEffect(() => {
+        if (preserveVideoContent) return;
         const reviseText = props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100
         let revisebj = {
             "conference_id": props?.route?.params?.RoleData?.id
@@ -178,7 +194,8 @@ const VideoComponent = (props) => {
                 || props?.route?.params?.FullID?.conferenceId
                 || props?.route?.params?.activityID?.conferenceId
                 || props?.route?.params?.postdata?.conferenceId,
-            "ActivityId": props?.route?.params?.RoleData?.current_activity_id
+            "ActivityId": activeCourseModuleId
+                || props?.route?.params?.RoleData?.current_activity_id
                 || props?.route?.params?.FullID?.previous_activity_id
                 || props?.route?.params?.postdata?.next_activity_id
                 || props?.route?.params?.activityID?.next_activity_id,
@@ -190,7 +207,8 @@ const VideoComponent = (props) => {
                 || props?.route?.params?.FullID?.conferenceId
                 || props?.route?.params?.activityID?.conferenceId
                 || props?.route?.params?.postdata?.conferenceId,
-            "ActivityId": props?.route?.params?.RoleData?.current_activity_id
+            "ActivityId": activeCourseModuleId
+                || props?.route?.params?.RoleData?.current_activity_id
                 || props?.route?.params?.FullID?.previous_activity_id
                 || props?.route?.params?.postdata?.next_activity_id
                 || props?.route?.params?.activityID?.next_activity_id,
@@ -200,7 +218,7 @@ const VideoComponent = (props) => {
                 dispatch(cmenextactionRequest(reviseText ? revisebj : obj));
             })
             .catch((err) => { showErrorAlert("Please connect to internet", err) })
-    }, [isFocus])
+    }, [isFocus, activeCourseModuleId, preserveVideoContent])
     const videoRef = useRef(null);
     const { width, height } = Dimensions.get('window');
     useEffect(() => {
@@ -326,6 +344,7 @@ const VideoComponent = (props) => {
             height: fullscreen ? 60 : 40,
             width: fullscreen ? 60 : 40,
             zIndex: 999,
+            elevation: 12,
             justifyContent: 'center',
             alignItems: 'center',
         },
@@ -412,6 +431,7 @@ const VideoComponent = (props) => {
             bottom: fullscreen ? 55 : 12,
             right: fullscreen ? 25 : 0,
             zIndex: 1000,
+            elevation: 12,
             height: normalize(35),
             width: normalize(35),
             borderRadius: normalize(35),
@@ -423,6 +443,7 @@ const VideoComponent = (props) => {
             bottom: fullscreen ? 40 : 12,
             right: fullscreen ? 17 : 0,
             zIndex: 1000,
+            elevation: 12,
             height: normalize(35),
             width: normalize(35),
             borderRadius: normalize(35),
@@ -435,6 +456,7 @@ const VideoComponent = (props) => {
             bottom: fullscreen ? normalize(48) : normalize(10),
             right: fullscreen ? 17 : 10,
             zIndex: 1000,
+            elevation: 12,
             height: normalize(35),
             width: normalize(35),
             borderRadius: normalize(35),
@@ -446,6 +468,7 @@ const VideoComponent = (props) => {
             bottom: fullscreen ? normalize(48) : normalize(10),
             right: fullscreen ? 17 : 10,
             zIndex: 1000,
+            elevation: 12,
             height: normalize(35),
             width: normalize(35),
             borderRadius: normalize(35),
@@ -778,6 +801,17 @@ const VideoComponent = (props) => {
         }
     };
 
+    const togglePlayback = useCallback(() => {
+        setPaused(prev => {
+            const next = !prev;
+            if (next) {
+                clearControlsTimer();
+                setShowThumb(true);
+            }
+            return next;
+        });
+    }, [clearControlsTimer]);
+
     const syncPreviewForTime = useCallback((timeValue) => {
         if (!thumbnailCues.length) {
             setPreviewFrame(null);
@@ -1074,7 +1108,54 @@ const VideoComponent = (props) => {
         ? "Completed"
         : `${validPercentage ?? 0}% Pending`;
     const { RoleData, FullID, activityID } = props?.route?.params || {};
-    const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
+    const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || props?.route?.params?.postdata?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
+    const activeNextAction = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
+    const activeCourseModules = activeNextAction?.courseModule || activeNextAction?.courseModules || props?.route?.params?.RoleData?.courseModule || props?.route?.params?.postdata?.courseModule || [];
+    const routeCourseModules = props?.route?.params?.activityID?.courseModule || [];
+    const activeCourseModule = getFirstIncompleteModule(activeCourseModules);
+    const routeCourseModule = getFirstIncompleteModule(routeCourseModules);
+    const rawModuleName = String(
+        activeCourseModule?.name ||
+        routeCourseModule?.name ||
+        activeNextAction?.next_activity_text ||
+        activeNextAction?.current_activity_text ||
+        ''
+    ).trim();
+    const activeCourseModuleName = rawModuleName.toLowerCase().includes('section 1') ? '' : rawModuleName;
+    const activeCourseModuleId =
+        activeCourseModule?.activity_id ||
+        activeCourseModule?.current_activity_id ||
+        activeCourseModule?.next_activity_id ||
+        activeCourseModule?.id ||
+        routeCourseModule?.activity_id ||
+        routeCourseModule?.current_activity_id ||
+        routeCourseModule?.next_activity_id ||
+        routeCourseModule?.id ||
+        activeNextAction?.current_activity_id ||
+        activeNextAction?.next_activity_id ||
+        activeNextAction?.id;
+    let rawNextActivityButtonText = String(activeNextAction?.next_activity_button_text || '').trim();
+    if (rawNextActivityButtonText.toLowerCase() === 'proceed to section 1' && activeCourseModule?.name) {
+        rawNextActivityButtonText = `Proceed to ${activeCourseModule.name}`;
+    }
+    const activeCourseModuleNameLower = activeCourseModuleName.toLowerCase();
+    if (activeCourseModuleNameLower.includes('post-assessment') || activeCourseModuleNameLower.includes('post assessment')) {
+        rawNextActivityButtonText = "Proceed to Post Test";
+    }
+    const displayButtonText = rawNextActivityButtonText;
+    const nextActivityButtonText = rawNextActivityButtonText.toLowerCase();
+    const videoPageTitle = '';
+    const shouldHideEmptyContent =
+        !videoUrl &&
+        !externalVideoUrl &&
+        !nonVideoContent &&
+        !CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook &&
+        (preserveVideoContent ||
+            activeCourseModuleNameLower.includes('section') ||
+            activeCourseModuleNameLower.includes('course') ||
+            nextActivityButtonText.includes('pre test') ||
+            nextActivityButtonText.includes('pre-test') ||
+            nextActivityButtonText.includes('assessment'));
     const displayedTime = isSeeking ? sliderDragTime : currentTime;
     const handleLink = (link, path) => {
         if (link && path) {
@@ -1240,6 +1321,7 @@ const VideoComponent = (props) => {
             </View>
         );
     };
+    console.log(props?.route?.params?.postdata , nextAction ,CMEReducer?.cmenextactionResponse,activeNextAction, "activeNextAction====", activeCourseModuleName, activeCourseModuleId)
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
@@ -1247,10 +1329,10 @@ const VideoComponent = (props) => {
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {!fullscreen && (
                     Platform.OS === 'ios' ? (
-                        <PageHeader title={props?.route?.params?.RoleData?.completed_percentage === 100 || props?.route?.params?.FullID?.percentage === 100 ? "Revise Course" : "Resume Course"} onBackPress={videoPress} />
+                        <PageHeader title={videoPageTitle} onBackPress={videoPress} />
                     ) : (
                         <View>
-                            <PageHeader title={props?.route?.params?.RoleData?.completed_percentage === 100 || props?.route?.params?.FullID?.percentage === 100 ? "Revise Course" : "Resume Course"} onBackPress={videoPress} />
+                            <PageHeader title={videoPageTitle} onBackPress={videoPress} />
                         </View>
                     )
                 )}
@@ -1359,10 +1441,11 @@ const VideoComponent = (props) => {
                                     />
                                 )}
                                 {showThumb && !loading && (
-                                    <Pressable onPress={() => {
-                                        setPaused(!paused);
-                                        showControlsBriefly();
-                                    }} style={styles.playText}>
+                                    <Pressable
+                                        onPress={togglePlayback}
+                                        hitSlop={16}
+                                        style={styles.playText}
+                                    >
                                         <PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
                                     </Pressable>
                                 )}
@@ -1472,7 +1555,7 @@ const VideoComponent = (props) => {
                     </View> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen ? (<View>
                         <FlipbookComponent path={CMEReducer?.cmeactivityResponse?.onlineDisplayPath} link={CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook} />
                     </View>
-                    ) : showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : <View style={{ height: normalize(50), width: normalize(290), paddingVertical: normalize(10) }}><Text style={{ justifyContent: "center", alignSelf: "center", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{"No content available"}</Text></View>
+                    ) : showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : shouldHideEmptyContent ? null : <View style={{ height: normalize(50), width: normalize(290), paddingVertical: normalize(10) }}><Text style={{ justifyContent: "center", alignSelf: "center", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{"No content available"}</Text></View>
                     }
 
                     {!fullscreen && <><View>
@@ -1489,22 +1572,38 @@ const VideoComponent = (props) => {
                                 width={normalize(150)}
                                 backgroundColor={Colorpath.white}
                                 borderRadius={normalize(5)}
-                                text={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? "Continue Later" : "Course Revision Completed... "}
-                                color={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.black}
+                                text={activeNextAction?.next_activity_button_text ? "Continue Later" : "Course Revision Completed... "}
+                                color={activeNextAction?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.black}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(-15)}
                                 borderWidth={0.5}
                                 borderColor={"#DDD"}
-                                disabled={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? false : true} />
+                                disabled={activeNextAction?.next_activity_button_text ? false : true} />
                             <Buttons
                                 onPress={() => {
-                                    if (CMEReducer?.cmenextactionResponse?.next_activity_button_text == "Proceed to Post Test" || CMEReducer?.cmenextactionResponse?.next_activity_button_text == "Proceed to Feedback/Evaluation" || !CMEReducer?.cmenextactionResponse?.next_activity_button_text) {
-                                        if (CMEReducer?.cmenextactionResponse?.next_activity_button_text) {
+                                    const shouldOpenPreTest =
+                                        nextActivityButtonText === 'proceed to post test' ||
+                                        nextActivityButtonText === 'proceed to feedback/evaluation' ||
+                                        nextActivityButtonText.includes('pre assessment') ||
+                                        nextActivityButtonText.includes('post assessment') ||
+                                        activeCourseModuleNameLower.includes('pre assessment') ||
+                                        activeCourseModuleNameLower.includes('post assessment') ||
+                                        activeNextAction?.next_activity_api === 'startTest';
+
+                                    if (shouldOpenPreTest || !nextActivityButtonText) {
+                                        if (shouldOpenPreTest) {
                                             takeCourseVideo();
                                             setPaused(true);
-                                            props.navigation.navigate("PreTest", {
-                                                activityID: { activityID: nextAction?.next_activity_id, conference_id: conferenceIdAll, text: CMEReducer?.cmenextactionResponse?.next_activity_text }
+                                            props.navigation.replace("PreTest", {
+                                                videoData: activeNextAction,
+                                                videoContentData: videoDic,
+                                                testFlowType: nextActivityButtonText.includes('post') || activeCourseModuleNameLower.includes('post') ? 'post' : 'pre',
+                                                activityID: {
+                                                    activityID: activeNextAction?.next_activity_id,
+                                                    conference_id: conferenceIdAll,
+                                                    text: activeNextAction?.next_activity_text || activeCourseModuleName
+                                                }
                                             });
                                         } else {
                                             setAddit(statepush);
@@ -1516,18 +1615,18 @@ const VideoComponent = (props) => {
                                     } else {
                                         takeCourseVideo();
                                         setPaused(true);
-                                        const reviseTextagain = CMEReducer?.cmenextactionResponse?.percentage == 100 || props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100;
+                                        const reviseTextagain = activeNextAction?.percentage == 100 || props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100;
                                         let obj = {
-                                            "conference_id": CMEReducer?.cmenextactionResponse?.conferenceId,
-                                            "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id,
+                                            "conference_id": activeNextAction?.conferenceId,
+                                            "ActivityId": activeNextAction?.next_activity_id,
                                         }
                                         let reviseobj = {
-                                            "conference_id": CMEReducer?.cmenextactionResponse?.conferenceId,
-                                            "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id,
+                                            "conference_id": activeNextAction?.conferenceId,
+                                            "ActivityId": activeNextAction?.next_activity_id,
                                             "revise_activity": 1
                                         }
                                         let objact = {
-                                            "ActivityId": CMEReducer?.cmenextactionResponse?.next_activity_id
+                                            "ActivityId": activeNextAction?.next_activity_id
                                         }
                                         connectionrequest()
                                             .then(() => {
@@ -1539,10 +1638,10 @@ const VideoComponent = (props) => {
                                 }}
                                 height={normalize(45)}
                                 width={normalize(150)}
-                                backgroundColor={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? Colorpath.white : Colorpath.ButtonColr}
+                                backgroundColor={displayButtonText ? Colorpath.white : Colorpath.ButtonColr}
                                 borderRadius={normalize(5)}
-                                text={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? nextAction?.next_activity_button_text : " Go back to Dashboard "}
-                                color={CMEReducer?.cmenextactionResponse?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.white}
+                                text={displayButtonText ? displayButtonText : " Go back to Dashboard "}
+                                color={displayButtonText ? Colorpath.ButtonColr : Colorpath.white}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(-15)} />

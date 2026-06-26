@@ -6,6 +6,7 @@ import React from 'react';
 import { AppRegistry, LogBox, View, Text, TextInput, Image } from 'react-native';
 import 'react-native-get-random-values';
 import { Provider as StoreProvider } from 'react-redux';
+import { registerBackgroundPushHandler } from './src/Utils/Helpers/PushNotifications';
 
 // Apply legacy prop-type shims before loading App so old libraries
 // like react-native-snap-carousel can read `*.propTypes.style` safely.
@@ -31,6 +32,7 @@ const { name: appName } = require('./app.json');
 const Store = require('./src/Redux/Store').default;
 
 LogBox.ignoreAllLogs();
+registerBackgroundPushHandler();
 
 const EmedEvents = () => {
     return (

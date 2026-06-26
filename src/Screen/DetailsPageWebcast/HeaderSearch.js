@@ -38,7 +38,7 @@ const HeaderSearch = (props) => {
     console.log(props?.route?.params?.taskData, "fdmlsdklmg------1233344", searchText, WebcastReducer?.webcastsearchResponse)
     const placeholders = useMemo(() => [
         "Search for CME/CE courses",
-        "Search for your state required courses ",
+        "Search for your state required ... ",
         "Search for topic",
         "Search for specialty",
         "Search for medical conferences",

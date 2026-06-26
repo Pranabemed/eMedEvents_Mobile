@@ -79,7 +79,13 @@ import { fetchAndStoreBasicAuthToken } from '../../Utils/Helpers/BasicAuth';
 import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import {
+  isNonUsaAccount,
+  writeNonUsaFlowState,
+  clearNonUsaFlowState,
+  NON_USA_PROFESSION_UPDATE_REQUIRED_KEY,
+  NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY,
+} from '../../Utils/Helpers/nonUsaFlow';
 
 
 ///token
@@ -850,6 +856,9 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, 'GuestPrimeVerifyPending');
     yield call(AsyncStorage.removeItem, 'CheckMembershipForceNewProfession');
     yield call(AsyncStorage.removeItem, 'activeProfile');
+    yield call(clearNonUsaFlowState);
+    yield call(AsyncStorage.removeItem, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY);
+    yield call(AsyncStorage.removeItem, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY);
     yield put(tokenSuccess(null));
     yield put(dashboardSuccess(null));
     yield put(dashMbSuccess(null));

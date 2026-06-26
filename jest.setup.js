@@ -43,7 +43,12 @@ jest.mock('@react-native-firebase/app', () => {
 
 jest.mock('@react-native-firebase/messaging', () => {
     return () => ({
+        AuthorizationStatus: {
+            AUTHORIZED: 1,
+            PROVISIONAL: 2,
+        },
         hasPermission: jest.fn(() => Promise.resolve(true)),
+        registerDeviceForRemoteMessages: jest.fn(() => Promise.resolve()),
         subscribeToTopic: jest.fn(),
         unsubscribeFromTopic: jest.fn(),
         requestPermission: jest.fn(() => Promise.resolve(true)),
@@ -51,8 +56,11 @@ jest.mock('@react-native-firebase/messaging', () => {
         onMessage: jest.fn(),
         onNotificationOpenedApp: jest.fn(),
         getInitialNotification: jest.fn(() => Promise.resolve(false)),
+        setBackgroundMessageHandler: jest.fn(),
     });
 });
+
+jest.mock('@notifee/react-native', () => require('@notifee/react-native/jest-mock'));
 
 jest.mock('@react-native-firebase/analytics', () => () => ({
     logEvent: jest.fn(),

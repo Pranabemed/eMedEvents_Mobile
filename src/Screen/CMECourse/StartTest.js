@@ -65,6 +65,10 @@ const StartTest = (props) => {
     const isFocus = useIsFocused();
     const [loadingdownst, setLoadingdownst] = useState(false);
     const [pdfUrist, setPdfUrist] = useState("");
+    const getFirstIncompleteModule = (modules) => {
+        if (!Array.isArray(modules)) return null;
+        return modules.find((item) => Number(item?.completedSection) === 0) || null;
+    };
     useEffect(() => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
@@ -398,12 +402,34 @@ const StartTest = (props) => {
                             }}>
                                 <Buttons
                                     onPress={() => {
-                                        if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession") {
+                                        const courseModuleList = Array.isArray(CMEReducer?.cmenextactionResponse?.courseModule)
+                                            ? CMEReducer?.cmenextactionResponse?.courseModule
+                                            : Array.isArray(CMEReducer?.cmenextactionResponse?.courseModules)
+                                                ? CMEReducer?.cmenextactionResponse?.courseModules
+                                                : [];
+                                        const nextIncompleteModule = getFirstIncompleteModule(courseModuleList);
+                                        const nextModuleId =
+                                            nextIncompleteModule?.activity_id ||
+                                            nextIncompleteModule?.current_activity_id ||
+                                            nextIncompleteModule?.next_activity_id ||
+                                            nextIncompleteModule?.id ||
+                                            CMEReducer?.cmenextactionResponse?.next_activity_id;
+                                        const nextModuleName = nextIncompleteModule?.name || CMEReducer?.cmenextactionResponse?.next_activity_text;
+                                        if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession" || nextModuleName?.toLowerCase()?.includes("section") || nextModuleName?.toLowerCase()?.includes("course")) {
                                             takeCourse();
-                                            props.navigation.navigate("VideoComponent", { activityID: CMEReducer?.cmenextactionResponse })
+                                            props.navigation.navigate("VideoComponent", {
+                                                activityID: {
+                                                    ...CMEReducer?.cmenextactionResponse,
+                                                    current_activity_id: nextModuleId,
+                                                    next_activity_id: nextModuleId,
+                                                    next_activity_text: nextModuleName,
+                                                    courseModule: courseModuleList,
+                                                },
+                                                preserveVideoContent: false,
+                                            })
                                         } else if (CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest") {
                                             takeCourse();
-                                            props.navigation.navigate("PreTest", { FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
+                                            props.navigation.navigate("PreTest", { testFlowType: "pre", FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
                                         }
                                     }}
                                     height={normalize(45)}

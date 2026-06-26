@@ -8,7 +8,7 @@ import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { cmedulicateRequest, evaulateexamRequest, nextactionagainRequest, startTestRequest } from '../../Redux/Reducers/CMEReducer';
+import { cmedulicateRequest, cmenextactionRequest, evaulateexamRequest, nextactionagainRequest, startTestRequest } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Buttons from '../../Components/Button';
 import Loader from '../../Utils/Helpers/Loader';
@@ -53,6 +53,37 @@ const PreTest = (props) => {
   const [headerTexts, setHeaderTexts] = useState("");
   const [answers, setAnswers] = useState({});
   const isFocus = useIsFocused();
+  const redirectedToVideoRef = useRef(false);
+  const testFlowType = String(props?.route?.params?.testFlowType || '').trim().toLowerCase();
+  const routeActivityText = String(
+    props?.route?.params?.activityID?.text ||
+    props?.route?.params?.FullID?.Wktext ||
+    ''
+  ).trim().toLowerCase();
+  const isPostTestFlow =
+    testFlowType === 'post' ||
+    routeActivityText.includes('post') ||
+    String(props?.route?.params?.FullID?.wholedata?.next_activity_text || '').trim().toLowerCase().includes('post');
+  const shouldOpenVideoFirst =
+    routeActivityText.includes('course') ||
+    routeActivityText.includes('video') ||
+    routeActivityText.includes('session');
+  const shouldHidePreTestView = shouldOpenVideoFirst && !redirectedToVideoRef.current;
+
+  useEffect(() => {
+    if (!isFocus || redirectedToVideoRef.current || !shouldOpenVideoFirst) {
+      return;
+    }
+
+    redirectedToVideoRef.current = true;
+    props.navigation.replace("VideoComponent", {
+      ...props?.route?.params,
+      activityID: props?.route?.params?.activityID,
+      FullID: props?.route?.params?.FullID,
+      postdata: props?.route?.params?.nodata || props?.route?.params?.postdata,
+    });
+  }, [isFocus, shouldOpenVideoFirst, props.navigation, props?.route?.params]);
+
   useEffect(() => {
     if (statepush) {
       const takeIDS = statepush?.state_id || statepush?.creditID?.state_id;
@@ -122,7 +153,67 @@ const PreTest = (props) => {
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err) })
   }
+
+  const awaitingNextAfterTestRef = useRef(false);
+  const handledNextAfterTestRef = useRef(false);
+
+  const goBackToVideoWithNextActivity = () => {
+    const nextActivityText = String(
+      CMEReducer?.cmedulicateResponse?.next_activity_text ||
+      props?.route?.params?.FullID?.wholedata?.next_activity_text ||
+      ''
+    ).trim();
+    const nextActivityId =
+      CMEReducer?.cmedulicateResponse?.next_activity_id ||
+      props?.route?.params?.FullID?.wholedata?.next_activity_id ||
+      props?.route?.params?.activityID?.next_activity_id;
+
+    const conferenceId =
+      CMEReducer?.cmedulicateResponse?.conferenceId ||
+      props?.route?.params?.activityID?.conference_id ||
+      props?.route?.params?.FullID?.wholedata?.conferenceId ||
+      props?.route?.params?.nodata?.conferenceId;
+
+    const nextActivityPayload = {
+      conference_id: conferenceId,
+      ActivityId: nextActivityId,
+    };
+
+    if (nextActivityId) {
+      awaitingNextAfterTestRef.current = true;
+      handledNextAfterTestRef.current = false;
+      connectionrequest()
+        .then(() => {
+          dispatch(cmenextactionRequest(nextActivityPayload));
+        })
+        .catch((err) => { showErrorAlert("Please connect to internet", err) });
+      return;
+    }
+
+    const isSurveyOrAssessment =
+      nextActivityText === "Survey & Feedback" ||
+      nextActivityText === "Pre Assessment" ||
+      nextActivityText === "Post Assessment";
+
+    if (isSurveyOrAssessment) {
+      props.navigation.replace("PreTest", {
+        videoData: props?.route?.params?.videoData || props?.route?.params?.RoleData,
+        activityID: {
+          activityID: nextActivityId,
+          conference_id: conferenceId,
+          text: nextActivityText,
+        },
+      });
+      return;
+    }
+
+    props.navigation.replace("VideoComponent", {
+      RoleData: props?.route?.params?.videoContentData || props?.route?.params?.RoleData,
+    });
+  };
+
   useEffect(() => {
+    if (!isFocus) return;
     const obj = { "ActivityId": props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID };
     connectionrequest()
       .then(() => {
@@ -139,6 +230,7 @@ const PreTest = (props) => {
     }
   }, [props?.route?.params?.nodata])
   useEffect(() => {
+    if (!isFocus) return;
     let obj = {
       "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.nodata?.conferenceId,
       "ActivityId": props?.route?.params?.FullID?.wholedata?.next_activity_id || props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID
@@ -154,6 +246,74 @@ const PreTest = (props) => {
       setTestData(CMEReducer?.startTestResponse);
     }
   }, [CMEReducer?.startTestResponse])
+
+  useEffect(() => {
+    if (!isFocus) return;
+    if (!awaitingNextAfterTestRef.current) return;
+    if (handledNextAfterTestRef.current) return;
+    if (CMEReducer.status !== 'CME/cmenextactionSuccess') return;
+
+    handledNextAfterTestRef.current = true;
+    awaitingNextAfterTestRef.current = false;
+
+    const nextResponse = CMEReducer.cmenextactionResponse;
+    const courseModules = Array.isArray(nextResponse?.courseModule)
+      ? nextResponse.courseModule
+      : Array.isArray(nextResponse?.courseModules)
+        ? nextResponse.courseModules
+        : [];
+    const nextIncompleteModule = courseModules.find(
+      (item) => Number(item?.completedSection) === 0 && !String(item?.name).toLowerCase().includes('section 1')
+    ) || null;
+    const nextModuleActivityId =
+      nextIncompleteModule?.activity_id ||
+      nextIncompleteModule?.current_activity_id ||
+      nextIncompleteModule?.next_activity_id ||
+      nextIncompleteModule?.id ||
+      nextResponse?.next_activity_id;
+    const nextModuleConferenceId =
+      nextIncompleteModule?.conference_id ||
+      nextResponse?.conferenceId ||
+      nextResponse?.conference_id;
+
+    if (isPostTestFlow) {
+      props.navigation.navigate("PostTestFail", {
+        examID: CMEReducer?.evaulateexamResponse?.examId,
+      });
+      return;
+    }
+
+    props.navigation.replace("VideoComponent", {
+      activityID: {
+        activityID: nextModuleActivityId,
+        conference_id: nextModuleConferenceId,
+        text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      RoleData: {
+        ...props?.route?.params?.videoContentData,
+        ...nextResponse,
+        current_activity_id: nextModuleActivityId,
+        conferenceId: nextModuleConferenceId,
+        next_activity_id: nextModuleActivityId,
+        next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      FullID: {
+        ...nextResponse,
+        conferenceId: nextModuleConferenceId,
+        previous_activity_id: nextModuleActivityId,
+      },
+      postdata: {
+        ...nextResponse,
+        conferenceId: nextModuleConferenceId,
+        next_activity_id: nextModuleActivityId,
+        next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      preserveVideoContent: true,
+    });
+  }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params]);
   if (status === '' || CMEReducer.status !== status) {
     switch (CMEReducer.status) {
       case 'CME/startTestRequest':
@@ -173,10 +333,10 @@ const PreTest = (props) => {
         status = CMEReducer.status;
         if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
           props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
-        } else if (CMEReducer?.cmedulicateResponse?.next_activity_api == "activitysession") {
-          props.navigation.navigate("VideoComponent", { postdata: CMEReducer?.cmedulicateResponse });
-        } else {
+        } else if (isPostTestFlow) {
           props.navigation.navigate("PostTestFail", { examID: CMEReducer?.evaulateexamResponse?.examId });
+        } else {
+          goBackToVideoWithNextActivity();
         }
         break;
       case 'CME/evaulateexamFailure':
@@ -220,6 +380,11 @@ const PreTest = (props) => {
           setTimeflex(0)
         }
       case 'CME/nextactionagainFailure':
+        status = CMEReducer.status;
+        break;
+      case 'CME/cmenextactionRequest':
+      case 'CME/cmenextactionSuccess':
+      case 'CME/cmenextactionFailure':
         status = CMEReducer.status;
         break;
     }
@@ -477,7 +642,9 @@ const PreTest = (props) => {
   useLayoutEffect(() => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
+
   return (
+    shouldHidePreTestView ? null : (
     <>
       <MyStatusBar
         barStyle={'light-content'}
@@ -508,7 +675,7 @@ const PreTest = (props) => {
                 <View>
                   <View style={styles.headerRow}>
                     <View style={styles.headerContent}>
-                      <Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text|| MEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
+                      <Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text || CMEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
                       <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999" }}>{"Question"}</Text>
                       <View style={styles.scoreContainer}>
                         <Text style={styles.scoreText}>{lengthCheck}</Text>
@@ -577,6 +744,7 @@ const PreTest = (props) => {
         </ScrollView>}
       </SafeAreaView>
     </>
+    )
   );
 };
 
