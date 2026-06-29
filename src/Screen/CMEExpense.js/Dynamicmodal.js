@@ -18,6 +18,14 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment';
 import TravelMode from './TravelMode';
+
+/**
+ * Reusable Dynamicmodal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTravelmodal }) => {
     const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);

@@ -4,6 +4,14 @@ import { MotiView } from 'moti';
 import normalize from '.././../Utils/Helpers/Dimen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+/**
+ * Reusable RingIndicatorWave component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const RingIndicatorWave = ({ isListening, stopListening, startListening }) => {
     return (
         <View style={styles.container} pointerEvents="box-none">

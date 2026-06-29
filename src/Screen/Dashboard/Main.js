@@ -31,6 +31,14 @@ import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
+/**
+ * Reusable normalizeProfessionHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';

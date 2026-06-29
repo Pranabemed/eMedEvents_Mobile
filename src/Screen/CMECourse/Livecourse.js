@@ -18,6 +18,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 
+/**
+ * Reusable Livecourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadingdownstlv }) => {
     const {
         statepush,

@@ -14,6 +14,14 @@ import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable CourseRelevant component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CourseRelevant = (props) => {
     const { isConnected } = useContext(AppContext);
     const AuthReducer = useSelector(state => state.AuthReducer);

@@ -19,6 +19,14 @@ import { stateDashboardRequest } from '../../Redux/Reducers/DashboardReducer';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable PreTest component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const PreTest = (props) => {

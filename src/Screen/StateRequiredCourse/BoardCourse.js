@@ -23,6 +23,14 @@ import DrawerModal from '../../Components/DrawerModal';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable BoardCourseSlide component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const BoardCourseSlide = (props) => {
     const { takestate, addit, isConnected, fulldashbaord, setAddit } = useContext(AppContext);

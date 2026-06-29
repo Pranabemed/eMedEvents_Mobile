@@ -4,6 +4,14 @@ import Fonts from '../../Themes/Fonts'
 import Colorpath from '../../Themes/Colorpath'
 import DropIcon from 'react-native-vector-icons/AntDesign';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable InpersonKeydates component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const InpersonKeydates = ({wholedata}) => {
     const [show, setShow] = useState(false);
     const [showend, setShowend] = useState(false);

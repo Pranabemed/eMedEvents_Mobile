@@ -6,6 +6,14 @@ import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable HospitalList component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const HospitalList  = ({hosppicker,hospAll,setSearchhosp, searchhosp,handlehospShows, setHosppicker, searchHospName}) => {
 const hospFilterTake = ({ item}) => {
     return (

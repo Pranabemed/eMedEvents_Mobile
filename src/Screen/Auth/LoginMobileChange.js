@@ -15,6 +15,14 @@ import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable LoginMobileChange component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const LoginMobileChange = (props) => {
     const [phone, setPhone] = useState("");
       const [mobileHd, setMobileHd] = useState("");

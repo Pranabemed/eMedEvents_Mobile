@@ -4,6 +4,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 
+/**
+ * Reusable StatewebcastSpeciality component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const StatewebcastSpeciality = ({ allSpecailities, specailityChange, expandspecail }) => {
     const animatedValue = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;

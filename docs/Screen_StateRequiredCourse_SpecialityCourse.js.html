@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/StateRequiredCourse/SpecialityCourse.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/StateRequiredCourse/SpecialityCourse.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, TouchableOpacity, Image, FlatList, ScrollView, ImageBackground, Alert, BackHandler } from 'react-native'
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import PageHeader from '../../Components/PageHeader'
+import Colorpath from '../../Themes/Colorpath'
+import MyStatusBar from '../../Utils/MyStatusBar'
+import normalize from '../../Utils/Helpers/Dimen';
+import Fonts from '../../Themes/Fonts'
+import Imagepath from '../../Themes/Imagepath';
+import IconDot from 'react-native-vector-icons/Entypo';
+import FilterModal from '../../Components/Filter';
+import CloseIcon from 'react-native-vector-icons/EvilIcons';
+import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native'
+import StarRating from 'react-native-star-rating-widget';
+import { useDispatch, useSelector } from 'react-redux'
+import { object } from 'prop-types'
+import connectionrequest from '../../Utils/Helpers/NetInfo'
+import { mainprofileRequest, specailtyRequest, stateDashboardRequest } from '../../Redux/Reducers/DashboardReducer'
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import Loader from '../../Utils/Helpers/Loader'
+import Tooltip from 'react-native-walkthrough-tooltip'
+import { AppContext } from '../GlobalSupport/AppContext'
+import DrawerModal from '../../Components/DrawerModal';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff'
+import { SafeAreaView } from 'react-native-safe-area-context'
+let status = "";
+// import { GestureHandlerRootView } from 'react-native-gesture-handler'
+
+/**
+ * Reusable SpecialityCourseSlide component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const SpecialityCourseSlide = (props) => {
+    const { takestate, addit, isConnected, fulldashbaord, setAddit } = useContext(AppContext);
+    const [visible, setVisible] = useState(false);
+    const [nodata, setNodata] = useState("drawerclose");
+    const [filtermodal, setFiltermodal] = useState(false);
+    const [filterName, setFilterName] = useState("");
+    const [acivityformat, setAcivityformat] = useState("");
+    const [filtermonth, setFiltermonth] = useState("");
+    const [stateFiltered, setStateFiltered] = useState([]);
+    const [activity, setActivity] = useState([]);
+    const [month, setMonth] = useState([]);
+    const navigation = useNavigation();
+    const dispatch = useDispatch();
+    const [tooltip, setTootip] = useState(false);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    console.log(DashboardReducer, "finaltake------------------", takestate, addit);
+    const [filterstate, setFilterstate] = useState(null);
+    const [finalData, setFinalData] = useState("");
+    const [stateid, setStateid] = useState("");
+    const [handle, setHandle] = useState(null);
+    const [viewmore, setViewmore] = useState(false);
+    const [servetextsp, setServetextsp] = useState(false);
+    const isFocus = useIsFocused();
+    console.log(filterstate, "handle=======", filterstate?.length);
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const openFilterModal = () => {
+        setFiltermodal(!filtermodal);
+        setViewmore(false);
+    }
+    const toggleDrawerModal = () => {
+        setVisible(!visible);
+        setNodata("drawerclose");
+    };
+    const addCreditBack = () => {
+        const getAda = fulldashbaord?.[0];
+        setAddit(getAda);
+        if (props?.route?.params?.back == "tabnav") {
+            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
+        } else {
+            toggleDrawerModal();
+        }
+    }
+    useEffect(() => {
+        connectionrequest()
+            .then(() => {
+                dispatch(mainprofileRequest({}))
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err)
+            })
+    }, [isFocus])
+    const handleSave = () => {
+        console.log("Selected Filter Name: ", filterName);
+        setFiltermodal(false);
+    };
+    console.log(filterName, "jdjfjjjj")
+    useEffect(() => {
+        const states = DashboardReducer?.mainprofileResponse?.specialities;
+        console.log(states, "states=======")
+        if (states &amp;&amp; typeof states === 'object' &amp;&amp; Object.keys(states).length > 0) {
+            const convertData = Object.entries(states).map(([key, val]) => ({ id: key, name: val }));
+            setFilterstate(convertData);
+        }
+    }, [DashboardReducer]);
+    const titlhandleUrl = (make) => {
+        const urltitle = make?.detailpage_url;
+        const resulttitle = urltitle.split('/').pop();
+        console.log(resulttitle, "webcast url=======", make);
+        if (resulttitle) {
+            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: addit } })
+        }
+    }
+    useEffect(() => {
+        if (stateid) {
+            stateDashboardData();
+        }
+    }, [stateid])
+    const stateDashboardData = () => {
+        let obj = {
+            "speciality": filterName
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(specailtyRequest(obj));
+            })
+            .catch(err => { showErrorAlert("Please connect to internet", err) })
+    }
+    const toggleSpecial = () => {
+        setViewmore(!viewmore)
+    }
+    if (status == '' || DashboardReducer.status != status) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/specailtyRequest':
+                status = DashboardReducer.status;
+                setServetextsp(false);
+                break;
+            case 'Dashboard/specailtySuccess':
+                status = DashboardReducer.status;
+                setServetextsp(true);
+                setFinalData(DashboardReducer?.specailtyResponse?.data?.specialty_courses);
+                console.log(DashboardReducer?.specailtyResponse?.data?.specialty_courses, "mainprofileRespons===========")
+                break;
+            case 'Dashboard/mainprofileFailure':
+                status = DashboardReducer.status;
+                setServetextsp(true);
+                break;
+        }
+    }
+    useEffect(() => {
+        const onBackPress = () => {
+            addCreditBack();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+    const RequiredCourses = ({ item, index }) => {
+        const getActualPrice = (percent, discountPrice) => {
+            let price = parseFloat(discountPrice);
+            return Math.round(price / (1 - percent));
+        };
+        let discount_percentage = +item?.emed_commission;
+        let actualPrice = getActualPrice(discount_percentage / 100, item?.display_price);
+        return (
+            &lt;View>
+                &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                    &lt;View
+                        style={{
+                            flexDirection: "column",
+                            width: normalize(290),
+                            borderRadius: normalize(10),
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: normalize(10),
+                            paddingVertical: normalize(10),
+                            alignItems: "flex-start",
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 2,
+                            elevation: 3
+                        }}
+                    >
+                        &lt;View style={{ flex: 1 }}>
+                            &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
+                                &lt;TouchableOpacity onPress={() => { titlhandleUrl(item) }}>
+                                    &lt;Text
+                                        style={{
+                                            fontFamily: Fonts.InterSemiBold,
+                                            fontSize: 16,
+                                            color: "#000000",
+                                            fontWeight: "bold",
+                                            flex: 1,
+                                            flexWrap: 'wrap',
+                                        }}
+                                    >
+                                        {item?.title}
+                                    &lt;/Text>
+                                &lt;/TouchableOpacity>
+                                {/* &lt;TouchableOpacity style={{ marginTop: normalize(-8) }}>
+                  &lt;IconDot name="dots-three-vertical" size={25} color={"#848484"} />
+                &lt;/TouchableOpacity> */}
+                            &lt;/View>
+                            &lt;View style={{ flexDirection: "row", marginTop: normalize(10), alignItems: "center" }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
+                                    {"Ratings:"}
+                                &lt;/Text>
+                                &lt;View pointerEvents="none">
+                                    &lt;StarRating
+                                        rating={Number(item?.average_rating) || 0}
+                                        onChange={() => { }}
+                                        starSize={15}
+                                        starStyle={{ marginHorizontal: 1 }}
+                                    />
+                                &lt;/View>
+                            &lt;/View>
+                            {item?.bundle_sub_conf_count &amp;&amp; &lt;View style={{ flexDirection: "row", marginTop: normalize(10), alignItems: "center" }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
+                                    {"Course Bundle:"}
+                                &lt;/Text>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666", fontWeight: "bold", marginRight: normalize(5) }}>
+                                    {item?.bundle_sub_conf_count}
+                                &lt;/Text>
+                            &lt;/View>}
+                            {Array.isArray(item?.cme_points_popovar) &amp;&amp; item?.cme_points_popovar?.length > 0 ? (
+                                &lt;TouchableOpacity onPress={() => {
+                                    setTootip(!tooltip);
+                                    setHandle(item);
+                                }}>
+                                    &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), borderRadius: normalize(20), backgroundColor: "#FFF2E0", marginTop: normalize(10), alignSelf: 'flex-start' }}>
+                                        &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#666" }}>
+                                            {`${item?.display_cme}...`}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                &lt;/TouchableOpacity>
+                            ) : item?.display_cme &amp;&amp; (
+                                &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), borderRadius: normalize(20), backgroundColor: "#FFF2E0", marginTop: normalize(10), alignSelf: 'flex-start' }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#666" }}>
+                                        {`${item?.display_cme
+                                            ? item?.display_cme?.toLowerCase()?.includes("contact hour")
+                                                ? item?.display_cme.replace(/contact hour/i, "Contact Hour(s)")
+                                                : item?.display_cme
+                                            : ""
+                                            }`}
+                                    &lt;/Text>
+                                &lt;/View>
+                            )}
+                            &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
+                                &lt;View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
+                                    {!item?.emed_commission ? (
+                                        &lt;View style={{ flexDirection: "row", alignItems: "center" }}>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 18,
+                                                    color: "#000000",
+                                                    fontWeight: "bold",
+                                                }}
+                                            >
+                                                {`${item?.display_currency_code}${item?.display_price}`}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                    ) : (
+                                        &lt;>
+                                            &lt;View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                &lt;Image source={Imagepath.TickMark} style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }} />
+                                                &lt;Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 14,
+                                                        color: "#FF5D18",
+                                                        fontWeight: "bold",
+                                                        marginLeft: normalize(10),
+                                                        fontStyle: "italic"
+                                                    }}
+                                                >
+                                                    {"Prime Offer"}
+                                                &lt;/Text>
+                                            &lt;/View>
+                                            &lt;View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                &lt;Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 18,
+                                                        color: "#eb5757",
+                                                        fontWeight: "bold",
+                                                    }}
+                                                >
+                                                    {`-${+(item?.emed_commission)}%`}
+                                                &lt;/Text>
+                                                &lt;Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 18,
+                                                        color: "#000000",
+                                                        fontWeight: "bold",
+                                                    }}
+                                                >
+                                                    {` ${item?.display_currency_code}${item?.display_price}`}
+                                                &lt;/Text>
+                                                &lt;Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterRegular,
+                                                        fontSize: 14,
+                                                        fontStyle: "italic",
+                                                        color: "#999",
+                                                        paddingVertical: normalize(2),
+                                                        paddingHorizontal: normalize(5),
+                                                        textDecorationLine: "line-through"
+                                                    }}
+                                                >
+                                                    {`${item?.display_currency_code} ${actualPrice}`}
+                                                &lt;/Text>
+                                            &lt;/View>
+                                        &lt;/>
+                                    )}
+                                &lt;/View>
+                                {item?.buttonText &amp;&amp; &lt;TouchableOpacity onPress={() => { titlhandleUrl(item) }} style={{ height: normalize(30), width: normalize(80), borderRadius: normalize(5), justifyContent: "center", alignItems: "center", borderColor: Colorpath.ButtonColr, borderWidth: 0.5 }}>
+                                    &lt;Text
+                                        style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 16,
+                                            color: "#2C4DB9",
+                                            textTransform: "capitalize"
+                                        }}
+                                    >
+                                        {item?.buttonText}
+                                    &lt;/Text>
+                                &lt;/TouchableOpacity>}
+                            &lt;/View>
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/View>
+
+
+            &lt;/View>
+        )
+    }
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                &lt;Loader visible={DashboardReducer?.status == 'Dashboard/specailtyRequest'} />
+
+                {Platform.OS === 'ios' ? &lt;PageHeader
+                    title="Specialty Courses"
+                    onBackPress={addCreditBack}
+                /> : &lt;View>
+                    &lt;PageHeader
+                        title="Specialty Courses"
+                        onBackPress={addCreditBack}
+                    />
+                &lt;/View>}
+                {conn == false ? &lt;IntOff /> : &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                    {filterstate?.length > 0 &amp;&amp; &lt;View>
+                        &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                            {!filterName ? &lt;View>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: "#000000" }}>
+                                    {"Filters"}
+                                &lt;/Text>
+                            &lt;/View> : &lt;>
+                                &lt;View
+                                    style={{
+                                        paddingHorizontal: normalize(15),
+                                        paddingVertical: normalize(8),
+                                        borderWidth: 0.5,
+                                        borderColor: "#000000",
+                                        borderRadius: normalize(25),
+                                        backgroundColor: "#FFFFFF",
+                                        alignSelf: 'flex-start',
+                                        flexDirection: "row"
+                                    }}
+                                >
+                                    &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }}>
+                                        {filterName ? filterName : filterName}
+                                    &lt;/Text>
+                                &lt;/View>
+                            &lt;/>}
+                            {filterstate?.length > 1 &amp;&amp; &lt;TouchableOpacity onPress={openFilterModal}>
+                                &lt;Image source={Imagepath.Filter} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
+                            &lt;/TouchableOpacity>}
+                        &lt;/View>
+                    &lt;/View>}
+                    &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), justifyContent: "center", alignItems: "center" }}>
+                        &lt;View style={{ height: 0.8, width: normalize(300), backgroundColor: "#CCC" }} />
+                    &lt;/View>
+                    {finalData?.length > 0 &amp;&amp; &lt;View style={{ paddingHorizontal: normalize(9), paddingVertical: normalize(5), marginLeft: normalize(10) }}>
+                        &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#000000" }}>
+                            {`${filterName} Specialty Courses`}
+                        &lt;/Text>
+                    &lt;/View>}
+                    &lt;View>
+                        &lt;FlatList
+                            scrollEnabled={false}
+                            data={finalData?.slice(0, 3)}
+                            renderItem={RequiredCourses}
+                            keyExtractor={(item, index) => index.toString()}
+                            ListEmptyComponent={servetextsp &amp;&amp;
+                                &lt;View style={{ justifyContent: "center", alignItems: "center" }}>
+                                    &lt;View style={{
+                                        height: normalize(50),
+                                        width: normalize(310),
+                                        alignItems: 'center',
+                                        borderStyle: 'dotted',
+                                        borderWidth: 1,
+                                        borderRadius: 1,
+                                        borderColor: "#000000",
+                                        backgroundColor: "#FFFFFF"
+                                    }}>
+                                        &lt;Text
+                                            style={{
+                                                alignContent: 'center',
+                                                alignItems: 'center',
+                                                alignSelf: 'center',
+                                                color: "#AAAAAA",
+                                                fontWeight: 'bold',
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 14,
+                                                paddingTop: normalize(8),
+                                                paddingHorizontal: normalize(10)
+                                                // textTransform: 'uppercase',
+                                            }}>
+                                            {`Our catalog currently does not include course(s) on ${filterName}.`}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                &lt;/View>
+
+                            }
+                            showsHorizontalScrollIndicator={false}
+                        />
+                        {finalData?.length > 3 &amp;&amp; &lt;FlatList
+                            scrollEnabled={false}
+                            data={viewmore ? finalData?.slice(3) : []}
+                            renderItem={RequiredCourses}
+                            keyExtractor={(item, index) => index.toString()}
+                            showsVerticalScrollIndicator={false}
+                            ListFooterComponent={
+                                &lt;TouchableOpacity onPress={toggleSpecial}>
+                                    &lt;View style={{
+                                        justifyContent: "flex-end",
+                                        alignItems: "flex-end",
+                                        width: "95%"
+                                    }}>
+                                        &lt;Text
+                                            style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: Colorpath.ButtonColr,
+                                            }}>
+                                            {viewmore ? "View less" : "View more"}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                &lt;/TouchableOpacity>
+                            }
+                        />}
+                    &lt;/View>
+                    &lt;Tooltip
+                        isVisible={tooltip}
+                        content={
+                            &lt;View style={{ flexGrow: 1, width: normalize(260) }}>
+                                {handle?.cme_points_popovar?.length > 0 ? (
+                                    handle?.cme_points_popovar?.map((d, index) => (
+                                        &lt;Text
+                                            key={index}
+                                            style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#000" }}
+                                        >
+                                            {`${parseFloat(d?.points) || 0} ${d?.name &amp;&amp;
+                                                d?.name?.toLowerCase() == "contact hour"
+                                                ? "Contact Hour(s)"
+                                                : d?.name || ""
+                                                }`}
+                                        &lt;/Text>
+                                    ))
+                                ) : null}
+                            &lt;/View>
+                        }
+                        placement="center"
+                        onClose={() => setTootip(false)}
+                    >
+                    &lt;/Tooltip>
+                    &lt;FilterModal
+                        isfilterVisible={filtermodal}
+                        onfilterFalse={openFilterModal}
+                        filterName={filterName}
+                        setFilterName={setFilterName}
+                        setStateid={setStateid}
+                        stateid={stateid}
+                        setAcivityformat={setAcivityformat}
+                        acivityformat={acivityformat}
+                        setFiltermonth={setFiltermonth}
+                        filtermonth={filtermonth}
+                        stateFiltered={stateFiltered}
+                        setStateFiltered={setStateFiltered}
+                        activity={activity}
+                        setActivity={setActivity}
+                        month={month}
+                        setMonth={setMonth}
+                        onSave={handleSave}
+                        filterState={filterstate}
+                        specaility={"text"}
+                    />
+                &lt;/ScrollView>}
+            &lt;/SafeAreaView>
+            &lt;DrawerModal
+                handel={nodata}
+                isVisible={visible}
+                onBackdropPress={() => setVisible(!visible)}
+                onRequestClose={() => setVisible(false)}
+                backButton={() => setVisible(!visible)}
+                rentalNavigate={() => setVisible(!visible)}
+                watchlistNavigate={() => setVisible(!visible)}
+                subscribeNavigate={() => setVisible(!visible)}
+                rewardNavigate={() => setVisible(!visible)}
+                homeNavigate={() => setVisible(!visible)}
+                expensesNav={() => setVisible(!visible)}
+                interestedNav={() => setVisible(!visible)}
+                drawerPress={() => setVisible(!visible)}
+            />
+        &lt;/>
+    )
+}
+
+export default SpecialityCourseSlide
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

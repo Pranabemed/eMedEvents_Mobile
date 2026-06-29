@@ -5,6 +5,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
+
+/**
+ * Reusable Cmemodal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Cmemodal = ({ isModal, onCmeFalse,setCmemodal}) => {
     return (
         <Modal

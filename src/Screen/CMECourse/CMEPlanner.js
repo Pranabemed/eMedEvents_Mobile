@@ -14,6 +14,14 @@ import { CMEPlannerRequest } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import ScheduleCourse from './ScheduleCourse';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CMEPlanner component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const CMEPlanner = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);

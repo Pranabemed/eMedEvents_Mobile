@@ -13,6 +13,14 @@ import NonPhysicianCat from '../../Components/NonPhysicianCat';
 import StateIntData from '../../Components/StateInt';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable MainInt component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status2 = "";
 const MainInt = (props) => {
   const {

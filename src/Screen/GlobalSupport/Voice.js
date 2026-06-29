@@ -10,6 +10,14 @@ import Fonts from '../../Themes/Fonts';
 // import { MotiView } from 'moti';
 import PhoneRing from './Ring';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable VoiceSearchBar component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSearchEn }) => {
     const [isListening, setIsListening] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');

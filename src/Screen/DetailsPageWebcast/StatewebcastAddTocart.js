@@ -7,6 +7,14 @@ import Colorpath from '../../Themes/Colorpath';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { addtoCartWebcastRequest, saveTicketAddRequest } from '../../Redux/Reducers/WebcastReducer';
+
+/**
+ * Reusable StatewebcastAddTocart component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastAddTocart = ({ 
   refID,
   urlneed, 

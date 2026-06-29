@@ -2,6 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../../Utils/Helpers/Dimen'; // adjust your import path
 
+/**
+ * Reusable CustomInputTouchableZ component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomInputTouchableZ = ({
     label,
     value,

@@ -15,6 +15,14 @@ import styles from '../../GuestUser.styles';
 import { SectionTitle } from './GuestUserShared';
 
 /**
+ * Reusable CarouselSectionComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Generic carousel section wrapper.
  * Purpose: Standardizes heading, carousel, and pagination for card-based sections.
  */

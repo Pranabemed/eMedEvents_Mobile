@@ -1,100 +1,146 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# eMedEvents React Native Mobile App
 
-# Getting Started
+## Project Overview
+eMedEvents is a comprehensive React Native mobile application designed to help medical professionals manage their CME (Continuing Medical Education) credits, explore medical events, and track certificates. It offers a seamless, cross-platform experience on both iOS and Android.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Architecture
+The application is built upon a modern React Native architecture:
+- **Framework**: React Native 0.82.0
+- **State Management**: Redux Toolkit & Redux Saga for asynchronous side-effects.
+- **Navigation**: React Navigation (Bottom Tabs, Stack Navigator)
+- **UI Components**: Custom components, Storybook integration for isolated testing, and `react-native-elements`.
+- **Data Persistence**: Async Storage for secure local token and state persistence.
+- **Networking**: Axios for API requests.
 
-## Step 1: Start Metro
+## Folder Structure
+```text
+/
+├── android/            # Android native project files
+├── ios/                # iOS native project files
+├── docs/               # Auto-generated JSDoc documentation
+├── .rnstorybook/       # Storybook UI configuration and stories
+├── src/                # Main application source code
+│   ├── Assets/         # Static images, fonts, and icons
+│   ├── Components/     # Reusable, stateless UI components
+│   ├── Navigator/      # React Navigation setup and route configs
+│   ├── Redux/          # State management (Actions, Reducers, Sagas, Store)
+│   ├── Screen/         # Stateful screen components grouped by feature
+│   ├── Themes/         # Global styling (Colors, Fonts, Image paths)
+│   └── Utils/          # Helper functions, config, and utilities
+└── package.json        # Project dependencies and scripts
+```
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Installation
+1. **Clone the repository.**
+2. **Install Node modules:**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+3. **Install CocoaPods (iOS only):**
+   ```bash
+   cd ios && pod install && cd ..
+   ```
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Environment Variables
+Ensure you have the required `.env` configurations (if applicable) placed in the root directory before running the build. This handles API endpoints and feature flags.
 
-```sh
-# Using npm
+## Running the App
+
+### Running Metro Bundler
+Start the Metro bundler to serve the JS bundle:
+```bash
 npm start
-
-# OR using Yarn
-yarn start
+# OR to clear cache:
+npm run startios
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+### Running Android
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
+# OR without uninstalling the old app:
+npm run android-build
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+### Running iOS
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Storybook Setup
+The project uses Storybook for isolated UI component development.
+To run Storybook on a simulator/device:
+1. Ensure the Metro bundler is running (`npm start`).
+2. Run the platform-specific Storybook script:
+   - **iOS:** `npm run storybook:ios`
+   - **Android:** `npm run storybook:android`
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Build & Release
 
-## Step 3: Modify your app
+### Build APK (Debug/Release)
+- **Debug:** `npm run debug-build`
+- **Release:** `npm run release-build` (Outputs to `android/app/build/outputs/apk/release/app-release.apk`)
 
-Now that you have successfully run the app, let's make changes!
+### Build AAB (Android App Bundle)
+To build an AAB for the Play Store, run from the `android` directory:
+```bash
+cd android && ./gradlew bundleRelease
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### Build IPA (iOS)
+Open `ios/eMedEvents.xcworkspace` in Xcode, configure your provisioning profiles, choose "Any iOS Device (arm64)", and select **Product > Archive**.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Running Tests
+Run the Jest test suite:
+```bash
+npm test
+```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## Linting & Formatting
+Ensure code quality by running ESLint:
+```bash
+npm run lint
+```
+Formatting is handled via Prettier (`.prettierrc.js`).
 
-## Congratulations! :tada:
+## Documentation Generation (JSDoc)
+To generate the HTML documentation for the project's source code:
+```bash
+npm run docs
+```
+The output will be available in the `docs/` folder.
 
-You've successfully run and modified your React Native App. :partying_face:
+## Available Scripts
+- `npm start`: Starts Metro Bundler.
+- `npm run android`: Uninstalls previous app and runs on Android.
+- `npm run ios`: Runs on iOS simulator.
+- `npm run lint`: Lints the codebase.
+- `npm test`: Runs unit tests.
+- `npm run docs`: Generates JSDoc.
+- `npm run release-build`: Builds Android Release APK.
 
-### Now what?
+## Troubleshooting
+- **Metro Bundler issues:** Run `npm run startios` to clear the cache.
+- **iOS Build Failures:** Delete `ios/Pods` and `ios/Podfile.lock`, then run `pod install`.
+- **Android Build Failures:** Run `cd android && ./gradlew clean`.
+- **NPM Conflicts:** Always use `--legacy-peer-deps` due to the React 19 / Redux Toolkit versioning.
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+## Contributing Guidelines
+1. Create a feature branch (`feature/your-feature`).
+2. Document new functions using JSDoc.
+3. Add Storybook stories for new reusable UI components.
+4. Ensure `npm run lint` passes before committing.
+5. Submit a PR.
 
-# Troubleshooting
+## Coding Standards
+- Use functional components and React Hooks.
+- Centralize styling via `src/Themes`.
+- Keep business logic in Redux Sagas and Utils, keeping UI components pure.
+- Include JSDoc for all exported utilities and components.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## Version Information
+- **App Version:** 0.0.1
+- **React Native:** 0.82.0
+- **React:** 19.1.1
 
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-# eMedEvents_Mobile
-# emed_mobile_live
-# emed_mobile_app_live
+## License
+Proprietary - Do not distribute without permission.

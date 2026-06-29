@@ -28,6 +28,14 @@ import Fonts from '../Themes/Fonts';
 import NetInfo from '@react-native-community/netinfo';
 import RestProfession from './RestProfession';
 
+/**
+ * Reusable NonPhysicianCat component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const normalizeProfessionHandle = (professionHandle) =>
     String(professionHandle || '')
         .toLowerCase()

@@ -9,6 +9,14 @@ import StateRequireditem from './StateRequired';
 import ResumeDash from './ResumeDash';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 
+/**
+ * Reusable Nonphysicianprofile component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress, navigation, DashboardReducer }) => {
     const stateHit = finddata?.my_recommendations?.mandatory_courses;
     const specHit = finddata?.my_recommendations?.speciality_courses;

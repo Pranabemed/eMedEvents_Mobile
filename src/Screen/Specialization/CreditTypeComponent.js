@@ -6,6 +6,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import DropDownHeader from '../../Components/DropDownHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CreditTypeComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, searchCreditName, searchtext }) => {
     console.log(clist, "wekknamecustome")
     const weekFilterProfession = ({ item, index }) => {

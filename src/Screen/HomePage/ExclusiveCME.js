@@ -4,6 +4,14 @@ import Fonts from "../../Themes/Fonts";
 import CalIcon from 'react-native-vector-icons/FontAwesome5'
 import normalize from '../../Utils/Helpers/Dimen';
 import Imagepath from "../../Themes/Imagepath";
+
+/**
+ * Reusable CMEExclusive component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CMEExclusive = ({ item, index }) => {
     console.log(item,"item-----------------")
     return (

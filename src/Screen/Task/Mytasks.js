@@ -17,6 +17,14 @@ import { stateDashboardRequest, stateDashboardSuccess } from '../../Redux/Reduce
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch } from 'react-redux';
+
+/**
+ * Reusable Mytasks component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
         const { isConnected,fulldashbaord,setAddit,statepush } = useContext(AppContext);

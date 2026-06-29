@@ -19,6 +19,14 @@ import { AppContext } from './AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable SpeakerProfile component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 
 const SpeakerProfile = (props) => {

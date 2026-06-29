@@ -39,6 +39,14 @@ import { GuestSelectionModals } from './GuestUserModule/components/GuestSelectio
 import { GuestProfessionPopup } from './GuestUserModule/components/GuestProfessionPopup';
 
 /**
+ * Reusable GuestUserContent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Guest user home content component.
  * Purpose: Composes the guest landing page from modular child sections without changing existing behavior.
  *

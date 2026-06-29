@@ -1,6 +1,14 @@
 import { View, Text, Image } from 'react-native'
 import React from 'react'
 
+/**
+ * Reusable ImagePDF component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ImagePDF = (props) => {
     console.log(props?.route?.params?.pdffile)
     return (

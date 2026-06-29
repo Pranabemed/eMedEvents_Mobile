@@ -25,6 +25,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
+ * Reusable ProfessionDropdown component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Profession and state dropdown component.
  * Purpose: Lets the user change requirement context without leaving the CME requirement screen.
  *

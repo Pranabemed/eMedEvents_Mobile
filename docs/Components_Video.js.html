@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/Video.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/Video.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, ScrollView, StatusBar, BackHandler, Pressable, Linking } from 'react-native';
+import Video from 'react-native-video';
+import PlayIcon from 'react-native-vector-icons/AntDesign';
+import FullIcon from 'react-native-vector-icons/Feather';
+import MyStatusBar from '../Utils/MyStatusBar';
+import Orientation from 'react-native-orientation-locker';
+import Colorpath from '../Themes/Colorpath';
+import PageHeader from './PageHeader';
+import normalize from '../Utils/Helpers/Dimen';
+import Fonts from '../Themes/Fonts';
+import Imagepath from '../Themes/Imagepath';
+import connectionrequest from '../Utils/Helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import { cmeactivityRequest, cmenextactionRequest } from '../Redux/Reducers/CMEReducer';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import Buttons from './Button';
+import { useIsFocused } from '@react-navigation/native';
+import RenderHTML from 'react-native-render-html';
+import RNFS from "react-native-fs";
+import FileViewer from "react-native-file-viewer";
+import Sliders from './SliderRef';
+import FlipbookComponent from './FlipbookComponent';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
+import { stateDashboardRequest } from '../Redux/Reducers/DashboardReducer';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../Utils/Helpers/IntOff';
+import { extractVttCandidates, findCueForTime, parseThumbnailVtt, resolveUrl } from '../Utils/Helpers/VttPreview';
+let status = "";
+let status1 = "";
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { WebView } from 'react-native-webview';
+
+/**
+ * Reusable normalizeVideoSource component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const normalizeVideoSource = (url) => {
+    if (!url) return null;
+    return url.trim().replace(/&amp;amp;/g, '&amp;');
+};
+
+const getEmbedUrl = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&amp;v=)([^#\&amp;\?]*).*/;
+    const match = url.match(regExp);
+    if (match &amp;&amp; match[2].length === 11) {
+        return `https://www.youtube.com/embed/${match[2]}?autoplay=0&amp;rel=0`;
+    }
+    return null;
+};
+
+
+
+const getExternalVideoUrl = (source) => {
+    if (!source) return null;
+    const normalized = normalizeVideoSource(source);
+    if (/^https?:\/\//i.test(normalized)) return normalized;
+    if (/^[\w-]{11}$/.test(normalized)) {
+        return `https://www.youtube.com/watch?v=${normalized}`;
+    }
+    return null;
+};
+
+const isPlayableVideoSource = (source) => {
+    const normalized = normalizeVideoSource(source);
+    return /\.(mp4|m4v|mov|webm|m3u8)(\?|$)/i.test(normalized);
+};
+
+const extractVideoUrl = (htmlString) => {
+    if (!htmlString) return null;
+    const videoUrlMatch = htmlString.match(/&lt;iframe[^>]+src=["']([^"']+\.(m3u8|mp4|m4v|mov|webm)[^"']*)["']|&lt;source[^>]+src=["']([^"']+\.(m4v|mp4|mov|webm|m3u8)[^"']*)["']/i);
+    if (videoUrlMatch) {
+        return videoUrlMatch[1] || videoUrlMatch[3];
+    }
+    return null;
+};
+
+const getFirstIncompleteModule = (modules) => {
+    if (!Array.isArray(modules)) return null;
+    return modules.find((item) => Number(item?.completedSection) === 0) || null;
+};
+
+const VideoComponent = (props) => {
+    const {
+        statepush,
+        setStatepush,
+        setFinddata,
+        isConnected,
+        setAddit
+    } = useContext(AppContext);
+    const isFocus = useIsFocused();
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const dispatch = useDispatch();
+    const routeVttParam = props?.route?.params?.vttUrl;
+    const [nextAction, setNextAction] = useState(null);
+    const [paused, setPaused] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [sliderDragTime, setSliderDragTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const sliderValueRef = useRef(0);
+    const [showLoader, setShowLoader] = useState(true);
+    const [conn, setConn] = useState("")
+    const [showThumb, setShowThumb] = useState(true);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [videoHeight, setVideoHeight] = useState(normalize(200));
+    const [videoAspectRatio, setVideoAspectRatio] = useState(16 / 9);
+    const [videoDic, setVideoDic] = useState(props?.route?.params?.RoleData || []);
+    const [videoUrl, setVideoUrl] = useState(null);
+    const [externalVideoUrl, setExternalVideoUrl] = useState(null);
+    const [loadingdown, setLoadingdown] = useState(false);
+    const [pdfUri, setPdfUri] = useState("");
+    const [nonVideoContent, setNonVideoContent] = useState(null);
+    const [thumbnailVttCandidates, setThumbnailVttCandidates] = useState([]);
+    const [thumbnailCues, setThumbnailCues] = useState([]);
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewTime, setPreviewTime] = useState(0);
+    const [previewFrame, setPreviewFrame] = useState(null);
+    const [previewVideoReady, setPreviewVideoReady] = useState(false);
+    const [initialVideoThumbnail, setInitialVideoThumbnail] = useState(null);
+    const [showTransitionCover, setShowTransitionCover] = useState(false);
+    const [transitionCoverFrame, setTransitionCoverFrame] = useState(null);
+    const controlsTimerRef = useRef(null);
+    const wasPausedBeforeSeekRef = useRef(false);
+    const lastPreviewCueIndexRef = useRef(-1);
+    const previewTokenRef = useRef(0);
+    const spriteSizeCacheRef = useRef({});
+    const cueFrameCacheRef = useRef({});
+    const previewVideoRef = useRef(null);
+    const pendingPreviewSeekRef = useRef(null);
+    const previewSeekRafRef = useRef(null);
+    const latestPreviewTargetRef = useRef(0);
+    const fullscreenTransitionRef = useRef(false);
+    const fullscreenTransitionTimerRef = useRef(null);
+    const hideTransitionCoverTimerRef = useRef(null);
+    const [isSeeking, setIsSeeking] = useState(false);
+    const didSetInitialFullscreenRef = useRef(false);
+    const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
+    const preserveVideoContent = !!props?.route?.params?.preserveVideoContent;
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    useEffect(() => {
+        if (statepush) {
+            const takeID = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeID }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }, [statepush])
+    const takeCourseVideo = () => {
+        if (statepush) {
+            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }
+    useEffect(() => {
+        if (preserveVideoContent) return;
+        let ActivityId = activeCourseModuleId
+            || props?.route?.params?.postdata?.next_activity_id
+            || props?.route?.params?.RoleData?.current_activity_id
+            || props?.route?.params?.activityID?.next_activity_id
+            || props?.route?.params?.FullID?.previous_activity_id;
+
+        const activeNextActionFallback = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
+        const btnTextFallback = String(activeNextActionFallback?.next_activity_button_text || '').trim().toLowerCase();
+
+        if (btnTextFallback === 'proceed to section 1' &amp;&amp; activeNextActionFallback?.next_activity_id) {
+            ActivityId = activeNextActionFallback.next_activity_id;
+        }
+
+        let obj = {
+            "ActivityId": ActivityId
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(cmeactivityRequest(obj));
+            })
+            .catch((err) => { showErrorAlert("Please connect to internet", err) })
+    }, [isFocus, activeCourseModuleId, preserveVideoContent])
+    useEffect(() => {
+        if (preserveVideoContent) return;
+        const reviseText = props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100
+        let revisebj = {
+            "conference_id": props?.route?.params?.RoleData?.id
+                || props?.route?.params?.RoleData?.conferenceId
+                || props?.route?.params?.FullID?.conferenceId
+                || props?.route?.params?.activityID?.conferenceId
+                || props?.route?.params?.postdata?.conferenceId,
+            "ActivityId": activeCourseModuleId
+                || props?.route?.params?.RoleData?.current_activity_id
+                || props?.route?.params?.FullID?.previous_activity_id
+                || props?.route?.params?.postdata?.next_activity_id
+                || props?.route?.params?.activityID?.next_activity_id,
+            "revise_activity": 1
+        }
+        let obj = {
+            "conference_id": props?.route?.params?.RoleData?.id
+                || props?.route?.params?.RoleData?.conferenceId
+                || props?.route?.params?.FullID?.conferenceId
+                || props?.route?.params?.activityID?.conferenceId
+                || props?.route?.params?.postdata?.conferenceId,
+            "ActivityId": activeCourseModuleId
+                || props?.route?.params?.RoleData?.current_activity_id
+                || props?.route?.params?.FullID?.previous_activity_id
+                || props?.route?.params?.postdata?.next_activity_id
+                || props?.route?.params?.activityID?.next_activity_id,
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(cmenextactionRequest(reviseText ? revisebj : obj));
+            })
+            .catch((err) => { showErrorAlert("Please connect to internet", err) })
+    }, [isFocus, activeCourseModuleId, preserveVideoContent])
+    const videoRef = useRef(null);
+    const { width, height } = Dimensions.get('window');
+    useEffect(() => {
+        if (fullscreen) {
+            Orientation.lockToLandscape();
+            setVideoHeight(height);
+        } else {
+            Orientation.lockToPortrait();
+            const calculatedHeight = width / (videoAspectRatio || (16 / 9));
+            const minHeight = normalize(180);
+            const maxHeight = height * 0.62;
+            setVideoHeight(Math.max(minHeight, Math.min(calculatedHeight, maxHeight)));
+        }
+    }, [fullscreen, height, width, videoAspectRatio]);
+    useEffect(() => {
+        return () => {
+            Orientation.lockToPortrait();
+        };
+    }, []);
+    const styles = StyleSheet.create({
+        details: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            paddingVertical: normalize(5),
+        },
+        column: {
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+        },
+        row: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        detailText: {
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 14,
+            color: '#666',
+        },
+        separator: {
+            height: 15,
+            width: 2,
+            backgroundColor: '#DDD',
+            marginHorizontal: normalize(10),
+        },
+        divider: {
+            marginTop: normalize(10),
+            height: 1,
+            width: '100%',
+            backgroundColor: '#DDD',
+        },
+        coursedivider: {
+            marginTop: normalize(10),
+            height: 6,
+            width: '90%',
+            backgroundColor: 'red',
+            borderRadius: normalize(15)
+        },
+        container: {
+            borderRadius: normalize(10),
+            overflow: 'hidden',
+        },
+        fullscreenContainer: {
+            position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+        },
+        videoContainer: {
+            width: "100%",
+            height: videoHeight,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        fullscreenVideoContainer: {
+            position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        video: {
+            width: '100%',
+            height: "100%",
+        },
+        fullscreenVideo: {
+            width: "100%",
+            height: "100%",
+        },
+        loadingThumbWrap: {
+            ...StyleSheet.absoluteFillObject,
+            zIndex: 890,
+            backgroundColor: 'transparent',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingThumbImage: {
+            width: '100%',
+            height: '100%',
+        },
+        transitionCoverWrap: {
+            ...StyleSheet.absoluteFillObject,
+            zIndex: 980,
+            backgroundColor: '#101010',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        transitionCoverImage: {
+            width: '100%',
+            height: '100%',
+        },
+        transitionCoverCropWrap: {
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: '#101010',
+        },
+        transitionCoverCropImage: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+        },
+        playText: {
+            position: 'absolute',
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            borderRadius: fullscreen ? 50 : 30,
+            height: fullscreen ? 60 : 40,
+            width: fullscreen ? 60 : 40,
+            zIndex: 999,
+            elevation: 12,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        fullscreencontrols: {
+            width: "100%",
+            position: 'absolute',
+            bottom: Platform.OS === 'ios' ? normalize(18) : normalize(12),
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: normalize(10),
+            zIndex: 1000,
+        },
+        controls: {
+            width: "100%",
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: normalize(10),
+            paddingTop: normalize(4),
+            paddingBottom: normalize(8),
+        },
+        sliderWrap: {
+            flex: 1,
+            paddingHorizontal: normalize(4),
+            paddingVertical: 0,
+            bottom: 0,
+        },
+        sliderWithPreview: {
+            flex: 1,
+            position: 'relative',
+            justifyContent: 'center',
+        },
+        previewBubble: {
+            position: 'absolute',
+            bottom: normalize(28),
+            width: normalize(120),
+            borderRadius: normalize(8),
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            padding: normalize(4),
+            overflow: 'hidden',
+            zIndex: 2000,
+        },
+        fullscreenPreviewBubble: {
+            bottom: normalize(32),
+            width: normalize(138),
+        },
+        previewImage: {
+            width: '100%',
+            height: normalize(68),
+            borderRadius: normalize(6),
+            backgroundColor: '#222222',
+        },
+        previewCropWrap: {
+            width: '100%',
+            height: normalize(68),
+            borderRadius: normalize(6),
+            backgroundColor: '#222222',
+            overflow: 'hidden',
+        },
+        previewCropImage: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+        },
+        previewTimeText: {
+            marginTop: normalize(4),
+            color: '#FFFFFF',
+            textAlign: 'center',
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 11,
+        },
+        // controlsandroid: {
+        //     width: "100%",
+        //     top: Platform.OS === 'ios' ? -60 : -21,
+        //     flexDirection: 'row',
+        //     alignItems: 'center',
+        // },
+        slider: {
+            flex: 0.94,
+            marginHorizontal: -2,
+        },
+        fullscreenButton: Platform.OS === 'ios' ? {
+            position: 'absolute',
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            bottom: fullscreen ? 55 : 12,
+            right: fullscreen ? 25 : 0,
+            zIndex: 1000,
+            elevation: 12,
+            height: normalize(35),
+            width: normalize(35),
+            borderRadius: normalize(35),
+            justifyContent: "center",
+            alignItems: "center"
+        } : {
+            position: 'absolute',
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            bottom: fullscreen ? 40 : 12,
+            right: fullscreen ? 17 : 0,
+            zIndex: 1000,
+            elevation: 12,
+            height: normalize(35),
+            width: normalize(35),
+            borderRadius: normalize(35),
+            justifyContent: "center",
+            alignItems: "center"
+        },
+        nfullmode: Platform.OS === 'ios' ? {
+            position: 'absolute',
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            bottom: fullscreen ? normalize(48) : normalize(10),
+            right: fullscreen ? 17 : 10,
+            zIndex: 1000,
+            elevation: 12,
+            height: normalize(35),
+            width: normalize(35),
+            borderRadius: normalize(35),
+            justifyContent: "center",
+            alignItems: "center"
+        } : {
+            position: 'absolute',
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            bottom: fullscreen ? normalize(48) : normalize(10),
+            right: fullscreen ? 17 : 10,
+            zIndex: 1000,
+            elevation: 12,
+            height: normalize(35),
+            width: normalize(35),
+            borderRadius: normalize(35),
+            justifyContent: "center",
+            alignItems: "center"
+        },
+        timeLabel: {
+            color: '#111111',
+            fontFamily: Fonts.InterMedium,
+            fontSize: 13,
+            textAlignVertical: 'center',
+        },
+        leftTime: {
+            minWidth: normalize(46),
+            textAlign: 'left',
+            marginRight: normalize(6),
+        },
+        rightTime: {
+            minWidth: normalize(46),
+            textAlign: 'right',
+            marginLeft: normalize(6),
+        },
+        fullscreenTimeLabel: {
+            fontWeight: '600',
+        },
+        fullscreenTimeBlack: {
+            color: '#000000',
+            textShadowColor: 'rgba(255,255,255,0.9)',
+            textShadowRadius: 3,
+            textShadowOffset: { width: 0, height: 0 },
+        },
+        fullscreenTimeWhite: {
+            color: '#FFFFFF',
+            textShadowColor: 'rgba(0,0,0,0.9)',
+            textShadowRadius: 3,
+            textShadowOffset: { width: 0, height: 0 },
+        },
+        timer: {
+            color: '#000000',
+            marginLeft: 10,
+        },
+        openExternalButton: {
+            marginTop: normalize(12),
+            marginHorizontal: normalize(12),
+            backgroundColor: '#E53935',
+            borderRadius: normalize(8),
+            paddingVertical: normalize(11),
+            paddingHorizontal: normalize(12),
+            alignItems: 'center',
+        },
+        openExternalButtonText: {
+            color: '#FFFFFF',
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 14,
+        },
+    });
+    const onLoad = (data) => {
+        setDuration(data.duration || 0);
+        const naturalWidth = Number(data?.naturalSize?.width) || 0;
+        const naturalHeight = Number(data?.naturalSize?.height) || 0;
+        if (naturalWidth > 0 &amp;&amp; naturalHeight > 0) {
+            setVideoAspectRatio(naturalWidth / naturalHeight);
+        }
+
+        const initialTime = videoDic &amp;&amp; videoDic?.video_play_time ? parseFloat(videoDic.video_play_time) : 0;
+
+        if (videoRef.current) {
+            setTimeout(() => {
+                videoRef.current.seek(initialTime);
+                setCurrentTime(initialTime);
+            }, 100);
+        }
+
+        setLoading(false);
+    };
+
+    // Additional guard to ensure `videoDic?.video_play_time` is always prioritized
+    useEffect(() => {
+        if (videoDic &amp;&amp; videoDic?.video_play_time) {
+            const playbackTime = parseFloat(videoDic.video_play_time);
+
+            if (videoRef.current) {
+                // Ensure the video seeks to the correct time when videoDic changes
+                videoRef.current.seek(playbackTime);
+                setCurrentTime(playbackTime);
+            }
+        }
+    }, [videoDic]); // Runs whenever `videoDic` changes
+
+
+    const onProgress = (data) => {
+        if (isSeeking) return;
+        setCurrentTime(data.currentTime);
+        setSliderDragTime(data.currentTime);
+    };
+
+    const onEnd = () => {
+        setPaused(true);
+        setCurrentTime(0);
+        videoRef.current?.seek(0);
+        setShowThumb(true);
+    };
+
+    const onReadyForDisplay = () => {
+        setLoading(false);
+        if (fullscreenTransitionRef.current &amp;&amp; showTransitionCover) {
+            if (hideTransitionCoverTimerRef.current) {
+                clearTimeout(hideTransitionCoverTimerRef.current);
+            }
+            hideTransitionCoverTimerRef.current = setTimeout(() => {
+                setShowTransitionCover(false);
+            }, 160);
+        }
+    };
+
+    const getTransitionCoverFrame = useCallback(() => {
+        if (previewFrame?.uri) {
+            return previewFrame;
+        }
+        const cueHit = findCueForTime(thumbnailCues, currentTime);
+        if (cueHit?.cue?.uri) {
+            const cue = cueHit.cue;
+            return {
+                ...cue,
+                spriteSize: cue?.uri ? spriteSizeCacheRef.current[cue.uri] : null,
+            };
+        }
+        const activity = videoDic?.activityData?.[0] || {};
+        const posterUri = activity?.poster
+            || activity?.thumbnail
+            || activity?.thumb
+            || activity?.video_thumbnail
+            || activity?.image
+            || null;
+        if (!posterUri) return null;
+        return {
+            uri: resolveUrl(videoDic?.onlineDisplayPath || videoUrl, posterUri),
+            crop: null,
+            spriteSize: null,
+        };
+    }, [previewFrame, thumbnailCues, currentTime, videoDic, videoUrl]);
+
+    const toggleFullscreen = () => {
+        const cover = getTransitionCoverFrame();
+        if (cover?.uri) {
+            setTransitionCoverFrame(cover);
+            setShowTransitionCover(true);
+        } else if (transitionCoverFrame?.uri) {
+            setShowTransitionCover(true);
+        }
+        fullscreenTransitionRef.current = true;
+        if (fullscreenTransitionTimerRef.current) {
+            clearTimeout(fullscreenTransitionTimerRef.current);
+        }
+        fullscreenTransitionTimerRef.current = setTimeout(() => {
+            fullscreenTransitionRef.current = false;
+            setShowTransitionCover(false);
+        }, 700);
+        setFullscreen(!fullscreen);
+    };
+
+    const clearControlsTimer = useCallback(() => {
+        if (controlsTimerRef.current) {
+            clearTimeout(controlsTimerRef.current);
+            controlsTimerRef.current = null;
+        }
+    }, []);
+
+    const showControlsBriefly = useCallback(() => {
+        setShowThumb(true);
+        clearControlsTimer();
+        if (!paused &amp;&amp; !loading) {
+            controlsTimerRef.current = setTimeout(() => {
+                setShowThumb(false);
+            }, 2600);
+        }
+    }, [clearControlsTimer, paused, loading]);
+
+    useEffect(() => {
+        if (showThumb) {
+            showControlsBriefly();
+        } else {
+            clearControlsTimer();
+        }
+    }, [showThumb, paused, loading, showControlsBriefly, clearControlsTimer]);
+
+    useEffect(() => () => clearControlsTimer(), [clearControlsTimer]);
+    useEffect(() => {
+        return () => {
+            if (fullscreenTransitionTimerRef.current) {
+                clearTimeout(fullscreenTransitionTimerRef.current);
+                fullscreenTransitionTimerRef.current = null;
+            }
+            if (hideTransitionCoverTimerRef.current) {
+                clearTimeout(hideTransitionCoverTimerRef.current);
+                hideTransitionCoverTimerRef.current = null;
+            }
+        };
+    }, []);
+
+    const videoPress = () => {
+        setAddit(statepush);
+        takeCourseVideo();
+        props.navigation.goBack();
+    };
+
+    const formatTime = (time) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes &lt; 10 ? '0' : ''}${minutes}.${seconds &lt; 10 ? '0' : ''}${seconds}`;
+    };
+    useEffect(() => {
+        if (CMEReducer?.cmeactivityResponse) {
+            setVideoDic(CMEReducer?.cmeactivityResponse);
+        }
+    }, [CMEReducer?.cmeactivityResponse])
+    useEffect(() => {
+        if (CMEReducer?.cmenextactionResponse) {
+            setNextAction(CMEReducer?.cmenextactionResponse);
+        }
+    }, [CMEReducer?.cmenextactionResponse])
+    if (status === '' || CMEReducer.status !== status) {
+        switch (CMEReducer.status) {
+            case 'CME/cmeactivityRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmeactivitySuccess':
+                status = CMEReducer.status;
+                setVideoDic(CMEReducer?.cmeactivityResponse);
+                break; // ← fixed fall-through
+            case 'CME/cmeactivityFailure':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmenextactionRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmenextactionSuccess':
+                status = CMEReducer.status;
+                setNextAction(CMEReducer?.cmenextactionResponse);
+                break; // ← fixed fall-through
+            case 'CME/cmenextactionFailure':
+                status = CMEReducer.status;
+                break;
+            case 'CME/nextactionagainRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/nextactionagainSuccess':
+                status = CMEReducer.status;
+                break; // ← fixed fall-through
+            case 'CME/nextactionagainFailure':
+                status = CMEReducer.status;
+                break;
+        }
+    }
+    if (status1 == '' || DashboardReducer.status != status1) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/stateDashboardRequest':
+                status1 = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateDashboardSuccess':
+                status1 = DashboardReducer.status;
+                setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+                break;
+            case 'Dashboard/stateDashboardFailure':
+                status1 = DashboardReducer.status;
+                break;
+        }
+    }
+    const schedulePreviewSeek = useCallback((targetValue) => {
+        if (!previewVideoRef.current || !previewVideoReady) return;
+        latestPreviewTargetRef.current = targetValue;
+        if (previewSeekRafRef.current) return;
+        previewSeekRafRef.current = requestAnimationFrame(() => {
+            previewSeekRafRef.current = null;
+            const target = Math.max(0, Number(latestPreviewTargetRef.current) || 0);
+            pendingPreviewSeekRef.current = target;
+            try {
+                previewVideoRef.current?.seek(target);
+            } catch (err) {
+                // no-op: preview seek is best effort only
+            }
+        });
+    }, [previewVideoReady]);
+
+    const warmCueAsset = useCallback((cue) => {
+        if (!cue?.uri) return;
+        const uri = cue.uri;
+        if (/^https?:\/\//i.test(uri)) {
+            Image.prefetch(uri).catch(() => { });
+        }
+        if (cue?.crop &amp;&amp; !spriteSizeCacheRef.current[uri]) {
+            Image.getSize(
+                uri,
+                (w, h) => {
+                    spriteSizeCacheRef.current[uri] = { width: w, height: h };
+                },
+                () => { },
+            );
+        }
+    }, []);
+
+    const setTwoCueCache = useCallback((currentIndex, currentCue, nextCue) => {
+        const nextIndex = currentIndex + 1;
+        const nextCache = {};
+        if (currentCue) {
+            nextCache[currentIndex] = currentCue;
+        }
+        if (nextCue) {
+            nextCache[nextIndex] = nextCue;
+        }
+        cueFrameCacheRef.current = nextCache;
+    }, []);
+
+    const handleSliderChange = (value) => {
+        sliderValueRef.current = value;
+        setSliderDragTime(value);
+        setPreviewTime(value);
+        // Some slider implementations may skip onSlidingStart during quick drags.
+        // This keeps preview visible and seek-state stable.
+        if (!isSeeking) {
+            wasPausedBeforeSeekRef.current = paused;
+            setIsSeeking(true);
+            setPaused(true);
+        }
+        if (!previewVisible) {
+            setPreviewVisible(true);
+        }
+        if (!previewFrame?.uri &amp;&amp; videoUrl &amp;&amp; (previewVisible || isSeeking)) {
+            schedulePreviewSeek(value);
+        }
+    };
+
+    const togglePlayback = useCallback(() => {
+        setPaused(prev => {
+            const next = !prev;
+            if (next) {
+                clearControlsTimer();
+                setShowThumb(true);
+            }
+            return next;
+        });
+    }, [clearControlsTimer]);
+
+    const syncPreviewForTime = useCallback((timeValue) => {
+        if (!thumbnailCues.length) {
+            setPreviewFrame(null);
+            return;
+        }
+        const found = findCueForTime(thumbnailCues, timeValue);
+        if (!found) {
+            setPreviewFrame(null);
+            return;
+        }
+
+        const currentCue = found.cue;
+        const currentIndex = found.index;
+        const nextCue = thumbnailCues[currentIndex + 1] || null;
+
+        // Keep a tiny persistent cache of the current + next cue.
+        setTwoCueCache(currentIndex, currentCue, nextCue);
+        warmCueAsset(currentCue);
+        warmCueAsset(nextCue);
+
+        if (found.index === lastPreviewCueIndexRef.current) return;
+        lastPreviewCueIndexRef.current = found.index;
+        const cue = cueFrameCacheRef.current[currentIndex] || currentCue;
+        const thisToken = previewTokenRef.current + 1;
+        previewTokenRef.current = thisToken;
+        const applyCue = (spriteSize = null) => {
+            if (previewTokenRef.current !== thisToken) return;
+            setPreviewFrame({ ...cue, spriteSize });
+        };
+        const cachedSize = cue?.uri ? spriteSizeCacheRef.current[cue.uri] : null;
+        // Show frame immediately for responsive scrubbing; loading continues in background.
+        applyCue(cachedSize || null);
+
+        if (cue?.crop &amp;&amp; cue?.uri &amp;&amp; !cachedSize) {
+            Image.getSize(
+                cue.uri,
+                (imgWidth, imgHeight) => {
+                    const size = { width: imgWidth, height: imgHeight };
+                    spriteSizeCacheRef.current[cue.uri] = size;
+                    applyCue(size);
+                },
+                () => { },
+            );
+        }
+        if (cue?.uri &amp;&amp; /^https?:\/\//i.test(cue.uri)) {
+            Image.prefetch(cue.uri).catch(() => { });
+        }
+    }, [thumbnailCues, setTwoCueCache, warmCueAsset]);
+
+    useEffect(() => {
+        if (isSeeking) {
+            syncPreviewForTime(previewTime);
+        }
+    }, [previewTime, isSeeking, syncPreviewForTime]);
+
+    useEffect(() => {
+        if (!videoUrl) return;
+        pendingPreviewSeekRef.current = currentTime || 0;
+        latestPreviewTargetRef.current = currentTime || 0;
+    }, [videoUrl, currentTime]);
+
+    useEffect(() => {
+        if (!previewVisible || !isSeeking) return;
+        if (!!previewFrame?.uri || !videoUrl) return;
+        if (!previewVideoRef.current || !previewVideoReady) return;
+        schedulePreviewSeek(previewTime);
+    }, [previewTime, previewVisible, isSeeking, previewFrame, videoUrl, previewVideoReady, schedulePreviewSeek]);
+
+    const handleSlidingStart = useCallback(() => {
+        showControlsBriefly();
+        wasPausedBeforeSeekRef.current = paused;
+        setIsSeeking(true);
+        setPaused(true);
+        setPreviewVisible(true);
+        setPreviewTime(currentTime);
+        setSliderDragTime(currentTime);
+        syncPreviewForTime(currentTime);
+    }, [paused, showControlsBriefly, currentTime, syncPreviewForTime]);
+    const handleSeek = useCallback((time) => {
+        showControlsBriefly();
+        if (!videoRef.current) {
+            console.warn('Video reference not available');
+            return;
+        }
+        try {
+            if (typeof videoRef.current?.seek === 'function') {
+                videoRef.current.seek(time);
+            } else if (typeof videoRef.current?.player?.seek === 'function') {
+                videoRef.current.player.seek(time);
+            }
+            setCurrentTime(time);
+        } catch (e) {
+            console.warn('Seek attempt failed:', e);
+        }
+    }, [showControlsBriefly]);
+    const handleSlidingComplete = useCallback((value) => {
+        handleSeek(value);
+        setSliderDragTime(value);
+        setIsSeeking(false);
+        setPreviewVisible(false);
+        if (!wasPausedBeforeSeekRef.current) {
+            setPaused(false);
+        }
+    }, [handleSeek]);
+    useEffect(() => {
+        return () => {
+            if (previewSeekRafRef.current) {
+                cancelAnimationFrame(previewSeekRafRef.current);
+                previewSeekRafRef.current = null;
+            }
+        };
+    }, []);
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            setTimeout(() => {
+                if (videoRef.current &amp;&amp; !videoRef.current.seek) {
+                    console.log('Attempting Android workaround');
+                    videoRef.current.seek = (time) => {
+                        videoRef.current?.player?.seek(time);
+                    };
+                }
+            }, 1000);
+        }
+    }, []);
+
+    useEffect(() => {
+        const activeDic = (videoDic &amp;&amp; videoDic.activityData &amp;&amp; videoDic.activityData.length > 0)
+            ? videoDic
+            : (props?.route?.params?.RoleData &amp;&amp; props?.route?.params?.RoleData.activityData &amp;&amp; props?.route?.params?.RoleData.activityData.length > 0)
+                ? props.route.params.RoleData
+                : null;
+
+        if (!activeDic) {
+            setVideoUrl(null);
+            setExternalVideoUrl(null);
+            setThumbnailVttCandidates([]);
+            setThumbnailCues([]);
+            setPreviewVideoReady(false);
+            setInitialVideoThumbnail(null);
+            setShowLoader(false);
+            return;
+        }
+
+        const descriptionHtml = activeDic?.activityData?.[0]?.description || '';
+        const descriptionUrl = extractVideoUrl(descriptionHtml);
+        const rawVideoId = activeDic?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.RoleData?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.RoleData?.video_audio_details?.[0]?.youtube_video_id
+            || '';
+        const candidateSource = descriptionUrl || rawVideoId;
+
+        if (!candidateSource &amp;&amp; !activeDic?.activityData?.[0]?.flipbook) {
+            setShowLoader(false);
+        }
+
+        // The baseUrl for VTT resolution: prefer a real HTTP URL (from description
+        // or onlineDisplayPath) so that relative VTT paths can be resolved.
+        // A bare YouTube video ID is NOT a valid base URL, so we skip it.
+        const onlineBase = activeDic?.onlineDisplayPath || '';
+        const isYouTubeId = candidateSource &amp;&amp; /^[\w-]{11}$/.test(candidateSource.trim());
+        const vttBaseUrl = /^https?:\/\//i.test(onlineBase)
+            ? onlineBase
+            : !isYouTubeId &amp;&amp; /^https?:\/\//i.test(candidateSource)
+                ? candidateSource
+                : '';
+
+        let resolvedVideoUrl = null;
+        if (candidateSource &amp;&amp; isPlayableVideoSource(candidateSource)) {
+            resolvedVideoUrl = normalizeVideoSource(candidateSource);
+            setVideoUrl(resolvedVideoUrl);
+            setExternalVideoUrl(null);
+            setNonVideoContent(null);
+        } else {
+            setVideoUrl(null);
+            resolvedVideoUrl = null;
+            setNonVideoContent(descriptionHtml || null);
+            setExternalVideoUrl(getExternalVideoUrl(candidateSource));
+        }
+
+        const activityData = activeDic?.activityData?.[0] || {};
+        const posterUri = activityData?.poster
+            || activityData?.thumbnail
+            || activityData?.thumb
+            || activityData?.video_thumbnail
+            || activityData?.image
+            || null;
+        if (posterUri) {
+            setInitialVideoThumbnail(resolveUrl(activeDic?.onlineDisplayPath || resolvedVideoUrl || candidateSource, posterUri));
+        } else {
+            setInitialVideoThumbnail(null);
+        }
+        const vttCandidates = extractVttCandidates({
+            routeVtt: routeVttParam,
+            activityData,
+            descriptionHtml,
+            baseUrl: vttBaseUrl,
+            videoUrl: resolvedVideoUrl || (!isYouTubeId ? candidateSource : null),
+        });
+        setThumbnailVttCandidates(vttCandidates);
+        setPreviewVideoReady(false);
+    }, [videoDic, routeVttParam, props?.route?.params?.RoleData]);
+
+    useEffect(() => {
+        let isActive = true;
+        if (!thumbnailVttCandidates?.length) {
+            setThumbnailCues([]);
+            setPreviewFrame(null);
+            lastPreviewCueIndexRef.current = -1;
+            return () => { };
+        }
+
+        const loadVtt = async () => {
+            for (let idx = 0; idx &lt; thumbnailVttCandidates.length; idx += 1) {
+                const candidateUrl = thumbnailVttCandidates[idx];
+                try {
+                    const response = await fetch(candidateUrl);
+                    const text = await response.text();
+                    if (!isActive) return;
+                    const cues = parseThumbnailVtt(text, candidateUrl);
+                    if (cues.length > 0) {
+                        setThumbnailCues(cues);
+                        lastPreviewCueIndexRef.current = -1;
+                        return;
+                    }
+                } catch (err) {
+                    if (!isActive) return;
+                }
+            }
+
+            if (!isActive) return;
+            console.log('Thumbnail VTT load failed for all candidates.');
+            setThumbnailCues([]);
+            setPreviewFrame(null);
+            lastPreviewCueIndexRef.current = -1;
+        };
+
+        loadVtt();
+        return () => {
+            isActive = false;
+        };
+    }, [thumbnailVttCandidates]);
+
+    useEffect(() => {
+        if (!thumbnailCues?.length) return;
+        const uniqueUris = [...new Set(thumbnailCues.map((c) => c?.uri).filter(Boolean))];
+
+        uniqueUris.forEach((uri) => {
+            if (/^https?:\/\//i.test(uri)) {
+                Image.prefetch(uri).catch(() => { });
+            }
+            if (!spriteSizeCacheRef.current[uri]) {
+                Image.getSize(
+                    uri,
+                    (w, h) => {
+                        spriteSizeCacheRef.current[uri] = { width: w, height: h };
+                    },
+                    () => { },
+                );
+            }
+        });
+    }, [thumbnailCues]);
+
+    useEffect(() => {
+        if (!thumbnailCues?.length || !isSeeking) return;
+        const found = findCueForTime(thumbnailCues, previewTime);
+        if (!found) return;
+        const curr = found.cue;
+        const next = thumbnailCues[found.index + 1] || null;
+        setTwoCueCache(found.index, curr, next);
+        warmCueAsset(curr);
+        warmCueAsset(next);
+    }, [thumbnailCues, isSeeking, previewTime, setTwoCueCache, warmCueAsset]);
+
+    const hasVideoSource = !!videoUrl;
+    useEffect(() => {
+        if (hasVideoSource &amp;&amp; !didSetInitialFullscreenRef.current) {
+            didSetInitialFullscreenRef.current = true;
+            setFullscreen(true);
+            setShowThumb(true);
+        }
+    }, [hasVideoSource]);
+    const pdfAll = videoDic &amp;&amp; videoDic?.activityData &amp;&amp; videoDic?.activityData?.length > 0
+        ? videoDic?.activityData[0]?.document
+        : null;
+    const completedPercentage = props?.route?.params?.RoleData?.completed_percentage
+    const fullIDPercentage = props?.route?.params?.FullID?.percentage;
+    const postDataPer = props?.route?.params?.postdata?.completed_percentage;
+    const actPerc = props?.route?.params?.activityID?.completed_percentage;
+    const validPercentage = [completedPercentage, fullIDPercentage, postDataPer, actPerc]
+        .find(p => typeof p == 'number' &amp;&amp; !isNaN(p));
+    const isCompleted = [completedPercentage, fullIDPercentage, postDataPer, actPerc]
+        .some(p => Number(p) == 100);
+    const statusMessage = isCompleted
+        ? "Completed"
+        : `${validPercentage ?? 0}% Pending`;
+    const { RoleData, FullID, activityID } = props?.route?.params || {};
+    const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || props?.route?.params?.postdata?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
+    const activeNextAction = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
+    const activeCourseModules = activeNextAction?.courseModule || activeNextAction?.courseModules || props?.route?.params?.RoleData?.courseModule || props?.route?.params?.postdata?.courseModule || [];
+    const routeCourseModules = props?.route?.params?.activityID?.courseModule || [];
+    const activeCourseModule = getFirstIncompleteModule(activeCourseModules);
+    const routeCourseModule = getFirstIncompleteModule(routeCourseModules);
+    const rawModuleName = String(
+        activeCourseModule?.name ||
+        routeCourseModule?.name ||
+        activeNextAction?.next_activity_text ||
+        activeNextAction?.current_activity_text ||
+        ''
+    ).trim();
+    const activeCourseModuleName = rawModuleName.toLowerCase().includes('section 1') ? '' : rawModuleName;
+    const activeCourseModuleId =
+        activeCourseModule?.activity_id ||
+        activeCourseModule?.current_activity_id ||
+        activeCourseModule?.next_activity_id ||
+        activeCourseModule?.id ||
+        routeCourseModule?.activity_id ||
+        routeCourseModule?.current_activity_id ||
+        routeCourseModule?.next_activity_id ||
+        routeCourseModule?.id ||
+        activeNextAction?.current_activity_id ||
+        activeNextAction?.next_activity_id ||
+        activeNextAction?.id;
+    let rawNextActivityButtonText = String(activeNextAction?.next_activity_button_text || '').trim();
+    if (rawNextActivityButtonText.toLowerCase() === 'proceed to section 1' &amp;&amp; activeCourseModule?.name) {
+        rawNextActivityButtonText = `Proceed to ${activeCourseModule.name}`;
+    }
+    const activeCourseModuleNameLower = activeCourseModuleName.toLowerCase();
+    if (activeCourseModuleNameLower.includes('post-assessment') || activeCourseModuleNameLower.includes('post assessment')) {
+        rawNextActivityButtonText = "Proceed to Post Test";
+    }
+    const displayButtonText = rawNextActivityButtonText;
+    const nextActivityButtonText = rawNextActivityButtonText.toLowerCase();
+    const videoPageTitle = '';
+    const shouldHideEmptyContent =
+        !videoUrl &amp;&amp;
+        !externalVideoUrl &amp;&amp;
+        !nonVideoContent &amp;&amp;
+        !CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook &amp;&amp;
+        (preserveVideoContent ||
+            activeCourseModuleNameLower.includes('section') ||
+            activeCourseModuleNameLower.includes('course') ||
+            nextActivityButtonText.includes('pre test') ||
+            nextActivityButtonText.includes('pre-test') ||
+            nextActivityButtonText.includes('assessment'));
+    const displayedTime = isSeeking ? sliderDragTime : currentTime;
+    const handleLink = (link, path) => {
+        if (link &amp;&amp; path) {
+            const showPDF = async () => {
+                setLoadingdown(true);
+                try {
+                    // Remove any spaces from the link and path
+                    const cleanedLink = link.replace(/\s+/g, '');
+                    const cleanedPath = path.replace(/\s+/g, '');
+                    const url = `${cleanedLink}${cleanedPath}`;
+                    const fileName = url.split("/").pop();
+                    const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+                    const options = {
+                        fromUrl: url,
+                        toFile: localFile,
+                    };
+
+                    const downloadResult = await RNFS.downloadFile(options).promise;
+                    console.log('Download result:', downloadResult);
+                    setPdfUri(localFile);
+                } catch (error) {
+                    console.error('Error during file download:', error);
+                } finally {
+                    setLoadingdown(false);
+                }
+            };
+            showPDF();
+        }
+    };
+
+    useEffect(() => {
+        if (pdfUri) {
+            const openFileViewer = async () => {
+                try {
+                    await FileViewer.open(pdfUri);
+                    setPdfUri(null);
+                } catch (error) {
+                    console.error('Error opening file viewer:', error);
+                }
+            };
+            openFileViewer();
+        }
+    }, [pdfUri]);
+    useEffect(() => {
+        const onBackPress = () => {
+            if (fullscreen) {
+                toggleFullscreen();
+            } else {
+                videoPress();
+            }
+            return true;
+        };
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+        return () => backHandler.remove();
+    }, [fullscreen]);
+    useEffect(() => {
+        // Simulate 2-second loading time
+        const timeout = setTimeout(() => {
+            setShowLoader(false);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+    }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, [fullscreen]);
+    const finalText = CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook &amp;&amp; !fullscreen;
+    const isValidCme = (value) =>
+        value &amp;&amp; value.replace(/\s/g, "") !== "-0";
+    const cmeValue =
+        isValidCme(props?.route?.params?.RoleData?.display_cme)
+            ? props.route.params.RoleData.display_cme
+            : isValidCme(props?.route?.params?.FullID?.conferenceCmePoints)
+                ? props.route.params.FullID.conferenceCmePoints
+                : isValidCme(props?.route?.params?.postdata?.conferenceCmePoints)
+                    ? props.route.params.postdata.conferenceCmePoints
+                    : isValidCme(props?.route?.params?.activityID?.conferenceCmePoints)
+                        ? props.route.params.activityID.conferenceCmePoints
+                        : null;
+    const renderThumbnailPreview = (isFullscreen = false) => {
+        if (!duration) return null;
+        const ratio = Math.max(0, Math.min(1, (duration > 0 ? previewTime / duration : 0)));
+        const previewWidth = isFullscreen ? normalize(138) : normalize(120);
+        const left = ratio * 100;
+        const crop = previewFrame?.crop;
+        const spriteSize = previewFrame?.spriteSize;
+        const hasImageFrame = !!(previewFrame?.uri);
+        // Only use the video mini-player fallback when we have a valid playable URL
+        const shouldUseVideoFallback = !hasImageFrame &amp;&amp; !!videoUrl &amp;&amp; typeof videoUrl === 'string' &amp;&amp; videoUrl.length > 0;
+
+        if (!hasImageFrame &amp;&amp; !shouldUseVideoFallback) return null;
+
+        return (
+            &lt;View
+                pointerEvents="none"
+                style={[
+                    styles.previewBubble,
+                    isFullscreen &amp;&amp; styles.fullscreenPreviewBubble,
+                    {
+                        left: `${left}%`,
+                        marginLeft: -(previewWidth / 2),
+                        opacity: previewVisible ? 1 : 0,
+                    }
+                ]}
+            >
+                {hasImageFrame &amp;&amp; crop &amp;&amp; spriteSize?.width &amp;&amp; spriteSize?.height ? (
+                    &lt;View style={styles.previewCropWrap}>
+                        &lt;Image
+                            source={{ uri: previewFrame.uri }}
+                            style={[
+                                styles.previewCropImage,
+                                {
+                                    width: spriteSize.width,
+                                    height: spriteSize.height,
+                                    transform: [{ translateX: -(crop.x || 0) }, { translateY: -(crop.y || 0) }],
+                                }
+                            ]}
+                        />
+                    &lt;/View>
+                ) : hasImageFrame ? (
+                    &lt;Image
+                        source={{ uri: previewFrame.uri }}
+                        style={styles.previewImage}
+                        resizeMode="cover"
+                        onError={() => { /* silently ignore broken VTT thumbnail images */ }}
+                    />
+                ) : shouldUseVideoFallback ? (
+                    &lt;Video
+                        ref={previewVideoRef}
+                        source={{ uri: videoUrl }}
+                        style={styles.previewImage}
+                        paused={!isSeeking}
+                        muted={true}
+                        repeat={false}
+                        resizeMode="cover"
+                        onLoad={() => {
+                            setPreviewVideoReady(true);
+                            const target = pendingPreviewSeekRef.current;
+                            if (typeof target === 'number' &amp;&amp; isFinite(target)) {
+                                try { previewVideoRef.current?.seek(target); } catch (_) { }
+                            }
+                        }}
+                        onReadyForDisplay={() => {
+                            setPreviewVideoReady(true);
+                            const target = pendingPreviewSeekRef.current;
+                            if (typeof target === 'number' &amp;&amp; isFinite(target)) {
+                                try { previewVideoRef.current?.seek(target); } catch (_) { }
+                            }
+                        }}
+                        onError={() => {
+                            // Preview video failed; reset so we don't keep retrying
+                            setPreviewVideoReady(false);
+                        }}
+                        onProgress={() => {
+                            // Keep decoder warm while scrubbing.
+                        }}
+                    />
+                ) : null}
+                &lt;Text style={styles.previewTimeText}>{formatTime(previewTime)}&lt;/Text>
+            &lt;/View>
+        );
+    };
+    console.log(props?.route?.params?.postdata , nextAction ,CMEReducer?.cmenextactionResponse,activeNextAction, "activeNextAction====", activeCourseModuleName, activeCourseModuleId)
+    return (
+        &lt;>
+            &lt;MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            &lt;StatusBar hidden={fullscreen} />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {!fullscreen &amp;&amp; (
+                    Platform.OS === 'ios' ? (
+                        &lt;PageHeader title={videoPageTitle} onBackPress={videoPress} />
+                    ) : (
+                        &lt;View>
+                            &lt;PageHeader title={videoPageTitle} onBackPress={videoPress} />
+                        &lt;/View>
+                    )
+                )}
+                {loadingdown &amp;&amp; &lt;View
+                    style={[
+                        {
+                            position: 'absolute',
+                            zIndex: 1000001,
+                            top: 0,
+                            left: 0,
+                            height: Dimensions.get('screen').height,
+                            width: '100%',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        },
+                    ]}>
+                    &lt;View
+                        style={{
+                            height: normalize(80),
+                            width: normalize(80),
+                            justifyContent: 'center',
+                            alignItems: "center",
+                        }}>
+                        &lt;ActivityIndicator size={"small"} color={"green"} style={{ marginTop: normalize(30) }} />
+                    &lt;/View>
+                &lt;/View>}
+
+                {conn == false ? &lt;IntOff /> : &lt;ScrollView scrollEnabled={!fullscreen} contentContainerStyle={{ paddingBottom: fullscreen ? normalize(320) : normalize(120) }}>
+                    {(hasVideoSource || (externalVideoUrl &amp;&amp; getEmbedUrl(externalVideoUrl))) ? &lt;View style={fullscreen ? styles.fullscreenContainer : styles.container}>
+                        {hasVideoSource ? (
+                            &lt;Pressable
+                                style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
+                                onPress={() => {
+                                    setShowThumb((prev) => !prev);
+                                    if (!showThumb) {
+                                        showControlsBriefly();
+                                    }
+                                }}
+                            >
+                                &lt;Video
+                                    ref={videoRef}
+                                    source={{ uri: videoUrl }}
+                                    style={fullscreen ? styles.fullscreenVideo : styles.video}
+                                    paused={paused}
+                                    onLoad={onLoad}
+                                    onProgress={onProgress}
+                                    onEnd={onEnd}
+                                    onReadyForDisplay={onReadyForDisplay}
+                                    bufferConfig={{
+                                        minBufferMs: 15000,
+                                        maxBufferMs: 50000,
+                                        bufferForPlaybackMs: 2500,
+                                        bufferForPlaybackAfterRebufferMs: 5000,
+                                    }}
+                                    resizeMode="contain"
+                                    shutterColor="transparent"
+                                    hideShutterView={true}
+                                    onVideoLoadStart={() => {
+                                        if (!fullscreenTransitionRef.current) {
+                                            setLoading(true);
+                                        }
+                                    }}
+                                />
+                                {loading &amp;&amp; initialVideoThumbnail &amp;&amp; (
+                                    &lt;View pointerEvents="none" style={styles.loadingThumbWrap}>
+                                        &lt;Image
+                                            source={{ uri: initialVideoThumbnail }}
+                                            style={styles.loadingThumbImage}
+                                            resizeMode="contain"
+                                        />
+                                    &lt;/View>
+                                )}
+                                {showTransitionCover &amp;&amp; transitionCoverFrame?.uri &amp;&amp; (
+                                    &lt;View pointerEvents="none" style={styles.transitionCoverWrap}>
+                                        {transitionCoverFrame?.crop &amp;&amp; transitionCoverFrame?.spriteSize?.width &amp;&amp; transitionCoverFrame?.spriteSize?.height ? (
+                                            &lt;View style={styles.transitionCoverCropWrap}>
+                                                &lt;Image
+                                                    source={{ uri: transitionCoverFrame.uri }}
+                                                    style={[
+                                                        styles.transitionCoverCropImage,
+                                                        {
+                                                            width: transitionCoverFrame.spriteSize.width,
+                                                            height: transitionCoverFrame.spriteSize.height,
+                                                            transform: [
+                                                                { translateX: -(transitionCoverFrame.crop.x || 0) },
+                                                                { translateY: -(transitionCoverFrame.crop.y || 0) },
+                                                            ],
+                                                        },
+                                                    ]}
+                                                />
+                                            &lt;/View>
+                                        ) : (
+                                            &lt;Image
+                                                source={{ uri: transitionCoverFrame.uri }}
+                                                style={styles.transitionCoverImage}
+                                                resizeMode="contain"
+                                            />
+                                        )}
+                                    &lt;/View>
+                                )}
+                                {loading &amp;&amp; (
+                                    &lt;ActivityIndicator
+                                        style={styles.playText}
+                                        size="large"
+                                        color={Colorpath.white}
+                                    />
+                                )}
+                                {showThumb &amp;&amp; !loading &amp;&amp; (
+                                    &lt;Pressable
+                                        onPress={togglePlayback}
+                                        hitSlop={16}
+                                        style={styles.playText}
+                                    >
+                                        &lt;PlayIcon style={{ top: 0, left: 0 }} name={paused ? "playcircleo" : "pausecircleo"} size={fullscreen ? 60 : 40} color="#FFFFFF" />
+                                    &lt;/Pressable>
+                                )}
+                                {!loading &amp;&amp; (
+                                    &lt;Pressable style={fullscreen ? styles.fullscreenButton : styles.nfullmode} onPress={toggleFullscreen}>
+                                        &lt;FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={22} color="#FFFFFF" />
+                                    &lt;/Pressable>
+                                )}
+                            &lt;/Pressable>
+                        ) : (
+                            &lt;View style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}>
+                                &lt;WebView
+                                    style={fullscreen ? styles.fullscreenVideo : styles.video}
+                                    source={{ uri: getEmbedUrl(externalVideoUrl) }}
+                                    javaScriptEnabled={true}
+                                    domStorageEnabled={true}
+                                    allowsFullscreenVideo={true}
+                                />
+                            &lt;/View>
+                        )}
+                        {!fullscreen &amp;&amp; !loading &amp;&amp; hasVideoSource ? (
+                            &lt;View style={styles.controls}>
+                                &lt;Text style={[styles.timeLabel, styles.leftTime]}>
+                                    {formatTime(displayedTime)}
+                                &lt;/Text>
+                                &lt;View style={styles.sliderWithPreview}>
+                                    {renderThumbnailPreview(false)}
+                                    &lt;Sliders
+                                        value={displayedTime}
+                                        max={duration}
+                                        valChange={handleSliderChange}
+                                        onSlidingStart={handleSlidingStart}
+                                        handleSlidingComplete={handleSlidingComplete}
+                                        containerStyle={styles.sliderWrap}
+                                        thumbStyle={{
+                                            height: 14,
+                                            width: 14,
+                                            backgroundColor: '#1F1F1F',
+                                            borderWidth: 1,
+                                            borderColor: '#1F1F1F',
+                                        }}
+                                    />
+                                &lt;/View>
+                                &lt;Text style={[styles.timeLabel, styles.rightTime]}>
+                                    {formatTime(duration)}
+                                &lt;/Text>
+                            &lt;/View>
+                        ) : !loading &amp;&amp; showThumb &amp;&amp; hasVideoSource &amp;&amp; (
+                            &lt;View style={styles.fullscreencontrols}>
+                                &lt;Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
+                                    &lt;Text style={[
+                                        styles.timeLabel,
+                                        styles.fullscreenTimeLabel,
+                                        styles.leftTime,
+                                        useBlackFullscreenTimer ? styles.fullscreenTimeBlack : styles.fullscreenTimeWhite
+                                    ]}>
+                                        {formatTime(displayedTime)}
+                                    &lt;/Text>
+                                &lt;/Pressable>
+                                &lt;View style={styles.sliderWithPreview}>
+                                    {renderThumbnailPreview(true)}
+                                    &lt;Sliders
+                                        value={displayedTime}
+                                        max={duration}
+                                        valChange={handleSliderChange}
+                                        onSlidingStart={handleSlidingStart}
+                                        handleSlidingComplete={handleSlidingComplete}
+                                        fullscreen={true}
+                                        containerStyle={styles.sliderWrap}
+                                    />
+                                &lt;/View>
+                                &lt;Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
+                                    &lt;Text style={[
+                                        styles.timeLabel,
+                                        styles.fullscreenTimeLabel,
+                                        styles.rightTime,
+                                        useBlackFullscreenTimer ? styles.fullscreenTimeBlack : styles.fullscreenTimeWhite
+                                    ]}>
+                                        {formatTime(duration)}
+                                    &lt;/Text>
+                                &lt;/Pressable>
+                            &lt;/View>
+                        )}
+                    &lt;/View> : (nonVideoContent || externalVideoUrl) &amp;&amp; !fullscreen ? &lt;View style={{ padding: normalize(15) }}>
+                        {nonVideoContent &amp;&amp; (
+                            &lt;RenderHTML
+                                contentWidth={300}
+                                source={{ html: nonVideoContent }}
+                                tagsStyles={{
+                                    p: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h3: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h4: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h1: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" },
+                                    h2: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }
+                                }}
+                            />
+                        )}
+
+                        {externalVideoUrl ? (
+                            &lt;Pressable
+                                onPress={() => Linking.openURL(externalVideoUrl)}
+                                style={styles.openExternalButton}
+                            >
+                                &lt;Text style={styles.openExternalButtonText}>Open Video in Browser&lt;/Text>
+                            &lt;/Pressable>
+                        ) : null}
+                    &lt;/View> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook &amp;&amp; !fullscreen ? (&lt;View>
+                        &lt;FlipbookComponent path={CMEReducer?.cmeactivityResponse?.onlineDisplayPath} link={CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook} />
+                    &lt;/View>
+                    ) : showLoader ? &lt;ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : shouldHideEmptyContent ? null : &lt;View style={{ height: normalize(50), width: normalize(290), paddingVertical: normalize(10) }}>&lt;Text style={{ justifyContent: "center", alignSelf: "center", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{"No content available"}&lt;/Text>&lt;/View>
+                    }
+
+                    {!fullscreen &amp;&amp; &lt;>&lt;View>
+                        &lt;View style={{ flexDirection: "row", justifyContent: "space-evenly", paddingVertical: finalText ? normalize(25) : normalize(10) }}>
+                            &lt;Buttons
+                                onPress={() => {
+                                    setAddit(statepush);
+                                    setStatepush(statepush);
+                                    takeCourseVideo();
+                                    setPaused(true);
+                                    props.navigation.navigate("TabNav");
+                                }}
+                                height={normalize(45)}
+                                width={normalize(150)}
+                                backgroundColor={Colorpath.white}
+                                borderRadius={normalize(5)}
+                                text={activeNextAction?.next_activity_button_text ? "Continue Later" : "Course Revision Completed... "}
+                                color={activeNextAction?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.black}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(-15)}
+                                borderWidth={0.5}
+                                borderColor={"#DDD"}
+                                disabled={activeNextAction?.next_activity_button_text ? false : true} />
+                            &lt;Buttons
+                                onPress={() => {
+                                    const shouldOpenPreTest =
+                                        nextActivityButtonText === 'proceed to post test' ||
+                                        nextActivityButtonText === 'proceed to feedback/evaluation' ||
+                                        nextActivityButtonText.includes('pre assessment') ||
+                                        nextActivityButtonText.includes('post assessment') ||
+                                        activeCourseModuleNameLower.includes('pre assessment') ||
+                                        activeCourseModuleNameLower.includes('post assessment') ||
+                                        activeNextAction?.next_activity_api === 'startTest';
+
+                                    if (shouldOpenPreTest || !nextActivityButtonText) {
+                                        if (shouldOpenPreTest) {
+                                            takeCourseVideo();
+                                            setPaused(true);
+                                            props.navigation.replace("PreTest", {
+                                                videoData: activeNextAction,
+                                                videoContentData: videoDic,
+                                                testFlowType: nextActivityButtonText.includes('post') || activeCourseModuleNameLower.includes('post') ? 'post' : 'pre',
+                                                activityID: {
+                                                    activityID: activeNextAction?.next_activity_id,
+                                                    conference_id: conferenceIdAll,
+                                                    text: activeNextAction?.next_activity_text || activeCourseModuleName
+                                                }
+                                            });
+                                        } else {
+                                            setAddit(statepush);
+                                            setStatepush(statepush);
+                                            takeCourseVideo();
+                                            setPaused(true);
+                                            props.navigation.navigate("TabNav");
+                                        }
+                                    } else {
+                                        takeCourseVideo();
+                                        setPaused(true);
+                                        const reviseTextagain = activeNextAction?.percentage == 100 || props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100;
+                                        let obj = {
+                                            "conference_id": activeNextAction?.conferenceId,
+                                            "ActivityId": activeNextAction?.next_activity_id,
+                                        }
+                                        let reviseobj = {
+                                            "conference_id": activeNextAction?.conferenceId,
+                                            "ActivityId": activeNextAction?.next_activity_id,
+                                            "revise_activity": 1
+                                        }
+                                        let objact = {
+                                            "ActivityId": activeNextAction?.next_activity_id
+                                        }
+                                        connectionrequest()
+                                            .then(() => {
+                                                dispatch(cmenextactionRequest(reviseTextagain ? reviseobj : obj));
+                                                dispatch(cmeactivityRequest(objact));
+                                            })
+                                            .catch((err) => { showErrorAlert("Please connect to internet", err) })
+                                    }
+                                }}
+                                height={normalize(45)}
+                                width={normalize(150)}
+                                backgroundColor={displayButtonText ? Colorpath.white : Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text={displayButtonText ? displayButtonText : " Go back to Dashboard "}
+                                color={displayButtonText ? Colorpath.ButtonColr : Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(-15)} />
+                        &lt;/View>
+                    &lt;/View>&lt;View>
+                            {pdfAll &amp;&amp; &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                                &lt;Pressable onPress={() => { handleLink(videoDic?.onlineDisplayPath, pdfAll) }} style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", width: '100%', gap: normalize(3) }}>
+                                    &lt;Image source={Imagepath.PdfFile} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
+                                    &lt;Text
+                                        style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 16,
+                                            color: "#000000",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {"Click here to view the PDF Presentation"}
+                                    &lt;/Text>
+                                &lt;/Pressable>
+                            &lt;/View>}
+                        &lt;/View>&lt;/>
+                    }
+                &lt;/ScrollView>}
+            &lt;/SafeAreaView>
+        &lt;/>
+    );
+};
+
+export default VideoComponent;
+const pageViewPositionSlider = {
+    trackColor: '#ABABAB',
+    thumbColor: '#1411AB',
+    style: {
+        width: '100%',
+        height: 20,
+        borderRadius: 10
+    },
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

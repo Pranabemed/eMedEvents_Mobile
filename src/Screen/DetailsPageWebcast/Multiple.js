@@ -13,6 +13,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
 import Icon from 'react-native-vector-icons/Entypo';
 
+/**
+ * Reusable CustomInputTouchableY component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomInputTouchableY = ({
     label,
     value,

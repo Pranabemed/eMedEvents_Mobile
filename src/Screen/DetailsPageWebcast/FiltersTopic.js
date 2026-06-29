@@ -8,6 +8,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import CloseIcon from 'react-native-vector-icons/AntDesign';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable FiltersTopic component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const FiltersTopic = ({ webcasttopic, searchWebcastTopic, checkoutCleartopic, topicfetched, setTopicfetched, weekname, setWeekname, rolesdata, setRolesdata, webcastall, setWebcastall, toggleWeekSelection }) => {
     console.log(weekname,"wekknamecustome",topicfetched)
     const weekFilter = ({ item, index }) => {

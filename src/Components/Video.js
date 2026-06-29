@@ -31,6 +31,14 @@ let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview';
 
+/**
+ * Reusable normalizeVideoSource component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const normalizeVideoSource = (url) => {
     if (!url) return null;
     return url.trim().replace(/&amp;/g, '&');

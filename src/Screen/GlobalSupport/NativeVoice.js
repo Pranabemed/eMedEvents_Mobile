@@ -9,6 +9,14 @@ import Fonts from '../../Themes/Fonts';
 import PhoneRing from './Ring';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable NativeVoice component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const { SpeechRecognition } = NativeModules;
 const speechRecognitionEmitter = new NativeEventEmitter(SpeechRecognition);
 

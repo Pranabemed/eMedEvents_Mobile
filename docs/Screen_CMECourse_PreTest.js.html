@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/CMECourse/PreTest.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/CMECourse/PreTest.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, TextInput, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
+import Colorpath from '../../Themes/Colorpath';
+import PageHeader from '../../Components/PageHeader';
+import normalize from '../../Utils/Helpers/Dimen';
+import Imagepath from '../../Themes/Imagepath';
+import Fonts from '../../Themes/Fonts';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import { cmedulicateRequest, cmenextactionRequest, evaulateexamRequest, nextactionagainRequest, startTestRequest } from '../../Redux/Reducers/CMEReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import Buttons from '../../Components/Button';
+import Loader from '../../Utils/Helpers/Loader';
+import { useIsFocused } from '@react-navigation/native';
+import CustomCheckBox from './CheckBox';
+import { AppContext } from '../GlobalSupport/AppContext';
+import { stateDashboardRequest } from '../../Redux/Reducers/DashboardReducer';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable PreTest component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+let status = "";
+let status1 = "";
+const PreTest = (props) => {
+  const {
+    statepush,
+    setStatepush,
+    setFinddata,
+    isConnected,
+    setAddit
+  } = useContext(AppContext);
+  const CMEReducer = useSelector(state => state.CMEReducer);
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const dispatch = useDispatch();
+  const PrePress = () => {
+    setAddit(statepush);
+    takeCoursepre();
+    props.navigation.goBack();
+  };
+  const [conn, setConn] = useState("")
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setConn(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, [isConnected]);
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [testData, setTestData] = useState(null);
+  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
+  const [timeflex, setTimeflex] = useState(0);
+  const [lengthCheck, setLengthCheck] = useState(0);
+  const [headerText, setHeaderText] = useState("");
+  const [headerTexts, setHeaderTexts] = useState("");
+  const [answers, setAnswers] = useState({});
+  const isFocus = useIsFocused();
+  const redirectedToVideoRef = useRef(false);
+  const testFlowType = String(props?.route?.params?.testFlowType || '').trim().toLowerCase();
+  const routeActivityText = String(
+    props?.route?.params?.activityID?.text ||
+    props?.route?.params?.FullID?.Wktext ||
+    ''
+  ).trim().toLowerCase();
+  const isPostTestFlow =
+    testFlowType === 'post' ||
+    routeActivityText.includes('post') ||
+    String(props?.route?.params?.FullID?.wholedata?.next_activity_text || '').trim().toLowerCase().includes('post');
+  const shouldOpenVideoFirst =
+    routeActivityText.includes('course') ||
+    routeActivityText.includes('video') ||
+    routeActivityText.includes('session');
+  const shouldHidePreTestView = shouldOpenVideoFirst &amp;&amp; !redirectedToVideoRef.current;
+
+  useEffect(() => {
+    if (!isFocus || redirectedToVideoRef.current || !shouldOpenVideoFirst) {
+      return;
+    }
+
+    redirectedToVideoRef.current = true;
+    props.navigation.replace("VideoComponent", {
+      ...props?.route?.params,
+      activityID: props?.route?.params?.activityID,
+      FullID: props?.route?.params?.FullID,
+      postdata: props?.route?.params?.nodata || props?.route?.params?.postdata,
+    });
+  }, [isFocus, shouldOpenVideoFirst, props.navigation, props?.route?.params]);
+
+  useEffect(() => {
+    if (statepush) {
+      const takeIDS = statepush?.state_id || statepush?.creditID?.state_id;
+      connectionrequest()
+        .then(() => {
+          dispatch(stateDashboardRequest({ "state_id": takeIDS }))
+        })
+        .catch((err) => { showErrorAlert("Please connect to internet", err) })
+    }
+  }, [statepush])
+  const takeCoursepre = () => {
+    if (statepush) {
+      const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+      connectionrequest()
+        .then(() => {
+          dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+        })
+        .catch((err) => { showErrorAlert("Please connect to internet", err) })
+    }
+  }
+  const handleOptionSelect = (questionId, optionId) => {
+    setSelectedOptions(prev => {
+      const updatedOptions = { ...prev, [questionId]: optionId };
+      return updatedOptions;
+    });
+  };
+  const handleMultipleOptionSelect = (questionId, optionId) => {
+    setSelectedOptions((prev) => {
+      const currentSelections = prev[questionId] || [];
+      const updatedSelections = currentSelections.includes(optionId)
+        ? currentSelections.filter((id) => id !== optionId) // Deselect the option
+        : [...currentSelections, optionId]; // Select the option
+      return { ...prev, [questionId]: updatedSelections };
+    });
+  };
+
+  const scrollViewRef = useRef(null);
+
+  useEffect(() => {
+    // Scroll to the top when the page is loaded or when coming back to this page
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, [isFocus]);
+  const allquestionHandle = () => {
+    const normalizedExamAnswers = Object.fromEntries(
+      Object.entries(selectedOptions || {}).map(([key, value]) => {
+        // If the value is an array → keep it as is
+        if (Array.isArray(value)) {
+          return [key, value];
+        }
+        // If the value is numeric (string or number) → wrap it in an array
+        else if (!isNaN(value)) {
+          return [key, [String(value)]];
+        }
+        // Otherwise (for text answers) → keep as plain string
+        else {
+          return [key, String(value)];
+        }
+      })
+    );
+    let obj = {
+      "AssessmentId": testData?.testData &amp;&amp; testData?.testData?.[0]?.assessment_id,
+      "ExamAnswersData": normalizedExamAnswers
+    }
+    connectionrequest()
+      .then(() => {
+        dispatch(evaulateexamRequest(obj));
+      })
+      .catch((err) => { showErrorAlert("Please connect to internet", err) })
+  }
+
+  const awaitingNextAfterTestRef = useRef(false);
+  const handledNextAfterTestRef = useRef(false);
+
+  const goBackToVideoWithNextActivity = () => {
+    const nextActivityText = String(
+      CMEReducer?.cmedulicateResponse?.next_activity_text ||
+      props?.route?.params?.FullID?.wholedata?.next_activity_text ||
+      ''
+    ).trim();
+    const nextActivityId =
+      CMEReducer?.cmedulicateResponse?.next_activity_id ||
+      props?.route?.params?.FullID?.wholedata?.next_activity_id ||
+      props?.route?.params?.activityID?.next_activity_id;
+
+    const conferenceId =
+      CMEReducer?.cmedulicateResponse?.conferenceId ||
+      props?.route?.params?.activityID?.conference_id ||
+      props?.route?.params?.FullID?.wholedata?.conferenceId ||
+      props?.route?.params?.nodata?.conferenceId;
+
+    const nextActivityPayload = {
+      conference_id: conferenceId,
+      ActivityId: nextActivityId,
+    };
+
+    if (nextActivityId) {
+      awaitingNextAfterTestRef.current = true;
+      handledNextAfterTestRef.current = false;
+      connectionrequest()
+        .then(() => {
+          dispatch(cmenextactionRequest(nextActivityPayload));
+        })
+        .catch((err) => { showErrorAlert("Please connect to internet", err) });
+      return;
+    }
+
+    const isSurveyOrAssessment =
+      nextActivityText === "Survey &amp; Feedback" ||
+      nextActivityText === "Pre Assessment" ||
+      nextActivityText === "Post Assessment";
+
+    if (isSurveyOrAssessment) {
+      props.navigation.replace("PreTest", {
+        videoData: props?.route?.params?.videoData || props?.route?.params?.RoleData,
+        activityID: {
+          activityID: nextActivityId,
+          conference_id: conferenceId,
+          text: nextActivityText,
+        },
+      });
+      return;
+    }
+
+    props.navigation.replace("VideoComponent", {
+      RoleData: props?.route?.params?.videoContentData || props?.route?.params?.RoleData,
+    });
+  };
+
+  useEffect(() => {
+    if (!isFocus) return;
+    const obj = { "ActivityId": props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID };
+    connectionrequest()
+      .then(() => {
+        dispatch(startTestRequest(obj));
+      })
+      .catch((err) => { showErrorAlert("Please connect to internet", err); });
+  }, [isFocus]);
+
+  useEffect(() => {
+    if (props?.route?.params?.nodata) {
+      setSelectedOptions({});
+      setTimeflex(0);
+      setLengthCheck(0);
+    }
+  }, [props?.route?.params?.nodata])
+  useEffect(() => {
+    if (!isFocus) return;
+    let obj = {
+      "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.nodata?.conferenceId,
+      "ActivityId": props?.route?.params?.FullID?.wholedata?.next_activity_id || props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID
+    }
+    connectionrequest()
+      .then(() => {
+        dispatch(cmedulicateRequest(obj));
+      })
+      .catch((err) => { showErrorAlert("Please connect to internet", err) })
+  }, [isFocus])
+  useEffect(() => {
+    if (CMEReducer?.startTestResponse) {
+      setTestData(CMEReducer?.startTestResponse);
+    }
+  }, [CMEReducer?.startTestResponse])
+
+  useEffect(() => {
+    if (!isFocus) return;
+    if (!awaitingNextAfterTestRef.current) return;
+    if (handledNextAfterTestRef.current) return;
+    if (CMEReducer.status !== 'CME/cmenextactionSuccess') return;
+
+    handledNextAfterTestRef.current = true;
+    awaitingNextAfterTestRef.current = false;
+
+    const nextResponse = CMEReducer.cmenextactionResponse;
+    const courseModules = Array.isArray(nextResponse?.courseModule)
+      ? nextResponse.courseModule
+      : Array.isArray(nextResponse?.courseModules)
+        ? nextResponse.courseModules
+        : [];
+    const nextIncompleteModule = courseModules.find(
+      (item) => Number(item?.completedSection) === 0 &amp;&amp; !String(item?.name).toLowerCase().includes('section 1')
+    ) || null;
+    const nextModuleActivityId =
+      nextIncompleteModule?.activity_id ||
+      nextIncompleteModule?.current_activity_id ||
+      nextIncompleteModule?.next_activity_id ||
+      nextIncompleteModule?.id ||
+      nextResponse?.next_activity_id;
+    const nextModuleConferenceId =
+      nextIncompleteModule?.conference_id ||
+      nextResponse?.conferenceId ||
+      nextResponse?.conference_id;
+
+    if (isPostTestFlow) {
+      props.navigation.navigate("PostTestFail", {
+        examID: CMEReducer?.evaulateexamResponse?.examId,
+      });
+      return;
+    }
+
+    props.navigation.replace("VideoComponent", {
+      activityID: {
+        activityID: nextModuleActivityId,
+        conference_id: nextModuleConferenceId,
+        text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      RoleData: {
+        ...props?.route?.params?.videoContentData,
+        ...nextResponse,
+        current_activity_id: nextModuleActivityId,
+        conferenceId: nextModuleConferenceId,
+        next_activity_id: nextModuleActivityId,
+        next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      FullID: {
+        ...nextResponse,
+        conferenceId: nextModuleConferenceId,
+        previous_activity_id: nextModuleActivityId,
+      },
+      postdata: {
+        ...nextResponse,
+        conferenceId: nextModuleConferenceId,
+        next_activity_id: nextModuleActivityId,
+        next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
+        courseModule: courseModules,
+      },
+      preserveVideoContent: true,
+    });
+  }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params]);
+  if (status === '' || CMEReducer.status !== status) {
+    switch (CMEReducer.status) {
+      case 'CME/startTestRequest':
+        status = CMEReducer.status;
+        break;
+      case 'CME/startTestSuccess':
+        status = CMEReducer.status;
+        setTestData(CMEReducer?.startTestResponse);
+        break;
+      case 'CME/startTestFailure':
+        status = CMEReducer.status;
+        break;
+      case 'CME/evaulateexamRequest':
+        status = CMEReducer.status;
+        break;
+      case 'CME/evaulateexamSuccess':
+        status = CMEReducer.status;
+        if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
+          props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
+        } else if (isPostTestFlow) {
+          props.navigation.navigate("PostTestFail", { examID: CMEReducer?.evaulateexamResponse?.examId });
+        } else {
+          goBackToVideoWithNextActivity();
+        }
+        break;
+      case 'CME/evaulateexamFailure':
+        status = CMEReducer.status;
+        break;
+      case 'CME/cmedulicateRequest':
+        status = CMEReducer.status;
+        break;
+      case 'CME/cmedulicateSuccess':
+        status = CMEReducer.status;
+        setHeaderText(CMEReducer?.cmedulicateResponse?.current_activity_text);
+        setLengthCheck(0);
+        setSelectedOptions({});
+        setTimeflex(0);
+        if (props?.route?.params?.FullID?.startTest) {
+          let obj = {
+            "conference_id": CMEReducer?.cmedulicateResponse?.conferenceId,
+            "ActivityId": CMEReducer?.cmedulicateResponse?.next_activity_id,
+          };
+          connectionrequest()
+            .then(() => {
+              dispatch(nextactionagainRequest(obj));
+            })
+            .catch((err) => {
+              showErrorAlert("Please connect to internet", err);
+            });
+        }
+
+      case 'CME/cmedulicateFailure':
+        status = CMEReducer.status;
+        break;
+      case 'CME/nextactionagainRequest':
+        status = CMEReducer.status;
+        break;
+      case 'CME/nextactionagainSuccess':
+        status = CMEReducer.status;
+        if (props?.route?.params?.FullID?.startTest) {
+          setHeaderTexts(CMEReducer?.nextactionagainResponse?.current_activity_text);
+          setLengthCheck(0);
+          setSelectedOptions({});
+          setTimeflex(0)
+        }
+      case 'CME/nextactionagainFailure':
+        status = CMEReducer.status;
+        break;
+      case 'CME/cmenextactionRequest':
+      case 'CME/cmenextactionSuccess':
+      case 'CME/cmenextactionFailure':
+        status = CMEReducer.status;
+        break;
+    }
+  }
+  if (status1 == '' || DashboardReducer.status != status1) {
+    switch (DashboardReducer.status) {
+      case 'Dashboard/stateDashboardRequest':
+        status1 = DashboardReducer.status;
+        break;
+      case 'Dashboard/stateDashboardSuccess':
+        status1 = DashboardReducer.status;
+        setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+        break;
+      case 'Dashboard/stateDashboardFailure':
+        status1 = DashboardReducer.status;
+        break;
+    }
+  }
+  const handleTextChange = (questionId, text) => {
+    setSelectedOptions(prev => {
+      const updatedOptions = { ...prev, [questionId]: text };
+      // checkIfAllAnswered(updatedOptions);
+      return updatedOptions;
+    });
+  };
+  useEffect(() => {
+    if (Object.keys(selectedOptions)?.length > 0) {
+      const otpions_id = Object.keys(selectedOptions);
+      const allQuestions = [];
+      const questionsObj = testData?.testData?.[0]?.questions || {};
+      Object.entries(questionsObj).forEach(([key, questions]) => {
+        if (key == "no_heading") {
+          // Directly push these questions
+          questions.forEach(q => {
+            allQuestions.push({
+              heading: null,
+              ...q
+            });
+          });
+        } else {
+          // For other keys, add heading before questions
+          questions.forEach(q => {
+            allQuestions.push({
+              heading: key,
+              ...q
+            });
+          });
+        }
+      });
+
+      // Now filter mandatory ones if needed
+      const mandatoryQuestions = allQuestions.filter(q => q.mandatory == 1);
+      const totalMandatoryQuestions = mandatoryQuestions?.length;
+      const answeredMandatoryCount = mandatoryQuestions.filter(q => {
+        return otpions_id.includes(q.question_id);
+      }).length;
+      const allMandatoryAnswered = answeredMandatoryCount == totalMandatoryQuestions;
+      setIsSubmitEnabled(allMandatoryAnswered);
+      setLengthCheck(otpions_id?.length);
+    }
+  }, [selectedOptions])
+  useEffect(() => {
+    const unsubscribe = props.navigation.addListener('focus', () => {
+      setSelectedOptions({});
+      setIsSubmitEnabled(false);
+      setLengthCheck(0);
+    });
+    return unsubscribe;
+  }, [props?.navigation]);
+  const estimatedTime = (val) => {
+    if (val) {
+      const convertedVal = val * 1000;
+      setTimeflex(convertedVal);
+    }
+  }
+  const cleanHTML = (htmlString) => {
+    if (!htmlString) return "";
+    htmlString = htmlString.replace(/&lt;p[^>]*style="[^"]*margin-left:0px;"[^>]*>(.*?)&lt;\/p>/g, "$1");
+    htmlString = htmlString.replace(/&lt;\/?[^>]+(>|$)/g, "");
+    htmlString = htmlString.replace(/&amp;nbsp;/g, " ");
+    return htmlString.trim();
+  };
+  let questionCounter = 0;
+  const totalQuestionsCount = testData &amp;&amp; testData?.testData?.[0]?.total_questions || "";
+  const renderGroup = ({ item, index: groupIndex }) => {
+    return (
+      &lt;View>
+        {item.heading &amp;&amp; (
+          &lt;>
+            &lt;Text
+              style={{
+                fontFamily: Fonts.InterSemiBold,
+                fontSize: 20,
+                color: Colorpath.ButtonColr,
+                marginBottom: normalize(4),
+                marginTop: normalize(5),
+                marginLeft: normalize(10),
+                fontWeight: '500',
+              }}
+            >
+              {item.heading}
+            &lt;/Text>
+            &lt;View
+              style={{
+                height: 1,
+                width: '90%',
+                backgroundColor: '#DDDDDD',
+                marginLeft: normalize(10),
+              }}
+            />
+          &lt;/>
+        )}
+        {item.questions.map((q, qIndex) => {
+          questionCounter += 1;
+          let currentGlobalIndex = 0;
+          for (let i = 0; i &lt; groupIndex; i++) {
+            currentGlobalIndex += allQuestions[i].questions.length;
+          }
+          currentGlobalIndex += qIndex + 1;
+          const isLastInGroup = qIndex === item.questions.length - 1;
+          const isLastInEntireData = currentGlobalIndex === totalQuestionsCount;
+          const isHeaderActive = !!item.heading;
+
+          return (
+            &lt;View key={q.question_id}>
+              {renderItem({
+                item: {
+                  ...q,
+                  questionNumber: questionCounter,
+                  isLastInGroup,
+                  isHeaderActive,
+                },
+              })}
+              {!isLastInEntireData &amp;&amp; (isLastInGroup || (!isHeaderActive &amp;&amp; !isLastInGroup)) &amp;&amp; (
+                &lt;View style={styles.groupSeparator}>
+                  {Array.from({ length: 34 }).map((_, idx) => (
+                    &lt;View key={idx} style={styles.dot} />
+                  ))}
+                &lt;/View>
+              )}
+            &lt;/View>
+          );
+        })}
+      &lt;/View>
+    );
+  };
+
+  const renderItem = ({ item, index }) => {
+    estimatedTime((item?.estimated_time || 0) * (item?.question_options?.length + 1 || 0));
+    const cleanStatement = cleanHTML(item?.statement);
+    return (
+      &lt;View style={styles.questionContainer}>
+        &lt;Text style={styles.questionText}>
+          {item?.mandatory == 1 ? (
+            &lt;>
+              &lt;Text style={{ color: 'red' }}>*&lt;/Text>
+              {`${item?.questionNumber}. ${cleanStatement}`}
+            &lt;/>
+          ) : (
+            `${item?.questionNumber}. ${cleanStatement}`
+          )}
+        &lt;/Text>
+
+        {item?.question_type_id_text === "Single Choice" ? (
+          item?.question_options?.map((option) => (
+            &lt;TouchableOpacity
+              onPress={() => handleOptionSelect(option.question_id, option.id)}
+              key={option.id}
+              style={styles.optionContainer}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+            >
+              &lt;CustomRadioButton
+                onPress={() => handleOptionSelect(option.question_id, option.id)}
+                selected={selectedOptions[option.question_id] === option.id}
+              />
+              &lt;Text style={styles.optionText}>
+                {cleanHTML(option?.statement)}
+              &lt;/Text>
+            &lt;/TouchableOpacity>
+          ))
+        ) : item?.question_type_id_text === "Multiple Choice" ? (
+          item?.question_options?.map((option) => (
+            &lt;TouchableOpacity
+              onPress={() => handleMultipleOptionSelect(option.question_id, option.id)}
+              key={option.id}
+              style={styles.optionContainer}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+            >
+              &lt;CustomCheckBox
+                selected={selectedOptions[option.question_id]?.includes(option.id)}
+                onPress={() => handleMultipleOptionSelect(option.question_id, option.id)}
+              />
+              &lt;Text style={styles.optionText}>
+                {cleanHTML(option?.statement)}
+              &lt;/Text>
+            &lt;/TouchableOpacity>
+          ))
+        ) : (
+          &lt;TextInput
+            style={styles.textArea}
+            multiline
+            value={selectedOptions[item?.question_id] || ''}
+            onChangeText={(text) => handleTextChange(item?.question_id, text)}
+            placeholder="Enter your answer"
+          />
+        )}
+      &lt;/View>
+    );
+  };
+  useEffect(() => {
+    const onBackPress = () => {
+      PrePress();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
+    return () => backHandler.remove();
+  }, []);
+  const [showLoader, setShowLoader] = useState(true);
+  useEffect(() => {
+    // Simulate 2-second loading time
+    const timeout = setTimeout(() => {
+      setShowLoader(false);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+  const allQuestions = useMemo(() => {
+    const questionGroups = testData?.testData?.[0]?.questions;
+
+    if (!questionGroups || typeof questionGroups !== 'object') return [];
+
+    return Object.entries(questionGroups).map(([heading, questions]) => ({
+      heading: heading == 'no_heading' ? null : heading,
+      questions: Array.isArray(questions) ? questions : [],
+    }));
+  }, [testData]);
+  const wholeTitle = useMemo(() => {
+    const title = CMEReducer?.startTestResponse?.testData?.[0]?.title;
+    const duplicateName = CMEReducer?.cmedulicateResponse?.conferenceName;
+    const nextName = CMEReducer?.nextactionagainResponse?.conferenceName;
+    
+    return title || duplicateName || nextName;
+  }, [
+    CMEReducer?.startTestResponse?.testData?.[0]?.title,
+    CMEReducer?.cmedulicateResponse?.conferenceName,
+    CMEReducer?.nextactionagainResponse?.conferenceName
+  ]);
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+
+  return (
+    shouldHidePreTestView ? null : (
+    &lt;>
+      &lt;MyStatusBar
+        barStyle={'light-content'}
+        backgroundColor={Colorpath.Pagebg}
+      />
+      &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
+        &lt;Loader
+          visible={CMEReducer?.status == 'CME/startTestRequest' || CMEReducer?.status == 'CME/evaulateexamRequest'} />
+        {Platform.OS === 'ios' ? (
+          &lt;PageHeader
+            title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
+            onBackPress={PrePress}
+            nol={"yes"}
+          />
+        ) : (
+          &lt;View>
+            &lt;PageHeader
+              title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
+              onBackPress={PrePress}
+              nol={"yes"}
+            />
+          &lt;/View>
+        )}
+        {conn == false ? &lt;IntOff /> : &lt;ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
+          &lt;View>
+            &lt;View style={styles.container}>
+              {showLoader ? &lt;ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : &lt;ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
+                &lt;View>
+                  &lt;View style={styles.headerRow}>
+                    &lt;View style={styles.headerContent}>
+                      &lt;Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text || CMEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}&lt;/Text>
+                      &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999" }}>{"Question"}&lt;/Text>
+                      &lt;View style={styles.scoreContainer}>
+                        &lt;Text style={styles.scoreText}>{lengthCheck}&lt;/Text>
+                        &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 24, color: "#999" }}>{"/"}&lt;/Text>
+                        &lt;Text style={styles.scoreText}>{`${""}${testData?.testData &amp;&amp; testData?.testData?.[0]?.total_questions || 0}`}&lt;/Text>
+                      &lt;/View>
+                    &lt;/View>
+                    {/* &lt;View style={styles.progressContainer}>
+                      &lt;ProgressBarCircle
+                        key={timeflex}
+                        duration={timeflex}
+                        size={65}
+                        strokeWidth={2}
+                        backgroundColor="#e0e0e0"
+                        fillColor={Colorpath.green}
+                      />
+                    &lt;/View> */}
+                  &lt;/View>
+                &lt;/View>
+              &lt;/ImageBackground>}
+
+            &lt;/View>
+          &lt;/View>
+          {allQuestions &amp;&amp; allQuestions?.length > 0 ? (
+            &lt;FlatList
+              data={allQuestions}
+              renderItem={renderGroup}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={showLoader ? &lt;ActivityIndicator size={"small"} color={Colorpath.green} /> :
+                &lt;Text
+                  style={{
+                    alignContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'center',
+                    color: Colorpath.grey,
+                    fontWeight: 'bold',
+                    fontFamily: Fonts.InterMedium,
+                    fontSize: normalize(20),
+                    paddingTop: normalize(30),
+                  }}>
+                  No data found
+                &lt;/Text>
+              }
+            />
+          ) : showLoader ? &lt;ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : (
+            &lt;Text style={{ padding: 20, textAlign: 'center' }}>Loading questions...&lt;/Text>
+          )}
+          &lt;View style={styles.buttonContainer}>
+            &lt;Buttons
+              onPress={() => {
+                allquestionHandle();
+                takeCoursepre();
+              }}
+              height={normalize(45)}
+              width={normalize(288)}
+              backgroundColor={isSubmitEnabled ? Colorpath.ButtonColr : Colorpath.grey}
+              borderRadius={normalize(5)}
+              text="Submit"
+              color={Colorpath.white}
+              fontSize={16}
+              fontFamily={Fonts.InterSemiBold}
+              marginTop={normalize(-15)}
+              disabled={!isSubmitEnabled}
+            />
+          &lt;/View>
+        &lt;/ScrollView>}
+      &lt;/SafeAreaView>
+    &lt;/>
+    )
+  );
+};
+
+const CustomRadioButton = ({ selected, onPress }) => (
+  &lt;TouchableOpacity onPress={onPress} style={{
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: selected ? Colorpath.green : '#000',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }} >
+    {selected ? (
+      &lt;View style={styles.radioButtonSelected} />
+    ) : (
+      &lt;View style={styles.radioButtonUnselected} />
+    )}
+  &lt;/TouchableOpacity>
+);
+
+const styles = StyleSheet.create({
+  questionContainer: {
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(10),
+    // borderBottomWidth: 1,
+    // borderBottomColor: "#DDDDDD",
+  },
+  questionContainer1: {
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    margin: 0,
+    marginBottom: 0,
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(10),
+
+  },
+  questionContainer2: {
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(10),
+    borderBottomWidth: 1,
+    borderBottomColor: "yellow",
+  },
+  questionText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 16,
+    color: "#000000",
+    // fontWeight: "bold",
+    marginBottom: normalize(5),
+  },
+  optionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: normalize(5),
+    paddingHorizontal: normalize(12),
+  },
+  optionText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#000000",
+    fontFamily: Fonts.InterRegular
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#DDDDDD",
+    marginTop: normalize(10),
+  },
+  headerContent: {
+    paddingVertical: normalize(5),
+    paddingHorizontal: normalize(5),
+  },
+  scoreContainer: {
+    flexDirection: "row",
+  },
+  scoreText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 24,
+    color: Colorpath.ButtonColr,
+  },
+  progressContainer: {
+    paddingVertical: normalize(5),
+  },
+  container: {
+    justifyContent: 'center',
+    alignSelf: 'center',
+    paddingVertical: normalize(0),
+  },
+  imageBackground: {
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(10),
+    width: normalize(330),
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  subText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 16,
+    color: '#000000',
+  },
+  radioButtonSelected: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: Colorpath.green,
+  },
+  radioButtonUnselected: {
+    height: 10,
+    width: 10,
+    backgroundColor: 'transparent',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    height: normalize(100),
+    bottom: -40,
+    left: 0,
+    right: 0,
+    backgroundColor: Colorpath.white,
+    borderColor: "#DDDDDD",
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: normalize(20),
+  },
+  textArea: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#fff',
+    marginTop: 10,
+    textAlignVertical: 'top'
+  },
+  groupSeparator: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(5)
+  },
+  dot: {
+    height: 1,
+    width: (Dimensions.get('window').width * 0.4 - 60) / 17,
+    backgroundColor: '#DDDDDD',
+  },
+});
+
+export default PreTest;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

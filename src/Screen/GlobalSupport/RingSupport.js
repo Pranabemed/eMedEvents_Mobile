@@ -9,6 +9,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import Colorpath from '../../Themes/Colorpath';
 
+/**
+ * Reusable Ring component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const SIZE = 100;
 const COLOR = Colorpath.ButtonColr;
 

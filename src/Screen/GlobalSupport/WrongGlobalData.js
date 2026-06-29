@@ -10,6 +10,14 @@ import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../../Navigator/StackNav';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable wrongRenderData component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const wrongRenderData = (title, data, onPressHandler, creditDataAll, nav, setPlaceholderIndex) => {
 
     return (

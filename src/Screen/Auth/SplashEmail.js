@@ -23,6 +23,14 @@ import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
+/**
+ * Reusable VerifyOTPEmail component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 // ─── Module-level OTP send guard ────────────────────────────────────────────
 // Stored OUTSIDE the component so it:
 //  • Survives React StrictMode's intentional unmount → remount cycle

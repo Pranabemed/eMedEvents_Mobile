@@ -5,6 +5,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
+
+/**
+ * Reusable CartFd component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CartFd = ({dataPayemnt, maindata, isVisible, setPaymentfdfreecart, content, navigation, name, setGocertificate, gocertificate }) => {
     return (
         <Modal

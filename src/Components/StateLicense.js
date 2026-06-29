@@ -34,6 +34,14 @@ import Buttons from './Button';
 import moment from 'moment';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 
+/**
+ * Reusable StateLicense component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const normalizeProfessionHandle = (professionHandle) =>
     String(professionHandle || '')
         .toLowerCase()

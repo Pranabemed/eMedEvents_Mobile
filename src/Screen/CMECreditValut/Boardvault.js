@@ -7,6 +7,14 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import Boardvaultcomponent from './Boardvaultcomponent';
 import { boardvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import moment from 'moment';
+
+/**
+ * Reusable Boardvault component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const Boardvault = ({takeID, isfocused,
     navigation,

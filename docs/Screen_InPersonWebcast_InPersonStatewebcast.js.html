@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/InPersonWebcast/InPersonStatewebcast.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/InPersonWebcast/InPersonStatewebcast.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler } from 'react-native'
+import React, { useEffect, useLayoutEffect, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MyStatusBar from '../../Utils/MyStatusBar'
+import Colorpath from '../../Themes/Colorpath'
+import Buttons from '../../Components/Button'
+import Fonts from '../../Themes/Fonts'
+import normalize from '../../Utils/Helpers/Dimen';
+import Modal from 'react-native-modal';
+import IconDot from 'react-native-vector-icons/Entypo';
+import Imagepath from '../../Themes/Imagepath'
+import showErrorAlert from '../../Utils/Helpers/Toast'
+import { saveTicketInpersonRequest } from '../../Redux/Reducers/WebcastReducer'
+import { useDispatch, useSelector } from 'react-redux'
+import connectionrequest from '../../Utils/Helpers/NetInfo'
+import Loader from '../../Utils/Helpers/Loader'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useIsFocused } from '@react-navigation/native';
+
+/**
+ * Reusable InPersonStatewebcast component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+let status1 = "";
+const InPersonStatewebcast = (props) => {
+    function cutomPrice(price) {
+        let num = parseFloat(price);
+        if (isNaN(num)) {
+            return price;
+        }
+        let truncated = Math.floor(num * 100) / 100;
+
+        return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
+    }
+    console.log(props?.route?.params?.realData?.ticketall, "props===============");
+    const dispatch = useDispatch();
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+    console.log(WebcastReducer, "WebcastReducer")
+    const isFocused = useIsFocused();
+    const [isfilterVisible, setIssfilterVisible] = useState(false);
+    const [finalamount, setFinalamount] = useState("");
+    const [inpersonticket, setInpersonticket] = useState(null)
+    const [modalHeight, setModalHeight] = useState(300);
+    const subtotalAmount = parseFloat(finalamount || "0") || 0;
+    const listBottomPadding = normalize(150);
+    useEffect(() => {
+        if (isFocused &amp;&amp; props?.route?.params?.realData?.realData) {
+            setIssfilterVisible(true);
+        }
+    }, [isFocused, props?.route?.params?.realData?.realData])
+    useEffect(() => {
+        const registrationTickets = props?.route?.params?.realData?.ticketall || [];
+        const baseHeight = 400;
+        const heightPerTicket = 300;
+        const calculatedHeight = registrationTickets.length > 0
+            ? baseHeight + (registrationTickets.length - 1) * heightPerTicket
+            : baseHeight;
+
+        setModalHeight(calculatedHeight);
+    }, [props?.route?.params?.realData?.registrationTickets, isfilterVisible]);
+
+    const { ticketall } = props?.route?.params?.realData || { ticketall: [] };
+    const isFreeSingleTicketFlow =
+        props?.route?.params?.realData?.freeSingleTicket === true ||
+        (Array.isArray(ticketall) &amp;&amp;
+            ticketall.length > 0 &amp;&amp;
+            ticketall.every(ticket => Number(ticket?.itemamt || 0) === 0));
+    console.log(ticketall, "ticketall-----------")
+    const inPersonSaveTicket = async () => {
+        if (clickHistory?.length > 0) {
+            console.log("Hello", clickHistory)
+            const checkoutSpan = props?.route?.params?.realData?.realData?.conferenceId;
+            let obj = {
+                "conference_id": checkoutSpan,
+                "tickets": props?.route?.params?.realData?.ticketall
+                    ?.map((ticket, index) => ({
+                        "id": ticket?.ticket_id,
+                        "quantity": clickHistory ? clickHistory[index]?.length : clickHistory[index]?.length
+                    }))
+                    ?.filter(ticket => ticket.quantity >= 1) // Ensure tickets with quantity >= 1 are added
+            };
+
+            // Include refer_params if RefID was captured from a deep link
+            try {
+                const storedRefID = await AsyncStorage.getItem('REFID');
+                if (storedRefID) {
+                    obj["refer_params"] = storedRefID;
+                }
+            } catch (e) {
+                console.log('[inPersonSaveTicket] Error reading RefID:', e);
+            }
+
+            connectionrequest()
+                .then(() => {
+                    dispatch(saveTicketInpersonRequest(obj));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err);
+                });
+        }
+    };
+
+    const [clickHistory, setClickHistory] = useState(() =>
+        (ticketall || []).map((ticket, index) => (
+            isFreeSingleTicketFlow &amp;&amp; index === 0 ? [1] : []
+        ))
+    );
+    const [totalAmounts, setTotalAmounts] = useState(() =>
+        (ticketall || []).map((ticket, index) => (
+            isFreeSingleTicketFlow &amp;&amp; index === 0
+                ? Number(ticket?.amount || ticket?.itemamt || 0)
+                : []
+        ))
+    );
+    const [totalQuantity, setTotalQuantity] = useState(0); // New state for total quantity
+    useEffect(() => {
+        if (!Array.isArray(ticketall)) return;
+
+        if (isFreeSingleTicketFlow) {
+            setClickHistory(ticketall.map((ticket, index) => (index === 0 ? [1] : [])));
+            setTotalAmounts(
+                ticketall.map((ticket, index) => (
+                    index === 0 ? Number(ticket?.amount || ticket?.itemamt || 0) : []
+                ))
+            );
+            return;
+        }
+
+        setClickHistory(Array(ticketall.length).fill([]));
+        setTotalAmounts(Array(ticketall.length).fill([]));
+    }, [isFreeSingleTicketFlow, ticketall]);
+    useEffect(() => {
+        const totalPerIndex = clickHistory.map((quantity, index) => quantity);
+        const totalLength = totalPerIndex.reduce((acc, curr) => acc + curr.length, 0);
+        setTotalQuantity(totalLength);
+        console.log(totalLength); // Map each quantity for every index
+    }, [clickHistory]);
+
+    const handleIncrement = (index, item) => {
+        console.log(ticketall, "totalQuantity========")
+        if (!ticketall[index]) {
+            console.log(`No ticket found for index ${index}`);
+            return;
+        }
+
+        const maxTickets = isFreeSingleTicketFlow ? 1 : 10;
+        const currentClickHistory = clickHistory[index];
+
+        if (isFreeSingleTicketFlow) {
+            return;
+        }
+
+        if (currentClickHistory.length >= maxTickets) {
+            console.log(`Cannot exceed the maximum limit of ${maxTickets} clicks for index ${index}.`);
+            return;
+        }
+
+        setClickHistory((prevHistory) => {
+            const newHistory = [...prevHistory];
+            newHistory[index] = [...newHistory[index], currentClickHistory.length + 1];
+            console.log(`Updated click history for index ${index}:`, newHistory[index]);
+            return newHistory;
+        });
+
+        // Update total amounts
+        setTotalAmounts((prevTotals) => {
+            const newTotals = [...prevTotals];
+            const newTotal = (item?.amount || 0) * (currentClickHistory.length + 1);
+            newTotals[index] = newTotal; // Update total for the current index
+            return newTotals;
+        });
+    };
+
+    const handleDecrement = (index, item) => {
+        setClickHistory((prevHistory) => {
+            const currentClickHistory = prevHistory[index];
+            if (currentClickHistory.length === 0) return prevHistory;
+
+            const newHistory = [...prevHistory];
+            newHistory[index] = currentClickHistory.slice(0, -1);
+            return newHistory;
+        });
+
+        // Update total amounts
+        setTotalAmounts((prevTotals) => {
+            const newTotals = [...prevTotals];
+            const currentClickHistory = clickHistory[index];
+            if (currentClickHistory.length > 0) {
+                const newTotal = (item?.amount || 0) * (currentClickHistory.length - 1);
+                newTotals[index] = newTotal; // Update total for the current index
+            } else {
+                newTotals[index] = 0; // Reset to 0 if no clicks
+            }
+            return newTotals;
+        });
+    };
+
+    console.log(totalAmounts, "Total Amounts=====", clickHistory);
+    const formatNumberWithCommas = (value) => {
+        if (value == null || value == undefined) return '';
+        const stringValue = value.toString().replace(/,/g, '');
+        const parts = stringValue.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+    };
+    const cleanTicketName = (value) => {
+        if (!value) return "";
+        return String(value)
+            .replace(/&lt;[^>]*>/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+    };
+    const stateDataFilter = ({ item, index }) => {
+        const minTickets = 0;
+        const maxTickets = isFreeSingleTicketFlow ? 1 : 10;
+        const clickCount = clickHistory[index]?.length || 0;
+        const disableIncrement = isFreeSingleTicketFlow || clickCount >= maxTickets;
+        const disableDecrement = isFreeSingleTicketFlow || clickCount &lt;= minTickets;
+        return (
+            &lt;>
+
+
+                &lt;View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: normalize(10) }}>
+                    &lt;View
+                        style={{
+                            flexDirection: 'column',
+                            width: normalize(290),
+                            borderRadius: normalize(10),
+                            backgroundColor: '#FFFFFF',
+                            paddingHorizontal: normalize(10),
+                            paddingVertical: normalize(10),
+                            alignItems: 'flex-start',
+                            borderWidth: 0.5,
+                            borderColor: '#DDDDDD',
+                        }}
+                    >
+                        &lt;View style={{ flex: 1 }}>
+                            &lt;View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                &lt;Text
+                                    style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 18,
+                                        color: '#000000',
+                                        fontWeight: 'bold',
+                                        flex: 1,
+                                        flexWrap: 'wrap',
+                                    }}
+                                >
+                                    {cleanTicketName(item?.ticket_name)}
+                                &lt;/Text>
+                            &lt;/View>
+
+                            {item?.key_value ? &lt;View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(5), alignSelf: 'flex-start' }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: '#333' }}>{item?.key_value}&lt;/Text>
+                            &lt;/View> : null}
+
+                            {/* {item?.enddate ? &lt;View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(0), alignSelf: 'flex-start' }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: '#333' }}>
+                                    {`Last Day: ${item?.enddate}`}
+                                &lt;/Text>
+                            &lt;/View>:null} */}
+
+                            &lt;View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: normalize(10), width: '100%' }}>
+                                {+(item?.itemamt) == 0 ? (
+                                    &lt;View style={{ flexDirection: 'column' }}>
+                                        &lt;View style={{ paddingVertical: normalize(5), paddingHorizontal: normalize(2) }}>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 18,
+                                                    color: '#000000',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
+                                                {"Free"}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                    &lt;/View>
+                                ) : (
+                                    &lt;View style={{ flexDirection: 'column' }}>
+                                        &lt;View style={{ paddingVertical: normalize(5) }}>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 18,
+                                                    color: '#000000',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
+                                                {`US$${formatNumberWithCommas(cutomPrice(item?.itemamt))}`}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                    &lt;/View>
+                                )}
+
+                                &lt;View style={{ flexDirection: 'row', alignSelf: 'center' }}>
+                                    {/* Decrement */}
+                                    &lt;TouchableOpacity
+                                        onPress={() => handleDecrement(index, item)}
+                                        disabled={disableDecrement} // Disable if count is at or below minTickets
+                                    >
+                                        &lt;Image
+                                            source={Imagepath.MinusImg}
+                                            style={{
+                                                height: normalize(30),
+                                                width: normalize(30),
+                                                resizeMode: 'contain',
+                                                tintColor: !disableDecrement ? '#666666' : '#cccccc', // Disable color logic
+                                            }}
+                                        />
+                                    &lt;/TouchableOpacity>
+
+                                    {/* Display Quantity */}
+                                    &lt;View style={{ alignItems: 'center', justifyContent: 'center', marginHorizontal: normalize(10) }}>
+                                        &lt;Text
+                                            style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 24,
+                                                color: '#000000',
+                                            }}
+                                        >
+                                            {clickCount}
+                                        &lt;/Text>
+                                    &lt;/View>
+
+                                    &lt;TouchableOpacity
+                                        onPress={() => handleIncrement(index, item)}
+                                        disabled={disableIncrement}
+                                    >
+                                        &lt;Image
+                                            source={Imagepath.PlusImg}
+                                            style={{
+                                                height: normalize(30),
+                                                width: normalize(30),
+                                                resizeMode: 'contain',
+                                                tintColor: !disableIncrement ? '#666666' : '#cccccc',
+                                            }}
+                                        />
+                                    &lt;/TouchableOpacity>
+                                &lt;/View>
+                            &lt;/View>
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/View>
+            &lt;/>
+        );
+    };
+    useEffect(() => {
+        if (totalAmounts) {
+            const totalSum = totalAmounts?.reduce((acc, curr) => {
+                return acc + (Array.isArray(curr) ? 0 : curr); // Sum only numeric values
+            }, 0);
+            setFinalamount(totalSum);
+        }
+    }, [totalAmounts])
+    if (status1 == '' || WebcastReducer.status != status1) {
+        switch (WebcastReducer.status) {
+            case 'WebCast/saveTicketInpersonRequest':
+                status1 = WebcastReducer.status;
+                break;
+            case 'WebCast/saveTicketInpersonSuccess':
+                status1 = WebcastReducer.status;
+                setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
+                if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
+                    setIssfilterVisible(false);
+                    props.navigation.navigate("Checkout", {
+                        inPersonTicket: {
+                            inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
+                            inpersonSpanrole: props?.route?.params?.realData?.realData,
+                            guestOrigin: props?.route?.params?.realData?.guestOrigin,
+                            subtotalAmount: subtotalAmount,
+                            processingFeeAmount: 0,
+                            totalTicketPrice: subtotalAmount
+                        }
+                    });
+                    // props.navigation.navigate("Checkout",  { checkoutSpan: { checkoutSpan: props?.route?.params?.realData, finalTicket: WebcastReducer?.saveTicketInpersonResponse }});
+                }
+                console.log("saveTicketfollowed>>>>", WebcastReducer?.saveTicketInpersonResponse);
+                break;
+            case 'WebCast/saveTicketInpersonFailure':
+                status1 = WebcastReducer.status;
+                break;
+        }
+    }
+    const backPressIn = () => {
+        props.navigation.goBack();
+        setIssfilterVisible(false);
+    }
+    useEffect(() => {
+        const onBackPress = () => {
+            backPressIn();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+    return (
+        &lt;>
+            &lt;MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
+                &lt;Loader visible={WebcastReducer?.status == 'WebCast/saveTicketInpersonRequest'} />
+                &lt;Modal
+                    animationIn={'slideInUp'}
+                    animationOut={'slideOutDown'}
+                    backdropTransitionOutTiming={0}
+                    hideModalContentWhileAnimating={true}
+                    isVisible={isfilterVisible}
+                    style={{ width: '100%', alignSelf: 'center', margin: 0, justifyContent: 'flex-end' }}
+                    animationInTiming={800}
+                    animationOutTiming={1000}
+                    onBackdropPress={() => {
+                        props.navigation.goBack();
+                        setIssfilterVisible(false);
+                    }}
+                >
+                    &lt;View style={{
+                        backgroundColor: Colorpath.white, borderTopRightRadius: normalize(20),
+                        borderTopLeftRadius: normalize(20), bottom: 0, height: normalize(470)
+                    }}>
+                        &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
+                            &lt;View style={styles.modalIndicator} />
+                        &lt;/View>
+                        &lt;View>
+                            {/* &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}> */}
+                            &lt;View style={styles.container}>
+                                &lt;FlatList
+                                    data={props?.route?.params?.realData?.ticketall}
+                                    renderItem={stateDataFilter}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    contentContainerStyle={{ paddingBottom: listBottomPadding }}
+                                />
+                            &lt;/View>
+                            {/* &lt;/ScrollView> */}
+                        &lt;/View>
+                        &lt;View style={{
+                            position: 'absolute',
+                            height: normalize(108),
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            backgroundColor: Colorpath.white,
+                            borderColor: "#DDDDDD",
+                            borderWidth: 1,
+                            paddingHorizontal: normalize(16),
+                            paddingTop: normalize(14),
+                            paddingBottom: normalize(16),
+                        }}>
+                            &lt;View style={{ flex: 1 }}>
+                                &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
+                                        {`${totalQuantity} Tickets Selected`}
+                                    &lt;/Text>
+                                    &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
+                                        {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
+                                    &lt;/Text>
+                                &lt;/View>
+                                &lt;View style={{ marginTop: normalize(10), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
+                                &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10) }}>
+                                    &lt;View>
+                                        &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: '#333' }}>
+                                            {"Total"}
+                                        &lt;/Text>
+                                        &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#333' }}>
+                                            {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                    &lt;Buttons
+                                        onPress={() => {
+                                            setIssfilterVisible(false);
+                                            inPersonSaveTicket();
+                                        }}
+                                        height={normalize(48)}
+                                        width={normalize(150)}
+                                        backgroundColor={clickHistory?.some(arr => arr.length > 0) ? Colorpath.ButtonColr : "#DADADA"}
+                                        borderRadius={normalize(5)}
+                                        text="Checkout"
+                                        color={Colorpath.white}
+                                        fontSize={16}
+                                        fontFamily={Fonts.InterSemiBold}
+                                        disabled={clickHistory?.some(arr => arr.length > 0) ? false : true}
+                                    />
+                                &lt;/View>
+                            &lt;/View>
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/Modal>
+            &lt;/SafeAreaView>
+        &lt;/>
+    )
+}
+
+export default InPersonStatewebcast
+
+const styles = StyleSheet.create({
+    container: {
+        paddingVertical: normalize(10),
+        paddingHorizontal: normalize(10),
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignContent: "space-between",
+    },
+    buttonContainer: {
+        flexDirection: "row",
+        paddingHorizontal: normalize(20),
+        paddingVertical: normalize(5),
+    },
+    modalView: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTopRightRadius: normalize(20),
+        borderTopLeftRadius: normalize(20),
+        paddingVertical: normalize(10),
+    },
+    modalIndicator: {
+        height: 5,
+        width: normalize(100),
+        backgroundColor: "#DDDDDD",
+        borderRadius: normalize(10),
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: normalize(5),
+    },
+    image: {
+        height: normalize(20),
+        width: normalize(20),
+        resizeMode: 'contain',
+    },
+    title: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 18,
+        color: Colorpath.ButtonColr,
+        marginLeft: normalize(5),
+    },
+    description: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: "#000000",
+        lineHeight: 20,
+    }
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

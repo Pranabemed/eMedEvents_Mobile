@@ -6,6 +6,14 @@ import Colorpath from '../Themes/Colorpath';
 import Pdf from 'react-native-pdf';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
+
+/**
+ * Reusable FlipbookComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const FlipbookComponent = ({ link, path }) => {
     const [loadingdown, setLoadingdown] = useState(false);
     const [pdfUri, setPdfUri] = useState(null);

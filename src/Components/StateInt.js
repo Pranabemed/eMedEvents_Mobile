@@ -20,6 +20,14 @@ import NetInfo from '@react-native-community/netinfo';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
+
+/**
+ * Reusable StateIntData component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 export default function StateIntData({ setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const dispatch = useDispatch();
     const {

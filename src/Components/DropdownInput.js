@@ -14,6 +14,14 @@ import DropdownIcon from 'react-native-vector-icons/MaterialIcons';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
 import Fonts from '../Themes/Fonts';
 
+/**
+ * Reusable onChangeText component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const DropdownInput = forwardRef((props, ref) => {
   console.log(props,"props-----------")
   const [textValue, setTextValue] = useState(props.value || '');

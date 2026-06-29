@@ -6,6 +6,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import PageHeader from '../../Components/PageHeader';
 import { CommonActions } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable GlobalSearch component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const GlobalSearch = (props) => {
     const SearchBack =()=>{
         props.navigation.dispatch(

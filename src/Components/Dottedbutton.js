@@ -2,6 +2,14 @@ import React from 'react';
 import { Dimensions } from "react-native";
 import Svg, { G, Rect } from "react-native-svg";
 
+/**
+ * Reusable DottedButton component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const DottedButton = () => {
   const { width } = Dimensions.get("screen");
   const spacing = 16;

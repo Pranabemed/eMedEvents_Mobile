@@ -7,6 +7,14 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
 import Imagepath from '../../Themes/Imagepath';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable FullscreenMapScreen component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const FullscreenMapScreen = (props) => {
     const { latitude, longitude } = props?.route?.params?.takeMap?.takeMap;
 

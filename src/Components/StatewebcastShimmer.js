@@ -3,6 +3,14 @@ import React from 'react';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import normalize from '../Utils/Helpers/Dimen';
 
+/**
+ * Reusable StatewebcastShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const { width: windowWidth } = Dimensions.get('window');
 
 const StatewebcastShimmer = () => {

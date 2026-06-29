@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Specialization/AllSpecial.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Specialization/AllSpecial.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler } from 'react-native';
+import Colorpath from '../../Themes/Colorpath';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Fonts from '../../Themes/Fonts';
+import normalize from '../../Utils/Helpers/Dimen';
+import Buttons from '../../Components/Button';
+import { licesensRequest, professionRequest, signupRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import { useIsFocused } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import Loader from '../../Utils/Helpers/Loader';
+import SepcialityComponent from './SepcialityComponent';
+import DropdownInput from '../../Components/DropdownInput';
+import { styles } from './SpecialStyle';
+import ProfessionComponent from './ProfessionComponent';
+import PraticingStateComponent from './PraticingStateComponent';
+import Imagepath from '../../Themes/Imagepath';
+import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
+import CustomInputTouchable from '../../Components/IconTextIn';
+import DropdownIcon from 'react-native-vector-icons/Entypo';
+import InputField from '../../Components/CellInput';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+
+/**
+ * Reusable AllSpecial component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+let status = "";
+const professionalTypes = [
+    { id: 1, label: 'MD', name: "Physician - MD" },
+    { id: 2, label: 'DO', name: "Physician - DO" },
+    { id: 3, label: 'DPM', name: "Physician - DPM" },
+    { id: 4, label: 'APRN', name: "Nursing - APRN" },
+    { id: 5, label: 'RN', name: "Nursing - RN" },
+    { id: 6, label: 'LPN', name: "Nursing - LPN" },
+    { id: 7, label: 'CNA', name: "Nursing - CNA" },
+    { id: 8, label: 'RDA', name: "Dentist - RDA" },
+    { id: 9, label: 'RDH', name: "Dentist - RDH" },
+    { id: 10, label: 'DDS', name: "Dentist - DDS" },
+    { id: 11, label: 'PharmD', name: "Pharmacist - Pharmacist" },
+    { id: 12, label: 'Other' },
+];
+const nonUsaProfessionalTypes = [
+    { id: 1, label: 'Physician', name: 'Physician' },
+    { id: 2, label: 'Nursing', name: 'Nursing' },
+    { id: 3, label: 'Dentist', name: 'Dentist' },
+    { id: 4, label: 'Other', name: 'Other' },
+];
+const AllSpecial = (props) => {
+    console.log(props?.route?.params?.Alldata, "props=====")
+    const isNonUsaUser = Boolean(props?.route?.params?.Alldata?.isNonUsaUser || props?.route?.params?.isNonUsaUser);
+    const [selectedId, setSelectedId] = useState(null);
+    const [clist, setClist] = useState('');
+    const [selectCountry, setSelectCountry] = useState([]);
+    const [searchtext, setSearchtext] = useState(false);
+    const [country, setCountry] = useState('');
+    const [countrypicker, setcountrypicker] = useState(false);
+    const [slist, setSlist] = useState('');
+    const [selectState, setSelectState] = useState([]);
+    const [statelist, setStatelist] = useState([]);
+    const [searchState, setSearchState] = useState('');
+    const [statepicker, setstatepicker] = useState(false);
+    const [state, setState] = useState('');
+    const [specialid, setSpecailid] = useState([]);
+    const [label, setLabel] = useState("");
+    const [pratice, setPratice] = useState(false);
+    const [searchpratice, setSearchpratice] = useState('');
+    const [slistpratice, setSlistpratice] = useState('');
+    const [specialidpratice, setSpecailidpratice] = useState("");
+    const [statepratice, setStatepratice] = useState('');
+    const [statelistpratice, setStatelistpratice] = useState([]);
+    const [selectStatepratice, setSelectStatepratice] = useState([]);
+    const [countryId, setCountryId] = useState("1")
+    const [otherProfessionValue, setOtherProfessionValue] = useState('');
+    const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState('');
+    const dispatch = useDispatch();
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const animatedValuespass = useRef(new Animated.Value(1)).current;
+    const scaleValuesespass = useRef(new Animated.Value(0)).current;
+    const animatedValuesprof = useRef(new Animated.Value(1)).current;
+    const scaleValuesesprof = useRef(new Animated.Value(0)).current;
+    const animatedValuestate = useRef(new Animated.Value(1)).current;
+    const scaleValuesestate = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const onBackPress = () => {
+            if (props.navigation.canGoBack()) {
+                props.navigation.goBack();
+            } else {
+                props.navigation.navigate('SignUp', {
+                    phoneCd: { phoneCd: props?.route?.params?.Alldata?.countryCode || '' },
+                    isNonUsaUser,
+                });
+            }
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => backHandler.remove();
+    }, [isNonUsaUser, props.navigation, props?.route?.params?.Alldata?.countryCode]);
+    const handlePress = (all) => {
+        const professionName = all?.name || all?.label || '';
+        licData(professionName)
+        setSelectedId(all?.id);
+        setLabel(professionName);
+        setSelectedProfessionalGroup(professionName);
+        setOtherProfessionValue('');
+        specaillized(professionName?.split(' - ')?.[0]);
+    };
+
+    useEffect(() => {
+        const targetScaleprof = state ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuespass, {
+                toValue: state ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesespass, {
+                toValue: targetScaleprof,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [state]);
+    useEffect(() => {
+        const targetScale = country ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesprof, {
+                toValue: country ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesprof, {
+                toValue: targetScale,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [country]);
+    useEffect(() => {
+        const targetScalesp = statepratice ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuestate, {
+                toValue: statepratice ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesestate, {
+                toValue: targetScalesp,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [statepratice]);
+    console.log(label, "md========")
+    const groupedData = isNonUsaUser
+        ? [
+            nonUsaProfessionalTypes.slice(0, 3),
+            nonUsaProfessionalTypes.slice(3)
+          ]
+        : [
+            professionalTypes.slice(0, 4),
+            professionalTypes.slice(4, 8),
+            professionalTypes.slice(8)
+        ];
+    const isfocused = useIsFocused();
+    const searchCountryName = text => {
+        console.log(text, 'text12333');
+        if (text) {
+            const listData = selectCountry?.filter(function (item) {
+                // console.log('item+++++++++++++++++++1111', item);
+                const itemData = item
+                    ? item?.toUpperCase()
+                    : ''.toUpperCase();
+                const textData = text.trim().toUpperCase();
+                const filteredData = itemData.indexOf(textData) > -1;
+                // console.log('filteredData', filteredData);
+                return filteredData;
+            });
+            setClist(listData);
+            setSearchtext(text);
+        } else {
+            setClist(selectCountry);
+            setSearchtext(text);
+        }
+    };
+    const searchStateName = text => {
+        console.log(text, 'text12333');
+        if (text) {
+            const stateListData = selectState?.filter(function (item) {
+                // console.log('item+++++++++++++++++++state', item);
+                const itemData = item?.name
+                    ? item?.name.toUpperCase() + item?.name.toUpperCase()
+                    : ''.toUpperCase();
+                const textData = text.trim().toUpperCase();
+                const filteredData = itemData.indexOf(textData) > -1;
+                // console.log('filteredDataState', filteredData);
+                return filteredData;
+            });
+            setSlist(stateListData);
+            setSearchState(text);
+        } else {
+            setSlist(selectState);
+            setSearchState(text);
+        }
+    };
+    const searchStateNamePratice = text => {
+        console.log(text, 'text12333');
+        if (text) {
+            const praticeState = selectStatepratice?.filter(function (item) {
+                // console.log('item+++++++++++++++++++state', item);
+                const itemData = item?.state_name
+                    ? item?.state_name.toUpperCase() + item?.state_name.toUpperCase()
+                    : ''.toUpperCase();
+                const textDataPratice = text.trim().toUpperCase();
+                const praticeStateFiltered = itemData.indexOf(textDataPratice) > -1;
+                // console.log('praticeStateFilteredState', praticeStateFiltered);
+                return praticeStateFiltered;
+            });
+            setSlistpratice(praticeState);
+            setSearchpratice(text);
+        } else {
+            setSlistpratice(selectStatepratice);
+            setSearchpratice(text);
+        }
+    };
+    useEffect(() => {
+        connectionrequest()
+            .then(() => {
+                dispatch(professionRequest(isNonUsaUser ? { other_country: 1 } : {}));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to Internet');
+            });
+    }, [isfocused, isNonUsaUser]);
+    const specaillized = (data) => {
+        const obj = data
+        connectionrequest()
+            .then(() => {
+                dispatch(specializationRequest(obj));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to Internet');
+            });
+    }
+    // const PraticingState = () => {
+    //     connectionrequest()
+    //         .then(() => {
+    //             dispatch(stateRequest(countryId));
+    //         })
+    //         .catch(err => {
+    //             // console.log(err);
+    //             showErrorAlert('Please connect to Internet', err);
+    //         });
+    // }
+    const handleStateSelect = (item) => {
+        console.log("Hello=======", item);
+        setState(item?.name);
+        setSpecailid(item.id)
+        setstatepicker(false);
+        // PraticingState();
+    };
+    const handleProfession = (did) => {
+        console.log("Hello=======did", did);
+        licData(did);
+        setLabel(did);
+        setCountry(did);
+        if (isNonUsaUser &amp;&amp; selectedId === 4) {
+            setOtherProfessionValue(did);
+        } else {
+            setSelectedProfessionalGroup(did);
+            setOtherProfessionValue('');
+        }
+        setcountrypicker(false);
+        specaillized(did?.split(' - ')[0])
+    }
+    const handlePratcing = (draw) => {
+        setStatepratice(draw?.state_name);
+        setSpecailidpratice(draw?.id)
+        setPratice(false);
+    }
+    const professionValueForNonUsa = () => (
+        selectedProfessionalGroup === 'Other'
+            ? otherProfessionValue.trim()
+            : selectedProfessionalGroup || label || country
+    );
+    console.log(selectedId ? selectedId === 12 : undefined, "heloo -------", country,statelist?.length);
+     const formatPhoneNumber = (input) => {
+    const cleaned = input.replace(/\D/g, '').slice(0, 10);
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+
+    if (match) {
+      let formatted = '';
+      if (match[1]) formatted = `(${match[1]}`;
+      if (match[2]) formatted += `) ${match[2]}`;
+      if (match[3]) formatted += `-${match[3]}`;
+      return formatted;
+    }
+    return input;
+  };
+    console.log("statepicker====", statepicker, country)
+    const signupHandle = () => {
+        const professionValue = isNonUsaUser
+            ? (selectedProfessionalGroup === 'Other' ? otherProfessionValue.trim() : selectedProfessionalGroup || label || country)
+            : (selectedId === 12 ? country : label);
+        if (isNonUsaUser) {
+            if (!selectedProfessionalGroup) {
+                showErrorAlert("Select Your Profession");
+                return;
+            }
+            if (selectedProfessionalGroup === 'Other' &amp;&amp; !otherProfessionValue.trim()) {
+                showErrorAlert("Enter your profession");
+                return;
+            }
+            if (!state) {
+                showErrorAlert("Choose Your Specialty");
+                return;
+            }
+        } else {
+            if (!selectedId &amp;&amp; !country) {
+                showErrorAlert("Select Your Profession")
+                return;
+            } else if (!country &amp;&amp; selectedId === 12) {
+                showErrorAlert("Select Your Profession")
+                return;
+            } else if (!state) {
+                showErrorAlert("Choose Your Specialty")
+                return;
+            } else if (!statepratice &amp;&amp; statelistpratice?.length > 0) {
+                showErrorAlert("Select Your State of Practice")
+                return;
+            }
+        }
+        {
+            let finalFormattedPhone = "";
+            if (!isNonUsaUser &amp;&amp; props?.route?.params?.Alldata?.countryCode == "+1" &amp;&amp; props?.route?.params?.Alldata?.phone) {
+                const finalCont = formatPhoneNumber(props?.route?.params?.Alldata?.phone);
+                finalFormattedPhone = finalCont || "";
+                console.log(finalFormattedPhone,"finalFormattedPhone++++++++")
+            }
+            let obj = isNonUsaUser ? {
+                "first_name": props?.route?.params?.Alldata?.first_name,
+                "last_name": props?.route?.params?.Alldata?.last_name,
+                "email": props?.route?.params?.Alldata?.email,
+                "password": props?.route?.params?.Alldata?.password,
+                "role": 4,
+                "state_id": "",
+                "profession": professionValue,
+                "npi_number": "",
+                "specialities": [specialid],
+                "signup_usa": false,
+                "is_mobile": 0,
+                "accept_updates": 1
+            } : finalFormattedPhone ? {
+                "first_name": props?.route?.params?.Alldata?.first_name,
+                "last_name": props?.route?.params?.Alldata?.last_name,
+                "email": props?.route?.params?.Alldata?.email,
+                "password": props?.route?.params?.Alldata?.password,
+                "phone": `+1${finalFormattedPhone}`,
+                "role": 4,
+                "state_id": specialidpratice,
+                "profession": selectedId === 12 ? country : label,
+                "npi_number": "",
+                "specialities": [specialid],
+                "signup_usa": true,
+                "accept_updates": 1,
+                "is_mobile": 1
+            } :
+                {
+                    "first_name": props?.route?.params?.Alldata?.first_name,
+                    "last_name": props?.route?.params?.Alldata?.last_name,
+                    "email": props?.route?.params?.Alldata?.email,
+                    "password": props?.route?.params?.Alldata?.password,
+                    "phone": `${props?.route?.params?.Alldata?.countryCode}${props?.route?.params?.Alldata?.phone}`,
+                    "role": 4,
+                    "state_id": specialidpratice || "",
+                    "profession": selectedId === 12 ? country : label,
+                    "npi_number": "",
+                    "specialities": [specialid],
+                    "signup_usa": true,
+                    "is_mobile": 1
+                }
+            console.log(obj, "sign up obj ===========")
+            connectionrequest()
+                .then(() => {
+                    dispatch(signupRequest(obj))
+                })
+                .catch(err => {
+                    showErrorAlert("Please connect to internet", err)
+                })
+        }
+    }
+
+    useEffect(() => {
+        if (state) {
+            setSearchState("");
+        }
+    }, [state])
+    useEffect(() => {
+        if (!searchState &amp;&amp; AuthReducer?.specializationResponse?.specialities) {
+            setSlist(AuthReducer?.specializationResponse?.specialities)
+        }
+    }, [searchState])
+    useEffect(() => {
+        if (country) {
+            setSearchtext("");
+        }
+    }, [country])
+    useEffect(() => {
+        if (!searchtext &amp;&amp; AuthReducer?.professionResponse?.profession_credentials) {
+            setClist(AuthReducer?.professionResponse?.profession_credentials);
+        }
+    }, [searchtext])
+    useEffect(() => {
+        if (statepratice) {
+            setSearchpratice("");
+        }
+    }, [statepratice])
+    useEffect(() => {
+        if (!searchpratice &amp;&amp; AuthReducer?.stateResponse?.states) {
+            setSlistpratice(AuthReducer?.stateResponse?.states);
+        }
+    }, [searchpratice])
+    const licData = (hill) => {
+        const obj = hill || country;
+        connectionrequest()
+            .then(() => {
+                dispatch(licesensRequest(obj));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to Internet');
+            });
+    }
+    if (status == '' || AuthReducer.status != status) {
+        switch (AuthReducer.status) {
+            case 'Auth/professionRequest':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/professionSuccess':
+                status = AuthReducer.status;
+                setSelectCountry(AuthReducer?.professionResponse?.profession_credentials);
+                setClist(AuthReducer?.professionResponse?.profession_credentials);
+                break;
+            case 'Auth/professionFailure':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/specializationRequest':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/specializationSuccess':
+                status = AuthReducer.status;
+                setStatelist(AuthReducer?.specializationResponse?.specialities);
+                setSelectState(AuthReducer?.specializationResponse?.specialities);
+                setSlist(AuthReducer?.specializationResponse?.specialities);
+                break;
+            case 'Auth/specializationFailure':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/licesensRequest':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/licesensSuccess':
+                status = AuthReducer.status;
+                setStatelistpratice(AuthReducer?.licesensResponse?.licensure_states);
+                setSelectStatepratice(AuthReducer?.licesensResponse?.licensure_states);
+                setSlistpratice(AuthReducer?.licesensResponse?.licensure_states);
+                break;
+            case 'Auth/licesensFailure':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/signupRequest':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/signupSuccess':
+                status = AuthReducer.status;
+                if (isNonUsaUser) {
+                    writeNonUsaFlowState({
+                        userType: 'non_usa',
+                        isNonUsa: true,
+                        signupCompleted: true,
+                        professionCompleted: true,
+                        emailVerified: false,
+                        email: props?.route?.params?.Alldata?.email || '',
+                        profession: professionValueForNonUsa(),
+                        profession_type: state || '',
+                    });
+                    props?.navigation.navigate("VerifyOTPEmail", {
+                        NewEmail: {
+                            email: props?.route?.params?.Alldata?.email,
+                            returnDat: props?.route?.params?.Alldata,
+                        },
+                        verifyemail: {
+                            verifyemail: props?.route?.params?.Alldata,
+                            profession: professionValueForNonUsa(),
+                            isNonUsaUser: true,
+                        },
+                        nonUsaUser: true,
+                    });
+                } else {
+                    props?.navigation.navigate("VerifyOTP", { verifyemail: { verifyemail: props?.route?.params?.Alldata, profession: label || country } });
+                }
+                break;
+            case 'Auth/signupFailure':
+                status = AuthReducer.status;
+                break;
+        }
+    }
+    useLayoutEffect(() => {
+                props.navigation.setOptions({ gestureEnabled: false });
+            }, []);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={styles.container}>
+                {statepicker ? (
+                    &lt;SepcialityComponent
+                        state={state}
+                        handleStateSelect={handleStateSelect}
+                        slist={slist}
+                        setstatepicker={setstatepicker}
+                        searchState={searchState}
+                        searchStateName={searchStateName}
+                        setSearchState={setSearchState}
+                    />
+                ) : countrypicker ? (
+                    &lt;ProfessionComponent
+                        setcountrypicker={setcountrypicker}
+                        searchtext={searchtext}
+                        searchCountryName={searchCountryName}
+                        clist={clist}
+                        setSearchtext={setSearchtext}
+                        handleProfession={handleProfession}
+                    />
+                ) : pratice ? (
+                    &lt;PraticingStateComponent
+                        handlePratcing={handlePratcing}
+                        slistpratice={slistpratice}
+                        setPratice={setPratice}
+                        searchpratice={searchpratice}
+                        setSearchpratice={setSearchpratice}
+                        searchStateNamePratice={searchStateNamePratice} />
+                ) : &lt;>
+                    &lt;Loader
+                        visible={AuthReducer?.status == 'Auth/signupRequest'} />
+                    &lt;View style={{ marginTop: normalize(40), marginLeft: normalize(15) }}>
+                        &lt;View style={{ marginBottom: normalize(5), marginRight: normalize(15) }}>
+                            &lt;Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }} />
+                        &lt;/View>
+                        &lt;View style={{ flexDirection: "row" }}>
+                            &lt;Text style={styles.AmText}>
+                                {"I am a"}
+                            &lt;/Text>
+                            &lt;Text style={{ color: "red", paddingVertical: normalize(2) }}>{"*"}&lt;/Text>
+                        &lt;/View>
+                    &lt;/View>
+                    &lt;View style={{ marginTop: normalize(10) }}>
+                        &lt;FlatList
+                            data={groupedData}
+                            renderItem={({ item }) => (
+                                &lt;View style={styles.buttonRow}>
+                                    {item.map(type => (
+                                        &lt;TouchableOpacity
+                                            key={type.id}
+                                            style={[
+                                                styles.button,
+                                                selectedId === type.id &amp;&amp; styles.selectedButton,
+                                                selectedId !== null &amp;&amp; selectedId !== type.id &amp;&amp; styles.unselectedButton
+                                            ]}
+                                            onPress={() => {
+                                                setCountry("");
+                                                setState('')
+                                                setStatepratice('')
+                                                handlePress(type);
+                                            }}
+                                        >
+                                            &lt;Text
+                                                style={[styles.buttonText, { color: selectedId === type.id ? "#FFFFFF" : "#000000" }]}
+                                            >
+                                                {type.label}
+                                            &lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    ))}
+                                &lt;/View>
+                            )}
+                            keyExtractor={(item, index) => index.toString()}
+                        />
+                    &lt;/View>
+                    &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                        &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                            {isNonUsaUser &amp;&amp; selectedProfessionalGroup === 'Other' ? (
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        &lt;InputField
+                                            label={otherProfessionValue ? "Profession*" : "Profession*"}
+                                            value={otherProfessionValue}
+                                            placeholder=""
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            maxLength={300}
+                                            editable={false}
+                                            leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                            onLeftIconPress={() => {
+                                                setcountrypicker(!countrypicker);
+                                                setState('');
+                                                setStatepratice('');
+                                            }}
+                                            onwholePress={() => {
+                                                setcountrypicker(!countrypicker);
+                                                setState('');
+                                                setStatepratice('');
+                                            }}
+                                            marginleft={normalize(280)}
+                                            multiline={true}
+                                            spaceneeded={true}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                            ) : selectedId === 12 ? (&lt;View style={{
+                                flexDirection: 'row',
+                                flex: 1
+                            }}>
+                                &lt;View style={{
+                                    flex: 1,
+                                    paddingRight: normalize(0)
+                                }}>
+
+                                    {/* &lt;CustomInputTouchable
+                                        label={country ? "Profession*" : "Profession*"}
+                                        value={country}
+                                        placeholder={""}
+                                        placeholderTextColor="#949494"
+                                        rightIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                        onPress={() => {
+                                            setcountrypicker(!countrypicker);
+                                            setState('');
+                                            setStatepratice('')
+                                        }}
+                                        onIconpres={() => {
+                                            setcountrypicker(!countrypicker);
+                                            setState('');
+                                            setStatepratice('')
+                                        }}
+                                    /> */}
+
+                                    &lt;InputField
+                                        label={country ? "Profession*" : "Profession*"}
+                                        value={country}
+                                        placeholder=""
+                                        placeholderTextColor="#949494"
+                                        keyboardType="default"
+                                        showCountryCode={false}
+                                        maxLength={300}
+                                        editable={false}
+                                        leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                        onLeftIconPress={() => {
+                                            setcountrypicker(!countrypicker);
+                                            setState('');
+                                            setStatepratice('')
+                                        }}
+                                        onwholePress={() => {
+                                            setcountrypicker(!countrypicker);
+                                            setState('');
+                                            setStatepratice('')
+                                        }}
+                                        marginleft={normalize(280)}
+                                        multiline={true}
+                                        spaceneeded={true}
+                                    />
+                                &lt;/View>
+                            &lt;/View>) : null}
+                            &lt;View style={{
+                                flexDirection: 'row',
+                                flex: 1
+                            }}>
+                                &lt;View style={{
+                                    flex: 1,
+                                    paddingRight: normalize(0)
+                                }}>
+
+                                    {/* &lt;CustomInputTouchable
+                                            disabled={statelist?.length > 0 ? false : true}
+                                            label={state ? "Speciality*" : "Speciality*"}
+                                            value={state}
+                                            placeholder={""}
+                                            placeholderTextColor="#949494"
+                                            rightIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                            onPress={() => {
+                                                setstatepicker(!statepicker);
+                                            }}
+                                            onIconpres={() => {
+                                                setstatepicker(!statepicker);
+                                            }}
+                                        /> */}
+                                    &lt;InputField
+                                        icondisable={statelist?.length > 0 ? false : true}
+                                        label={state ? "Speciality*" : "Speciality*"}
+                                        value={state}
+                                        placeholder=""
+                                        placeholderTextColor="#949494"
+                                        keyboardType="default"
+                                        showCountryCode={false}
+                                        maxLength={500}
+                                        editable={false}
+                                        leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                        onLeftIconPress={() => setstatepicker(!statepicker)}
+                                        marginleft={normalize(280)}
+                                        onwholePress={() => setstatepicker(!statepicker)}
+                                        multiline={true}
+                                        spaceneeded={true}
+                                    />
+                                &lt;/View>
+                            &lt;/View>
+
+                            {!isNonUsaUser &amp;&amp; statelistpratice?.length > 0 &amp;&amp; &lt;View style={{
+                                flexDirection: 'row',
+                                flex: 1
+                            }}>
+                                &lt;View style={{
+                                    flex: 1,
+                                    paddingRight: normalize(0)
+                                }}>
+                                    &lt;InputField
+                                        icondisable={statelistpratice?.length > 0 ? false : true}
+                                        label={statepratice ? "Currently Practicing State In*" : "Currently Practicing State In*"}
+                                        value={statepratice}
+                                        placeholder=""
+                                        placeholderTextColor="#949494"
+                                        keyboardType="default"
+                                        showCountryCode={false}
+                                        maxLength={300}
+                                        editable={false}
+                                        leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                        onLeftIconPress={() => {
+                                            setPratice(!pratice);
+                                            licData(label);
+                                        }}
+                                        marginleft={normalize(280)}
+                                        onwholePress={() => {
+                                            setPratice(!pratice)
+                                            licData(label);
+                                        }}
+                                        multiline={true}
+                                        spaceneeded={true}
+                                    />
+                                &lt;/View>
+                            &lt;/View>}
+                        &lt;/View>
+                        &lt;View>
+                            &lt;Buttons
+                                onPress={signupHandle}
+                                height={normalize(45)}
+                                width={normalize(300)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(9)}
+                                text="Submit"
+                                color={Colorpath.white}
+                                fontSize={18}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                            />
+                        &lt;/View>
+                    &lt;/ScrollView>
+                &lt;/>}
+
+            &lt;/SafeAreaView>
+        &lt;/>
+    );
+};
+export default AllSpecial;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

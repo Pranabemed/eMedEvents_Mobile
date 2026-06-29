@@ -20,6 +20,14 @@ import IntOff from '../../Utils/Helpers/IntOff';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable FilterScreen component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const FilterScreen = (props) => {
     const { isConnected } = useContext(AppContext);
     const [search, setSearch] = useState('');

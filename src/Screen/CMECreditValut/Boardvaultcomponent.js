@@ -15,6 +15,14 @@ import Imagepath from '../../Themes/Imagepath';
 import { useSelector } from 'react-redux';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import Search from 'react-native-vector-icons/AntDesign';
+
+/**
+ * Reusable Boardvaultcomponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Boardvaultcomponent = ({ takeID, handleBoardname, lengthcheck, certificateboard, setCertificatebaord, setBoardname, setBoardexpiredate, boardexpiredate, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, dispatch, hideCertificateAction }) => {
     const [currentProfile, setCurrentProfile] = useState('');
     useEffect(() => {

@@ -32,6 +32,14 @@ import CustomInputTouchableX from './CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, markNonUsaStateLicenseFlowCompleted } from '../../Utils/Helpers/nonUsaFlow';
 
+/**
+ * Reusable buildProfessionLabel component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
     const cleanProfessionType = String(professionType || '').trim();

@@ -4,6 +4,14 @@ import IconDot from 'react-native-vector-icons/Entypo';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Imagepath from '../../Themes/Imagepath';
+
+/**
+ * Reusable MandatoryCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const MandatoryCertificate = ({ item }) => {
     return (
         <View>

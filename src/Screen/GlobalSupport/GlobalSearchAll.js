@@ -11,6 +11,14 @@ import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../../Navigator/StackNav';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable renderSection component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow, setSearchText, creditDataAll) => {
     const validTitles = [
         "In-Person Conferences & Online courses",

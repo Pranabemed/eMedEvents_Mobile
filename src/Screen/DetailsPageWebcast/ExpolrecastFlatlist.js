@@ -3,6 +3,14 @@ import React, { useRef } from 'react'
 import Fonts from '../../Themes/Fonts'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable ExpolrecastFlatlist component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ExpolrecastFlatlist = ({stateid, profesions,lastScrollY, setLastScrollY, isTouching, setIsTouching, activeList, setActiveList, setIsScrolling, paginatedData, ExplorecastComponent, renderFooter, loadMoreData, setAllSpecial, setTootip, handleUrl, statewise }) => {
     const handleScroll = (event) => {
         const currentScrollY = event.nativeEvent.contentOffset.y;

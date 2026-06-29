@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/HomePage/FilterScreen.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/HomePage/FilterScreen.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Colorpath from '../../Themes/Colorpath';
+import PageHeader from '../../Components/PageHeader';
+import normalize from '../../Utils/Helpers/Dimen';
+import Fonts from '../../Themes/Fonts';
+import PriceSlider from './PriceSlider';
+import { cmeCourseRequest } from '../../Redux/Reducers/CMEReducer';
+import { useDispatch, useSelector } from 'react-redux';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import Loader from '../../Utils/Helpers/Loader';
+import CreditPrice from './CreditPrice';
+import { CommonActions } from '@react-navigation/native';
+import { AppContext } from '../GlobalSupport/AppContext';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
+let status = "";
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable FilterScreen component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const FilterScreen = (props) => {
+    const { isConnected } = useContext(AppContext);
+    const [search, setSearch] = useState('');
+    const [selectedFilter, setSelectedFilter] = useState("");
+    const [selectedItems, setSelectedItems] = useState([]);
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const dispatch = useDispatch();
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const [minValue, setMinValue] = useState("");
+    const [maxValue, setMaxValue] = useState("");
+    const [minValuep, setMinValuep] = useState("");
+    const [maxValuep, setMaxValuep] = useState("");
+    const [filtertake, setFiltertake] = useState(null);
+
+    const getPlaceholderText = useCallback(() => {
+        if (!selectedFilter) return 'Search here';
+        const friendlyNames = {
+            conf_types: "course format",
+            organizers_types: "organizer",
+            speakers_types: "speaker",
+            profession_types: "profession",
+            date_types: "date",
+            location_types: "location",
+            mandate_states: "state",
+            credit_types: "credit type",
+            topic_types: "topic",
+            count_specilaities: "speciality",
+        };
+        const name = friendlyNames[selectedFilter] || selectedFilter.toLowerCase();
+        return `Search by ${name}`;
+    }, [selectedFilter]);
+
+    const renderBrowseSearchInput = () => {
+        if (selectedFilter === 'get_cme_points_to_stat' ||
+            selectedFilter === 'get_price_to_stat' ||
+            selectedFilter === 'cme_type_flags') {
+            return null;
+        }
+        return (
+            &lt;View style={styles.stickySearchWrap}>
+                &lt;Icon name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
+                &lt;TextInput
+                    placeholderTextColor={"#999999"}
+                    placeholder={getPlaceholderText()}
+                    style={styles.stickySearchInput}
+                    onChangeText={updateSearch}
+                    value={search}
+                />
+                {search.length > 0 &amp;&amp; (
+                    &lt;TouchableOpacity
+                        onPress={() => setSearch('')}
+                        style={styles.clearIconWrap}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        &lt;Icon name="x" size={18} color="#9CA3AF" />
+                    &lt;/TouchableOpacity>
+                )}
+            &lt;/View>
+        );
+    };
+    const [combinedData, setCombinedData] = useState([]);
+    const [selectedItm, setSelectedItm] = useState([]);
+    const [resetOn, setResetOn] = useState(false);
+    const [finalds, setFinalds] = useState(false);
+    const [cmetype, setCmetype] = useState(null);
+    const MIN_DEFAULT = filtertake?.get_cme_points_from_stat;
+    const MIN_PMin = filtertake?.get_price_from_stat
+    const Max_Price = filtertake?.get_price_to_stat;
+    const Min_DPrice = filtertake?.get_cme_points_to_stat
+    const [slider1Min, setSlider1Min] = useState(MIN_PMin);
+    const [slider1Max, setSlider1Max] = useState(Max_Price);
+    const [slider2Min, setSlider2Min] = useState(MIN_DEFAULT);
+    const [slider2Max, setSlider2Max] = useState(Min_DPrice);
+    const buildGlobalResultParams = useCallback(() => {
+        const originRoute = props?.route?.params?.wholeDats?.mainKeyAll || {};
+
+        return {
+            ...originRoute,
+            filterDatSh: {
+                filterDatSh: selectedItems,
+                returnTake: originRoute,
+                selectedIt: selectedItm,
+                minVal: minValue,
+                maxVal: maxValue,
+                minValP: minValuep,
+                maxValp: maxValuep,
+                selectedItem: selectedFilter,
+            },
+        };
+    }, [maxValue, maxValuep, minValue, minValuep, props?.route?.params?.wholeDats?.mainKeyAll, selectedFilter, selectedItems, selectedItm]);
+
+    const navigateToResults = useCallback((params) => {
+        props.navigation.dispatch(state => {
+            const globalResultIndex = state.routes.findIndex(r => r.name === 'Globalresult');
+            if (globalResultIndex !== -1) {
+                const newRoutes = state.routes.slice(0, globalResultIndex + 1).map((route, idx) => {
+                    if (idx === globalResultIndex) {
+                        return {
+                            ...route,
+                            params: {
+                                ...route.params,
+                                ...params
+                            }
+                        };
+                    }
+                    return route;
+                });
+                return CommonActions.reset({
+                    ...state,
+                    routes: newRoutes,
+                    index: newRoutes.length - 1
+                });
+            } else {
+                const newRoutes = [...state.routes.slice(0, -1), {
+                    name: 'Globalresult',
+                    params: params
+                }];
+                return CommonActions.reset({
+                    ...state,
+                    routes: newRoutes,
+                    index: newRoutes.length - 1
+                });
+            }
+        });
+    }, [props.navigation]);
+    const FilterBack = () => {
+        if (props?.route?.params?.wholeDats?.norm == "ghgh") {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: "TabNav"
+                        }
+                    ],
+                }));
+        } else if (selectedItems?.length > 0) {
+            navigateToResults(buildGlobalResultParams());
+        } else {
+            props.navigation.goBack();
+        }
+    };
+    useEffect(() => {
+        const initialData = props?.route?.params?.wholeDats?.ClearText || [];
+        setSelectedItems(initialData);
+    }, [props?.route?.params?.wholeDats?.ClearText]);
+    console.log(props?.route?.params, "props--------------", selectedFilter, selectedItems)
+
+    useEffect(() => {
+        if (props?.route?.params?.wholeDats?.wholeDats) {
+            setFiltertake(props?.route?.params?.wholeDats?.wholeDats);
+            const keys = Object.keys(props?.route?.params?.wholeDats?.wholeDats);
+            const wholeDats = props?.route?.params?.wholeDats?.wholeDats || {};
+            const availableKeys = [];
+            const oneKeys = props?.route?.params?.wholeDats?.takeTrue || []
+            if (keys?.length > 0) {
+                keys.forEach(key => {
+                    const value = wholeDats[key];
+                    if (value !== undefined &amp;&amp; value !== null &amp;&amp; value !== "" &amp;&amp; value !== 0 &amp;&amp; !(Array.isArray(value) &amp;&amp; value.length === 0)) {
+                        availableKeys.push({ key, value });
+                    }
+                });
+                const matchingKeys = availableKeys
+                    .map(({ key }) => key)
+                    .filter(key => oneKeys.includes(key));
+                setSelectedFilter(
+                    matchingKeys.length > 0
+                        ? matchingKeys[0]
+                        : (availableKeys.length > 0 ? availableKeys[0].key : null)
+                );
+            }
+        }
+    }, [props?.route?.params?.wholeDats?.wholeDats])
+    const againHand = () => {
+        const mainKey = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.mainKey ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.mainKey ?? "";
+        const stateKey = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd ?? "";
+        const newCt = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt ?? "";
+        let obj = {
+            "pageno": 0,
+            "limit": 9,
+            "search_speciality": "",
+            "conference_type_text": "",
+            "cme_from": "",
+            "cme_to": "",
+            "organization": "",
+            "price_from": "",
+            "price_to": "",
+            "startdate": "",
+            "location": "",
+            "free_conf": "",
+            "noncme": "",
+            "speaker": "",
+            "search_mandate_states": [],
+            "search_topic": "",
+            "search_profession": "",
+            "credittype": "",
+            "sort_type": "",
+            "searchKeyword": props?.route?.params?.wholeDats?.mainKeyAll?.trig?.searchTxt ? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.searchTxt : "",
+            "request_type": props?.route?.params?.wholeDats?.mainKeyAll?.trig?.rqstType ? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.rqstType : "",
+            [mainKey]:
+                props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetake ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetake
+                ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[0] ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[0]
+                ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.monthAds ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.monthAds ?? props?.route?.params?.trig?.trig ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.trig ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.datamainkey
+                ?? "",
+            [stateKey]:
+                (props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd)
+                    ? (
+                        props?.route?.params?.wholeDats?.mainKeyAll?.trig?.trig ??
+                        props?.route?.params?.wholeDats?.mainKeyAll?.trig?.trig ??
+                        props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[1] ??
+                        props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[1] ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.stateID
+                    )
+                    : "",
+            [newCt]:
+                (props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt)
+                    ? (props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[2] ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.beforetakecity?.[2] ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.allProfessionMain)
+                    : "",
+        };
+        connectionrequest()
+            .then(() => {
+                dispatch(cmeCourseRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+            });
+    };
+    if (status == '' || CMEReducer.status !== status) {
+        switch (CMEReducer.status) {
+            case 'CME/cmeCourseRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmeCourseSuccess':
+                status = CMEReducer.status;
+                const handlAgain = CMEReducer?.cmeCourseResponse?.aggregations
+                if (handlAgain) {
+                    setFiltertake(handlAgain);
+                    const keys = Object.keys(handlAgain);
+                    for (let key of keys) {
+                        if (Array.isArray(handlAgain[key]) &amp;&amp; handlAgain[key].length > 0 &amp;&amp; selectedFilter) {
+                            setSelectedFilter(selectedFilter);
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 'CME/cmeCourseFailure':
+                status = CMEReducer.status;
+                break;
+        }
+    }
+    // const generateFilterToKeyMap = (wholeDat) => {
+    //     const filterToKeyMap = {};
+    //     for (const key in wholeDat) {
+    //         if (Array.isArray(wholeDat[key])) {
+    //             const filterName = key
+    //                 .replace(/_/g, ' ')
+    //                 .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+    //             filterToKeyMap[filterName] = key;
+    //         } else if (typeof wholeDat[key] == 'number') {
+    //             if (key.includes('price')) {
+    //                 const getPriceFromStat = wholeDat["get_price_from_stat"];
+    //                 const getPriceToStat = wholeDat["get_price_to_stat"];
+    //                 const havingFreeCme = wholeDat["having_freecme"];
+    //                 const havingNonCme = wholeDat["having_noncme"];
+    //                 if (!(getPriceFromStat == 0 &amp;&amp; getPriceToStat == 0 &amp;&amp; havingFreeCme == 0 &amp;&amp; havingNonCme == 0)) {
+    //                     filterToKeyMap['Price range Start'] = key.replace('_from_', '_start_');
+    //                     filterToKeyMap['Price range End'] = key.replace('_from_', '_end_');
+    //                 }
+    //                 filterToKeyMap['Price range Start'] = key.replace('_from_', '_start_');
+    //                 filterToKeyMap['Price range End'] = key.replace('_from_', '_end_');
+    //             } else if (key.includes('cme_points')) {
+    //                 filterToKeyMap['No. of credits Start'] = key.replace('_from_', '_start_');
+    //                 filterToKeyMap['No. of credits End'] = key.replace('_from_', '_end_');
+    //             }
+    //         }
+    //     }
+    //     return filterToKeyMap;
+    // };
+    const generateFilterToKeyMap = (wholeDat) => {
+        const filterToKeyMap = {};
+        const getPriceFromStat = wholeDat["get_price_from_stat"];
+        const getPriceToStat = wholeDat["get_price_to_stat"];
+        const havingFreeCme = wholeDat["get_cme_points_from_stat"];
+        const havingNonCme = wholeDat["get_cme_points_to_stat"];
+        const havingFreeCmereal = wholeDat["having_freecme"];
+        const havingNonCmereal = wholeDat["having_noncme"];
+        for (const key in wholeDat) {
+            if (Array.isArray(wholeDat[key])) {
+                const filterName = key
+                    .replace(/_/g, ' ')
+                    .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+                filterToKeyMap[filterName] = key;
+            } else if (typeof wholeDat[key] == 'number') {
+                if (key.includes('price')) {
+                    if (!(getPriceFromStat == 0 &amp;&amp; getPriceToStat == 0)) {
+                        if (key.includes("_from_")) {
+                            filterToKeyMap['Price range Start'] = key.replace('_from_', '_start_');
+                        }
+                        if (key.includes("_to_")) {
+                            filterToKeyMap['Price range End'] = key.replace('_from_', '_end_');
+                        }
+                    }
+                } else if (key.includes('cme_points')) {
+                    if (!(havingFreeCme == 0 &amp;&amp; havingNonCme == 0)) {
+                        if (key.includes("_from_")) {
+                            filterToKeyMap['No. of credits Start'] = key.replace('_from_', '_start_');
+                        }
+                        if (key.includes("_to_")) {
+                            filterToKeyMap['No. of credits End'] = key.replace('_from_', '_end_');
+                        }
+                    }
+                }
+            }
+        }
+        if (havingFreeCmereal == 1 &amp;&amp; havingNonCmereal == 1) {
+            filterToKeyMap['CME Type'] = 'cme_type_flags';
+        }
+        return filterToKeyMap;
+    };
+
+
+
+    // const filterToKeyMap = filtertake ? generateFilterToKeyMap(filtertake) : {};
+    // const filters = Object.keys(filterToKeyMap);
+    // const validFilters = filters.filter(filter => {
+    //     const key = filterToKeyMap[filter];
+    //     return filtertake &amp;&amp; filtertake[key] &amp;&amp; filtertake[key].length > 0;
+    // });
+    const updateSearch = (text) => setSearch(text);
+    const toggleSelection = (item, types) => {
+        console.log(item, types, "---------itemtypes1122");
+        setSelectedItems(prevSelectedItems => {
+            const updatedItems = [...prevSelectedItems];
+            const typeIndex = updatedItems.findIndex(i => i[types]);
+            if (typeIndex !== -1) {
+                const existingType = updatedItems[typeIndex];
+                existingType[types] = existingType[types] || [];
+                if (existingType[types].includes(item)) {
+                    existingType[types] = existingType[types].filter(i => i !== item);
+                    if (existingType[types].length == 0) {
+                        updatedItems.splice(typeIndex, 1);
+                    }
+                } else {
+                    existingType[types].push(item);
+                }
+            } else {
+                updatedItems.push({ [types]: [item] });
+            }
+
+            return updatedItems;
+        });
+    };
+    const filterToKeyMapd = filtertake
+        ? generateFilterToKeyMap(filtertake)
+        : {};
+    const validFiltersd = Array.from(
+        new Set(
+            Object.values(filterToKeyMapd).filter(
+                (key) =>
+                    (filtertake &amp;&amp; filtertake[key] &amp;&amp; filtertake[key].length > 0) || key == 'cme_type_flags' || typeof filtertake[key] === "number"
+            )
+        )
+    );
+    console.log(validFiltersd, "validFiltersd---------", selectedItems)
+    const renderFilterOption = ({ item, index }) => (
+        &lt;>
+            {index === 0 &amp;&amp; (
+                &lt;>
+                    &lt;View
+                        style={{
+                            height: normalize(12),
+                            width: normalize(120),
+                            backgroundColor: Colorpath.Pagebg,
+                        }}
+                    />
+                    &lt;View style={{
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#E3E3E3'
+                    }} />
+                &lt;/>
+            )}
+            &lt;TouchableOpacity
+                style={[styles.filterOption, selectedFilter === item &amp;&amp; styles.selectedFilterOption]}
+                onPress={() => {
+                    setSearch('');
+                    setSelectedFilter(item);
+                }}
+            >
+                &lt;Text style={styles.filterOptionText}>{item == "conf_types" ? "Course Format" : item == "organizers_types" ? "Organizers" : item == "speakers_types" ? "Speakers" : item == "profession_types" ? "Choose Profession" : item == "get_cme_points_to_stat" ? 'No. of credits' : item == "get_price_to_stat" ? "Price range" : item == "cme_type_flags" ? "Course Type" : item == "date_types" ? "Dates" : item == "location_types" ? "Location" : item == "mandate_states" ? 'State-required Courses' : item == 'credit_types' ? 'Credit type' : item == 'topic_types' ? "Topics" : item == 'count_specilaities' ? "Choose Specailities" : item}&lt;/Text>
+            &lt;/TouchableOpacity>
+        &lt;/>
+    );
+    useEffect(() => {
+        if (selectedFilter) {
+            setCombinedData([
+                { type: selectedFilter, data: filtertake[selectedFilter] },
+            ]);
+        }
+    }, [selectedFilter, filtertake])
+    const renderProfessionItem = ({ item, index, types, selectedFilters, reqItem }) => {
+        console.log(reqItem, "reqitem======", item)
+        const hasReqItem = reqItem &amp;&amp; reqItem.length > 0;
+
+        // Check if item exists in any array within reqItem objects (only if reqItem has data)
+        const isItemInReqItem = hasReqItem ? reqItem.some(reqObj => {
+            return Object.values(reqObj).some(arr =>
+                Array.isArray(arr) &amp;&amp; arr.includes(item)
+            );
+        }) : false;
+
+        const getIconName = (item, selectedItems) => {
+            return selectedItems.some(i => {
+                return Object.values(i).some(arr => Array.isArray(arr) &amp;&amp; arr.includes(item));
+            }) ? 'check' : 'check';
+        };
+
+        const getIconColor = (item, selectedItems) => {
+            // If reqItem has data and item is in reqItem, always return orange color
+            if (hasReqItem &amp;&amp; isItemInReqItem) {
+                return '#FF5733'; // Orange color
+            }
+
+            // Otherwise, use the original logic
+            return selectedItems.some(i => {
+                return Object.values(i).some(arr => Array.isArray(arr) &amp;&amp; arr.includes(item));
+            }) ? '#FF5733' : '#FFFFFF';
+        };
+
+        // Determine if the item should be disabled (only if reqItem has data and contains the item)
+        const shouldDisableItem = hasReqItem &amp;&amp; isItemInReqItem;
+        return (
+            &lt;TouchableOpacity
+                style={styles.professionItem}
+                onPress={shouldDisableItem ? null : () => toggleSelection(item, types, selectedFilters)}
+                disabled={shouldDisableItem}
+            >
+                &lt;View style={styles.professionRow}>
+                    &lt;Icon
+                        name={getIconName(item, selectedItems)}
+                        size={20}
+                        color={getIconColor(item, selectedItems)}
+                    />
+                    &lt;Text numberOfLines={4} style={styles.professionText}>{item}&lt;/Text>
+                &lt;/View>
+            &lt;/TouchableOpacity>
+        )
+
+    };
+    const hitData = ["Free Courses", "Non-CME Courses"];
+    const SliderTick = (item) => {
+        setSelectedItm(prevSelectedItems => {
+            if (prevSelectedItems.includes(item)) {
+                return prevSelectedItems.filter(i => i !== item);
+            } else {
+                return [...prevSelectedItems, item];
+            }
+        });
+    };
+    useEffect(() => {
+        if (props?.route?.params?.wholeDats?.PriceDrop?.CME?.length > 0) {
+            setCmetype(props?.route?.params?.wholeDats?.PriceDrop?.CME)
+        }
+    }, [props?.route?.params?.wholeDats?.PriceDrop?.CME])
+    console.log(selectedItm, "itempo--------selectedItm")
+    const hitItem = ({ item, index }) => {
+        return (
+            &lt;TouchableOpacity
+                style={styles.professionItem}
+                onPress={() => {
+                    setSelectedFilter(selectedFilter);
+                    SliderTick(item);
+                }}
+            >
+                &lt;View style={styles.professionRow}>
+                    {cmetype?.includes(item) ? &lt;Icon
+                        name={cmetype.includes(item) ? 'check' : 'check'}
+                        size={20}
+                        color={cmetype.includes(item) ? '#FF5733' : '#CCCCCC'}
+                    /> : &lt;Icon
+                        name={selectedItm.includes(item) ? 'check' : 'check'}
+                        size={20}
+                        color={selectedItm.includes(item) ? '#FF5733' : '#CCCCCC'}
+                    />}
+                    &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", gap: Platform.OS === "ios" ? normalize(5) : normalize(10) }}>
+                        &lt;Text style={[styles.professionText, { width: normalize(90) }]}>{item}&lt;/Text>
+                        {cmetype?.includes(item) &amp;&amp; &lt;TouchableOpacity onPress={() => {
+                            const updatedCmeType = cmetype.filter(val => val !== item);
+                            setCmetype(updatedCmeType);
+                            setSelectedItm(prevSelectedItems => {
+                                // Combine rest of active items with previous selectedItm
+                                const combined = [...updatedCmeType];
+
+                                // Remove duplicates
+                                const uniqueItems = Array.from(new Set(combined));
+
+                                return uniqueItems;
+                            });
+                            againHand();
+                        }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#ff773d" }}>{cmetype.includes(item) ? "Clear" : ""}&lt;/Text>
+                        &lt;/TouchableOpacity>}
+                    &lt;/View>
+                &lt;/View>
+            &lt;/TouchableOpacity>
+        );
+    };
+    const renderItem = ({ item, index }) => {
+        if (item?.type == selectedFilter) {
+            const type = selectedFilter;
+            const hitDat = finalds ? "" : props?.route?.params?.wholeDats?.ClearText || props?.route?.params?.wholeDats?.PriceDrop?.minget || props?.route?.params?.wholeDats?.PriceDrop?.maxget || props?.route?.params?.wholeDats?.PriceDrop?.mingetp || props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
+            const hasData = typeof hitDat == "object" &amp;&amp; hitDat.some(item => {
+                return item.hasOwnProperty(type) &amp;&amp; Array.isArray(item[type]) &amp;&amp; item[type].length > 0;
+            });
+            console.log(hasData, "hasData-----", item, hitDat);
+            return (
+                &lt;View>
+                    &lt;View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row" }}>
+                        &lt;Text style={styles.professionHeader}>{item?.type == "conf_types" ? "Course Format" : item?.type == "organizers_types" ? "Organizers" : item?.type == "speakers_types" ? "Speakers" : item?.type == "profession_types" ? "Choose Profession" : item?.type == "get_cme_points_to_stat" ? 'No. of credits' : item?.type == "get_price_to_stat" ? "Price range" : item?.type == "cme_type_flags" ? "Course Type" : item?.type == "date_types" ? "Dates" : item?.type == "location_types" ? "Location" : item?.type == "mandate_states" ? 'State-required Courses' : item?.type == 'credit_types' ? 'Credit type' : item?.type == 'topic_types' ? "Topics" : item?.type == 'count_specilaities' ? "Choose Specailities" : item?.type}&lt;/Text>
+                        &lt;TouchableOpacity onPress={() => {
+                            setFinalds(true);
+                            againHand();
+                            setSelectedItems([]);
+                        }}>
+                            {hasData &amp;&amp; &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#ff773d", marginTop: normalize(16) }}>{"Clear"}&lt;/Text>}
+                        &lt;/TouchableOpacity>
+                    &lt;/View>
+                    {Array.isArray(item?.data) &amp;&amp; item?.data.length > 0 ? (
+                        item.data
+                            .filter(p =>
+                                (typeof p == "string" ? p : p?.key)?.toLowerCase().includes(search.toLowerCase())
+                            )
+                            .length > 0 ? (
+                            item.data
+                                .filter(p =>
+                                    (typeof p == "string" ? p : p?.key)?.toLowerCase().includes(search.toLowerCase())
+                                )
+                                .map((profession, index) =>
+                                    renderProfessionItem({
+                                        item: typeof profession == "string" ? profession : profession?.key,
+                                        index,
+                                        types: item?.type,
+                                        selectedFilters: selectedFilter,
+                                        reqItem: hitDat || []
+                                    })
+                                )
+                        ) : (
+                            &lt;View style={{ paddingVertical: normalize(5), paddingHorizontal: normalize(10) }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{"No data found"}&lt;/Text>
+                            &lt;/View>
+                        )
+                    ) : (
+                        &lt;View style={{ paddingVertical: normalize(5), paddingHorizontal: normalize(10) }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{"No data found"}&lt;/Text>
+                        &lt;/View>
+                    )}
+                &lt;/View>
+            );
+        }
+        return null;
+    };
+    const renderContent = () => {
+        switch (selectedFilter) {
+            case 'conf_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'organizers_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'profession_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'speakers_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'credit_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'get_cme_points_to_stat':
+                return (
+                    &lt;CreditPrice
+                        minValue={minValue}
+                        maxValue={maxValue}
+                        setMinValue={setMinValue}
+                        setMaxValue={setMaxValue}
+                        text={"No. of credits"}
+                        sliderWidth={190}
+                        min={MIN_DEFAULT}
+                        resetEnable={resetOn}
+                        max={filtertake?.get_cme_points_to_stat}
+                        currentMin={slider2Min}
+                        currentMax={slider2Max}
+                        setCurrentMin={setSlider2Min}
+                        setCurrentMax={setSlider2Max}
+                        step={1}
+                        trigmin={props?.route?.params?.wholeDats?.PriceDrop?.maxget || props?.route?.params?.wholeDats?.PriceDrop?.minget}
+                        againHand={againHand}
+                        onValueChange={range => {
+                            setMinValue(range.min);
+                            setMaxValue(range.max);
+                        }}
+                    />
+                );
+            case 'date_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'get_price_to_stat':
+                return (
+                    &lt;PriceSlider
+                        selectedFilter={selectedFilter}
+                        setSelectedFilter={setSelectedFilter}
+                        selectedItm={selectedItm}
+                        CMEText={props?.route?.params?.wholeDats?.PriceDrop?.CME?.length > 0 ? props?.route?.params?.wholeDats?.PriceDrop?.CME : props?.route?.params?.wholeDats?.PriceDrop?.CME}
+                        setSelectedItm={setSelectedItm}
+                        sliderWidth={190}
+                        min={MIN_PMin}
+                        currentMin={slider1Min}
+                        currentMax={slider1Max}
+                        setCurrentMin={setSlider1Min}
+                        setCurrentMax={setSlider1Max}
+                        resetEnable={resetOn}
+                        trigmin={props?.route?.params?.wholeDats?.PriceDrop?.maxgetp || props?.route?.params?.wholeDats?.PriceDrop?.mingetp}
+                        againHand={againHand}
+                        max={filtertake?.get_price_to_stat || Max_Price}
+                        step={1}
+                        onValueChange={range => {
+                            setMinValuep(range.min);
+                            setMaxValuep(range.max);
+                        }}
+                    />
+                );
+            case 'cme_type_flags':
+                return (
+                    &lt;>
+                        &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 16, color: "#000000", textDecorationLine: "underline" }}>{"Course Type"}&lt;/Text>
+                            &lt;FlatList
+                                data={hitData}
+                                renderItem={hitItem}
+                                keyExtractor={(item) => item}
+                                ListHeaderComponent={&lt;View />}
+                                showsVerticalScrollIndicator={false}
+                                ListEmptyComponent={
+                                    &lt;View style={{
+                                        height: normalize(50),
+                                        width: normalize(170),
+                                        alignSelf: 'center',
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        borderRadius: normalize(10)
+                                    }}>
+                                        &lt;Text
+                                            style={{
+                                                color: Colorpath.grey,
+                                                fontFamily: Fonts.InterRegular,
+                                                fontSize: 10,
+                                            }}>
+                                            No data found
+                                        &lt;/Text>
+                                    &lt;/View>
+                                } />
+                        &lt;/View>
+                    &lt;/>
+                );
+            case 'location_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'mandate_states':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'topic_types':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            case 'count_specilaities':
+                return (
+                    &lt;>
+                        &lt;FlatList
+                            data={combinedData}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.type}
+                            ListHeaderComponent={&lt;View />}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                &lt;View style={{
+                                    height: normalize(50),
+                                    width: normalize(170),
+                                    alignSelf: 'center',
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: normalize(10)
+                                }}>
+                                    &lt;Text
+                                        style={{
+                                            color: Colorpath.grey,
+                                            fontFamily: Fonts.InterRegular,
+                                            fontSize: 10,
+                                        }}>
+                                        No data found
+                                    &lt;/Text>
+                                &lt;/View>
+                            }
+                        />
+                    &lt;/>
+                );
+            default:
+                return null;
+        }
+    };
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+
+    const initialCme = props?.route?.params?.wholeDats?.PriceDrop?.CME;
+    const initialMinGet = props?.route?.params?.wholeDats?.PriceDrop?.minget;
+    const initialMaxGet = props?.route?.params?.wholeDats?.PriceDrop?.maxget;
+    const initialMinGetP = props?.route?.params?.wholeDats?.PriceDrop?.mingetp;
+    const initialMaxGetP = props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
+
+    const isResetActive =
+        selectedItems?.length > 0 ||
+        selectedItm?.length > 0 ||
+        (cmetype &amp;&amp; cmetype.length > 0) ||
+        (minValue !== undefined &amp;&amp; minValue !== null &amp;&amp; minValue !== "") ||
+        (maxValue !== undefined &amp;&amp; maxValue !== null &amp;&amp; maxValue !== "") ||
+        (minValuep !== undefined &amp;&amp; minValuep !== null &amp;&amp; minValuep !== "") ||
+        (maxValuep !== undefined &amp;&amp; maxValuep !== null &amp;&amp; maxValuep !== "") ||
+        (initialCme &amp;&amp; initialCme.length > 0) ||
+        (initialMinGet !== undefined &amp;&amp; initialMinGet !== null &amp;&amp; initialMinGet !== "") ||
+        (initialMaxGet !== undefined &amp;&amp; initialMaxGet !== null &amp;&amp; initialMaxGet !== "") ||
+        (initialMinGetP !== undefined &amp;&amp; initialMinGetP !== null &amp;&amp; initialMinGetP !== "") ||
+        (initialMaxGetP !== undefined &amp;&amp; initialMaxGetP !== null &amp;&amp; initialMaxGetP !== "");
+
+    return (
+        &lt;>
+            &lt;MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            {conn == false ? &lt;IntOff /> : &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                &lt;View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
+                    &lt;PageHeader title="Filter Results" onBackPress={FilterBack} />
+                &lt;/View>
+                &lt;Loader visible={CMEReducer?.status == 'CME/cmeCourseRequest'} />
+                &lt;KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }} behavior={Platform.OS === 'ios' ? "padding" : undefined}>
+                    {renderBrowseSearchInput()}
+                    &lt;View style={styles.content}>
+                        &lt;FlatList
+                            data={validFiltersd}
+                            renderItem={renderFilterOption}
+                            keyExtractor={(item) => item}
+                            style={styles.filterList}
+                        />
+                        &lt;View style={styles.professionContainer}>
+                            {renderContent()}
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/KeyboardAvoidingView>
+                &lt;View style={styles.footer}>
+                    &lt;TouchableOpacity disabled={!isResetActive} onPress={() => {
+                        Alert.alert('eMedEvent', 'Are you sure want to clear all the data ?', [{
+                            text: "Yes", onPress: () => {
+                                setResetOn(!resetOn);
+                                setSelectedItems([]);
+                                setSelectedItm([]);
+                                setCmetype([]);
+                                setMinValue("");
+                                setMaxValue("");
+                                setMinValuep("");
+                                setMaxValuep("");
+
+                                const originRoute = props?.route?.params?.wholeDats?.mainKeyAll || {};
+                                const clearedParams = {
+                                    ...originRoute,
+                                    filterDatSh: {
+                                        filterDatSh: [],
+                                        returnTake: originRoute,
+                                        selectedIt: [],
+                                        minVal: "",
+                                        maxVal: "",
+                                        minValP: "",
+                                        maxValp: "",
+                                        selectedItem: selectedFilter,
+                                    },
+                                };
+                                navigateToResults(clearedParams);
+                            }, style: "cancel"
+                        }, {
+                            text: "No", onPress: () => {
+                                console.log("regjnjregjtr");
+                            }, style: "cancel"
+                        }])
+                    }} style={styles.footerButton}>
+                        &lt;Text style={{
+                            fontSize: 18,
+                            color: isResetActive ? '#000000' : '#CCC',
+                            fontFamily: Fonts.InterSemiBold
+                        }}>{"Reset"}&lt;/Text>
+                    &lt;/TouchableOpacity>
+                    &lt;View style={{ height: normalize(20), width: 1, backgroundColor: "#ECECEC" }} />
+                    &lt;TouchableOpacity onPress={() => { navigateToResults(buildGlobalResultParams()) }} disabled={false} style={styles.footerButton}>
+                        &lt;Text style={{
+                            fontSize: 18,
+                            color: Colorpath.ButtonColr,
+                            fontFamily: Fonts.InterSemiBold
+                        }}>{"Apply"}&lt;/Text>
+                    &lt;/TouchableOpacity>
+                &lt;/View>
+            &lt;/SafeAreaView>}
+        &lt;/>
+    );
+};
+
+const styles = StyleSheet.create({
+    content: {
+        flexDirection: 'row',
+        flex: 1,
+    },
+    filterList: {
+        width: '40%',
+        backgroundColor: '#EAF5FF',
+    },
+    filterOption: {
+        paddingVertical: normalize(13),
+        paddingHorizontal: normalize(10),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E3E3E3',
+    },
+    alphabetSection: {
+        marginBottom: normalize(15),
+        paddingVertical: normalize(5)
+    },
+    alphabetHeader: {
+        fontSize: 18,
+        fontFamily: Fonts.InterMedium,
+        color: '#000000',
+        marginBottom: 5,
+        alignSelf: "center"
+    },
+    itemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    itemText: {
+        marginLeft: 10,
+        fontSize: 14,
+        color: "#000000",
+        fontFamily: Fonts.InterMedium
+    },
+    selectedFilterOption: {
+        backgroundColor: '#FFFFFF',
+    },
+    filterOptionText: {
+        fontSize: 14,
+        fontFamily: Fonts.InterMedium,
+        color: "#000000"
+    },
+    professionContainer: {
+        width: '60%',
+        paddingHorizontal: normalize(15),
+        backgroundColor: "#FFFFFF"
+    },
+    professionHeader: {
+        fontSize: 14,
+        fontFamily: Fonts.InterMedium,
+        color: '#000000',
+        marginTop: normalize(16),
+        // marginBottom: normalize(8),
+    },
+    professionItem: {
+        paddingVertical: normalize(8),
+    },
+    professionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    professionText: {
+        fontSize: 14,
+        fontFamily: Fonts.InterMedium,
+        color: "#000000",
+        marginLeft: normalize(8),
+        width: normalize(130),
+        flexWrap: "wrap",
+        // backgroundColor:"red"
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: normalize(18),
+        borderTopWidth: 0.5,
+        borderTopColor: '#E3E3E3',
+        backgroundColor: "#FFFFFF"
+    },
+    footerButton: {
+        height: normalize(20),
+        width: normalize(140),
+        alignItems: 'center',
+    },
+    stickySearchWrap: {
+        height: normalize(56),
+        width: '100%',
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: normalize(15),
+        paddingVertical: normalize(8),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        justifyContent: 'center',
+    },
+    stickySearchInput: {
+        height: normalize(40),
+        width: '100%',
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: "#DADADA",
+        paddingLeft: normalize(38),
+        paddingRight: normalize(38),
+        color: '#111111',
+        fontFamily: Fonts.InterMedium,
+        fontSize: 15,
+        backgroundColor: '#F3F4F6',
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
+    },
+    clearIconWrap: {
+        position: 'absolute',
+        right: normalize(26),
+        zIndex: 1,
+        top: normalize(19),
+    },
+    separator: {
+        height: 0.8,
+        width: normalize(200),
+        backgroundColor: "#999999",
+        alignSelf: 'center',
+    },
+});
+
+export default FilterScreen;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

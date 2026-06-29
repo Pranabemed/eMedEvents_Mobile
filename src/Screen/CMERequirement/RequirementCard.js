@@ -23,6 +23,14 @@ import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 
 /**
+ * Reusable RequirementCard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Requirement detail card.
  * Purpose: Shows licensure tabs, credit requirements, cycle duration, and mandatory notes for a selected state/profession.
  *

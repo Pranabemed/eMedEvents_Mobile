@@ -4,6 +4,14 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Imagepath from '../../Themes/Imagepath';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
+
+/**
+ * Reusable parseHtmlContent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const parseHtmlContent = (htmlContent) => {
   const titleMatch = htmlContent.match(/<h2 class='orange-color'>(.*?)<\/h2>/i);
   const dateMatch = htmlContent.match(/<p class='paratex sliderthreecredits[^>]*'>\s*<img[^>]*>\s*(.*?)<\/p>/i);

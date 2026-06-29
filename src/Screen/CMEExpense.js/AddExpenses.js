@@ -13,6 +13,14 @@ import CalenderIcon from 'react-native-vector-icons/Feather';
 import Buttons from '../../Components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable AddExpenses component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const AddExpenses = (props) => {
     const [cmeimg, setCmeimg] = useState(null);
     const [membership, setMembership] = useState("");

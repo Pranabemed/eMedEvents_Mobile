@@ -4,6 +4,14 @@ import StarRating from 'react-native-star-rating-widget';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable StateRequiredCast component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateRequiredCast = ({ tooltip, item, index, setAllSpecial, setTootip, handleUrl }) => {
     function customRound(price) {
         price = price.replace(/[^0-9.]/g, '');

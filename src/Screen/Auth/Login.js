@@ -24,6 +24,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+
+/**
+ * Reusable normalizeProfessionHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const normalizeProfessionHandle = (professionHandle) =>
   String(professionHandle || '')
     .toLowerCase()

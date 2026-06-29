@@ -30,6 +30,14 @@ import Loader from '../../Utils/Helpers/Loader'
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable CustomRadioButton component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 let status1 = "";
 const CustomRadioButton = ({ selected, onPress }) => (

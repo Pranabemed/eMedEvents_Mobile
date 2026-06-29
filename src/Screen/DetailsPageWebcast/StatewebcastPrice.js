@@ -13,6 +13,14 @@ import { saveTicketRequest } from '../../Redux/Reducers/WebcastReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { useDispatch, useSelector } from 'react-redux';
+
+/**
+ * Reusable StatewebcastPrice component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status3 = "";
 const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToReviews, calculatePrice }) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);

@@ -6,6 +6,14 @@ import CustomFlatList from "../../Utils/Helpers/CustomFlat";
 import { TextInput } from "react-native-gesture-handler";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable StickyFlatList component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const data = Array(10).fill(1);
 const StickyFlatList = () => {
   return (

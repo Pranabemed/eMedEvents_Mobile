@@ -6,6 +6,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Fonts from '../../Themes/Fonts';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable AddToCartNo component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const AddToCartNo = (props) => {
 
     const cartPressNo = () => {

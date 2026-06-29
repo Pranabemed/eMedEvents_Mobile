@@ -16,6 +16,14 @@ import Imagepath from '../../../../Themes/Imagepath';
 import styles from '../../GuestUser.styles';
 import { scale } from '../utils/guestUserCore';
 
+/**
+ * Reusable SectionTitleComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const MEMBERSHIP_POINTS = [
   'Multi State & Board Licensure Tracking',
   'Personalized CME/CE Recommendations',

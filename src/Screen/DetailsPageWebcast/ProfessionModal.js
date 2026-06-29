@@ -5,6 +5,14 @@ import Icon from 'react-native-vector-icons/AntDesign'
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import { styles } from '../CMECreditValut/Statevaultstyes';
+
+/**
+ * Reusable ProfessionModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ProfessionModal = ({setProfessionstype,profesionstype,professionFetch,profesions,setProfessions,creditModal, setCreditModal, dommyData, setParticular}) => {
     return (
         <Modal

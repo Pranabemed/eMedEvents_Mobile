@@ -9,6 +9,14 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 
+/**
+ * Reusable RegisterModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const GUEST_PROMPT_KEYS = [
     'GUEST_REGISTRATION_FLOW',
     'GUEST_PRIME_VERIFICATION_PENDING',

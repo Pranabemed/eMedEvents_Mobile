@@ -20,6 +20,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CMEActivity component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const CMEActivity = (props) => {
     console.log(props?.route?.params?.name, "mgblfhik000000");

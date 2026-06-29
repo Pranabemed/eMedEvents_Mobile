@@ -26,6 +26,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 let status = "";
 // import { GestureHandlerRootView } from 'react-native-gesture-handler'
+
+/**
+ * Reusable StateCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateCourse = (props) => {
   const { takestate, addit, isConnected, fulldashbaord, setAddit } = useContext(AppContext);
   const [visible, setVisible] = useState(false);

@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/DrawerModal.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/DrawerModal.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  Image,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  FlatList,
+  ImageBackground,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Linking,
+  InteractionManager
+} from 'react-native';
+import { takeLatest, select, put, call } from 'redux-saga/effects';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import propstype from 'prop-types';
+import normalize from '../Utils/Helpers/Dimen';
+import Modal from 'react-native-modal';
+import Imagepath from '../Themes/Imagepath';
+import Fonts from '../Themes/Fonts';
+import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import { againloginsiginRequest, againloginsiginSuccess, allreducerRequest, loginRequest, loginsiginRequest, loginsiginSuccess, loginSuccess, logoutRequest, signupRequest, tokenRequest } from '../Redux/Reducers/AuthReducer';
+import { useDispatch, useSelector } from 'react-redux';
+import ArrowIcn from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../Utils/Helpers/constants';
+import connectionrequest from '../Utils/Helpers/NetInfo';
+import { mainprofileRequest } from '../Redux/Reducers/DashboardReducer';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import Colorpath from '../Themes/Colorpath';
+import { PrimeCheckRequest, saveRegistRequest } from '../Redux/Reducers/WebcastReducer';
+import PrimeCard from './PrimeCard';
+import Loader from '../Utils/Helpers/Loader';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
+import NetInfo from '@react-native-community/netinfo';
+import Buttons from './Button';
+import StackNav from '../Navigator/StackNav';
+import { navigationRef } from '../Navigator/RootNavigation';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
+
+/**
+ * Reusable DrawerModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+export default function DrawerModal(props) {
+  const insets = useSafeAreaInsets();
+  const {
+    takedata,
+    setIsConnected,
+    fulldashbaord,
+    setAddit
+  } = useContext(AppContext);
+  const navigation = useNavigation();
+  const isFocus = useIsFocused();
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const WebcastReducer = useSelector(state => state.WebcastReducer);
+  const dispatch = useDispatch();
+  const [allHandled, setAllHandled] = useState(null);
+  const [primeit, setPrimeit] = useState(false);
+  const [primeits, setPrimeits] = useState(false);
+  const [subit, setSubit] = useState(false);
+  const [nettruedr, setNettruedr] = useState(true)
+  const [primeSkipped, setPrimeSkipped] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [isProfileReady, setIsProfileReady] = useState(false);
+  const [storedAuthUser, setStoredAuthUser] = useState(null);
+  const hasActiveSession =
+    AuthReducer?.signupResponse?.user ||
+    AuthReducer?.loginResponse?.user ||
+    AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.verifymobileResponse?.user ||
+    storedAuthUser;
+
+  const resolvedUser = hasActiveSession
+    ? DashboardReducer?.mainprofileResponse || hasActiveSession
+    : null;
+
+  const resolvedDrawerUser = resolvedUser;
+
+  const loginUser =
+    storedAuthUser ||
+    AuthReducer?.loginResponse?.user ||
+    resolvedUser;
+
+  const activeUser = loginUser?.user
+    ? loginUser.user
+    : loginUser;
+
+  const isNonSubscribedNoSubscription =
+    activeUser?.subscription_user == "non-subscribed" &amp;&amp;
+    (!activeUser?.subscription ||
+      activeUser?.subscription?.length === 0) &amp;&amp;
+    (!activeUser?.subscriptions ||
+      activeUser?.subscriptions?.length === 0);
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
+  }, [props.isVisible]);
+  useEffect(() => {
+    const checkPrimeSkipped = async () => {
+      try {
+        const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+        setPrimeSkipped(skipped === 'true');
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    if (isFocus || props.isVisible) {
+      checkPrimeSkipped();
+    }
+  }, [isFocus, props.isVisible]);
+  useEffect(() => {
+    let mounted = true;
+    if (isFocus) {
+      setIsProfileReady(false);
+      Promise.all([
+        readNonUsaFlowState(),
+        readNonUsaPermanentFlags(),
+        AsyncStorage.getItem(constants.AUTH_USER_DATA),
+        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+        AsyncStorage.getItem(constants.PROFESSION),
+        AsyncStorage.getItem('activeProfile')
+      ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
+        if (!mounted) return;
+
+        const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
+
+        setNonUsaFlowState(state);
+        setNonUsaPermanentFlags(flags);
+        setStoredAuthUser(auth_user_json);
+        setCurrentProfile(activeProfile);
+        setIsProfileReady(true);
+      }).catch(err => {
+        console.log('Error loading AsyncStorage drawer data', err);
+        if (mounted) {
+          setIsProfileReady(true);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+  const navigateSmooth = (name, params) => {
+    props.drawerPress?.();
+    props.onBackdropPress?.();
+    requestAnimationFrame(() => {
+      InteractionManager.runAfterInteractions(() => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name, params }]
+          })
+        );
+      });
+    });
+  };
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setNettruedr(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, [isFocus]);
+  const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+  const profFromDashboard =
+    resolvedDrawerUser?.professional_information?.profession != null &amp;&amp;
+      resolvedDrawerUser?.professional_information?.profession_type != null
+      ? `${resolvedDrawerUser?.professional_information?.profession} - ${resolvedDrawerUser?.professional_information?.profession_type}`
+      : null;
+  const allProfTake = isProfileReady &amp;&amp; currentProfile !== 'SkipProfile' &amp;&amp; validHandles.has(profFromDashboard);
+  useEffect(() => {
+    if (AuthReducer.status === 'Auth/logoutSuccess') {
+      setLogoutPending(false);
+      setSubit(false);
+      props.onBackdropPress?.();
+      navigationRef.current?.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'GuestUser' }],
+        })
+      );
+      return;
+    }
+
+    if (AuthReducer.status === 'Auth/logoutFailure') {
+      setLogoutPending(false);
+    }
+  }, [AuthReducer.status, navigation, props]);
+  useEffect(() => {
+    if (props?.handel == "closeit") {
+      connectionrequest()
+        .then(() => {
+          dispatch(mainprofileRequest({}))
+        })
+        .catch((err) => showErrorAlert("Please connect to internet", err))
+    }
+  }, [props?.handel]);
+  useEffect(() => {
+    connectionrequest()
+      .then(() => {
+        dispatch(mainprofileRequest({}))
+      })
+      .catch((err) => showErrorAlert("Please connect to internet", err))
+  }, [isFocus])
+  useEffect(() => {
+    if (resolvedDrawerUser) {
+      setAllHandled(resolvedDrawerUser);
+    }
+  }, [resolvedDrawerUser]);
+
+  useEffect(() => {
+    if (props.isVisible) {
+      connectionrequest()
+        .then(() => {
+          dispatch(mainprofileRequest({}));
+          dispatch(PrimeCheckRequest({}));
+        })
+        .catch((err) => showErrorAlert("Please connect to internet", err));
+    }
+  }, [props.isVisible]);
+  const getInitials = (firstname, lastname) => {
+    const firstInitial = firstname ? firstname.charAt(0).toUpperCase() : "";
+    const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
+    return firstInitial + lastInitial;
+  };
+  const userObj = resolvedUser || null;
+  const isUsaProfile =
+    userObj?.usa_user === true ||
+    userObj?.usa_user === 1 ||
+    userObj?.usa_user === '1' ||
+    userObj?.is_non_usa === false ||
+    userObj?.is_non_usa === 0 ||
+    userObj?.is_non_usa === '0';
+
+  const isNonUsaUser = isProfileReady &amp;&amp; currentProfile !== 'SkipProfile' &amp;&amp; !isUsaProfile &amp;&amp; (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+
+  useEffect(() => {
+    if (isUsaProfile &amp;&amp; nonUsaFlowState?.isNonUsa) {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+      setNonUsaFlowState(null);
+    }
+  }, [isUsaProfile, nonUsaFlowState]);
+  const modalKey = isNonSubscribedNoSubscription ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
+    { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
+    // { id: 3, name: "Document Vault",img: Imagepath.Folder},
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    // { id: 5, name: "CME/CE Planner",img:Imagepath.CalenderCheck},
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
+    // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
+    // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
+    // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
+  ] : currentProfile === 'SkipProfile' &amp;&amp; !isNonSubscribedNoSubscription ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+  ] : isNonUsaUser ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+  ] : allProfTake ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
+    { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
+    // { id: 3, name: "Document Vault",img: Imagepath.Folder},
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    // { id: 5, name: "CME/CE Planner",img:Imagepath.CalenderCheck},
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
+    // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
+    // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
+    // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
+  ] : !resolvedDrawerUser?.licensures?.[0]?.board_id
+    ? [
+      { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+      { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+      { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+      { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+
+    ]
+    : [
+      { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+      { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
+      { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+      { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
+      { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+    ]
+  const downKey = [
+    { id: 0, name: "For Any Quries" },
+    { id: 1, name: "support@emedevents.com" },
+    { id: 2, name: "Sign Out" }
+  ]
+  const [expandedId, setExpandedId] = useState(0);
+  const [finalverifyvault, setFinalverifyvault] = useState(null);
+  const [finalProfession, setFinalProfession] = useState(null);
+  const [alphaimg, setAlphaimg] = useState("");
+  const handleToggle = (id) => {
+    setExpandedId(prevId => (prevId === id ? null : id));
+  };
+  useEffect(() => {
+    const token_handle_vault = () => {
+      setTimeout(async () => {
+        try {
+          const [board_special, profession_data] = await Promise.all([
+            AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+            AsyncStorage.getItem(constants.PROFESSION)
+          ]);
+          const board_special_json = board_special ? JSON.parse(board_special) : null;
+          const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+          setFinalverifyvault(board_special_json);
+          setFinalProfession(profession_data_json);
+        } catch (error) {
+          console.log('Error fetching data:', error);
+        }
+      }, 100);
+    };
+
+    if (isFocus || props.isVisible) {
+      token_handle_vault();
+    }
+  }, [isFocus, props.isVisible]);
+  useEffect(() => {
+    connectionrequest()
+      .then(() => {
+        dispatch(PrimeCheckRequest({}))
+      })
+      .catch((err) => showErrorAlert("Please connect to internet", err))
+  }, [])
+  const resolvedProfessionSource = useMemo(() => {
+    return (
+      resolvedDrawerUser?.professional_information ||
+      AuthReducer?.loginResponse?.user ||
+      AuthReducer?.againloginsiginResponse?.user ||
+      AuthReducer?.verifymobileResponse?.user ||
+      finalverifyvault ||
+      finalProfession ||
+      null
+    );
+  }, [
+    resolvedDrawerUser?.professional_information,
+    AuthReducer?.loginResponse?.user,
+    AuthReducer?.againloginsiginResponse?.user,
+    AuthReducer?.verifymobileResponse?.user,
+    finalverifyvault,
+    finalProfession,
+  ]);
+  const resolvedProfessionText = useMemo(() => {
+    const clean = (value) => {
+      if (value == null) return '';
+      return String(value).trim();
+    };
+    const profession = clean(resolvedProfessionSource?.profession);
+    const professionType = clean(resolvedProfessionSource?.profession_type);
+    return profession &amp;&amp; professionType
+      ? `${profession} - ${professionType}`
+      : profession || professionType || '';
+  }, [resolvedProfessionSource]);
+  const isPrimeTrial = useMemo(() => {
+    return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
+  }, [WebcastReducer?.PrimeCheckResponse]);
+  const takeSub = isPrimeTrial || isNonSubscribedNoSubscription || finalProfession?.subscription_user == "free" || activeUser?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvault?.subscription_user == "non-subscribed";
+  const endDateStringTake =
+    WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfession?.subscriptions?.[0]?.end_date;
+  useEffect(() => {
+    if (endDateStringTake) {
+      const endDateString =
+        WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfession?.subscriptions?.[0]?.end_date;
+      if (!endDateString) return;
+      try {
+        const endDate = new Date(endDateString);
+        const currentDate = new Date();
+        const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+        const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+        if (normalizedCurrentDate >= normalizedEndDate) {
+          setPrimeit(true);
+        } else {
+          setPrimeit(false);
+        }
+        const timeDifference = normalizedEndDate - normalizedCurrentDate;
+        const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
+        if (daysDifference &lt;= 30) {
+          setPrimeits(true);
+        } else {
+          setPrimeits(false);
+        }
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        // Handle error case appropriately (maybe setEnables(false))
+      }
+    } else if (takeSub) {
+      setPrimeits(true);
+    }
+  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvault, finalProfession, takeSub, endDateStringTake]);
+  const resolvedSpecialityText = useMemo(() => {
+    const specialitiesObject =
+      resolvedDrawerUser?.specialities ||
+      resolvedProfessionSource?.professional_information?.specialities ||
+      resolvedProfessionSource?.specialities;
+    if (!specialitiesObject) return '';
+    const valuesArray = Object.values(specialitiesObject).filter(Boolean);
+    return valuesArray.join(', ');
+  }, [resolvedDrawerUser?.specialities, resolvedProfessionSource]);
+  const [stableProfileMetaText, setStableProfileMetaText] = useState('');
+  const readProfileText = (value) => (value == null ? '' : String(value).trim());
+  const buildProfessionLabel = (source) => {
+    if (!source) return '';
+    const profession = readProfileText(source?.professional_information?.profession || source?.profession);
+    const professionType = readProfileText(source?.professional_information?.profession_type || source?.profession_type);
+    if (profession &amp;&amp; professionType) {
+      return `${profession} - ${professionType}`;
+    }
+    return profession || professionType || '';
+  };
+  const currentProfileMetaText = useMemo(() => {
+    const professionLabel = buildProfessionLabel(resolvedProfessionSource);
+    return [professionLabel || resolvedProfessionText, resolvedSpecialityText].filter(Boolean).join(' | ');
+  }, [resolvedProfessionSource, resolvedProfessionText, resolvedSpecialityText]);
+  useEffect(() => {
+    if (currentProfileMetaText) {
+      setStableProfileMetaText(currentProfileMetaText);
+    }
+  }, [currentProfileMetaText]);
+  useEffect(() => {
+    if (resolvedDrawerUser || resolvedProfessionSource) {
+      const firstName = resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname;
+      const lastName = resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname;
+      const initials = getInitials(firstName, lastName);
+      setAlphaimg(initials)
+    }
+  }, [resolvedDrawerUser, resolvedProfessionSource])
+  const renderNestedItem = ({ item, index }) => {
+    return (
+      &lt;>
+        &lt;View style={{ paddingHorizontal: normalize(51), paddingVertical: normalize(5) }}>
+          &lt;Pressable onPress={() => {
+            if (item?.id == 2) {
+              navigateSmooth("Wallets", { name: item?.name });
+            } else if (item?.id == 3) {
+              navigateSmooth("HCPSub", { name: item?.name });
+            } else if (item?.id == 0) {
+              navigateSmooth("Registration", { name: item?.name });
+            } else {
+              navigateSmooth("SubTransaction", { name: item?.name });
+
+            }
+          }}>
+            &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#666", width: normalize(200), fontWeight: "500" }}>{item?.name}&lt;/Text>
+          &lt;/Pressable>
+        &lt;/View>
+        {item?.id == 3 &amp;&amp; &lt;View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
+          &lt;View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+        &lt;/View>}
+      &lt;/>
+    );
+  }
+  const modalRender = ({ item, index }) => {
+    return (
+      &lt;>
+        &lt;Pressable onPress={() => {
+          if (item?.id == 0) {
+            const getAda = fulldashbaord?.[0];
+            setAddit(getAda);
+            navigateSmooth("TabNav");
+          } else if (item?.id == 1) {
+            navigateSmooth("Course", {
+              taskData: { statid: takedata?.board_id, creditID: takedata },
+            });
+          } else if (item?.id == 2) {
+            if (primeit || isNonSubscribedNoSubscription) {
+              setSubit(true);
+              // props.expensesNav();
+            } else {
+              // props.expensesNav();
+              navigateSmooth("StateCourse");
+            }
+          } else if (item?.id == 3) {
+            // props.expensesNav();
+            if (primeit || isNonSubscribedNoSubscription) {
+              setSubit(true);
+            } else {
+              navigateSmooth("BoardCourseSlide");
+            }
+          } else if (item?.id == 4) {
+            // props.expensesNav();
+            if (primeit || isNonSubscribedNoSubscription) {
+              setSubit(true);
+            } else {
+              navigateSmooth("SpecialityCourseSlide");
+            }
+          } else if (item?.id == 5 &amp;&amp; expandedId == 5) {
+            setExpandedId(0);
+          } else if (item?.id == 5 &amp;&amp; expandedId == 0) {
+            item?.nestedItems &amp;&amp; handleToggle(item?.id);
+          } else if (item?.id == 6) {
+            navigateSmooth("InterestedChekout");
+          }
+        }} style={{ flexDirection: "row", paddingHorizontal: normalize(15), paddingVertical: normalize(5), gap: 8 }}>
+          &lt;Image source={item.img} style={{ height: item?.id == 6 ? normalize(18) : normalize(20), width: item?.id == 6 ? normalize(18) : normalize(20), resizeMode: "contain", tintColor: "#000000" }} />
+          &lt;View style={{ flexDirection: "row" }}>
+            &lt;Text style={Platform.OS === 'ios' ? { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333", paddingHorizontal: normalize(8), paddingVertical: normalize(4), fontWeight: "500" } : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333", paddingHorizontal: normalize(8) }}>{item?.name}&lt;/Text>
+            {item?.nestedItems &amp;&amp; (
+              &lt;ArrowIcn style={{ marginTop: normalize(-2), paddingHorizontal: normalize(80) }} name={expandedId == 0 ? expandedId == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down" : (expandedId || props?.expandId) == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={30} color={"#000000"} />
+            )}
+          &lt;/View>
+        &lt;/Pressable>
+        &lt;View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
+          &lt;View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+        &lt;/View>
+
+        {expandedId == 0 ? expandedId == item?.id &amp;&amp; item?.nestedItems &amp;&amp; (
+          &lt;FlatList
+            data={item?.nestedItems}
+            renderItem={renderNestedItem}
+            keyExtractor={(nestedItem) => nestedItem.id.toString()}
+          />) : (expandedId || props?.expandId) == item?.id &amp;&amp; item?.nestedItems &amp;&amp; (
+            &lt;FlatList
+              data={item?.nestedItems}
+              renderItem={renderNestedItem}
+              keyExtractor={(nestedItem) => nestedItem.id.toString()}
+            />)}
+        {/* &lt;View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
+          &lt;View style={{ height: 1, width: normalize(230), backgroundColor: "#DDD" }} />
+        &lt;/View> */}
+      &lt;/>
+    )
+  }
+  const handleRot = () => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+      if (state.isConnected) {
+        &lt;StackNav />
+      }
+    });
+
+    return () => unsubscribe();
+  }
+  const clearAllAsyncStorage = async () => {
+    try {
+      const keepKeys = [
+        'PRIME_CARD_SKIPPED_ONCE',
+        'PrimeMembershipSkipped',
+        constants.NON_USA_FLOW_STATE,
+        NON_USA_PROFESSION_UPDATE_REQUIRED_KEY,
+        NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY,
+      ];
+      const preservedEntries = await AsyncStorage.multiGet(keepKeys);
+      await AsyncStorage.removeItem('lastActiveTab')
+      await AsyncStorage.removeItem('WHOLEDATA');
+      await AsyncStorage.removeItem('PRODATA');
+      await AsyncStorage.clear();
+      for (const [key, value] of preservedEntries) {
+        if (value !== null) {
+          await AsyncStorage.setItem(key, value);
+        }
+      }
+      console.log('All AsyncStorage keys cleared successfully!');
+    } catch (e) {
+      console.error('Error clearing AsyncStorage:', e);
+    }
+  };
+  const openEmail = () => {
+    Linking.openURL('mailto:support@emedevents.com');
+  };
+  const modalDown = ({ item, index }) => {
+    return (
+      &lt;View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
+        &lt;Pressable onPress={() => {
+          if (item?.id == 2) {
+            Alert.alert("eMedEvents", "Are you sure want to signout ?",
+              [{ text: "No", style: "cancel", onPress: () => { console.log("hello") } },
+              {
+                text: "Yes", style: "default",
+                onPress: () => {
+                  setLogoutPending(true);
+                  clearAllAsyncStorage()
+                    .then(() => dispatch(logoutRequest()))
+                    .then(() => dispatch(allreducerRequest({ "obj": "" })))
+                    .catch(err => console.log("Logout flow error:", err));
+                }
+              }])
+          } else if (item.id == 1) {
+            openEmail();
+          }
+        }}>
+          &lt;Text style={{ fontWeight: "500", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: item?.id == 1 ? Colorpath.ButtonColr : item?.id == 2 ? "#FF5E62" : "#333", marginTop: item?.id == 2 ? normalize(10) : 0 }}>{item?.name}&lt;/Text>
+        &lt;/Pressable>
+      &lt;/View>
+    )
+  }
+
+  return (
+    &lt;>
+      &lt;Modal
+        backdropOpacity={0.5}
+        backdropColor="rgba(0,0,0,0.5)"
+        animationIn={'slideInLeft'}
+        animationOut={'slideOutLeft'}
+        animationInTiming={250}
+        animationOutTiming={200}
+        useNativeDriver={true}
+        hideModalContentWhileAnimating={true}
+        backdropTransitionOutTiming={0}
+        onBackdropPress={() => {
+          if (props?.lastActiveTab) {
+            const getAda = fulldashbaord?.[0];
+            setAddit(getAda);
+            props.onBackdropPress();
+            navigation.navigate("TabNav", { initialRoute: props?.lastActiveTab });
+          } else if (props?.handel == 'drawerclose') {
+            const getAda = fulldashbaord?.[0];
+            setAddit(getAda);
+            props.onBackdropPress();
+            navigation.navigate("TabNav");
+          } else if (props?.handel == "closeit") {
+            const getAda = fulldashbaord?.[0];
+            setAddit(getAda);
+            props.onBackdropPress();
+            navigation.navigate("TabNav");
+          } else {
+            props.onBackdropPress();
+          }
+        }}
+        isVisible={props.isVisible}
+        style={{ margin: normalize(0) }}
+        onRequestClose={() => {
+          props.onRequestClose();
+        }}>
+        &lt;SafeAreaView
+          style={{
+            backgroundColor: "#FFFFFF",
+            flex: 1,
+            width: Platform.OS === 'ios' ? '83%' : '87%',
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 3
+          }}>
+          {/* &lt;Loader visible={DashboardReducer?.status == 'Dashboard/mainprofileRequest'} /> */}
+          {nettruedr ? &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+            &lt;View
+              style={{
+                flexDirection: 'row',
+                paddingLeft: normalize(32),
+                paddingTop: Platform.OS === 'ios' ? normalize(20) : normalize(10),
+                gap: 10
+              }}>
+              &lt;Pressable onPress={() => {
+                navigateSmooth("TabNav", { initialRoute: "Profiles" });
+              }}>
+                {resolvedDrawerUser?.personal_information?.image_name &amp;&amp; resolvedDrawerUser?.personal_information?.image_path ? &lt;ImageBackground source={resolvedDrawerUser?.personal_information?.image_name == null || resolvedDrawerUser?.personal_information?.image_name == "" || !resolvedDrawerUser?.personal_information?.image_name ||
+                  resolvedDrawerUser?.personal_information?.image_path == null || !resolvedDrawerUser?.personal_information?.image_path || resolvedDrawerUser?.personal_information?.image_path == ""
+                  ? Imagepath.HumanIcn
+                  : { uri: `${resolvedDrawerUser?.personal_information?.image_path}${resolvedDrawerUser?.personal_information?.image_name}` }
+                } resizeMode="cover" style={{ height: normalize(35), width: normalize(35) }} imageStyle={{ borderRadius: normalize(35) }} /> : &lt;View style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: Colorpath.Pagebg,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                  &lt;Text style={{
+                    color: Colorpath.ButtonColr,
+                    fontSize: 18,
+                    fontWeight: "bold", fontFamily: Fonts.InterBold
+                  }}>{alphaimg}&lt;/Text>
+                &lt;/View>}
+              &lt;/Pressable>
+              &lt;View style={{ flexDirection: "column" }}>
+                &lt;View style={{ flexDirection: "column" }}>
+                  &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname || AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || 'Guest'} ${resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname || AuthReducer?.loginResponse?.user?.lastname || AuthReducer?.againloginsiginResponse?.user?.lastname || 'User'}`}&lt;/Text>
+                  &lt;Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>
+                    {stableProfileMetaText || 'Guest Profile'}
+                  &lt;/Text>
+                &lt;/View>
+                {(isNonSubscribedNoSubscription || !isNonUsaUser &amp;&amp; allProfTake) &amp;&amp; (
+                  &lt;Pressable
+                    style={{
+                      alignSelf: 'flex-start', // Let content determine width
+                      marginTop: normalize(8),
+                    }}
+                    disabled={isNonSubscribedNoSubscription ? false : (primeit ? !primeit : !primeits)}
+                    onPress={() => setSubit(true)}
+                  >
+                    &lt;View
+                      style={{
+                        flexDirection: "row",
+                        paddingVertical: 3,
+                        paddingHorizontal: 10,
+                        borderRadius: normalize(20),
+                        borderWidth: 0.8,
+                        borderColor: "#FF773D",
+                        alignItems: "center",
+                        gap: 3,
+                      }}
+                    >
+                      &lt;View
+                        style={{
+                          height: normalize(20),
+                          width: normalize(20),
+                          borderRadius: normalize(20),
+                          backgroundColor: "#FF773D",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          shadowColor: "#000",
+                          shadowOffset: { height: 3, width: 0 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 3,
+                          elevation: 5,
+                          right: normalize(5),
+                          marginRight: normalize(-5)
+                        }}
+                      >
+                        &lt;Image
+                          source={Imagepath.CrownHome}
+                          style={{
+                            height: normalize(15),
+                            width: normalize(15),
+                            resizeMode: "contain"
+                          }}
+                        />
+                      &lt;/View>
+                      &lt;Text
+                        style={{
+                          fontFamily: Fonts.InterMedium,
+                          fontSize: 14,
+                          color: "#FF773D",
+                          textAlign: "center",
+                          paddingVertical: 3,
+                          fontWeight: "500"
+                        }}
+                      >
+                        {isNonSubscribedNoSubscription || primeit || (primeits &amp;&amp; !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date)
+                          ? "Become a Prime Member"
+                          : "Prime Member"}
+                      &lt;/Text>
+                    &lt;/View>
+                  &lt;/Pressable>
+                )}
+              &lt;/View>
+            &lt;/View>
+            &lt;View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
+              &lt;View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+            &lt;/View>
+            &lt;View>
+              &lt;FlatList
+                data={modalKey}
+                renderItem={modalRender}
+                keyExtractor={(item, index) => index.toString()} />
+            &lt;/View>
+            &lt;View>
+              &lt;FlatList
+                data={downKey}
+                renderItem={modalDown}
+                keyExtractor={(item, index) => index.toString()} />
+            &lt;/View>
+          &lt;/ScrollView> : &lt;SafeAreaView style={styles.container}>
+            &lt;View style={styles.centerContainer}>
+              &lt;View style={{
+                height: normalize(100),
+                width: normalize(120),
+                borderRadius: normalize(20),
+                bottom: normalize(20),
+                justifyContent: "center",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { height: 3, width: 0 },
+                elevation: 10,
+                backgroundColor: "#FFFFFF"
+              }}>
+                &lt;Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
+              &lt;/View>
+              &lt;Buttons
+                onPress={handleRot}
+                height={normalize(25)}
+                width={normalize(240)}
+                // backgroundColor={Colorpath.ButtonColr}
+                borderRadius={normalize(5)}
+                text="No Internet Connection"
+                color={Colorpath.black}
+                fontSize={20}
+                fontFamily={Fonts.InterSemiBold}
+                fontWeight="bold"
+              // marginTop={normalize(5)}
+              />
+              &lt;Buttons
+                onPress={handleRot}
+                height={normalize(45)}
+                width={normalize(290)}
+                // backgroundColor={Colorpath.ButtonColr}
+                borderRadius={normalize(5)}
+                text={`Please check your internet connection ${"\n"}and try again`}
+                color={Colorpath.black}
+                fontSize={16}
+                fontFamily={Fonts.InterSemiBold}
+                fontWeight="bold"
+                marginTop={normalize(5)}
+              />
+              &lt;Buttons
+                onPress={() => {
+                  props.onBackdropPress();
+                  navigation.navigate("TabNav");
+                  handleRot();
+                }}
+                height={normalize(45)}
+                width={normalize(240)}
+                backgroundColor={Colorpath.ButtonColr}
+                borderRadius={normalize(5)}
+                text="Retry"
+                color={Colorpath.white}
+                fontSize={16}
+                fontFamily={Fonts.InterSemiBold}
+                fontWeight="bold"
+                marginTop={normalize(15)}
+              />
+            &lt;/View>
+          &lt;/SafeAreaView>}
+        &lt;/SafeAreaView>
+        {subit &amp;&amp; &lt;PrimeCard primeadd={subit} setPrimeadd={setSubit} />}
+      &lt;/Modal>
+    &lt;/>
+  );
+}
+
+DrawerModal.propstype = {
+  isVisible: propstype.string,
+  onBackdropPress: propstype.func,
+  onRequestClose: propstype.func,
+  editButton: propstype.func,
+  backButton: propstype.func,
+  loginlogoutNavigate: propstype.func,
+  rentalNavigate: propstype.func,
+  expensesNav: propstype.func,
+  interestedNav: propstype.func,
+  // feedbackNavigate: propstype.func,
+  watchlistNavigate: propstype.func,
+  subscribeNavigate: propstype.func,
+  rewardNavigate: propstype.func,
+  homeNavigate: propstype.func,
+  logoutSucees: propstype.func,
+  handel: propstype.string,
+  expandId: propstype.number,
+  drawerPress: propstype.func
+};
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    // backgroundColor: Colorpath.Pagebg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    padding: normalize(10),
+    // flex: 0.4
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: normalize(20),
+    zIndex: 2,
+  },
+  internetCard: {
+    // position: 'absolute',
+    top: 400,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colorpath.Pagebg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    padding: normalize(10),
+    marginTop: normalize(10),
+    flex: 1,
+    gap: normalize(5)
+  },
+  internetText: {
+    color: "#000000",
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 20,
+  },
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -13,6 +13,14 @@ import moment from 'moment';
 import Loader from '../../Utils/Helpers/Loader';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable HcpContent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
     const windowWidth = Dimensions.get('window').width;
     const TransReducer = useSelector(state => state.TransReducer);

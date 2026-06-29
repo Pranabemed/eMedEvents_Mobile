@@ -6,6 +6,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import DropDownHeader from '../../Components/DropDownHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable LocationComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const LocationComponent = ({setDownlink,Handlestate,setStatepick,searchtexttopic,searchTopicName,clisttopic}) => {
     const weekFilterProfession = ({ item, index }) => {
         return (item?.state_name ?<TouchableOpacity

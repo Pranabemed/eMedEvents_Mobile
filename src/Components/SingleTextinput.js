@@ -8,6 +8,14 @@ import {
   Easing,
 } from 'react-native';
 import PropTypes from 'prop-types';
+
+/**
+ * Reusable onChangeText component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const TextInputSingle = forwardRef((props, ref) => {
   const [textValue, setTextValue] = useState(props.value);
   const animatedLabelValue = useRef(new Animated.Value(0)).current;

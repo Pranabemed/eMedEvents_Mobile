@@ -13,6 +13,14 @@ import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import EyeIcon from 'react-native-vector-icons/Entypo';
 
+/**
+ * Reusable toggleSecureEntry component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 // ---------------------------------------------------------------------------
 // CellInput – floating-label TextInput
 //

@@ -2,6 +2,14 @@ import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Install if not already: npm install react-native-vector-icons
 
+/**
+ * Reusable CustomCheckBox component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomCheckBox = ({ selected, onPress }) => {
   return (
     <TouchableOpacity

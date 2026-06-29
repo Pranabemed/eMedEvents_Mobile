@@ -16,6 +16,14 @@ import styles from '../../GuestUser.styles';
 import { MembershipBanner, SectionTitle, StatsGrid, TagChip } from './GuestUserShared';
 
 /**
+ * Reusable GuestRequirementsPanelComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Profession and state requirement input panel.
  * Purpose: Keeps the guest requirement call-to-action isolated from the page container.
  */

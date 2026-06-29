@@ -13,6 +13,14 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import ArrowUp from 'react-native-vector-icons/AntDesign';
 import TextFieldIn from '../Components/Textfield';
+
+/**
+ * Reusable Specialized component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 export default function Specialized(props) {
   const [modalVisible, setModalVisible] = useState(props.modalVisible);
   const [search, setSearch] = useState('');

@@ -8,6 +8,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import ErrorIcon from 'react-native-vector-icons/MaterialIcons'
 import moment from 'moment';
 import { CommonActions } from '@react-navigation/native';
+
+/**
+ * Reusable BoardCarousel component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const  BoardCarousel = ({ item ,boardnamereal,navigation,stateid,boardtake}) =>{
     const windowWidth = Dimensions.get('window').width;
     const text = item?.board_name;

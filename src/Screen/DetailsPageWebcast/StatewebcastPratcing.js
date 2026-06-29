@@ -4,6 +4,14 @@ import Buttons from '../../Components/Button';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
+
+/**
+ * Reusable StatewebcastPratcing component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastPratcing = ({navigate}) => {
   return (
     <View

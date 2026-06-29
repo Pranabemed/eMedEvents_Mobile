@@ -17,6 +17,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
 import constants from '../../Utils/Helpers/constants';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 import { AboutusRequest, HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 import { clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import GuestUserView from './GuestUserView';
@@ -80,6 +81,9 @@ const GuestUser = props => {
     playerSessionID: '',
     ip: '',
     country: '',
+    country_name: '',
+    state_name: '',
+    city_name: '',
     deviceToken: '',
     email: ''
   });
@@ -162,15 +166,19 @@ const GuestUser = props => {
         }
 
         const email = await AsyncStorage.getItem(constants.EMAIL);
+        getUserAgentJSON();
 
         const ip = getPublicIP() || '';
         const geoInfo = await getCountryAndDialCode();
-        const country = geoInfo?.country || 'unknown';
+        const country = geoInfo?.country || '';
 
         setGuestDeviceData({
           playerSessionID: guestSessionId,
           ip: ip,
           country: country,
+          country_name: geoInfo?.country_name || '',
+          state_name: geoInfo?.state_name || '',
+          city_name: geoInfo?.city_name || '',
           deviceToken: token,
           email: email || ''
         });
@@ -215,6 +223,7 @@ const GuestUser = props => {
       }
 
       try {
+        getUserAgentJSON();
         await connectionrequest();
         const geoInfo = await getCountryAndDialCode();
         const countryCode = geoInfo?.country || 'US';

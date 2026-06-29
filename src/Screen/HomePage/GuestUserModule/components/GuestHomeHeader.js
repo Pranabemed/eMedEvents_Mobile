@@ -10,6 +10,7 @@ import styles from '../../GuestUser.styles';
 import { scale, getStateSlug, getStateName } from '../utils/guestUserCore';
 import normalize from '../../../../Utils/Helpers/Dimen';
 import { getApi } from '../../../../Utils/Helpers/ApiRequest';
+import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
@@ -42,6 +43,7 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
     if (isUsaUser === false) return;
     const fetchStates = async () => {
       try {
+        getUserAgentJSON();
         const response = await getApi('master/states?country_id=1');
         if (response?.data?.states) {
           setStatesList(response.data.states);

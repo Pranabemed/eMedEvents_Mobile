@@ -4,6 +4,14 @@ import ConferenceSummary from './ConferenceSummary'
 import RefundHtml from './Refund'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable StatewebcastRefund component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastRefund = ({conferenceText,conferenceHtml,expandcon,conferShows,width,webcastdeatils,refundtext,disclaimerText,refunded,refundExpand}) => {
   return (
     <View>

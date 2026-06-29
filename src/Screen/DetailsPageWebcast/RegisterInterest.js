@@ -34,6 +34,14 @@ import CustomInputTouchableX from '../Profile/CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+
+/**
+ * Reusable RegisterInterest component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status1 = "";
 let status = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';

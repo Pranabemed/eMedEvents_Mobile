@@ -4,6 +4,14 @@ import Modal from 'react-native-modal';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
+
+/**
+ * Reusable EmpStatusModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const EmpStatusModal = ({ setEmpstatusname, empstatusname, profiletakeshow, setProfiletakeshow }) => {
     const profileData = [{ id: 0, name: "Full-Time" }, { id: 1, name: "Part-Time" }, { id: 2, name: "Locum Tenens" }, { id: 3, name: "Telemedicine" }, { id: 4, name: "Volunteer" }, { id: 5, name: "Non-Clinical/Others" }];
     return (

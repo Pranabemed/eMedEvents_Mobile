@@ -12,6 +12,14 @@ import ResumeDash from './ResumeDash';
 import StateRequireditem from './StateRequired';
 import HomeShimmer from './DashBoardShimmer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable Dashboardmain component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButtonPress, setAddit, addit, takestate, setTakestate, tasksData, navigation, completedCount, pendingCount, totalcard, DashboardReducer, hasTasks, cmeValult }) => {
     const {
         fulldashbaord,

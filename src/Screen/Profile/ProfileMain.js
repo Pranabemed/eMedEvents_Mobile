@@ -27,6 +27,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow.js';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
+/**
+ * Reusable ProfileMain component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ProfileMain = (props) => {
     const {
         setFulldashbaord,

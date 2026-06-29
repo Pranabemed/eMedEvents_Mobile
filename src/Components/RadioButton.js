@@ -2,6 +2,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
+
+/**
+ * Reusable CustomRadioButton component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CustomRadioButton = ({ selected, onPress, label }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>

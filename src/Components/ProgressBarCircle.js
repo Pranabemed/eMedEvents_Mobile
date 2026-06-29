@@ -5,6 +5,14 @@ import Animated, { Easing, useSharedValue, useAnimatedProps, withTiming } from '
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 
+/**
+ * Reusable ProgressBarCircle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const ProgressBarCircle = ({

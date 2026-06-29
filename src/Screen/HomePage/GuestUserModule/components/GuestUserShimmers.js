@@ -16,6 +16,14 @@ import { SHIMMER_BG, SHIMMER_HL } from '../utils/guestUserContentParsers';
 import { SectionTitle } from './GuestUserShared';
 
 /**
+ * Reusable GuestHeroShimmerComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Hero/banner loading placeholder.
  * Purpose: Preserves top banner layout while guest home data is loading.
  */

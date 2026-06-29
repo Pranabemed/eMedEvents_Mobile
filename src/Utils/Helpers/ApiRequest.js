@@ -194,6 +194,26 @@ axiosInstance.interceptors.request.use(
       const freshToken = await AsyncStorage.getItem(constants.TOKEN);
       if (freshToken) {
         config.headers['eMedAuthorization'] = freshToken;
+      } else {
+        const { getPublicIP } = require('./IPServer');
+        const ip = getPublicIP() || '';
+        const uid = await AsyncStorage.getItem('PLAYERSESSION') || '';
+        
+        config.headers['Origin'] = '';
+        config.headers['Content-Type'] = 'application/json';
+        config.headers['IPADDRESS'] = ip;
+        config.headers['clickedUrl'] = '';
+        config.headers['referrerUrl'] = '';
+        config.headers['TrackingUID'] = uid;
+
+        console.log('[ApiRequest] Injected Guest Headers:', {
+          Origin: config.headers['Origin'],
+          'Content-Type': config.headers['Content-Type'],
+          IPADDRESS: ip,
+          clickedUrl: config.headers['clickedUrl'],
+          referrerUrl: config.headers['referrerUrl'],
+          TrackingUID: uid
+        });
       }
 
       const userAgentHeader = getUserAgentJSON();

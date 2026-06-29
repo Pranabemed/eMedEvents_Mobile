@@ -22,6 +22,14 @@ import { readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 let status1 = "";
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable MobileLoginOTP component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const MobileLoginOTP = (props) => {
     const {
         setFulldashbaord,

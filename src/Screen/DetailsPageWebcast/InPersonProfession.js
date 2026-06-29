@@ -7,6 +7,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import DropDownHeader from '../../Components/DropDownHeader'
 import PageHeader from '../../Components/PageHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ProfessionInPerson component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countrypickerprof, clist, setcountrypicker, searchCountryName, searchtext }) => {
     console.log(clist, "wekknamecustome");
     const [showLoader, setShowLoader] = useState(false)

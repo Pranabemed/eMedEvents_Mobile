@@ -19,6 +19,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable NonMain component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const NonMain = (props) => {
     const {
         statepush,

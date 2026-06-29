@@ -8,6 +8,14 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import CloseIcon from 'react-native-vector-icons/AntDesign';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
+
+/**
+ * Reusable PayModalCart component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PayModalCart = ({ dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);

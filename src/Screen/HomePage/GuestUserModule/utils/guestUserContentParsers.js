@@ -12,6 +12,14 @@ import { FormatDateZone } from '../../../../Utils/Helpers/Timezone';
 import { formatGuestNumber, formatGuestNumericText, getText } from './guestUserCore';
 
 /**
+ * Reusable matchGroup component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Removes HTML tags and entity noise from a string.
  * Purpose: Converts CMS HTML fragments into plain text display values.
  *

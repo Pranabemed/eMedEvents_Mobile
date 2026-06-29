@@ -5,6 +5,14 @@ import StatewebcastComponent from './StatewebcastComponent'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
+
+/**
+ * Reusable StatewebcastFaculty component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastFaculty = ({webcastdeatils,windowWidth,windowHeight,handleSnapToItem,val,nav,creditData,datawhole}) => {
   return (
     <View>

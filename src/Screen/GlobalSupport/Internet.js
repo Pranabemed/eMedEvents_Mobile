@@ -11,6 +11,14 @@ import { AppContext } from './AppContext';
 import StackNav from '../../Navigator/StackNav';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable Internet component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Internet = () => {
     const {
         isConnected,

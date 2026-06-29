@@ -5,6 +5,14 @@ import PageHeader from '../../Components/PageHeader';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+/**
+ * Reusable ExternalWebView component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ExternalWebView = (props) => {
   const webViewRef = useRef(null);
   const [canGoBack, setCanGoBack] = useState(false);

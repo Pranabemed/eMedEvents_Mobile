@@ -8,6 +8,14 @@ import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CheckThreeCity component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CheckThreeCity = ({ cityPicker, cityAll, setSearchcity, activeIndex, searchcity, handlecityShows, setCityPicker, searchCityName }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)

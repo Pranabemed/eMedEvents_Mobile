@@ -13,6 +13,14 @@ import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import RestProfession from './RestProfession';
+
+/**
+ * Reusable NewProfession component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 
 const normalizeProfessionHandle = (professionHandle) =>

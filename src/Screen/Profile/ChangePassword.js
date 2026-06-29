@@ -19,6 +19,14 @@ import constants from '../../Utils/Helpers/constants';
 import { NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY } from '../../Utils/Helpers/nonUsaFlow';
 import { navigationRef } from '../../Navigator/RootNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ChangePassword component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status1 = "";
 const ChangePassword = (props) => {
 

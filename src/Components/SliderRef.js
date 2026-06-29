@@ -2,6 +2,14 @@ import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Slider } from '@rneui/themed';
 import normalize from '../Utils/Helpers/Dimen';
+
+/**
+ * Reusable Sliders component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Sliders = ({
     value,
     max,

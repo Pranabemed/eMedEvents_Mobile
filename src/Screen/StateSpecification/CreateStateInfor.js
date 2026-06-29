@@ -34,6 +34,14 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput';
 import { markNonUsaStateLicenseFlowCompleted, readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CreateStateInfor component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const CreateStateInfor = (props) => {

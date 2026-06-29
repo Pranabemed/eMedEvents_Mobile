@@ -16,6 +16,14 @@ import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import constants from '../../Utils/Helpers/constants';
 import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/**
+ * Reusable CircleLoader component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const CircleLoader = ({allProfTake, percentage, mainData }) => {

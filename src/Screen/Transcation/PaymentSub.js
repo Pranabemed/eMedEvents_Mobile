@@ -22,6 +22,14 @@ import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable PaymentSub component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PaymentSub = (props) => {
     const {
         isConnected

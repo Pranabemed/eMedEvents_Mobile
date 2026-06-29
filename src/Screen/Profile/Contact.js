@@ -34,6 +34,14 @@ import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, 
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable isPhysicianProfessionalInformation component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 let status1 = "";
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';

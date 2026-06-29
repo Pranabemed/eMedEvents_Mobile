@@ -44,6 +44,14 @@ let status = "";
 let status1 = "";
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable Checkout component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const Checkout = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer)

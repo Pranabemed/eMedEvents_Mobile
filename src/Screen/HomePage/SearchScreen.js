@@ -10,6 +10,14 @@ import Imagepath from '../../Themes/Imagepath'
 import Buttons from '../../Components/Button'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable SearchScreen component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const SearchScreen = (props) => {
     const [search, setSearch] = useState(false);
     const [searchtxt, setSearchtxt] = useState("");

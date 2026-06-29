@@ -16,6 +16,14 @@ import Imagepath from '../../Themes/Imagepath';
 import InputField from '../../Components/CellInput';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ForgotMPIN component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ForgotMPIN = (props) => {
     const isNonUsaUser = Boolean(props?.route?.params?.isNonUsaUser);
     const [mobilhd, setMobilhd] = useState("");

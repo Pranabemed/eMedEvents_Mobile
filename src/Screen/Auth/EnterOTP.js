@@ -15,6 +15,14 @@ import Imagepath from '../../Themes/Imagepath';
 import Header from '../../Components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable EnterOTP component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const EnterOTP = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);

@@ -4,6 +4,14 @@ import normalize from '../../Utils/Helpers/Dimen'
 import Fonts from "../../Themes/Fonts";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import moment from "moment";
+
+/**
+ * Reusable FeaturedComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const FeaturedComponent = ({ item, index }) => {
     const formatDate = (dateStr) => {
         const date = moment(dateStr, "DD MMM'YY");

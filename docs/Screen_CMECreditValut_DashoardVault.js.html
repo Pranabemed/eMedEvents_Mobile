@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/CMECreditValut/DashoardVault.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/CMECreditValut/DashoardVault.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, ScrollView, TouchableOpacity, Dimensions, StyleSheet, Image } from 'react-native'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import PageHeader from '../../Components/PageHeader'
+import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native'
+import normalize from '../../Utils/Helpers/Dimen';
+import Colorpath from '../../Themes/Colorpath';
+import Fonts from '../../Themes/Fonts';
+import MyStatusBar from '../../Utils/MyStatusBar'
+import GradientButton from '../../Components/LinearButton'
+import Statevault from './Statevault'
+import Boardvault from './Boardvault'
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import Statevaultcomponet from './Statevaultcomponet';
+import { styles } from './Statevaultstyes';
+import moment from 'moment';
+import CMEChecklistModal from './CMEChecklistModal';
+import { boardvaultRequest, professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
+import StateVaultModal from './StateVaultModal';
+import BoardVaultModal from './BoardVaultModal';
+import Loader from '../../Utils/Helpers/Loader';
+import NetInfo from '@react-native-community/netinfo';
+import IntIcn from 'react-native-vector-icons/MaterialIcons';
+import Buttons from '../../Components/Button';
+import { AppContext } from '../GlobalSupport/AppContext';
+import StackNav from '../../Navigator/StackNav';
+import Imagepath from '../../Themes/Imagepath';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionActive } from '../../Utils/Helpers/primeSubscription';
+import CertficateHandle from './FileCheck';
+
+/**
+ * Reusable parseExpiryDate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
+
+const DashoardVault = (props) => {
+    const {
+        isConnected,
+        setIsConnected,
+        fulldashbaord,
+    } = useContext(AppContext);
+    // const [avoid, setAvoid] = useState(false);
+    const isfocused = useIsFocused();
+    const isFocus = isfocused;
+    const [valuttext, setValuttext] = useState(true);
+    const [width, setWidth] = useState(true);
+    const [statepick, setStatepick] = useState("");
+    const navigation = useNavigation();
+    const dispatch = useDispatch();
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const [statewise, setStatewise] = useState("");
+    const [clisttopic, setClisttopic] = useState('');
+    const [selectCountrytopic, setSelectCountrytopic] = useState([]);
+    const [searchtexttopic, setSearchtexttopic] = useState('');
+    const [stateid, setStateid] = useState("");
+    const [creditwise, setCreditwise] = useState(null);
+    const [expireDatecredit, setExpireDatecredit] = useState(false);
+    const [countdownMessagecredit, setCountdownMessagecredit] = useState('');
+    const [loadingCreditwise, setLoadingCreditwise] = useState(false);
+    const [loadingStatewise, setLoadingStatewise] = useState(false);
+    const [boardname, setBoardname] = useState("");
+    const [licesense, setLicesense] = useState("");
+    const [totalCredit, setTotalCredit] = useState("");
+    const [mancredit, setMancredit] = useState("");
+    const [mantopiccredit, setMantopiccredit] = useState("");
+    const [gencredit, setGencredit] = useState("");
+    const [gentopiccredit, setGentopiccredit] = useState("");
+    const [expirelicno, setExpirelicno] = useState("");
+    const [certificatedata, setCertificatedata] = useState(null);
+    const [cmemodal, setCmemodal] = useState(false);
+    const [allProfessionData, setAllProfessionData] = useState(null);
+    const [renewalvault, setRenewalvault] = useState("");
+    const [renewalCheck, setRenewalCheck] = useState(null);
+    const [modalshow, setModalShow] = useState(false);
+    const [statepickboard, setStatepickboard] = useState("");
+    const [statewiseboard, setStatewiseboard] = useState("");
+    const windowWidth = Dimensions.get('window').width;
+    const windowHeight = Dimensions.get('window').height;
+    const calculatedHeight = Platform.OS === "ios" ? windowHeight * 0.84 : windowHeight * 0.75;
+    const calculatedWidth = windowWidth * 0.92;
+    const [clisttopicboard, setClisttopicboard] = useState('');
+    const [selectCountrytopicboard, setSelectCountrytopicboard] = useState([]);
+    const [searchtexttopicboard, setSearchtexttopicboard] = useState('');
+    const [stateidboard, setStateidboard] = useState("");
+    const [expireDatecreditboard, setExpireDatecreditboard] = useState(false);
+    const [countdownMessagecreditboard, setCountdownMessagecreditboard] = useState('');
+    const [loadingCreditwiseboard, setLoadingCreditwiseboard] = useState(false);
+    const [loadingStatewiseboard, setLoadingStatewiseboard] = useState(false);
+    const [boardnameboard, setBoardnameboard] = useState("");
+    const [licesenseboard, setLicesenseboard] = useState("");
+    const [totalCreditboard, setTotalCreditboard] = useState("");
+    const [mancreditboard, setMancreditboard] = useState("");
+    const [mantopiccreditboard, setMantopiccreditboard] = useState("");
+    const [gencreditboard, setGencreditboard] = useState("");
+    const [gentopiccreditboard, setGentopiccreditboard] = useState("");
+    const [boardexpiredate, setBoardexpiredate] = useState("");
+    const [certificateboard, setCertificatebaord] = useState(null);
+    const [lengthcheck, setLengthcheck] = useState("");
+    const [conn, setConn] = useState("")
+    const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+        professionUpdateRequired: false,
+        stateLicenseFlowCompleted: false,
+    });
+    const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    useEffect(() => {
+        if (isFocus) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(boardvaultRequest({}));
+                    dispatch(mainprofileRequest({}));
+                    dispatch(PrimeCheckRequest({}));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err);
+                });
+        }
+    }, [isFocus]);
+
+    useEffect(() => {
+        if (CreditVaultReducer.status === 'CreditVault/boardvaultRequest') {
+            setLoadingStatewiseboard(true);
+        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultSuccess') {
+            setLoadingStatewiseboard(false);
+            const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
+            if (finalboard) {
+                const takeFinalBoard = Object.keys(finalboard).map(key => ({
+                    ...finalboard[key],
+                    board_id: key,
+                }));
+                setSelectCountrytopicboard(takeFinalBoard);
+                setClisttopicboard(takeFinalBoard);
+            }
+        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultFailure') {
+            setLoadingStatewiseboard(false);
+        }
+    }, [CreditVaultReducer.status, CreditVaultReducer?.boardvaultResponse]);
+    useEffect(() => {
+        if (clisttopicboard?.length > 0) {
+            const defaultStated = clisttopicboard[0];
+            setLengthcheck(defaultStated);
+            // setStatewise(defaultState?.board_data?.board_name); 
+            setCertificatebaord(defaultStated);
+            setBoardnameboard(defaultStated?.board_data?.board_name);
+            setLicesenseboard(defaultStated?.board_data?.certification_id);
+            setMancreditboard(defaultStated?.credits_data?.topic_earned_credits);
+            setMantopiccreditboard(defaultStated?.credits_data?.topic_credits);
+            setGencreditboard(defaultStated?.credits_data?.total_general_earned_credits);
+            setGentopiccreditboard(defaultStated?.credits_data?.total_general_credits);
+            setTotalCreditboard(defaultStated?.credits_data?.total_credits)
+            const parsedExpiry = parseExpiryDate(defaultStated?.board_data?.expiry_date);
+            setBoardexpiredate(parsedExpiry.isValid() ? parsedExpiry.format('MMMM DD, YYYY') : "");
+            const today = moment().startOf('day');
+            const isExpired = parsedExpiry.isValid() ? today.isAfter(parsedExpiry.clone().startOf('day'), 'day') : true;
+            if (isExpired) {
+                setExpireDatecreditboard(true);
+                setCountdownMessagecreditboard('');
+            } else {
+                const differenceDays = parsedExpiry.clone().startOf('day').diff(today, 'days');
+                setExpireDatecreditboard(false);
+                setCountdownMessagecreditboard(`${differenceDays}`);
+            }
+        }
+    }, [clisttopicboard]);
+    useEffect(() => {
+        setBoardnameboard(boardnameboard);
+    }, [isfocused])
+    useEffect(() => {
+        if (stateidboard) {
+            const parsedExpiry = parseExpiryDate(stateidboard?.board_data?.expiry_date);
+            const today = moment().startOf('day');
+            const isExpired = parsedExpiry.isValid() ? today.isAfter(parsedExpiry.clone().startOf('day'), 'day') : true;
+            if (isExpired) {
+                setExpireDatecreditboard(true);
+                setCountdownMessagecreditboard('');
+            } else {
+                const differenceDays = parsedExpiry.clone().startOf('day').diff(today, 'days');
+                setExpireDatecreditboard(false);
+                setCountdownMessagecreditboard(`${differenceDays}`);
+            }
+        }
+    }, [stateidboard])
+    const searchTopicNameboard = text => {
+        if (text) {
+            const listAllData = selectCountrytopicboard?.filter(function (item) {
+                const itemDataTopic = item?.board_data.board_name
+                    ? item?.board_data.board_name?.toUpperCase()
+                    : ''.toUpperCase();
+                const textDataTopic = text.trim().toUpperCase();
+                const AllDataFilter = itemDataTopic.indexOf(textDataTopic) > -1;
+                return AllDataFilter;
+            });
+            setClisttopicboard(listAllData);
+            setSearchtexttopicboard(text);
+        } else {
+            setClisttopicboard(selectCountrytopicboard);
+            setSearchtexttopicboard(text);
+        }
+    };
+    const handleBoardname = (did) => {
+        setStateidboard(did)
+        setBoardnameboard(did?.board_data?.board_name);
+        setStatepickboard(false);
+        setCertificatebaord(did);
+    }
+
+
+
+    /////////state--area///////
+
+    const onhandle = () => {
+        setCmemodal(false);
+    }
+    const oncmeModalclose = () => {
+        setCmemodal(false);
+    }
+    useFocusEffect(
+        React.useCallback(() => {
+            let obj = {};
+
+            const fetchData = () => {
+                connectionrequest()
+                    .then(() => {
+                        dispatch(stateMandatoryRequest(obj));
+                    })
+                    .catch((err) => {
+                        showErrorAlert("Please connect to internet", err);
+                    });
+            };
+
+            fetchData();
+
+            // Cleanup if needed
+            return () => {
+                // Cleanup logic here if necessary
+            };
+        }, [])
+    );
+    useEffect(() => {
+        if (DashboardReducer.status === 'Dashboard/stateMandatoryRequest') {
+            setLoadingStatewise(true);
+        } else if (DashboardReducer.status === 'Dashboard/stateMandatorySuccess') {
+            setLoadingStatewise(false);
+        } else if (DashboardReducer.status === 'Dashboard/stateMandatoryFailure') {
+            setLoadingStatewise(false);
+        }
+
+        if (DashboardReducer.status === 'Dashboard/stateCourseRequest') {
+            setLoadingCreditwise(true);
+        } else if (DashboardReducer.status === 'Dashboard/stateCourseSuccess') {
+            setLoadingCreditwise(false);
+            setCreditwise(DashboardReducer?.stateCourseResponse?.data?.state_data);
+        } else if (DashboardReducer.status === 'Dashboard/stateCourseFailure') {
+            setLoadingCreditwise(false);
+        }
+
+        if (DashboardReducer.status === 'Dashboard/stateReportingSuccess') {
+            setRenewalCheck(DashboardReducer?.stateReportingResponse?.renewal_report);
+            if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
+                setRenewalvault(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
+            } else {
+                setRenewalvault(null);
+            }
+        }
+    }, [DashboardReducer.status, DashboardReducer?.stateCourseResponse, DashboardReducer?.stateReportingResponse]);
+
+    useEffect(() => {
+        if (CreditVaultReducer.status === 'CreditVault/professionvaultSuccess') {
+            setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
+        }
+    }, [CreditVaultReducer.status, CreditVaultReducer?.professionvaultResponse]);
+    useEffect(() => {
+        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+
+        if (stateData) {
+            const stateDataArray = Object.keys(stateData).map(key => ({
+                ...stateData[key],
+                state_id: key,
+            }));
+            // Update state with the new data
+            setSelectCountrytopic(stateDataArray);
+            setClisttopic(stateDataArray);
+
+            if (stateDataArray.length > 0) {
+                const defaultState = stateDataArray[0];
+                setCertificatedata(defaultState);
+                setStatewise(defaultState?.state_name || "");
+                setStateid(defaultState?.state_id || "");
+            } else {
+                setCertificatedata(null);
+                setStatewise("");
+                setStateid("");
+            }
+        } else {
+            setSelectCountrytopic([]);
+            setClisttopic([]);
+            setCertificatedata(null);
+            setStatewise("");
+            setStateid("");
+        }
+    }, [JSON.stringify(DashboardReducer?.stateMandatoryResponse?.state_data)]);
+
+
+    const [finalverifyvault, setFinalverifyvault] = useState(null);
+    const [finalProfession, setFinalProfession] = useState(null);
+    const [storedAuthUser, setStoredAuthUser] = useState(null);
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
+    const [isProfileReady, setIsProfileReady] = useState(false);
+
+    const [currentProfile, setCurrentProfile] = useState(null);
+
+    useEffect(() => {
+        let mounted = true;
+        if (isFocus) {
+            setIsAsyncStorageLoaded(false);
+            setIsProfileReady(false);
+            Promise.all([
+                readNonUsaFlowState(),
+                readNonUsaPermanentFlags(),
+                AsyncStorage.getItem(constants.AUTH_USER_DATA),
+                AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                AsyncStorage.getItem(constants.PROFESSION),
+                AsyncStorage.getItem('ExploreTrialClicked'),
+                AsyncStorage.getItem('activeProfile')
+            ]).then(([state, flags, auth_user, board_special, profession_data, exploreTrialClickedRaw, activeProfile]) => {
+                if (!mounted) return;
+
+                const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
+                const board_special_json = board_special ? JSON.parse(board_special) : null;
+                const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+
+                setNonUsaFlowState(state);
+                setNonUsaPermanentFlags(flags);
+                setStoredAuthUser(auth_user_json);
+                setFinalverifyvault(board_special_json);
+                setFinalProfession(profession_data_json);
+                setExploreTrialClicked(exploreTrialClickedRaw === 'true');
+                setCurrentProfile(activeProfile);
+                setIsAsyncStorageLoaded(true);
+                setIsProfileReady(true);
+            }).catch(err => {
+                console.log('Error loading AsyncStorage vault data', err);
+                if (mounted) {
+                    setIsAsyncStorageLoaded(true);
+                    setIsProfileReady(true);
+                }
+            });
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isFocus]);
+    useEffect(() => {
+        const emitter = require('react-native').DeviceEventEmitter;
+        const sub = emitter.addListener('ACTIVE_PROFILE_CHANGED', (profile) => {
+            setCurrentProfile(profile);
+            setIsProfileReady(true);
+        });
+        return () => sub.remove();
+    }, []);
+
+    const hasActiveSession =
+        AuthReducer?.signupResponse?.user ||
+        AuthReducer?.loginResponse?.user ||
+        AuthReducer?.againloginsiginResponse?.user ||
+        AuthReducer?.verifymobileResponse?.user ||
+        storedAuthUser;
+
+    const resolvedUser = hasActiveSession
+        ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
+        : null;
+
+    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser;
+    const activeUser = loginUser?.user ? loginUser.user : loginUser;
+    const isNonSubscribedNoSubscription =
+        activeUser?.subscription_user == "non-subscribed" &amp;&amp;
+        (!activeUser?.subscription || activeUser?.subscription?.length === 0) &amp;&amp;
+        (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+    const isPrimeTrialOrActive = useMemo(() => (
+        exploreTrialClicked ||
+        isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse) ||
+        Boolean(WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.')
+    ), [exploreTrialClicked, WebcastReducer?.PrimeCheckResponse, WebcastReducer?.PrimePaymentResponse]);
+    const shouldHideCertificateAction = isNonSubscribedNoSubscription &amp;&amp; !isPrimeTrialOrActive;
+    const userObj = resolvedUser || finalverifyvault || finalProfession;
+    const isUsaProfile =
+        userObj?.usa_user === true ||
+        userObj?.usa_user === 1 ||
+        userObj?.usa_user === '1' ||
+        userObj?.is_non_usa === false ||
+        userObj?.is_non_usa === 0 ||
+        userObj?.is_non_usa === '0';
+
+    const isNonUsaUser = !isUsaProfile &amp;&amp; (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+
+    useEffect(() => {
+        if (isUsaProfile &amp;&amp; nonUsaFlowState?.isNonUsa) {
+            clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+            setNonUsaFlowState(null);
+        }
+    }, [isUsaProfile, nonUsaFlowState]);
+    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+    const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const getDisplayProfession = (source) => {
+        if (!source) return "";
+        const profession = String(source?.professional_information?.profession || source?.profession || '').trim();
+        const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
+        return profession &amp;&amp; professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
+    };
+    const allProfTake = isProfileReady &amp;&amp; currentProfile !== 'SkipProfile' &amp;&amp; validHandles.has(getDisplayProfession(userObj));
+    const shouldShowAddLicenseCard =
+        !isNonUsaUser &amp;&amp;
+        !fulldashbaord?.length &amp;&amp;
+        (currentProfile === 'SkipProfile' || !allProfTake || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true);
+    const nonUsaStateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+    const nonUsaCertificates = nonUsaStateData?.['-1']?.certificates;
+    let hasNonUsaCertificates = false;
+    if (nonUsaCertificates) {
+        if (Array.isArray(nonUsaCertificates)) {
+            hasNonUsaCertificates = nonUsaCertificates.length > 0;
+        } else if (typeof nonUsaCertificates === 'object') {
+            hasNonUsaCertificates = Object.values(nonUsaCertificates).flatMap((value) => (Array.isArray(value) ? value : [value])).filter(Boolean).length > 0;
+        }
+    }
+
+    const allProfession = AuthReducer?.loginResponse?.user?.profession || storedAuthUser?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
+    useEffect(() => {
+        if (certificatedata) {
+            let obj = {
+                "profession": allProfession,
+                "stateId": certificatedata?.state_id
+            }
+            dispatch(professionvaultRequest(obj))
+        }
+    }, [certificatedata])
+    useEffect(() => {
+        if (stateid) {
+            let obj = {
+                "state_id": stateid
+            }
+            dispatch(stateCourseRequest(obj));
+            dispatch(stateReportingRequest(obj))
+        }
+    }, [stateid]);
+    useEffect(() => {
+        if (creditwise) {
+            if (creditwise?.board_data?.expiry_date) {
+                const parsedExpiry = parseExpiryDate(creditwise?.board_data?.expiry_date);
+                const today = moment().startOf('day');
+                if (!parsedExpiry.isValid()) {
+                    setModalShow(true);
+                    setExpireDatecredit(true);
+                    setCountdownMessagecredit('');
+                } else {
+                    const targetDate = parsedExpiry.clone().startOf('day');
+                    const isExpired = today.isAfter(targetDate, 'day');
+                    if (isExpired) {
+                        setModalShow(true);
+                        setExpireDatecredit(true);
+                        setCountdownMessagecredit('');
+                    } else {
+                        const differenceDays = targetDate.diff(today, 'days');
+                        if (differenceDays == 89) {
+                            // setModalShow(true);
+                            setExpireDatecredit(true);
+                            setCountdownMessagecredit('');
+                        } else if (differenceDays &lt; 89) {
+                            // setModalShow(true);
+                            setExpireDatecredit(true);
+                            setCountdownMessagecredit(`${differenceDays}`);
+                        } else {
+                            // setModalShow(false);
+                            setExpireDatecredit(false);
+                            setCountdownMessagecredit(`${differenceDays}`);
+                        }
+                    }
+                }
+            }
+            if (creditwise?.board_data?.board_name) {
+                setBoardname(creditwise?.board_data?.board_name);
+            }
+            if (creditwise?.board_data?.expiry_date) {
+                const parsedExpiry = parseExpiryDate(creditwise?.board_data?.expiry_date);
+                setExpirelicno(parsedExpiry.isValid() ? parsedExpiry.format('MMMM DD, YYYY') : '')
+            }
+            if (creditwise?.license_number) {
+                setLicesense(creditwise?.license_number);
+            }
+            if (creditwise?.credits_data?.total_credits) {
+                setTotalCredit(creditwise?.credits_data?.total_credits);
+            }
+            if (creditwise?.credits_data?.topic_earned_credits) {
+                setMancredit(creditwise?.credits_data?.topic_earned_credits)
+            }
+            if (creditwise?.credits_data?.topic_credits) {
+                setMantopiccredit(creditwise?.credits_data?.topic_credits);
+            }
+            if (creditwise?.credits_data?.total_general_earned_credits) {
+                setGencredit(creditwise?.credits_data?.total_general_earned_credits);
+            }
+            if (creditwise?.credits_data?.total_general_credits) {
+                setGentopiccredit(creditwise?.credits_data?.total_general_credits);
+            }
+        }
+
+    }, [creditwise]);
+    const searchTopicName = text => {
+        if (text) {
+            const listAllData = selectCountrytopic?.filter(function (item) {
+                const itemDataTopic = item?.state_name
+                    ? item?.state_name?.toUpperCase()
+                    : ''.toUpperCase();
+                const textDataTopic = text.trim().toUpperCase();
+                const AllDataFilter = itemDataTopic.indexOf(textDataTopic) > -1;
+                return AllDataFilter;
+            });
+            setClisttopic(listAllData);
+            setSearchtexttopic(text);
+        } else {
+            setClisttopic(selectCountrytopic);
+            setSearchtexttopic(text);
+        }
+    };
+    const vaultState = (vault) => {
+        setStateid(vault?.state_id)
+        setStatewise(vault?.state_name);
+        setCertificatedata(vault);
+        setStatepick(false);
+        setCreditwise(null);
+        if (stateid) {
+            let obj = {
+                "state_id": stateid
+            }
+            dispatch(stateCourseRequest(obj));
+        }
+    }
+    useEffect(() => {
+        if (statewise) {
+            setSearchtexttopic("");
+        }
+    }, [statewise])
+    useEffect(() => {
+        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+        if (stateData) {
+            const stateDataArray = Object.keys(stateData).map(key => ({
+                ...stateData[key],
+                state_id: key,
+            }));
+            if (!searchtexttopic &amp;&amp; stateDataArray) {
+                setClisttopic(stateDataArray);
+            }
+        }
+    }, [searchtexttopic])
+    useEffect(() => {
+        setStatewise(statewise);
+
+    }, [isfocused])
+    useEffect(() => {
+        // setAvoid(true);
+        setWidth(true);
+    }, [isfocused])
+    const downCredit = () => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [
+                    { name: "TabNav", params: { initialRoute: "Home" } }
+                ],
+            })
+        );
+
+    }
+    const handleRot = () => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsConnected(state.isConnected);
+            if (state.isConnected) {
+                &lt;StackNav />
+            }
+        });
+
+        return () => unsubscribe();
+    }
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            {conn === false ? &lt;SafeAreaView style={stylesd.container}>
+                &lt;View style={stylesd.centerContainer}>
+                    &lt;View style={{ height: normalize(100), width: normalize(120), borderRadius: normalize(20), bottom: normalize(50), justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { height: 3, width: 0 }, elevation: 10, backgroundColor: "#FFFFFF" }}>
+                        &lt;Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
+                    &lt;/View>
+                    &lt;Buttons
+                        onPress={handleRot}
+                        height={normalize(45)}
+                        width={normalize(240)}
+                        backgroundColor={Colorpath.ButtonColr}
+                        borderRadius={normalize(5)}
+                        text="Retry"
+                        color={Colorpath.white}
+                        fontSize={16}
+                        fontFamily={Fonts.InterSemiBold}
+                        fontWeight="bold"
+                        marginTop={normalize(65)}
+                    />
+                &lt;/View>
+                &lt;View style={stylesd.internetCard}>
+                    &lt;Text style={stylesd.internetText}>{"No Internet Connection"}&lt;/Text>
+                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>{"Please check your internet connection \n                    and try again"}&lt;/Text>
+                &lt;/View>
+            &lt;/SafeAreaView> : &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {statepick ? (
+                    &lt;StateVaultModal
+                        vaultState={vaultState}
+                        setStatepick={setStatepick}
+                        searchtexttopic={searchtexttopic}
+                        searchTopicName={searchTopicName}
+                        clisttopic={clisttopic}
+                    />
+                ) : statepickboard ? (&lt;BoardVaultModal
+                    handleBoardname={handleBoardname}
+                    setStatepickboard={setStatepickboard}
+                    statepickboard={statepickboard}
+                    searchtexttopicboard={searchtexttopicboard}
+                    searchTopicNameboard={searchTopicNameboard}
+                    clisttopicboard={clisttopicboard} />) : (&lt;>
+                        {!(isNonUsaUser &amp;&amp; hasNonUsaCertificates) &amp;&amp; (
+                            &lt;View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
+                                {Platform.OS === "ios" ? (
+                                    &lt;PageHeader
+                                        title="Credit Vault"
+                                        onBackPress={downCredit}
+                                    />
+                                ) : (
+                                    &lt;PageHeader
+                                        title="Credit Vault"
+                                        onBackPress={downCredit}
+                                    />
+                                )}
+                            &lt;/View>
+                        )}
+                        &lt;Loader visible={!isAsyncStorageLoaded || (!isNonUsaUser &amp;&amp; creditwise == null) || (isNonUsaUser &amp;&amp; loadingStatewise)} />
+                        {shouldShowAddLicenseCard ? (
+                            &lt;View style={stylesd.nonUsaContainer}>
+                                &lt;View style={stylesd.nonUsaCard}>
+                                    &lt;View style={stylesd.nonUsaBanner}>
+                                        &lt;Text style={stylesd.nonUsaBannerText}>Add License&lt;/Text>
+                                    &lt;/View>
+                                    &lt;View style={stylesd.nonUsaBody}>
+                                        &lt;Text style={stylesd.nonUsaDescription}>
+                                            Add at least one valid state license to unlock Credit Vault access.
+                                        &lt;/Text>
+                                        &lt;TouchableOpacity
+                                            style={stylesd.nonUsaButton}
+                                            onPress={() => {
+                                                navigation.navigate("AddLicense", { profile: "main" });
+                                            }}
+                                        >
+                                            &lt;Text style={stylesd.nonUsaButtonText}>Add License&lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                        ) : (isNonUsaUser &amp;&amp; !hasNonUsaCertificates) ? (
+                            &lt;View style={stylesd.nonUsaContainer}>
+                                &lt;View style={stylesd.nonUsaCard}>
+                                    &lt;View style={stylesd.nonUsaBanner}>
+                                        &lt;Text style={stylesd.nonUsaBannerText}>Credit Vault&lt;/Text>
+                                    &lt;/View>
+                                    &lt;View style={stylesd.nonUsaBody}>
+                                        &lt;Text style={stylesd.nonUsaDescription}>
+                                            You can view credits and certificates of all the activities you fulfilled at eMedEvents.{"\n\n"}
+                                            You can also add credits and certificates of activities you attended elsewhere.
+                                        &lt;/Text>
+                                        &lt;TouchableOpacity
+                                            style={stylesd.nonUsaButton}
+                                            onPress={() => {
+                                                navigation.navigate("AddCredits", { isNonUsaUser: isNonUsaUser });
+                                            }}
+                                        >
+                                            &lt;Text style={stylesd.nonUsaButtonText}>Add Credits&lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                        ) : isNonUsaUser ? (
+                            &lt;CertficateHandle navigation={navigation} route={{ params: { isNonUsaUser: true } }} />
+                        ) : (
+                            &lt;>
+                                &lt;View style={{ marginTop: normalize(10) }}>
+                                    &lt;View style={{
+                                        flexDirection: "row",
+                                        justifyContent: "space-between", // Changed from space-evenly to space-between
+                                        width: normalize(300),
+                                        height: normalize(48),
+                                        backgroundColor: "#FFFFFF",
+                                        borderRadius: normalize(5),
+                                        paddingHorizontal: normalize(2), // Added padding to prevent overflow
+                                        alignSelf: 'center',
+                                    }}>
+                                        &lt;TouchableOpacity
+                                            style={[
+                                                {
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    flex: 1,
+                                                    height: normalize(41),
+                                                    borderRadius: normalize(5),
+                                                    marginTop: normalize(3),
+                                                    marginHorizontal: normalize(2),
+                                                },
+                                                valuttext &amp;&amp; {
+                                                    backgroundColor: "#DCE4FF"
+                                                }
+                                            ]}
+                                            onPress={() => { setValuttext(true); }}
+                                        >
+                                            &lt;Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: valuttext ? Colorpath.ButtonColr : "#000000",
+                                                fontWeight: "500"
+                                            }}>
+                                                State License{
+                                                    AuthReducer?.staticdataResponse?.state ? ` (${AuthReducer.staticdataResponse.state})` :
+                                                        selectCountrytopic ? ` (${selectCountrytopic?.length})` :
+                                                            ''
+                                                }
+                                            &lt;/Text>
+                                        &lt;/TouchableOpacity>
+
+                                        &lt;TouchableOpacity
+                                            style={[
+                                                {
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    flex: 1,
+                                                    height: normalize(41),
+                                                    borderRadius: normalize(5),
+                                                    marginTop: normalize(3),
+                                                    marginHorizontal: normalize(-1),
+                                                },
+                                                !valuttext &amp;&amp; {
+                                                    backgroundColor: "#DCE4FF"
+                                                }
+                                            ]}
+                                            onPress={() => { setValuttext(false) }}
+                                        >
+                                            &lt;Text style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: !valuttext ? Colorpath.ButtonColr : "#000000",
+                                                fontWeight: "500"
+                                            }}>
+                                                Board Certifications{DashboardReducer?.dashboardResponse?.data?.boards ? `(${Object.keys(DashboardReducer?.dashboardResponse?.data?.boards || {}).length})` :
+                                                    AuthReducer?.staticdataResponse?.board &amp;&amp; AuthReducer.staticdataResponse.board.length > 0
+                                                        ? ` (${AuthReducer.staticdataResponse.board})`
+                                                        : DashboardReducer?.dashboardResponse?.data?.board_certifications &amp;&amp;
+                                                            DashboardReducer.dashboardResponse.data.board_certifications.length > 0
+                                                            ? ` (${DashboardReducer.dashboardResponse.data.board_certifications.length})`
+                                                            : '(0)'
+                                                }
+                                            &lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(0) }}>
+                                    &lt;View>
+                                        &lt;View style={{ bottom: normalize(10) }}>
+                                            {valuttext &amp;&amp; &lt;Statevault
+                                                modalshow={modalshow}
+                                                setModalShow={setModalShow}
+                                                allProfession={allProfession}
+                                                count={AuthReducer?.staticdataResponse?.state}
+                                                onhandle={onhandle}
+                                                oncmeModalclose={oncmeModalclose}
+                                                navigation={navigation}
+                                                dispatch={dispatch}
+                                                DashboardReducer={DashboardReducer}
+                                                CreditVaultReducer={CreditVaultReducer}
+                                                AuthReducer={AuthReducer}
+                                                statewise={statewise}
+                                                setStatewise={setStatewise}
+                                                clisttopic={clisttopic}
+                                                setClisttopic={setClisttopic}
+                                                statepick={statepick}
+                                                selectCountrytopic={selectCountrytopic}
+                                                setSelectCountrytopic={setSelectCountrytopic}
+                                                searchtexttopic={searchtexttopic}
+                                                setSearchtexttopic={setSearchtexttopic}
+                                                searchTopicName={searchTopicName}
+                                                stateid={stateid}
+                                                setStateid={setStateid}
+                                                creditwise={creditwise}
+                                                setCreditwise={setCreditwise}
+                                                expireDatecredit={expireDatecredit}
+                                                setExpireDatecredit={setExpireDatecredit}
+                                                countdownMessagecredit={countdownMessagecredit}
+                                                setCountdownMessagecredit={setCountdownMessagecredit}
+                                                loadingCreditwise={loadingCreditwise}
+                                                setLoadingCreditwise={setLoadingCreditwise}
+                                                loadingStatewise={loadingStatewise}
+                                                setLoadingStatewise={setLoadingStatewise}
+                                                boardname={boardname}
+                                                setBoardname={setBoardname}
+                                                licesense={licesense}
+                                                setLicesense={setLicesense}
+                                                totalCredit={totalCredit}
+                                                setTotalCredit={setTotalCredit}
+                                                mancredit={mancredit}
+                                                setMancredit={setMancredit}
+                                                mantopiccredit={mantopiccredit}
+                                                setMantopiccredit={setMantopiccredit}
+                                                gencredit={gencredit}
+                                                setGencredit={setGencredit}
+                                                gentopiccredit={gentopiccredit}
+                                                setGentopiccredit={setGentopiccredit}
+                                                expirelicno={expirelicno}
+                                                setExpirelicno={setExpirelicno}
+                                                certificatedata={certificatedata}
+                                                setCertificatedata={setCertificatedata}
+                                                cmemodal={cmemodal}
+                                                setCmemodal={setCmemodal}
+                                                allProfessionData={allProfessionData}
+                                                setAllProfessionData={setAllProfessionData}
+                                                renewalvault={renewalvault}
+                                                setRenewalvault={setRenewalvault}
+                                                isfocused={isfocused}
+                                                setStatepick={setStatepick}
+                                                vaultState={vaultState}
+                                                renewalCheck={renewalCheck}
+                                                hideCertificateAction={shouldHideCertificateAction} />}
+                                        &lt;/View>
+                                        &lt;View style={{ bottom: normalize(10) }}>
+                                            {!valuttext &amp;&amp; &lt;Boardvault
+                                                isfocused={isfocused}
+                                                navigation={navigation}
+                                                dispatch={dispatch}
+                                                statepickboard={statepickboard}
+                                                setStatepickboard={setStatepickboard}
+                                                statewiseboard={statewiseboard}
+                                                setStatewiseboard={setStatewiseboard}
+                                                clisttopicboard={clisttopicboard}
+                                                setClisttopicboard={setClisttopicboard}
+                                                selectCountrytopicboard={selectCountrytopicboard}
+                                                setSelectCountrytopicboard={setSelectCountrytopicboard}
+                                                searchtexttopicboard={searchtexttopicboard}
+                                                setSearchtexttopicboard={setSearchtexttopicboard}
+                                                stateidboard={stateidboard}
+                                                setStateidboard={setStateidboard}
+                                                expireDatecreditboard={expireDatecreditboard}
+                                                setExpireDatecreditboard={setExpireDatecreditboard}
+                                                countdownMessagecreditboard={countdownMessagecreditboard}
+                                                setCountdownMessagecreditboard={setCountdownMessagecreditboard}
+                                                loadingCreditwiseboard={loadingCreditwiseboard}
+                                                setLoadingCreditwiseboard={setLoadingCreditwiseboard}
+                                                loadingStatewiseboard={loadingStatewiseboard}
+                                                setLoadingStatewiseboard={setLoadingStatewiseboard}
+                                                boardnameboard={boardnameboard}
+                                                setBoardnameboard={setBoardnameboard}
+                                                licesenseboard={licesenseboard}
+                                                setLicesenseboard={setLicesenseboard}
+                                                totalCreditboard={totalCreditboard}
+                                                setTotalCreditboard={setTotalCreditboard}
+                                                mancreditboard={mancreditboard}
+                                                setMancreditboard={setMancreditboard}
+                                                mantopiccreditboard={mantopiccreditboard}
+                                                setMantopiccreditboard={setMantopiccreditboard}
+                                                gencreditboard={gencreditboard}
+                                                setGencreditboard={setGencreditboard}
+                                                gentopiccreditboard={gentopiccreditboard}
+                                                setGentopiccreditboard={setGentopiccreditboard}
+                                                boardexpiredate={boardexpiredate}
+                                                setBoardexpiredate={setBoardexpiredate}
+                                                certificateboard={certificateboard}
+                                                setCertificatebaord={setCertificatebaord}
+                                                lengthcheck={lengthcheck}
+                                                setLengthcheck={setLengthcheck}
+                                                searchTopicNameboard={searchTopicNameboard}
+                                                handleBoardname={handleBoardname}
+                                                styles={styles}
+                                                takeID={CreditVaultReducer?.boardvaultResponse?.board_data}
+                                                hideCertificateAction={shouldHideCertificateAction}
+                                            />}
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/ScrollView>
+                            &lt;/>
+                        )}
+                    &lt;/>)}
+
+            &lt;/SafeAreaView>}
+
+
+        &lt;/>
+    )
+}
+
+export default DashoardVault
+const stylesd = StyleSheet.create({
+    container: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: Colorpath.Pagebg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
+        padding: normalize(10),
+        flex: 1
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: normalize(20),
+        zIndex: 2,
+    },
+    icon: {
+        marginBottom: normalize(20),
+    },
+    internetCard: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: Colorpath.Pagebg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
+        padding: normalize(10),
+        marginTop: normalize(10),
+        flex: 1,
+        gap: normalize(5)
+    },
+    internetText: {
+        color: "#000000",
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 20,
+    },
+    nonUsaContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: normalize(20),
+        backgroundColor: Colorpath.Pagebg,
+    },
+    nonUsaCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
+        elevation: 2,
+    },
+    nonUsaBanner: {
+        backgroundColor: '#E8F0FE',
+        paddingVertical: normalize(16),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#D3E2FD',
+    },
+    nonUsaBannerText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: '#1E60F2',
+        fontWeight: '600',
+    },
+    nonUsaBody: {
+        paddingHorizontal: normalize(20),
+        paddingVertical: normalize(24),
+        alignItems: 'center',
+    },
+    nonUsaDescription: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: '#4A5568',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: normalize(24),
+    },
+    nonUsaButton: {
+        backgroundColor: '#1E60F2',
+        paddingVertical: normalize(12),
+        paddingHorizontal: normalize(24),
+        borderRadius: normalize(6),
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '60%',
+    },
+    nonUsaButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        color: '#FFFFFF',
+        fontWeight: '600',
+    },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

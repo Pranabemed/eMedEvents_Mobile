@@ -31,6 +31,14 @@ import ProfessionDropdown from './ProfessionDropdown';
 import RequirementCard from './RequirementCard';
 import CourseHorizontalList from './CourseHorizontalList';
 
+/**
+ * Reusable filterUniqueSection component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const professionMapping = {
   Physician: 167,
   Nursing: 169,

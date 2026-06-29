@@ -3,6 +3,14 @@ import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import normalize from '../Utils/Helpers/Dimen';
 
+/**
+ * Reusable DashboardMainShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const { width: SCREEN_W } = Dimensions.get('window');
 
 /**

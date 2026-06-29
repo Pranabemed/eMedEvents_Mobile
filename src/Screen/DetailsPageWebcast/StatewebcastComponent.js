@@ -3,6 +3,14 @@ import React from 'react';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
+
+/**
+ * Reusable StatewebcastComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastComponent = ({ item, index, nav,creditData,datawhole }) => {
     console.log(item, "item=======1233",datawhole)
     return (

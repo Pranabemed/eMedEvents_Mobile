@@ -5,6 +5,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
 import Fonts from '../Themes/Fonts';
 import Buttons from './Button';
+
+/**
+ * Reusable FilterModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const FilterModal = ({
     isfilterVisible,
     onfilterFalse,

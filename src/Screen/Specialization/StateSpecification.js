@@ -18,6 +18,14 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StateSpecification component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateSpecification = (props) => {
     const { isConnected } = useContext(AppContext);
     const AuthReducer = useSelector(state => state.AuthReducer);

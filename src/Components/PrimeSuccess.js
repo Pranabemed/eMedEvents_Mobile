@@ -6,6 +6,14 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
+
+/**
+ * Reusable PrimeSuccess component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) => {
     return (
         <Modal

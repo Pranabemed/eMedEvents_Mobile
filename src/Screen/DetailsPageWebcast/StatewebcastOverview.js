@@ -5,6 +5,14 @@ import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import HtmlTableRenderer from './HtmlTableRenderer';
 
+/**
+ * Reusable StatewebcastOverview component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpansion, expanded, navigation, webcastdeatils, creditData }) => {
     const handleOverviewLink = (href) => {
         if (!href || !navigation) return;

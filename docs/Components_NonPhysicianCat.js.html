@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/NonPhysicianCat.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/NonPhysicianCat.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect, useRef, useContext } from 'react';
+import {
+    View,
+    Platform,
+    Dimensions,
+    TouchableOpacity,
+    Text,
+    StyleSheet
+} from 'react-native';
+import Carousel, { Pagination } from 'react-native-snap-carousel';
+import Colorpath from '../Themes/Colorpath';
+import normalize from '../Utils/Helpers/Dimen';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import connectionrequest from '../Utils/Helpers/NetInfo';
+import { dashboardRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import HomeShimmer from './DashBoardShimmer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../Utils/Helpers/constants';
+import Carouselcarditem from './Carouselcarditem';
+import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
+import Nonphysicianprofile from './Nonphysicianprofile';
+import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
+import Buttons from './Button';
+import Fonts from '../Themes/Fonts';
+import NetInfo from '@react-native-community/netinfo';
+import RestProfession from './RestProfession';
+
+/**
+ * Reusable NonPhysicianCat component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const normalizeProfessionHandle = (professionHandle) =>
+    String(professionHandle || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
+
+let status = "";
+export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
+    const DASHBOARD_REFRESH_MS = 60000;
+    const dispatch = useDispatch();
+    const {
+        setTakedata,
+        setIsConnected,
+        expireDate,
+        setFinddata,
+        finddata
+    } = useContext(AppContext);
+    const windowWidth = Dimensions.get('window').width;
+    const windowHeight = Dimensions.get('window').height;
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const navigation = useNavigation();
+    const [val, setval] = useState(0);
+    const [detailsmodal, setDetailsmodal] = useState(false);
+    const [cmemodal, setCmemodal] = useState(false);
+    const [vaultModal, setVaultmodal] = useState(false);
+    const [totalcard, setTotalCred] = useState();
+    const [stateid, setStateid] = useState();
+    const [renewal, setRenewal] = useState("");
+    const carouselRef = useRef(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [pageNum, setPageNum] = useState(0);
+    const [limit, setLimit] = useState(9);
+    const [wholeNo, setWholeNo] = useState(false);
+    const lastDashboardSyncRef = useRef(0);
+    const lastStateSyncRef = useRef(null);
+    const dashboardFetchInFlightRef = useRef(false);
+    // Get the current item without scrolling
+    const getCurrentItem = () => {
+        if (!fulldashbaord?.length) return null;
+        return fulldashbaord[currentIndex]; // &lt;-- Uses state-tracked index
+    };
+    const isFocus = useIsFocused();
+    useEffect(() => {
+        const tokenHandle = async () => {
+            try {
+                if (!isFocus) return;
+                const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
+                if (!loginHandle) return;
+                const hasDashboardData = Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures);
+                const isStale = (Date.now() - lastDashboardSyncRef.current) > DASHBOARD_REFRESH_MS;
+                if (!hasDashboardData || isStale) {
+                    dashBoarData();
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        tokenHandle();
+    }, [isFocus, DashboardReducer?.dashboardResponse?.data?.licensures?.length]);
+    useEffect(() => {
+        if (DashboardReducer?.dashboardResponse?.data) {
+            lastDashboardSyncRef.current = Date.now();
+        }
+    }, [DashboardReducer?.dashboardResponse?.data]);
+    useEffect(() => {
+        if (DashboardReducer.status === 'Dashboard/dashboardSuccess' || DashboardReducer.status === 'Dashboard/dashboardFailure') {
+            dashboardFetchInFlightRef.current = false;
+        }
+    }, [DashboardReducer.status]);
+    const dashBoarData = () => {
+        if (dashboardFetchInFlightRef.current) return;
+        dashboardFetchInFlightRef.current = true;
+        connectionrequest()
+            .then(() => {
+                dispatch(dashboardRequest({}))
+            })
+            .catch(err => {
+                dashboardFetchInFlightRef.current = false;
+                showErrorAlert("Please connect to internet", err)
+            })
+
+    }
+    const restOfProfession = () => {
+        const getFirstTruthyProfession = (...sources) =>
+            sources.find(val => val) || '';
+
+        const handleProf = String(
+            getFirstTruthyProfession(
+                DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+                AuthReducer?.signupResponse?.user?.profession,
+                AuthReducer?.loginResponse?.user?.profession,
+                finalProfessionmain?.profession
+            )
+        )
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-');
+        let obj =
+        {
+            "pageno": 0,
+            "limit": 9,
+            "search_speciality": "",
+            "conference_type_text": "",
+            "cme_from": "",
+            "cme_to": "",
+            "organization": "",
+            "price_from": "",
+            "price_to": "",
+            "startdate": "",
+            "location": "",
+            "free_conf": "",
+            "noncme": "",
+            "speaker": "",
+            "search_mandate_states": [],
+            "search_topic": "",
+            "search_profession": "",
+            "credittype": "",
+            "sort_type": "",
+            "request_type": "professionconferences",
+            "conference_profession": handleProf
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(cmeCourseRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+                setLoading(false);
+            });
+    }
+    const stateTake = (toklen, anoth) => {
+        let obj = {
+            "state": toklen ? toklen?.length : 0,
+            "board": anoth ? anoth?.length : 0
+        };
+        connectionrequest()
+            .then(() => {
+                dispatch(staticdataRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to the internet", err);
+            });
+    }
+    const validHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+    const otherRestrict = new Set(["nursing-aprn", "nursing-cna", "nursing-lpn", "nursing-rn", "dentist-dds", "dentist-rda", "dentist-rdh"]);
+    const authProfession =
+        AuthReducer?.loginResponse?.user?.profession &amp;&amp; AuthReducer?.loginResponse?.user?.profession_type
+            ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
+            : AuthReducer?.againloginsiginResponse?.user?.profession &amp;&amp; AuthReducer?.againloginsiginResponse?.user?.profession_type
+                ? `${AuthReducer?.againloginsiginResponse?.user?.profession} - ${AuthReducer?.againloginsiginResponse?.user?.profession_type}`
+                : AuthReducer?.signupResponse?.user?.profession &amp;&amp; AuthReducer?.signupResponse?.user?.profession_type
+                    ? `${AuthReducer?.signupResponse?.user?.profession} - ${AuthReducer?.signupResponse?.user?.profession_type}`
+                    : finalProfessionmain?.profession &amp;&amp; finalProfessionmain?.profession_type
+                        ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
+                        : null;
+    const profFromDashboard =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &amp;&amp;
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
+            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
+            : null;
+    const resolvedProfessionHandle = normalizeProfessionHandle(profFromDashboard || authProfession);
+    const allProfTake = validHandles.has(resolvedProfessionHandle);
+    const allNoDetData = otherRestrict.has(resolvedProfessionHandle);
+    if (status == '' || DashboardReducer.status != status) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/dashboardRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/dashboardSuccess':
+                status = DashboardReducer.status;
+                if (DashboardReducer?.dashboardResponse?.data?.licensures == 0) {
+                    setWholeNo(true);
+                } else {
+                    setWholeNo(false);
+                }
+                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+                    return index === self.findIndex((s) =>
+                        s.state_id === state.state_id &amp;&amp;
+                        s.board_id === state.board_id
+                    );
+                });
+                const mainDataCheck = DashboardReducer?.dashboardResponse?.data?.board_certifications;
+                if (mainDataCheck) {
+                    const uniqueMainDatacheck = mainDataCheck.filter(
+                        (item, index, self) => index === self.findIndex((t) => t.board_id === item.board_id)
+                    );
+                    if (uniqueStates?.length > 0 || uniqueMainDatacheck?.length > 0) {
+                        stateTake(uniqueStates, uniqueMainDatacheck);
+                    }
+                }
+                setFulldashbaord(uniqueStates);
+                break;
+            case 'Dashboard/dashboardFailure':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateDashboardRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateDashboardSuccess':
+                status = DashboardReducer.status;
+                setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+                break;
+            case 'Dashboard/stateDashboardFailure':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateReportingRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateReportingSuccess':
+                status = DashboardReducer.status;
+                if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
+                    setRenewal(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
+                } else {
+                    setRenewal(null);
+                }
+                break;
+            case 'Dashboard/stateReportingFailure':
+                status = DashboardReducer.status;
+                break;
+        }
+    }
+    useEffect(() => {
+        if (fulldashbaord?.length == 0) {
+            lastStateSyncRef.current = null;
+            setWholeNo(true);
+            restOfProfession();
+        }
+    }, [fulldashbaord])
+    const [completedCount, setCompletedCount] = useState(0);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    useEffect(() => {
+        const activities = DashboardReducer?.stateDashboardResponse?.data?.my_activities || [];
+        let total = 0;
+        let completed = 0;
+        activities?.forEach((d) => {
+            if (d?.completed_percentage !== undefined) {
+                total++;
+                if (d?.completed_percentage === 100) {
+                    completed++;
+                }
+            }
+        });
+        setCompletedCount(completed);
+        setPendingCount(total - completed);
+
+    }, [DashboardReducer?.stateDashboardResponse?.data]);
+    const [nettrue, setNettrue] = useState("");
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setNettrue(state.isConnected);
+        });
+
+        return () => unsubscribe();
+    }, []);
+    const handleRot = () => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsConnected(state.isConnected);
+            if (state.isConnected) {
+                navigation.navigate("TabNav")
+            }
+        });
+        return () => unsubscribe();
+    }
+    const cleanNumber = (value) => {
+        if (typeof value == 'number') return value;
+        if (typeof value == 'string') {
+            const num = parseFloat(value.replace(/,/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    };
+    const getDtaa = fulldashbaord?.[0];
+    const topicEarned = cleanNumber(
+        addit?.credits_data?.topic_earned_credits !== undefined &amp;&amp; addit?.credits_data?.topic_earned_credits !== null
+            ? (addit.credits_data.topic_earned_credits == "0.00" ? 0 : addit.credits_data.topic_earned_credits)
+            : getDtaa?.credits_data?.topic_earned_credits
+    );
+    const topicTotal = cleanNumber(
+        addit?.credits_data?.topic_credits !== undefined &amp;&amp; addit?.credits_data?.topic_credits !== null
+            ? (addit.credits_data.topic_credits == "0.00" ? 0 : addit.credits_data.topic_credits)
+            : getDtaa?.credits_data?.topic_credits
+    );
+    const generalEarned = cleanNumber(
+        addit?.credits_data?.total_general_earned_credits !== undefined &amp;&amp; addit?.credits_data?.total_general_earned_credits !== null
+            ? (addit.credits_data.total_general_earned_credits == "0.00" ? 0 : addit.credits_data.total_general_earned_credits)
+            : getDtaa?.credits_data?.total_general_earned_credits
+    );
+    const generalTotal = cleanNumber(
+        addit?.credits_data?.total_general_credits !== undefined &amp;&amp; addit?.credits_data?.total_general_credits !== null
+            ? (addit.credits_data.total_general_credits == "0.00" ? 0 : addit.credits_data.total_general_credits)
+            : getDtaa?.credits_data?.total_general_credits
+    );
+    const bothNoRequirement = (
+        topicEarned == 0 &amp;&amp; topicTotal == 0 &amp;&amp;
+        generalEarned == 0 &amp;&amp; generalTotal == 0
+    );
+    const firstData =
+        AuthReducer?.loginResponse?.user?.firstname ||
+        AuthReducer?.againloginsiginResponse?.user?.firstname ||
+        AuthReducer?.signupResponse?.user?.firstname ||
+        DashboardReducer?.dashboardResponse?.data?.user_information?.firstname ||
+        DashboardReducer?.dashPerResponse?.data?.user_information?.firstname ||
+        DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
+    const hasLicensureCards = Array.isArray(fulldashbaord) &amp;&amp; fulldashbaord.length > 0;
+    const hasResolvedDashboard =
+        fulldashbaord == 0 ||
+        Array.isArray(fulldashbaord) ||
+        DashboardReducer.status == 'Dashboard/dashboardFailure';
+
+    return (
+        &lt;>
+
+            &lt;View>
+                {hasResolvedDashboard &amp;&amp; &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                    &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hello, ${firstData || ''}`}&lt;/Text>
+                &lt;/View>}
+                {hasLicensureCards ?
+                    &lt;View key={`dashboard-${fulldashbaord.length}`}>
+                        &lt;View style={{ height: allProfTake ? normalize(260) : bothNoRequirement ? normalize(210) : expireDate &amp;&amp; !allProfTake ? normalize(250) : normalize(255), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
+                            &lt;Carousel
+                                ref={carouselRef}
+                                layout={'default'}
+                                data={fulldashbaord}
+                                marginTop={normalize(10)}
+                                sliderWidth={windowWidth}
+                                itemWidth={
+                                    Platform.OS === 'ios' ? windowWidth - normalize(20) : windowWidth - normalize(20)
+                                }
+                                itemHeight={windowHeight * 0.9}
+                                sliderHeight={windowHeight * 0.9}
+                                renderItem={({ item, index }) => &lt;Carouselcarditem setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
+                                firstItem={0}
+                                onSnapToItem={(index) => {
+                                    setval(index);
+                                    setCurrentIndex(index);
+                                    const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
+                                    if (getDtaa) {
+                                        const nextStateId = getDtaa.state_id;
+                                        if (lastStateSyncRef.current !== nextStateId) {
+                                            dispatch(stateDashboardRequest({ "state_id": nextStateId }))
+                                            dispatch(stateReportingRequest({ "state_id": nextStateId }))
+                                            lastStateSyncRef.current = nextStateId;
+                                        }
+                                        // stateDashboardData(getDtaa.state_id);
+                                        // stateReport(getDtaa.state_id);
+                                        const responseData = DashboardReducer?.stateDashboardResponse?.data;
+                                        setFinddata(responseData);
+                                        setAddit(getDtaa);
+                                        setTakedata(getDtaa);
+                                        setTakestate(getDtaa.board_id);
+                                        setStateid(getDtaa.state_id);
+                                        const { topic_earned_credits = 0, total_general_earned_credits = 0 } = getDtaa.credits_data || {};
+                                        setTotalCred(topic_earned_credits + total_general_earned_credits);
+                                    }
+                                }}
+                            />
+                            &lt;View style={styles.paginationContainer}>
+                                {fulldashbaord &amp;&amp; fulldashbaord?.length >= 2 &amp;&amp; fulldashbaord?.map((_, index) => (
+                                    &lt;View
+                                        key={index}
+                                        style={[
+                                            styles.dot,
+                                            currentIndex === index ? styles.activeDot : styles.inactiveDot
+                                        ]}
+                                    />
+                                ))}
+                            &lt;/View>
+                        &lt;/View>
+                        {nettrue === false ?
+                            &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}&lt;/Text>
+                                &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000", marginTop: normalize(7) }}>{"Please check your internet connection \n                    and try again"}&lt;/Text>
+                                &lt;Buttons
+                                    onPress={handleRot}
+                                    height={normalize(45)}
+                                    width={normalize(240)}
+                                    backgroundColor={Colorpath.ButtonColr}
+                                    borderRadius={normalize(5)}
+                                    text="Retry"
+                                    color={Colorpath.white}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterSemiBold}
+                                    fontWeight="bold"
+                                    marginTop={normalize(25)}
+                                />
+                            &lt;/View>
+                            : null}
+                        &lt;Nonphysicianprofile allNoDetData={allNoDetData} addit={addit} finddata={finddata} handleButtonPress={getCurrentItem()} navigation={navigation} DashboardReducer={DashboardReducer} />
+                    &lt;/View> : hasResolvedDashboard ? (
+                        &lt;RestProfession
+                            finalProfessionmain={finalProfessionmain}
+                            setPrimeadd={setPrimeadd}
+                            enables={enables}
+                            addit={addit}
+                            takestate={takestate}
+                            navigation={navigation}
+                            completedCount={completedCount}
+                            pendingCount={pendingCount}
+                            DashboardReducer={DashboardReducer}
+                            CMEReducer={CMEReducer}
+                        />
+                    ) : &lt;HomeShimmer />}
+            &lt;/View>
+        &lt;/>
+    );
+}
+const styles = StyleSheet.create({
+    paginationContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 15
+    },
+    dot: {
+        height: 10,
+        width: 10,
+        borderRadius: 5,
+        marginHorizontal: 3
+    },
+    inactiveDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 8,
+        backgroundColor: Colorpath.ButtonColr,
+        borderColor: "#FFFFFF",
+        borderWidth: 1,
+    },
+    activeDot: {
+        width: 25,
+        height: 8,
+        borderRadius: 10,
+        backgroundColor: Colorpath.white,
+    }
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

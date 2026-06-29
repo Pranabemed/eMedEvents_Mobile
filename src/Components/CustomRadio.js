@@ -3,6 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
 import Colorpath from '../Themes/Colorpath';
 
+/**
+ * Reusable CustomPaymentradio component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomPaymentradio = ({walletmo, options, onSelect, stylechange,selectedOption,setSelectedOption}) => {
     console.log(stylechange, "stylechange======")
     useEffect(() => {

@@ -11,6 +11,14 @@ import {
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 
+/**
+ * Reusable CustomInputTouchable component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomInputTouchable = ({
     label,
     value,

@@ -17,6 +17,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { CMEPlannerEditRequest } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+
+/**
+ * Reusable ScheduleCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, setSelectedItem }) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const dispatch = useDispatch();

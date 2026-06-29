@@ -8,6 +8,14 @@ import Buttons from '../../Components/Button';
 import RenderHTML from 'react-native-render-html';
 import { useNavigation } from '@react-navigation/native';
 
+/**
+ * Reusable CMEChecklistModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved, cmeRealback, selectedState, onBrowseCourses }) => {
     // const firstOption = Object.keys(allProfessionData?.cme_data || {})[0] || "";
 

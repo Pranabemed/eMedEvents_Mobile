@@ -22,6 +22,14 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable Wallets component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const Wallets = (props) => {
     const { isConnected } = useContext(AppContext);

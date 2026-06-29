@@ -24,6 +24,14 @@ import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
+/**
+ * Reusable AllSpecial component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 const professionalTypes = [
     { id: 1, label: 'MD', name: "Physician - MD" },

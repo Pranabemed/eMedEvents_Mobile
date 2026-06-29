@@ -11,6 +11,14 @@ import Fonts from '../../Themes/Fonts'
 import Buttons from '../../Components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable AddProfMemb component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const AddProfMemb = (props) => {
     const SearchBack = () => {
         props.navigation.goBack();

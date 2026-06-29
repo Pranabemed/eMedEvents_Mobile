@@ -3,6 +3,14 @@ import { View, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient'; 
 import normalize from '../Utils/Helpers/Dimen';
 
+/**
+ * Reusable GradientButton component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const GradientButton = ({width,take}) => {
     const styles = StyleSheet.create({
         buttonContainertake: {

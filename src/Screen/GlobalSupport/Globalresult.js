@@ -24,6 +24,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
 
+/**
+ * Reusable Globalresult component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
 const getStateLabel = stateObj =>

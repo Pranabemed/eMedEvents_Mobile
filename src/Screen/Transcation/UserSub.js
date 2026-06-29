@@ -11,6 +11,14 @@ import { subRenewalRequest, userSubRequest } from '../../Redux/Reducers/TransRed
 import moment from 'moment';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable UserSub component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
     const windowWidth = Dimensions.get('window').width;
     const TransReducer = useSelector(state => state.TransReducer);

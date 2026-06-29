@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/HomePage/GuestUserModule/utils/guestUserContentParsers.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/HomePage/GuestUserModule/utils/guestUserContentParsers.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * File Name: guestUserContentParsers.js
+ * Module: Guest User
+ * Purpose: Provides parsing and payload-normalization helpers for Guest User content sections.
+ * Author: Codex
+ * Created Date: 2026-06-03
+ * Last Modified: 2026-06-03
+ * Dependencies: ../../../../Utils/Helpers/Timezone, ./guestUserCore
+ */
+
+import { FormatDateZone } from '../../../../Utils/Helpers/Timezone';
+import { formatGuestNumber, formatGuestNumericText, getText } from './guestUserCore';
+
+/**
+ * Reusable matchGroup component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
+ * Description: Removes HTML tags and entity noise from a string.
+ * Purpose: Converts CMS HTML fragments into plain text display values.
+ *
+ * Params:
+ * @param {string} value
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Convert value to string.
+ * 2. Strip tags and common HTML entities.
+ * 3. Normalize repeated whitespace.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Handles nullish input through safe string conversion.
+ */
+export const stripHtml = value =>
+  String(value || '')
+    .replace(/&lt;[^>]*>/g, ' ')
+    .replace(/&amp;nbsp;/g, ' ')
+    .replace(/&amp;amp;/g, '&amp;')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Description: Returns the first regex capture group after HTML cleanup.
+ * Purpose: Simplifies repeated CMS HTML parsing patterns.
+ *
+ * Params:
+ * @param {string} html
+ * @param {RegExp} regex
+ *
+ * Returns:
+ * @returns {string|null}
+ *
+ * Flow:
+ * 1. Run regex against the HTML string.
+ * 2. Read first capture group when matched.
+ * 3. Return cleaned text or null.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns null when regex does not match.
+ */
+export const matchGroup = (html, regex) => {
+  const match = html.match(regex);
+  return match ? stripHtml(match[1]) : null;
+};
+
+/**
+ * Description: Resolves a banner or detail URL from multiple payload fields.
+ * Purpose: Supports hero and free-course routing when payload structure varies.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Read direct URL fields first.
+ * 2. Normalize relative URLs to the production domain.
+ * 3. Fall back to parsing anchor tags from HTML content.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty string when no valid URL exists.
+ */
+export const getBannerUrl = item => {
+  const rawUrl =
+    item?.banner_url ||
+    item?.bannerUrl ||
+    item?.url ||
+    item?.link ||
+    item?.conference_url ||
+    item?.conferenceUrl;
+
+  if (rawUrl) {
+    const url = String(rawUrl).trim();
+    if (!url) return '';
+    return url.startsWith('/') ? `https://www.emedevents.com${url}` : url;
+  }
+
+  const html = String(item?.html_content || '');
+  const hrefMatch = html.match(/&lt;a[^>]*href=['"]([^'"]+)['"]/i);
+  if (!hrefMatch?.[1]) return '';
+
+  const href = hrefMatch[1].trim();
+  if (!href) return '';
+  return href.startsWith('/') ? `https://www.emedevents.com${href}` : href;
+};
+
+/**
+ * Description: Resolves a detail page URL from supported payload fields.
+ * Purpose: Keeps course detail routing consistent across sections.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Check supported detail-page fields.
+ * 2. Fall back to banner or conference URLs.
+ * 3. Return the first valid text.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty string when no URL is available.
+ */
+export const getDetailPageUrl = item =>
+  getText(
+    item?.detailpage_url,
+    item?.detailPageUrl,
+    item?.detail_page_url,
+    item?.banner_url,
+    item?.url,
+    item?.link,
+    item?.conference_url,
+  );
+
+/**
+ * Description: Builds a display-ready date range for conference data.
+ * Purpose: Standardizes date labels across bundle cards and banners.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Try timezone-aware formatted date range.
+ * 2. Fall back to raw date fields.
+ * 3. Return the first valid label.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty string when no date data exists.
+ */
+export const getDateRange = item => {
+  const formatted = FormatDateZone(
+    item?.startdate || item?.startDate,
+    item?.enddate || item?.endDate || item?.endate,
+  );
+  if (formatted) return formatted;
+  return getText(item?.date, item?.event_date, item?.startdate, item?.startDate);
+};
+
+/**
+ * Description: Resolves CME credit label text from bundle payloads.
+ * Purpose: Normalizes direct display strings and point popover arrays into one label.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Prefer provided `display_cme`.
+ * 2. Normalize "Contact Hour" label when needed.
+ * 3. Build pipe-separated text from `cme_points_popovar` when direct label is missing.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty string when credit details do not exist.
+ */
+export const getCmeLabel = item => {
+  if (item?.display_cme) {
+    const normalizedDisplayCme = String(item.display_cme).toLowerCase().includes('contact hour')
+      ? String(item.display_cme).replace(/contact hour/i, 'Contact Hour(s)')
+      : String(item.display_cme);
+    return formatGuestNumericText(normalizedDisplayCme);
+  }
+  if (Array.isArray(item?.cme_points_popovar) &amp;&amp; item.cme_points_popovar.length) {
+    return item.cme_points_popovar
+      .map(point => {
+        const count = formatGuestNumber(Number.parseFloat(point?.points) || 0);
+        const name =
+          point?.name &amp;&amp; point?.name.toLowerCase() === 'contact hour'
+            ? 'Contact Hour(s)'
+            : point?.name || '';
+        return `${count} ${name}`.trim();
+      })
+      .filter(Boolean)
+      .join(' | ');
+  }
+  return '';
+};
+
+/**
+ * Description: Resolves visible price text from bundle payloads.
+ * Purpose: Standardizes free and paid pricing labels.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string}
+ *
+ * Flow:
+ * 1. Return `FREE` for free-priced payloads.
+ * 2. Read currency code and amount fields.
+ * 3. Return combined display value.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty string-compatible text when price parts are missing.
+ */
+export const getPriceLabel = item => {
+  if (String(item?.display_price || '').toUpperCase() === 'FREE') {
+    return 'FREE';
+  }
+  return `${getText(item?.display_currency_code, item?.currency_code, '')}${formatGuestNumericText(getText(
+    item?.display_price,
+    item?.price,
+    item?.amount,
+  ))}`.trim();
+};
+
+/**
+ * Description: Parses banner HTML for date and credits metadata.
+ * Purpose: Extracts CMS banner metadata used by hero and live-conference sections.
+ *
+ * Params:
+ * @param {string} html
+ *
+ * Returns:
+ * @returns {Object}
+ *
+ * Flow:
+ * 1. Extract meta and credit blocks from HTML.
+ * 2. Parse date and credits from known markup patterns.
+ * 3. Return normalized date/credit values.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty fields when expected HTML structure is missing.
+ */
+export const parseBannerMeta = html => {
+  const metaHtmlMatch = html.match(
+    /&lt;p[^>]*class=['"][^'"]*sliderthreecredits[^'"]*['"][^>]*>([\s\S]*?)&lt;\/p>/i,
+  );
+  const metaHtml = metaHtmlMatch ? metaHtmlMatch[1] : '';
+  const creditsBlockMatch = html.match(
+    /&lt;p[^>]*class=['"][^'"]*\bcredits\b[^'"]*['"][^>]*>([\s\S]*?)&lt;\/p>/i,
+  );
+  const creditsBlock = creditsBlockMatch ? creditsBlockMatch[1] : '';
+
+  if (!metaHtml &amp;&amp; !creditsBlock) {
+    return { date: '', credits: '' };
+  }
+
+  const dateMatch =
+    metaHtml.match(
+      /&lt;img[^>]*alt=['"](?:Calendar|calendar)['"][^>]*>\s*([\s\S]*?)(?=&lt;img[^>]*alt=['"](?:Credits|credits)['"]|&lt;span[^>]*class=['"]textmogento['"]|$)/i,
+    ) ||
+    metaHtml.match(
+      /Calendar\.png[^>]*>\s*([\s\S]*?)(?=&lt;img[^>]*alt=['"](?:Credits|credits)['"]|&lt;span[^>]*class=['"]textmogento['"]|$)/i,
+    );
+
+  const creditsMatch =
+    metaHtml.match(
+      /&lt;img[^>]*alt=['"](?:Credits|credits)['"][^>]*>\s*&lt;span[^>]*>\s*([\d.]+)\s*&lt;\/span>\s*([\s\S]*?)(?=&lt;img[^>]*alt=['"][^>]*Hybrid|&lt;span[^>]*class=['"]textmogento['"]|$)/i,
+    ) ||
+    metaHtml.match(
+      /&lt;img[^>]*alt=['"](?:Credits|credits)['"][^>]*>\s*([\s\S]*?)(?=&lt;img[^>]*alt=['"][^>]*Hybrid|&lt;span[^>]*class=['"]textmogento['"]|$)/i,
+    ) ||
+    metaHtml.match(
+      /credits\.png[^>]*>\s*([\s\S]*?)(?=&lt;img[^>]*alt=['"][^>]*Hybrid|&lt;span[^>]*class=['"]textmogento['"]|$)/i,
+    ) ||
+    creditsBlock.match(
+      /&lt;span[^>]*>\s*([\d.]+)\s*&lt;\/span>\s*([\s\S]*?)(?=&lt;\/p>|$)/i,
+    );
+
+  const date = stripHtml(dateMatch?.[1]);
+  const credits = creditsMatch
+    ? creditsMatch[2]
+      ? `${stripHtml(creditsMatch[1])} ${stripHtml(creditsMatch[2])}`.trim()
+      : stripHtml(creditsMatch[1])
+    : '';
+
+  return {
+    date: date || '',
+    credits: formatGuestNumericText(credits || ''),
+  };
+};
+
+/**
+ * Description: Splits a pipe-separated meta string into date and credit parts.
+ * Purpose: Supports hero banner fallback rendering when API sends combined metadata text.
+ *
+ * Params:
+ * @param {string} value
+ *
+ * Returns:
+ * @returns {Object}
+ *
+ * Flow:
+ * 1. Split the incoming text by pipe delimiters.
+ * 2. Normalize each segment.
+ * 3. Return the first segment as date and the remainder as credits.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns empty parts when value is missing.
+ */
+export const splitMetaLine = value => {
+  const parts = String(value || '')
+    .split('|')
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  return {
+    date: parts[0] || '',
+    credits: formatGuestNumericText(parts.slice(1).join(' | ') || ''),
+  };
+};
+
+/**
+ * Description: Extracts banner title from CMS HTML.
+ * Purpose: Supports hero and webinar cards when direct title fields are absent.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string|null}
+ *
+ * Flow:
+ * 1. Read HTML content.
+ * 2. Match the heading tag.
+ * 3. Return cleaned text or null.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns null when heading is not found.
+ */
+export const getHtmlTitle = item =>
+  matchGroup(String(item?.html_content || ''), /&lt;h2[^>]*>([\s\S]*?)&lt;\/h2>/i);
+
+/**
+ * Description: Extracts location text from CMS HTML.
+ * Purpose: Supplies live webinar location fallback data when API fields are empty.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string|null}
+ *
+ * Flow:
+ * 1. Read HTML content.
+ * 2. Match the known location pattern.
+ * 3. Return cleaned location text.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns null when the location pattern is not present.
+ */
+export const getHtmlLocation = item => {
+  const html = String(item?.html_content || '');
+  return matchGroup(
+    html,
+    /&lt;p[^>]*class=['"][^'"]*\bcredits\b[^'"]*['"][^>]*>[\s\S]*?(?:location|loc)[^>]*>\s*([\s\S]*?)&lt;\/p>/i,
+  );
+};
+
+/**
+ * Description: Extracts banner button text from CMS HTML.
+ * Purpose: Supplies CTA fallback labels for hero and live webinar items.
+ *
+ * Params:
+ * @param {Object} item
+ *
+ * Returns:
+ * @returns {string|null}
+ *
+ * Flow:
+ * 1. Read HTML content.
+ * 2. Match button text.
+ * 3. Return cleaned CTA label.
+ *
+ * API Used:
+ * None
+ *
+ * Redux Actions:
+ * None
+ *
+ * Error Handling:
+ * Returns null when button markup is not available.
+ */
+export const getHtmlButtonText = item =>
+  matchGroup(String(item?.html_content || ''), /&lt;button[^>]*>([\s\S]*?)&lt;\/button>/i);
+
+export const SHIMMER_BG = '#EAF4FB';
+export const SHIMMER_HL = '#FFFFFF';
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

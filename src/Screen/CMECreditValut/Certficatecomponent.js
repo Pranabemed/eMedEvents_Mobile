@@ -5,6 +5,14 @@ import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import MandatoryCertificate from './MandatoryCertificate';
+
+/**
+ * Reusable Certficatecomponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Certficatecomponent = ({ certificateData,navigation }) => {
    const [showMore, setShowMore] = useState(false); 
     const [maxToShow, setMaxToShow] = useState(3);

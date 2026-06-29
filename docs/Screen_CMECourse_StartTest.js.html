@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/CMECourse/StartTest.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/CMECourse/StartTest.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, ImageBackground, StyleSheet, TouchableOpacity, Image, ScrollView, useWindowDimensions, Alert, BackHandler, ActivityIndicator } from 'react-native'
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import Colorpath from '../../Themes/Colorpath'
+import MyStatusBar from '../../Utils/MyStatusBar'
+import PageHeader from '../../Components/PageHeader'
+import Imagepath from '../../Themes/Imagepath'
+import normalize from '../../Utils/Helpers/Dimen';
+import Fonts from '../../Themes/Fonts'
+import TimeIcon from 'react-native-vector-icons/Ionicons';
+import ProgressBarLine from '../../Components/ProgressPerce'
+import { connect, useDispatch, useSelector } from 'react-redux'
+import connectionrequest from '../../Utils/Helpers/NetInfo'
+import { activityfulfilmentRequest, actvityBreakupRequest, cmenextactionRequest } from '../../Redux/Reducers/CMEReducer'
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import RenderHTML from 'react-native-render-html'
+import Buttons from '../../Components/Button'
+import { useIsFocused } from '@react-navigation/native'
+import Loader from '../../Utils/Helpers/Loader'
+import RNFS from "react-native-fs";
+import FileViewer from "react-native-file-viewer";
+import { AppContext } from '../GlobalSupport/AppContext'
+import { stateDashboardRequest } from '../../Redux/Reducers/DashboardReducer';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StartTest component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+let status = "";
+let status1 = "";
+const StartTest = (props) => {
+    const {
+        statepush,
+        setStatepush,
+        setFinddata,
+        isConnected,
+        fulldashbaord,
+        setAddit,
+        setFulldashbaord,
+        addit
+    } = useContext(AppContext);
+    const startPress = () => {
+        // const fullDta = fulldashbaord?.[0];
+        setAddit(statepush);
+        // setFulldashbaord(addit)
+        takeCourse();
+        props.navigation.goBack();
+    }
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const [progress, setProgress] = useState(50);
+    const [mainData, setMainData] = useState([]);
+    const [actvityData, setActvityData] = useState([]);
+    const [actvityDatas, setActvityDatas] = useState([]);
+    const [htmlContents, setHtmlContents] = useState("")
+    const [dataactivity, setDataactivity] = useState();
+    const [dataactivitymain, setDataactivitymain] = useState();
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const dispatch = useDispatch();
+    const { width } = useWindowDimensions();
+    const isFocus = useIsFocused();
+    const [loadingdownst, setLoadingdownst] = useState(false);
+    const [pdfUrist, setPdfUrist] = useState("");
+    const getFirstIncompleteModule = (modules) => {
+        if (!Array.isArray(modules)) return null;
+        return modules.find((item) => Number(item?.completedSection) === 0) || null;
+    };
+    useEffect(() => {
+        if (statepush) {
+            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }, [statepush])
+    const takeCourse = () => {
+        if (statepush) {
+            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }
+    // const activityId = actvityData?.courseModules["Pre-Assessment"]?.activity_id || null;
+    console.log(actvityData?.courseHandout, props?.route?.params, statepush, "props?.route?.params?.conference=====================", dataactivity, dataactivitymain, props?.route?.params?.startCourse?.conferenceId);
+    useEffect(() => {
+        if (props?.route?.params?.conference || props?.route?.params?.startCourse?.conferenceId) {
+            let obj = {
+                "conference_id": props?.route?.params?.conference || props?.route?.params?.startCourse?.conferenceId
+            }
+            connectionrequest()
+                .then(() => {
+                    dispatch(activityfulfilmentRequest(obj))
+                    dispatch(actvityBreakupRequest(obj))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }, [props?.route?.params?.conference, props?.route?.params?.startCourse?.conferenceId])
+    useEffect(() => {
+        if (CMEReducer?.activityfulfilmentResponse?.courseModules) {
+            const activityId = CMEReducer?.activityfulfilmentResponse?.courseModules["Pre-Assessment"]?.activity_id || null;
+
+            if (activityId) {
+                console.log("Activity ID:", activityId);
+                setDataactivitymain(activityId);
+            } else {
+                console.log("No activity_id found.");
+            }
+        } else {
+            console.log("CourseModules data not available yet.");
+        }
+    }, [CMEReducer?.activityfulfilmentResponse]);
+    useEffect(() => {
+        if (CMEReducer?.activityfulfilmentResponse?.courseModules) {
+            const courseModules = CMEReducer?.activityfulfilmentResponse?.courseModules;
+            const activityIdmain =
+                courseModules["Course"]?.activity_id ||
+                courseModules["Post-Assessment"]?.activity_id ||
+                courseModules["Survey &amp; Feedback"]?.activity_id ||
+                courseModules["Certificate"]?.activity_id ||
+                null;
+            if (activityIdmain) {
+                console.log("Activity ID:", activityIdmain);
+                setDataactivity(activityIdmain);
+            } else {
+                console.log("No activity_id found.");
+            }
+        } else {
+            console.log("CourseModules data not available yet.");
+        }
+    }, [CMEReducer?.activityfulfilmentResponse]);
+
+    useEffect(() => {
+        const fullData = actvityData;
+        const extractedData = fullData?.cmeCreditsData?.map(d => ({
+            name: d?.name || "",
+            points: parseFloat(d?.points) || 0
+        }));
+        setMainData(extractedData);
+        console.log(extractedData, "Extracted Data", mainData);
+        const htmlContent = actvityData?.overView
+        setHtmlContents(htmlContent);
+    }, [actvityData]);
+    const [speakerName, setSpeakerName] = useState('');
+    const [speakerQualification, setSpeakerQualification] = useState('');
+    const [speakerSpecialities, setSpeakerSpecialities] = useState('');
+    const [speakerImage, setSpeakerImage] = useState('');
+
+    useEffect(() => {
+        if (actvityData?.speakers?.length > 0) {
+            const speaker = actvityData?.speakers[0];
+            setSpeakerName(speaker.name || '');
+            setSpeakerQualification(speaker?.qualification || '');
+            setSpeakerSpecialities(speaker?.specialities || '');
+            setSpeakerImage(speaker?.userImage || '');
+        }
+    }, [actvityData]);
+    if (status === '' || CMEReducer.status !== status) {
+        switch (CMEReducer.status) {
+            case 'CME/activityfulfilmentRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/activityfulfilmentSuccess':
+                status = CMEReducer.status;
+                setActvityData(CMEReducer?.activityfulfilmentResponse);
+                console.log("setActvityData ======>", CMEReducer?.activityfulfilmentResponse)
+                break;
+            case 'CME/activityfulfilmentFailure':
+                status = CMEReducer.status;
+                break;
+            case 'CME/actvityBreakupRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/actvityBreakupSuccess':
+                status = CMEReducer.status;
+                let obj = {
+                    "conference_id": CMEReducer?.actvityBreakupResponse?.conferenceId,
+                    "ActivityId": CMEReducer?.actvityBreakupResponse?.current_activity_id,
+                }
+                console.log("StartTest.js-------", obj)
+                connectionrequest()
+                    .then(() => {
+                        dispatch(cmenextactionRequest(obj));
+                    })
+                    .catch((err) => { showErrorAlert("Please connect to internet", err) })
+                console.log("activity fullfill ======>", CMEReducer?.actvityBreakupResponse, CMEReducer?.cmenextactionResponse)
+                break;
+            case 'CME/actvityBreakupFailure':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmenextactionRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/cmenextactionSuccess':
+                status = CMEReducer.status;
+                setActvityDatas(CMEReducer?.cmenextactionResponse);
+                console.log("activity fullfills ======>", CMEReducer?.cmenextactionResponse)
+                break;
+            case 'CME/cmenextactionFailure':
+                status = CMEReducer.status;
+                break;
+        }
+    }
+    if (status1 == '' || DashboardReducer.status != status1) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/stateDashboardRequest':
+                status1 = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateDashboardSuccess':
+                status1 = DashboardReducer.status;
+                setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+                break;
+            case 'Dashboard/stateDashboardFailure':
+                status1 = DashboardReducer.status;
+                break;
+        }
+    }
+    const handleLinkst = (link) => {
+        if (link) {
+            const showPDF = async () => {
+                setLoadingdownst(true);
+                try {
+                    const url = `${link}`;
+                    console.log(url, "url---------");
+                    const fileName = url.split("/").pop();
+                    const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+                    console.log('Downloading file from:', url);
+                    console.log('Saving file to:', localFile);
+                    const options = {
+                        fromUrl: url,
+                        toFile: localFile,
+                    };
+                    const downloadResult = await RNFS.downloadFile(options).promise;
+                    console.log('Download result:', downloadResult);
+                    setPdfUrist(localFile);
+                    console.log('File downloaded successfully to:', localFile);
+                } catch (error) {
+                    console.error('Error during file download:', error);
+                } finally {
+                    setLoadingdownst(false);
+                }
+            };
+            showPDF();
+        }
+    };
+
+    useEffect(() => {
+        if (pdfUrist) {
+            const openFileViewerst = async () => {
+                try {
+                    console.log('Opening file viewer for:', pdfUrist);
+                    await FileViewer.open(pdfUrist);
+                    setPdfUrist(null);
+                } catch (error) {
+                    console.error('Error opening file viewer:', error);
+                }
+            };
+            openFileViewerst();
+        }
+    }, [pdfUrist]);
+    useEffect(() => {
+        const onBackPress = () => {
+            takeCourse();
+            startPress();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, []);
+    const acivityData =
+        actvityDatas?.conferenceCmePoints &amp;&amp;
+        actvityDatas?.conferenceCmePoints.replace(/\s/g, "") !== "-0";
+    const [showLoader, setShowLoader] = useState(true);
+    useEffect(() => {
+        // Simulate 2-second loading time
+        const timeout = setTimeout(() => {
+            setShowLoader(false);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+    }, []);
+    console.log(mainData, "maindata--------", actvityData, actvityDatas);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
+                &lt;Loader visible={showLoader} />
+                {Platform.OS === 'ios' ? &lt;PageHeader
+                    title="Activity Fulfillment"
+                    onBackPress={startPress}
+                /> : &lt;View>
+                    &lt;PageHeader
+                        title="Activity Fulfillment"
+                        onBackPress={startPress}
+                    />
+                &lt;/View>}
+                {conn == false ? &lt;IntOff /> : &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                    &lt;View>
+                        &lt;View style={styles.container}>
+                            &lt;ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
+                                &lt;View style={styles.contentContainer}>
+                                    &lt;View style={styles.header}>
+                                        &lt;Text style={styles.title}>
+                                            {actvityData?.title || actvityDatas?.conferenceName}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                    &lt;View style={styles.subHeader}>
+                                        &lt;Text style={styles.subText}>
+                                            {actvityData?.organizerName || actvityDatas?.organizationName}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                    &lt;View style={styles.details}>
+                                        &lt;View style={styles.column}>
+                                            &lt;View style={styles.row}>
+                                                {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) ? &lt;Text style={styles.detailText}>
+                                                    {actvityData?.conferenceDuration || actvityDatas?.conferenceDuration}
+                                                &lt;/Text> : null}
+                                                {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) ? &lt;View style={styles.separator} /> : null}
+                                                &lt;Text style={styles.detailText}>
+                                                    {mainData?.length > 0
+                                                        ? `${mainData?.[0]?.points || 0} ${mainData?.[0]?.name &amp;&amp;
+                                                            mainData?.[0]?.name?.toLowerCase() == "contact hour"
+                                                            ? "Contact Hour(s)"
+                                                            : mainData?.[0]?.name || ""
+                                                        }`
+                                                        : acivityData ? acivityData : "" || ""}
+                                                &lt;/Text>
+                                            &lt;/View>
+                                        &lt;/View>
+                                    &lt;/View>
+                                    {actvityData?.courseHandout &amp;&amp; &lt;View style={styles.divider} />}
+                                &lt;/View>
+                                {actvityData?.courseHandout ? &lt;View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%", paddingHorizontal: normalize(0), marginTop: normalize(10) }}>
+                                    &lt;View>
+                                        &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333" }}>
+                                            {"Course Handout"}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                    &lt;View style={{ minWidth: normalize(70) }}>
+                                        {loadingdownst ? (
+                                            &lt;ActivityIndicator
+                                                style={{ marginRight: normalize(15) }}
+                                                size="small"
+                                                color={Colorpath.green}
+                                            />
+                                        ) : null}
+
+                                        &lt;TouchableOpacity
+                                            onPress={() => handleLinkst(actvityData?.courseHandout)}
+                                            disabled={loadingdownst}
+                                            style={{ opacity: loadingdownst ? 0.5 : 1 }}
+                                        >
+                                            &lt;Text style={{
+                                                fontFamily: Fonts.InterBold,
+                                                fontSize: 16,
+                                                color: loadingdownst ? Colorpath.disabled : Colorpath.ButtonColr
+                                            }}>
+                                                {"Download"}
+                                            &lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    &lt;/View>
+                                &lt;/View> : null}
+
+                            &lt;/ImageBackground>
+                        &lt;/View>
+                        {htmlContents ? &lt;View style={{ width: "100%", paddingHorizontal: normalize(0), marginTop: normalize(10) }}>
+                            &lt;View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                                    {"Overview"}
+                                &lt;/Text>
+                            &lt;/View>
+                            &lt;View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
+                                &lt;RenderHTML
+                                    contentWidth={width}
+                                    source={{ html: htmlContents }}
+                                    tagsStyles={styles.tagsStyles}
+                                />
+                            &lt;/View>
+                        &lt;/View> : null}
+                        &lt;View style={{ width: "100%" }}>
+                            &lt;View style={{
+                                paddingVertical: normalize(10), paddingHorizontal: normalize(10)
+                            }}>
+                                &lt;Buttons
+                                    onPress={() => {
+                                        const courseModuleList = Array.isArray(CMEReducer?.cmenextactionResponse?.courseModule)
+                                            ? CMEReducer?.cmenextactionResponse?.courseModule
+                                            : Array.isArray(CMEReducer?.cmenextactionResponse?.courseModules)
+                                                ? CMEReducer?.cmenextactionResponse?.courseModules
+                                                : [];
+                                        const nextIncompleteModule = getFirstIncompleteModule(courseModuleList);
+                                        const nextModuleId =
+                                            nextIncompleteModule?.activity_id ||
+                                            nextIncompleteModule?.current_activity_id ||
+                                            nextIncompleteModule?.next_activity_id ||
+                                            nextIncompleteModule?.id ||
+                                            CMEReducer?.cmenextactionResponse?.next_activity_id;
+                                        const nextModuleName = nextIncompleteModule?.name || CMEReducer?.cmenextactionResponse?.next_activity_text;
+                                        if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession" || nextModuleName?.toLowerCase()?.includes("section") || nextModuleName?.toLowerCase()?.includes("course")) {
+                                            takeCourse();
+                                            props.navigation.navigate("VideoComponent", {
+                                                activityID: {
+                                                    ...CMEReducer?.cmenextactionResponse,
+                                                    current_activity_id: nextModuleId,
+                                                    next_activity_id: nextModuleId,
+                                                    next_activity_text: nextModuleName,
+                                                    courseModule: courseModuleList,
+                                                },
+                                                preserveVideoContent: false,
+                                            })
+                                        } else if (CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest") {
+                                            takeCourse();
+                                            props.navigation.navigate("PreTest", { testFlowType: "pre", FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
+                                        }
+                                    }}
+                                    height={normalize(45)}
+                                    width={normalize(300)}
+                                    backgroundColor={Colorpath.ButtonColr}
+                                    borderRadius={normalize(9)}
+                                    text={CMEReducer?.actvityBreakupResponse?.button_text}
+                                    color={Colorpath.white}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterBold}
+                                    // marginTop={normalize(30)}
+                                    fontWeight={"bold"}
+                                />
+                            &lt;/View>
+                            {/* &lt;View style={{ paddingHorizontal: normalize(10), width: "100%" }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                                    {"Course Modules"}
+                                &lt;/Text>
+                            &lt;/View>
+                            &lt;View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(6) }}>
+                                &lt;View style={{
+                                    justifyContent: 'center',
+                                    alignSelf: 'center',
+                                    width: '99.99%',
+                                    borderWidth: 1,
+                                    borderColor: "#DDDDDD",
+                                    borderRadius: normalize(10),
+                                    paddingHorizontal: normalize(8), paddingVertical: normalize(2)
+                                }}>
+                                    &lt;View style={styles.View}>
+                                        &lt;View style={styles.contentContainer}>
+                                            {(actvityData?.title || actvityDatas?.conferenceName) ? &lt;View style={styles.header}>
+                                                &lt;Text numberOfLines={2} style={styles.title}>
+                                                    {actvityData?.title || actvityDatas?.conferenceName}
+                                                &lt;/Text>
+                                            &lt;/View> : null}
+                                            {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) &amp;&amp; &lt;View style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                width: '100%',
+                                                paddingVertical: normalize(5)
+                                            }}>
+                                                &lt;TimeIcon name="time-outline" size={25} color={"#999999"} />
+                                                &lt;Text style={[styles.subText, { marginLeft: normalize(5) }]}>
+                                                    {actvityData?.conferenceDuration || actvityDatas?.conferenceDuration}
+                                                &lt;/Text>
+                                            &lt;/View>}
+                                            {(actvityData?.courseModules || actvityDatas?.courseModule) &amp;&amp; (
+                                                &lt;View
+                                                    style={{
+                                                        width: normalize(280),
+                                                        paddingVertical: normalize(5),
+                                                        // backgroundColor:"red"
+                                                    }}
+                                                >
+                                                    &lt;View style={styles.column}>
+                                                        {(() => {
+                                                            // ✅ STEP 1: Decide which dataset to use
+                                                            const hasCourseModulesData =
+                                                                actvityData?.courseModules &amp;&amp;
+                                                                Object.keys(actvityData?.courseModules).length > 0;
+
+                                                            // ✅ STEP 2: Prepare display list (no merge)
+                                                            const displayList = hasCourseModulesData
+                                                                ? Object.keys(actvityData?.courseModules || {})
+                                                                : (actvityDatas?.courseModule || []).map(item => item?.name).filter(Boolean);
+
+                                                            // ✅ STEP 3: Split into chunks of 3 for multi-line layout
+                                                            const rows = [];
+                                                            for (let i = 0; i &lt; displayList.length; i += 3) {
+                                                                rows.push(displayList.slice(i, i + 3));
+                                                            }
+
+                                                            // ✅ STEP 4: Render rows
+                                                            return rows.map((rowItems, rowIndex) => (
+                                                                &lt;View
+                                                                    key={`row-${rowIndex}`}
+                                                                    style={[styles.row, { marginBottom: rowIndex !== rows.length - 1 ? normalize(5) : 0 }]}
+                                                                >
+                                                                    {rowItems.map((label, index) => {
+                                                                        const cleanLabel = label
+                                                                            ?.replace(/-/g, ' ')
+                                                                            ?.replace(/&amp;/g, 'and')
+                                                                            ?.replace(/\b\w/g, c => c.toUpperCase().trim());
+
+                                                                        return (
+                                                                            // &lt;React.Fragment key={`${label}-${index}`}>
+                                                                            //     &lt;Text numberOfLines={2} style={styles.detailText}>
+                                                                            //         {cleanLabel}
+                                                                            //     &lt;/Text>
+                                                                            //     {index !== rowItems.length - 1 &amp;&amp; &lt;View style={styles.separator} />}
+                                                                            // &lt;/React.Fragment>
+                                                                            &lt;React.Fragment key={`${label}-${index}`}>
+                                                                                &lt;View style={{ flexShrink: 1, flex: 1, minWidth: '30%' }}>
+                                                                                    &lt;Text
+                                                                                        numberOfLines={3}
+                                                                                        style={[styles.detailText, { flexWrap: 'wrap' }]}
+                                                                                        ellipsizeMode="tail"
+                                                                                    >
+                                                                                        {cleanLabel}
+                                                                                    &lt;/Text>
+                                                                                &lt;/View>
+                                                                                {index !== rowItems.length - 1 &amp;&amp; &lt;View style={styles.separator} />}
+                                                                            &lt;/React.Fragment>
+                                                                        );
+                                                                    })}
+                                                                &lt;/View>
+                                                            ));
+                                                        })()}
+                                                    &lt;/View>
+                                                &lt;/View>
+                                            )}
+
+
+
+                                            &lt;View>
+                                                {actvityDatas?.percentage === undefined ? &lt;>&lt;/> : &lt;View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
+                                                    &lt;ProgressBarLine needwidth={"yes"} textadd={"yes"} progress={actvityDatas?.percentage} height={6} fillColor={Colorpath.green} />
+                                                &lt;/View>}
+                                            &lt;/View>
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View> */}
+                        &lt;/View>
+                        {actvityData?.speakers?.length > 0 ? &lt;View style={{ width: "100%", paddingHorizontal: normalize(0), paddingVertical: normalize(0) }}>
+                            &lt;View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                                    {"Faculty"}
+                                &lt;/Text>
+                            &lt;/View>
+                            &lt;View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(6) }}>
+                                &lt;View style={{
+                                    width: '100%',
+                                    borderWidth: 1,
+                                    borderColor: "#DDDDDD",
+                                    borderRadius: normalize(10),
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(8),
+                                }}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center'
+                                    }}>
+                                        &lt;View style={{
+                                            height: normalize(70),
+                                            width: normalize(70),
+                                            backgroundColor: '#e9f5f9',
+                                            borderRadius: normalize(35),
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            marginRight: normalize(10),
+                                        }}>
+                                            &lt;ImageBackground
+                                                source={{ uri: speakerImage }}
+                                                style={{
+                                                    height: normalize(70),
+                                                    width: normalize(70),
+                                                }}
+                                                imageStyle={{ borderRadius: normalize(60) }}
+                                            />
+                                        &lt;/View>
+                                        &lt;View style={styles.textContainer}>
+                                            &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#00000", fontWeight: "bold" }}>{speakerName}&lt;/Text>
+                                            &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{speakerQualification}&lt;/Text>
+                                            &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{speakerSpecialities}&lt;/Text>
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                        &lt;/View> : null}
+                    &lt;/View>
+                &lt;/ScrollView>}
+            &lt;/SafeAreaView>
+        &lt;/>
+    )
+}
+
+export default StartTest
+const styles = StyleSheet.create({
+    container: {
+        justifyContent: 'center',
+        alignSelf: 'center',
+        // paddingVertical: normalize(10),
+        width: '100%',
+    },
+    imageBackground: {
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(10),
+        alignItems: 'flex-start',
+        flexDirection: 'column',
+        width: normalize(330),
+    },
+    contentContainer: {
+        width: '100%',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginRight: normalize(0)
+    },
+    tagsStyles: {
+        ul: {
+            marginVertical: normalize(5),
+            paddingLeft: 20,
+        },
+        li: {
+            marginBottom: 5,
+            fontSize: 16,
+            color: '#333',
+            top: Platform.OS === 'ios' ? 0 : -2,
+        },
+    },
+    title: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 20,
+        color: '#000000',
+        fontWeight: 'bold',
+        flex: 1,
+        flexWrap: 'wrap',
+    },
+    subHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingVertical: normalize(5),
+    },
+    subText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#666',
+    },
+    details: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingVertical: normalize(5),
+    },
+    column: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    detailText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#666',
+    },
+    separator: {
+        height: 15,
+        width: 2,
+        backgroundColor: '#DDD',
+        marginHorizontal: normalize(10),
+    },
+    divider: {
+        marginTop: normalize(10),
+        height: 1,
+        width: '100%',
+        backgroundColor: '#DDD',
+    },
+    coursedivider: {
+        marginTop: normalize(10),
+        height: 6,
+        width: '90%',
+        backgroundColor: 'red',
+        borderRadius: normalize(15)
+    },
+    textContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    text: {
+        fontSize: normalize(14),
+        color: '#333',
+        marginBottom: normalize(5),
+    },
+    detailsd: {
+        paddingVertical: normalize(6),
+        paddingHorizontal: normalize(8),
+        borderWidth: 1,
+        borderColor: "#DADADA",
+        borderRadius: normalize(5),
+        backgroundColor: "#fff",
+        justifyContent: "center",
+    },
+    columnd: {
+        flexDirection: "column",
+    },
+    rowd: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-evenly",
+    },
+    detailTextd: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: "#000000",
+        textAlign: "center",
+    },
+    separatord: {
+        height: normalize(18),
+        width: normalize(1),
+        backgroundColor: "#DADADA",
+        marginHorizontal: normalize(5),
+    },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

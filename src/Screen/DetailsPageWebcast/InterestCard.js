@@ -12,6 +12,14 @@ import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { useDispatch } from 'react-redux'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable InterestCard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const InterestCard = (props) => {
     const dispatch = useDispatch();
     const thanksBack = () => {

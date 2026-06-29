@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Transcation/UserSub.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Transcation/UserSub.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import Colorpath from '../../Themes/Colorpath'
+import normalize from '../../Utils/Helpers/Dimen';
+import Fonts from '../../Themes/Fonts';
+import { useDispatch, useSelector } from 'react-redux';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { subRenewalRequest, userSubRequest } from '../../Redux/Reducers/TransReducer';
+import moment from 'moment';
+let status = "";
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable UserSub component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
+    const windowWidth = Dimensions.get('window').width;
+    const TransReducer = useSelector(state => state.TransReducer);
+    const dispatch = useDispatch();
+    const isFocus = useIsFocused();
+    const navigation = useNavigation();
+    // const [storeAlldatas, setStoreAlldatas] = useState([]);
+    const [apiReq, setApiReq] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [pageNum, setPageNum] = useState(0);
+    const [limit, setLimit] = useState(10);
+    const [final, setFinal] = useState([])
+    const [refreshing, setRefreshing] = useState(false);
+    const [isEnable, setIsEnable] = useState(0);
+    const [exdate, setExdate] = useState(false);
+    useEffect(() => {
+        fetchuserSub();
+        setIsEnable(1);
+    }, [isFocus]);
+    const [switchStates, setSwitchStates] = useState({});
+    const handleSwitchToggle = (index, get) => {
+        Alert.alert(
+            "eMedEvents",
+            "Are you sure you want to cancel this subscription ?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Yes",
+                    onPress: () => {
+                        setSwitchStates((prevStates) => ({
+                            ...prevStates,
+                            [index]: !prevStates[index],
+                        }));
+                        let obj = {
+                            "subscription_id": get?.id
+                        }
+                        dispatch(subRenewalRequest(obj));
+                    },
+                },
+            ]
+        );
+    };
+    const fetchuserSub = () => {
+        let obj = {
+            "limit": limit,
+            "page": pageNum,
+            "fromDate": "",
+            "toDate": "",
+            "keyword": ""
+        };
+        connectionrequest()
+            .then(() => {
+                dispatch(userSubRequest(obj));
+
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+                setLoading(false);
+            });
+    };
+    useFocusEffect(
+        useCallback(() => {
+            setStoreAlldatas([]);
+            setPageNum(0);
+            fetchuserSub();
+        }, [])
+    );
+    const fetchMore = useCallback(() => {
+        const totalCount = TransReducer?.userSubResponse?.subscription_count || 0;
+        const totalDataLength = final?.reduce((acc, item) => acc + item.data.length, 0) || 0;
+        console.log(totalDataLength, "totalDataLength-------", final);
+        if (totalDataLength >= totalCount) {
+            setApiReq(false);
+            setLoading(false);
+            return;
+        }
+        if (!apiReq) {
+            const hasuserSubData = TransReducer?.userSubResponse?.subscription_data?.length > 0;
+            if (hasuserSubData) {
+                setPageNum(prevPage => prevPage + 1); // Increment pageNum
+                fetchuserSub(); // Trigger fetch
+            }
+        }
+    }, [apiReq, final, TransReducer]);
+    const fullDataRefresh = () => {
+        setStoreAlldatas([]);
+        setPageNum(0);
+        setRefreshing(false);
+        fetchuserSub();
+    };
+    if (status === '' || TransReducer.status !== status) {
+        switch (TransReducer.status) {
+            case 'Transaction/userSubRequest':
+                status = TransReducer.status;
+                setApiReq(true);
+                setLoading(true);
+                break;
+            case 'Transaction/userSubSuccess':
+                status = TransReducer.status;
+                setApiReq(false);
+                setLoading(false);
+                const newData = TransReducer?.userSubResponse?.subscription_data || [];
+                const totalCount = TransReducer?.userSubResponse?.subscription_count || 0;
+                if (newData.length > 0) {
+                    const updatedStoreData = { ...storeAlldatas };
+                    newData.forEach(item => {
+                        if (item?.created_date) {
+                            const dateString = item?.created_date;
+                            const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+                            if (monthYearMatch) {
+                                const month = monthYearMatch[1];
+                                const year = monthYearMatch[2];
+                                const monthYear = `${month} ${year}`;
+                                if (!updatedStoreData[monthYear]) {
+                                    updatedStoreData[monthYear] = [];
+                                }
+                                const isDuplicate = updatedStoreData[monthYear].some(existingItem => {
+                                    return (
+                                        existingItem.id === item.id 
+                                    );
+                                });
+                                if (!isDuplicate) {
+                                    updatedStoreData[monthYear].push(item);
+                                }
+                            } else {
+                                console.warn(`Invalid created_date format for item:`, item);
+                            }
+                        }
+                    });
+                    setStoreAlldatas(updatedStoreData);
+                    const totalItemsFetched = Object.values(updatedStoreData).flat().length;
+                    console.log(totalItemsFetched, "totalItemsFetched")
+                    if (totalItemsFetched >= totalCount) {
+                        console.log("All data fetched. Stopping API calls.");
+                        setApiReq(false);
+                        setLoading(false);
+                    }
+                }
+                break;
+            case 'Transaction/userSubFailure':
+                status = TransReducer.status;
+                setApiReq(false);
+                setLoading(false);
+                break;
+            case 'Transaction/subRenewalRequest':
+                status = TransReducer.status;
+                break;
+            case 'Transaction/subRenewalSuccess':
+                status = TransReducer.status;
+                setStoreAlldatas([]);
+                setPageNum(0);
+                setRefreshing(false);
+                fetchuserSub();
+                break;
+            case 'Transaction/subRenewalFailure':
+                status = TransReducer.status;
+                break;
+        }
+    }
+    useEffect(() => {
+        if (storeAlldatas) {
+            const storetakeAll = Object.keys(storeAlldatas).map((monthYear) => {
+                const data = storeAlldatas[monthYear];
+                const updatedData = data.map((item) => ({
+                    ...item,
+                    dataLength: data.length,
+                }));
+                return {
+                    monthYear,
+                    data: updatedData,
+                };
+            });
+            setFinal(storetakeAll);
+            console.log(storetakeAll, "storetakeAl", final);
+        }
+    }, [storeAlldatas]);
+        const expiredItems = useMemo(() => {
+          const result = {};
+          final &amp;&amp; final.forEach(monthGroup => {
+            monthGroup.data.forEach(item => {
+              if (!item?.expiry_date) {
+                result[item.id] = false;
+                return;
+              }
+              try {
+                const endDate = new Date(moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD"));
+                const currentDate = new Date();
+                endDate.setHours(0, 0, 0, 0);
+                currentDate.setHours(0, 0, 0, 0);
+                result[item.id] = currentDate > endDate;
+              } catch (error) {
+                result[item.id] = false;
+              }
+            });
+          });
+          return result;
+        }, [final]);
+    console.log(final, "exdate=========")
+    const renderItem = ({ item, index }) => {
+        // detectExDate(index, item?.id, item?.start_date);
+        console.log(item, "item-----------")
+        const isLastItem = index === item?.dataLength - 1;
+        const isSwitchOn = switchStates[index] ?? (item?.can_cancel === 1);
+        const isItemExpired = expiredItems[item.id] || false;
+        console.log(isItemExpired, "isItemExpired--------")
+        return (
+            &lt;View>
+                &lt;View style={{ justifyContent: "center", alignSelf: "center", marginTop: normalize(0), backgroundColor: "#FFFFFF" }}>
+                    &lt;View
+                        style={{
+                            flexDirection: "column",
+                            width: normalize(290),
+                            borderRadius: normalize(5),
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: normalize(10),
+                            paddingVertical: normalize(10),
+                            alignItems: "flex-start",
+                        }}
+                    >
+                        {item?.subscription_type ? &lt;View
+                            style={{
+                                paddingHorizontal: normalize(10),
+                                paddingVertical: normalize(8),
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                width: "100%",
+                            }}
+                        >
+                            &lt;Text
+                                numberOfLines={2}
+                                style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: "#000000",
+                                    flexShrink: 1,
+                                    flexWrap: "wrap",
+                                }}
+                            >
+                                {"Premium"}
+                            &lt;/Text>
+                            {item?.subscription_status &amp;&amp; &lt;View style={{
+                                height: normalize(20),
+                                width: normalize(50),
+                                borderRadius: normalize(15),
+                                borderWidth: 1,
+                                borderColor: "green",
+                                justifyContent: "center",
+                                alignItems: "center"
+                            }}>
+                                &lt;Text
+                                    style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 10,
+                                        color: "green",
+                                        alignSelf: "center"
+                                    }}
+                                >
+                                    {item?.subscription_status}
+                                &lt;/Text>
+                            &lt;/View>}
+                        &lt;/View> : null}
+                        &lt;View
+                            style={{
+                                paddingHorizontal: normalize(10),
+                                width: "100%",
+                                flexDirection: "row", justifyContent: "space-between", alignContent: "space-between"
+                            }}
+                        >
+                            &lt;Text
+                                style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 10,
+                                    color: "#AAA",
+                                }}
+                            >
+                                {`Trans Date: ${moment(item?.created_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`}
+                            &lt;/Text>
+                            &lt;Text
+                                style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 10,
+                                    color: isItemExpired ? "red" : "#AAA",
+                                }}
+                            >
+                                {isItemExpired
+                                    ? `Plan Expired on : ${moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`
+                                    : `Plan Expires on : ${moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`
+                                }
+                            &lt;/Text>
+                        &lt;/View>
+                    &lt;/View>
+                    &lt;View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
+                        {item?.can_cancel == 1 &amp;&amp; &lt;View style={{ paddingHorizontal: normalize(0), flexDirection: "row", gap: normalize(10) }}>
+
+                            &lt;Switch
+                                trackColor={{
+                                    false: "#999999",
+                                    true: "#008000",
+                                }}
+                                thumbColor={"#FFFFFF"}
+                                onValueChange={() => handleSwitchToggle(index, item)}
+                                style={{ marginBottom: normalize(10), marginLeft: normalize(10) }}
+                                value={isSwitchOn}
+                            />
+                            &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", marginTop: normalize(5) }}>{"Auto Renew"}&lt;/Text>
+                        &lt;/View>}
+                        {item?.can_update == 1 &amp;&amp; &lt;View style={{ marginRight: normalize(10) }}>
+                            &lt;TouchableOpacity onPress={() => {
+                                navigation.navigate("PaymentSub", { takeid: item?.id });
+                            }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000", textDecorationLine: "underline" }}>{"Update Payment Details"}&lt;/Text>
+                            &lt;/TouchableOpacity>
+                        &lt;/View>}
+                    &lt;/View>
+                    {!isLastItem &amp;&amp; &lt;View style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 5,
+                        paddingHorizontal: normalize(10),
+                        paddingVertical: normalize(5)
+                    }}>
+                        {Array.from({ length: 24 }).map((_, index) => (
+                            &lt;View key={index} style={{
+                                height: 2,
+                                width: (windowWidth * 0.4 - 20) / 16,
+                                backgroundColor: "#DDDDDD"
+                            }} />
+                        ))}
+                    &lt;/View>}
+                &lt;/View>
+            &lt;/View>
+        );
+    }
+    const renderMonthItem = ({ item }) => {
+        return (
+            &lt;View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
+                &lt;Text
+                    style={{
+                        fontFamily: Fonts.InterSemiBold,
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#333',
+                        marginBottom: normalize(10)
+                    }}
+                >
+                    {item.monthYear} {/* Display month and year */}
+                &lt;/Text>
+
+                &lt;FlatList
+                    data={item?.data}
+                    renderItem={renderItem}
+                    keyExtractor={(item, index) => index.toString()}
+                />
+            &lt;/View>
+        );
+    }
+const [showLoader, setShowLoader] = useState(true);
+          useEffect(() => {
+              // Simulate 2-second loading time
+              const timeout = setTimeout(() => {
+                  setShowLoader(false);
+              }, 2000);
+      
+              return () => clearTimeout(timeout);
+          }, []);
+    return (
+        &lt;>
+            &lt;View style={{ paddingVertical: normalize(10) }}>
+                &lt;FlatList
+                    data={final}
+                    renderItem={renderMonthItem}
+                    contentContainerStyle={{ paddingBottom: normalize(120) }}
+                    keyExtractor={(item, index) => index.toString()}
+                    onEndReached={fetchMore}
+                    onEndReachedThreshold={0.5}
+                    scrollEventThrottle={16}
+                    ListFooterComponent={
+                        loading &amp;&amp; !showLoader ? &lt;ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                    }
+                    refreshControl={
+                        &lt;RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={fullDataRefresh}
+                        />
+                    }
+                    ListEmptyComponent={showLoader ? &lt;View style={{justifyContent:"center",alignItems:"center",paddingTop:normalize(30)}}>
+                        &lt;ActivityIndicator color={"green"} size="small" />
+                    &lt;/View>  :
+                        &lt;Text
+                            style={{
+                                alignContent: 'center',
+                                alignItems: 'center',
+                                alignSelf: 'center',
+                                color: Colorpath.grey,
+                                fontWeight: 'bold',
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: normalize(20),
+                                paddingTop: normalize(30),
+                            }}>
+                            No data found
+                        &lt;/Text>
+                    }
+                />
+            &lt;/View>
+        &lt;/>
+    )
+}
+
+export default UserSub</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

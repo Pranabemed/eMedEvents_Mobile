@@ -4,6 +4,25 @@ import propstype from 'prop-types';
 import normalize from '../Utils/Helpers/Dimen';
 import Colorpath from '../Themes/Colorpath';
 import ArrowNeed from 'react-native-vector-icons/Feather';
+
+/**
+ * Reusable Button component that supports text, icons, and loading states.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {number} props.height - The height of the button.
+ * @param {number} props.width - The width of the button.
+ * @param {number} props.borderRadius - The border radius.
+ * @param {string} props.backgroundColor - The background color.
+ * @param {string} props.color - The text color.
+ * @param {string} props.text - The text to display inside the button.
+ * @param {Function} props.onPress - Callback executed when the button is pressed.
+ * @param {boolean} props.loading - If true, displays a loading indicator instead of text/icon.
+ * @param {boolean} props.disabled - If true, the button is disabled.
+ * @param {boolean} props.image - If true, displays an icon (requires `source` prop).
+ * @param {string} props.source - The icon name for `react-native-vector-icons/Feather`.
+ * @returns {JSX.Element}
+ */
 export default function Buttons(props) {
   return (
     <TouchableOpacity

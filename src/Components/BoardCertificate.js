@@ -24,6 +24,14 @@ import Boardonedata from './Boardonedata';
 import Noboardfound from './Noboardfound';
 import Boardtwodata from './Boardtwodata';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable BoardCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 export default function BoardCertificate({finalShow, setFinalShow, boardnamereal, setBoardnamereal }) {
     const {

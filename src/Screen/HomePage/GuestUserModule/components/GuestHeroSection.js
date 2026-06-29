@@ -25,6 +25,14 @@ import { GuestHeroShimmer } from './GuestUserShimmers';
 import normalize from '../../../../Utils/Helpers/Dimen';
 
 /**
+ * Reusable GuestHeroSectionComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Guest hero carousel section.
  * Purpose: Preserves the current hero-banner UI and navigation behavior in an isolated component.
  */

@@ -17,6 +17,14 @@ import showErrorAlert from '../Utils/Helpers/Toast';
 import { AppContext } from '../Screen/GlobalSupport/AppContext'
 import { stateDashboardRequest } from '../Redux/Reducers/DashboardReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable RateReview component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const RateReview = (props) => {

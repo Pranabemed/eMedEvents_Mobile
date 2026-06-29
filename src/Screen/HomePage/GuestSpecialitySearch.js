@@ -27,6 +27,14 @@ import GlobalSearchAll from '../GlobalSupport/GlobalSearchAll';
 import VoiceSearchBar from '../GlobalSupport/Voice';
 import TextFieldIn from '../../Components/Textfield';
 
+/**
+ * Reusable SpecialtyItem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const getLabel = item => {
   if (item == null) return '';
   if (typeof item === 'string') return item.trim();

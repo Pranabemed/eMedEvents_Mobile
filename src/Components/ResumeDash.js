@@ -11,6 +11,14 @@ import IconDot from 'react-native-vector-icons/Entypo';
 import normalize from '../Utils/Helpers/Dimen';
 import ProgressBarLine from './ProgressPerce';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable ResumeDash component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     const {
         statepush,

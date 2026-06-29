@@ -33,6 +33,14 @@ import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/Webc
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
+/**
+ * Reusable LoginMobile component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 // ─── Module-level OTP send guard ─────────────────────────────────────────────
 // Same pattern as LoginEmail. Stored outside the component so it:
 //  • Survives React StrictMode's intentional unmount → remount cycle

@@ -1,3 +1,14 @@
+/**
+ * Centralized mapping of local image assets used in the application.
+ * Defines required images for all components to avoid inline requires and ensure maintainability.
+ * 
+ * @constant {Object} Imagepath
+ * 
+ * @example
+ * import Imagepath from '../Themes/Imagepath';
+ * 
+ * <Image source={Imagepath.Logo} />
+ */
 const Imagepath = {
    Splash: require('../Assets/Images/Splash.png'),
    Logo: require('../Assets/Images/eMedlogo.png'),

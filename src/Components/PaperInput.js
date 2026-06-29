@@ -12,6 +12,14 @@ import {
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 
+/**
+ * Reusable CustomInputs component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomInputs = ({
     mode,
     label,

@@ -9,6 +9,14 @@ import Search from 'react-native-vector-icons/AntDesign';
 import Fonts from '../../Themes/Fonts';
 import ProfileModal from './ProfileModal';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ProfMember component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ProfMember = (props) => {
     const SearchBack = () => {
         props.navigation.goBack();

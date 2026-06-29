@@ -11,6 +11,14 @@ import showErrorAlert from '../Utils/Helpers/Toast';
 import Share from 'react-native-share';
 import constants from '../Utils/Helpers/constants';
 
+/**
+ * Reusable PageHeader component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand, hideCart = false }) => {
   const navigation = useNavigation();
   const cleanTitle = (title || '').replace(/\*/g, '').toLowerCase().trim();

@@ -11,6 +11,14 @@ import ImagePicker from 'react-native-image-crop-picker';
 import Imagepath from '../Themes/Imagepath';
 import CamIcn from 'react-native-vector-icons/Feather';
 import { ResizeMode } from 'react-native-video';
+
+/**
+ * Reusable CameraPicker component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 export default function CameraPicker(props) {
   // function to open gallery
   async function btnClick_galeryUpload() {

@@ -9,6 +9,14 @@ import Fonts from "../Themes/Fonts";
 import normalize from "../Utils/Helpers/Dimen";
 import Pdf from 'react-native-pdf';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable AllDownloadCatalog component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const AllDownloadCatalog = (props) => {
     const [loading, setLoading] = useState(false);
     const [pdfUri, setPdfUri] = useState(null);

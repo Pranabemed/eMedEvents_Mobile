@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/FinalCertificate.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/FinalCertificate.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useContext, useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator, Platform, StyleSheet, ScrollView } from "react-native";
+import FileViewer from "react-native-file-viewer";
+import RNFS from "react-native-fs";
+import Colorpath from "../Themes/Colorpath";
+import PageHeader from "./PageHeader";
+import MyStatusBar from "../Utils/MyStatusBar";
+import Fonts from "../Themes/Fonts";
+import normalize from "../Utils/Helpers/Dimen";
+import connectionrequest from "../Utils/Helpers/NetInfo";
+import { useDispatch, useSelector } from "react-redux";
+import { certificatewiseexamRequest } from "../Redux/Reducers/CMEReducer";
+import showErrorAlert from "../Utils/Helpers/Toast";
+import Pdf from 'react-native-pdf';
+import Buttons from "./Button";
+import { stateDashboardRequest } from "../Redux/Reducers/DashboardReducer";
+import { AppContext } from "../Screen/GlobalSupport/AppContext";
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from "../Utils/Helpers/IntOff";
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable DownloadCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+let status = "";
+let status1 = "";
+const DownloadCertificate = (props) => {
+    const {
+        statepush,
+        setFinddata,
+        isConnected
+    } = useContext(AppContext);
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const dispatch = useDispatch();
+    console.log(props?.route?.params, "exmaid ", CMEReducer);
+    const [loading, setLoading] = useState(false);
+    const [pdfUri, setPdfUri] = useState(null);
+    const [pdftrue, setPdftrue] = useState(false);
+    const [pDFPath, setPDFPath] = useState(null);
+    useEffect(() => {
+        if (props?.route?.params?.examID) {
+            let obj = {
+                "ExamId": props?.route?.params?.examID?.examID,
+                "CertificateActivityId": props?.route?.params?.examID?.CertificateActivityId?.next_activity_id,
+                "ConferenceId": props?.route?.params?.examID?.CertificateActivityId?.conferenceId
+            };
+            connectionrequest()
+                .then(() => {
+                    dispatch(certificatewiseexamRequest(obj));
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) });
+        }
+    }, [props?.route?.params?.examID]);
+
+    if (status === '' || CMEReducer.status !== status) {
+        switch (CMEReducer.status) {
+            case 'CME/certificatewiseexamRequest':
+                status = CMEReducer.status;
+                break;
+            case 'CME/certificatewiseexamSuccess':
+                status = CMEReducer.status;
+                console.log("certificatewiseexam", CMEReducer?.certificatewiseexamResponse?.certificatePath);
+                setPDFPath(CMEReducer?.certificatewiseexamResponse?.certificatePath);
+                break;
+            case 'CME/startTestFailure':
+                status = CMEReducer.status;
+                break;
+        }
+    }
+    useEffect(() => {
+        if (statepush) {
+            const takeID = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeID }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }, [statepush])
+    const finalTakePer = () => {
+        if (statepush) {
+            const takeID = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeID }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+        }
+    }
+    useEffect(() => {
+        if (props?.route?.params?.PngFIle) {
+            const finalPath = `${props?.route?.params?.PngFIle?.Path?.certificate_path ? props?.route?.params?.PngFIle?.Path?.certificate_path : props?.route?.params?.PngFIle?.Path}${props?.route?.params?.PngFIle?.PngFIle}`
+            setPDFPath(finalPath);
+        }
+    }, [props?.route?.params?.PngFIle])
+    useEffect(() => {
+        if (pDFPath) {
+            const showPDF = async () => {
+                setLoading(true);
+                try {
+                    const url = pDFPath
+                    // const url = CMEReducer?.certificatewiseexamResponse?.certificatePath ? CMEReducer?.certificatewiseexamResponse?.certificatePath : CMEReducer?.certificatewiseexamResponse?.certificatePath;
+                    const f2 = url.split("/");
+                    const fileName = f2[f2.length - 1];
+                    const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+                    const options = {
+                        fromUrl: url,
+                        toFile: localFile,
+                    };
+                    await RNFS.downloadFile(options).promise;
+                    setLoading(false);
+                    setPdfUri(localFile);
+                    // await FileViewer.open(localFile);
+                } catch (error) {
+                    setLoading(false);
+                    console.log(error, "error");
+                }
+            };
+            showPDF();
+        }
+    }, [pDFPath])
+    useEffect(() => {
+        if (pdftrue) {
+            const onPress = async () => {
+                setLoading(true);
+                try {
+                    const url = pDFPath
+                    // const url = CMEReducer?.certificatewiseexamResponse?.certificatePath ? CMEReducer?.certificatewiseexamResponse?.certificatePath : CMEReducer?.certificatewiseexamResponse?.certificatePath;
+                    const f2 = url.split("/");
+                    const fileName = f2[f2.length - 1];
+                    const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+                    const options = {
+                        fromUrl: url,
+                        toFile: localFile,
+                    };
+                    await RNFS.downloadFile(options).promise;
+                    setLoading(false);
+                    setPdftrue(false);
+                    await FileViewer.open(localFile);
+                } catch (error) {
+                    setLoading(false);
+                    console.log(error, "error");
+                }
+            };
+            onPress()
+        }
+    }, [pdftrue])
+    const downPress = () => {
+        finalTakePer();
+        props.navigation.goBack();
+    };
+    if (status1 == '' || DashboardReducer.status != status1) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/stateDashboardRequest':
+                status1 = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateDashboardSuccess':
+                status1 = DashboardReducer.status;
+                setFinddata(DashboardReducer?.stateDashboardResponse?.data);
+                console.log("finddatapostfail====", DashboardReducer?.stateDashboardResponse?.data)
+                break;
+            case 'Dashboard/stateDashboardFailure':
+                status1 = DashboardReducer.status;
+                break;
+        }
+    }
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={"light-content"}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {Platform.OS === "ios" ? (
+                    &lt;PageHeader
+                        title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate"}
+                        onBackPress={downPress}
+                    />
+                ) : (
+                    &lt;View>
+                        &lt;PageHeader
+                            title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate"}
+                            onBackPress={downPress}
+                        />
+                    &lt;/View>
+                )}
+                {/* &lt;ScrollView contentContainerStyle={{paddingBottom:normalize(50)}}> */}
+                {conn == false ? &lt;IntOff /> : &lt;View style={styles.container}>
+                    {pdfUri ?
+                        &lt;View style={styles.pdfContainer}>
+                            &lt;Pdf
+                                source={{ uri: pdfUri, cache: true }}
+                                onLoadComplete={(numberOfPages, filePath) => {
+                                    console.log(`number of pages: ${numberOfPages}`);
+                                }}
+                                onPageChanged={(page, numberOfPages) => {
+                                    console.log(`current page: ${page}`);
+                                }}
+                                onError={(error) => {
+                                    console.log(error);
+                                }}
+                                onPressLink={(uri) => {
+                                    console.log(`Link pressed: ${uri}`);
+                                }}
+                                style={styles.pdf}
+                            />
+                            &lt;TouchableOpacity
+                                onPress={() => { setPdftrue(true) }}
+                                style={styles.button}
+                            >
+                                &lt;Text style={styles.buttonText}>
+                                    {props?.route?.params?.PngFIle?.notrq ? "Download Document" : "Download Certificate"}
+                                &lt;/Text>
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+                        : &lt;ActivityIndicator
+                            size="large"
+                            color={Colorpath.ButtonColr}
+                        />}
+                    &lt;Buttons
+                        onPress={() => {
+                            if (props?.route?.params?.PngFIle) {
+                                finalTakePer();
+                                props.navigation.goBack();
+                                // props.navigation.navigate("TabNav", { initialRoute: "Contact" });
+                                // props.navigation.goBack();
+                            } else {
+                                finalTakePer();
+                                props.navigation.navigate("TabNav");
+                            }
+                        }}
+                        height={normalize(45)}
+                        width={normalize(288)}
+                        backgroundColor={Colorpath.white}
+                        borderRadius={normalize(5)}
+                        text={props?.route?.params?.PngFIle?.notrq ? "Back" : props?.route?.params?.PngFIle ? "Back to Credit Vault " : "Go to Dashboard"}
+                        color={Colorpath.ButtonColr}
+                        fontSize={18}
+                        fontFamily={Fonts.InterSemiBold}
+                        marginTop={normalize(15)}
+                        borderColor={Colorpath.ButtonColr}
+                        borderWidth={0.5}
+                    />
+                    {props?.route?.params?.PngFIle ? &lt;>&lt;/> : &lt;Buttons
+                        onPress={() => { props.navigation.navigate("RateReview", { reviewCon: props?.route?.params?.examID?.CertificateActivityId?.conferenceId }) }}
+                        height={normalize(45)}
+                        width={normalize(288)}
+                        backgroundColor={Colorpath.ButtonColr}
+                        borderRadius={normalize(5)}
+                        text="Review Course"
+                        color={Colorpath.white}
+                        fontSize={18}
+                        fontFamily={Fonts.InterSemiBold}
+                        marginTop={normalize(15)}
+                    />}
+                &lt;/View>}
+            &lt;/SafeAreaView>
+            {/* &lt;/ScrollView> */}
+        &lt;/>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: Colorpath.Pagebg,
+    },
+    button: {
+        position: 'absolute',
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        width: normalize(310),
+        height: normalize(50),
+        zIndex: 1,
+        bottom: 0
+    },
+    buttonText: {
+        fontSize: 20,
+        fontFamily: Fonts.InterMedium,
+        color: Colorpath.white,
+        alignSelf: "center",
+        paddingVertical: normalize(12)
+    },
+    pdfContainer: {
+        width: '90%',
+        height: '70%',
+        borderRadius: normalize(10),
+        borderWidth: 1,
+        borderColor: Colorpath.grey,
+        overflow: 'hidden',
+        marginTop: normalize(20),
+        position: 'relative',
+    },
+    pdf: {
+        width: '100%',
+        height: '100%',
+    },
+    buttonOverlay: {
+        position: 'absolute',
+        bottom: normalize(20),
+        left: '50%',
+        transform: [{ translateX: -normalize(150) }],
+        padding: 20,
+        borderRadius: normalize(10),
+        zIndex: 1,
+    },
+});
+
+export default DownloadCertificate;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

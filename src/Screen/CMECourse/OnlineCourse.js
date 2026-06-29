@@ -18,6 +18,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import { AppContext } from '../GlobalSupport/AppContext';
 import normalize from '../../Utils/Helpers/Dimen';
 
+/**
+ * Reusable OnlineCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdownst, setLoadingdownst, filteredItems, setFilteredItems, setPendingall, pendingall, setCompltall, compltall, dataAll, setDataAll }) => {
     const {
         statepush,

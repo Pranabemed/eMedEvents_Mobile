@@ -5,6 +5,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import HtmlTableRenderer from './HtmlTableRenderer';
 
+/**
+ * Reusable StatewebcastAcc component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggleExpansionacc }) => {
     const viewmore = webcastdeatils?.cme_accreditation || '';
     const showButton = viewmore.replace(/<\/?[^>]+>/g, '').trim().length > 500;

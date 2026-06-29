@@ -19,6 +19,14 @@ import Imagepath from '../../Themes/Imagepath';
 import Loader from '../../Utils/Helpers/Loader';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ChooseState component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ChooseState = (props) => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   const dispatch = useDispatch();

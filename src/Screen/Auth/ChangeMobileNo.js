@@ -16,6 +16,14 @@ import Imagepath from '../../Themes/Imagepath';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable ChangeMobileNo component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ChangeMobileNo = (props) => {
     const [phone, setPhone] = useState("");
       const [mobileHd, setMobileHd] = useState("");

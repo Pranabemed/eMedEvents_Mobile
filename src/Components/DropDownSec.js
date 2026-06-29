@@ -14,6 +14,14 @@ import DropdownIcon from 'react-native-vector-icons/MaterialIcons';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
 import Fonts from '../Themes/Fonts'; 
 import CalIcon from 'react-native-vector-icons/Feather';
+
+/**
+ * Reusable onChangeText component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const DropdownInputs = forwardRef((props, ref) => {
   const [textValue, setTextValue] = useState(props.value || '');
   const animatedLabelValue = useRef(new Animated.Value(0)).current;

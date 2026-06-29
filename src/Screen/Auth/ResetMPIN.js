@@ -18,6 +18,14 @@ import Imagepath from '../../Themes/Imagepath';
 import Header from '../../Components/Header';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ResetMPIN component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const ResetMPIN = (props) => {
     const dispatch = useDispatch();

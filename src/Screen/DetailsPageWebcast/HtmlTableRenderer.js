@@ -3,6 +3,14 @@ import { View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import RenderHTML from 'react-native-render-html';
 
+/**
+ * Reusable HtmlTableRenderer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const HtmlTableRenderer = ({ source, width, tagsStyles, onLinkPress }) => {
     const [webViewHeight, setWebViewHeight] = useState(200);
     const lastHeightRef = useRef(200);

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Auth/SignUp.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Auth/SignUp.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, StyleSheet, Image, BackHandler } from 'react-native';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import Colorpath from '../../Themes/Colorpath';
+import Fonts from '../../Themes/Fonts';
+import normalize from '../../Utils/Helpers/Dimen';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Buttons from '../../Components/Button';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { clearEmailexistState, emailexistRequest } from '../../Redux/Reducers/AuthReducer';
+import { useDispatch, useSelector } from 'react-redux';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import TextFieldIn from '../../Components/Textfield';
+import TickMark from 'react-native-vector-icons/Ionicons';
+import TextInputPlain from '../../Components/PlainyTextInput';
+import Imagepath from '../../Themes/Imagepath';
+import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
+import InputField from '../../Components/CellInput';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native';
+import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+
+/**
+ * Reusable SignUp component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const SignUp = (props) => {
+  const [fname, setFname] = useState("");
+  const [lname, setLname] = useState("")
+  const [cellno, setCellno] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [socheck, setSocheck] = useState(false);
+  const [error, setError] = useState(false);
+  const [gettrue, setGettrue] = useState(false);
+  const [mobileHd, setMobileHd] = useState("");
+  const [signupCountryCode, setSignupCountryCode] = useState(props?.route?.params?.phoneCd?.phoneCd || '');
+  const [isNonUsaFlow, setIsNonUsaFlow] = useState(
+    props?.route?.params?.phoneCd?.phoneCd 
+      ? String(props?.route?.params?.phoneCd?.phoneCd).trim() !== "+1"
+      : true
+  );
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  console.log(AuthReducer, "Auth========", props?.route?.params?.phoneCd)
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const geoInfo = await getCountryAndDialCode();
+        if (geoInfo) {
+          const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
+          const isNonUsaIp = ipCountry &amp;&amp; ipCountry !== 'US' &amp;&amp; ipCountry !== 'USA';
+          setIsNonUsaFlow(isNonUsaIp);
+          if (!signupCountryCode) {
+            setSignupCountryCode(geoInfo.dialCode || '+1');
+          }
+        }
+      } catch (error) {
+        console.log('SignUp geo lookup failed', error);
+      }
+    };
+    detectCountry();
+  }, []);
+  const CreateAccount = () => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&amp;])[A-Za-z\d@.#$!%*?&amp;]{8,15}$/;;
+    const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+    const mobilePattern = /^\d{10}$/;
+    if (!fname || fname?.length &lt; 3) {
+      showErrorAlert("Please enter your first name.");
+    } else if (!lname || lname?.length &lt; 3) {
+      showErrorAlert("Please enter your last name.");
+    } else if (!isNonUsaFlow &amp;&amp; !cellno) {
+      showErrorAlert("Please enter your cell number.");
+    } else if (!isNonUsaFlow &amp;&amp; !mobilePattern.test(cellno)) {
+      showErrorAlert("Cell number must be 10 digits ");
+    } else if (!email) {
+      showErrorAlert("Please enter your email address.");
+    } else if (!validate.test(email)) {
+      showErrorAlert("Please enter a valid email address (e.g., abc@gmail.com)");
+    } else if (!password) {
+      showErrorAlert("Please create a password.");
+    } else if (!regex.test(password)) {
+      setError(true);
+      // showErrorAlert("Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.");
+    } else if (checked) {
+      showErrorAlert("You must accept the Terms &amp; Privacy Policy to continue.");
+    } else {
+      if (isNonUsaFlow) {
+        writeNonUsaFlowState({
+          userType: 'non_usa',
+          isNonUsa: true,
+          signupCompleted: false,
+          professionCompleted: false,
+          emailVerified: false,
+          signupDraft: {
+            first_name: fname.trim(),
+            last_name: lname.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            countryCode: signupCountryCode || '',
+          },
+        });
+      }
+      props.navigation.navigate("AllSpecial", {
+        Alldata: {
+          "first_name": fname.trim(),
+          "last_name": lname.trim(),
+          "phone": isNonUsaFlow ? "" : cellno.trim(),
+          "email": email.trim(),
+          "password": password.trim(),
+          "countryCode": signupCountryCode,
+          "isNonUsaUser": isNonUsaFlow,
+        }
+      })
+    }
+  }
+  const handleInput = (val) => {
+    setPassword(val);
+    const regexPass = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&amp;])[A-Za-z\d@$!%*?&amp;]{8,}$/;
+    if (regexPass.test(val)) {
+      setError(false);
+    }
+  };
+
+  const setMobileNo = (text) => {
+    setCellno(text);
+    setGettrue(true);
+    const mobilePattern = /^\d{10}$/;
+    if (mobilePattern.test(text)) {
+      let obj = { phone: `${signupCountryCode}${text}` };
+      connectionrequest()
+        .then(() => {
+          dispatch(emailexistRequest(obj));
+        })
+        .catch(err => {
+          showErrorAlert("Please connect to the Internet", err);
+        });
+    } else {
+      console.log("Invalid cell no");
+    }
+  }
+  const setEmailExist = (text) => {
+    setEmail(text);
+    setGettrue(false);
+    const emailPattern = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+    console.log(emailPattern, "emailPattern-----")
+    if (emailPattern.test(text)) {
+      let obj = { email: text };
+      connectionrequest()
+        .then(() => {
+          dispatch(emailexistRequest(obj));
+        })
+        .catch(err => {
+          showErrorAlert("Please connect to the Internet", err);
+        });
+    } else {
+      console.log("Invalid email format");
+    }
+  }
+  const formatPhoneNumber = (input) => {
+    const cleaned = input.replace(/\D/g, '').slice(0, 10);
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+
+    if (match) {
+      let formatted = '';
+      if (match[1]) formatted = `(${match[1]}`;
+      if (match[2]) formatted += `) ${match[2]}`;
+      if (match[3]) formatted += `-${match[3]}`;
+      return formatted;
+    }
+    return input;
+  };
+  const formatIndianPhoneNumber = (input) => {
+    if (!input) return "";
+
+    const strInput = String(input);
+    const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+    if (cleaned.length == 10) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    }
+
+    return strInput;
+  };
+  console.log(gettrue, "hgfgfgj----------", cellno)
+  const lastHandledStatusRef = React.useRef("");
+  useFocusEffect(
+    React.useCallback(() => {
+      lastHandledStatusRef.current = "";
+      dispatch(clearEmailexistState());
+      return () => {
+        lastHandledStatusRef.current = "";
+      };
+    }, [dispatch])
+  );
+  useEffect(() => {
+    if (AuthReducer.status === 'Auth/emailexistSuccess' &amp;&amp; lastHandledStatusRef.current !== "Auth/emailexistSuccess") {
+      if (AuthReducer?.emailexistResponse?.success === false) {
+        lastHandledStatusRef.current = "Auth/emailexistSuccess";
+        const isPhoneCheck = AuthReducer?.emailexistType === 'phone';
+        if (isPhoneCheck) {
+          Alert.alert('eMedEvents', 'This cell number already exists in eMedEvents.', [
+            {
+              text: 'Cancel', onPress: () => {
+                setMobileHd("");
+                setCellno("");
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+              }, style: 'cancel'
+            },
+            {
+              text: 'OK', onPress: () => {
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+                props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: signupCountryCode, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
+              }
+            },
+          ]);
+        } else if (AuthReducer?.emailexistType === 'email') {
+          Alert.alert('eMedEvents', 'This email already exists in eMedEvents.', [
+            {
+              text: 'Cancel', onPress: () => {
+                setEmail("");
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+              }, style: 'cancel'
+            },
+            {
+              text: 'OK', onPress: () => {
+                dispatch(clearEmailexistState());
+                lastHandledStatusRef.current = "";
+                props.navigation.navigate("Login", { "email": email, isNonUsaUser: isNonUsaFlow })
+              }
+            },
+          ]);
+        }
+      }
+    } else if (AuthReducer.status === 'Auth/emailexistRequest') {
+      lastHandledStatusRef.current = "";
+    }
+  }, [AuthReducer.status, AuthReducer.emailexistResponse, AuthReducer.emailexistType, cellno, email]);
+  const backSingUp = () => {
+    if (props.navigation.canGoBack()) {
+      props.navigation.goBack();
+    } else {
+      props.navigation.navigate('Login', { isNonUsaUser: isNonUsaFlow });
+    }
+  }
+  useEffect(() => {
+    const onBackPress = () => {
+      backSingUp();
+      return true;
+    };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+    return () => backHandler.remove();
+  }, []);
+  console.log(cellno?.length > 0 &amp;&amp; cellno !== 10, "=========poooo")
+  const cellNoRegexwpdd = /^\d{10}$/;
+  const isValidWhatsappNodd = cellno?.length > 0 &amp;&amp; !cellNoRegexwpdd.test(cellno);
+  const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+  const isValidEmail = email?.length > 0 &amp;&amp; !validateEmail.test(email);
+  const passwordregex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&amp;])[A-Za-z\d@.#$!%*?&amp;]{8,15}$/;
+  const isPasswordValid = password?.length > 0 &amp;&amp; !passwordregex.test(password);
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+  return (
+    &lt;>
+      &lt;MyStatusBar
+        barStyle={'light-content'}
+        backgroundColor={Colorpath.Pagebg}
+      />
+      &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+        &lt;KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          &lt;ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(60) }}>
+            &lt;View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), justifyContent: "center", alignItems: "center" }}>
+              &lt;Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }} />
+            &lt;/View>
+            &lt;View style={styles.headerContainer}>
+              &lt;Text style={styles.headerText}>{"Sign Up"}&lt;/Text>
+              &lt;Text style={styles.subHeaderText}>
+                {"Please sign up to continue"}
+              &lt;/Text>
+            &lt;/View>
+            &lt;View>
+              &lt;View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(10) }}>
+
+                &lt;View style={{
+                  flexDirection: 'row',
+                  flex: 1
+                }}>
+                  &lt;View style={{
+                    flex: 1,
+                    paddingRight: normalize(0)
+                  }}>
+                    &lt;InputField
+                      label='First Name*'
+                      value={fname}
+                      onChangeText={setFname}
+                      placeholder=''
+                      placeholderTextColor="#949494"
+                      keyboardType="default"
+                      showCountryCode={false}
+                      maxlength={100}
+                    />
+                  &lt;/View>
+                &lt;/View>
+                {fname &amp;&amp; fname?.length &lt; 3 &amp;&amp; (
+                  &lt;View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
+                    &lt;Text
+                      style={{
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 12,
+                        color: 'red',
+                      }}>
+                      {"Please enter your first name."}
+                    &lt;/Text>
+                  &lt;/View>
+                )}
+                &lt;View style={{
+                  flexDirection: 'row',
+                  flex: 1
+                }}>
+                  &lt;View style={{
+                    flex: 1,
+                    paddingRight: normalize(0)
+                  }}>
+                    &lt;InputField
+                      label='Last Name*'
+                      value={lname}
+                      onChangeText={setLname}
+                      placeholder=''
+                      placeholderTextColor="#949494"
+                      keyboardType="default"
+                      showCountryCode={false}
+                      maxlength={100}
+                    />
+                  &lt;/View>
+                &lt;/View>
+                {lname &amp;&amp; lname?.length &lt; 3 &amp;&amp; (
+                  &lt;View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
+                    &lt;Text
+                      style={{
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 12,
+                        color: 'red',
+                      }}>
+                      {"Please enter your last name."}
+                    &lt;/Text>
+                  &lt;/View>
+                )}
+                {!isNonUsaFlow &amp;&amp; (
+                  &lt;View style={{
+                    flexDirection: 'row',
+                    flex: 1
+                  }}>
+                    &lt;View style={{
+                      flex: 1,
+                      paddingRight: normalize(0)
+                    }}>
+                      &lt;InputField
+                        label="Cell Number*"
+                        value={mobileHd}
+                        onChangeText={(text) => {
+                          if (signupCountryCode == "+1") {
+                            const formatted = formatPhoneNumber(text);
+                            setMobileHd(formatted);
+                            const rawDigits = formatted.replace(/\D/g, '');
+                            setMobileNo(rawDigits);
+                          } else if (signupCountryCode == "+91") {
+                            const formatted = formatIndianPhoneNumber(text);
+                            setMobileHd(formatted);
+                            const rawDigits = formatted.replace(/\D/g, '');
+                            setMobileNo(rawDigits);
+                          }
+                        }}
+                        placeholder=""
+                        placeholderTextColor="#949494"
+                        keyboardType="phone-pad"
+                        showCountryCode={true}
+                        countryCode={signupCountryCode}
+                        maxlength={14}
+                      />
+                    &lt;/View>
+                  &lt;/View>
+                )}
+                {!isNonUsaFlow &amp;&amp; isValidWhatsappNodd &amp;&amp; (
+                  &lt;View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
+                    &lt;Text
+                      style={{
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 12,
+                        color: 'red',
+                      }}>
+                      {"Please enter a valid cell number"}
+                    &lt;/Text>
+                  &lt;/View>
+                )}
+                &lt;View style={{
+                  flexDirection: 'row',
+                  flex: 1
+                }}>
+                  &lt;View style={{
+                    flex: 1,
+                    paddingRight: normalize(0)
+                  }}>
+                    &lt;InputField
+                      label='Email Address*'
+                      value={email}
+                      onChangeText={setEmailExist}
+                      placeholder=''
+                      placeholderTextColor="#949494"
+                      keyboardType="default"
+                      showCountryCode={false}
+                      maxlength={100}
+                    />
+                  &lt;/View>
+                &lt;/View>
+                {isValidEmail &amp;&amp; (
+                  &lt;View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
+                    &lt;Text
+                      style={{
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 12,
+                        color: 'red',
+                      }}>
+                      {"Please enter a valid email address (e.g., abc@gmail.com)"}
+                    &lt;/Text>
+                  &lt;/View>
+                )}
+                &lt;View style={{
+                  flexDirection: 'row',
+                  flex: 1
+                }}>
+                  &lt;View style={{
+                    flex: 1,
+                    paddingRight: normalize(0)
+                  }}>
+                    &lt;InputField
+                      label="Password*"
+                      value={password}
+                      onChangeText={handleInput}
+                      placeholder=""
+                      placeholderTextColor="#949494"
+                      isPassword={true}
+                      keyboardType="default"
+                      showCountryCode={false}
+                    />
+                  &lt;/View>
+                &lt;/View>
+                {(isPasswordValid || error &amp;&amp; password) &amp;&amp;
+                  &lt;View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
+                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "red" }}>
+                      {"Password must be 8+ chars, with 1 uppercase , 1 special character and 1 number."}
+                    &lt;/Text>
+                  &lt;/View>}
+              &lt;/View>
+            &lt;/View>
+            &lt;View style={{ paddingHorizontal: normalize(21) }}>
+              &lt;View style={{ flexDirection: "row" }}>
+                &lt;View style={{ flexDirection: "row", gap: normalize(10) }}>
+                  &lt;TouchableOpacity onPress={() => { setChecked(!checked) }}>
+                    {!checked ? &lt;View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
+                      &lt;TickMark name="checkmark" color={Colorpath.white} size={20} />
+                    &lt;/View> :
+                      &lt;View style={{ borderColor: Colorpath.black, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
+                    }
+                  &lt;/TouchableOpacity>
+
+                  &lt;View style={{ flexDirection: "column" }}>
+                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#666666" }}>
+                      {"I agree with eMedEvents"}
+                    &lt;/Text>
+                    &lt;View style={{ flexDirection: "row", gap: 10 }}>
+                      &lt;TouchableOpacity onPress={(() => props.navigation.navigate("TermsAndConditions"))}>
+                        &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
+                          {"Terms of Use"}
+                        &lt;/Text>
+                      &lt;/TouchableOpacity>
+                      &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
+                        {"and"}
+                      &lt;/Text>
+                      &lt;TouchableOpacity onPress={(() => props.navigation.navigate("PrivacyPolicy"))}>
+                        &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
+                          {"Privacy Policy"}
+                        &lt;/Text>
+                      &lt;/TouchableOpacity>
+                    &lt;/View>
+                  &lt;/View>
+                &lt;/View>
+              &lt;/View>
+              &lt;View style={{ flexDirection: "row", marginTop: normalize(15) }}>
+                &lt;View style={{ flexDirection: "row", gap: normalize(10) }}>
+                  &lt;TouchableOpacity onPress={() => { setSocheck(!socheck) }} >
+                    {!socheck ? &lt;View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
+                      &lt;TickMark name="checkmark" color={Colorpath.white} size={20} />
+                    &lt;/View> :
+                      &lt;View style={{ height: normalize(20), width: normalize(20), borderColor: Colorpath.black, borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
+                    }
+                  &lt;/TouchableOpacity>
+                  &lt;View style={{ flexDirection: "row" }}>
+                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
+                      {"I agree to receive messages and OTPs for\nsecure account access from eMedEvents."}
+                    &lt;/Text>
+                  &lt;/View>
+
+                &lt;/View>
+              &lt;/View>
+            &lt;/View>
+            &lt;TouchableOpacity>
+              &lt;Buttons
+                onPress={CreateAccount}
+                height={normalize(45)}
+                width={normalize(280)}
+                backgroundColor={Colorpath.ButtonColr}
+                borderRadius={normalize(9)}
+                text="Proceed"
+                color={Colorpath.white}
+                fontSize={18}
+                fontFamily={Fonts.InterSemiBold}
+                marginTop={normalize(20)}
+              />
+            &lt;/TouchableOpacity>
+            &lt;View style={{ flexDirection: "row", justifyContent: "center", gap: 1, marginTop: normalize(10) }}>
+              &lt;View>
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#000000" }}>
+                  {"Already a member?"}
+                &lt;/Text>
+              &lt;/View>
+              &lt;TouchableOpacity onPress={() => { props.navigation.navigate('Login') }}>
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                  {"Log In"}
+                &lt;/Text>
+              &lt;/TouchableOpacity>
+            &lt;/View>
+          &lt;/ScrollView>
+        &lt;/KeyboardAvoidingView>
+      &lt;/SafeAreaView>
+    &lt;/>
+  );
+};
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: Platform.OS === 'ios' ? normalize(40) : normalize(60)
+    // flex: 0.6
+    // backgroundColor:"red"
+  },
+  headerText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 32,
+    color: "#000000",
+    fontWeight: "bold"
+
+  },
+  subHeaderText: {
+    paddingVertical: normalize(10),
+    color: "#666666",
+    fontSize: 18,
+    fontFamily: Fonts.InterRegular,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    alignItems: 'center',
+    marginTop: normalize(20)
+  },
+  forgotContainer: {
+    marginTop: normalize(10),
+    alignSelf: 'center',
+    width: normalize(280),
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  forgotText: {
+    fontFamily: Fonts.InterMedium,
+    fontSize: 14,
+    color: Colorpath.ButtonColr,
+  },
+  scrollViewContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: normalize(20),
+    paddingHorizontal: normalize(16),
+  },
+});
+
+export default SignUp;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

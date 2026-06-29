@@ -11,6 +11,14 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import Internet from './Internet';
 import { useSelector } from 'react-redux';
 
+/**
+ * Reusable AppProvider component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 export const AppContext = createContext();
 const AppProvider = ({ children }) => {
   const [takestate, setTakestate] = useState('');

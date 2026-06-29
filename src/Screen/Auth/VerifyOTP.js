@@ -19,6 +19,14 @@ import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable VerifyOTP component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const persistEmailVerifiedStatus = async () => {
     try {
         const [verifyRaw, professionRaw] = await Promise.all([

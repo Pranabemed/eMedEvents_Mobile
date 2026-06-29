@@ -6,6 +6,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import { styles } from '../CMECreditValut/Statevaultstyes';
 import RNFS from "react-native-fs";
 import FileViewer from "react-native-file-viewer";
+
+/**
+ * Reusable CatlogDownload component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CatlogDownload = ({setDownlink,downlink,downData, setLoadingdown,loadingdown,pdfUri,setPdfUri}) => {
   const handleLink =(link)=>{
     if (link) {

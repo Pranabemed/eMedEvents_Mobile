@@ -19,6 +19,14 @@ import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import constants from '../../Utils/Helpers/constants';
 import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
+/**
+ * Reusable normalizeProfessionHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
 

@@ -7,6 +7,14 @@ import Colorpath from '../Themes/Colorpath';
 import { CommonActions } from '@react-navigation/native';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
+/**
+ * Reusable TaskCardItem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, index,setTakestate,takestate }) => {
     const {
             setStatepush

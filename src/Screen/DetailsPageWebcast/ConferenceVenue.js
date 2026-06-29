@@ -6,6 +6,14 @@ import Colorpath from '../../Themes/Colorpath';
 import Imagepath from '../../Themes/Imagepath';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
+
+/**
+ * Reusable MapScreen component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const MapScreen = ({ webcastdeatils, navto }) => {
     const [region, setRegion] = useState(null);
     const [circleRadius, setCircleRadius] = useState(1000);

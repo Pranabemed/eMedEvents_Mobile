@@ -6,6 +6,14 @@ import Modal from 'react-native-modal';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import EyeIcon from 'react-native-vector-icons/Entypo';
+
+/**
+ * Reusable TextModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const TextModal = ({ isVisible, onFalse,setDetailsmodal }) => {
     return (
         <Modal

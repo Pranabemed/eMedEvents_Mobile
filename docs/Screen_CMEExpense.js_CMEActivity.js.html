@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/CMEExpense.js/CMEActivity.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/CMEExpense.js/CMEActivity.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, TouchableOpacity, FlatList, ActivityIndicator, Alert, Linking } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import Colorpath from '../../Themes/Colorpath'
+import PageHeader from '../../Components/PageHeader'
+import normalize from '../../Utils/Helpers/Dimen';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import { CommonActions } from '@react-navigation/native';
+import TickMark from 'react-native-vector-icons/Ionicons';
+import ShareIcn from 'react-native-vector-icons/AntDesign';
+import Fonts from '../../Themes/Fonts';
+import IconDot from 'react-native-vector-icons/Entypo';
+import { useDispatch, useSelector } from 'react-redux';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { againListRequest, CMEAllowanceRequest, CMEListWiseRequest } from '../../Redux/Reducers/CMECEExpensReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import moment from 'moment';
+import GlobalModal from './GlobalModal';
+import Dynamicmodal from './Dynamicmodal';
+import Loader from '../../Utils/Helpers/Loader';
+import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CMEActivity component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+let status = "";
+const CMEActivity = (props) => {
+    console.log(props?.route?.params?.name, "mgblfhik000000");
+    const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);
+    const [globaldrop, setGloabaldrop] = useState(false);
+    const [travelmodal, setTravelmodal] = useState(false);
+    const [typewise, setTypewise] = useState("");
+    const [gettitle, setGettitle] = useState("");
+    const [selectedCourseTitles, setSelectedCourseTitles] = useState([]);
+    const [down,setDown] = useState("");
+    const dispatch = useDispatch();
+    const CMECEActBack = () => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [
+                    { name: "CMEExDashboard" }
+                ],
+            })
+        );
+    }
+    useEffect(() => {
+        if (props?.route?.params?.name) {
+            let obj = { "type": props?.route?.params?.name }
+            connectionrequest()
+                .then(() => {
+                    dispatch(againListRequest(obj))
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err)
+                })
+        }
+    }, [props?.route?.params?.name])
+    const editjson = [
+        {
+            "id": "1440",
+            "type": "Travel Expenses",
+            "field_data": {
+                "travel_date": "2024-12-30T07:36:30.104Z",
+                "mode_of_transport": "Airfare"
+            },
+            "amount": "100.00",
+            "documents": "custom_invoices/e9a90f295cc8671f66463d1021d344fd.png"
+        }
+    ];
+    const [updatedData, setUpdatedData] = useState([]);
+    const [paginatedData, setPaginatedData] = useState([]);
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [pushdata, setPushdata] = useState("");
+    const itemsPerPage = 10;
+    useEffect(() => {
+        if (props?.route?.params?.name) {
+            let obj = {
+                "type": "",
+                "category": "expenses"
+            }
+            connectionrequest()
+                .then(() => {
+                    dispatch(CMEAllowanceRequest(obj))
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err)
+                })
+        }
+    }, [props?.route?.params?.name])
+
+    const [cmeceopen, setCmeceopen] = useState(false);
+    if (status === '' || CMECEExpensReducer.status !== status) {
+        switch (CMECEExpensReducer.status) {
+            case 'Expenses/CMEAllowanceRequest':
+                status = CMECEExpensReducer.status;
+                break;
+            case 'Expenses/CMEAllowanceSuccess':
+                status = CMECEExpensReducer.status;
+                console.log(typeof CMECEExpensReducer?.CMEAllowanceResponse?.allowances, "cmeceexpense------");
+                const seeJson = CMECEExpensReducer?.CMEAllowanceResponse?.allowances;
+                if (Array.isArray(seeJson) &amp;&amp; seeJson.length > 0) {
+                    const updatedJson = seeJson.map(course => {
+                        if (!course?.all_documents_types) {
+                            const documentTypes = (course?.registration_fees || [])
+                                .map(fee => fee.type)
+                                .filter((value, index, self) => self.indexOf(value) === index);
+                            return {
+                                ...course,
+                                all_documents_types: documentTypes,
+                            };
+                        }
+                        return course;
+                    });
+                    setUpdatedData(updatedJson);
+                    setPaginatedData(updatedJson.slice(0, itemsPerPage));
+                }
+                break;
+            case 'Expenses/CMEAllowanceFailure':
+                status = CMECEExpensReducer.status;
+                break;
+            case 'Expenses/againListRequest':
+                status = CMECEExpensReducer.status;
+                break;
+            case 'Expenses/againListSuccess':
+                status = CMECEExpensReducer.status;
+                setTypewise(CMECEExpensReducer?.againListResponse?.documents);
+                console.log(CMECEExpensReducer?.againListResponse?.documents, "type request------");
+                break;
+            case 'Expenses/againListFailure':
+                status = CMECEExpensReducer.status;
+                break;
+            case 'Expenses/CMEListWiseRequest':
+                status = CMECEExpensReducer.status;
+                break;
+            case 'Expenses/CMEListWiseSuccess':
+                status = CMECEExpensReducer.status;
+                setDown(CMECEExpensReducer?.CMEListWiseResponse);
+                console.log(CMECEExpensReducer?.CMEListWiseResponse, "chekcboxrequest------");
+                break;
+            case 'Expenses/CMEListWiseFailure':
+                status = CMECEExpensReducer.status;
+                break;
+        }
+    }
+
+    const [expandedIndexes, setExpandedIndexes] = useState({});
+    useEffect(() => {
+        if (updatedData) {
+            setTimeout(() => {
+                setPaginatedData(updatedData.slice(0, 3));
+                // setLoading(false);
+            }, 1000);
+        }
+    }, [updatedData]);
+    const toggleExpandKey = (key, index) => {
+        setExpandedIndexes((prev) => ({
+            ...prev,
+            [`${index}-${key}`]: !prev[`${index}-${key}`],
+        }));
+    };
+    const loadMoreData = () => {
+        if (loadingMore) return;
+        if (paginatedData?.length &lt; updatedData?.length) {
+            setLoadingMore(true);
+            const nextPage = page + 1;
+            const itemsPerPage = 3;
+            const newData = updatedData.slice(0, nextPage * itemsPerPage);
+            setTimeout(() => {
+                setPaginatedData(newData);
+                setPage(nextPage);
+                setLoadingMore(false);
+            }, 1000);
+        }
+    };
+    const renderFooter = () => {
+        return loadingMore ? (
+            &lt;View style={{ paddingVertical: normalize(20) }}>
+                &lt;ActivityIndicator size="small" color={Colorpath.ButtonColr} />
+            &lt;/View>
+        ) : null;
+    };
+    const [courseTitleExpanded, setCourseTitleExpanded] = useState({});
+    const toggleCourseTitle = (index) => {
+        setCourseTitleExpanded((prevState) => ({
+            ...prevState,
+            [index]: !prevState[index],
+        }));
+    };
+    const [selectedCourses, setSelectedCourses] = useState({});
+    const toggleSelectAll = () => {
+        const newSelectAll = !cmeceopen;
+        setCmeceopen(newSelectAll);
+        if (paginatedData?.length > 0) {
+            if (newSelectAll) {
+                setSelectedCourses(paginatedData.map(() => true));
+                const allTitles = paginatedData.map(item => item?.course_title);
+                setSelectedCourseTitles(allTitles);
+            } else {
+                setSelectedCourses(paginatedData.map(() => false));
+                setSelectedCourseTitles([]);
+            }
+        }
+    };
+    const toggleTitlecheckbox = (index, item) => {
+        setSelectedCourses((prev) => {
+            const updatedSelectedCourses = {
+                ...prev,
+                [index]: !prev[index],
+            };
+            if (updatedSelectedCourses[index]) {
+                setSelectedCourseTitles((prevTitles) => [
+                    ...prevTitles,
+                    item?.course_title,
+                ]);
+            } else {
+                setSelectedCourseTitles((prevTitles) =>
+                    prevTitles.filter((title) => title !== item?.course_title)
+                );
+            }
+
+            return updatedSelectedCourses;
+        });
+    };
+    console.log(selectedCourseTitles?.length > 0, "selectedCourseTitles------");
+    const goDown = () => {
+        let obj = {
+            "type": props?.route?.params?.name,
+            "titles": selectedCourseTitles?.length > 0 &amp;&amp; selectedCourseTitles?.join('|'),
+            "download": 1,
+            "category": "expenses"
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(CMEListWiseRequest(obj))
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err)
+            })
+    }
+    useEffect(() => {
+        if (CMECEExpensReducer?.CMEListWiseResponse?.archive_document) {
+            downloadZipFile();
+        }
+    }, [CMECEExpensReducer?.CMEListWiseResponse])
+    const downloadZipFile = async () => {
+        const fileUrl = `${down?.document_path}${down?.archive_document}`
+        const filePath = `${RNFS.DocumentDirectoryPath}/${down?.archive_document}`;
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const fileContent = await response.blob();
+            const base64Data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    resolve(reader.result);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(fileContent);
+            });
+            const base64 = base64Data.split(',')[1];
+            await RNFS.writeFile(filePath, base64, 'base64');
+            Alert.alert('Download successful', 'ZIP file has been downloaded to: ' + filePath);
+            await openZipFile(filePath);
+        } catch (error) {
+            console.error('Download error:', error);
+            // Alert.alert('Download failed', error.message);
+        }
+    };
+    const openZipFile = async (filePath) => {
+        try {
+            const isFileExist = await RNFS.exists(filePath);
+            if (!isFileExist) {
+                Alert.alert('Error', 'File does not exist at the specified path.');
+                return;
+            }
+            if (Platform.OS === 'android') {
+                try {
+                    await FileViewer.open(filePath, { showOpenWithDialog: true });
+                } catch (e) {
+                    console.log('No ZIP viewer app available:', e);
+                    Alert.alert(
+                        'No App Found',
+                        'It seems there is no app installed to open ZIP files. Please download one from the Play Store.',
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Go to Play Store', onPress: () => Linking.openURL('market://details?id=com.winzip.android') }
+                        ]
+                    );
+                }
+            } else if (Platform.OS === 'ios') {
+                try {
+                    await FileViewer.open(filePath);
+                } catch (e) {
+                    console.log('No ZIP viewer app available:', e);
+                    Alert.alert(
+                        'No App Found',
+                        'It seems there is no app installed to open ZIP files. Please download one from the App Store.',
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Go to App Store', onPress: () => Linking.openURL('itms-apps://apps.apple.com/us/app/winzip/id500637987') }
+                        ]
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error opening file:', error);
+            Alert.alert('Error', 'Unable to open the file. Please check if a ZIP file viewer app is installed.');
+        }
+    };
+    const CmeceActivityItem = ({ item, index }) => {
+        const renderValidKeys = () => {
+            return renderAllDocumentsTypes();
+        };
+
+        const renderAllDocumentsTypes = () => {
+            const uniqueKeys = new Set();
+
+            const keysToRender = item.all_documents_types.filter((type) => {
+                const associatedKey = type.toLowerCase().replace(/\s+/g, "_");
+                const associatedData = item[associatedKey];
+                const isUnique =
+                    !uniqueKeys.has(associatedKey) &amp;&amp;
+                    associatedData &amp;&amp;
+                    associatedData.length > 0;
+
+                if (isUnique) {
+                    uniqueKeys.add(associatedKey);
+                }
+
+                return isUnique;
+            });
+
+            return keysToRender.map((type, keyIndex) => {
+                const associatedKey = type.toLowerCase().replace(/\s+/g, "_");
+                const associatedData = item[associatedKey];
+                const isExpanded = expandedIndexes[`${index}-${associatedKey}`] || false;
+                console.log(item, "associatedData[0]?.show_edit", type, associatedData);
+
+                // Directly render if single data point
+                if (Array.isArray(associatedData) &amp;&amp; associatedData.length == 1) {
+                    return (
+                        &lt;View key={keyIndex}
+                            style={{
+                                flexDirection: "column",
+                                alignSelf: "center",
+                                marginTop: normalize(10),
+                                padding: normalize(10),
+                                backgroundColor: "#FFFFFF",
+                                width: normalize(300),
+                                borderRadius: normalize(5),
+                                shadowColor: "#000",
+                                shadowOffset: { height: 3, width: 0 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 10,
+                                elevation: 5
+                            }}
+                        >
+                            &lt;View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
+                                &lt;Text
+                                    style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 16,
+                                        color: "#000000",
+                                    }}
+                                >
+                                    {type.replace(/_/g, " ")}
+                                &lt;/Text>
+                                {(item?.in_person == 1) &amp;&amp; (type !== "Registration Fees") ? (
+                                    &lt;TouchableOpacity onPress={() => {
+                                        setPushdata(associatedData);
+                                        setGettitle(item?.course_title);
+                                        setGloabaldrop(!globaldrop);
+                                    }}>
+                                        &lt;IconDot
+                                            name="dots-three-vertical"
+                                            size={25}
+                                            color={"#848484"}
+                                        />
+                                    &lt;/TouchableOpacity>
+                                ) : null}
+                                {type == "Registration Fees" &amp;&amp; associatedData[0]?.show_edit == 1 ?
+                                    &lt;TouchableOpacity onPress={() => {
+                                        setPushdata(associatedData);
+                                        setGettitle(item?.course_title);
+                                        setGloabaldrop(!globaldrop);
+                                    }}>
+                                        &lt;IconDot
+                                            name="dots-three-vertical"
+                                            size={25}
+                                            color={"#848484"}
+                                        />
+                                    &lt;/TouchableOpacity>
+                                    : null}
+                            &lt;/View>
+                            {renderFilteredData(type, associatedData)}
+                        &lt;/View>
+                    );
+                }
+
+                return (
+                    &lt;View key={keyIndex} style={{ marginBottom: 10 }}>
+                        &lt;TouchableOpacity
+                            onPress={() => toggleExpandKey(associatedKey, index)}
+                            style={{
+                                flexDirection: "column",
+                                alignSelf: "center",
+                                marginTop: normalize(10),
+                                padding: normalize(10),
+                                backgroundColor: "#FFFFFF",
+                                width: normalize(300),
+                                borderRadius: normalize(5),
+                                shadowColor: "#000",
+                                shadowOffset: { height: 3, width: 0 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 10,
+                                elevation: 5,
+                            }}
+                        >
+                            &lt;View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
+                                &lt;Text
+                                    style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 16,
+                                        color: "#000000",
+                                    }}
+                                >
+                                    {type == "Meals and Incidentals" ? "Meals Expenses" : type.replace(/_/g, " ")}
+                                &lt;/Text>
+                                {type !== "Registration Fees" &amp;&amp; Array.isArray(associatedData) &amp;&amp; associatedData.length > 0 &amp;&amp; (
+                                    &lt;ShareIcn
+                                        name={isExpanded ? "up" : "down"}
+                                        color={"#000000"}
+                                        size={20}
+                                    />
+                                )}
+                            &lt;/View>
+
+                            {type == "Registration Fees" ? (
+                                &lt;View style={{ padding: 0 }}>
+                                    {renderFilteredData(type, associatedData, item)}
+                                &lt;/View>
+                            ) : (
+                                isExpanded &amp;&amp; Array.isArray(associatedData) &amp;&amp; associatedData.length > 0 &amp;&amp; (
+                                    &lt;View>
+                                        {renderFilteredData(type, associatedData, item)}
+                                    &lt;/View>
+                                )
+                            )}
+                        &lt;/TouchableOpacity>
+                    &lt;/View>
+                );
+            });
+        };
+        const extractDynamicAmounts = (data) => {
+            const result = [];
+            for (const key in data) {
+                if (Array.isArray(data[key]) &amp;&amp; key !== "all_documents" &amp;&amp; key !== "all_documents_types") {
+                    const amountKey = `${key}_amount`;
+                    if (data.hasOwnProperty(amountKey)) {
+                        let totalAmount = 0;
+                        data[key].forEach((entity) => {
+                            if (entity.amount) {
+                                totalAmount += parseFloat(entity.amount);
+                            }
+                        });
+                        if (data[key].length > 0 &amp;&amp; data[key][0].type) {
+                            result.push({
+                                type: data[key][0].type,
+                                dynamic_amount: totalAmount,
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
+        };
+
+        const renderFilteredData = (type, data, mainid) => {
+            const dynamicAmounts = mainid ? extractDynamicAmounts(mainid) || [] : [];
+            console.log(type, "type-------", data, mainid, dynamicAmounts);
+            if (!data || data.length == 0) {
+                return (
+                    &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>
+                        {"No data available"}
+                    &lt;/Text>
+                );
+            }
+            const filteredDynamicAmounts = dynamicAmounts.filter(
+                (dynamicEntry) => dynamicEntry.type == type &amp;&amp; dynamicEntry.type !== "Registration Fees"
+            );
+            return data.map((entry, index) => {
+                console.log(entry, "entry========")
+                const totalAmount =
+                    type == "Registration Fees"
+                        ? data.reduce((total, entry) => total + parseFloat(entry.amount) || 0, 0)
+                        : 0;
+
+                return (
+                    &lt;View
+                        key={index}
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: 10,
+                        }}
+                    >
+
+                        &lt;View style={{ flex: 1 }}>
+                            {dynamicAmounts
+                                .filter((dynamicEntry) => dynamicEntry.type == type)
+                                .map((dynamicEntry) => {
+                                    if (dynamicEntry.dynamic_amount &amp;&amp; index == 0 &amp;&amp; dynamicEntry.type !== "Registration Fees") {
+                                        return (
+                                            &lt;>
+                                                &lt;Text
+                                                    key={dynamicEntry.type}
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 16,
+                                                        color: "#000000",
+                                                        marginBottom: 10,
+                                                    }}
+                                                >
+                                                    ${dynamicEntry.dynamic_amount}
+                                                &lt;/Text>
+                                            &lt;/>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                            {filteredDynamicAmounts.length > 0 &amp;&amp; index == 0 &amp;&amp; (
+                                &lt;View
+                                    style={{
+                                        height: 0.7,
+                                        width: normalize(295),
+                                        marginLeft: normalize(185),
+                                        alignSelf: "center",
+                                        backgroundColor: "#CCCCCC",
+                                        top: normalize(-7),
+                                    }}
+                                />
+                            )}
+
+                            {entry.field_data &amp;&amp;
+                                Object.keys(entry.field_data).map((key) => {
+                                    const value = entry.field_data[key];
+                                    const isDate = moment(value, moment.ISO_8601, true).isValid();
+
+                                    return !["lodging_date", "travel_date"].includes(key) &amp;&amp; value ? (
+                                        &lt;View style={{ paddingVertical: normalize(10) }}>
+                                            &lt;Text
+                                                key={key}
+                                                style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontSize: 16,
+                                                    color: "#000000",
+                                                }}
+                                            >
+                                                {`${isDate ? moment(value).format("DD MMMM, YYYY") : value}`}
+                                            &lt;/Text>
+                                        &lt;/View>
+
+                                    ) : null;
+                                })}
+
+
+                            {type == "Registration Fees" &amp;&amp; index == 0 &amp;&amp; totalAmount ? (
+                                &lt;Text
+                                    style={{
+                                        fontFamily: Fonts.InterBold,
+                                        fontSize: 16,
+                                        color: "#000000",
+                                        marginBottom: 10,
+                                    }}
+                                >
+                                    ${totalAmount}
+                                &lt;/Text>
+                            ) : (
+                                null
+                            )}
+                        &lt;/View>
+                        {type !== "Registration Fees" &amp;&amp; (
+                            &lt;Text
+                                style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 16,
+                                    color: "#000000",
+                                    textAlign: "center",
+                                    flex: 1,
+                                }}
+                            >
+                                ${entry.amount || "N/A"}
+                            &lt;/Text>
+                        )}
+                        &lt;View style={{ flex: 1, alignItems: "flex-end" }}>
+                            {(mainid?.in_person == 1 &amp;&amp; type !== "Registration Fees") &amp;&amp; (
+                                &lt;TouchableOpacity onPress={() => {
+                                    setPushdata(entry);
+                                    setGettitle(mainid?.course_title);
+                                    setGloabaldrop(!globaldrop);
+                                }}>
+                                    &lt;IconDot
+                                        name="dots-three-vertical"
+                                        size={25}
+                                        color={"#848484"}
+                                    />
+                                &lt;/TouchableOpacity>
+                            )}
+                            {type == "Registration Fees" &amp;&amp; mainid?.registration_fees[0]?.show_edit == 1 &amp;&amp; (
+                                &lt;TouchableOpacity onPress={() => {
+                                    setPushdata(entry);
+                                    setGettitle(mainid?.course_title);
+                                    setGloabaldrop(!globaldrop);
+                                }}>
+                                    &lt;IconDot
+                                        name="dots-three-vertical"
+                                        size={25}
+                                        color={"#848484"}
+                                    />
+                                &lt;/TouchableOpacity>
+                            )}
+                        &lt;/View>
+                    &lt;/View>
+                );
+            });
+        };
+
+
+
+
+        return (
+            &lt;>
+                &lt;View
+                    style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        width: normalize(315),
+                        height: normalize(30),
+                    }}
+                >
+                    &lt;View
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingHorizontal: normalize(10),
+                            gap: normalize(10),
+                            flex: 1,
+                        }}
+                    >
+                        &lt;TouchableOpacity onPress={() => toggleTitlecheckbox(index, item)}>
+                            &lt;View
+                                style={{
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    backgroundColor: selectedCourses[index]
+                                        ? Colorpath.ButtonColr
+                                        : "#FFF",
+                                    borderColor: Colorpath.ButtonColr,
+                                    height: normalize(15),
+                                    width: normalize(15),
+                                    borderRadius: normalize(2),
+                                    borderWidth: normalize(0.5),
+                                }}
+                            >
+                                {selectedCourses[index] &amp;&amp; (
+                                    &lt;TickMark name="checkmark" color={Colorpath.white} size={14} />
+                                )}
+                            &lt;/View>
+                        &lt;/TouchableOpacity>
+                        &lt;TouchableOpacity style={{ flex: 1 }} onPress={() => { toggleCourseTitle(index) }}>
+                            &lt;Text
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                                style={{
+                                    fontFamily: Fonts.InterSemiBold,
+                                    fontSize: 14,
+                                    color: "#000000",
+                                    flex: 1,
+                                    textAlignVertical: "center"
+                                }}
+                            >
+                                {item?.course_title}
+                            &lt;/Text>
+                        &lt;/TouchableOpacity>
+                    &lt;/View>
+                    &lt;TouchableOpacity
+                        onPress={() => toggleCourseTitle(index)}
+                        style={{ width: normalize(40), alignItems: "flex-end" }}
+                    >
+                        &lt;ShareIcn
+                            name={courseTitleExpanded[index] ? "up" : "down"}
+                            color={"#000000"}
+                            size={20}
+                        />
+                    &lt;/TouchableOpacity>
+                &lt;/View>
+                &lt;View
+                    style={{ height: 0.7, width: normalize(305), alignSelf: "center", backgroundColor: "#CCCCCC" }}
+                />
+                {courseTitleExpanded[index] &amp;&amp; &lt;View>{renderValidKeys()}&lt;/View>}
+            &lt;/>
+        );
+    };
+
+
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                &lt;Loader
+                    visible={CMECEExpensReducer?.status == 'Expenses/CMEAllowanceRequest' || CMECEExpensReducer?.status == 'Expenses/CMEListWiseRequest'} />
+                &lt;View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
+                    {Platform.OS === "ios" ? (
+                        &lt;PageHeader
+                            title="CME/CE Activities"
+                            onBackPress={CMECEActBack}
+                        />
+                    ) : (
+                        &lt;PageHeader
+                            title="CME/CE Activities"
+                            onBackPress={CMECEActBack}
+                        />
+                    )}
+                &lt;/View>
+                &lt;View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
+                    &lt;View style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: "#FFFFFF",
+                        height: normalize(50),
+                        borderWidth: 1,
+                        borderColor: "#DDDDDD",
+                        // borderRadius: normalize(5)
+                    }}>
+                        &lt;View style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingHorizontal: normalize(10),
+                            gap: normalize(10)
+                        }}>
+                            &lt;TouchableOpacity onPress={() => toggleSelectAll()}>
+                                {!cmeceopen ? (
+                                    &lt;View style={{
+                                        height: normalize(15),
+                                        width: normalize(15),
+                                        borderColor: Colorpath.black,
+                                        borderRadius: normalize(2),
+                                        borderWidth: normalize(0.5),
+                                    }} />
+                                ) : (
+                                    &lt;View style={{
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        backgroundColor: Colorpath.ButtonColr,
+                                        borderColor: Colorpath.ButtonColr,
+                                        height: normalize(15),
+                                        width: normalize(15),
+                                        borderRadius: normalize(2),
+                                        borderWidth: normalize(0.5),
+                                    }}>
+                                        &lt;TickMark name="checkmark" color={Colorpath.white} size={14} />
+                                    &lt;/View>
+                                )}
+                            &lt;/TouchableOpacity>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterRegular,
+                                fontSize: 14,
+                                color: "#040D14"
+                            }}>
+                                {"Select All"}
+                            &lt;/Text>
+                        &lt;/View>
+
+                        &lt;View style={{
+                            flexDirection: "row",
+                            alignItems: "center"
+                        }}>
+                            &lt;TouchableOpacity style={{ width: normalize(40) }}>
+                                &lt;ShareIcn name="sharealt" color={"#CCCCCC"} size={25} />
+                            &lt;/TouchableOpacity>
+                            &lt;TouchableOpacity onPress={() => { goDown() }} style={{ width: normalize(30) }}>
+                                &lt;ShareIcn name="download" color={selectedCourseTitles?.length > 0 ? Colorpath.ButtonColr : "#CCCCCC"} size={25} />
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/View>
+                &lt;View>
+                    &lt;FlatList
+                        data={paginatedData}
+                        renderItem={CmeceActivityItem}
+                        keyExtractor={(item, index) => item.id}
+                        ListFooterComponent={renderFooter}
+                        onEndReached={loadMoreData}
+                        onEndReachedThreshold={0.5}
+                        contentContainerStyle={{ paddingBottom: normalize(150) }}
+                        ListEmptyComponent={
+                            &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
+                                &lt;View
+                                    style={{
+                                        flexDirection: "row",
+                                        // height: normalize(83),
+                                        width: normalize(290),
+                                        borderRadius: normalize(10),
+                                        backgroundColor: "#FFFFFF",
+                                        paddingHorizontal: normalize(10),
+                                        paddingVertical: normalize(10),
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    &lt;View style={{ flex: 1, justifyContent: "center" }}>
+
+                                        &lt;Text
+                                            style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: "#000000",
+                                                fontWeight: "bold",
+                                            }}
+                                        >
+                                            {"There are no CME/CE content not available !!."}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                        }
+                    />
+                &lt;/View>
+                &lt;GlobalModal gettitle={gettitle} title={props?.route?.params?.name} typewise={typewise} travelmodal={travelmodal} setTravelmodal={setTravelmodal} maindata={pushdata} globaldrop={globaldrop} setGloabaldrop={setGloabaldrop} />
+                &lt;View style={{
+                    position: 'absolute',
+                    bottom: 70,
+                    right: 0,
+                    paddingHorizontal: normalize(20),
+                    zIndex: 999
+                }}>
+                    &lt;TouchableOpacity onPress={() => { props.navigation.navigate("AddCME", { newjson: editjson }) }} style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: normalize(50),
+                        width: normalize(50),
+                        backgroundColor: Colorpath.ButtonColr,
+                        borderWidth: 0.5,
+                        borderColor: "#AAAAAA",
+                        borderRadius: normalize(50),
+                        paddingHorizontal: normalize(15)
+                    }}>
+                        &lt;ShareIcn name="plus" color={Colorpath.white} size={25} />
+                    &lt;/TouchableOpacity>
+                &lt;/View>
+            &lt;/SafeAreaView>
+        &lt;/>
+    )
+}
+
+export default CMEActivity</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

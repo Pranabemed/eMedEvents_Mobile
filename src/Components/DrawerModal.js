@@ -42,6 +42,14 @@ import { navigationRef } from '../Navigator/RootNavigation';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 
+/**
+ * Reusable DrawerModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 export default function DrawerModal(props) {
   const insets = useSafeAreaInsets();
   const {

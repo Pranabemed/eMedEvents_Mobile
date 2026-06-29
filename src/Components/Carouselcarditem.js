@@ -15,6 +15,14 @@ import Modal from 'react-native-modal'
 import CMECard from './CMECard';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable Carouselcarditem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
     const {

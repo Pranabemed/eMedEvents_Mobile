@@ -22,6 +22,14 @@ import { useIsFocused } from '@react-navigation/native';
 import analytics from '@react-native-firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/**
+ * Reusable Onboard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const sliderData = [
     {
         hText: 'Your Gateway to\n CME/CE Opportunities',

@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
+
+/**
+ * Reusable CustomInput component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CustomInput = ({
     label,
     value,

@@ -5,6 +5,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import StarRating from 'react-native-star-rating-widget';
+
+/**
+ * Reusable StatewebcastReviews component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, reviewpost, expandreview, reviewChange }) => {
     console.log(reviewpost, "expandreview-------")
     const reviewsShows = ({ item, index }) => {

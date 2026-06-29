@@ -4,6 +4,14 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import normalize from "../Utils/Helpers/Dimen";
 
+/**
+ * Reusable ProgressBarLine component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ProgressBarLine = ({needwidth,textadd, progress, height = 10, backgroundColor = '#e0e0e0', fillColor = '#3b5998', tasks }) => {
     const animatedValue = useRef(new Animated.Value(0)).current;
 

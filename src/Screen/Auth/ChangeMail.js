@@ -16,6 +16,14 @@ import Imagepath from '../../Themes/Imagepath';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable ChangeMail component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ChangeMail = (props) => {
     const [email, setEmail] = useState("");
     const dispatch = useDispatch();

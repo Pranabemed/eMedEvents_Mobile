@@ -9,6 +9,14 @@ import Buttons from '../../Components/Button';
 import TickMark from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable ProfileSpeciality component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepicker, previousSpec, handleSpecialityChange, selectedSpecialities, setSelectedSpecialities, handleSpecialitySelect, formData, setstatepicker, setSearchState, searchState, searchStateName, slist }) => {
     console.log(selectedSpecialities, "selectedSpecialitieqwwww12233s--------", formData, previousSpec)
     const [checked, setChecked] = useState(false);

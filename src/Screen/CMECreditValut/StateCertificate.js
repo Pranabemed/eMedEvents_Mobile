@@ -13,6 +13,14 @@ import Imagepath from '../../Themes/Imagepath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Certficatecomponent from './Certficatecomponent';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StateCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateCertificate = (props) => {
     const certificatpress = () => {
         props.navigation.goBack();

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/CMECourse/ScheduleCourse.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/CMECourse/ScheduleCourse.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import Colorpath from '../../Themes/Colorpath';
+import normalize from '../../Utils/Helpers/Dimen';
+import Modal from 'react-native-modal';
+import Fonts from '../../Themes/Fonts';
+import Buttons from '../../Components/Button';
+import CustomTextField from '../../Components/CustomTextfiled';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import moment from 'moment';
+import CalenderIcon from 'react-native-vector-icons/Feather';
+import TimeIcon from 'react-native-vector-icons/Ionicons';
+import CustomRadioButtons from '../../Components/CustomRadio';
+import CustomInputWithDropdown from '../../Components/CustomTextInput';
+import TickMark from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { CMEPlannerEditRequest } from '../../Redux/Reducers/CMEReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+
+/**
+ * Reusable ScheduleCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, setSelectedItem }) => {
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const dispatch = useDispatch();
+    console.log(selectedItem, CMEReducer,"selectedItem==========")
+    const dataAvail = [
+        { id: 0, name: "Once" },
+        { id: 1, name: "Daily" },
+        { id: 2, name: "Weekly" },
+    ];
+    const durationData = [
+        { id: 0, name: "15min" },
+        { id: 1, name: "30min" },
+        { id: 2, name: "45min" },
+        { id: 3, name: "60min" },
+        { id: 4, name: "Custom" }
+    ];
+    const weekDays = [
+        { id: 0, name: "Sun" },
+        { id: 1, name: "Mon" },
+        { id: 2, name: "Tue" },
+        { id: 3, name: "Wed" },
+        { id: 4, name: "Thu" },
+        { id: 5, name: "Fri" },
+        { id: 6, name: "Sat" }
+    ]
+    const [modalHeight, setModalHeight] = useState(300);
+    const [selectedState, setSelectedState] = useState("Once");
+    const [durationset, setDurationset] = useState("15min");
+    const [timeduation, setTimeduartion] = useState("")
+    const [selectdate, setSelectdate] = useState("Start Date*");
+    const [selectenddate, setSelectenddate] = useState("");
+    const [opendate, setOpendate] = useState(false);
+    const [enddate, setEnddate] = useState(false);
+    const [selectdatetime, setSelectdatetime] = useState("");
+    const [opendatetime, setOpendatetime] = useState(false);
+    const [remind, setRemind] = useState("");
+    const [durationsdata, setDurationsdata] = useState("");
+    const [weekname, setWeekname] = useState("");
+    const [frequency, setFrequency] = useState("");
+    const [inputdata, setInputdata] = useState("");
+    const [texdt, setTextdt] = useState("")
+    useEffect(() => {
+        setModalHeight(isfilterVisible ? 600 : 300);
+    }, [isfilterVisible]);
+
+    const pendingshow = (index) => {
+        const selectedName = dataAvail[index].name;
+        setSelectedState(selectedName);
+    };
+    const duartionshow = (index) => {
+        const selectedTime = durationData[index].name;
+        setDurationset(selectedTime);
+    };
+    const options = [
+        { id: 1, label: 'Notification' },
+        { id: 2, label: 'Email' },
+    ];
+
+    const handleSelect = (option) => {
+        setRemind(option);
+        console.log('Selected option:', option);
+    };
+
+    const toggleWeekSelection = (item) => {
+        if (weekname.includes(item.name)) {
+            setWeekname(weekname.filter(week => week !== item.name));
+        } else {
+            setWeekname([...weekname, item.name]);
+        }
+    };
+    console.log(texdt, inputdata,frequency,weekname, "weekname============")
+    const PlannowHandle = () => {
+        let obj = {
+            "id": selectedItem?.id,
+            "conference_id": selectedItem?.confid,
+            "frequency": selectedState,
+            "start_date": selectenddate,
+            "end_date": selectenddate,
+            "time": selectdatetime,
+            "duration": durationsdata?.id === 4 ? timeduation : durationsdata?.name,
+            "week_days": "",
+            "reminder_type": remind?.label,
+            "reminder_before": texdt,
+            "reminder_before_type": inputdata
+        }
+        connectionrequest()
+        .then(()=>{
+            dispatch(CMEPlannerEditRequest(obj))
+        })
+        .catch((err)=>{
+            showErrorAlert("Please connect to internet",err)
+        })
+    }
+    const stateDataFilter = ({ item, index }) => {
+        const isSelected = selectedState === item.name;
+        return (
+            &lt;TouchableOpacity
+                onPress={() => {
+                    pendingshow(index);
+                    setFrequency(item);
+                    setDurationsdata("15min");
+                    setSelectdate(item?.name);
+                }}
+                style={{
+                    paddingHorizontal: normalize(12),
+                    paddingVertical: normalize(10),
+                    borderWidth: 0.5,
+                    borderColor: "#AAAAAA",
+                    borderRadius: normalize(25),
+                    backgroundColor: isSelected ? Colorpath.ButtonColr : "#FFFFFF",
+                    margin: normalize(5),
+                    alignSelf: 'flex-start'
+                }}
+            >
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: isSelected ? Colorpath.white : "#333333" }}>
+                    {item?.name}
+                &lt;/Text>
+            &lt;/TouchableOpacity>
+        );
+    };
+
+    const durationFilter = ({ item, index }) => {
+        const duartionisset = durationset === item.name;
+        return (
+            &lt;TouchableOpacity
+                onPress={() => {
+                    duartionshow(index);
+                    setDurationsdata(item);
+                }}
+                style={{
+                    paddingHorizontal: normalize(9),
+                    paddingVertical: normalize(9),
+                    borderWidth: 0.5,
+                    borderColor: "#AAAAAA",
+                    borderRadius: normalize(20),
+                    backgroundColor: duartionisset ? Colorpath.ButtonColr : "#FFFFFF",
+                    margin: normalize(3),
+                    alignSelf: 'flex-start'
+                }}
+            >
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: duartionisset ? Colorpath.white : "#333333" }}>
+                    {item?.name}
+                &lt;/Text>
+            &lt;/TouchableOpacity>
+        );
+    };
+    const weekFilter = ({ item, index }) => {
+        const isSelectedWeek = weekname.includes(item.name);
+        return (
+            &lt;TouchableOpacity onPress={() => { toggleWeekSelection(item); }}>
+                &lt;View style={{ flexDirection: "row" }}>
+                    &lt;View style={{ flexDirection: "row", marginLeft: normalize(10) }}>
+                        &lt;TouchableOpacity onPress={() => { toggleWeekSelection(item); }}>
+                            &lt;View style={{
+                                justifyContent: "center",
+                                alignItems: "center",
+                                backgroundColor: isSelectedWeek ? Colorpath.ButtonColr : 'transparent',
+                                borderColor: isSelectedWeek ? Colorpath.ButtonColr : Colorpath.black,
+                                height: normalize(17),
+                                width: normalize(17),
+                                borderRadius: normalize(5),
+                                borderWidth: normalize(0.5)
+                            }}>
+                                {isSelectedWeek &amp;&amp; &lt;TickMark name="checkmark" color={Colorpath.white} size={17} />}
+                            &lt;/View>
+                        &lt;/TouchableOpacity>
+                        &lt;View style={{ flexDirection: "row", paddingHorizontal: normalize(4) }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#666666" }}>
+                                {item?.name}
+                            &lt;/Text>
+                        &lt;/View>
+                    &lt;/View>
+                &lt;/View>
+            &lt;/TouchableOpacity>
+        );
+    };
+    return (
+        &lt;Modal
+            animationIn={'slideInUp'}
+            animationOut={'slideOutDown'}
+            backdropTransitionOutTiming={0}
+            hideModalContentWhileAnimating={true}
+            isVisible={isfilterVisible}
+            style={{ width: '100%', alignSelf: 'center', margin: 0 }}
+            animationInTiming={800}
+            animationOutTiming={1000}
+        >
+            &lt;View style={[styles.modalView, { height: modalHeight }]}>
+                &lt;View style={{ justifyContent: "center", alignItems: "center" }}>
+                    &lt;View style={styles.modalIndicator} />
+                &lt;/View>
+                &lt;View>
+                    &lt;View style={styles.container}>
+                        &lt;Buttons
+                            onPress={() => { onfilterFalse(); }}
+                            height={normalize(45)}
+                            width={normalize(110)}
+                            backgroundColor={Colorpath.white}
+                            borderRadius={normalize(5)}
+                            text="Plan Activity"
+                            color={"#000000"}
+                            fontSize={18}
+                            fontFamily={Fonts.InterSemiBold}
+                            fontWeight={"bold"}
+                        />
+                        &lt;Buttons
+                            onPress={() => {
+                                onSave();
+                                onfilterFalse();
+                            }}
+                            height={normalize(45)}
+                            width={normalize(110)}
+                            backgroundColor={Colorpath.white}
+                            borderRadius={normalize(5)}
+                            text="Close"
+                            color={"#666666"}
+                            fontSize={16}
+                            fontFamily={Fonts.InterMedium}
+                            fontWeight={"bold"}
+                            disabled={false}
+                        />
+                    &lt;/View>
+                    &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                        &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0) }}>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16, color: "#333"
+                            }}>
+                                {"Frequency"}
+                            &lt;/Text>
+                        &lt;/View>
+                        &lt;View style={styles.container}>
+                            &lt;FlatList
+                                data={dataAvail}
+                                numColumns={3}
+                                renderItem={stateDataFilter}
+                                keyExtractor={(item, index) => index.toString()}
+                            />
+                        &lt;/View>
+                        &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0) }}>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16, color: "#333"
+                            }}>
+                                {"Start Date"}
+                            &lt;/Text>
+                        &lt;/View>
+                        &lt;View>
+                            &lt;TouchableOpacity onPress={() => setOpendate(!opendate)} style={{
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                                &lt;CustomTextField
+                                    value={selectdate}
+                                    color={"#000000"}
+                                    height={normalize(50)}
+                                    width={normalize(300)}
+                                    backgroundColor={Colorpath.white}
+                                    alignSelf={'center'}
+                                    borderRadius={normalize(9)}
+                                    placeholder={'Start Date*'}
+                                    placeholderTextColor={"RGB( 170, 170, 170 )"}
+                                    fontSize={normalize(12)}
+                                    marginTop={normalize(10)}
+                                    autoCapitalize="none"
+                                    keyboardType='default'
+                                    borderWidth={1}
+                                    borderColor={"#DDDDDD"}
+                                    rightIcon={CalenderIcon}
+                                    rightIconName={"calendar"}
+                                    rightIconSize={25}
+                                    rightIconColor="#63748b"
+                                    editable={false}
+                                    onRightIconPress={() => { setOpendate(!opendate) }}
+                                />
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+
+                        {frequency?.id == 1 || frequency?.id == 2 ? (
+                            &lt;>
+                                &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(4) }}>
+                                    &lt;Text style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 16, color: "#333"
+                                    }}>
+                                        {"End Date"}
+                                    &lt;/Text>
+                                &lt;/View>
+                                &lt;View>
+                                    &lt;TouchableOpacity onPress={() => setEnddate(!enddate)} style={{
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}>
+                                        &lt;CustomTextField
+                                            value={selectenddate}
+                                            color={"#000000"}
+                                            height={normalize(50)}
+                                            width={normalize(300)}
+                                            backgroundColor={Colorpath.white}
+                                            alignSelf={'center'}
+                                            borderRadius={normalize(9)}
+                                            placeholder={'End Date*'}
+                                            placeholderTextColor={"RGB( 170, 170, 170 )"}
+                                            fontSize={normalize(12)}
+                                            marginTop={normalize(10)}
+                                            autoCapitalize="none"
+                                            keyboardType='default'
+                                            borderWidth={1}
+                                            borderColor={"#DDDDDD"}
+                                            rightIcon={CalenderIcon}
+                                            rightIconName={"calendar"}
+                                            rightIconSize={25}
+                                            rightIconColor="#63748b"
+                                            editable={false}
+                                            onRightIconPress={() => { setEnddate(!enddate) }}
+                                        />
+                                    &lt;/TouchableOpacity>
+                                &lt;/View>
+                            &lt;/>
+                        ) : null}
+
+                        {selectdate == selectenddate &amp;&amp; &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "red" }}>{"Start date &amp; end date should not be same !!"}&lt;/Text>
+                        &lt;/View>}
+
+                        {frequency?.id == 2 ? (
+                            &lt;>
+                                &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
+                                    &lt;Text style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 16, color: "#333"
+                                    }}>
+                                        {"Weekdays"}
+                                    &lt;/Text>
+                                &lt;/View>
+                                &lt;View>
+                                    &lt;FlatList
+                                        data={weekDays}
+                                        renderItem={weekFilter}
+                                        keyExtractor={(item, index) => index.toString()}
+                                        numColumns={4}
+                                        columnWrapperStyle={{
+                                            justifyContent: 'flex-start',
+                                            marginBottom: normalize(10)
+                                        }}
+                                        contentContainerStyle={{ paddingHorizontal: normalize(10) }}
+                                    />
+                                &lt;/View>
+                            &lt;/>
+                        ) : null}
+
+                        &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16, color: "#333"
+                            }}>
+                                {"Time"}
+                            &lt;/Text>
+                        &lt;/View>
+                        &lt;View>
+                            &lt;TouchableOpacity onPress={() => setOpendatetime(!opendatetime)} style={{
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                                &lt;CustomTextField
+                                    value={selectdatetime}
+                                    color={"#000000"}
+                                    height={normalize(50)}
+                                    width={normalize(300)}
+                                    backgroundColor={Colorpath.white}
+                                    alignSelf={'center'}
+                                    borderRadius={normalize(9)}
+                                    placeholder={'Time*'}
+                                    placeholderTextColor={"RGB( 170, 170, 170 )"}
+                                    fontSize={normalize(12)}
+                                    marginTop={normalize(0)}
+                                    autoCapitalize="none"
+                                    keyboardType='default'
+                                    borderWidth={1}
+                                    borderColor={"#DDDDDD"}
+                                    rightIcon={TimeIcon}
+                                    rightIconName={"time-outline"}
+                                    rightIconSize={25}
+                                    rightIconColor="#63748b"
+                                    editable={false}
+                                    onRightIconPress={() => { setOpendatetime(!opendatetime) }}
+                                />
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+
+
+                        {frequency?.id == 1 || frequency?.id == 2 ? (
+                            &lt;>
+                                &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
+                                    &lt;Text style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 16, color: "#333"
+                                    }}>
+                                        {"Duration"}
+                                    &lt;/Text>
+                                &lt;/View>
+                                &lt;View>
+                                    &lt;FlatList
+                                        data={durationData}
+                                        numColumns={5}
+                                        renderItem={durationFilter}
+                                        keyExtractor={(item, index) => index.toString()}
+                                    />
+                                &lt;/View>
+                            &lt;/>
+                        ) : null}
+
+                        &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                            {durationsdata?.id === 4 &amp;&amp; (&lt;TextInput
+                                style={styles.textInput}
+                                placeholder="Enter duration in min"
+                                keyboardType="phone-pad"
+                                maxLength={3}
+                                value={timeduation}
+                                onChangeText={(val) => { setTimeduartion(val) }}
+                            />)}
+                        &lt;/View>
+
+                        &lt;View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16, color: "#333"
+                            }}>
+                                {"Reminder"}
+                            &lt;/Text>
+                        &lt;/View>
+                        &lt;View style={{ paddingVertical: 0, paddingHorizontal: normalize(10) }}>
+                            &lt;CustomRadioButtons options={options} onSelect={handleSelect} />
+                        &lt;/View>
+                        {remind &amp;&amp; (&lt;View style={{ justifyContent: "center", alignItems: "center", paddingHorizontal: normalize(10), paddingVertical: normalize(5) }}>
+                            &lt;CustomInputWithDropdown texdt={texdt} setTextdt={setTextdt} inputdata={inputdata} setInputdata={setInputdata} />
+                        &lt;/View>)}
+                        &lt;View style={{ paddingVertical: normalize(10) }}>
+                            &lt;Buttons
+                                onPress={() => {
+                                    onfilterFalse();
+                                    PlannowHandle();
+                                }}
+                                height={normalize(45)}
+                                width={normalize(298)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text="Save"
+                                color={"#fff"}
+                                fontSize={18}
+                                fontFamily={Fonts.InterSemiBold}
+                                fontWeight={"bold"}
+                            />
+                        &lt;/View>
+                        &lt;DateTimePickerModal
+                            isVisible={enddate}
+                            mode="date"
+                            minimumDate={new Date()}
+                            onConfirm={val => {
+                                setSelectenddate(moment(val).format('YYYY-MM-DD'));
+                                setEnddate(false);
+                            }}
+                            onCancel={() => setEnddate(false)}
+                            textColor="black"
+                        />
+                        &lt;DateTimePickerModal
+                            isVisible={opendate}
+                            mode="date"
+                            maximumDate={new Date()}
+                            onConfirm={val => {
+                                setSelectdate(moment(val).format('YYYY-MM-DD'));
+                                setOpendate(false);
+                            }}
+                            onCancel={() => setOpendate(false)}
+                            textColor="black"
+                        />
+                        &lt;DateTimePickerModal
+                            isVisible={opendatetime}
+                            mode="time"
+                            maximumDate={new Date()}
+                            onConfirm={val => {
+                                setSelectdatetime(moment(val).format('hh:mm:mm'));
+                                setOpendatetime(false);
+                            }}
+                            onCancel={() => setOpendatetime(false)}
+                            textColor="black"
+                        />
+                    &lt;/ScrollView>
+                &lt;/View>
+            &lt;/View>
+        &lt;/Modal>
+    );
+};
+
+export default ScheduleCourse;
+
+const styles = StyleSheet.create({
+    container: {
+        paddingVertical: normalize(10),
+        paddingHorizontal: normalize(10),
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignContent: "space-between",
+    },
+    buttonContainer: {
+        flexDirection: "row",
+        paddingHorizontal: normalize(20),
+        paddingVertical: normalize(5),
+    },
+    modalView: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTopRightRadius: normalize(20),
+        borderTopLeftRadius: normalize(20),
+        paddingVertical: normalize(10),
+    },
+    modalIndicator: {
+        height: 10,
+        width: normalize(100),
+        backgroundColor: "#DDDDDD",
+        borderRadius: normalize(10),
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: normalize(5),
+    },
+    image: {
+        height: normalize(20),
+        width: normalize(20),
+        resizeMode: 'contain',
+    },
+    title: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 18,
+        color: Colorpath.ButtonColr,
+        marginLeft: normalize(5),
+    },
+    description: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: "#000000",
+        lineHeight: 20,
+    },
+    textInput: {
+        height: normalize(50),
+        borderColor: '#ccc',
+        borderWidth: 1,
+        marginRight: 10,
+        paddingLeft: 10,
+        width: normalize(145),
+        borderRadius: 10,
+        color: '#000000',
+        fontSize: 14,
+        fontFamily: Fonts.InterSemiBold,
+    },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

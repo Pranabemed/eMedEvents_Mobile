@@ -13,6 +13,14 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpaci
 import { getStateName } from '../utils/guestUserCore';
 
 /**
+ * Reusable GuestSelectionModalsComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Guest user state/profession modal set.
  * Purpose: Preserves existing bottom-sheet and popup selection behavior outside the main content file.
  */

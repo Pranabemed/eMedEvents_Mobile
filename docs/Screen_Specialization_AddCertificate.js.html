@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Specialization/AddCertificate.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Specialization/AddCertificate.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import Colorpath from '../../Themes/Colorpath'
+import MyStatusBar from '../../Utils/MyStatusBar'
+import PageHeader from '../../Components/PageHeader'
+import Fonts from '../../Themes/Fonts'
+import normalize from '../../Utils/Helpers/Dimen';
+import Imagepath from '../../Themes/Imagepath';
+import TextFieldIn from '../../Components/Textfield'
+import CustomTextField from '../../Components/CustomTextfiled';
+import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
+import CalenderIcon from 'react-native-vector-icons/Feather';
+import Buttons from '../../Components/Button'
+import CellModal from '../../Components/CellModal'
+import moment from 'moment';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import CameraPicker from '../../Components/CameraPicker';
+import DeleteIcon from 'react-native-vector-icons/MaterialIcons';
+import ScanIcon from 'react-native-vector-icons/AntDesign';
+import Modal from 'react-native-modal';
+import { useDispatch, useSelector } from 'react-redux'
+import connectionrequest from '../../Utils/Helpers/NetInfo'
+import { boardSpecialityRequest, boardcertificateRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer'
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import Loader from '../../Utils/Helpers/Loader';
+import ImagePicker from 'react-native-image-crop-picker';
+import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import constants from '../../Utils/Helpers/constants'
+import DropdownInput from '../../Components/DropdownInput'
+import BoardCustomed from './BoardCustomed';
+import TextInputSingle from '../../Components/SingleTextinput'
+import CustomInputTouchable from '../../Components/IconTextIn'
+import DropdownIcon from 'react-native-vector-icons/Entypo';
+import InputField from '../../Components/CellInput'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable AddCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+let status = "";
+const AddCertificate = (props) => {
+    console.log(totalboardname, "boardnamerealData=====", props?.route?.params);
+    const [certificateboard, setCertificateboard] = useState(false);
+    const [certificateID, setCertificateID] = useState(false);
+    const [issuedate, setIssuedate] = useState(false);
+    const [expirydate, setExpirydate] = useState(false);
+    const [modalcert, setModalcert] = useState(false);
+    const [boardfd, setBoardfd] = useState(false);
+    const [boraded, setBoarded] = useState(false);
+    const [boardcamera, setBoardcamera] = useState(false);
+    const [boardPic, setBoardPic] = useState("");
+    const [boardPicOT, setBoardPicOT] = useState("");
+    const [boardID, setBoardID] = useState("");
+    const [boardnamereal, setBoardnamereal] = useState([]);
+    const [searchboardname, setsearchboardname] = useState("");
+    const [bspecialityname, setBspecialityname] = useState("");
+    const [boardnamepick, setBoardnamepick] = useState(false);
+    const [visible, setVisible] = useState(false);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const navigation = useNavigation();
+    const dispatch = useDispatch();
+    const addCretBack = () => {
+        if (props?.route?.params?.profile) {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: "BoardProfile",
+                            params: {
+                                board: "text",
+                            }
+                        }
+                    ]
+                })
+            );
+            navigation.goBack();
+        } else if (props?.route?.params?.takeback == "back") {
+            navigation.navigate("TabNav", { initialRoute: "Contact" });
+        } else if (props?.route?.params?.profiledet) {
+            navigation.goBack();
+        } else {
+            navigation.navigate("TabNav", { detectmain: "main" });
+        }
+    }
+    const toggleModalcert = () => {
+        setModalcert(!modalcert);
+    };
+    console.log(AuthReducer?.verifymobileResponse?.user?.specialities, DashboardReducer?.mainprofileResponse, "jel========;ooo", AuthReducer);
+    console.log(DashboardReducer?.dashboardResponse?.data?.board_certifications, "Dashborad============", boardnamereal);
+    const isFocus = useIsFocused();
+    const animatedValuespass = useRef(new Animated.Value(1)).current;
+    const scaleValuesespass = useRef(new Animated.Value(0)).current;
+    const animatedValuesemail = useRef(new Animated.Value(1)).current;
+    const scaleValuesemail = useRef(new Animated.Value(0)).current;
+    const animatedValuesdate = useRef(new Animated.Value(1)).current;
+    const scaleValuesesdate = useRef(new Animated.Value(0)).current;
+    const animatedValuesyear = useRef(new Animated.Value(1)).current;
+    const scaleValuesesyear = useRef(new Animated.Value(0)).current;
+    const animatedValuesimg = useRef(new Animated.Value(1)).current;
+    const scaleValuesesimg = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const targetImg = boardPic ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesimg, {
+                toValue: boardPic ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesimg, {
+                toValue: targetImg,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [boardPic]);
+    useEffect(() => {
+        const targetScaleprof = certificateboard ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuespass, {
+                toValue: certificateboard ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesespass, {
+                toValue: targetScaleprof,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [certificateboard]);
+    useEffect(() => {
+        const targetScaleIssuedate = issuedate ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesdate, {
+                toValue: issuedate ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesdate, {
+                toValue: targetScaleIssuedate,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [issuedate]);
+    useEffect(() => {
+        const targetScaleIssueex = expirydate ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesyear, {
+                toValue: expirydate ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesyear, {
+                toValue: targetScaleIssueex,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [expirydate]);
+    useEffect(() => {
+        const targetScales = certificateID ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesemail, {
+                toValue: certificateID ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesemail, {
+                toValue: targetScales,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [certificateID]);
+    if (status == '' || DashboardReducer.status != status) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/boardcertificateRequest':
+                status = DashboardReducer.status;
+                setVisible(!visible);
+                break;
+            case 'Dashboard/boardcertificateSuccess':
+                status = DashboardReducer.status;
+                setVisible(false);
+                toggleModalcert();
+                dispatch(dashboardRequest({}));
+                break;
+            case 'Dashboard/boardcertificateFailure':
+                status = DashboardReducer.status;
+                setVisible(false);
+                break;
+        }
+    }
+    function directUploadBoard() {
+        ImagePicker.openCamera({
+            width: 300,
+            height: 400,
+            cropping: true,
+            mediaType: 'any',
+        })
+            .then(response => {
+                let imageObj = {
+                    name: response.filename
+                        ? response.filename
+                        : response.path.replace(/^.*[\\\/]/, ''),
+                    type: response.mime,
+                    uri: response.path,
+                };
+                setBoardPic(imageObj);
+                setBoardPicOT(imageObj.uri);
+            })
+            .catch(err => console.log(err));
+    }
+    console.log(bspecialityname, "AuthReducer?.loginResponse?.user?.specialities=========", boardID, searchboardname);
+    const handleBoardname = (roled) => {
+        setCertificateboard(roled?.name);
+        setBoardID(roled?.id)
+        setBoardnamepick(false);
+        setBspecialityname(roled?.specialities)
+    }
+    const [finalverifyboard, setFinalverifybaord] = useState(null);
+    const [finalProfession, setFinalProfession] = useState(null);
+    const [boardspecial, setBoardspecial] = useState([]);
+    const [totalboardname, setTotalboardname] = useState([]);
+
+    useEffect(() => {
+        const token_handle_vault = () => {
+            setTimeout(async () => {
+                try {
+                    const [board_special, profession_data] = await Promise.all([
+                        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                        AsyncStorage.getItem(constants.PROFESSION)
+                    ]);
+                    const board_special_json = board_special ? JSON.parse(board_special) : null;
+                    const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+                    setFinalverifybaord(board_special_json);
+                    setFinalProfession(profession_data_json);
+                    console.log(board_special_json, "statelicesene=================");
+                    console.log(profession_data_json, "profession=================");
+                } catch (error) {
+                    console.log('Error fetching data:', error);
+                }
+            }, 100);
+        };
+
+        token_handle_vault();
+    }, [isFocus]);
+
+    const transformDataSpecial = (data) => {
+        return Object.keys(data).map(key => {
+            const specialities = Object.values(data[key].specialities).map(spec => spec.name);
+            return {
+                id: parseInt(key, 10),
+                name: data[key].name,
+                specialities: specialities.join(', ')
+            };
+        });
+    };
+    const roleBoardIds = useMemo(() => {
+        const roleData = DashboardReducer?.dashboardResponse?.data?.board_certifications || [];
+        return roleData
+            .filter((item, index, self) =>
+                index === self.findIndex((t) => t.board_id === item.board_id)
+            )
+            .map(item => item.board_id);
+    }, [DashboardReducer?.dashboardResponse?.data?.board_certifications]);
+
+    useEffect(() => {
+        const allBoardSpeciality = DashboardReducer?.boardSpecialityResponse?.certification_boards;
+        if (allBoardSpeciality) {
+            const dynamicDataSpecial = transformDataSpecial(allBoardSpeciality);
+            const filteredBoards = dynamicDataSpecial.filter(board =>
+                !roleBoardIds.includes(board.id.toString())
+            );
+            if (JSON.stringify(filteredBoards) !== JSON.stringify(totalboardname)) {
+                setTotalboardname(filteredBoards);
+                setBoardnamereal(filteredBoards);
+            }
+        }
+    }, [DashboardReducer?.boardSpecialityResponse?.certification_boards, roleBoardIds, totalboardname]);
+
+    useEffect(() => {
+        if (props?.route?.params?.profiledet) {
+            setBoardPic(props?.route?.params?.profiledet?.certification_file);
+            setBspecialityname(props?.route?.params?.profiledet?.speciality);
+            setCertificateboard(props?.route?.params?.profiledet?.board_name);
+            setBoardID(props?.route?.params?.profiledet?.board_id);
+            setCertificateID(props?.route?.params?.profiledet?.certification_id);
+            setIssuedate(props?.route?.params?.profiledet?.from_date);
+            setExpirydate(props?.route?.params?.profiledet?.to_date);
+        }
+    }, [props?.route?.params?.profiledet])
+
+    useEffect(() => {
+        const transformData = (data) => {
+            return Object.keys(data).map(key => ({
+                id: parseInt(key, 10),
+                name: data[key]
+            }));
+        };
+
+        const allBoardData = DashboardReducer?.mainprofileResponse?.specialities || AuthReducer?.loginResponse?.user?.specialities ||
+            AuthReducer?.againloginsiginResponse?.user?.specialities ||
+            AuthReducer?.verifymobileResponse?.user?.specialities || finalverifyboard?.specialities || finalProfession?.specialities
+            ;
+
+        if (allBoardData) {
+            const dynamicData = transformData(allBoardData);
+            if (JSON.stringify(boardspecial) !== JSON.stringify(dynamicData)) {
+                setBoardspecial(dynamicData);
+                console.log(dynamicData, "new json board=========");
+            }
+        }
+    }, [
+        DashboardReducer?.mainprofileResponse?.specialities,
+        AuthReducer?.loginResponse?.user?.specialities,
+        AuthReducer?.againloginsiginResponse?.user?.specialities,
+        AuthReducer?.verifymobileResponse?.user?.specialities,
+        finalverifyboard?.specialities,
+        finalProfession?.specialities
+    ]);
+
+    useEffect(() => {
+        const boardSpecialty = () => {
+            if (boardspecial?.length > 0) {
+                const AllId = boardspecial.map((d) => d?.id);
+                const finalId = AllId?.join(', ');
+                console.log(finalId, "finalId========");
+                let obj = {
+                    "profession": DashboardReducer?.mainprofileResponse?.professional_information?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
+                        AuthReducer?.loginResponse?.user?.profession ||
+                        AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyboard?.profession || finalProfession?.profession,
+                    "specilityid": finalId
+                };
+
+                connectionrequest()
+                    .then(() => {
+                        dispatch(boardSpecialityRequest(obj));
+                    })
+                    .catch(err => {
+                        showErrorAlert("Please connect to internet", err);
+                    });
+            }
+        };
+
+        boardSpecialty();
+    }, [
+        AuthReducer?.loginResponse?.user?.specialities,
+        AuthReducer?.againloginsiginResponse?.user?.specialities,
+        AuthReducer?.verifymobileResponse?.user?.specialities,
+        boardspecial,
+        finalverifyboard?.specialities,
+        finalProfession?.specialities
+    ]);
+    const searchBoardNameFinal = text => {
+        console.log(text, 'text12333', totalboardname);
+        if (text) {
+            const boardState = totalboardname?.filter(function (item) {
+                console.log('item+++++++++++++++++++state', item);
+                const boardFinal = item?.name
+                    ? item?.name.toUpperCase() + item?.name.toUpperCase()
+                    : ''.toUpperCase();
+                const textGetName = text.trim().toUpperCase();
+                const boardStateFiltered = boardFinal.indexOf(textGetName) > -1;
+                console.log('boardStateFilteredState', boardStateFiltered);
+                return boardStateFiltered;
+            });
+            setBoardnamereal(boardState);
+            setsearchboardname(text);
+        } else {
+            setBoardnamereal(totalboardname);
+            setsearchboardname(text);
+        }
+    };
+    useEffect(() => {
+        if (certificateboard) {
+            setsearchboardname("");
+        }
+    }, [certificateboard])
+    const boardCertificateAdd = () => {
+        // if (!boardPic) {
+        //     showErrorAlert("Please choose a image !")
+        // } else 
+        if (!certificateboard) {
+            showErrorAlert("Select your specialty board");
+        } else if (!certificateID) {
+            showErrorAlert("Enter your  board certification id");
+        } else if (!issuedate) {
+            showErrorAlert("Select your certification issue date")
+        } else if (!expirydate) {
+            showErrorAlert("Select your certification expiry date")
+        } else {
+            let obj = new FormData();
+            obj.append("id", props?.route?.params?.profiledet ? props?.route?.params?.profiledet?.id : 0);
+            obj.append("board_id", boardID);
+            obj.append("board_speciality", bspecialityname);
+            obj.append("certificate_id", certificateID);
+            obj.append("from_date", issuedate);
+            obj.append("to_date", expirydate);
+            obj.append("certification_file", boardPic ? boardPic : null);
+            obj.append("delete_file", boardPic ? 0 : 1)
+            connectionrequest()
+                .then(() => {
+                    dispatch(boardcertificateRequest(obj))
+                })
+                .catch(err => { showErrorAlert("Please connect to internet", err) })
+        }
+    }
+    useEffect(() => {
+        const onBackPress = () => {
+            addCretBack();
+            return true;
+        };
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, []);
+    useLayoutEffect(() => {
+                props.navigation.setOptions({ gestureEnabled: false });
+            }, []);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {boardnamepick ? (&lt;BoardCustomed setsearchboardname={setsearchboardname} boardnamepick={boardnamepick} handleBoardname={handleBoardname} setBoardnamepick={setBoardnamepick} searchboardname={searchboardname} searchBoardNameFinal={searchBoardNameFinal} boardnamereal={boardnamereal} />) : &lt;>
+                    {Platform.OS === 'ios' ? &lt;View style={{ marginTop: normalize(20) }}>
+                        &lt;PageHeader
+                            title={props?.route?.params?.profiledet ? "Edit Certification" : "Add Certification"}
+                            onBackPress={addCretBack}
+                        />
+                    &lt;/View> : &lt;View>
+                        &lt;PageHeader
+                            title={props?.route?.params?.profiledet ? "Edit Certification" : "Add Certification"}
+                            onBackPress={addCretBack}
+                        />
+                    &lt;/View>}
+
+                    &lt;KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    >
+                        &lt;Loader
+                            visible={DashboardReducer?.status == 'Dashboard/boardcertificateRequest'} />
+                        &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                            &lt;View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
+                                &lt;Pressable onPress={() => {
+                                    if (boardPic) {
+                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                    } else {
+                                        setBoardcamera(true);
+                                    }
+                                }}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            &lt;InputField
+                                                label={"Upload File"}
+                                                value={boardPic
+                                                    ? boardPic.uri
+                                                        ? boardPic.uri.split('/').pop().replace(/-/g, '').slice(-16)
+                                                        : boardPic.split('/').pop()
+                                                    : ""}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={boardPic ? &lt;DeleteIcon name="delete" size={25} color="#949494" /> : &lt;ScanIcon name="scan1" size={28} color="#949494" />}
+                                                onLeftIconPress={() => {
+                                                    if (boardPic) {
+                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                                    } else {
+                                                        directUploadBoard();
+                                                    }
+                                                }}
+                                                onwholePress={() => {
+                                                    if (boardPic) {
+                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                                    } else {
+                                                        setBoardcamera(true);
+                                                    }
+                                                }}
+                                                marginleft={boardPic ? normalize(270) : normalize(265)}
+                                                spaceneeded={true}
+                                            />
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        {/* &lt;CustomInputTouchable
+                                                label={"Certification Board*"}
+                                                value={certificateboard}
+                                                placeholder={""}
+                                                placeholderTextColor="#949494"
+                                                rightIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                onPress={() => {
+                                                    setBoardnamepick(!boardnamepick);
+                                                }}
+                                                onIconpres={() => { setBoardnamepick(!boardnamepick); }}
+                                            /> */}
+                                        &lt;InputField
+                                            icondisable={props?.route?.params?.profiledet ? true : false}
+                                            label={"Certification Board*"}
+                                            value={certificateboard}
+                                            placeholder=""
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            editable={false}
+                                            leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                            onLeftIconPress={() => setBoardnamepick(!boardnamepick)}
+                                            marginleft={normalize(270)}
+                                            multiline={true}
+                                            onwholePress={() => setBoardnamepick(!boardnamepick)}
+                                            onlyfor={true}
+                                            spaceneeded={true}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        &lt;InputField
+                                            label='Certification ID*'
+                                            value={certificateID}
+                                            onChangeText={setCertificateID}
+                                            placeholder=''
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            maxlength={100}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;Pressable onPress={() => {
+                                    if (props?.route?.params?.profiledet?.from_date) {
+                                        setBoardfd(true);
+                                    } else {
+                                        setBoardfd(true);
+                                    }
+                                }}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            &lt;InputField
+                                                label={"Issue Date*"}
+                                                value={issuedate &amp;&amp; moment(issuedate, "YYYY-MM-DD", true).isValid()
+                                                    ? moment(issuedate).format("MM-DD-YYYY")
+                                                    : ""}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={&lt;CalenderIcon name="calendar" size={25} color="#949494" />}
+                                                onLeftIconPress={() => {
+                                                    if (props?.route?.params?.profiledet?.from_date) {
+                                                        setBoardfd(true);
+                                                    } else {
+                                                        setBoardfd(true);
+                                                    }
+                                                }}
+                                                marginleft={normalize(270)}
+                                                onwholePress={() => {
+                                                    if (props?.route?.params?.profiledet?.from_date) {
+                                                        setBoardfd(true);
+                                                    } else {
+                                                        setBoardfd(true);
+                                                    }
+                                                }}
+                                                spaceneeded={true}
+                                            />
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+                                &lt;Pressable onPress={() => setBoarded(true)}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            &lt;InputField
+                                                label={"Expiry Date*"}
+                                                value={expirydate &amp;&amp; moment(expirydate, "YYYY-MM-DD", true).isValid()
+                                                    ? moment(expirydate).format("MM-DD-YYYY")
+                                                    : ""}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={&lt;CalenderIcon name="calendar" size={25} color="#949494" />}
+                                                onLeftIconPress={() => setBoarded(true)}
+                                                marginleft={normalize(270)}
+                                                onwholePress={() => setBoarded(true)}
+                                                spaceneeded={true}
+                                            />
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+                            &lt;/View>
+                            &lt;Buttons
+                                onPress={boardCertificateAdd}
+                                height={normalize(45)}
+                                width={normalize(291)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(9)}
+                                text={props?.route?.params?.profiledet ? "Save" : "Add"}
+                                color={Colorpath.white}
+                                fontSize={18}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                            />
+                            &lt;Buttons
+                                onPress={() => {
+                                    if (props?.route?.params?.profile) {
+                                        props.navigation.dispatch(
+                                            CommonActions.reset({
+                                                index: 0,
+                                                routes: [
+                                                    {
+                                                        name: "BoardProfile",
+                                                        params: {
+                                                            board: "text",
+                                                        }
+                                                    }
+                                                ]
+                                            })
+                                        );
+                                    } else if (props?.route?.params?.profiledet) {
+                                        navigation.goBack();
+                                    } else {
+                                        props.navigation.navigate("TabNav", { detectmain: "main" });
+                                    }
+                                }}
+                                height={normalize(45)}
+                                width={normalize(280)}
+                                backgroundColor={Colorpath.Pagebg}
+                                borderRadius={normalize(9)}
+                                text="Cancel"
+                                color={Colorpath.ButtonColr}
+                                fontSize={14}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                            />
+                        &lt;/ScrollView>
+                        &lt;CellModal
+                            isVisible={modalcert}
+                            onClose={toggleModalcert}
+                            content={props?.route?.params?.profiledet ? "Board certification information \n updated successfully." : "Board certification information \n added successfully."}
+                            navigation={props.navigation}
+                            name={props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile ? "text" : props?.route?.params?.takeback == "back" ? "Contact" : "TabNav"}
+                        />
+                        {/* &lt;/ScrollView> */}
+                        {props?.route?.params?.profiledet?.from_date ? &lt;DateTimePickerModal
+                            isVisible={boardfd}
+                            mode="date"
+                            date={
+                                props?.route?.params?.profiledet?.from_date
+                                    ? new Date(props?.route?.params?.profiledet?.from_date)
+                                    : '' // Fallback to current date if no from_date is provided
+                            }
+                            onConfirm={val => {
+                                setIssuedate(moment(val).format('YYYY-MM-DD'));
+                                setBoardfd(false);
+                            }}
+                            onCancel={() => setBoardfd(false)}
+                            textColor="black"
+                        /> : &lt;DateTimePickerModal
+                            isVisible={boardfd}
+                            mode="date"
+                            maximumDate={new Date()}
+                            onConfirm={val => {
+                                setIssuedate(moment(val).format('YYYY-MM-DD'));
+                                setBoardfd(false);
+                            }}
+                            onCancel={() => setBoardfd(false)}
+                            textColor="black"
+                        />}
+                        {props?.route?.params?.profiledet?.to_date ? &lt;DateTimePickerModal
+                            isVisible={boraded}
+                            mode="date"
+                            date={
+                                props?.route?.params?.profiledet?.to_date
+                                    ? new Date(props?.route?.params?.profiledet?.to_date)
+                                    : '' // Fallback to current date if no from_date is provided
+                            }
+                            onConfirm={val => {
+                                setExpirydate(moment(val).format('YYYY-MM-DD'));
+                                setBoarded(false);
+                            }}
+                            onCancel={() => setBoarded(false)}
+                            textColor="black"
+                        /> : &lt;DateTimePickerModal
+                            isVisible={boraded}
+                            mode="date"
+                            minimumDate={new Date()}
+                            onConfirm={val => {
+                                setExpirydate(moment(val).format('YYYY-MM-DD'));
+                                setBoarded(false);
+                            }}
+                            onCancel={() => setBoarded(false)}
+                            textColor="black"
+                        />}
+                        &lt;CameraPicker
+                            cropping={true}
+                            pickerVisible={boardcamera}
+                            onBackdropPress={() => setBoardcamera(false)}
+                            btnClick_cameraUpload={imgObj => {
+                                console.log(imgObj);
+                                setBoardPic(imgObj);
+                                setBoardPicOT(imgObj.uri);
+                                setBoardcamera(false);
+                            }}
+                            btnClick_ImageUpload={(imgObj) => {
+                                console.log(imgObj);
+                                setBoardPic(imgObj);
+                                setBoardPicOT(imgObj.uri);
+                                setBoardcamera(false);
+                            }}
+                            btnClick_galeryUpload={imgObj => {
+                                console.log('imgObj:::::::::', imgObj);
+                                setBoardPic(imgObj);
+                                setBoardPicOT(imgObj.uri);
+                                setBoardcamera(false);
+                            }}
+                        />
+
+
+                    &lt;/KeyboardAvoidingView>
+                &lt;/>}
+
+            &lt;/SafeAreaView>
+        &lt;/>
+    )
+}
+
+export default AddCertificate;
+const styles = StyleSheet.create({
+    imageBackground: {
+        height: normalize(65),
+        width: normalize(300),
+        resizeMode: "contain",
+        justifyContent: 'center',
+    },
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: normalize(10),
+    },
+    textContainer: {
+        paddingVertical: normalize(10),
+    },
+    uploadText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+    },
+    separatorLine: {
+        height: normalize(35),
+        width: 1,
+        marginLeft: normalize(160),
+        backgroundColor: "#DDDDDD",
+    },
+    iconContainer: {
+        paddingVertical: normalize(5),
+    },
+    headerText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: "#000000",
+    },
+    centered: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    image: {
+        height: normalize(65),
+        width: normalize(308),
+        resizeMode: 'contain',
+    },
+    dropDownItem: {
+        borderWidth: 1,
+        marginTop: normalize(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: normalize(40),
+        width: '85%',
+        alignSelf: 'center',
+    },
+    dropDownItemText: {
+        fontSize: normalize(14),
+        lineHeight: normalize(14),
+        textAlign: 'center',
+        color: Colorpath.black,
+        textTransform: 'capitalize'
+    },
+    dropdown: {
+        height: normalize(45),
+        width: normalize(280),
+        alignSelf: 'center',
+        backgroundColor: Colorpath.textField,
+        // borderBottomColor: 'gray',
+        // borderBottomWidth: 0.5,
+        marginTop: normalize(9),
+        borderRadius: normalize(8),
+    },
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

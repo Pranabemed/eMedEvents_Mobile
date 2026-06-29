@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/GlobalSupport/Globalresult.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/GlobalSupport/Globalresult.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput, Dimensions } from 'react-native'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Colorpath from '../../Themes/Colorpath';
+import normalize from '../../Utils/Helpers/Dimen';
+import PageHeader from '../../Components/PageHeader';
+import Fonts from '../../Themes/Fonts';
+import Imagepath from '../../Themes/Imagepath';
+import { useDispatch, useSelector } from 'react-redux';
+import { cmeCourseRequest, ConfActRequest, clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
+import { stateRequest } from '../../Redux/Reducers/AuthReducer';
+import { professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import moment from 'moment';
+import Modal from 'react-native-modal';
+import Loader from '../../Utils/Helpers/Loader';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
+import { FormatDateZone } from '../../Utils/Helpers/Timezone';
+import { AppContext } from './AppContext';
+import IntOff from '../../Utils/Helpers/IntOff';
+import NetInfo from '@react-native-community/netinfo';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
+
+/**
+ * Reusable Globalresult component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
+
+const getStateLabel = stateObj =>
+    stateObj?.name || stateObj?.state_name || stateObj?.title || '';
+
+const getResultButtonLabel = item =>
+    item?.buttonText ||
+    item?.button_text ||
+    item?.buttonType ||
+    item?.buttontype ||
+    item?.button_type ||
+    item?.button ||
+    item?.cta_text ||
+    '';
+
+const getResultPriceLabel = item => {
+    const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? '';
+    const priceText = String(rawPrice).trim();
+
+    if (!priceText) {
+        return '';
+    }
+
+    if (priceText.toUpperCase() === 'FREE') {
+        return 'FREE';
+    }
+
+    return `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}`;
+};
+
+const getResultTypeLabel = item => {
+    const rawType = String(
+        item?.eventType ||
+        item?.event_type ||
+        item?.conference_type ||
+        item?.conference_type_text ||
+        item?.type ||
+        ''
+    ).trim();
+
+    const lower = rawType.toLowerCase();
+    if (lower === 'webcst' || lower === 'webcast') {
+        return 'Webcast';
+    }
+    if (lower === 'in-person' || lower === 'inperson') {
+        return 'In-person';
+    }
+    return rawType;
+};
+
+const getResultCreditLabel = item => {
+    const rawCme = item?.display_cme || item?.cmeLabel || item?.credit || item?.credits || '';
+    if (rawCme) {
+        const cleaned = String(rawCme).trim();
+        if (/^\d+(\.\d+)?$/.test(cleaned)) {
+            return `${cleaned} CME / CE Credit(s)`;
+        }
+        return cleaned.replace(/contact hours?(\(s\))?/ig, 'Contact Hour(s)').trim();
+    }
+    if (Array.isArray(item?.cme_points_popovar) &amp;&amp; item.cme_points_popovar.length) {
+        return item.cme_points_popovar
+            .map(point => {
+                const count = parseFloat(point?.points) || 0;
+                const name = point?.name &amp;&amp; /contact\s*hours?(\(s\))?/i.test(point.name)
+                    ? 'Contact Hour(s)'
+                    : point?.name || '';
+                return `${count} ${name}`.trim();
+            })
+            .filter(Boolean)
+            .join(' | ');
+    }
+    return '';
+};
+
+const Globalresult = (props) => {
+    const CMEReducer = useSelector(state => state.CMEReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    const dispatch = useDispatch();
+    const {
+        isConnected
+    } = useContext(AppContext);
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const [storeAlldata, setStoreAlldata] = useState([]);
+    const [apiReq, setApiReq] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [hasFetchedResults, setHasFetchedResults] = useState(false);
+    const [pageNum, setPageNum] = useState(0);
+    const [limit, setLimit] = useState(9);
+    const [refreshing, setRefreshing] = useState(false);
+    const [sortedFall, setSortedFall] = useState(false);
+    const [sortType, setSortType] = useState("");
+    const [profModalVisible, setProfModalVisible] = useState(false);
+    const [stateModalVisible, setStateModalVisible] = useState(false);
+    const [stateSearchText, setStateSearchText] = useState('');
+    const [selectedProfession, setSelectedProfession] = useState('');
+    const [selectedState, setSelectedState] = useState(null);
+    const [cmeModalVisible, setCmeModalVisible] = useState(false);
+    const [allProfessionData, setAllProfessionData] = useState(null);
+    const [shouldOpenCmeChecklist, setShouldOpenCmeChecklist] = useState(false);
+    const [cmeRequestKey, setCmeRequestKey] = useState('');
+    const [handledCmeRequestKey, setHandledCmeRequestKey] = useState('');
+    const [cmeRequestStarted, setCmeRequestStarted] = useState(false);
+    const [displayedHeaderTitle, setDisplayedHeaderTitle] = useState('');
+    const [displayedResultsCount, setDisplayedResultsCount] = useState(0);
+    const [displayedAggregations, setDisplayedAggregations] = useState(null);
+    const hasFocusedOnceRef = useRef(false);
+    const requestStatusRef = useRef("");
+    const lastTrigRef = useRef();
+    const lastFilterRef = useRef();
+    const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
+    const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
+    const isFreeOnlyResults = useMemo(() => {
+        if (!Array.isArray(storeAlldata) || storeAlldata.length === 0) {
+            return false;
+        }
+
+        return storeAlldata.every(item => {
+            const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? item?.displayPrice ?? '';
+            const normalizedPrice = String(rawPrice).trim().toLowerCase();
+
+            return (
+                !normalizedPrice ||
+                normalizedPrice === '0' ||
+                normalizedPrice === '0.0' ||
+                normalizedPrice === '0.00' ||
+                normalizedPrice === 'free'
+            );
+        });
+    }, [storeAlldata]);
+    const sortOptions = useMemo(() => {
+        const baseOptions = props?.route?.params?.trig?.newCt ? sorteddataforCity : sortedData;
+
+        if (!isFreeOnlyResults) {
+            return baseOptions;
+        }
+
+        return baseOptions.filter(option => !option?.type?.startsWith('PRICE_'));
+    }, [isFreeOnlyResults, props?.route?.params?.trig?.newCt]);
+    const sortModalHeight = useMemo(() => {
+        const maxHeight = props?.route?.params?.trig?.newCt ? normalize(240) : normalize(340);
+        const itemHeight = normalize(50);
+        const paddingHeight = normalize(28);
+        const calculatedHeight = paddingHeight + (sortOptions.length * itemHeight);
+
+        return Math.max(normalize(160), Math.min(calculatedHeight, maxHeight));
+    }, [props?.route?.params?.trig?.newCt, sortOptions.length]);
+    const hasAuthToken = Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
+    const guestSelection = props?.route?.params?.guestSelection;
+    const isGuestCmeRouteType = props?.route?.params?.trig?.rqstType === 'professionlandingpage';
+    const hasGuestSelectionData = Boolean(
+        guestSelection?.profession ||
+        guestSelection?.stateId ||
+        guestSelection?.stateName ||
+        guestSelection?.state,
+    );
+    const isGuestCmeFlow = Boolean(
+        !hasAuthToken &amp;&amp; (
+            isGuestCmeRouteType ||
+            props?.route?.params?.guestCmeFlow === true ||
+            props?.route?.params?.trig?.guestCmeFlow === true ||
+            hasGuestSelectionData
+        )
+    );
+    const isGuestSpecialityFlow = Boolean(
+        !hasAuthToken &amp;&amp; (
+            props?.route?.params?.trig?.fromGuestSpecialitySearch ||
+            props?.route?.params?.trig?.creditData?.fromGuestSpecialitySearch ||
+            props?.route?.params?.trig?.CreditData?.fromGuestSpecialitySearch ||
+            (props?.route?.params?.trig?.Realback === 'guest' &amp;&amp; props?.route?.params?.trig?.rqstType === 'specialityconferences')
+        )
+    );
+    const isGuestFlow = Boolean(
+        isGuestCmeFlow ||
+        isGuestSpecialityFlow ||
+        props?.route?.params?.trig?.Realback === 'guest' ||
+        props?.route?.params?.Realback === 'guest' ||
+        !hasAuthToken
+    );
+    const stateList = Array.isArray(AuthReducer?.stateResponse?.data)
+        ? AuthReducer?.stateResponse?.data
+        : Array.isArray(AuthReducer?.stateResponse?.states)
+            ? AuthReducer?.stateResponse?.states
+            : [];
+    const filteredStateList = stateList.filter(item =>
+        String(getStateLabel(item)).toLowerCase().includes(stateSearchText.trim().toLowerCase()),
+    );
+    const totalResults = Number(
+        CMEReducer?.cmeCourseResponse?.conferences_count ??
+        props?.route?.params?.trig?.totalDaa?.count ??
+        0,
+    );
+    const canLoadMore = totalResults > 0 &amp;&amp; storeAlldata.length &lt; totalResults;
+    const routeQueryKey = useMemo(
+        () =>
+            JSON.stringify({
+                trig: props?.route?.params?.trig ?? null,
+                filterDatSh: props?.route?.params?.filterDatSh ?? null,
+            }),
+        [props?.route?.params?.filterDatSh, props?.route?.params?.trig],
+    );
+    const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(routeQueryKey);
+    const isRouteRefreshing = displayedRouteQueryKey !== routeQueryKey;
+    const resetResultsView = useCallback((options = {}) => {
+        const {
+            clearSort = false,
+            loadingState = false,
+            routeKey,
+        } = options;
+
+        setStoreAlldata([]);
+        setPageNum(0);
+        setHasFetchedResults(false);
+        setDisplayedHeaderTitle('');
+        setDisplayedResultsCount(0);
+        setDisplayedAggregations(null);
+        setRefreshing(false);
+        setLoading(loadingState);
+        setApiReq(false);
+
+        if (clearSort) {
+            setSortType('');
+        }
+
+        if (routeKey) {
+            setDisplayedRouteQueryKey(routeKey);
+        }
+        dispatch(clearCmeCourseData());
+    }, [dispatch]);
+    useEffect(() => {
+        const currentTrig = props?.route?.params?.trig;
+        if (currentTrig) {
+            const currentTrigStr = JSON.stringify(currentTrig);
+            if (currentTrigStr !== lastTrigRef.current) {
+                lastTrigRef.current = currentTrigStr;
+                resetResultsView({ clearSort: true, loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType: '' });
+            }
+        }
+    }, [props?.route?.params?.trig, resetResultsView, fetchHandle]);
+    useEffect(() => {
+        const currentFilter = props?.route?.params?.filterDatSh?.filterDatSh;
+        if (currentFilter) {
+            const currentFilterStr = JSON.stringify(currentFilter);
+            if (currentFilterStr !== lastFilterRef.current) {
+                lastFilterRef.current = currentFilterStr;
+                resetResultsView({ loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType });
+            }
+        }
+    }, [props?.route?.params?.filterDatSh, resetResultsView, sortType, fetchHandle]);
+    useEffect(() => {
+        if (!isGuestCmeFlow) return;
+
+        setSelectedProfession(guestSelection?.profession || '');
+        if (guestSelection?.state) {
+            setSelectedState(guestSelection.state);
+            return;
+        }
+        if (guestSelection?.stateId || guestSelection?.stateName) {
+            setSelectedState({
+                state_id: guestSelection?.stateId,
+                name: guestSelection?.stateName,
+            });
+        }
+    }, [
+        guestSelection?.profession,
+        guestSelection?.state,
+        guestSelection?.stateId,
+        guestSelection?.stateName,
+        isGuestCmeFlow,
+    ]);
+    useEffect(() => {
+        if (!isGuestCmeFlow) return;
+        dispatch(stateRequest(1));
+    }, [dispatch, isGuestCmeFlow]);
+    useEffect(() => {
+        if (
+            shouldOpenCmeChecklist &amp;&amp;
+            cmeRequestKey &amp;&amp;
+            CreditVaultReducer?.status === 'CreditVault/professionvaultRequest'
+        ) {
+            setCmeRequestStarted(true);
+        }
+    }, [CreditVaultReducer?.status, cmeRequestKey, shouldOpenCmeChecklist]);
+    useEffect(() => {
+        if (
+            shouldOpenCmeChecklist &amp;&amp;
+            cmeRequestKey &amp;&amp;
+            cmeRequestStarted &amp;&amp;
+            handledCmeRequestKey !== cmeRequestKey &amp;&amp;
+            (CreditVaultReducer?.status === 'CreditVault/professionvaultSuccess' ||
+                CreditVaultReducer?.status === 'CreditVault/professionvaultFailure')
+        ) {
+            if (CreditVaultReducer?.status === 'CreditVault/professionvaultSuccess') {
+                setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
+                setCmeModalVisible(true);
+            }
+            setHandledCmeRequestKey(cmeRequestKey);
+            setShouldOpenCmeChecklist(false);
+            setCmeRequestStarted(false);
+        }
+    }, [
+        CreditVaultReducer?.professionvaultResponse,
+        CreditVaultReducer?.status,
+        cmeRequestKey,
+        cmeRequestStarted,
+        handledCmeRequestKey,
+        shouldOpenCmeChecklist,
+    ]);
+    useEffect(() => {
+        const stateId = getStateId(selectedState);
+        if (!isGuestCmeFlow || !shouldOpenCmeChecklist || !selectedProfession || stateId == null) {
+            return;
+        }
+
+        const requestKey = `${selectedProfession}-${stateId}`;
+        setCmeModalVisible(false);
+        setAllProfessionData(null);
+        resetResultsView({ clearSort: true });
+        setCmeRequestKey(requestKey);
+        dispatch(
+            professionvaultRequest({
+                profession: selectedProfession,
+                stateId: String(stateId),
+            }),
+        );
+    }, [dispatch, isGuestCmeFlow, resetResultsView, selectedProfession, selectedState, shouldOpenCmeChecklist]);
+    console.log(props?.route?.params, "props?.route?.params?.filterDatSh------")
+    const goBackToGuestUser = useCallback(() => {
+        setProfModalVisible(false);
+        setStateModalVisible(false);
+        setCmeModalVisible(false);
+        setSortedFall(false);
+
+        const navigationState = props.navigation.getState();
+        const previousRoute = navigationState?.routes?.[navigationState.index - 1];
+        const resetGuestSelectionsAt = Date.now();
+
+        if (previousRoute?.name === 'GuestUser' &amp;&amp; previousRoute?.key) {
+            props.navigation.dispatch({
+                ...CommonActions.setParams({
+                    resetGuestSelectionsAt,
+                }),
+                source: previousRoute.key,
+            });
+            props.navigation.goBack();
+            return;
+        }
+
+        props.navigation.navigate('GuestUser', {
+            resetGuestSelectionsAt,
+        });
+    }, [props.navigation]);
+    const SearchBack = useCallback(() => {
+        if (props.navigation.canGoBack?.()) {
+            props.navigation.goBack();
+        } else if (isGuestCmeFlow) {
+            goBackToGuestUser();
+        } else if (props?.route?.params?.trig?.Realback == "cont") {
+            props.navigation.goBack();
+        } else if (props?.route?.params?.trig?.backProps == "yes") {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        { name: "TabNav", params: { initialRoute: "Home" } }
+                    ],
+                })
+            );
+        } else if (props?.route?.params?.trig?.speaker) {
+            props.navigation.goBack();
+        } else if (props?.route?.params?.trig?.back == "goBack") {
+            props.navigation.goBack();
+        } else {
+            props.navigation.goBack();
+        }
+    }, [goBackToGuestUser, isGuestCmeFlow, props.navigation, props?.route?.params?.trig]);
+    useEffect(() => {
+        return () => {
+            dispatch(clearCmeCourseData());
+        };
+    }, [dispatch]);
+    useEffect(() => {
+        const onBackPress = () => {
+            SearchBack()
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, [SearchBack]);
+    const fetchHandle = useCallback((d, options = {}) => {
+        const requestedPageNum = options?.pageNum ?? pageNum;
+        const requestedSortType = options?.sortType ?? d?.type ?? sortType ?? "";
+        if (requestedPageNum === 0) {
+            setLoading(true);
+            setHasFetchedResults(false);
+        }
+        const mainKey = props?.route?.params?.trig?.mainKey ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.mainKey ?? "";
+        const stateKey = props?.route?.params?.trig?.newAdd ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newAdd ?? "";
+        const newCt = props?.route?.params?.trig?.newCt ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newCt ?? "";
+        const rqstType =
+            props?.route?.params?.trig?.rqstType ??
+            props?.route?.params?.filterDatSh?.returnTake?.trig?.rqstType ??
+            "";
+        const finalKey =
+            rqstType == "specialityconferences"
+                ? `m${rqstType}`
+                : rqstType;
+
+        let obj = {
+            "pageno": requestedPageNum,
+            "limit": limit,
+            "search_speciality": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat()
+                : "",
+            "conference_type_text":
+                props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat()
+                    : "",
+            "cme_from": props?.route?.params?.filterDatSh?.minVal ? props?.route?.params?.filterDatSh?.minVal : "",
+            "cme_to": props?.route?.params?.filterDatSh?.maxVal ? props?.route?.params?.filterDatSh?.maxVal : "",
+            "organization": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat()
+                : props?.route?.params?.trig?.organ ? props?.route?.params?.trig?.organ : "",
+            "price_from": props?.route?.params?.filterDatSh?.minValP ? props?.route?.params?.filterDatSh?.minValP : "",
+            "price_to": props?.route?.params?.filterDatSh?.maxValp ? props?.route?.params?.filterDatSh?.maxValp : "",
+            "startdate": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat()
+                : "",
+            "location": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat()
+                : "",
+            "free_conf": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Free Courses") == "Free Courses" ? 1 : "" : "",
+            "noncme": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Non-CME Courses") == "Non-CME Courses" ? 1 : "" : "",
+            "speaker": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat()
+                : props?.route?.params?.trig?.speaker ? props?.route?.params?.trig?.speaker : "",
+            "search_mandate_states": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat()
+                : [],
+            "search_topic": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat()
+                : "",
+            "search_profession": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat()
+                : "",
+            "credittype": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat().length > 0
+                ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat()
+                : "",
+            "sort_type": requestedSortType,
+            "searchKeyword": props?.route?.params?.trig?.searchTxt ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.searchTxt ?? "",
+            "request_type": finalKey ?? props?.route?.params?.trig?.rqstType ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.rqstType ?? "",
+            [mainKey]:
+                props?.route?.params?.trig?.beforetake ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.beforetake
+                ?? props?.route?.params?.trig?.beforetakecity?.[0] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.beforetakecity?.[0]
+                ?? props?.route?.params?.trig?.monthAds ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.monthAds ?? props?.route?.params?.trig?.trig ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.trig ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.datamainkey
+                ?? props?.route?.params?.trig?.datamainkey ?? "",
+            [stateKey]:
+                (props?.route?.params?.trig?.newAdd ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newAdd)
+                    ? (
+                        props?.route?.params?.trig?.trig ??
+                        props?.route?.params?.filterDatSh?.returnTake?.trig?.trig ??
+                        props?.route?.params?.trig?.beforetakecity?.[1] ??
+                        props?.route?.params?.filterDatSh?.returnTake?.trig?.beforetakecity?.[1] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.stateID ?? props?.route?.params?.trig?.stateID
+                    )
+                    : "",
+            [newCt]:
+                (props?.route?.params?.trig?.newCt ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.newCt)
+                    ? (props?.route?.params?.trig?.beforetakecity?.[2] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.beforetakecity?.[2] ?? props?.route?.params?.filterDatSh?.returnTake?.trig?.allProfessionMain ?? props?.route?.params?.trig?.allProfessionMain)
+                    : "",
+        };
+
+        if (props?.route?.params?.trig?.request_type === 'stateconferences') {
+            obj = {
+                "pageno": requestedPageNum,
+                "limit": limit,
+                "search_speciality": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.count_specilaities)?.map(d => d?.count_specilaities).flat()
+                    : props?.route?.params?.trig?.search_speciality ?? "",
+                "conference_type_text": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.conf_types)?.map(d => d?.conf_types).flat()
+                    : props?.route?.params?.trig?.conference_type_text ?? "",
+                "cme_from": props?.route?.params?.filterDatSh?.minVal ? props?.route?.params?.filterDatSh?.minVal : props?.route?.params?.trig?.cme_from ?? "",
+                "cme_to": props?.route?.params?.filterDatSh?.maxVal ? props?.route?.params?.filterDatSh?.maxVal : props?.route?.params?.trig?.cme_to ?? "",
+                "organization": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.organizers_types)?.map(d => d?.organizers_types).flat()
+                    : props?.route?.params?.trig?.organization ?? "",
+                "price_from": props?.route?.params?.filterDatSh?.minValP ? props?.route?.params?.filterDatSh?.minValP : props?.route?.params?.trig?.price_from ?? "",
+                "price_to": props?.route?.params?.filterDatSh?.maxValp ? props?.route?.params?.filterDatSh?.maxValp : props?.route?.params?.trig?.price_to ?? "",
+                "startdate": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.date_types)?.map(d => d?.date_types).flat()
+                    : props?.route?.params?.trig?.startdate ?? "",
+                "location": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.location_types)?.map(d => d?.location_types).flat()
+                    : props?.route?.params?.trig?.location ?? "",
+                "free_conf": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Free Courses") == "Free Courses" ? 1 : "" : props?.route?.params?.trig?.free_conf ?? "",
+                "noncme": props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ? props?.route?.params?.filterDatSh?.selectedIt?.find(item => item === "Non-CME Courses") == "Non-CME Courses" ? 1 : "" : props?.route?.params?.trig?.noncme ?? "",
+                "speaker": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.speakers_types)?.map(d => d?.speakers_types).flat()
+                    : props?.route?.params?.trig?.speaker ?? "",
+                "search_mandate_states": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.mandate_states)?.map(d => d?.mandate_states).flat()
+                    : props?.route?.params?.trig?.search_mandate_states ?? [],
+                "search_topic": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.topic_types)?.map(d => d?.topic_types).flat()
+                    : props?.route?.params?.trig?.search_topic ?? "",
+                "search_profession": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.profession_types)?.map(d => d?.profession_types).flat()
+                    : props?.route?.params?.trig?.search_profession ?? "",
+                "credittype": props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat().length > 0
+                    ? props?.route?.params?.filterDatSh?.filterDatSh?.filter(d => d?.credit_types)?.map(d => d?.credit_types).flat()
+                    : props?.route?.params?.trig?.credittype ?? "",
+                "sort_type": requestedSortType || props?.route?.params?.trig?.sort_type || "",
+                "searchKeyword": props?.route?.params?.trig?.searchKeyword ?? "",
+                "request_type": "stateconferences",
+                "country": props?.route?.params?.trig?.country ?? "usa-medical-conferences",
+                "state": props?.route?.params?.trig?.state ?? "",
+                "": ""
+            };
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(cmeCourseRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+                setLoading(false);
+            });
+    }, [dispatch, limit, pageNum, props?.route?.params?.filterDatSh, props?.route?.params?.trig, sortType]);
+
+    useEffect(() => {
+        const unsubscribe = props.navigation.addListener('focus', () => {
+            if (!hasFocusedOnceRef.current) {
+                hasFocusedOnceRef.current = true;
+                return;
+            }
+
+            if (isGuestFlow) {
+                resetResultsView({ loadingState: true });
+                fetchHandle(undefined, { pageNum: 0, sortType });
+                return;
+            }
+
+            if (props?.route?.params?.trig?.Realback === "cont") {
+                resetResultsView({ loadingState: true });
+                fetchHandle(undefined, { pageNum: 0 });
+            }
+        });
+        return unsubscribe;
+    }, [fetchHandle, isGuestFlow, props.navigation, props?.route?.params?.trig, resetResultsView, sortType]);
+
+    const fetchMore = useCallback(() => {
+        if (!apiReq &amp;&amp; !loading &amp;&amp; canLoadMore &amp;&amp; CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            fetchHandle(undefined, { pageNum: nextPage });
+        }
+    }, [apiReq, canLoadMore, loading, pageNum, CMEReducer?.cmeCourseResponse?.conferences?.length, fetchHandle]);
+
+    const fullDataRefresh = () => {
+        resetResultsView({ loadingState: true });
+        setRefreshing(true);
+        fetchHandle(undefined, { pageNum: 0 });
+    };
+    const handleUrl = (onlineName) => {
+        const url = onlineName?.detailpage_url;
+        if (!url) {
+            return;
+        }
+        const result = url.split('/').pop();
+        console.log(result, "webcast url=======", onlineName);
+        let obj = {
+            "conference_id": onlineName?.id,
+            "action_type": "view",
+            "status": 1
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(ConfActRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+        });
+        if (result) {
+            const resolvedRealback =
+                props?.route?.params?.trig?.Realback ||
+                props?.route?.params?.filterDatSh?.returnTake?.trig?.Realback ||
+                props?.route?.params?.filterDatSh?.returnTake?.webCastURL?.Realback ||
+                (isGuestFlow ? 'guest' : undefined);
+
+            props.navigation.navigate("Statewebcast", {
+                webCastURL: {
+                    webCastURL: result,
+                    shareUrl: url,
+                    creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll,
+                    Realback: resolvedRealback
+                }
+            })
+        }
+    }
+
+    useEffect(() => {
+        if (!CMEReducer.status || requestStatusRef.current === CMEReducer.status) {
+            return;
+        }
+
+        requestStatusRef.current = CMEReducer.status;
+
+        switch (CMEReducer.status) {
+            case 'CME/cmeCourseRequest':
+                setApiReq(true);
+                setLoading(true);
+                break;
+            case 'CME/cmeCourseSuccess':
+                setApiReq(false);
+                setLoading(false);
+                setHasFetchedResults(true);
+                setRefreshing(false);
+                setDisplayedRouteQueryKey(routeQueryKey);
+                if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
+                    if (pageNum === 0) {
+                        setStoreAlldata(CMEReducer?.cmeCourseResponse?.conferences);
+                    } else {
+                        let modifiedData = [
+                            ...storeAlldata,
+                            ...CMEReducer?.cmeCourseResponse?.conferences,
+                        ]?.filter(
+                            (value, index, self) =>
+                                index === self.findIndex(t => t?.id === value?.id),
+                        );
+                        setStoreAlldata(modifiedData);
+                    }
+                } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
+                    if (pageNum === 0) setStoreAlldata([]);
+                    setApiReq(false);
+                    setLoading(false);
+                }
+                break;
+            case 'CME/cmeCourseFailure':
+                setPageNum(0);
+                setApiReq(false);
+                setLoading(false);
+                setHasFetchedResults(true);
+                setRefreshing(false);
+                setDisplayedRouteQueryKey(routeQueryKey);
+                break;
+        }
+    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
+    const searchGlobalitem = ({ item, index }) => {
+        const buttonLabel = getResultButtonLabel(item);
+        const priceLabel = getResultPriceLabel(item);
+        const guestCreditLabel = getResultCreditLabel(item);
+        const guestTypeLabel = getResultTypeLabel(item);
+        const guestPrimaryLabel = guestCreditLabel;
+        const guestSecondaryLabel = guestTypeLabel;
+        const hasBottomRow = Boolean(buttonLabel || priceLabel);
+        const formatDate = (dateStr) => {
+            const date = moment(dateStr, "DD MMM'YY");
+            return date.format("MMM  D").replace(' ', '');
+        };
+        const formattedDate = formatDate(item?.startdate);
+        const formatDateEnd = (dateStr) => {
+            const date = moment(dateStr, "DD MMM'YY");
+            return date.format("MMM D, YYYY").replace('', '');
+        };
+        const formattedDateend = formatDateEnd(item?.enddate);
+        const renderLocationAndDates = () => {
+            if (item?.startdate &amp;&amp; item?.enddate &amp;&amp; item?.location) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.WrongCal}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                bottom: normalize(1),
+                                marginLeft: normalize(5),
+                                width: normalize(220),
+                                lineHeight: normalize(15)
+                            }}
+                        >
+                            {`${FormatDateZone(item?.startdate, item?.enddate)} | ${item?.location}`}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            } else if (item?.startdate &amp;&amp; item?.enddate) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.CalImg}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                marginLeft: normalize(5),
+                                lineHeight: normalize(15)
+                            }}
+                        >
+                            {`${FormatDateZone(item?.startdate, item?.enddate)}`}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            } else if (item?.location) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.MapPin}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                lineHeight: normalize(15)
+                            }}
+                        >
+                            {item?.location}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            }
+            return null;
+        };
+        return (
+            &lt;View>
+                &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(isGuestFlow ? 8 : 10) }}>
+                    &lt;TouchableOpacity onPress={() => { handleUrl(item) }}>
+                        &lt;View
+                            style={isGuestFlow ? styles.guestResultCard : {
+                                flexDirection: "column",
+                                width: normalize(290),
+                                borderRadius: normalize(10),
+                                backgroundColor: "#FFFFFF",
+                                paddingHorizontal: normalize(10),
+                                paddingVertical: normalize(5),
+                                borderColor: "#DADADA",
+                                borderWidth: 0.8
+                            }}
+                        >
+                            &lt;View style={{ flex: 1 }}>
+                                &lt;View style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    width: isGuestFlow ? '100%' : '106%'
+                                }}>
+                                    &lt;View style={{ flex: 1, marginRight: 10 }}>
+                                        &lt;View>
+                                            &lt;Text
+                                                style={isGuestFlow ? styles.guestResultTitle : {
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 16,
+                                                    color: "#000000",
+                                                    fontWeight: "bold",
+                                                    flexWrap: 'wrap',
+                                                    lineHeight: 20,
+                                                }}
+                                                numberOfLines={2}
+                                                ellipsizeMode="tail"
+                                            >
+                                                {item?.title}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                            &lt;View style={{ justifyContent: "flex-start", alignItems: "flex-start", paddingVertical: normalize(4) }}>
+                                &lt;Text style={isGuestFlow ? styles.guestResultOrg : { fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}&lt;/Text>
+                            &lt;/View>
+                            {(item?.startdate || item?.enddate || item?.location) &amp;&amp; (&lt;View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
+                                {renderLocationAndDates()}
+                            &lt;/View>)}
+                            {(guestCreditLabel || guestTypeLabel) ? (
+                                &lt;View style={{ paddingVertical: normalize(4) }}>
+                                    &lt;Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14,
+                                        fontWeight: 'bold',
+                                        color: '#666666',
+                                        lineHeight: 20
+                                    }}>
+                                        {guestCreditLabel}
+                                        {guestCreditLabel &amp;&amp; guestTypeLabel ? '  |  ' : ''}
+                                        {guestTypeLabel}
+                                    &lt;/Text>
+                                &lt;/View>
+                            ) : null}
+                            {hasBottomRow &amp;&amp; &lt;View style={isGuestFlow ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
+                            {!hasBottomRow ? null : &lt;View style={isGuestFlow ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", alignItems: "center", marginTop: normalize(3) }}>
+                                &lt;View style={isGuestFlow ? styles.guestResultPrimaryWrap : { flex: 1, justifyContent: 'center' }}>
+                                    {buttonLabel ? (
+                                        &lt;Text
+                                            numberOfLines={1}
+                                            style={isGuestFlow ? styles.guestResultButtonText : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold" }}
+                                        >
+                                            {buttonLabel}
+                                        &lt;/Text>
+                                    ) : null}
+                                &lt;/View>
+                                {(buttonLabel &amp;&amp; priceLabel) ? (
+                                    &lt;Text style={isGuestFlow ? styles.guestResultPipe : { marginHorizontal: normalize(10), fontFamily: Fonts.InterBold, fontSize: 16, color: "#9CA3AF", fontWeight: "bold", textAlign: "center" }}>
+                                        |
+                                    &lt;/Text>
+                                ) : null}
+                                &lt;View style={isGuestFlow ? styles.guestResultSecondaryWrap : { flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                                    {priceLabel ? (
+                                        &lt;Text numberOfLines={1} style={isGuestFlow ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                                            {priceLabel}
+                                        &lt;/Text>
+                                    ) : null}
+                                &lt;/View>
+                            &lt;/View>}
+                        &lt;/View>
+                    &lt;/TouchableOpacity>
+                &lt;/View>
+            &lt;/View>
+        )
+    };
+    const handleGuestProfessionSelect = profession => {
+        setCmeModalVisible(false);
+        setAllProfessionData(null);
+        setHandledCmeRequestKey('');
+        setCmeRequestStarted(false);
+        setShouldOpenCmeChecklist(false);
+        resetResultsView({ clearSort: true });
+        setStateSearchText('');
+        setProfModalVisible(false);
+
+        setSelectedProfession(profession);
+        if (getStateId(selectedState) != null &amp;&amp; profession) {
+            setShouldOpenCmeChecklist(true);
+        }
+    };
+    const handleGuestStateSelect = stateObj => {
+        setCmeModalVisible(false);
+        setAllProfessionData(null);
+        setHandledCmeRequestKey('');
+        setCmeRequestStarted(false);
+        setShouldOpenCmeChecklist(false);
+        resetResultsView({ clearSort: true });
+        setStateModalVisible(false);
+        setStateSearchText('');
+
+        setSelectedState(stateObj);
+        if (selectedProfession &amp;&amp; getStateId(stateObj) != null) {
+            setShouldOpenCmeChecklist(true);
+        }
+    };
+    const handleGuestBrowseCourses = params => {
+        setCmeModalVisible(false);
+        setSortedFall(false);
+        resetResultsView({ clearSort: true, routeKey: '' });
+        props.navigation.replace('Globalresult', params);
+    };
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, [props.navigation]);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            {conn == false ? &lt;IntOff /> : &lt;SafeAreaView style={{ flex: 1, backgroundColor: isGuestFlow ? '#DCEBFA' : Colorpath.Pagebg }}>
+                &lt;View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
+                    {Platform.OS === "ios" ? (
+                        &lt;PageHeader
+                            title="Search Results"
+                            onBackPress={SearchBack}
+                        />
+                    ) : (
+                        &lt;PageHeader
+                            title="Search Results"
+                            onBackPress={SearchBack}
+                        />
+
+                    )}
+                &lt;/View>
+                &lt;Loader visible={isRouteRefreshing || (loading &amp;&amp; storeAlldata?.length === 0) || shouldOpenCmeChecklist} />
+                {isGuestCmeFlow &amp;&amp; (
+                    &lt;View style={styles.guestTopSection}>
+                        &lt;View style={styles.guestSelectorCard}>
+                            &lt;TouchableOpacity
+                                style={styles.guestSelectorCell}
+                                onPress={() => setProfModalVisible(true)}
+                            >
+                                &lt;Text style={styles.guestSelectorLabel}>Profession&lt;/Text>
+                                &lt;View style={styles.guestSelectorValueRow}>
+                                    &lt;Text style={styles.guestSelectorValue} numberOfLines={1}>
+                                        {selectedProfession || 'Select Profession'}
+                                    &lt;/Text>
+                                    &lt;Icon name="keyboard-arrow-down" size={20} color={Colorpath.ButtonColr} />
+                                &lt;/View>
+                            &lt;/TouchableOpacity>
+                            &lt;View style={styles.guestSelectorDivider} />
+                            &lt;TouchableOpacity
+                                style={styles.guestSelectorCell}
+                                onPress={() => {
+                                    dispatch(stateRequest(1));
+                                    setStateSearchText('');
+                                    setStateModalVisible(true);
+                                }}
+                            >
+                                &lt;Text style={styles.guestSelectorLabel}>State&lt;/Text>
+                                &lt;View style={styles.guestSelectorValueRow}>
+                                    &lt;Text style={styles.guestSelectorValue} numberOfLines={1}>
+                                        {getStateLabel(selectedState) || 'Select State'}
+                                    &lt;/Text>
+                                    &lt;Icon name="keyboard-arrow-down" size={20} color={Colorpath.ButtonColr} />
+                                &lt;/View>
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+                    &lt;/View>
+                )}
+                {!isRouteRefreshing &amp;&amp; storeAlldata?.length > 0 &amp;&amp; (
+                    &lt;>
+                        &lt;TouchableOpacity
+                            onPress={() => {
+                                setPageNum(0);
+                                setSortedFall(!sortedFall);
+                            }}
+                            style={isGuestFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
+                        >
+                            &lt;View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
+                                &lt;Text style={[
+                                    isGuestFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
+                                    { marginBottom: 0 }
+                                ]}>
+                                    {`Showing (${totalResults || ""}) Results for`}
+                                &lt;/Text>
+                                &lt;View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
+                                    &lt;Text style={isGuestFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By&lt;/Text>
+                                    &lt;Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
+                                &lt;/View>
+                            &lt;/View>
+                        &lt;/TouchableOpacity>
+                        {isGuestFlow &amp;&amp; CMEReducer?.cmeCourseResponse?.header_title ? (
+                            &lt;View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
+                                &lt;Text style={styles.guestSummaryTitle}>
+                                    {CMEReducer?.cmeCourseResponse?.header_title}
+                                &lt;/Text>
+                            &lt;/View>
+                        ) : null}
+                    &lt;/>
+                )}
+                {!isRouteRefreshing &amp;&amp; !isGuestFlow &amp;&amp; CMEReducer?.cmeCourseResponse?.header_title &amp;&amp; storeAlldata?.length > 0 &amp;&amp; (
+                    &lt;View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
+                        &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                            {CMEReducer?.cmeCourseResponse?.header_title}
+                        &lt;/Text>
+                    &lt;/View>
+                )}
+                &lt;View style={{ flex: 1 }}>
+                    &lt;FlatList
+                        style={{ flex: 1 }}
+                        key={`results-${routeQueryKey}-${selectedProfession || 'none'}-${getStateId(selectedState) || 'none'}`}
+                        data={isRouteRefreshing ? [] : storeAlldata}
+                        renderItem={searchGlobalitem}
+                        keyExtractor={(item, index) => String(item?.id ?? item?.detailpage_url ?? index)}
+                        onEndReached={fetchMore}
+                        onEndReachedThreshold={0.3}
+                        contentContainerStyle={isGuestFlow ? styles.guestListContent : { paddingBottom: normalize(200) }}
+                        scrollEventThrottle={16}
+                        ListFooterComponent={
+                            loading ? &lt;ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                        }
+                        refreshControl={
+                            &lt;RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={fullDataRefresh}
+                            />
+                        }
+                        ListEmptyComponent={!isRouteRefreshing &amp;&amp; hasFetchedResults &amp;&amp; !loading &amp;&amp;
+                            &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
+                                &lt;View
+                                    style={{
+                                        flexDirection: "row",
+                                        // height: normalize(83),
+                                        width: normalize(290),
+                                        borderRadius: normalize(10),
+                                        backgroundColor: "#FFFFFF",
+                                        paddingHorizontal: normalize(10),
+                                        paddingVertical: normalize(10),
+                                        alignItems: "center",
+                                        borderStyle: 'dotted',
+                                        borderWidth: 1,
+                                    }}
+                                >
+                                    &lt;View style={{ flex: 1, justifyContent: "center" }}>
+                                        &lt;Text
+                                            style={{
+                                                fontFamily: Fonts.InterSemiBold,
+                                                fontSize: 16,
+                                                color: Colorpath.ButtonColr,
+                                                fontWeight: "bold",
+                                                alignSelf: "center"
+                                            }}
+                                        >
+                                            {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                        &lt;/Text>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                        } />
+                &lt;/View>
+                &lt;Modal
+                    animationIn={'slideInUp'}
+                    animationOut={'slideOutDown'}
+                    isVisible={sortedFall}
+                    backdropColor={Colorpath.black}
+                    style={{
+                        width: '100%',
+                        alignSelf: 'center',
+                        margin: 0,
+                    }}
+                    onBackdropPress={() => setSortedFall(false)}>
+                    &lt;TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => setSortedFall(false)}>
+
+                        &lt;View
+                            style={props?.route?.params?.trig?.newCt ? {
+                                borderRadius: normalize(7),
+                                height: sortModalHeight,
+                                position: 'absolute',
+                                bottom: 0,
+                                width: '100%',
+                                backgroundColor: '#fff',
+                            } : {
+                                borderRadius: normalize(7),
+                                height: sortModalHeight,
+                                position: 'absolute',
+                                bottom: 0,
+                                width: '100%',
+                                backgroundColor: '#fff',
+                            }}>
+                            &lt;FlatList
+                                contentContainerStyle={{
+                                    paddingBottom: normalize(12),
+                                    paddingTop: normalize(7),
+                                }}
+                                showsVerticalScrollIndicator={false}
+                                keyExtractor={item => item.id.toString()}
+                                data={sortOptions}
+                                renderItem={({ item }) => {
+                                    const handlePress = (dd) => {
+                                        fetchHandle(dd, { pageNum: 0, sortType: dd?.type });
+                                        setPageNum(0);
+                                        setSortType(dd?.type);
+                                        setSortedFall(false);
+                                        setStoreAlldata([]);
+                                    };
+
+                                    return (
+                                        &lt;TouchableOpacity
+                                            onPress={() => { handlePress(item) }}
+                                            style={styles.dropDownItem}
+                                        >
+                                            &lt;Text style={styles.dropDownItemText}>
+                                                {item?.name}
+                                            &lt;/Text>
+                                        &lt;/TouchableOpacity>
+                                    );
+                                }}
+                            />
+
+                        &lt;/View>
+                    &lt;/TouchableOpacity>
+                &lt;/Modal>
+                {CMEReducer?.cmeCourseResponse?.aggregations &amp;&amp; storeAlldata?.length > 0 &amp;&amp; &lt;View style={{
+                    position: 'absolute',
+                    bottom: 70,
+                    right: 0,
+                    paddingHorizontal: normalize(20),
+                    zIndex: 999
+                }}>
+                    &lt;TouchableOpacity onPress={() => {
+                        props.navigation.navigate("FilterScreen", { wholeDats: { wholeDats: CMEReducer?.cmeCourseResponse?.aggregations, mainKeyAll: props?.route?.params?.trig ? props?.route?.params : props?.route?.params?.filterDatSh?.returnTake, ClearText: props?.route?.params?.filterDatSh?.filterDatSh, takeTrue: props?.route?.params?.filterDatSh?.selectedItem, PriceDrop: { minget: props?.route?.params?.filterDatSh?.minVal, maxget: props?.route?.params?.filterDatSh?.maxVal, mingetp: props?.route?.params?.filterDatSh?.minValP, maxgetp: props?.route?.params?.filterDatSh?.maxValp, CME: props?.route?.params?.filterDatSh?.selectedIt } } });
+                    }} style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: normalize(50),
+                        width: normalize(50),
+                        backgroundColor: Colorpath.ButtonColr,
+                        borderWidth: 0.5,
+                        borderColor: "#AAAAAA",
+                        borderRadius: normalize(50),
+                        paddingHorizontal: normalize(15)
+                    }}>
+                        &lt;Image source={Imagepath.Filter} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", alignSelf: "center", tintColor: "#FFFFFF" }} />
+                    &lt;/TouchableOpacity>
+                &lt;/View>}
+                &lt;Modal
+                    animationIn={'fadeIn'}
+                    animationOut={'fadeOut'}
+                    isVisible={profModalVisible}
+                    onBackdropPress={() => setProfModalVisible(false)}
+                    style={styles.centerModal}
+                >
+                    &lt;View style={styles.choiceModalCard}>
+                        &lt;Text style={styles.choiceModalTitle}>Select Profession&lt;/Text>
+                        {['Physician', 'Nursing', 'Dentist', 'Pharmacist'].map(prof => (
+                            &lt;TouchableOpacity
+                                key={prof}
+                                onPress={() => handleGuestProfessionSelect(prof)}
+                                style={styles.choiceModalItem}
+                            >
+                                &lt;Text style={styles.choiceModalItemText}>{prof}&lt;/Text>
+                            &lt;/TouchableOpacity>
+                        ))}
+                    &lt;/View>
+                &lt;/Modal>
+                &lt;Modal
+                    animationIn={'slideInUp'}
+                    animationOut={'slideOutDown'}
+                    isVisible={stateModalVisible}
+                    onBackdropPress={() => setStateModalVisible(false)}
+                    style={styles.bottomModal}
+                >
+                    &lt;View style={styles.stateModalCard}>
+                        &lt;Text style={styles.choiceModalTitle}>Select State&lt;/Text>
+                        &lt;TextInput
+                            value={stateSearchText}
+                            onChangeText={setStateSearchText}
+                            placeholder="Search state"
+                            placeholderTextColor="#9CA3AF"
+                            style={styles.stateSearchInput}
+                        />
+                        &lt;FlatList
+                            data={filteredStateList}
+                            keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? item?.name ?? index)}
+                            renderItem={({ item }) => (
+                                &lt;TouchableOpacity
+                                    onPress={() => handleGuestStateSelect(item)}
+                                    style={styles.choiceModalItem}
+                                >
+                                    &lt;Text style={styles.choiceModalItemText}>{getStateLabel(item)}&lt;/Text>
+                                &lt;/TouchableOpacity>
+                            )}
+                            ListEmptyComponent={
+                                &lt;Text style={styles.emptyStateText}>No states found&lt;/Text>
+                            }
+                        />
+                    &lt;/View>
+                &lt;/Modal>
+                &lt;CMEChecklistModal
+                    allProfessionData={allProfessionData}
+                    setAllProfessionData={setAllProfessionData}
+                    onCMEClose={() => setCmeModalVisible(false)}
+                    onSaved={() => setCmeModalVisible(false)}
+                    isVisibelCME={cmeModalVisible}
+                    allProfession={selectedProfession}
+                    certificatedata={{ state_id: getStateId(selectedState) }}
+                    selectedState={selectedState}
+                    cmeRealback="guest"
+                    onBrowseCourses={handleGuestBrowseCourses}
+                />
+            &lt;/SafeAreaView>}
+        &lt;/>
+    )
+}
+
+export default Globalresult
+const styles = StyleSheet.create({
+    guestTopSection: {
+        paddingHorizontal: normalize(14),
+        paddingTop: normalize(12),
+        paddingBottom: normalize(6),
+    },
+    guestSelectorCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(10),
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(10),
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    guestSelectorCell: {
+        flex: 1,
+    },
+    guestSelectorDivider: {
+        width: 1,
+        alignSelf: 'stretch',
+        backgroundColor: '#E5E7EB',
+        marginHorizontal: normalize(12),
+        borderStyle: 'dashed',
+    },
+    guestSelectorLabel: {
+        fontSize: 12,
+        color: '#8C8C8C',
+        fontFamily: Fonts.InterMedium,
+        marginBottom: normalize(4),
+    },
+    guestSelectorValueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    guestSelectorValue: {
+        flex: 1,
+        color: Colorpath.ButtonColr,
+        fontSize: 16,
+        fontFamily: Fonts.InterSemiBold,
+        marginRight: normalize(4),
+    },
+    guestSummaryWrap: {
+        paddingHorizontal: normalize(14),
+        paddingTop: normalize(12),
+        paddingBottom: normalize(8),
+    },
+    guestSummaryText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 15,
+        color: '#333333',
+        marginBottom: normalize(4),
+    },
+    guestSummaryTitle: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 22,
+        color: Colorpath.ButtonColr,
+    },
+    guestSortWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: normalize(6),
+    },
+    guestSortText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 16,
+        color: '#333333',
+    },
+    guestListContent: {
+        paddingHorizontal: normalize(14),
+        paddingBottom: normalize(200),
+        alignItems: 'center',
+    },
+    guestResultCard: {
+        flexDirection: 'column',
+        width: Dimensions.get('window').width - normalize(28),
+        borderRadius: normalize(12),
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(8),
+        borderColor: '#DADADA',
+        borderWidth: 0.8,
+    },
+    guestResultTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 16,
+        color: "#111111",
+        fontWeight: "bold",
+        flexWrap: 'wrap',
+        lineHeight: 22,
+    },
+    guestResultOrg: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: "#999999",
+    },
+    guestResultDivider: {
+        height: 1,
+        width: '100%',
+        backgroundColor: "#DADADA",
+        marginTop: normalize(6),
+    },
+    guestResultPriceRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: normalize(10),
+    },
+    guestResultPrimaryWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        minWidth: 0,
+    },
+    guestResultSecondaryWrap: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        minWidth: 0,
+    },
+    guestResultPrice: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 15,
+        color: Colorpath.ButtonColr,
+        flexShrink: 1,
+        textAlign: 'right',
+    },
+    guestResultPipe: {
+        marginHorizontal: normalize(8),
+        fontFamily: Fonts.InterBold,
+        fontSize: 18,
+        color: '#9CA3AF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: normalize(20),
+    },
+    guestResultButtonText: {
+        marginRight: normalize(8),
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        color: '#111827',
+        fontWeight: 'bold',
+        flexShrink: 1,
+    },
+    centerModal: {
+        justifyContent: 'center',
+        margin: 0,
+        paddingHorizontal: normalize(20),
+    },
+    bottomModal: {
+        justifyContent: 'flex-end',
+        margin: 0,
+    },
+    choiceModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(16),
+        padding: normalize(16),
+    },
+    stateModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: normalize(18),
+        borderTopRightRadius: normalize(18),
+        padding: normalize(16),
+        maxHeight: '78%',
+    },
+    choiceModalTitle: {
+        fontSize: 18,
+        color: '#111111',
+        fontFamily: Fonts.InterSemiBold,
+        marginBottom: normalize(12),
+    },
+    choiceModalItem: {
+        paddingVertical: normalize(12),
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEEEEE',
+    },
+    choiceModalItemText: {
+        fontSize: 16,
+        color: '#333333',
+        fontFamily: Fonts.InterMedium,
+    },
+    stateSearchInput: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: normalize(10),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        marginBottom: normalize(12),
+        color: '#111827',
+    },
+    emptyStateText: {
+        color: '#6B7280',
+        textAlign: 'center',
+        paddingVertical: normalize(16),
+        fontFamily: Fonts.InterMedium,
+    },
+    dropDownItem: {
+        borderWidth: 1,
+        marginTop: normalize(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: normalize(40),
+        width: '85%',
+        alignSelf: 'center',
+    },
+    dropDownItemText: {
+        fontSize: 16,
+        lineHeight: normalize(14),
+        textAlign: 'center',
+        color: Colorpath.black,
+        textTransform: 'capitalize',
+        fontFamily: Fonts.InterMedium
+    },
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

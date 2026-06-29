@@ -6,6 +6,14 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
 import Fonts from '../../Themes/Fonts';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable PrivacyPolicy component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PrivacyPolicy = (props) => {
     const openEmail = () => {
         Linking.openURL('mailto:legal@emedevents.com');

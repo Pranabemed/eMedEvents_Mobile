@@ -11,6 +11,14 @@ import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Icon from 'react-native-vector-icons/Feather';
+
+/**
+ * Reusable PriceSlider component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PriceSlider = ({
   selectedFilter,
   setSelectedFilter,

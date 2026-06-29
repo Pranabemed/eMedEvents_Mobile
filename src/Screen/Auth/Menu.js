@@ -5,6 +5,14 @@ import DrawerModal from '../../Components/DrawerModal';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable Menu component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Menu = () => {
     const [visible, setVisible] = useState(false);
     const[care,setCare] = useState("closeit");

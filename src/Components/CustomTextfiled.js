@@ -10,6 +10,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import EyeIcon from 'react-native-vector-icons/Entypo';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
 
+/**
+ * Reusable onChangeText component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomTextField = forwardRef((props, ref) => {
   const [eyeVisible, setEyeVisible] = useState(true);
 

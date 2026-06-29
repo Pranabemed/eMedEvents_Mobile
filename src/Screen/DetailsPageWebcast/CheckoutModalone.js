@@ -10,6 +10,14 @@ import PageHeader from '../../Components/PageHeader';
 import Buttons from '../../Components/Button';
 import TickMark from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CheckoutModalone component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id, setFormData, removeSpeciality, activeIndex, handleSpecialityChange, selectedSpecialities, setSelectedSpecialities, handleSpecialitySelect, formData, setstatepicker, setSearchState, searchState, searchStateName, slist }) => {
     console.log(selectedSpecialities, "selectedSpecialitieqwwww12233s--------", formData, previousSpec);
      const[showLoader,setShowLoader] = useState(false)

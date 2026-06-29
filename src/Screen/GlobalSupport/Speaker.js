@@ -16,6 +16,14 @@ import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable Speaker component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 const Speaker = (props) => {
        const {

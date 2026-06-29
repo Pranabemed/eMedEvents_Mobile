@@ -1,3 +1,9 @@
+/**
+ * Redux Store Configuration.
+ * Combines all reducers, sets up redux-saga middleware, and applies redux-logger.
+ * 
+ * @module Store
+ */
 import createSagaMiddleware from 'redux-saga'
 import { configureStore } from "@reduxjs/toolkit";
 import logger from 'redux-logger';
@@ -15,6 +21,13 @@ import BrowsReducer from './Reducers/BrowsReducer';
 
 let sagaMiddleware = createSagaMiddleware();
 const middleware = [sagaMiddleware, logger]
+
+/**
+ * The main Redux store for the application.
+ * Contains the root reducer combining Auth, Dashboard, CME, CreditVault, etc.
+ * 
+ * @constant store
+ */
 export default configureStore({
     reducer: {
         AuthReducer: AuthReducer,

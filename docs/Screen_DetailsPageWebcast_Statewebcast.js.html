@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/DetailsPageWebcast/Statewebcast.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/DetailsPageWebcast/Statewebcast.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Image, Text, View, Platform, TouchableOpacity, ScrollView, Dimensions, useWindowDimensions, Alert, StyleSheet, TextInput, BackHandler, Linking } from 'react-native';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Colorpath from '../../Themes/Colorpath';
+import normalize from '../../Utils/Helpers/Dimen';
+import PageHeader from '../../Components/PageHeader';
+import { useDispatch, useSelector } from 'react-redux';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { cartcountWebcastRequest, saveTicketCartRequest, saveTicketRequest, webcastDeatilsRequest, refIDRequest } from '../../Redux/Reducers/WebcastReducer';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import StatewebcastSpeciality from './StatewebcastSpeciality';
+import StatewebcastOverview from './StatewebcastOverview';
+import StatewebcastPratcing from './StatewebcastPratcing';
+import StatewebcastAcc from './StatewebcastAcc';
+import StatewebcastFaculty from './StatewebcastFaculty';
+import StatewebcastCheckout from './StatewebcastCheckout';
+import StatewebcastReviews from './StatewebcastReviews';
+import StatewebcastRefund from './StatewebcastRefund';
+import StatewebcastText from './StatewebcastText';
+import StatewebcastAddTocart from './StatewebcastAddTocart';
+import StatewebcastPrice from './StatewebcastPrice';
+import Loader from '../../Utils/Helpers/Loader';
+import StatewebcastShimmer from '../../Components/StatewebcastShimmer';
+import { CommonActions, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import InpersonKeydates from './InpersonKeydates';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Imagepath from '../../Themes/Imagepath';
+import Fonts from '../../Themes/Fonts';
+import IconSh from 'react-native-vector-icons/Feather';
+import MapScreen from './ConferenceVenue';
+import CourseOutline from './CourseOutline';
+import TopicCast from './TopicCast';
+import CatlogDownload from './CatlogDownload';
+import { AppContext } from '../GlobalSupport/AppContext';
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
+
+/**
+ * Reusable handleSnapToItem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
+const Statewebcast = props => {
+    const {
+        cartcount,
+        setCartcount,
+        setStatepush,
+        isConnected,
+        fulldashbaord,
+        setAddit,
+        statepush,
+        setGtprof
+    } = useContext(AppContext);
+    const { width } = useWindowDimensions();
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const isFocused = useIsFocused();
+    console.log(statepush, props?.route?.params?.webCastURL, "fullcast=================", props?.route?.params, WebcastReducer?.cartcountWebcastResponse?.cartItemsCount);
+    const dispatch = useDispatch();
+    const browserFallbackInProgressRef = useRef(false);
+    const browserFallbackCompletedRef = useRef(false);
+    const [refID, setRefID] = useState(props?.route?.params?.webCastURL?.refID || null);
+    const [viewmore, setViewmore] = useState("");
+    const [viewmoreac, setViewmoreac] = useState("");
+    const [viewmorepolicy, setViewmorepolicy] = useState("");
+    const windowWidth = Dimensions.get('window').width;
+    const windowHeight = Dimensions.get('window').height;
+    const [val, setval] = useState(0);
+    const [webcastdeatils, setWebcastdeatils] = useState(null);
+    const [htmlContents, setHtmlContents] = useState("");
+    const [topiccast, setTopiccast] = useState(false);
+    const [sharetrue, setSharetrue] = useState(true);
+    const [finalprice, setFinalprice] = useState(0);
+    const [ratingsall, setRatingsall] = useState({
+        totalRatingsCount: 0,
+        totalAverageRating: 0
+    });
+    const [allSpecailities, setAllSpecailities] = useState(null);
+    const [reviewpost, setReviewpost] = useState(null);
+    const [conferenceText, setConferenceText] = useState(null);
+    const [addtocartload, setAddtocartload] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+    const [downlinkdt, setDownlinkdt] = useState(false);
+    const [loadingdowndt, setLoadingdowndt] = useState(false);
+    const [pdfUridt, setPdfUridt] = useState("");
+    const downDt = [{ id: 1, name: "Physician (MD/DO)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-04-02/global_pediatric_images/State%20Wise%20CME%20Course%20Bundle%20For%20Physicians-4.pdf" }, { id: 2, name: "Registered Nurse (RN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20RN-4.pdf" }, { id: 3, name: "Nurse Practitioner (NP/APRN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20NP.pdf" }]
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const profFromDashboard =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &amp;&amp;
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
+            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
+            : null;
+    const allProfTake = validHandles.has(profFromDashboard);
+
+    const resolvedShareUrl = useMemo(() => {
+        return (
+            props?.route?.params?.webCastURL?.shareUrl ||
+            props?.route?.params?.webCastURL?.detailpage_url ||
+            webcastdeatils?.detailpage_url ||
+            webcastdeatils?.emed_url ||
+            props?.route?.params?.newCast ||
+            props?.route?.params?.webCastURL?.webCastURL ||
+            ""
+        );
+    }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
+    const hasAuthToken = Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
+    const hideGuestCartIcon = Boolean(
+        !hasAuthToken ||
+        props?.route?.params?.webCastURL?.Realback === "guest" ||
+        props?.route?.params?.webCastURL?.guestOrigin === "guest" ||
+        props?.route?.params?.webCastURL?.fromGuestSpecialitySearch === true ||
+        props?.route?.params?.webCastURL?.guestCmeFlow === true
+    );
+    const isGuestWebcastFlow = props?.route?.params?.webCastURL?.Realback === "guest";
+
+    const normalizeUrlCandidate = useCallback((value) => {
+        if (typeof value !== "string") return "";
+
+        const trimmedValue = value.trim();
+        if (!trimmedValue) return "";
+
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmedValue)) {
+            return trimmedValue;
+        }
+
+        return `https://${trimmedValue}`;
+    }, []);
+
+    const isMeaningfulWebcastPayload = useCallback((payload) => {
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            return false;
+        }
+
+        if (payload?.success === false) {
+            return false;
+        }
+
+        return Boolean(
+            payload?.conferenceId ||
+            payload?.conferenceTypeText ||
+            payload?.detailpage_url ||
+            payload?.emed_url ||
+            payload?.conference_url ||
+            payload?.title ||
+            payload?.course_title ||
+            payload?.overView ||
+            (Array.isArray(payload?.registrationTickets) &amp;&amp; payload.registrationTickets.length > 0) ||
+            (Array.isArray(payload?.topics) &amp;&amp; payload.topics.length > 0) ||
+            (Array.isArray(payload?.speakers) &amp;&amp; payload.speakers.length > 0)
+        );
+    }, []);
+
+    const getValidatedWebcastPayload = useCallback((responsePayload) => {
+        const candidates = [responsePayload?.data, responsePayload];
+
+        for (const candidate of candidates) {
+            if (isMeaningfulWebcastPayload(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }, [isMeaningfulWebcastPayload]);
+
+    const resetToHome = useCallback(() => {
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: "TabNav", params: { initialRoute: "Home" } }],
+            })
+        );
+    }, [props.navigation]);
+
+    const goBackToGuestUser = useCallback(() => {
+        if (props.navigation.canGoBack?.()) {
+            props.navigation.goBack();
+            return;
+        }
+
+        props.navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'GuestUser' }],
+            })
+        );
+    }, [props.navigation]);
+
+    const guestFallbackUrl = useMemo(() => {
+        return normalizeUrlCandidate(
+            props?.route?.params?.webCastURL?.detailpage_url ||
+            props?.route?.params?.webCastURL?.shareUrl ||
+            props?.route?.params?.webCastURL?.webCastURL ||
+            props?.route?.params?.newCast ||
+            webcastdeatils?.detailpage_url ||
+            webcastdeatils?.emed_url ||
+            ""
+        );
+    }, [normalizeUrlCandidate, props?.route?.params?.newCast, props?.route?.params?.webCastURL, webcastdeatils?.detailpage_url, webcastdeatils?.emed_url]);
+
+    const openGuestFallbackInBrowser = useCallback(async () => {
+        if (!isGuestWebcastFlow || !guestFallbackUrl) {
+            setLoading(false);
+            goBackToGuestUser();
+            return;
+        }
+
+        if (browserFallbackInProgressRef.current || browserFallbackCompletedRef.current) {
+            return;
+        }
+
+        browserFallbackInProgressRef.current = true;
+
+        try {
+            const supported = await Linking.canOpenURL(guestFallbackUrl);
+
+            if (!supported) {
+                throw new Error("Unsupported webcast URL");
+            }
+
+            await Linking.openURL(guestFallbackUrl);
+        } catch (error) {
+            console.log("Guest webcast fallback failed:", error);
+            showErrorAlert("Unable to open conference link", error?.message || error);
+        } finally {
+            browserFallbackCompletedRef.current = true;
+            browserFallbackInProgressRef.current = false;
+            setLoading(false);
+            goBackToGuestUser();
+        }
+    }, [goBackToGuestUser, guestFallbackUrl, isGuestWebcastFlow]);
+
+    const boardCast = useCallback(() => {
+        if (props?.route?.params?.webCastURL?.Realback === "guest") {
+            goBackToGuestUser();
+            return;
+        }
+        if (props?.route?.params?.webCastURL?.speaks === "speaker" || props?.route?.params?.webCastURL?.speaks === "organ") {
+            if (props.navigation.canGoBack?.()) {
+                props.navigation.goBack();
+                return;
+            }
+        }
+        if (props?.route?.params?.webCastURL?.takeUrl) {
+            props.navigation.navigate("SpeakerProfile", { fullUrl: { textHo: props?.route?.params?.webCastURL?.textHo, speaks: props?.route?.params?.webCastURL?.speaks, hitDat: props?.route?.params?.webCastURL?.highText, fullUrl: props?.route?.params?.webCastURL?.takeUrl, creditData: props?.route?.params?.webCastURL?.creditData } })
+        } else if (props?.route?.params?.webCastURL?.acrBack == "listing") {
+            props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
+        } else if (props?.route?.params?.webCastURL?.Realback === "cont") {
+            props.navigation.goBack();
+        } else if (allProfTake) {
+            setGtprof(true);
+            setAddit(statepush);
+            setAddit(props?.route?.params?.webCastURL?.creditData);
+            resetToHome();
+        } else {
+            setAddit(statepush);
+            setAddit(props?.route?.params?.webCastURL?.creditData);
+            resetToHome();
+        }
+    }, [allProfTake, goBackToGuestUser, props.navigation, props?.route?.params?.webCastURL, resetToHome, setAddit, setGtprof, statepush]);
+    const handleSnapToItem = (index) => {
+        setval(index);
+    };
+    const shouldRenderAddToCartAndDownload = useMemo(() => {
+        return (
+
+            webcastdeatils &amp;&amp; webcastdeatils?.conference_active !== 0 &amp;&amp;
+            webcastdeatils?.buttonType?.toLowerCase() !== "interest" &amp;&amp;
+            webcastdeatils?.is_cart_applicable == 1 &amp;&amp;
+            webcastdeatils?.already_in_cart === 0 &amp;&amp;
+            webcastdeatils?.isHavingActivity !== 1
+        );
+    }, [webcastdeatils]);
+
+    const isBundleAddToCart = useMemo(() => {
+        return webcastdeatils?.bundle_add_cart == "1";
+    }, [webcastdeatils]);
+    const scrollViewRef = useRef(null);
+    const [reviewsPosition, setReviewsPosition] = useState(0);
+    console.log(reviewsPosition, "reviewsPosition=========")
+    const scrollToReviews = () => {
+        setExpandreview(true);
+        scrollViewRef.current?.scrollTo({
+            y: 2000,
+            animated: true,
+        });
+    };
+    useEffect(() => {
+        if (props?.route?.params?.webCastURL?.creditData?.creditID) {
+            setStatepush(props?.route?.params?.webCastURL?.creditData?.creditID);
+        }
+    }, [props?.route?.params?.webCastURL?.creditData?.creditID])
+    console.log("webcastuser=====", webcastdeatils?.conferenceTypeText == "Webcast", viewmore);
+    const requestedConferenceUrl = props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast || "";
+    useEffect(() => {
+        if (!requestedConferenceUrl) return;
+        setLoading(true);
+        setWebcastdeatils(null);
+        let obj = {
+            "conference_url": requestedConferenceUrl
+        };
+        // Also grab a persisted refID from AsyncStorage if not available in route (e.g. app was cold-started)
+        if (!refID) {
+            AsyncStorage.getItem('REFID').then(storedRefID => {
+                if (storedRefID) setRefID(storedRefID);
+            }).catch(() => { });
+        }
+        connectionrequest()
+            .then(() => {
+                setIsWaitingForResponse(true);
+                dispatch(webcastDeatilsRequest(obj));
+            })
+            .catch((err) => {
+                if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                    return;
+                }
+                setLoading(false);
+                showErrorAlert("Please connect to internet", err)
+            });
+    }, [dispatch, isGuestWebcastFlow, openGuestFallbackInBrowser, requestedConferenceUrl]);
+    useEffect(() => {
+        if (requestedConferenceUrl) return;
+        const cachedDetails = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
+        if (cachedDetails) {
+            setWebcastdeatils(cachedDetails);
+        }
+        setLoading(false);
+    }, [getValidatedWebcastPayload, requestedConferenceUrl, WebcastReducer?.webcastDeatilsResponse]);
+
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        readNonUsaFlowState().then(state => {
+            if (mounted) {
+                setNonUsaFlowState(state);
+            }
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+
+    useEffect(() => {
+        if (webcastdeatils?.conferenceId &amp;&amp; isNonUsaUser) {
+            let obj = {
+                "conference_id": webcastdeatils.conferenceId,
+                "action_type": "view",
+                "status": 1
+            };
+            connectionrequest()
+                .then(() => {
+                    dispatch(ConfActRequest(obj));
+                })
+                .catch((err) => {
+                    console.log("ConfActRequest error: ", err);
+                });
+        }
+    }, [webcastdeatils?.conferenceId, isNonUsaUser, dispatch]);
+
+    // useEffect(() => {
+    //     if (webcastdeatils) {
+    //         const checkoutSpan = webcastdeatils?.conferenceId;
+    //         let obj = {
+    //             "conference_id": checkoutSpan,
+    //             "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+    //                 "id": ticket?.id,
+    //                 "quantity": 1
+    //             }))
+    //         };
+    //         connectionrequest()
+    //             .then(() => {
+    //                 dispatch(saveTicketRequest(obj));
+    //             })
+    //             .catch((err) => {
+    //                 showErrorAlert("Please connect to internet", err)
+    //             })
+    //     }
+    // }, [webcastdeatils])
+    useEffect(() => {
+        if (webcastdeatils?.overView) {
+            setHtmlContents(webcastdeatils?.overView);
+        }
+    }, [webcastdeatils?.overView])
+    useEffect(() => {
+        if (webcastdeatils?.cme_accreditation) {
+            setViewmore(webcastdeatils?.cme_accreditation);
+        }
+    }, [webcastdeatils?.cme_accreditation])
+    useEffect(() => {
+        if (webcastdeatils?.refund_policy) {
+            setViewmoreac(webcastdeatils?.refund_policy);
+        }
+    }, [webcastdeatils?.refund_policy])
+    useEffect(() => {
+        if (webcastdeatils?.seo_content) {
+            setConferenceText(webcastdeatils?.seo_content);
+        }
+    }, [webcastdeatils?.seo_content])
+    useEffect(() => {
+        if (webcastdeatils?.disclaimer) {
+            setViewmorepolicy(webcastdeatils?.disclaimer);
+        }
+    }, [webcastdeatils?.disclaimer])
+    useEffect(() => {
+        if (webcastdeatils?.topics?.length > 0) {
+            setTopiccast(webcastdeatils?.topics);
+        }
+    }, [webcastdeatils?.topics])
+    useEffect(() => {
+        if (webcastdeatils?.userReviews) {
+            const userReviews = webcastdeatils?.userReviews
+            const totalRatingsCount = userReviews?.filter(review => review.averageRating !== null &amp;&amp; review.averageRating !== "").length;
+            const totalAverageRating = userReviews?.reduce((sum, review) => {
+                return sum + parseFloat(review.averageRating);
+            }, 0) / totalRatingsCount;
+            setRatingsall({
+                totalRatingsCount,
+                totalAverageRating
+            });
+        }
+    }, [webcastdeatils?.userReviews])
+    useEffect(() => {
+        if (webcastdeatils?.specialities) {
+            setAllSpecailities(webcastdeatils?.specialities);
+        }
+    }, [webcastdeatils?.specialities])
+    useEffect(() => {
+        if (webcastdeatils?.userReviews) {
+            setReviewpost(webcastdeatils?.userReviews);
+        }
+    }, [webcastdeatils?.userReviews])
+    useEffect(() => {
+        let obj = {};
+        connectionrequest()
+            .then(() => {
+                dispatch(cartcountWebcastRequest(obj))
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err)
+            })
+
+    }, [props?.route?.params])
+
+    // Reset status on focus so webcast details reload correctly when returning from cart
+    useFocusEffect(
+        useCallback(() => {
+            connectionrequest()
+                .then(() => {
+                    dispatch(cartcountWebcastRequest({}));
+                    // Silent background refresh — don't blank screen (no setLoading/setWebcastdeatils null)
+                    if (requestedConferenceUrl &amp;&amp; !browserFallbackCompletedRef.current &amp;&amp; !browserFallbackInProgressRef.current) {
+                        dispatch(webcastDeatilsRequest({ "conference_url": requestedConferenceUrl }));
+                    }
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err);
+                });
+        }, [requestedConferenceUrl, dispatch])
+    );
+
+    console.log(webcastdeatils, "webcastdetails============");
+    const [expanded, setExpanded] = useState(false);
+    const [expandedtopic, setExpandedtopic] = useState(false);
+    const [expandedacc, setExpandedacc] = useState(false);
+    const [refunded, setRefunded] = useState(false);
+    const [expandspecail, setExpandspecail] = useState(false);
+    const [expandspecailtar, setExpandspecailtar] = useState(false);
+    const [expandreview, setExpandreview] = useState(false);
+    const [expandcon, setExpandcon] = useState(false);
+    const [conn, setConn] = useState("")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setConn(state.isConnected);
+        });
+        return () => unsubscribe();
+    }, [isConnected]);
+    const toggleExpansion = () => {
+        if (!expanded) {
+            setHtmlContents(prevContent => prevContent);
+        }
+        setExpanded(!expanded);
+    };
+    const toggleTopic = () => {
+        setExpandedtopic(!expandedtopic);
+    };
+    const toggleExpansionacc = () => {
+        if (!expandedacc) {
+            setViewmore(prevContent => prevContent);
+        }
+        setExpandedacc(!expandedacc);
+    };
+    const refundExpand = () => {
+        if (!refunded) {
+            setViewmoreac(prevContent => prevContent);
+        }
+        setRefunded(!refunded);
+    };
+    const conferShows = () => {
+        if (!expandcon) {
+            setConferenceText(prevContent => prevContent);
+        }
+        setExpandcon(!expandcon);
+    };
+    const specailityChange = () => {
+        setExpandspecail(!expandspecail);
+    };
+    const targetChange = () => {
+        setExpandspecailtar(!expandspecailtar);
+    };
+    const reviewChange = () => {
+        setExpandreview(!expandreview)
+    }
+    const stripHtmlForPreview = useCallback((html = '') => {
+        return String(html)
+            .replace(/&lt;script[\s\S]*?&lt;\/script>/gi, ' ')
+            .replace(/&lt;style[\s\S]*?&lt;\/style>/gi, ' ')
+            .replace(/&lt;table[\s\S]*?&lt;\/table>/gi, ' ')
+            .replace(/&lt;\/?[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }, []);
+    const overviewHasTable = useMemo(() => htmlContents.toLowerCase().includes('&lt;table'), [htmlContents]);
+    const overviewPreviewText = useMemo(() => {
+        if (!htmlContents) return '';
+        if (expanded) return stripHtmlForPreview(htmlContents);
+        return stripHtmlForPreview(htmlContents).slice(0, 1000);
+    }, [expanded, htmlContents, stripHtmlForPreview]);
+    const source = useMemo(() => {
+        if (!htmlContents) {
+            return { html: '' };
+        }
+        if (expanded) {
+            return { html: htmlContents };
+        }
+
+        const lowerHtml = htmlContents.toLowerCase();
+        if (lowerHtml.includes('&lt;table')) {
+            const preview = stripHtmlForPreview(htmlContents);
+            return { html: preview ? `${preview.slice(0, 1000)}...` : '' };
+        }
+
+        return { html: htmlContents.substring(0, 1010) + '...' };
+    }, [expanded, htmlContents, stripHtmlForPreview]);
+    const acc_source = {
+        html: expandedacc ? viewmore : viewmore.substring(0, 1300) + '...',
+    };
+    const refundtext = {
+        html: refunded ? viewmoreac : viewmoreac.substring(0, 1300) + '...',
+    };
+    const disclaimerText = {
+        html: viewmorepolicy
+    };
+    const conferenceHtml = {
+        html: expandcon
+            ? conferenceText
+            : (conferenceText ? conferenceText.substring(0, 300) + '...' : ''),
+    };
+    const urltrack = props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast;
+    // const isWebcastLoading = WebcastReducer?.status === 'WebCast/webcastDeatilsRequest' || 
+    //                      WebcastReducer?.status === 'WebCast/saveTicketRequest';
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                boardCast();
+                return true;
+            };
+
+            const backHandler = BackHandler.addEventListener(
+                'hardwareBackPress',
+                onBackPress
+            );
+
+            return () => backHandler.remove();
+        }, [boardCast])
+    );
+    const takeCount = useMemo(() => (
+        WebcastReducer?.cartcountWebcastResponse?.cartItemsCount || 0
+    ), [WebcastReducer?.cartcountWebcastResponse?.cartItemsCount]);
+    useEffect(() => {
+        setCartcount(takeCount);
+    }, [takeCount]);
+    const handleTicketsCart = () => {
+        if (webcastdeatils?.registrationTickets?.length > 0) {
+            const checkoutSpan = webcastdeatils?.conferenceId;
+            const obj = {
+                "conference_id": checkoutSpan,
+                "tickets": webcastdeatils?.registrationTickets?.map(ticket => ({
+                    "id": ticket?.id,
+                    "quantity": 1
+                }))
+            };
+
+            if (refID) {
+                obj["refer_params"] = refID;
+            }
+
+            connectionrequest()
+                .then(() => {
+                    dispatch(saveTicketCartRequest(obj));
+                })
+                .catch((err) => showErrorAlert("Please connect to internet", err));
+        } else {
+            props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse || "", webcast: webcastdeatils, urlneedTake: urltrack } });
+        }
+    };
+
+    const cartHand = () => {
+        const latestCartCount = Number(
+            WebcastReducer?.cartcountWebcastResponse?.cartItemsCount ?? cartcount ?? 0
+        );
+        const navPayload = {
+            addtocart: {
+                addtocart: "startcallapi",
+                coupon: WebcastReducer?.saveTicketCartResponse || {},
+                webcast: webcastdeatils || {},
+                urlneedTake: urltrack,
+                cart: "remove"
+            }
+        };
+
+        if (latestCartCount > 0) {
+            props.navigation.navigate("AddToCart", navPayload);
+            return;
+        }
+
+        props.navigation.navigate("AddToCartNo", navPayload);
+    }
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+
+    const calculatePrice = (price, commission) => {
+        const amount = Number(price);
+        const comm = Number(commission);
+        if (!comm) {
+            return Math.trunc(amount); // 34 (not 34.00)
+        }
+        const commissionAmount = (amount * comm) / 100;
+        const finalPrice = amount - commissionAmount;
+        return Number.isInteger(finalPrice)
+            ? finalPrice
+            : Number(finalPrice.toFixed(2));
+    };
+    const hasValidWebcastData = useMemo(() => {
+        return Boolean(getValidatedWebcastPayload(webcastdeatils));
+    }, [getValidatedWebcastPayload, webcastdeatils]);
+    useEffect(() => {
+        if (webcastdeatils?.registrationTickets?.length > 0) {
+            const ticket = webcastdeatils.registrationTickets?.[0];
+            const price = calculatePrice(
+                ticket?.amount,
+                ticket?.emed_commission
+            );
+            setFinalprice(price);
+        }
+    }, [webcastdeatils?.registrationTickets]);
+    useEffect(() => {
+        if (!isFocused) return;
+
+        switch (WebcastReducer.status) {
+            case 'WebCast/webcastDeatilsRequest':
+                if (isWaitingForResponse) {
+                    setLoading(true);
+                }
+                break;
+            case 'WebCast/webcastDeatilsSuccess': {
+                if (!isWaitingForResponse) break;
+                console.log("webcastdeatilsfollowed>>>>", WebcastReducer?.webcastDeatilsResponse);
+                const validatedWebcastPayload = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
+                if (validatedWebcastPayload) {
+                    setWebcastdeatils(validatedWebcastPayload);
+                    setLoading(false);
+                    setIsWaitingForResponse(false);
+                } else if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                    setIsWaitingForResponse(false);
+                } else {
+                    setLoading(false);
+                    setIsWaitingForResponse(false);
+                }
+                break;
+            }
+            case 'WebCast/webcastDeatilsFailure':
+                if (!isWaitingForResponse) break;
+                setIsWaitingForResponse(false);
+                if (isGuestWebcastFlow) {
+                    openGuestFallbackInBrowser();
+                    break;
+                }
+                setLoading(false);
+                Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel", onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save", onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
+                break;
+            case 'WebCast/saveTicketCartSuccess':
+                if (cartcount !== 0) {
+                    props.navigation.navigate("AddToCart", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse, webcast: webcastdeatils, urlneedTake: urltrack, "cart": "remove" } });
+                } else {
+                    props.navigation.navigate("AddToCartNo", { addtocart: { addtocart: "startcallapi", coupon: WebcastReducer?.saveTicketCartResponse, webcast: webcastdeatils, urlneedTake: urltrack } });
+                }
+                break;
+        }
+    }, [isFocused, WebcastReducer.status, WebcastReducer?.webcastDeatilsResponse, WebcastReducer?.saveTicketCartResponse, cartcount, getValidatedWebcastPayload, isGuestWebcastFlow, openGuestFallbackInBrowser, webcastdeatils, urltrack, props.navigation, isWaitingForResponse]);
+    return (
+        &lt;>
+            &lt;MyStatusBar
+                barStyle={'light-content'}
+                backgroundColor={Colorpath.Pagebg}
+            />
+            {conn == false ? &lt;IntOff /> : &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {Platform.OS === 'ios' ? (
+                    &lt;PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} hideCart={hideGuestCartIcon} />
+                ) : (
+                    &lt;View>
+                        &lt;PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} hideCart={hideGuestCartIcon} />
+                    &lt;/View>
+                )}
+                &lt;Loader
+                    visible={addtocartload || loadingdowndt} />
+                {/* Content wrapper - shimmer overlays absolutely while loading */}
+                &lt;View style={{ flex: 1 }}>
+                    {loading || !hasValidWebcastData ? (
+                        &lt;View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+                            &lt;StatewebcastShimmer />
+                        &lt;/View>
+                    ) : (
+                        &lt;>
+                            &lt;ScrollView
+                                ref={scrollViewRef}
+                                nestedScrollEnabled={true}
+                                contentContainerStyle={{ paddingBottom: normalize(100), backgroundColor: Colorpath.white, flexGrow: 1 }}
+                            >
+                                &lt;View style={{ backgroundColor: Colorpath.Pagebg, padding: 10 }}>
+                                    &lt;StatewebcastPrice refID={refID} calculatePrice={finalprice || "0"} nav={props.navigation} webcastdeatils={webcastdeatils} ratingsall={ratingsall} scrollToReviews={scrollToReviews} />
+                                    &lt;StatewebcastAddTocart refID={refID} urlneed={urltrack} downlinkdt={downlinkdt} setDownlinkdt={setDownlinkdt} webcastdeatils={webcastdeatils} setAddtocartload={setAddtocartload} addtocartload={addtocartload} status={WebcastReducer?.status} WebcastReducer={WebcastReducer} bundle_conference_id={webcastdeatils?.conferenceId} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} dispatch={dispatch} shouldRenderAddToCartAndDownload={shouldRenderAddToCartAndDownload} nav={props.navigation} isBundleAddToCart={isBundleAddToCart} />
+                                &lt;/View>
+            &lt;StatewebcastOverview
+                width={width}
+                source={source}
+                previewText={overviewPreviewText}
+                hasTable={overviewHasTable}
+                toggleExpansion={toggleExpansion}
+                expanded={expanded}
+                navigation={props.navigation}
+                webcastdeatils={webcastdeatils}
+                                    creditData={props?.route?.params?.webCastURL?.creditData}
+                                />
+                                {(webcastdeatils?.conferenceTypeText === "In-Person Event" ||
+                                    webcastdeatils?.conferenceTypeText === "Hybrid Event" ||
+                                    webcastdeatils?.conferenceTypeText === "Live Webinar") &amp;&amp;
+                                    webcastdeatils?.key_dates &amp;&amp;
+                                    "registrationOpen" in webcastdeatils?.key_dates &amp;&amp;
+                                    (
+                                        webcastdeatils?.key_dates?.registrationOpen ||
+                                        webcastdeatils?.key_dates?.registrationEnd ||
+                                        webcastdeatils?.key_dates?.conferenceStartdate ||
+                                        webcastdeatils?.key_dates?.conferenceEnddate
+                                    ) ? (
+                                    &lt;>
+                                        &lt;View
+                                            style={{
+                                                paddingHorizontal: normalize(15),
+                                                paddingVertical: normalize(0),
+                                            }}
+                                        >
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontWeight: "bold",
+                                                    fontSize: 18,
+                                                    color: "#000000",
+                                                }}
+                                            >
+                                                {"Key Dates"}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                        &lt;InpersonKeydates wholedata={webcastdeatils.key_dates} />
+                                    &lt;/>
+                                ) : null}
+
+                                {webcastdeatils?.conferenceTypeText !== "Webcast" &amp;&amp; webcastdeatils?.confSchedule &amp;&amp; webcastdeatils?.confSchedule?.length > 0 ? (
+                                    &lt;>
+                                        &lt;View style={{ paddingVertical: normalize(15), paddingHorizontal: normalize(7) }}>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontWeight: "bold",
+                                                    fontSize: 18,
+                                                    color: '#000000',
+                                                }}>
+                                                {"Course Outline"}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                        &lt;CourseOutline wholedata={webcastdeatils?.confSchedule} />
+                                    &lt;/>
+                                ) : null}
+                                {/* due to bundle remove form apk *Tushar sir changes {webcastdeatils?.is_state_bundle == 1 &amp;&amp;
+                        webcastdeatils?.organizerName == "eMedEd, Inc." ? (&lt;View style={{ paddingVertical: normalize(10) }}>
+                            &lt;StatewebcastPratcing navigate={props.navigation} />
+                        &lt;/View>) : null} */}
+                                {webcastdeatils?.topics?.length > 0 &amp;&amp; &lt;TopicCast topics={webcastdeatils?.topics} topiccast={topiccast} expandedtopic={expandedtopic} toggleTopic={toggleTopic} />}
+                                {webcastdeatils?.cmeCreditsData?.length > 0 ? &lt;StatewebcastAcc width={width} acc_source={acc_source} expandedacc={expandedacc} webcastdeatils={webcastdeatils} toggleExpansionacc={toggleExpansionacc} /> : null}
+                                {webcastdeatils?.speakers?.length > 0 ? &lt;View style={{ paddingVertical: webcastdeatils?.speakers?.length > 0 ? normalize(15) : 0, backgroundColor: "" }}>
+                                    &lt;StatewebcastFaculty datawhole={props?.route?.params?.webCastURL?.Realback} creditData={props?.route?.params?.webCastURL?.creditData} nav={props.navigation} webcastdeatils={webcastdeatils} windowWidth={windowWidth} windowHeight={windowHeight} handleSnapToItem={handleSnapToItem} val={val} />
+                                &lt;/View> : null}
+                                &lt;StatewebcastText allSpecailities={allSpecailities} expandspecailtar={expandspecailtar} targetChange={targetChange} webcastdeatils={webcastdeatils} />
+                                {allSpecailities?.length > 0 ? &lt;View style={{ paddingVertical: normalize(5) }}>
+                                    &lt;StatewebcastSpeciality allSpecailities={allSpecailities} expandspecail={expandspecail} specailityChange={specailityChange} />
+                                &lt;/View> : null}
+                                &lt;View>
+                                    {webcastdeatils?.conferenceTypeText !== "Webcast" &amp;&amp; webcastdeatils?.latitude &amp;&amp; webcastdeatils?.longitude &amp;&amp; &lt;>
+                                        &lt;View
+                                            style={{
+                                                paddingHorizontal: normalize(15),
+                                                paddingVertical: normalize(10),
+                                            }}>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontWeight: "bold",
+                                                    fontSize: 18,
+                                                    color: '#000000',
+                                                }}>
+                                                {"Conference Venue"}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                        {webcastdeatils?.venue || webcastdeatils?.address ? &lt;View style={{ margin: 5 }}>
+                                            &lt;View style={{ justifyContent: "center", alignContent: "center", borderWidth: 0.5, borderColor: "#666" }}>
+                                                &lt;View style={{ justifyContent: "center", alignSelf: "center", height: normalize(150), width: normalize(300), borderRadius: 50, borderWidth: 0.5, borderColor: "#000000" }}>
+                                                    &lt;MapScreen navto={props.navigation} webcastdeatils={webcastdeatils} />
+                                                &lt;/View>
+                                                &lt;View style={{ justifyContent: "center", alignContent: "center", paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
+                                                    &lt;View style={{ flexDirection: 'row', gap: normalize(2) }}>
+                                                        &lt;Image
+                                                            source={Imagepath.MapPin}
+                                                            style={{ height: normalize(20), width: normalize(20), resizeMode: 'contain', top: 3, tintColor: "#666" }}
+                                                        />
+                                                        &lt;View style={{ flexDirection: 'column', gap: normalize(5) }}>
+                                                            {webcastdeatils?.venue &amp;&amp; &lt;Text numberOfLines={3} style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#333", width: normalize(280) }}>
+                                                                {webcastdeatils?.venue}
+                                                            &lt;/Text>}
+                                                            {webcastdeatils?.address &amp;&amp; &lt;Text numberOfLines={1} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666" }}>
+                                                                {webcastdeatils?.address}
+                                                            &lt;/Text>}
+                                                        &lt;/View>
+                                                    &lt;/View>
+                                                &lt;/View>
+                                            &lt;/View>
+                                        &lt;/View> : null}
+                                    &lt;/>}
+                                &lt;/View>
+                                &lt;View>
+                                    &lt;StatewebcastRefund conferenceText={conferenceText} conferenceHtml={conferenceHtml} expandcon={expandcon} conferShows={conferShows} width={width} webcastdeatils={webcastdeatils} refundtext={refundtext} disclaimerText={disclaimerText} refunded={refunded} refundExpand={refundExpand} />
+                                &lt;/View>
+                                {webcastdeatils?.userReviews?.length > 0 &amp;&amp; &lt;View style={webcastdeatils?.seo_content || webcastdeatils?.refund_policy || webcastdeatils?.disclaimer ? { paddingVertical: !expandreview ? normalize(10) : 0 } : {}}>
+                                    &lt;StatewebcastReviews setReviewsPosition={setReviewsPosition} webcastdeatils={webcastdeatils} ratingsall={ratingsall} reviewpost={reviewpost} expandreview={expandreview} reviewChange={reviewChange} />
+                                &lt;/View>}
+                            &lt;/ScrollView>
+                            &lt;StatewebcastCheckout refID={refID} takePrice={finalprice} urlneed={urltrack} creditData={props?.route?.params?.webCastURL?.creditData} isBundleAddToCart={isBundleAddToCart} setAddtocartload={setAddtocartload} conferenceIDs={webcastdeatils?.bundle_add_cart_conf_ids} bundle_conference_id={webcastdeatils?.conferenceId} navigation={props.navigation} webcastdeatils={webcastdeatils} guestOrigin={props?.route?.params?.webCastURL?.Realback} />
+                            &lt;CatlogDownload
+                                setDownlink={setDownlinkdt}
+                                downlink={downlinkdt}
+                                downData={downDt}
+                                setLoadingdown={setLoadingdowndt}
+                                loadingdown={loadingdowndt}
+                                pdfUri={pdfUridt}
+                                setPdfUri={setPdfUridt} />
+                        &lt;/>
+                    )}
+                &lt;/View>
+            &lt;/SafeAreaView>}
+        &lt;/>
+    );
+};
+
+export default Statewebcast;
+
+const styles = StyleSheet.create({
+    textInputContainer: {
+        backgroundColor: '#ffffff',
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        borderWidth: 0.5,
+        borderColor: "#000000"
+    },
+    textInput: {
+        height: normalize(30),
+        color: '#000000',
+        fontSize: 16,
+        fontFamily: Fonts.InterSemiBold
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: "100%",
+        // backgroundColor:"yellow",
+        paddingVertical: normalize(10), // Increased padding for better touch area
+        paddingHorizontal: normalize(10),
+    },
+    icon: {
+        width: normalize(30),
+        height: normalize(30),
+        marginRight: normalize(5),
+        //   backgroundColor:Colorpath.Pagebg
+    },
+    placeName: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 16,
+        color: Colorpath.ButtonColr
+    },
+    address: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: "#6A84DB"
+    },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

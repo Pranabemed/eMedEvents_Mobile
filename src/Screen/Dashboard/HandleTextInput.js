@@ -6,6 +6,14 @@ import { CommonActions } from '@react-navigation/native';
 import normalize from '../../Utils/Helpers/Dimen';
 import SearchIcon from 'react-native-vector-icons/Ionicons';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
+
+/**
+ * Reusable HandleTextInput component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, focusedInput }) => {
   const placeholders = [
     "Search for CME/CE courses",

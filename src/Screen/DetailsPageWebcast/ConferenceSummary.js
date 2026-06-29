@@ -4,6 +4,14 @@ import HtmlTableRenderer from './HtmlTableRenderer';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable ConferenceSummary component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ConferenceSummary = ({ conferenceHtml, expandcon, conferShows, width, conferenceText }) => {
     const showButton = conferenceText && conferenceText.replace(/<\/?[^>]+>/g, '').trim().length > 300;
     const finalHtml = showButton ? conferenceHtml : { html: conferenceText || '' };

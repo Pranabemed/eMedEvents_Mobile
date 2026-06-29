@@ -21,6 +21,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AddToCartShimmer from '../../Components/AddToCartShimmer';
 import { useFocusEffect } from '@react-navigation/native';
 
+/**
+ * Reusable AddToCart component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 const AddToCart = (props) => {
     const {

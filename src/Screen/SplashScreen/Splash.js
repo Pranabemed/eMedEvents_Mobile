@@ -17,6 +17,14 @@ import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNo
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { loginSuccess, signupSuccess, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 
+/**
+ * Reusable Splash component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';

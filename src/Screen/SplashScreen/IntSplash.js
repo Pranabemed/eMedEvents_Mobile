@@ -8,6 +8,14 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 import { AppContext } from '../GlobalSupport/AppContext';
+
+/**
+ * Reusable SplashInt component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
 export default function SplashInt(props) {
   const {

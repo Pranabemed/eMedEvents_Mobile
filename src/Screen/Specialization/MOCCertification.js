@@ -8,6 +8,14 @@ import normalize from '../../Utils/Helpers/Dimen';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable MOCCertification component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const MOCCertification = (props) => {
     const [taketrue, setTaketrue] = useState(false);
     const navigation = useNavigation();

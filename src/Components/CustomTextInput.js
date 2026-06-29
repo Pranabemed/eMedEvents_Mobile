@@ -15,6 +15,14 @@ import Fonts from '../Themes/Fonts';
 import Dropdown from 'react-native-vector-icons/MaterialCommunityIcons'
 import { useIsFocused } from '@react-navigation/native';
 
+/**
+ * Reusable CustomInputWithDropdown component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomInputWithDropdown = ({inputdata,setInputdata,texdt,setTextdt}) => {
   const isFocus = useIsFocused();
   const [modalVisible, setModalVisible] = useState(false);

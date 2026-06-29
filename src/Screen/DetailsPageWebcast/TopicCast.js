@@ -4,6 +4,14 @@ import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity } from "
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from "../../Themes/Fonts";
 import Colorpath from "../../Themes/Colorpath";
+
+/**
+ * Reusable TopicCast component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const TopicCast = ({ topics, expandedtopic, toggleTopic, topiccast }) => {
   console.log(topiccast, "topiccast")
   return (

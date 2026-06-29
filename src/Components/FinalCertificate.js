@@ -18,6 +18,14 @@ import { AppContext } from "../Screen/GlobalSupport/AppContext";
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from "../Utils/Helpers/IntOff";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable DownloadCertificate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const DownloadCertificate = (props) => {

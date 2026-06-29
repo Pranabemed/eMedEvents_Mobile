@@ -4,6 +4,14 @@ import Fonts from '../Themes/Fonts';
 import moment from 'moment';
 import normalize from '../Utils/Helpers/Dimen';
 import { FormatDateZone } from '../Utils/Helpers/Timezone';
+
+/**
+ * Reusable StateRequireditem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const COURSE_CARD_WIDTH = normalize(230);
 const COURSE_CARD_HEIGHT = normalize(165);
 const COURSE_CARD_GAP = normalize(4);

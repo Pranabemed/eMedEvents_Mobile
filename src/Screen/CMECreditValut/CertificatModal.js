@@ -9,6 +9,14 @@ import { boardvaultRequest, deletevaultRequest } from '../../Redux/Reducers/Cred
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+
+/**
+ * Reusable CertificatModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename,fakedata, dataFull, setDataFull, deleteIndex, setDeleteIndex, CreditVaultReducer, dispatch, certificatefecthed, setCertificatefecthed, navigation, styles, creditModal, setCreditModal, dommyData, particular, setParticular }) => {
     console.log(particular,stateget, "particular>>>>>>>>>>>", certificatefecthed, deleteIndex, dataFull,statename);

@@ -6,6 +6,14 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable ExploreInput component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, statewise, setFiltering }) => {
     const animatedValuestatedate = useRef(new Animated.Value(1)).current;
     const scaleValuesestatedate = useRef(new Animated.Value(0)).current;

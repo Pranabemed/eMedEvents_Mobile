@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Utils/Helpers/TokenManager.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Utils/Helpers/TokenManager.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * TokenManager.js  — v4 (SINGLE REFRESH LOCK — shared promise pattern)
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * WHY THIS EXISTS
+ * ───────────────
+ * The server issues access_token and refresh_token. If the user is idle on a
+ * screen for 10+ minutes with no API calls, the interceptor never fires.
+ * This module proactively refreshes the token before it expires so the user
+ * is NEVER kicked out while the app is open.
+ *
+ * GOLDEN RULE — NO FORCED LOGOUT
+ * ────────────────────────────────
+ * This module NEVER logs the user out. It NEVER clears AsyncStorage. It NEVER
+ * dispatches logoutSuccess. The ONLY thing that may log a user out is when the
+ * user explicitly taps the "Logout" button (logoutSaga).
+ *
+ * SINGLE REFRESH LOCK (Key Design)
+ * ─────────────────────────────────
+ * There is ONE shared _refreshPromise. If a refresh is already in progress
+ * from ANY source (AppState handler, timer, ApiRequest interceptor), every
+ * other caller JOINS the same promise instead of making a second HTTP call.
+ *
+ * ⚠️  Refresh tokens are SINGLE-USE on the server. Two concurrent
+ *     verifyRefreshToken calls with the same refresh_token means the server
+ *     accepts the first and REJECTS the second → "token expired" shown to user.
+ *     This shared-promise pattern prevents that race condition entirely.
+ *
+ * PROACTIVE TIMER STRATEGY
+ * ────────────────────────
+ * 1. On every new token, decode the JWT to get its exact expiry time (exp).
+ * 2. Schedule a setTimeout to fire REFRESH_BUFFER_MS before expiry.
+ * 3. When the timer fires, silently call verifyRefreshToken.
+ * 4. On success: save new tokens + schedule next timer.
+ * 5. On failure: do nothing. User stays logged in.
+ *
+ * APP BACKGROUND HANDLING
+ * ───────────────────────
+ * On AppState → background/inactive:  clear any pending timer.
+ * On AppState → 'active':
+ *   • If token is still valid  → reschedule timer (OS may have killed it).
+ *   • If token is near expiry  → attempt proactive refresh immediately.
+ *   • If token is expired      → attempt proactive refresh immediately.
+ *                                If refresh fails → DO NOTHING. User stays in.
+ *
+ * USAGE — call once from App.js:
+ *
+ *   import TokenManager from './src/Utils/Helpers/TokenManager';
+ *
+ *   useEffect(() => {
+ *     const cleanup = TokenManager.init();
+ *     return cleanup;
+ *   }, []);
+ *
+ * ApiRequest.js delegates its refresh to TokenManager.forceRefresh() so ALL
+ * refresh attempts share the same lock and single HTTP call.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import { AppState } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import constants from './constants';
+import getUserAgentJSON from './UserAgent';
+import { getBasicAuthorizationHeader } from './BasicAuth';
+
+// ─── How many ms before expiry we proactively refresh ─────────────────────────
+// 90 seconds → fires at T+8m30s when token expires at T+10min.
+const REFRESH_BUFFER_MS = 90 * 1000;
+
+// ─── Minimum ms before we bother scheduling a timer ───────────────────────────
+const MIN_SCHEDULE_MS = 5 * 1000;
+const APPSTATE_ACTIVE_DEBOUNCE_MS = 5000;
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+let _refreshTimerId = null;
+let _appStateSubscription = null;
+
+// ─── Single shared refresh promise ────────────────────────────────────────────
+// KEY: All callers (timer, AppState handler, ApiRequest interceptor) share this
+// ONE promise. When a refresh is already running, new callers join it instead
+// of making a duplicate HTTP call. Refresh tokens are single-use on the server.
+let _refreshPromise = null;
+let _lastActiveCheckAt = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JWT decoder — pure JS, no external library required
+// ─────────────────────────────────────────────────────────────────────────────
+function decodeJWTPayload(token) {
+    try {
+        if (!token || typeof token !== 'string') return null;
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) b64 += '=';
+
+        let decoded;
+        if (typeof atob === 'function') {
+            decoded = atob(b64);
+        } else {
+            // Manual Base64 decode for React Native Release builds
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            let str = '';
+            let i = 0;
+            while (i &lt; b64.length) {
+                const e1 = chars.indexOf(b64[i++]);
+                const e2 = chars.indexOf(b64[i++]);
+                const e3 = chars.indexOf(b64[i++]);
+                const e4 = chars.indexOf(b64[i++]);
+
+                const b1 = (e1 &lt;&lt; 2) | (e2 >> 4);
+                const b2 = ((e2 &amp; 15) &lt;&lt; 4) | (e3 >> 2);
+                const b3 = ((e3 &amp; 3) &lt;&lt; 6) | e4;
+
+                str += String.fromCharCode(b1);
+                if (e3 !== 64) str += String.fromCharCode(b2);
+                if (e4 !== 64) str += String.fromCharCode(b3);
+            }
+            decoded = str;
+        }
+
+        return decoded; // Return RAW byte string
+    } catch (e) {
+        console.warn('[TokenManager] JWT extract failed:', e?.message);
+        return null;
+    }
+}
+
+// Returns expiry timestamp in ms, or null if undecodable
+function getTokenExpiryMs(token) {
+    const rawPayload = decodeJWTPayload(token);
+    if (!rawPayload) return null;
+
+    try {
+        // Try elegant JSON decode first (only works perfectly on ASCII payloads)
+        const parsed = JSON.parse(rawPayload);
+        if (parsed?.exp) return parsed.exp * 1000;
+    } catch (_) {
+        // UTF-8 names inside JWTs break pure JS JSON.parse on Native Release builds.
+        // Fallback: strictly Regex out the 'exp' integer since it's purely ASCII.
+    }
+
+    // RegEx fallback for the exact `"exp": 1234567` block
+    const match = /"exp"\s*:\s*(\d+)/.exec(rawPayload);
+    if (match &amp;&amp; match[1]) {
+        return parseInt(match[1], 10) * 1000;
+    }
+
+    return null; // JWT exp is in seconds
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _doActualRefresh — the ONLY function that calls verifyRefreshToken HTTP API.
+//
+// ⚠️  Uses plain axios (NOT axiosInstance) so it is COMPLETELY outside the
+//     Axios interceptor chain. No infinite-loop risk.
+//
+// ✅  Returns new token string on success.
+// ✅  Returns null on failure. NEVER throws. NEVER forces logout.
+// ─────────────────────────────────────────────────────────────────────────────
+async function _doActualRefresh(reason) {
+    const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
+    if (!refreshToken) {
+        console.log('[TokenManager] No refresh_token — user not logged in, skipping:', reason);
+        return null;
+    }
+
+    console.log(`[TokenManager] 🔄 Calling verifyRefreshToken (${reason})…`);
+
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt &lt; maxAttempts) {
+        attempt++;
+        try {
+            const userAgentHeader = getUserAgentJSON();
+            const basicAuthToken = await getBasicAuthorizationHeader();
+            const res = await axios.post(
+                `${constants.BASE_URL}/user/verifyRefreshToken`,
+                { refresh_token: refreshToken },
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        ...(basicAuthToken ? { Authorization: basicAuthToken } : {}),
+                        ...(userAgentHeader ? { userAgent: userAgentHeader, 'User-Agent': userAgentHeader } : {}),
+                    },
+                    timeout: 15000,
+                },
+            );
+
+            if (res.data?.success &amp;&amp; res.data?.token) {
+                const newToken = res.data.token;
+                const newRefreshToken = res.data.refresh_token || refreshToken;
+
+                // ── Persist ──────────────────────────────────────────────────────
+                await AsyncStorage.setItem(constants.TOKEN, newToken);
+                await AsyncStorage.setItem(constants.REFRESH_TOKEN, newRefreshToken);
+
+                // ── Push to Redux ─────────────────────────────────────────────────
+                try {
+                    const Store = require('../../Redux/Store').default;
+                    const { tokenSuccess, refreshTokenSuccess } = require('../../Redux/Reducers/AuthReducer');
+                    Store.dispatch(tokenSuccess(newToken));
+                    Store.dispatch(refreshTokenSuccess(res.data));
+                } catch (_) { }
+
+                console.log('[TokenManager] ✅ Token refreshed successfully:', reason);
+
+                // ── Schedule NEXT proactive refresh for the new token ─────────────
+                _scheduleTimer(newToken);
+                return newToken;
+
+            } else {
+                // If it's an explicit rejection (e.g. 401 or success:false) from the server,
+                // do NOT retry. The server has legitimately rejected the token.
+                console.warn(
+                    '[TokenManager] ⚠️  verifyRefreshToken rejected by server:',
+                    res?.data?.msg,
+                    '| Reason:', reason,
+                    '| User remains logged in.',
+                );
+                return null;
+            }
+        } catch (err) {
+            // It is a true Network/OS Error (or 5xx timeout).
+            // This happens instantly on iOS Native when waking from deep sleep
+            // because the OS network stack is temporarily unavailable for ~1 second.
+            if (attempt &lt; maxAttempts) {
+                console.warn(
+                    `[TokenManager] ⚠️ Network error on attempt ${attempt}. Retrying in 1.5s...`
+                );
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } else {
+                console.warn(
+                    '[TokenManager] ⚠️  Network error during refresh (final):',
+                    err?.message,
+                    '| Reason:', reason,
+                    '| User remains logged in.',
+                );
+                return null;
+            }
+        }
+    }
+    return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// performRefresh — shared-promise deduplication wrapper
+//
+// If a refresh is already in progress from ANY caller (AppState, timer,
+// ApiRequest interceptor), new callers JOIN the existing promise instead of
+// making a duplicate HTTP call.
+//
+// Refresh tokens are single-use — two concurrent calls = server rejects the
+// second one with "token expired". This function prevents that entirely.
+// ─────────────────────────────────────────────────────────────────────────────
+function performRefresh(reason) {
+    if (_refreshPromise) {
+        console.log('[TokenManager] 🔗 Joining existing refresh in progress:', reason);
+        return _refreshPromise;
+    }
+
+    _refreshPromise = _doActualRefresh(reason).finally(() => {
+        _refreshPromise = null;
+    });
+
+    return _refreshPromise;
+}
+
+async function ensureValidToken(reason = 'ensure-valid-token') {
+    try {
+        const token = await AsyncStorage.getItem(constants.TOKEN);
+        if (!token) {
+            return null;
+        }
+
+        const expiryMs = getTokenExpiryMs(token);
+        if (!expiryMs) {
+            console.log('[TokenManager] ensureValidToken: unknown token expiry, using stored token and scheduling refresh fallback.');
+            performRefresh(`${reason}-unknown-expiry`);
+            return token;
+        }
+
+        const now = Date.now();
+        if (now >= expiryMs) {
+            console.log('[TokenManager] ensureValidToken: stored token already expired, waiting for silent refresh...');
+            const refreshedToken = await performRefresh(`${reason}-expired`);
+            if (refreshedToken) {
+                return refreshedToken;
+            }
+            console.warn('[TokenManager] ensureValidToken: silent refresh failed, keeping stored token to avoid forced logout.');
+            return token;
+        }
+
+        if (now >= expiryMs - REFRESH_BUFFER_MS) {
+            console.log('[TokenManager] ensureValidToken: token near expiry, waiting for proactive refresh...');
+            const refreshedToken = await performRefresh(`${reason}-near-expiry`);
+            return refreshedToken || token;
+        }
+
+        _scheduleTimer(token);
+        return token;
+    } catch (e) {
+        console.warn('[TokenManager] ensureValidToken error (non-fatal):', e?.message);
+        return await AsyncStorage.getItem(constants.TOKEN);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Timer scheduler — reads the token, decodes exp, sets a setTimeout to fire
+// REFRESH_BUFFER_MS before expiry.
+// ─────────────────────────────────────────────────────────────────────────────
+function _scheduleTimer(token) {
+    if (_refreshTimerId !== null) {
+        clearTimeout(_refreshTimerId);
+        _refreshTimerId = null;
+    }
+
+    if (!token) return;
+
+    const expiryMs = getTokenExpiryMs(token);
+    if (!expiryMs) {
+        console.warn('[TokenManager] Cannot decode token expiry — no proactive timer scheduled.');
+        return;
+    }
+
+    const now = Date.now();
+    const msUntilExpiry = expiryMs - now;
+    const msUntilRefresh = msUntilExpiry - REFRESH_BUFFER_MS;
+
+    if (msUntilRefresh &lt;= MIN_SCHEDULE_MS) {
+        console.log(`[TokenManager] Token expires in ${Math.round(msUntilExpiry / 1000)}s — refreshing immediately.`);
+        performRefresh('immediate-near-expiry');
+    } else {
+        const secUntilRefresh = Math.round(msUntilRefresh / 1000);
+        console.log(
+            `[TokenManager] ⏱️  Next proactive refresh in ${secUntilRefresh}s` +
+            ` (token expires in ${Math.round(msUntilExpiry / 1000)}s).`
+        );
+        _refreshTimerId = setTimeout(() => {
+            _refreshTimerId = null;
+            performRefresh('timer-fired');
+        }, msUntilRefresh);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AppState handler — fires when app returns from background / becomes active
+// ─────────────────────────────────────────────────────────────────────────────
+async function _onAppStateChange(nextState) {
+    // When app goes to background ('inactive' or 'background')
+    if (nextState !== 'active') {
+        if (_refreshTimerId !== null) {
+            clearTimeout(_refreshTimerId);
+            _refreshTimerId = null;
+        }
+        return;
+    }
+
+    // When app returns to 'active'
+    const now = Date.now();
+    if (now - _lastActiveCheckAt &lt; APPSTATE_ACTIVE_DEBOUNCE_MS) {
+        return;
+    }
+    _lastActiveCheckAt = now;
+
+    // Give JS a tiny window to completely unfreeze on Android Release builds
+    // before we recalculate the exact token timestamp delta.
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+        const token = await AsyncStorage.getItem(constants.TOKEN);
+        if (!token) return; // Guest / not logged in
+
+        const expiryMs = getTokenExpiryMs(token);
+        if (!expiryMs) {
+            console.log('[TokenManager] 🟡 Foreground: unknown token expiry — attempting proactive refresh…');
+            performRefresh('foreground-unknown-expiry');
+            return;
+        }
+
+        const now = Date.now();
+
+        if (now >= expiryMs) {
+            // Token already expired — refresh immediately.
+            // performRefresh uses shared promise so won't duplicate with ApiRequest.
+            console.log(
+                `[TokenManager] 🔴 Foreground: token expired ${Math.round((now - expiryMs) / 1000)}s ago — refreshing now…`
+            );
+            performRefresh('foreground-expired');
+
+        } else if (now >= expiryMs - REFRESH_BUFFER_MS) {
+            console.log(
+                `[TokenManager] 🟡 Foreground: token expires in ${Math.round((expiryMs - now) / 1000)}s — proactive refresh…`
+            );
+            performRefresh('foreground-near-expiry');
+
+        } else {
+            // Token is healthy — just reschedule timer (OS may have cleared it while backgrounded).
+            console.log(
+                `[TokenManager] 🟢 Foreground: token healthy — ${Math.round((expiryMs - now) / 1000)}s remaining. Rescheduling timer.`
+            );
+            _scheduleTimer(token);
+        }
+    } catch (e) {
+        console.warn('[TokenManager] AppState handler error (non-fatal):', e?.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Async startup logic — called from init() in the background.
+// ─────────────────────────────────────────────────────────────────────────────
+async function _initAsync() {
+    try {
+        const token = await AsyncStorage.getItem(constants.TOKEN);
+        if (!token) {
+            console.log('[TokenManager] No token on cold start — user not logged in.');
+            return;
+        }
+
+        const expiryMs = getTokenExpiryMs(token);
+
+        if (!expiryMs) {
+            console.log('[TokenManager] Cold start: non-JWT token — attempting proactive refresh…');
+            performRefresh('cold-start-non-jwt');
+            return;
+        }
+
+        if (Date.now() >= expiryMs) {
+            console.log('[TokenManager] Cold start: token expired — attempting silent refresh…');
+            performRefresh('cold-start-expired');
+        } else {
+            console.log('[TokenManager] Cold start: token valid — scheduling proactive refresh timer.');
+            _scheduleTimer(token);
+        }
+    } catch (e) {
+        console.warn('[TokenManager] _initAsync error (non-fatal):', e?.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public API
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TokenManager = {
+    /**
+     * Call ONCE from App.js on mount.
+     * Returns a SYNCHRONOUS cleanup function (never a Promise).
+     */
+    init() {
+        if (_appStateSubscription) {
+            _appStateSubscription.remove();
+        }
+        _appStateSubscription = AppState.addEventListener('change', _onAppStateChange);
+        _initAsync();
+
+        return () => {
+            if (_refreshTimerId !== null) {
+                clearTimeout(_refreshTimerId);
+                _refreshTimerId = null;
+            }
+            if (_appStateSubscription) {
+                _appStateSubscription.remove();
+                _appStateSubscription = null;
+            }
+        };
+    },
+
+    /**
+     * Call this whenever a new token is received (login, signup, any API response).
+     * Resets and reschedules the proactive refresh timer.
+     *
+     * @param {string} newToken — the fresh JWT access token
+     */
+    onNewToken(newToken) {
+        if (!newToken) return;
+        _scheduleTimer(newToken);
+    },
+
+    /**
+     * Attempt an immediate token refresh.
+     *
+     * KEY: Uses the shared _refreshPromise deduplication — if a refresh is
+     * already running from any source, this joins it rather than starting a
+     * second HTTP call. Safe to call from ApiRequest.js interceptor.
+     *
+     * @returns {Promise&lt;string|null>}  new token string on success, null on failure.
+     *                                  Never throws. Never forces logout.
+     */
+    forceRefresh() {
+        return performRefresh('force-refresh');
+    },
+
+    /**
+     * Ensures startup/foreground flows can wait for a usable token before
+     * dispatching authenticated API calls.
+     */
+    ensureValidToken(reason) {
+        return ensureValidToken(reason);
+    },
+};
+
+export default TokenManager;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

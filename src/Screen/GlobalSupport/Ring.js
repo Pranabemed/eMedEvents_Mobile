@@ -5,6 +5,14 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '.././../Utils/Helpers/Dimen';
 
+/**
+ * Reusable PhoneRing component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const COLOR = Colorpath.ButtonColr;
 const SIZE = 100;
 

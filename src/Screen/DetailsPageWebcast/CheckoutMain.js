@@ -13,6 +13,14 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import moment from 'moment';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
 // import { useSelector } from 'react-redux';
+
+/**
+ * Reusable CheckoutMain component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CheckoutMain = ({
     savefull,
     setSavefull,

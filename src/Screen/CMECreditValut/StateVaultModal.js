@@ -6,6 +6,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import DropDownHeader from '../../Components/DropDownHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StateVaultModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateVaultModal = ({ vaultState, clisttopic, setStatepick, searchTopicName, searchtexttopic }) => {
     console.log(clisttopic, "wekknamecustome");
     const [showLoader,setShowLoader] = useState(false);

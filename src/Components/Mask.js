@@ -12,6 +12,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import EyeIcon from 'react-native-vector-icons/Entypo';
 import MaskInput from 'react-native-mask-input';
 
+/**
+ * Reusable MaskField component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const MaskField = ({
     label,
     value,

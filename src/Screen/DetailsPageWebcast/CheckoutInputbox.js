@@ -25,6 +25,14 @@ import IntOff from '../../Utils/Helpers/IntOff';
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import NetInfo from '@react-native-community/netinfo';
 import moment from 'moment';
+
+/**
+ * Reusable CheckoutInputbox component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   handleInputChanged,
   isEmailTouched,

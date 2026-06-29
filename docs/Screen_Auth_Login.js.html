@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Auth/Login.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Auth/Login.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import Colorpath from '../../Themes/Colorpath';
+import Fonts from '../../Themes/Fonts';
+import normalize from '../../Utils/Helpers/Dimen';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import Buttons from '../../Components/Button';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { useDispatch, useSelector } from 'react-redux';
+import { chooseStatecardRequest, loginRequest, loginsiginRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
+import Loader from '../../Utils/Helpers/Loader';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
+import Imagepath from '../../Themes/Imagepath';
+import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
+import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { AppContext } from '../GlobalSupport/AppContext';
+import InputField from '../../Components/CellInput';
+let status = "";
+let status1 = "";
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+
+/**
+ * Reusable normalizeProfessionHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+const normalizeProfessionHandle = (professionHandle) =>
+  String(professionHandle || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+const Login = (props) => {
+  const {
+    setFulldashbaord,
+    setGtprof
+  } = useContext(AppContext);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const [isPasswordFieldVisible, setIsPasswordFieldVisible] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+1');
+  const [wholeD, setWholeD] = useState("");
+  const [Usph, setUsph] = useState("")
+  const [mobileHd, setMobileHd] = useState("");
+  const [nonloader, setNonloader] = useState(false);
+  const [locationPermission, setLocationPermission] = useState(false);
+  const [inputBlocked, setInputBlocked] = useState(false);
+  const [permissionRequested, setPermissionRequested] = useState(false);
+  const [choosePr, setChoosePr] = useState(false);
+  const isFocus = useIsFocused();
+  const [fcm, setFcm] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
+  const [isNonUsaFlow, setIsNonUsaFlow] = useState(Boolean(props?.route?.params?.isNonUsaUser || String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1"));
+  const handleInputChange = (val) => {
+    const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+    const mobileRegex = /^\d{10}$/;
+    setEmail(val);
+    if (isNonUsaFlow) {
+      setMobile(false);
+      setIsPasswordFieldVisible(true);
+      return;
+    }
+    // Block input after first digit if no location permission
+    if (mobile &amp;&amp; !locationPermission &amp;&amp; val.length > 0) {
+      setEmail(val);
+      setInputBlocked(true);
+    }
+    if (val.trim() === '') {
+      setMobile(false);
+      setIsPasswordFieldVisible(false);
+      return;
+    }
+    if (emailRegex.test(val)) {
+      setIsPasswordFieldVisible(true);
+    } else if (mobileRegex.test(val)) {
+      setIsPasswordFieldVisible(false);
+    } else if (/^\d+$/.test(val)) {
+      setMobile(true);
+      setIsPasswordFieldVisible(false);
+    } else if (/^[a-zA-Z]/.test(val)) {
+      setIsPasswordFieldVisible(false);
+    } else {
+      setIsPasswordFieldVisible(false);
+      setMobile(false);
+    }
+  };
+  const formatPhoneNumber = (input) => {
+    const cleaned = input.replace(/\D/g, '').slice(0, 10);
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+
+    if (match) {
+      let formatted = '';
+      if (match[1]) formatted = `(${match[1]}`;
+      if (match[2]) formatted += `) ${match[2]}`;
+      if (match[3]) formatted += `-${match[3]}`;
+      return formatted;
+    }
+    return input;
+  };
+  const formatIndianPhoneNumber = (input) => {
+    if (!input) return "";
+
+    const strInput = String(input);
+    const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
+
+    if (cleaned.length == 10) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    }
+
+    return strInput;
+  };
+  useEffect(() => {
+    if (props?.route?.params?.isNonUsaUser) {
+      setIsNonUsaFlow(true);
+      setMobile(false);
+      setPhoneCountryCode('');
+    } else {
+      setPhoneCountryCode(prev => prev || '+1');
+    }
+    if (props?.route?.params?.email) {
+      setEmail(props?.route?.params?.email);
+      setIsPasswordFieldVisible(true);
+      setMobile(false);
+    }
+  }, [props?.route?.params?.email])
+  useEffect(() => {
+    let mounted = true;
+    readNonUsaFlowState().then(async (state) => {
+      if (!mounted) return;
+      setNonUsaFlowState(state);
+      const isNonUsa = isNonUsaAccount({}, state);
+      
+      let geoInfo = null;
+      try {
+        geoInfo = await getCountryAndDialCode();
+      } catch (err) {
+        console.log('[Login] IP lookup failed:', err);
+      }
+
+      if (isNonUsa) {
+        setIsNonUsaFlow(true);
+        setMobile(false);
+        setIsPasswordFieldVisible(true);
+      } else if (geoInfo) {
+        const isNonUsaIp = geoInfo.country &amp;&amp; geoInfo.country !== 'US' &amp;&amp; geoInfo.country !== 'USA';
+        setIsNonUsaFlow(isNonUsaIp);
+        if (isNonUsaIp) {
+          setMobile(false);
+          setIsPasswordFieldVisible(true);
+        } else {
+          setPhoneCountryCode(geoInfo.dialCode || '+1');
+        }
+      } else {
+        setIsNonUsaFlow(false);
+        setPhoneCountryCode('+1');
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+  useEffect(() => {
+    let mounted = true;
+    readNonUsaPermanentFlags().then((flags) => {
+      if (mounted) {
+        setNonUsaPermanentFlags(flags);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+  useEffect(() => {
+    if (isNonUsaFlow) {
+      setMobile(false);
+      return;
+    }
+    if (props?.route?.params?.phone &amp;&amp; phoneCountryCode == "+1") {
+      const formatted = formatPhoneNumber(props?.route?.params?.phone?.phone);
+      setMobileHd(formatted);
+      setEmail(props?.route?.params?.phone?.phone);
+      setPhoneCountryCode(props?.route?.params?.phone?.countryCode)
+      setIsPasswordFieldVisible(false);
+      setMobile(true);
+    } else if (props?.route?.params?.phone &amp;&amp; phoneCountryCode == "+91") {
+      const formatted = formatIndianPhoneNumber(props?.route?.params?.phone?.phone);
+      setMobileHd(formatted);
+      setEmail(props?.route?.params?.phone?.phone);
+      setPhoneCountryCode(props?.route?.params?.phone?.countryCode)
+      setIsPasswordFieldVisible(false);
+      setMobile(true);
+    }
+  }, [props?.route?.params?.phone])
+
+  const handleLogin = () => {
+    const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+    const mobileRegex = /^\d{10}$/;
+    if (!email) {
+      showErrorAlert(isNonUsaFlow ? "Please enter your email address!" : "Please enter your email or mobile number!");
+    } else if (isNonUsaFlow &amp;&amp; !emailRegex.test(email)) {
+      showErrorAlert("Please enter a valid email address!");
+    } else if (!isNonUsaFlow &amp;&amp; !emailRegex.test(email) &amp;&amp; !mobileRegex.test(email)) {
+      showErrorAlert("Please enter a valid email address or 10 digit mobile number!");
+    } else if ((isPasswordFieldVisible || isNonUsaFlow) &amp;&amp; !password) {
+      showErrorAlert("Please enter your password to continue");
+    } else {
+      let formattedEmail = email;
+      let finalFormattedPhone = "";
+      if (!isNonUsaFlow &amp;&amp; phoneCountryCode == "+1" &amp;&amp; email) {
+        const finalCont = processPhoneNumberUSA(email.trim());
+        finalFormattedPhone = finalCont?.formattedNumber || "";
+      }
+      if (!isNonUsaFlow &amp;&amp; mobileRegex.test(email)) {
+        formattedEmail = `${phoneCountryCode}${email}`;
+      }
+      let obj = (isPasswordFieldVisible || isNonUsaFlow) ? {
+        "username": formattedEmail.trim(),
+        "password": password.trim(),
+        "deviceToken": fcm,
+        "deviceType": Platform.OS
+      } : {
+        "phone": phoneCountryCode == "+1" ? `+1${mobileHd}` : formattedEmail.trim()
+      };
+      connectionrequest()
+        .then(() => {
+          dispatch((isPasswordFieldVisible || isNonUsaFlow) ? loginRequest(obj) : loginsiginRequest(obj));
+        })
+        .catch(err => {
+          showErrorAlert("Please connect to the internet", err);
+        });
+    }
+  };
+  const verifyHandle = () => {
+    let obj = {};
+    connectionrequest()
+      .then(() => {
+        dispatch(verifyRequest(obj));
+      })
+      .catch((err) => {
+        showErrorAlert("Please connect to internet", err);
+      });
+  };
+
+  const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+  const isValidEmail = !mobile &amp;&amp; email?.length > 0 &amp;&amp; !validateEmail.test(email);
+  const mobileReg = /^\d{10}$/;
+  const isMobile = !isNonUsaFlow &amp;&amp; mobile &amp;&amp; email?.length > 0 &amp;&amp; !mobileReg.test(email);
+  const isTrueFlag = (value) => value == true || value == 1 || value == "1" || value == "true";
+  const isFalseFlag = (value) => value == false || value == 0 || value == "0" || value == "false";
+  const lastHandledSigninResponseRef = useRef(null);
+  if (status == '' || AuthReducer.status != status) {
+    switch (AuthReducer.status) {
+      case 'Auth/loginRequest':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/loginSuccess':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/loginFailure':
+        status = AuthReducer.status;
+        showErrorAlert(AuthReducer?.loginResponse?.msg || "Something went wrong!");
+        break;
+      case 'Auth/loginsiginRequest':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/loginsiginSuccess':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/loginsiginFailure':
+        status = AuthReducer.status;
+        showErrorAlert(AuthReducer?.loginsiginResponse?.msg || "something went wrong !");
+        break;
+      case 'Auth/verifyRequest':
+        status = AuthReducer.status;
+        break;
+      case 'Auth/verifySuccess': {
+        status = AuthReducer.status;
+        const wholeData = AuthReducer?.verifyResponse;
+        if (isNonUsaFlow) {
+          if (wholeData?.is_verified !== "1") {
+            props?.navigation.navigate("LoginEmail", {
+              nonUsaUser: true,
+              user: {
+                emailid: wholeData?.email,
+              },
+              verifyemail: {
+                verifyemail: wholeData,
+                isNonUsaUser: true,
+              },
+            });
+          }
+        } else if (wholeData?.is_verified !== "1" &amp;&amp; wholeData?.phone_verified !== "1") {
+          props?.navigation.navigate("LoginEmail", {
+            user: {
+              emailid: wholeData?.email,
+              phoneData: wholeData?.phone,
+            },
+          });
+        }
+        break;
+      }
+      case 'Auth/verifyFailure':
+        status = AuthReducer.status;
+        break;
+    }
+  }
+  useEffect(() => {
+    const loginSignInResponse = AuthReducer?.loginsiginResponse;
+    if (!loginSignInResponse || Object.keys(loginSignInResponse).length == 0) return;
+    if (lastHandledSigninResponseRef.current == loginSignInResponse) return;
+    lastHandledSigninResponseRef.current = loginSignInResponse;
+
+    const normalizedPhoneCode = String(phoneCountryCode || "").trim();
+    const isUSUser = normalizedPhoneCode == "+1";
+    const isEmailVerified = isTrueFlag(loginSignInResponse?.is_verified);
+    const isPhoneVerified = isTrueFlag(loginSignInResponse?.phone_verified);
+    const isEmailNotVerified = isFalseFlag(loginSignInResponse?.is_verified);
+    const isPhoneNotVerified = isFalseFlag(loginSignInResponse?.phone_verified);
+    const isSuccess = isTrueFlag(loginSignInResponse?.success);
+    const hasPhoneOtp = !!loginSignInResponse?.phone_otp;
+    // OTP generation response often only has success/msg/phone_otp.
+    // Handle this first so it always navigates to OTP screen.
+    if (isSuccess &amp;&amp; hasPhoneOtp) {
+      if (isNonUsaFlow) return;
+      props.navigation.navigate("MobileLoginOTP", {
+        "mobileNo": {
+          mobileNo: isUSUser ? mobileHd : email,
+          phoneCode: normalizedPhoneCode
+        }
+      });
+      return;
+    }
+    if (isNonUsaFlow) {
+      if (isEmailNotVerified) {
+        props.navigation.navigate("LoginEmail", {
+          nonUsaUser: true,
+          user: {
+            emailid: loginSignInResponse?.email || email,
+          },
+          verifyemail: {
+            verifyemail: loginSignInResponse,
+            isNonUsaUser: true,
+          },
+        });
+        return;
+      }
+      if (isEmailVerified) {
+        let objToken = { "token": loginSignInResponse?.token, "key": {} };
+        dispatch(dashboardRequest(objToken));
+        setNonloader(true);
+        setGtprof(false);
+        return;
+      }
+    }
+    if (isEmailNotVerified &amp;&amp; isPhoneNotVerified) {
+      verifyHandle();
+      return;
+    }
+    if (isEmailVerified &amp;&amp; isPhoneNotVerified) {
+      props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: normalizedPhoneCode } });
+      return;
+    }
+      if (isPhoneVerified) {
+        if (isUSUser) {
+          let objToken = { "token": loginSignInResponse?.token, "key": {} }
+          dispatch(dashboardRequest(objToken));
+          setNonloader(true);
+          setGtprof(false);
+        } else {
+        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
+          props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+        } else {
+          props?.navigation.navigate("CreateStateInfor");
+        }
+        }
+        return;
+      }
+    if (isSuccess) {
+      props.navigation.navigate("MobileLoginOTP", {
+        "mobileNo": {
+          mobileNo: isUSUser ? mobileHd : email,
+          phoneCode: normalizedPhoneCode
+        }
+      });
+      return;
+    }
+    showErrorAlert(loginSignInResponse?.msg || "something went wrong !");
+  }, [AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
+  const validHandles = useMemo(() => new Set([
+    "Physician - MD",
+    "Physician - DO",
+    "Physician - DPM"
+  ]), []);
+
+  const loginResponse = AuthReducer?.loginResponse || {};
+  const user = loginResponse?.user || {};
+  const isGuestPrimeUser = useMemo(() => {
+    const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+    const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+    return subscriptionUser == 'non-subscribed' &amp;&amp; subscriptions.length == 0;
+  }, [user?.subscription_user, user?.subscriptions]);
+  console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
+  const normalizedProfessionHandle = normalizeProfessionHandle(
+    user?.profession &amp;&amp; user?.profession_type ? `${user.profession}-${user.profession_type}` : `${user?.profession || ''}-${user?.profession_type || ''}`
+  );
+  const subscriptionList = Array.isArray(user?.subscription) ? user.subscription : [];
+  const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+  const shouldShowPrimeCardForLogin =
+    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &amp;&amp;
+    subscriptionUser == 'non-subscribed' &amp;&amp;
+    subscriptionList.length == 0;
+  const shouldShowStateLicenseForLogin =
+    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &amp;&amp;
+    subscriptionList.length > 0;
+  const chooseStatecardResponse = AuthReducer?.chooseStatecardResponse || {};
+
+  // Memoized derived values
+  const profFromDashboard = useMemo(() => (
+    user?.profession &amp;&amp; user?.profession_type
+      ? `${user.profession} - ${user.profession_type}`
+      : null
+  ), [user.profession, user.profession_type]);
+
+  const allProfTake = useMemo(() => (
+    validHandles.has(profFromDashboard)
+  ), [validHandles, profFromDashboard]);
+
+  const token = useMemo(() => loginResponse?.token, [loginResponse]);
+  const tokenObj = useMemo(() => ({ token, key: {} }), [token]);
+  const prevToken = useRef(null);
+
+  // Track if we have valid state license data
+  const hasStateLicenseData = useRef(false);
+  const stateLicenseCheckComplete = useRef(false);
+
+  // If Physician with no profession_type set, dispatch verifyRequest once on loginSucces
+
+  // Dispatch license request on token change
+  useEffect(() => {
+    if (token &amp;&amp; token !== prevToken.current) {
+      // Reset flags when token changes
+      hasStateLicenseData.current = false;
+      stateLicenseCheckComplete.current = false;
+      dispatch(chooseStatecardRequest(tokenObj));
+      prevToken.current = token;
+    }
+  }, [token, tokenObj, dispatch]);
+
+  // Monitor when state license response is valid
+  useEffect(() => {
+    if (chooseStatecardResponse?.state_licensures !== undefined) {
+      hasStateLicenseData.current = true;
+    }
+  }, [chooseStatecardResponse]);
+
+  // Main navigation logic
+  useEffect(() => {
+    if (!token) return;
+    AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(isGuestPrimeUser)).catch(err => {
+      console.log('Error storing guest prime flag', err);
+    });
+    const isEmailNotVerified = loginResponse.is_verified == "0";
+    const isPhoneNotVerified = loginResponse.phone_verified == "0";
+    const isEmailVerified = loginResponse.is_verified == "1";
+    const nophone = !loginResponse.phone
+    // hasLicense: true when license_number has a real value
+    const hasLicense = !!(user?.license_number &amp;&amp; user.license_number.trim() !== "");
+    // noLicense: true when license_number is null or "" (API returns "" when not yet added)
+    // Get state licenses only if we have valid data
+    const stateLicenses = hasStateLicenseData.current
+      ? chooseStatecardResponse?.state_licensures || []
+      : [];
+
+    const hasStateLicensures = stateLicenses.length > 0;
+
+    // Track navigation state to prevent duplicate calls
+    let navigationHandled = false;
+
+    const handleNavigation = (destination, params = {}) => {
+      if (!navigationHandled) {
+        props?.navigation.navigate(destination, params);
+        navigationHandled = true;
+        stateLicenseCheckComplete.current = true;
+      }
+    };
+
+    const isNonUsa = isNonUsaAccount(user) || isNonUsaFlow;
+    if (isNonUsa) {
+      if (isEmailNotVerified) {
+        handleNavigation("LoginEmail", {
+          nonUsaUser: true,
+          user: {
+            emailid: loginResponse?.email,
+          },
+          verifyemail: {
+            verifyemail: loginResponse,
+            isNonUsaUser: true,
+          },
+        });
+        return;
+      }
+      const proceedNonUsaLogin = async () => {
+        try {
+          await writeNonUsaFlowState({
+            userType: 'non_usa',
+            isNonUsa: true,
+            emailVerified: true,
+            professionCompleted: true,
+          });
+        } catch (e) {
+          console.log('Error writing nonUsaFlowState:', e);
+        }
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'TabNav' }],
+          })
+        );
+      };
+      proceedNonUsaLogin();
+      return;
+    } else {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+    }
+
+    if (isEmailNotVerified &amp;&amp; isPhoneNotVerified) {
+      handleNavigation("LoginEmail", {
+        user: {
+          emailid: loginResponse?.email,
+          phoneData: loginResponse?.phone,
+        }
+      });
+      return;
+    }
+    if (isEmailVerified &amp;&amp; nophone) {
+      handleNavigation("AddMobileLogin");
+      return;
+    }
+    if (isEmailVerified &amp;&amp; isPhoneNotVerified) {
+      handleNavigation("LoginMobile", { validPh: { cellno: loginResponse?.phone, phonecode: phoneCountryCode } });
+      return;
+    }
+    if (allProfTake &amp;&amp; (shouldShowPrimeCardForLogin || shouldShowStateLicenseForLogin)) {
+      handleNavigation("PrimeCard", {
+        ...props?.route?.params,
+        subscriptionDataExists: shouldShowStateLicenseForLogin || undefined,
+      });
+      return;
+    }
+    const activeResponse = (AuthReducer?.verifyResponse &amp;&amp; Object.keys(AuthReducer.verifyResponse).length > 0)
+      ? AuthReducer.verifyResponse
+      : loginResponse;
+    const isFullyVerified = activeResponse?.is_verified == "1" &amp;&amp; activeResponse?.phone_verified == "1";
+
+    if (allProfTake &amp;&amp; !hasLicense &amp;&amp; !hasStateLicenseData.current &amp;&amp; !isFullyVerified) {
+      return;
+    }
+
+    if (allProfTake) {
+      if (hasLicense || isFullyVerified) {
+        setNonloader(true);
+        dispatch(dashboardRequest(tokenObj));
+        setGtprof(true);
+      }
+      else if (hasStateLicensures) {
+        setNonloader(true);
+        handleNavigation("ChooseState", {
+          dataVr: { dataVr: stateLicenses, Loc: loginResponse?.user?.user_location }
+        });
+      }
+      else {
+        setNonloader(true);
+        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
+          handleNavigation("TabNav");
+        } else {
+          handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
+        }
+      }
+    }
+    else if (loginResponse.success) {
+      setNonloader(true);
+      dispatch(dashboardRequest(tokenObj));
+      setGtprof(false);
+    }
+    else {
+      showErrorAlert(loginResponse.msg || "Something went wrong!");
+    }
+  }, [
+    token,
+    allProfTake,
+    loginResponse,
+    user?.license_number,
+    chooseStatecardResponse,
+    nonUsaPermanentFlags,
+    phoneCountryCode,
+    tokenObj,
+    AuthReducer?.verifyResponse,
+    isGuestPrimeUser
+  ]);
+  useEffect(() => {
+    if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 &amp;&amp; allProfTake) {
+      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+        return index === self.findIndex((s) =>
+          s.state_id === state.state_id &amp;&amp;
+          s.board_id === state.board_id
+        );
+      });
+      dispatch(mainprofileRequest({}))
+      setGtprof(true);
+      setFulldashbaord(uniqueStates);
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    } else if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 &amp;&amp; !allProfTake) {
+      const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+        return index === self.findIndex((s) =>
+          s.state_id === state.state_id &amp;&amp;
+          s.board_id === state.board_id
+        );
+      });
+      dispatch(mainprofileRequest({}))
+      setGtprof(false);
+      setNonloader(false);
+      setFulldashbaord(uniqueStates);
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    } else if (DashboardReducer?.dashboardResponse?.data?.licensures?.length == 0 &amp;&amp; !allProfTake) {
+      setFulldashbaord(0);
+      setGtprof(false);
+      setNonloader(false);
+      dispatch(mainprofileRequest({}))
+      props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+    }
+  }, [DashboardReducer?.dashboardResponse?.data, allProfTake])
+  if (status1 == '' || DashboardReducer.status != status1) {
+    switch (DashboardReducer.status) {
+      case 'Dashboard/dashboardRequest':
+        status1 = DashboardReducer.status;
+        setNonloader(true);
+        break;
+      case 'Dashboard/dashboardSuccess':
+        status1 = DashboardReducer.status;
+        setNonloader(false);
+        const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
+          return index === self.findIndex((s) =>
+            s.state_id === state.state_id &amp;&amp;
+            s.board_id === state.board_id
+          );
+        });
+        dispatch(mainprofileRequest({}))
+        setFulldashbaord(uniqueStates);
+        props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav",params: { detectmain:isGuestPrimeUser ? "Prime" : "main" } }] }));
+        break;
+      case 'Dashboard/dashboardFailure':
+        status1 = DashboardReducer.status;
+        setNonloader(false);
+        break;
+    }
+  }
+  const backEra = () => {
+    if (props.navigation.canGoBack()) {
+      props.navigation.goBack();
+    } else {
+      props.navigation.navigate("Onboard");
+    }
+  }
+  const goToGuestPage = async () => {
+    try {
+      const session = await AsyncStorage.getItem('PLAYERSESSION');
+      if (!session) {
+        const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
+        await AsyncStorage.setItem('PLAYERSESSION', guestSessionId);
+      }
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'GuestUser' }],
+        })
+      );
+    } catch (err) {
+      console.log('goToGuestPage error', err);
+      props.navigation.navigate("Onboard");
+    }
+  }
+  useEffect(() => {
+    const onBackPress = () => {
+      backEra();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
+    return () => backHandler.remove();
+  }, []);
+  const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?&lt;!\.)$/;
+  const mobileRegex = /^\d{10}$/;
+  const isButtonEnabled = isNonUsaFlow
+    ? emailRegex.test(email)
+    : (emailRegex.test(email) || mobileRegex.test(email));
+  useEffect(() => {
+    if (DashboardReducer?.dashboardResponse?.data) {
+      setNonloader(false);
+    }
+  }, [DashboardReducer?.dashboardResponse])
+  const phoneInputRef = useRef(null);
+  useEffect(() => {
+    if (mobile &amp;&amp; phoneInputRef.current) {
+      phoneInputRef.current.focus();
+    }
+  }, [mobile])
+
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+  useEffect(() => {
+    generateDeviceToken()
+      .then((res) => {
+        setFcm(res)
+      })
+      .catch((err) => {
+        showErrorAlert("Please connect to Interne11t", err)
+      })
+  }, [isFocus, fcm])
+  return (
+    &lt;>
+      &lt;MyStatusBar
+        barStyle={'light-content'}
+        backgroundColor={Colorpath.Pagebg}
+      />
+      &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+        &lt;Loader visible={nonloader || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} />
+        {/* &lt;Loader visible={AuthReducer?.status == 'Auth/loginRequest' || nonloader || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} /> */}
+        &lt;KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
+        >
+          &lt;ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(80) }}>
+            &lt;View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), justifyContent: "center", alignItems: "center" }}>
+              &lt;Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }} />
+            &lt;/View>
+            &lt;View style={[styles.headerContainer]}>
+              &lt;Text style={styles.headerText}>{"Hello Again!"}&lt;/Text>
+              &lt;Text style={styles.subHeaderText}>
+                {"Welcome back we’re always \n    happy to see you again"}
+              &lt;/Text>
+            &lt;/View>
+            &lt;View>
+              &lt;View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(15) }}>
+
+            &lt;View style={styles.content}>
+                  &lt;View style={styles.formContainer}>
+                    {mobile &amp;&amp; !isNonUsaFlow ? &lt;InputField
+                      ref={phoneInputRef}
+                      label="Email / Cell Number"
+                      value={mobileHd}
+                      onChangeText={(val) => {
+                        if (phoneCountryCode == "+91") {
+                          const formatted = formatIndianPhoneNumber(val);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          handleInputChange(rawDigits);
+                          setEmail(rawDigits);
+                        } else if (phoneCountryCode == "+1") {
+                          const formatted = formatPhoneNumber(val);
+                          setMobileHd(formatted);
+                          const rawDigits = formatted.replace(/\D/g, '');
+                          handleInputChange(rawDigits);
+                          setEmail(rawDigits);
+                        }
+                      }}
+                      placeholder=""
+                      placeholderTextColor="#949494"
+                      keyboardType="number-pad"
+                      showCountryCode={true}
+                      countryCode={phoneCountryCode || "+91"}
+                      maxlength={14}
+                    /> : &lt;InputField
+                      label={isNonUsaFlow ? "Email Address" : "Email / Cell Number"}
+                      value={email}
+                      onChangeText={handleInputChange}
+                      placeholder=""
+                      placeholderTextColor="#949494"
+                      keyboardType="default"
+                      showCountryCode={false}
+                      maxlength={100}
+                    />}
+                    {isValidEmail &amp;&amp; (
+                      &lt;View style={{ bottom: normalize(10) }}>
+                        &lt;Text
+                          style={{
+                            fontFamily: Fonts.InterRegular,
+                            fontSize: 12,
+                            color: 'red',
+                          }}>
+                          {"Please enter a valid email address (e.g., abc@gmail.com)"}
+                        &lt;/Text>
+                      &lt;/View>
+                    )}
+                    {isMobile &amp;&amp; (
+                      &lt;View style={{ bottom: normalize(10) }}>
+                        &lt;Text
+                          style={{
+                            fontFamily: Fonts.InterRegular,
+                            fontSize: 12,
+                            color: 'red',
+                          }}>
+                          {"Please enter a valid cell number"}
+                        &lt;/Text>
+                      &lt;/View>
+                    )}
+                    {isPasswordFieldVisible &amp;&amp; &lt;InputField
+                      label="Password"
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder=""
+                      placeholderTextColor="#949494"
+                      isPassword={true}
+                      keyboardType="default"
+                      showCountryCode={false}
+                    />}
+                    {password &amp;&amp; password?.length &lt; 5 &amp;&amp; (
+                      &lt;View style={{ bottom: normalize(10) }}>
+                        &lt;Text
+                          style={{
+                            fontFamily: Fonts.InterRegular,
+                            fontSize: 12,
+                            color: 'red',
+                          }}>
+                          {"Please enter your password to continue"}
+                        &lt;/Text>
+                      &lt;/View>
+                    )}
+                  &lt;/View>
+                &lt;/View>
+                {(isNonUsaFlow || (!mobile &amp;&amp; phoneCountryCode)) ? &lt;View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
+                  &lt;TouchableOpacity onPress={() => { props.navigation.navigate("ForgotMPIN", { phoneCode: phoneCountryCode || "+1", isNonUsaUser: isNonUsaFlow }) }}>
+                    &lt;Text style={styles.forgotText}>Forgot Password?&lt;/Text>
+                  &lt;/TouchableOpacity>
+                &lt;/View> : &lt;>&lt;/>}
+              &lt;/View>
+              &lt;Buttons
+                onPress={handleLogin}
+                height={normalize(45)}
+                width={normalize(290)}
+                backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#CCC"}
+                borderRadius={normalize(9)}
+                text={(isPasswordFieldVisible || isNonUsaFlow) ? "Sign In" : "Proceed"}
+                color={Colorpath.white}
+                fontSize={18}
+                fontFamily={Fonts.InterSemiBold}
+                marginTop={normalize(0)}
+                disabled={!isButtonEnabled}
+              />
+            &lt;/View>
+            &lt;View style={{ flexDirection: "row", justifyContent: "center", gap: 1, marginTop: normalize(10) }}>
+              &lt;View>
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#000000" }}>
+                  {"New user?"}
+                &lt;/Text>
+              &lt;/View>
+              &lt;TouchableOpacity onPress={() => {
+                if (isNonUsaFlow) {
+                  props.navigation.navigate('SignUp', { phoneCd: { phoneCd: '' }, isNonUsaUser: true });
+                } else if (phoneCountryCode) {
+                  props.navigation.navigate('SignUp', { phoneCd: { phoneCd: phoneCountryCode } });
+                } else {
+                  setInputBlocked(true);
+                }
+              }}>
+                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                  {" Sign Up"}
+                &lt;/Text>
+              &lt;/TouchableOpacity>
+            &lt;/View>
+            &lt;TouchableOpacity onPress={goToGuestPage} style={{ marginTop: normalize(15), alignSelf: "center" }}>
+              &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.black, fontWeight: "bold" }}>
+                {"Back to Guest Page"}
+              &lt;/Text>
+            &lt;/TouchableOpacity>
+          &lt;/ScrollView>
+        &lt;/KeyboardAvoidingView>
+      &lt;/SafeAreaView>
+    &lt;/>
+  );
+};
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: Platform.OS === 'ios' ? normalize(50) : normalize(80)
+    // flex: 0.6,
+  },
+  headerText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 32,
+    color: "#000000",
+    fontWeight: "bold"
+  },
+  subHeaderText: {
+    marginTop: normalize(10),
+    color: "#666666",
+    fontSize: 18,
+    fontFamily: Fonts.InterRegular,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    marginTop: normalize(15),
+    alignItems: 'center',
+  },
+  forgotContainer: {
+    // marginTop: normalize(10),
+    alignSelf: 'center',
+    width: normalize(280),
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  forgotText: {
+    fontFamily: Fonts.InterMedium,
+    fontSize: 14,
+    color: Colorpath.ButtonColr,
+  },
+  input: {
+    height: normalize(45),
+    width: normalize(280), padding: 10,
+    backgroundColor: Colorpath.white,
+    borderRadius: normalize(9),
+    shadowColor: "#000",
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: normalize(5),
+    elevation: normalize(5),
+    fontFamily: Fonts.InterMedium,
+    fontSize: 15,
+    color: "#000"
+  },
+  content: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  formContainer: {
+    flex: 1,
+    paddingRight: normalize(0),
+  }
+});
+
+export default Login;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

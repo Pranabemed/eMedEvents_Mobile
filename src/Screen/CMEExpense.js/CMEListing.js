@@ -16,6 +16,14 @@ import { styles } from '../Specialization/SpecialStyle';
 import Modal from 'react-native-modal';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable CMEListing component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CMEListing = (props) => {
     const [CMEmodal, setCMEModal] = useState(false);
     console.log(props?.route?.params?.headerName, "fkjfkj")

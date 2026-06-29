@@ -14,6 +14,14 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import CourseShimmer from '../../Components/CourseShimmer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable BoardCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const BoardCourse = (props) => {
     const dispatch = useDispatch();

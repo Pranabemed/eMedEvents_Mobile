@@ -3,6 +3,14 @@ import React from 'react'
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
+
+/**
+ * Reusable Dashboardmaintwo component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Dashboardmaintwo = ({ cmeModalFalse, modalFalse, DashboardReducer }) => {
     return (
         <View>

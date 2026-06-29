@@ -9,6 +9,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { boardListDeleteRequest, boardListProfileRequest, stateLicenseDeleteRequest, stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+
+/**
+ * Reusable ProfileModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let statusd = "";
 const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData, profiletakeshow, setProfiletakeshow, remove, detectdata, nav }) => {
     const profileData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }, { id: 2, name: "Delete", Icon: "delete" }];

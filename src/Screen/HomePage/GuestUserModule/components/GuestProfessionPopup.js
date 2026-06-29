@@ -20,6 +20,7 @@ import Colorpath from '../../../../Themes/Colorpath';
 import Fonts from '../../../../Themes/Fonts';
 import normalize from '../../../../Utils/Helpers/Dimen';
 import { getApi } from '../../../../Utils/Helpers/ApiRequest';
+import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import Buttons from '../../../../Components/Button';
 import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
 
@@ -28,14 +29,14 @@ const POPUP_SHOWN_KEY = 'GUEST_PROFESSION_POPUP_SHOWN';
 const getDisplayValue = item =>
   String(
     item?.name ??
-      item?.label ??
-      item?.profession ??
-      item?.profession_name ??
-      item?.speciality_name ??
-      item?.specialty_name ??
-      item?.title ??
-      item ??
-      '',
+    item?.label ??
+    item?.profession ??
+    item?.profession_name ??
+    item?.speciality_name ??
+    item?.specialty_name ??
+    item?.title ??
+    item ??
+    '',
   ).trim();
 
 const normalizeList = source => {
@@ -76,19 +77,19 @@ const normalizeList = source => {
 const normalizeProfessionResponse = responseData =>
   normalizeList(
     responseData?.profession_credentials ??
-      responseData?.professions ??
-      responseData?.profession ??
-      responseData?.data ??
-      responseData,
+    responseData?.professions ??
+    responseData?.profession ??
+    responseData?.data ??
+    responseData,
   );
 
 const normalizeSpecialtyResponse = responseData =>
   normalizeList(
     responseData?.specialities ??
-      responseData?.specialties ??
-      responseData?.speciality ??
-      responseData?.data ??
-      responseData,
+    responseData?.specialties ??
+    responseData?.speciality ??
+    responseData?.data ??
+    responseData,
   );
 
 export const GuestProfessionPopup = ({
@@ -151,6 +152,7 @@ export const GuestProfessionPopup = ({
   const fetchProfessions = useCallback(async () => {
     setProfessionLoading(true);
     try {
+      getUserAgentJSON();
       const endpoint = isUsaUser === false
         ? 'master/professionCredentials?other_country=1'
         : 'master/professionCredentials';
@@ -176,6 +178,7 @@ export const GuestProfessionPopup = ({
 
     setSpecialtyLoading(true);
     try {
+      getUserAgentJSON();
       const response = await getApi(
         `master/specialities?profession=${encodeURIComponent(selectedProfession)}`,
       );
@@ -286,26 +289,46 @@ export const GuestProfessionPopup = ({
     }
 
     setIsSubmitting(true);
+
+    let dynamicCity = guestData?.city_name || '';
+    let dynamicState = guestData?.state_name || '';
+    let dynamicCountryName = guestData?.country_name || '';
+
+    try {
+      if (!dynamicCity || dynamicCountryName === 'IN' || dynamicCountryName === guestData?.country) {
+        const geoRes = await fetch('https://ipwhois.app/json/');
+        const geoData = await geoRes.json();
+        dynamicCity = geoData?.city || dynamicCity;
+        dynamicState = geoData?.region || dynamicState;
+        dynamicCountryName = geoData?.country || dynamicCountryName;
+      }
+    } catch (error) {
+      console.log('Error fetching dynamic geo data:', error);
+    }
+
     const payload = {
       profession,
       speciality: specialty,
       email,
       playerSessionID: guestData?.playerSessionID || '',
       ip: guestData?.ip || '',
-      city: '',
-      region: guestData?.country || '',
-      country_name: guestData?.country || '',
+      city: dynamicCity,
+      state_name: dynamicState,
+      region: dynamicState,
+      country_name: dynamicCountryName,
       deviceToken: guestData?.deviceToken || '',
       deviceType: Platform.OS === 'web' ? 'web_chrome' : Platform.OS,
     };
-
     dispatch(professionSaveRequest(payload));
   }, [
     dispatch,
+    guestData?.city_name,
     guestData?.country,
+    guestData?.country_name,
     guestData?.deviceToken,
     guestData?.ip,
     guestData?.playerSessionID,
+    guestData?.state_name,
     email,
     isSubmitting,
     profession,

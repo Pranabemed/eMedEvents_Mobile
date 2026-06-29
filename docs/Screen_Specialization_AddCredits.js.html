@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Specialization/AddCredits.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Specialization/AddCredits.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, FlatList, ImageBackground, TextInput, Animated, Easing, BackHandler, Pressable } from 'react-native';
+import Colorpath from '../../Themes/Colorpath';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import PageHeader from '../../Components/PageHeader';
+import Fonts from '../../Themes/Fonts';
+import normalize from '../../Utils/Helpers/Dimen';
+import Imagepath from '../../Themes/Imagepath';
+import ScanIcon from 'react-native-vector-icons/AntDesign';
+import TextFieldIn from '../../Components/Textfield';
+import CustomTextField from '../../Components/CustomTextfiled';
+import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
+import CalenderIcon from 'react-native-vector-icons/Feather';
+import Buttons from '../../Components/Button';
+import CellModal from '../../Components/CellModal';
+import moment from 'moment';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useDispatch, useSelector } from 'react-redux';
+import { OCRCertificateRequest, addCreditVaultRequest, addCreditsRequest, dashboardRequest, stateCourseRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import Modal from 'react-native-modal';
+import CameraPicker from '../../Components/CameraPicker';
+import DeleteIcon from 'react-native-vector-icons/MaterialIcons';
+import Loader from '../../Utils/Helpers/Loader';
+import ImagePicker from 'react-native-image-crop-picker';
+import CrossIcon from 'react-native-vector-icons/AntDesign'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
+import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import DropdownInput from '../../Components/DropdownInput';
+import CreditTypeComponent from './CreditTypeComponent';
+import ChooseMandatoryComponent from './ChooseMandatoryComponent';
+import TextInputSingle from '../../Components/SingleTextinput';
+import CustomInputTouchable from '../../Components/IconTextIn';
+import InputField from '../../Components/CellInput';
+import DropdownIcon from 'react-native-vector-icons/Entypo';
+import showDur from '../../Utils/Helpers/Duration';
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable AddCredits component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+let status = "";
+const AddCredits = (props) => {
+    const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        if (isfocused) {
+            readNonUsaFlowState().then(state => {
+                if (mounted) {
+                    setNonUsaFlowState(state);
+                }
+            });
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isfocused]);
+
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyadd || finalProfession;
+    const isNonUsaUser = props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+
+    console.log(props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard, "jjjjjjj", props?.route?.params?.creditvalutstate?.state_name, "Props111", props?.route?.params?.creditvalutboard?.board_data?.board_id, ocrData, props?.route?.params?.FullBoard, props?.route?.params?.boardCert);
+    console.log("Propsfulldata=====", props?.route?.params, props?.route?.params?.fulldata, "hjhh", props?.route?.params?.fulldata?.fulldata);
+    console.log("mainAdd=====1223", props?.route?.params?.mainAdd, props?.route?.params?.mainAdd?.state_name);
+    const [activitytitle, setActivitytitle] = useState('');
+    const [provideName, setProvideName] = useState('');
+    const [creditscount, setCreditscount] = useState('');
+    const [cdate, setCdate] = useState('');
+    const [cleardata, setCleardata] = useState(false);
+    const [stopic, setStopic] = useState('');
+    const [isModalVisiblecred, setModalVisiblecred] = useState(false);
+    const [opendate, setOpendate] = useState(false);
+    const dispatch = useDispatch();
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const [selectCountry, setSelectCountry] = useState([]);
+    const [clist, setClist] = useState('');
+    const [searchtext, setSearchtext] = useState('');
+    const isfocused = useIsFocused();
+    const [countrypicker, setcountrypicker] = useState(false);
+    const [country, setCountry] = useState('');
+    const [creditId, setCreditId] = useState();
+    const [cameraPicker, setCameraPicker] = useState(false);
+    const [ProfilePicObj1, setProfilePicObj1] = useState("");
+    const [ProfilePicUri1, setProfilePicUri1] = useState('');
+    const [finalstate, setFinalstate] = useState();
+    const [stateMan, setStateMan] = useState(false);
+    const [stateManData, setStateManData] = useState([]);
+    const [statetopicpicker, setStatetopicpicker] = useState(false);
+    const [clisttopic, setClisttopic] = useState('');
+    const [searchtexttopic, setSearchtexttopic] = useState('');
+    const [selectCountrytopic, setSelectCountrytopic] = useState([]);
+    const [topicId, setTopicId] = useState("");
+    const [ocrData, setOCRData] = useState(null);
+    const [moretext, setMoretext] = useState(false);
+    console.log(finalstate, "mmmmmmmm", moretext)
+    const addCreditBack = () => {
+        props.navigation.goBack();
+    };
+    console.log(AuthReducer, "df,mkkkk", clisttopic, clisttopic[0]?.name, cleardata, ProfilePicObj1);
+    console.log(clist, "dropdowndata========", ProfilePicObj1 === null, ProfilePicObj1
+        ? ProfilePicObj1.uri
+            ? ProfilePicObj1.uri.split('/').pop().replace(/-/g, '').slice(-16)
+            : ProfilePicObj1.split('/').pop()
+        : ProfilePicObj1)
+    const [finalverifyadd, setFinalverifyadd] = useState(null);
+    const [finalProfession, setFinalProfession] = useState(null);
+    const returnToDashboardVault = props?.route?.params?.returnToDashboardVault === true;
+    useEffect(() => {
+        const token_handle_vault = () => {
+            setTimeout(async () => {
+                try {
+                    const [board_special, profession_data] = await Promise.all([
+                        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                        AsyncStorage.getItem(constants.PROFESSION)
+                    ]);
+                    const board_special_json = board_special ? JSON.parse(board_special) : null;
+                    const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+                    setFinalverifyadd(board_special_json);
+                    setFinalProfession(profession_data_json);
+                    console.log(board_special_json, "statelicesene=================");
+                    console.log(profession_data_json, "profession=================");
+                } catch (error) {
+                    console.log('Error fetching data:', error);
+                }
+            }, 100);
+        };
+
+        token_handle_vault();
+    }, [props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard]);
+    const handleCreditType = (item) => {
+        setCountry(item?.name);
+        setcountrypicker(false);
+        setCreditId(item?.id);
+    }
+    useEffect(() => {
+        if (country) {
+            setSearchtext("");
+        }
+    }, [country])
+    useEffect(() => {
+        if (!searchtext &amp;&amp; DashboardReducer?.addCreditsResponse?.credit_types) {
+            setClist(DashboardReducer?.addCreditsResponse?.credit_types);
+        }
+    }, [searchtext])
+    // useEffect(() => {
+    //     const token_handle_vaultadd = () => {
+    //       setTimeout(async () => {
+    //         const board_special_add = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
+    //         console.log(board_special_add, "statelicesene=================addcredit");
+    //         const jsonObject = JSON.parse(board_special_add);
+    //         setFinalverifyadd(jsonObject);
+    //       }, 500);
+    //     };
+
+    //     try {
+    //         token_handle_vaultadd();
+    //     } catch (error) {
+    //       console.log(error);
+    //     }
+    //   }, [props?.route?.params?.creditvalut]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            let obj = {};
+
+            const fetchData = () => {
+                connectionrequest()
+                    .then(() => {
+                        dispatch(stateMandatoryRequest(obj));
+                    })
+                    .catch((err) => {
+                        showErrorAlert("Please connect to internet", err);
+                    });
+            };
+
+            fetchData();
+
+            // Cleanup if needed
+            return () => {
+                // Cleanup logic here if necessary
+            };
+        }, [])
+    );
+
+    function directCameraCredit() {
+        ImagePicker.openCamera({
+            width: 300,
+            height: 400,
+            cropping: true,
+            mediaType: 'any',
+        })
+            .then(response => {
+                let imageObj = {
+                    name: response.filename
+                        ? response.filename
+                        : response.path.replace(/^.*[\\\/]/, ''),
+                    type: response.mime,
+                    uri: response.path,
+                };
+                setProfilePicObj1(imageObj);
+                setProfilePicUri1(imageObj.uri);
+            })
+            .catch(err => console.log(err));
+    }
+    const toggleModalcred = () => {
+        setModalVisiblecred(!isModalVisiblecred);
+    };
+    console.log(finalProfession?.profession, "profession======122");
+    const addcreditAgain = () => {
+        const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
+            AuthReducer?.loginResponse?.user?.profession ||
+            AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
+        connectionrequest()
+            .then(() => {
+                dispatch(addCreditsRequest(profession));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to Internet');
+            });
+    }
+    useEffect(() => {
+        if (isNonUsaUser &amp;&amp; isfocused) {
+            const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
+                AuthReducer?.loginResponse?.user?.profession ||
+                AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
+            connectionrequest()
+                .then(() => {
+                    dispatch(addCreditsRequest(profession));
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        }
+    }, [isNonUsaUser, isfocused, finalProfession, finalverifyadd]);
+    const StateMandatoryDat = [{ id: 0, name: "No" }, { id: 1, name: "Yes" }]
+    const handleAddCredits = () => {
+        if (!ProfilePicObj1 &amp;&amp; !isNonUsaUser) {
+            showErrorAlert("Please upload a valid file (accepted formats: .docx, .pptx, .word, .jpg, .png, .jpeg)");
+        } else if (!activitytitle) {
+            showErrorAlert("Enter your activity title.");
+        } else if (!provideName) {
+            showErrorAlert("Enter your provide name.");
+        } else if (!country) {
+            showErrorAlert("Select your credit type");
+        } else if (!creditscount) {
+            showErrorAlert("Enter your credits");
+        } else if (!isNonUsaUser &amp;&amp; finalstate === "Yes" &amp;&amp; !stopic) {
+            showErrorAlert("Select your topic")
+        } else if (!cdate) {
+            showErrorAlert("Select your issue date ");
+        } else {
+            let obj = new FormData();
+            obj.append("id", props?.route?.params?.creditvalutstate?.id || props?.route?.params?.mainAdd?.creditID?.id || props?.route?.params?.creditvalut?.id || props?.route?.params?.fulldata?.fulldata?.id || props?.route?.params?.mainAdd?.id || props?.route?.params?.mainAdd?.state_data?.id || 0);
+            obj.append("course_title", activitytitle);
+            obj.append("credit_type", creditId);
+            obj.append("credits", +(creditscount));
+            obj.append("completion_date", cdate);
+            if (ProfilePicObj1) {
+                obj.append("certificate", ProfilePicObj1);
+            }
+            if (isNonUsaUser) {
+                const isGuestUser = !Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
+                if (isGuestUser) {
+                    obj.append("board_id", "");
+                    obj.append("source_type", "certificate");
+                    obj.append("mandatory_topic", "");
+                } else {
+                    obj.append("board_id", 0);
+                    obj.append("source_type", "licensure");
+                    obj.append("mandatory_topic", 0);
+                }
+            } else {
+                obj.append("board_id", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.creditvalutstate?.board_data?.board_id || props?.route?.params?.fulldata?.statenamefull?.board_data?.board_id || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalut?.board_data?.board_id || props?.route?.params?.fulldata?.fulldata?.state_board_id || props?.route?.params?.mainAdd?.board_data?.board_id || props?.route?.params?.mainAdd?.state_data?.board_data?.board_id || props?.route?.params?.mainAdd?.statid || props?.route?.params?.mainAdd?.creditID?.board_id || props?.route?.params?.mainAdd?.board_id || 0 || "");
+                obj.append("source_type", props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? "certificate" : "licensure");
+                obj.append("mandatory_topic", finalstate == "Yes" ? topicId : "");
+            }
+            obj.append("course_provider", provideName)
+            obj.append("ocr_format_id", ocrData ? ocrData?.ocr_format_id : "")
+            console.log(obj, "add credits");
+            connectionrequest()
+                .then(() => {
+                    dispatch(addCreditVaultRequest(obj));
+                })
+                .catch(err => { showErrorAlert("Please connect to internet") })
+        }
+    }
+    const searchCreditName = text => {
+        console.log(text, 'text12333');
+        if (text) {
+            const listData = selectCountry?.filter(function (item) {
+                console.log('item+++++++++++++++++++1111', item?.name);
+                const itemData = item?.name
+                    ? item?.name?.toUpperCase()
+                    : ''.toUpperCase();
+                const textData = text.trim().toUpperCase();
+                const filteredData = itemData.indexOf(textData) > -1;
+                console.log('filteredData', filteredData);
+                return filteredData;
+            });
+            setClist(listData);
+            setSearchtext(text);
+        } else {
+            setClist(selectCountry);
+            setSearchtext(text);
+        }
+    };
+    useEffect(() => {
+        if (ocrData?.activity_title) {
+            setActivitytitle(ocrData.activity_title);
+        } else if (props?.route?.params?.fulldata?.fulldata?.program_title) {
+            setActivitytitle(props?.route?.params?.fulldata?.fulldata?.program_title);
+        }
+    }, [ocrData?.activity_title, props?.route?.params?.fulldata?.fulldata?.program_title]);
+    useEffect(() => {
+        if (ocrData?.provider_name) {
+            setProvideName(ocrData.provider_name);
+        } else if (props?.route?.params?.fulldata?.fulldata?.program_provider) {
+            setProvideName(props?.route?.params?.fulldata?.fulldata?.program_provider);
+        }
+    }, [ocrData?.provider_name, props?.route?.params?.fulldata?.fulldata?.program_provider]);
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata?.credit_type) {
+            setCountry(props?.route?.params?.fulldata?.fulldata?.credit_type);
+            setCreditId(props?.route?.params?.fulldata?.fulldata?.cmetype);
+        }
+    }, [props?.route?.params?.fulldata?.fulldata?.credit_type])
+    useEffect(() => {
+        if (ocrData?.number_of_credits_earned) {
+            setCreditscount(ocrData?.number_of_credits_earned);
+        } else if (props?.route?.params?.fulldata?.fulldata?.cmepoints) {
+            setCreditscount(props?.route?.params?.fulldata?.fulldata?.cmepoints);
+        }
+    }, [ocrData?.number_of_credits_earned, props?.route?.params?.fulldata?.fulldata?.cmepoints]);
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata?.program_date) {
+            setCdate(props?.route?.params?.fulldata?.fulldata?.program_date);
+        }
+    }, [props?.route?.params?.fulldata?.fulldata?.program_date]);
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata) {
+            setFinalstate("No");
+        }
+    }, [props?.route?.params?.fulldata?.fulldata])
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata?.mandated_course === "1") {
+            setFinalstate("Yes");
+            dispatch(stateMandatoryRequest({}));
+        }
+    }, [props?.route?.params?.fulldata?.fulldata?.mandated_course]);
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata?.certificate) {
+            const fileName = props?.route?.params?.fulldata?.fulldata?.certificate;
+            setProfilePicObj1(`${props?.route?.params?.fulldata?.certiPath?.certificate_path}${fileName}`);
+        }
+    }, [props?.route?.params?.fulldata?.fulldata?.certificate]);
+    console.log(ProfilePicObj1, "fileobject12222==========", clisttopic, finalstate)
+    useEffect(() => {
+        if (props?.route?.params?.fulldata?.fulldata?.mandatory_topic_id &amp;&amp; finalstate == "Yes") {
+            const handleID = props?.route?.params?.fulldata?.fulldata?.mandatory_topic_id;
+            const finalData = clisttopic || [];
+            const matchedItem = finalData.find(item => item?.id == handleID);
+            if (matchedItem) {
+                setStopic(matchedItem?.name || "");
+                setTopicId(matchedItem?.id);
+            } else if (finalData.length > 0) {
+                setStopic(finalData[0]?.name || "");
+                setTopicId(finalData[0]?.id);
+            }
+        }
+    }, [clisttopic]);
+    console.log(stopic, "stopic------1222")
+    const searchTopicName = text => {
+        console.log(text, 'text12333');
+        if (text) {
+            const listAllData = selectCountrytopic?.filter(function (item) {
+                console.log('item+++++++++++++++++++1111', item?.name);
+                const itemDataTopic = item?.name
+                    ? item?.name?.toUpperCase()
+                    : ''.toUpperCase();
+                const textDataTopic = text.trim().toUpperCase();
+                const AllDataFilter = itemDataTopic.indexOf(textDataTopic) > -1;
+                console.log('AllDataFilter', AllDataFilter);
+                return AllDataFilter;
+            });
+            setClisttopic(listAllData);
+            setSearchtexttopic(text);
+        } else {
+            setClisttopic(selectCountrytopic);
+            setSearchtexttopic(text);
+        }
+    };
+    const fullDataMemo = useMemo(() => props?.route?.params?.fulldata, [props?.route?.params?.fulldata]);
+    useEffect(() => {
+        if (!fullDataMemo &amp;&amp; !ProfilePicObj1) return;
+        if (props?.route?.params?.creditvalutboard) return;
+        const obj = new FormData();
+        obj.append("document", ProfilePicObj1 || `${fullDataMemo?.certiPath?.certificate_path}${fullDataMemo?.certificate}`);
+
+        const handleRequest = async () => {
+            try {
+                await connectionrequest();
+                dispatch(OCRCertificateRequest(obj));
+            } catch (err) {
+                showErrorAlert("Please connect to the internet", err);
+            }
+        };
+        handleRequest();
+    }, [ProfilePicObj1, fullDataMemo, props?.route?.params?.creditvalutboard]);
+    console.log(ProfilePicObj1 ? ProfilePicObj1?.uri?.split('/')?.pop()?.replace(/-/g, '') : ProfilePicObj1, "omg =========")
+    if (status == '' || DashboardReducer.status != status) {
+        switch (DashboardReducer.status) {
+            case 'Dashboard/addCreditsRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/addCreditsSuccess':
+                status = DashboardReducer.status;
+                setSelectCountry(DashboardReducer?.addCreditsResponse?.credit_types);
+                setClist(DashboardReducer?.addCreditsResponse?.credit_types);
+                break;
+            case 'Dashboard/addCreditsFailure':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateMandatoryRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/stateMandatorySuccess':
+                status = DashboardReducer.status;
+                setStateManData(DashboardReducer?.stateMandatoryResponse?.state_data)
+                break;
+            case 'Dashboard/stateMandatoryFailure':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/addCreditVaultRequest':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/addCreditVaultSuccess':
+                status = DashboardReducer.status;
+                if (props?.route?.params?.mainAdd?.creditID?.state_id || props?.route?.params?.creditvalut?.state_id || props?.route?.params?.fulldata?.statenamefull?.state_id) {
+                    let obj = {
+                        "state_id": props?.route?.params?.creditvalut?.state_id || props?.route?.params?.fulldata?.statenamefull?.state_id
+                    }
+                    dispatch(stateCourseRequest(obj));
+                }
+                dispatch(dashboardRequest({}))
+                toggleModalcred();
+                break;
+            case 'Dashboard/addCreditVaultFailure':
+                status = DashboardReducer.status;
+                break;
+            case 'Dashboard/OCRCertificateRequest':
+                status = DashboardReducer.status;
+                if (props?.route?.params?.creditvalutstate?.id || props?.route?.params?.creditvalut?.id || moretext) {
+                    showDur("We are currently retrieving the details from your certificate.", 10000)
+                }
+                break;
+            case 'Dashboard/OCRCertificateSuccess':
+                status = DashboardReducer.status;
+                console.log(DashboardReducer?.OCRCertificateResponse?.list_data?.documents[0]?.field_data, "field_data============>>>>>>>>>>>>>>>");
+                setOCRData(DashboardReducer?.OCRCertificateResponse?.list_data?.documents[0]?.field_data);
+                break;
+            case 'Dashboard/OCRCertificateFailure':
+                status = DashboardReducer.status;
+                break;
+        }
+    }
+
+    const animatedValuespass = useRef(new Animated.Value(1)).current;
+    const scaleValuesespass = useRef(new Animated.Value(0)).current;
+    const animatedValuesemail = useRef(new Animated.Value(1)).current;
+    const scaleValuesemail = useRef(new Animated.Value(0)).current;
+    const animatedValuescrdit = useRef(new Animated.Value(1)).current;
+    const scaleValuesescredit = useRef(new Animated.Value(0)).current;
+    const animatedValuesyear = useRef(new Animated.Value(1)).current;
+    const scaleValuesesyear = useRef(new Animated.Value(0)).current;
+    const animatedValuestate = useRef(new Animated.Value(1)).current;
+    const scaleValuesestate = useRef(new Animated.Value(0)).current;
+    const animatedValuestatedate = useRef(new Animated.Value(1)).current;
+    const scaleValuesestatedate = useRef(new Animated.Value(0)).current;
+    const animatedValuestatedatetopic = useRef(new Animated.Value(1)).current;
+    const scaleValuesestatedatetopic = useRef(new Animated.Value(0)).current;
+    const animatedValuesimg = useRef(new Animated.Value(1)).current;
+    const scaleValuesesimg = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const targetScaleprofdd = finalstate ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuestate, {
+                toValue: finalstate ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesestate, {
+                toValue: targetScaleprofdd,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [finalstate]);
+    useEffect(() => {
+        const targetScaleprotopic = finalstate ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuestatedatetopic, {
+                toValue: finalstate ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesestatedatetopic, {
+                toValue: targetScaleprotopic,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [stopic]);
+    useEffect(() => {
+        const targetScaleprofddff = cdate ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuestatedate, {
+                toValue: cdate ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesestatedate, {
+                toValue: targetScaleprofddff,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [cdate]);
+    useEffect(() => {
+        const targetScaleprof = activitytitle ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesemail, {
+                toValue: activitytitle ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesemail, {
+                toValue: targetScaleprof,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [activitytitle]);
+    useEffect(() => {
+        const targetScaleprofd = creditscount ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesyear, {
+                toValue: creditscount ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesyear, {
+                toValue: targetScaleprofd,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [creditscount]);
+    useEffect(() => {
+        const targetcrdit = country ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuescrdit, {
+                toValue: country ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesescredit, {
+                toValue: targetcrdit,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [country])
+    useEffect(() => {
+        const targetImg = ProfilePicObj1 ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuesimg, {
+                toValue: ProfilePicObj1 ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesesimg, {
+                toValue: targetImg,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [ProfilePicObj1]);
+    useEffect(() => {
+        const targetScaleprov = provideName ? 1 : 0.8;
+        Animated.parallel([
+            Animated.timing(animatedValuespass, {
+                toValue: provideName ? 1 : 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleValuesespass, {
+                toValue: targetScaleprov,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [provideName]);
+
+    const finalStateWise = stateManData ? stateManData : "No data";
+    const StateNameFetch = props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || props?.route?.params?.mainAdd?.creditID?.state_name || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null;
+    console.log(StateNameFetch, "StateNameFetch===========", finalStateWise)
+    function getStateDataByName(finalStateWise, StateNameFetch) {
+        for (const key in finalStateWise) {
+            if (finalStateWise[key].state_name === StateNameFetch) {
+                return finalStateWise[key];
+            }
+        }
+        return null;
+    }
+    function detectfileAddcredit(file) {
+        console.log(file, "file000");
+        const fileName = typeof file === 'string' ? file : file?.uri;
+        if (fileName &amp;&amp; typeof fileName === 'string') {
+            if (fileName.toLowerCase().endsWith('.png')) {
+                Alert.alert('eMedEvents', 'Are you sure you want to delete this image?', [{
+                    text: "No", onPress: () => console.log("No pressed")
+                }, {
+                    text: "Yes", onPress: () => {
+                        setProfilePicObj1("");
+                        setActivitytitle('');
+                        setProvideName('');
+                        setOCRData(null);
+                    }
+                }]);
+            } else if (fileName.toLowerCase().endsWith('.jpg')) {
+                Alert.alert('eMedEvents', 'Are you sure you want to delete this image?', [{
+                    text: "No", onPress: () => console.log("No pressed")
+                }, {
+                    text: "Yes", onPress: () => {
+                        setProfilePicObj1("");
+                        setActivitytitle('');
+                        setProvideName('');
+                        setOCRData(null);
+                    }
+                }]);
+            } else if (fileName.toLowerCase().endsWith('.pdf')) {
+                Alert.alert('eMedEvents', 'Are you sure you want to delete this PDF?', [{
+                    text: "No", onPress: () => console.log("No pressed")
+                }, {
+                    text: "Yes", onPress: () => {
+                        setProfilePicObj1("");
+                        setActivitytitle('');
+                        setProvideName('');
+                        setOCRData(null);
+                    }
+                }]);
+            } else {
+                Alert.alert('eMedEvents', 'Are you sure you want to delete this item?', [{
+                    text: "No", onPress: () => console.log("No pressed")
+                }, {
+                    text: "Yes", onPress: () => {
+                        setProfilePicObj1("");
+                        setActivitytitle('');
+                        setProvideName('');
+                        setOCRData(null);
+                    }
+                }]);
+            }
+        } else {
+            console.log("Invalid file or file URI");
+        }
+    }
+    const topicwiseStatehand = (hello) => {
+        setStopic(hello?.name);
+        setTopicId(hello?.id)
+        setStatetopicpicker(false);
+    }
+    useEffect(() => {
+        if (finalStateWise &amp;&amp; StateNameFetch) {
+            const alabamaData = getStateDataByName(finalStateWise, StateNameFetch);
+            const originalData = alabamaData?.topics;
+            if (originalData) {
+                const transformedData = originalData?.flatMap((item) =>
+                    Object.entries(item.topic_list)?.map(([id, name]) => ({
+                        id: Number(id),
+                        name: name
+                    }))
+                );
+                setSelectCountrytopic(transformedData);
+                setClisttopic(transformedData);
+            } else {
+                setClisttopic([]);
+            }
+        }
+    }, [finalStateWise, StateNameFetch]);
+    useEffect(() => {
+        if (ProfilePicObj1 === null) {
+            setProfilePicObj1("")
+        }
+    }, [ProfilePicObj1])
+    useEffect(() => {
+        if (finalstate == "No") {
+            setStopic("");
+            setFinalstate("No")
+        }
+    }, [finalstate])
+    useEffect(() => {
+        const onBackPress = () => {
+            addCreditBack();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, []);
+    const handleChange = (text) => {
+        const numericValue = text.replace(/[^0-9.]/g, "");
+        if (text.startsWith("-") || text == "-1" || parseFloat(text) &lt; 0) {
+            return;
+        }
+        setCreditscount(numericValue);
+    };
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
+    console.log(clisttopic?.length == 0, DashboardReducer?.stateCourseResponse?.data?.state_data, "creditvault123", props?.route?.params?.creditvalut, clisttopic)
+    return (
+        &lt;>
+            &lt;MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            &lt;SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                {countrypicker ? (
+                    &lt;CreditTypeComponent
+                        clist={clist}
+                        searchCreditName={searchCreditName}
+                        searchtext={searchtext}
+                        handleCreditType={handleCreditType}
+                        setcountrypicker={setcountrypicker}
+                    />) : statetopicpicker ? (
+                        &lt;ChooseMandatoryComponent
+                            clisttopic={clisttopic}
+                            searchTopicName={searchTopicName}
+                            searchtexttopic={searchtexttopic}
+                            topicwiseStatehand={topicwiseStatehand}
+                            setStatetopicpicker={setStatetopicpicker}
+                        />) : &lt;>
+                    {Platform.OS === 'ios' ? &lt;PageHeader title="Add Credits" onBackPress={addCreditBack} /> : &lt;View>
+                        &lt;PageHeader title="Add Credits" onBackPress={addCreditBack} />
+                    &lt;/View>}
+                    &lt;Loader
+                        visible={DashboardReducer?.status == 'Dashboard/addCreditVaultRequest' || DashboardReducer?.status == 'Dashboard/OCRCertificateRequest'} />
+                    &lt;KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                        &lt;ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
+                            {!isNonUsaUser &amp;&amp; (
+                                &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), backgroundColor: "#FF6D68", justifyContent: "center", alignItems: "center" }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#FFFFFF" }}>{"Upload/Scan the document first to fill the form"}&lt;/Text>
+                                &lt;/View>
+                            )}
+                            &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                &lt;Text style={isNonUsaUser ? styles.nonusaheaderText : styles.headerText}>
+                                    {isNonUsaUser ? "Add previous or external CE activities to your vault for personalized recommendations." : `Add New Credit for ${props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name || props?.route?.params?.creditvalutboard?.board_data?.board_name || props?.route?.params?.FullBoard?.boardtakefinal || props?.route?.params?.mainAdd?.creditID?.state || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null}`}
+                                &lt;/Text>
+                            &lt;/View>
+                            &lt;View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
+                                &lt;Pressable>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            {/* &lt;CustomInputTouchable
+                                            label={"Upload/Scan Document*"}
+                                            value={ProfilePicObj1
+                                            ? ProfilePicObj1.uri
+                                                ? ProfilePicObj1.uri
+                                                    .split('/')
+                                                    .pop()
+                                                    .replace(/-/g, '')
+                                                    .slice(-16)
+                                                : ProfilePicObj1.split('/').pop()
+                                                : ''}
+                                            placeholder={""}
+                                            placeholderTextColor="#949494"
+                                            rightIcon={ProfilePicObj1 ? &lt;DeleteIcon name="delete" size={25} color="#949494" /> : &lt;ScanIcon name="scan1" size={28} color="#949494" />}
+                                            onPress={() => {
+                                                setCameraPicker(true)
+                                            }}
+                                            onIconpres={() => {
+                                                if (ProfilePicObj1) {
+                                                    detectfileAddcredit(ProfilePicObj1);
+                                                    setActivitytitle('');
+                                                    setProvideName('');
+                                                } else {
+                                                    directCameraCredit();
+                                                }
+                                            }}
+                                            textStyle={{ color: ProfilePicObj1 ? Colorpath.ButtonColr : "#949494" }}
+                                        /> */}
+                                            &lt;InputField
+                                                label={"Upload/Scan Document*"}
+                                                value={ProfilePicObj1
+                                                    ? ProfilePicObj1.uri
+                                                        ? ProfilePicObj1.uri
+                                                            .split('/')
+                                                            .pop()
+                                                            .replace(/-/g, '')
+                                                            .slice(-16)
+                                                        : ProfilePicObj1.split('/').pop()
+                                                    : ''}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={ProfilePicObj1 ? &lt;DeleteIcon name="delete" size={25} color="#949494" /> : &lt;ScanIcon name="scan1" size={28} color="#949494" />}
+                                                onLeftIconPress={() => {
+                                                    if (ProfilePicObj1) {
+                                                        detectfileAddcredit(ProfilePicObj1);
+                                                    } else {
+                                                        setMoretext(true);
+                                                        directCameraCredit();
+                                                    }
+                                                }}
+                                                onwholePress={() => {
+                                                    if (ProfilePicObj1) {
+                                                        detectfileAddcredit(ProfilePicObj1);
+                                                    } else {
+                                                        setMoretext(true);
+                                                        setCameraPicker(true);
+                                                    }
+                                                }}
+                                                marginleft={normalize(270)}
+                                                spaceneeded={true}
+                                            />
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        &lt;InputField
+                                            label='Activity Title*'
+                                            value={activitytitle}
+                                            onChangeText={setActivitytitle}
+                                            placeholder=''
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            maxlength={100}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_title ? true : false}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        &lt;InputField
+                                            label={isNonUsaUser || props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? 'Organizer Name*' : 'Provider Name*'}
+                                            value={provideName}
+                                            onChangeText={setProvideName}
+                                            placeholder={""}
+                                            placeholderTextColor="#949494"
+                                            keyboardType="default"
+                                            showCountryCode={false}
+                                            maxlength={100}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.program_provider ? true : false}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;Pressable disabled={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true} onPress={() => {
+                                    setcountrypicker(!countrypicker);
+                                    addcreditAgain();
+                                }}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            &lt;InputField
+                                                icondisable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true}
+                                                label={"Credit Type*"}
+                                                value={country}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                onLeftIconPress={() => {
+                                                    setcountrypicker(!countrypicker);
+                                                    addcreditAgain();
+                                                }}
+                                                onwholePress={() => {
+                                                    setcountrypicker(!countrypicker);
+                                                    addcreditAgain();
+                                                }}
+                                                marginleft={normalize(270)}
+                                                spaceneeded={true}
+                                            />
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+
+                                &lt;View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    &lt;View style={{
+                                        flex: 1,
+                                        paddingRight: normalize(0)
+                                    }}>
+                                        &lt;InputField
+                                            label={'No. of Credits*'}
+                                            value={creditscount}
+                                            onChangeText={handleChange}
+                                            placeholder={''}
+                                            placeholderTextColor="#949494"
+                                            keyboardType="phone-pad"
+                                            showCountryCode={false}
+                                            maxlength={100}
+                                            editable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.cmepoints ? true : false}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                                &lt;Pressable onPress={() => {
+                                    if (cdate) {
+                                        setCdate("");
+                                    } else {
+                                        setOpendate(!opendate)
+                                    }
+                                }} disabled={isNonUsaUser || ProfilePicObj1 || cdate ? false : true}>
+                                    &lt;View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        &lt;View style={{
+                                            flex: 1,
+                                            paddingRight: normalize(0)
+                                        }}>
+                                            &lt;InputField
+                                                icondisable={isNonUsaUser || ProfilePicObj1 || cdate ? false : true}
+                                                label={"Issue Date*"}
+                                                value={cdate ? moment(cdate).format("MM-DD-YYYY") : cdate}
+                                                placeholder=""
+                                                placeholderTextColor="#949494"
+                                                keyboardType="default"
+                                                showCountryCode={false}
+                                                editable={false}
+                                                leftIcon={cdate ? &lt;CrossIcon name="closecircle" size={18} color="#949494" /> : &lt;CalenderIcon name="calendar" size={25} color="#949494" />}
+                                                onLeftIconPress={() => {
+                                                    if (cdate) {
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes", onPress: () => setCdate(""), style: "default" }, { text: "No", onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                    } else {
+                                                        setOpendate(!opendate)
+                                                    }
+                                                }}
+                                                onwholePress={() => {
+                                                    if (cdate) {
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes", onPress: () => setCdate(""), style: "default" }, { text: "No", onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                    } else {
+                                                        setOpendate(!opendate)
+                                                    }
+                                                }}
+                                                marginleft={normalize(270)}
+                                                spaceneeded={true}
+                                            />
+
+                                            {/* &lt;CustomInputTouchable
+                                                label={"Issue Date*"}
+                                                value={cdate}
+                                                placeholder={""}
+                                                placeholderTextColor="#949494"
+                                                rightIcon={cdate ? &lt;CrossIcon name="closecircle" size={18} color="#949494" /> : &lt;CalenderIcon name="calendar" size={25} color="#949494" />}
+                                                onPress={() => {
+                                                    setOpendate(!opendate)
+                                                }}
+                                                onIconpres={() => {
+                                                    if (cdate) {
+                                                        setCdate("");
+                                                    } else {
+                                                        setOpendate(!opendate)
+                                                    }
+                                                }}
+                                                disabled={ProfilePicObj1 || cdate ? false : true}
+                                            /> */}
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/Pressable>
+                                {!isNonUsaUser &amp;&amp; (
+                                    &lt;>
+                                        {(clisttopic?.length == 0 || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name) ?
+                                            &lt;View style={{
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                &lt;View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0)
+                                                }}>
+                                                    &lt;Pressable disabled={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false} onPress={() => setStateMan(true)}>
+                                                        &lt;InputField
+                                                            icondisable={clisttopic?.length == 0 || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id || props?.route?.params?.FullBoard?.stateid || props?.route?.params?.creditvalutboard?.board_data?.board_id ? true : false}
+                                                            label={"State Mandated Course*"}
+                                                            value={finalstate ? finalstate : undefined}
+                                                            placeholder=""
+                                                            placeholderTextColor="#949494"
+                                                            keyboardType="default"
+                                                            showCountryCode={false}
+                                                            editable={false}
+                                                            leftIcon={&lt;DropdownIcon name="chevron-small-down" style={{ bottom: -13 }} size={25} color="#949494" />}
+                                                            onLeftIconPress={() => {
+                                                                setStateMan(true);
+                                                            }}
+                                                            onwholePress={() => setStateMan(true)}
+                                                            marginleft={normalize(270)}
+                                                            bgv={true}
+                                                            notext={"State Mandated Course*"}
+                                                        />
+                                                    &lt;/Pressable>
+                                                &lt;/View>
+                                            &lt;/View> : &lt;View style={{
+
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                &lt;View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0)
+                                                }}>
+                                                    &lt;Pressable disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true} onPress={() => setStateMan(true)}>
+                                                        &lt;InputField
+                                                            icondisable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true}
+                                                            label={"State Mandated Course*"}
+                                                            value={finalstate ? finalstate : undefined}
+                                                            placeholder=""
+                                                            placeholderTextColor="#949494"
+                                                            keyboardType="default"
+                                                            showCountryCode={false}
+                                                            editable={false}
+                                                            leftIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                            onLeftIconPress={() => {
+                                                                setStateMan(true);
+                                                            }}
+                                                            onwholePress={() => setStateMan(true)}
+                                                            marginleft={normalize(270)}
+                                                            spaceneeded={true}
+                                                        />
+                                                    &lt;/Pressable>
+                                                &lt;/View>
+                                            &lt;/View>}
+
+                                        &lt;Pressable disabled={finalstate === "Yes" ? false : true} onPress={() => setStatetopicpicker(!statetopicpicker)}>
+                                            &lt;View style={{
+                                                flexDirection: 'row',
+                                                flex: 1
+                                            }}>
+                                                &lt;View style={{
+                                                    flex: 1,
+                                                    paddingRight: normalize(0),
+                                                }}>
+                                                    &lt;CustomInputTouchable
+                                                        label={"Choose State Mandatory Topic*"}
+                                                        value={stopic}
+                                                        placeholder={finalstate === "Yes" ? "" : "Choose State Mandatory Topic*"}
+                                                        placeholderTextColor="#949494"
+                                                        newstyle={finalstate === "Yes" ? "Yes" : "No"}
+                                                        rightIcon={&lt;DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
+                                                        onPress={() => {
+                                                            setStatetopicpicker(!statetopicpicker);
+                                                        }}
+                                                        onIconpres={() => {
+                                                            setStatetopicpicker(!statetopicpicker);
+                                                        }}
+                                                        disabled={finalstate === "Yes" ? false : true}
+                                                    />
+                                                &lt;/View>
+                                            &lt;/View>
+                                        &lt;/Pressable>
+                                    &lt;/>
+                                )}
+                            &lt;/View>
+                            &lt;Buttons
+                                onPress={handleAddCredits}
+                                height={normalize(45)}
+                                width={normalize(300)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(9)}
+                                text="Save"
+                                color={Colorpath.white}
+                                fontSize={18}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(10)}
+                            />
+
+                            &lt;Buttons
+                                onPress={() => {
+                                    props.navigation.goBack();
+                                }}
+                                height={normalize(45)}
+                                width={normalize(280)}
+                                backgroundColor={Colorpath.Pagebg}
+                                borderRadius={normalize(9)}
+                                text="Cancel"
+                                color={Colorpath.ButtonColr}
+                                fontSize={14}
+                                fontFamily={Fonts.InterSemiBold}
+                                marginTop={normalize(0)}
+                            />
+
+                            &lt;CellModal
+                                isVisible={isModalVisiblecred}
+                                onClose={toggleModalcred}
+                                content={isNonUsaUser ? "Credit details \n added successfully." : (props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully.")}
+                                navigation={props.navigation}
+                                name={isNonUsaUser ? "CertficateHandle" : returnToDashboardVault ? "DashoardVault" : "goBack"}
+                            />
+
+
+                            &lt;DateTimePickerModal
+                                isVisible={opendate}
+                                mode="date"
+                                maximumDate={new Date()}
+                                onConfirm={val => {
+                                    setCdate(moment(val).format('YYYY-MM-DD'));
+                                    setOpendate(false);
+                                }}
+                                onCancel={() => setOpendate(false)}
+                                textColor="black"
+                            />
+
+
+                            &lt;Modal
+                                animationIn={'slideInUp'}
+                                animationOut={'slideOutDown'}
+                                isVisible={stateMan}
+                                backdropColor={Colorpath.black}
+                                style={{
+                                    width: '100%',
+                                    alignSelf: 'center',
+                                    margin: 0,
+                                }}
+                                onBackdropPress={() => setStateMan(false)}>
+                                &lt;TouchableOpacity
+                                    style={{ flex: 1 }}
+                                    onPress={() => setStateMan(false)}>
+                                    &lt;KeyboardAvoidingView
+                                        style={{
+                                            flex: 1,
+                                        }}
+                                        behavior={Platform.OS == 'ios' ? 'padding' : 'height'}>
+                                        &lt;View
+                                            style={[
+                                                {
+                                                    borderRadius: normalize(7),
+                                                    height:
+                                                        Platform.OS === 'ios' ? normalize(140) : normalize(120),
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    width: '100%',
+                                                    backgroundColor: '#fff',
+                                                },
+                                            ]}>
+                                            &lt;FlatList
+                                                contentContainerStyle={{
+                                                    paddingBottom: normalize(70),
+                                                    paddingTop: normalize(7),
+                                                }}
+                                                showsVerticalScrollIndicator={false}
+                                                keyExtractor={item => item.id}
+                                                data={StateMandatoryDat}
+                                                ListEmptyComponent={
+                                                    &lt;View
+                                                        style={{
+                                                            height:
+                                                                Platform.OS === 'ios'
+                                                                    ? normalize(500)
+                                                                    : normalize(390),
+                                                        }}>
+                                                        &lt;Text
+                                                            style={{
+                                                                alignContent: 'center',
+                                                                alignItems: 'center',
+                                                                alignSelf: 'center',
+                                                                color: Colorpath.grey,
+                                                                fontWeight: 'bold',
+                                                                fontFamily: Fonts.InterSemiBold,
+                                                                fontSize: normalize(20),
+                                                                paddingTop: normalize(30),
+                                                            }}>
+                                                            No state course found
+                                                        &lt;/Text>
+                                                    &lt;/View>
+                                                }
+                                                renderItem={({ item, index }) => {
+                                                    return (
+                                                        &lt;TouchableOpacity
+                                                            key={index}
+                                                            onPress={() => {
+                                                                setFinalstate(item?.name);
+                                                                setStateMan(false);
+                                                                dispatch(stateMandatoryRequest({}))
+                                                            }}
+                                                            style={[styles.dropDownItem]}>
+                                                            &lt;Text style={[styles.dropDownItemText]}>
+                                                                {item?.name}
+                                                            &lt;/Text>
+                                                        &lt;/TouchableOpacity>
+                                                    );
+                                                }}
+                                            />
+                                        &lt;/View>
+                                    &lt;/KeyboardAvoidingView>
+                                &lt;/TouchableOpacity>
+                            &lt;/Modal>
+
+
+
+                        &lt;/ScrollView>
+                    &lt;/KeyboardAvoidingView>
+                    &lt;CameraPicker
+                        cropping={true}
+                        pickerVisible={cameraPicker}
+                        onBackdropPress={() => setCameraPicker(false)}
+                        btnClick_cameraUpload={imgObj => {
+                            console.log('imgObj:::::::::', imgObj);
+                            setProfilePicObj1(imgObj);
+                            setProfilePicUri1(imgObj.uri);
+                            setCameraPicker(false);
+                        }}
+                        btnClick_ImageUpload={imgObj => {
+                            console.log('imgObj:::::::::', imgObj);
+                            setProfilePicObj1(imgObj);
+                            setProfilePicUri1(imgObj.uri);
+                            setCameraPicker(false);
+                        }}
+                        btnClick_galeryUpload={imgObj => {
+                            setProfilePicObj1(imgObj);
+                            setProfilePicUri1(imgObj.uri);
+                            setCameraPicker(false);
+                        }}
+                    />
+
+                &lt;/>}
+
+            &lt;/SafeAreaView>
+        &lt;/>
+    );
+}
+
+const styles = StyleSheet.create({
+    headerText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 18,
+        color: "#000000",
+        fontWeight: "bold",
+    },
+    nonusaheaderText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 12,
+        color: "#000000",
+    },
+    centered: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    image: {
+        height: normalize(65),
+        width: normalize(308),
+        resizeMode: 'contain',
+    },
+    dropDownItem: {
+        borderWidth: 1,
+        marginTop: normalize(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: normalize(40),
+        width: '85%',
+        alignSelf: 'center',
+    },
+    dropDownItemText: {
+        fontSize: normalize(14),
+        lineHeight: normalize(14),
+        textAlign: 'center',
+        color: Colorpath.black,
+        textTransform: 'capitalize'
+    },
+    dropdown: {
+        height: normalize(45),
+        width: normalize(280),
+        alignSelf: 'center',
+        backgroundColor: Colorpath.textField,
+        // borderBottomColor: 'gray',
+        // borderBottomWidth: 0.5,
+        marginTop: normalize(9),
+        borderRadius: normalize(8),
+    },
+    imageBackground: {
+        // height: normalize(65),
+        // width: normalize(300),
+        resizeMode: "contain",
+        justifyContent: 'center',
+    },
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: normalize(10),
+    },
+    textContainer: {
+        marginLeft: normalize(2),
+    },
+    uploadText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#000000s"
+    },
+    separatorLine: {
+        height: normalize(35),
+        width: 1,
+        marginLeft: normalize(160),
+        backgroundColor: "#DDDDDD",
+    },
+    iconContainer: {
+        paddingVertical: normalize(6),
+    },
+});
+
+export default AddCredits;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

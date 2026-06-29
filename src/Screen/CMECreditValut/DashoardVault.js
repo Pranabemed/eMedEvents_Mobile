@@ -34,6 +34,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionActive } from '../../Utils/Helpers/primeSubscription';
 import CertficateHandle from './FileCheck';
+
+/**
+ * Reusable parseExpiryDate component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 
 const DashoardVault = (props) => {

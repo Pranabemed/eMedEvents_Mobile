@@ -19,6 +19,14 @@ import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../Navigator/StackNav';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
+/**
+ * Reusable RestProfession component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
     // Start as true so shimmer shows immediately on mount (before API fires)

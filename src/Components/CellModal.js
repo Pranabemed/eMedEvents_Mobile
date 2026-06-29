@@ -7,6 +7,14 @@ import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 import { readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
+
+/**
+ * Reusable CellModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
     console.log(profMerge, "profiletake=====", key,name)
     const pressed = useRef(false);

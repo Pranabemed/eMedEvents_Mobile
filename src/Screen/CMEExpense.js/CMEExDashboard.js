@@ -16,6 +16,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import LinearGradient from 'react-native-linear-gradient';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable CMEExDashboard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CMEExDashboard = (props) => {
     const [socheck, setSocheck] = useState(false);
     const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/Carouselcarditem.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/Carouselcarditem.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable, InteractionManager } from 'react-native'
+import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
+import Colorpath from '../Themes/Colorpath';
+import Fonts from '../Themes/Fonts';
+import normalize from '../Utils/Helpers/Dimen';
+import moment from 'moment';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../Utils/Helpers/constants';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import { licesensRequest } from '../Redux/Reducers/AuthReducer';
+import connectionrequest from '../Utils/Helpers/NetInfo';
+import Modal from 'react-native-modal'
+import CMECard from './CMECard';
+import ArrowNeed from 'react-native-vector-icons/Feather';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable Carouselcarditem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+let status = "";
+const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
+    const {
+        setExpireDate,
+        setFinddata,
+        clearContextData
+    } = useContext(AppContext);
+    const windowWidth = Dimensions.get('window').width;
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const [finalverifyvault, setFinalverifyvault] = useState(null);
+    const [finalProfession, setFinalProfession] = useState(null);
+    const dispatch = useDispatch();
+    const isFocus = useIsFocused();
+    const [CMEcard, setCMECard] = useState(false)
+    const [isItemExpired, setIsItemExpired] = useState(false);
+    const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+    const [dashMod, setDashMod] = useState(false);
+    const [countdownMessage, setCountdownMessage] = useState('');
+    const [takeName, setTakeName] = useState("");
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+    const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+    const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
+    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const profFromDashboard =
+        dashboardProfession &amp;&amp; dashboardProfessionType
+            ? `${dashboardProfession} - ${dashboardProfessionType}`
+            : '';
+    const allProfTake = validHandles.has(profFromDashboard);
+    useEffect(() => {
+        const token_handle_vault = () => {
+            setTimeout(async () => {
+                try {
+                    const [board_special, profession_data] = await Promise.all([
+                        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                        AsyncStorage.getItem(constants.PROFESSION)
+                    ]);
+                    const board_special_json = board_special ? JSON.parse(board_special) : null;
+                    const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+                    setFinalverifyvault(board_special_json);
+                    setFinalProfession(profession_data_json);
+                } catch (error) {
+                    console.log('Error fetching data:', error);
+                }
+            }, 100);
+        };
+
+        token_handle_vault();
+    }, [navigation, isFocus]);
+    // Reset status on focus so licesensSuccess is re-processed after tab switch
+    useEffect(() => {
+        status = "";
+    }, [isFocus]);
+    const [allProfession, setAllProfession] = useState(null);
+
+    const cleanNumber = (value) => {
+        if (typeof value == 'number') return value;
+        if (typeof value == 'string') {
+            const num = parseFloat(value.replace(/,/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+        return 0;
+    };
+    const topicEarned = cleanNumber(item?.credits_data?.topic_earned_credits);
+    const topicTotal = cleanNumber(item?.credits_data?.topic_credits);
+    const generalEarned = cleanNumber(item?.credits_data?.total_general_earned_credits);
+    const generalTotal = cleanNumber(item?.credits_data?.total_general_credits);
+    const manWrng = (topicEarned === 0 &amp;&amp; topicTotal === 0);
+    const genWrng = (generalEarned === 0 &amp;&amp; generalTotal === 0);
+    const bothNoRequirement =
+        (topicEarned === 0 &amp;&amp; topicTotal === 0 &amp;&amp;
+            generalEarned === 0 &amp;&amp; generalTotal === 0);
+    const finalSumCred = topicEarned + generalEarned
+    const isEmptyLike = (value) => {
+        if (value == null) return true;
+        if (typeof value == 'string') {
+            const cleaned = value.trim().toLowerCase();
+            if (cleaned == '') return true;
+            if (['null', 'undefined', 'n/a', 'na', '-', '--', '0'].includes(cleaned)) return true;
+            // Treat strings with no alphanumeric content as empty placeholders.
+            if (!/[a-z0-9]/i.test(cleaned)) return true;
+        }
+        return false;
+    };
+    const isInvalidExpireDays = (value) => {
+        if (isEmptyLike(value)) return true;
+        const parsed = Number(value);
+        return Number.isNaN(parsed) || parsed &lt;= 0;
+    };
+    const isZeroDate = (value) =>
+        typeof value == 'string' &amp;&amp; (value.trim() == '0000-00-00' || value.trim() == '0000-00-00 00:00:00');
+
+    const isMissingLicenseData =
+        isEmptyLike(item?.license_number) &amp;&amp;
+        (isZeroDate(item?.to_date) || !item?.to_date);
+
+    const isActiveCard = val == index;
+    useEffect(() => {
+        const professionData =
+            AuthReducer?.loginResponse?.user ||
+            AuthReducer?.againloginsiginResponse?.user ||
+            AuthReducer?.verifymobileResponse?.user ||
+            finalverifyvault ||
+            finalProfession;
+
+        setAllProfession(professionData);
+    }, [
+        AuthReducer?.loginResponse?.user,
+        AuthReducer?.againloginsiginResponse?.user,
+        AuthReducer?.verifymobileResponse?.user,
+        finalverifyvault,
+        finalProfession,
+        navigation,
+        isFocus
+    ]);
+    const fetchLicenses = useCallback(async () => {
+        if (
+            !dashboardProfession ||
+            !dashboardProfessionType ||
+            !fetcheddt ||
+            AuthReducer?.licesensResponse?.licensure_states?.length > 0
+        ) {
+            return;
+        }
+        const professionString = `${dashboardProfession} - ${dashboardProfessionType}`;
+        try {
+            await connectionrequest();
+            dispatch(licesensRequest(professionString));
+        } catch (err) {
+            showErrorAlert('Please connect to Internet', err);
+        }
+    }, [dashboardProfession, dashboardProfessionType, fetcheddt, AuthReducer?.licesensResponse?.licensure_states]);
+
+    useEffect(() => {
+        fetchLicenses();
+    }, [fetchLicenses]);
+    if (status == '' || AuthReducer.status != status) {
+        switch (AuthReducer.status) {
+            case 'Auth/licesensRequest':
+                status = AuthReducer.status;
+                break;
+            case 'Auth/licesensSuccess':
+                status = AuthReducer.status;
+                const uniqueStates = AuthReducer?.licesensResponse?.licensure_states?.filter((state, index, self) =>
+                    index === self.findIndex((s) => s.id === state.id)
+                );
+                const filteredStates = uniqueStates?.filter((state) =>
+                    !fetcheddt?.some((dash) => dash.state_id === state.id)
+                );
+                setStateCount(filteredStates);
+                break;
+            case 'Auth/licesensFailure':
+                status = AuthReducer.status;
+                break;
+        }
+    }
+    const styles = StyleSheet.create({
+        container: {
+            width: normalize(300),
+            marginTop: normalize(10),
+            backgroundColor: "#FFFFFF",
+            borderRadius: normalize(12),
+            alignSelf: 'center',
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 4,
+            overflow: 'hidden',
+            paddingVertical: normalize(10)
+        },
+        infoRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: normalize(15),
+            paddingVertical: normalize(1),
+        },
+        sectionLabel: {
+            fontFamily: Fonts.InterRegular,
+            fontSize: 12,
+            color: "#777777",
+        },
+        stateName: {
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 18,
+            color: "#000",
+            fontWeight: "bold"
+        },
+        logo: {
+            height: normalize(40),
+            width: normalize(40),
+            resizeMode: "contain",
+        },
+        divider: {
+            height: 1,
+            backgroundColor: '#F0F0F0',
+            marginVertical: 10,
+        },
+        labelText: {
+            fontFamily: Fonts.InterMedium,
+            fontSize: 12,
+            color: '#777',
+        },
+
+        valueText: {
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 14,
+            color: '#000',
+            fontWeight: "bold"
+        },
+        bottomRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        cmeButton: {
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#EAF5FF",
+            paddingHorizontal: normalize(15),
+            paddingVertical: normalize(10),
+            borderBottomLeftRadius: normalize(12),
+            borderBottomRightRadius: normalize(12),
+            borderTopEndRadius: normalize(12),
+            top: normalize(10)
+        },
+        cmeText: {
+            color: '#264092',
+            fontSize: 13,
+            fontFamily: Fonts.InterSemiBold,
+            fontWeight: "bold"
+        },
+        cmeIcon: {
+            backgroundColor: Colorpath.ButtonColr,
+            height: normalize(18),
+            width: normalize(18),
+            borderRadius: normalize(9),
+            justifyContent: "center",
+            alignItems: "center",
+            marginLeft: 6,
+        },
+        expiryWarning: {
+            flexDirection: "row",
+            alignItems: "center",
+        },
+        warnIcon: {
+            height: normalize(15),
+            width: normalize(15),
+            resizeMode: "contain",
+        },
+        countdownText: {
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 12,
+            color: '#FF0000',
+            marginLeft: 4,
+            width: normalize(80),
+            fontWeight: "bold"
+
+        },
+        update: {
+            color: Colorpath.ButtonColr,
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 13,
+            fontWeight: "bold"
+        },
+        active: {
+            color: "#2cad21",
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 13,
+            fontWeight: "bold"
+        },
+        renew: {
+            color: Colorpath.black,
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 13,
+            fontWeight: "bold"
+        },
+        updateRenew: {
+            flexDirection: 'row',
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: normalize(2),
+            height: normalize(40),
+            width: normalize(300),
+            backgroundColor: "#FFE0E0",
+            borderBottomStartRadius: normalize(12),
+            borderBottomEndRadius: normalize(12),
+            paddingHorizontal: normalize(15),
+        },
+        activebody: {
+            flexDirection: 'row',
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: normalize(2),
+            height: normalize(40),
+            width: normalize(300),
+            backgroundColor: "#deefd9",
+            borderBottomStartRadius: normalize(12),
+            borderBottomEndRadius: normalize(12),
+            paddingHorizontal: normalize(15),
+        },
+        renewRow: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: normalize(5),
+        },
+        arrowCircleBlack: {
+            backgroundColor: Colorpath.black,
+            height: normalize(15),
+            width: normalize(15),
+            borderRadius: normalize(15),
+            justifyContent: "center",
+            alignItems: "center",
+        },
+        progressContainer: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 5,
+            marginLeft: normalize(15),
+            paddingVertical: normalize(5),
+        },
+        progressBar: {
+            height: 2,
+            width: (windowWidth * 0.3 - 40) / 10,
+        },
+    });
+    const handleOpenRenewalLink = (renewallink) => {
+        if (renewallink &amp;&amp; typeof renewallink === 'string' &amp;&amp; renewallink.trim() !== '') {
+            Linking.openURL(renewallink)
+                .catch(err => Alert.alert('Error', 'Failed to open the URL: ' + err.message));
+        } else {
+            Alert.alert('Invalid URL', 'The renewal link is not available or is invalid.');
+        }
+    };
+    // --- Derived expiry logic (no useEffect timing issues) ---
+    const parsedExpiry = moment(item?.to_date, ["YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY", "MM/DD/YYYY", moment.ISO_8601], true);
+    const isExpiryValid = parsedExpiry.isValid();
+    const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
+    useEffect(() => {
+        let interactionPromise = null;
+        let timeoutId = null;
+
+        if (isActiveCard) {
+            const today = moment().startOf('day');
+            let isExpired = false;
+            let isWarning = false;
+            let message = '';
+
+            if (isMissingLicenseData || !item?.to_date || !isExpiryValid) {
+                isExpired = true;
+                isWarning = true;
+            } else {
+                const targetDate = parsedExpiry.clone().startOf('day');
+                if (today.isAfter(targetDate, 'day')) {
+                    isExpired = true;
+                    isWarning = true;
+                } else {
+                    const differenceDays = targetDate.diff(today, 'days');
+                    isExpired = false;
+                    isWarning = differenceDays &lt; 90;
+                    message = differenceDays === 89 ? 'Renew &amp; Update' : `${differenceDays}`;
+                }
+            }
+
+            setTakeName(item?.board_name || '');
+            setIsItemExpired(isExpired);
+            setIsExpiringSoon(isWarning);
+            setExpireDate(isExpired);
+            setCountdownMessage(message);
+
+            if (isExpired) {
+                if (isFocus) {
+                    interactionPromise = InteractionManager.runAfterInteractions(() => {
+                        timeoutId = setTimeout(() => {
+                            setDashMod(true);
+                        }, Platform.OS === 'ios' ? 800 : 300);
+                    });
+                }
+            } else {
+                setDashMod(false);
+            }
+        } else {
+            setIsExpiringSoon(false);
+            setDashMod(false);
+        }
+
+        return () => {
+            if (interactionPromise) {
+                interactionPromise.cancel();
+            }
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [item?.to_date, item?.from_date, item?.expiry_date, item?.license_number, item?.license_expire_days, item?.board_name, isActiveCard, isExpiryValid, isMissingLicenseData, isFocus, parsedExpiry, setExpireDate]);
+    return (
+        &lt;>
+            &lt;View style={styles.container}>
+                &lt;View style={styles.infoRow}>
+                    &lt;View>
+                        &lt;Text style={styles.sectionLabel}>{allProfTake ? "State Medical Board" : "State Nursing Board"}&lt;/Text>
+                        &lt;Text style={styles.stateName}>{item?.state_name}&lt;/Text>
+                    &lt;/View>
+                    &lt;Image
+                        source={{ uri: `${DashboardReducer?.dashboardResponse?.data?.licensure_logo_path}${item?.licensure_logo}` }}
+                        style={styles.logo}
+                    />
+                &lt;/View>
+                &lt;View style={styles.divider} />
+                &lt;View style={styles.infoRow}>
+                    &lt;Text style={styles.labelText}>{"License #"}&lt;/Text>
+                    &lt;Text style={[styles.labelText, { marginRight: Platform.OS === 'ios' ? normalize(25) : normalize(20) }]}>{"Expiration"}&lt;/Text>
+                &lt;/View>
+                &lt;View style={styles.infoRow}>
+                    &lt;Text style={[styles.valueText, { textTransform: "uppercase" }]}>{item?.license_number}&lt;/Text>
+                    &lt;Text style={styles.valueText}>{formattedExpiry}&lt;/Text>
+                &lt;/View>
+                &lt;View style={styles.bottomRow}>
+                    {bothNoRequirement ? &lt;>&lt;/> : &lt;Pressable onPress={() => setCMECard(true)} style={styles.cmeButton}>
+                        &lt;Text style={styles.cmeText}>{allProfTake ? "My CME Requirements" : "My CE Requirements"}&lt;/Text>
+                        &lt;View style={styles.cmeIcon}>
+                            &lt;ArrowNeed name="arrow-right" color="#FFFFFF" size={12} />
+                        &lt;/View>
+                    &lt;/Pressable>}
+                &lt;/View>
+                {isExpiringSoon ? &lt;View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                    &lt;View style={styles.updateRenew}>
+                        &lt;Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }))}>
+                            &lt;Text style={styles.update}>{"Update"}&lt;/Text>
+                        &lt;/Pressable>
+                        &lt;Pressable style={styles.renewRow} onPress={() => handleOpenRenewalLink(renewal)}>
+                            &lt;Text style={styles.renew}>{"Renew State Licenses"}&lt;/Text>
+                            &lt;View style={styles.arrowCircleBlack}>
+                                &lt;ArrowNeed name={"arrow-up-right"} color={"#FFFFFF"} size={12} />
+                            &lt;/View>
+                        &lt;/Pressable>
+                    &lt;/View>
+                &lt;/View> : &lt;View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                    &lt;View style={styles.activebody}>
+                        &lt;Text style={styles.renew}>{"License Status"}&lt;/Text>
+                        &lt;Text style={styles.active}>{"Active"}&lt;/Text>
+                    &lt;/View>
+                &lt;/View>}
+                &lt;Modal
+                    isVisible={dashMod &amp;&amp; isItemExpired &amp;&amp; isActiveCard}
+                    animationIn="zoomIn"
+                    animationOut="zoomOut"
+                    backdropTransitionOutTiming={0}
+                    useNativeDriver={true}
+                    hideModalContentWhileAnimating={true}
+                    style={stylesmodal.modal}
+                >
+                    &lt;View style={stylesmodal.container}>
+                        &lt;View style={{ justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
+                            &lt;Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 16,
+                                color: Colorpath.black,
+                                textAlign: 'center',
+                                fontWeight: "bold"
+                            }}>
+                                {takeName}
+                            &lt;/Text>
+                        &lt;/View>
+                        &lt;View style={{ marginTop: normalize(5) }}>
+                            &lt;View style={{ height: Platform.OS === "ios" ? 1 : 0.4, width: normalize(280), backgroundColor: Colorpath.ButtonColr }} />
+                        &lt;/View>
+                        {!isMissingLicenseData &amp;&amp; allProfTake ? &lt;View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
+                            &lt;Text style={stylesmodal.content}>
+                                {"Your state license has expired. To maintain access and meet state board credit requirements, please update your license. "}
+                                &lt;Text
+                                    style={stylesmodal.underct}
+                                    onPress={() => {
+                                        clearContextData();
+                                        setFinddata("");
+                                        setExpireDate(false);
+                                        setIsItemExpired(false);
+                                        setDashMod(false);
+                                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }));
+                                    }}
+                                >
+                                    {"Click here"}
+                                &lt;/Text>
+                                {" to upload your updated license."}
+                            &lt;/Text>
+                        &lt;/View> : &lt;View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
+                            &lt;Text style={stylesmodal.content}>
+                                {"You haven't added your state license yet. To maintain access and meet state board credit requirements, please add your license."}
+                                &lt;Text
+                                    style={stylesmodal.underct}
+                                    onPress={() => {
+                                        setExpireDate(false);
+                                        setIsItemExpired(false);
+                                        setDashMod(false);
+                                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }));
+                                    }}
+                                >
+                                    {"Click here"}
+                                &lt;/Text>
+                                {" to add your license."}
+                            &lt;/Text>
+                        &lt;/View>}
+                    &lt;/View>
+                &lt;/Modal>
+
+            &lt;/View>
+            {CMEcard &amp;&amp; &lt;CMECard expiryno={isItemExpired} finalSumCred={finalSumCred} manWrng={manWrng} genWrng={genWrng} allProfTake={allProfTake} windowWidth={windowWidth} CMEcard={CMEcard} setCMECard={setCMECard} item={item} styles={styles} />}
+        &lt;/>
+    );
+}
+
+export default Carouselcarditem
+const stylesmodal = StyleSheet.create({
+    modal: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        margin: 0,
+    },
+    container: {
+        width: normalize(280),
+        backgroundColor: Colorpath.white,
+        borderRadius: normalize(10),
+        padding: normalize(20),
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: "center",
+        borderWidth: 1,
+        borderColor: Colorpath.ButtonColr
+    },
+    content: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 16,
+        color: Colorpath.black,
+        textAlign: 'center',
+    },
+    underct: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 16,
+        color: Colorpath.ButtonColr,
+        textAlign: 'center',
+        textDecorationLine: "underline"
+    }
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -11,9 +11,11 @@ import {
   StateBundleLandingSuccess,
 } from '../Reducers/GuestReducer';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 
 export function* HomelistSaga(action) {
   console.log('hi');
+  getUserAgentJSON();
   const ipAddress = getPublicIP();
   let header = {
     Accept: 'application/json',
@@ -35,6 +37,7 @@ export function* HomelistSaga(action) {
 }
 
 export function* AboutusSaga(action) {
+  getUserAgentJSON();
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
@@ -52,6 +55,7 @@ export function* AboutusSaga(action) {
 }
 
 export function* StateBundleLandingSaga(action) {
+  getUserAgentJSON();
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
@@ -74,6 +78,7 @@ export function* StateBundleLandingSaga(action) {
 }
 
 export function* professionSaveSaga(action) {
+  getUserAgentJSON();
   const ipAddress = action?.payload?.ip || getPublicIP();
   const header = {
     Accept: 'application/json',

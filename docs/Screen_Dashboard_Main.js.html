@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/Dashboard/Main.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/Dashboard/Main.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Image, BackHandler, ActivityIndicator, Pressable } from 'react-native'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import Colorpath from '../../Themes/Colorpath'
+import Fonts from '../../Themes/Fonts'
+import normalize from '../../Utils/Helpers/Dimen';
+import MyStatusBar from '../../Utils/MyStatusBar';
+import StateLicense from '../../Components/StateLicense';
+import { useDispatch, useSelector } from 'react-redux';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import connectionrequest from '../../Utils/Helpers/NetInfo';
+import Imagepath from '../../Themes/Imagepath';
+import { AppContext } from '../GlobalSupport/AppContext';
+import HandleTextInput from './HandleTextInput';
+import PrimeCard from '../../Components/PrimeCard';
+import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
+import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
+import { licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
+import Snackbar from 'react-native-snackbar';
+import NewProfession from '../../Components/NewProfession';
+import NonPhysicianCat from '../../Components/NonPhysicianCat';
+import NetInfo from '@react-native-community/netinfo';
+import { Freeze } from "react-freeze";
+import { enableFreeze } from "react-native-screens";
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
+import Modal from 'react-native-modal';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+
+/**
+ * Reusable normalizeProfessionHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
+const PRIME_CARD_TEST_COUNTRY_CODE = '';
+
+const normalizeProfessionHandle = (professionHandle) =>
+  String(professionHandle || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+
+const findMatchedProfessionHandle = (candidates, supportedHandles) => {
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeProfessionHandle(candidate);
+    if (!normalizedCandidate) continue;
+
+    for (const handle of supportedHandles) {
+      if (normalizedCandidate === handle || normalizedCandidate.includes(handle)) {
+        return handle;
+      }
+    }
+  }
+
+  return '';
+};
+
+const buildProfessionLabel = (profession, professionType) => {
+  const cleanProfession = String(profession || '').trim();
+  const cleanProfessionType = String(professionType || '').trim();
+
+  if (!cleanProfession || !cleanProfessionType) {
+    return '';
+  }
+
+  return `${cleanProfession} - ${cleanProfessionType}`;
+};
+
+const getCountryFromIP = async (ip) => {
+  try {
+    const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+    const res = await fetch(url);
+    const text = await res.text();
+    if (text.startsWith('&lt;')) {
+      throw new Error('HTML response');
+    }
+    const data = JSON.parse(text);
+    return String(data?.country || 'unknown').trim().toUpperCase();
+  } catch (e) {
+    console.log('Main guest geo lookup failed:', e);
+    return 'unknown';
+  }
+};
+
+const isUsaBasedUser = (user, ipCountryCode = '') => {
+  const countryId = String(
+    user?.country_id ||
+    user?.billing_address?.country_id ||
+    user?.user_billing_address?.country_id ||
+    user?.user_address?.country_id ||
+    ''
+  ).trim();
+  const countryName = String(
+    user?.country_name ||
+    user?.billing_address?.country_name ||
+    user?.user_billing_address?.country_name ||
+    user?.user_address?.country_name ||
+    ''
+  ).trim().toLowerCase();
+  const usaUser = String(user?.usa_user || '').trim().toLowerCase();
+  const ipCountry = String(user?.ip_country || user?.country_code || '').trim().toLowerCase();
+  const callingCode = String(user?.callingCode || user?.countryCode || '').trim();
+  const normalizedResolvedIpCountry = String(ipCountryCode || '').trim().toLowerCase();
+
+  if (countryId &amp;&amp; countryId !== '1' &amp;&amp; countryId !== '233' &amp;&amp; countryId !== '0') {
+    return false;
+  }
+  if (countryName &amp;&amp; !countryName.includes('usa') &amp;&amp; !countryName.includes('united states') &amp;&amp; !countryName.includes('us')) {
+    return false;
+  }
+
+  return (
+    usaUser === '1' ||
+    usaUser === 'true' ||
+    countryId === '1' ||
+    countryName.includes('usa') ||
+    countryName.includes('united states') ||
+    callingCode === '+1' ||
+    normalizedResolvedIpCountry === 'us' ||
+    normalizedResolvedIpCountry === 'usa' ||
+    ipCountry === 'us' ||
+    ipCountry === 'usa'
+  );
+};
+
+const parseStoredJson = (value) => {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return null;
+  }
+};
+
+const requiresVerification = (user, isNonUsa = false, verifyResponse = null, verifyData = null) => {
+  if (!user) return false;
+  const primarySource = verifyResponse || {};
+  const secondarySource = user || {};
+  const tertiarySource = verifyData || {};
+
+  const isEmailVerified = [
+    primarySource?.is_verified,
+    primarySource?.email_verified,
+    primarySource?.user?.is_verified,
+    primarySource?.user?.email_verified,
+    secondarySource?.is_verified,
+    secondarySource?.email_verified,
+    secondarySource?.user?.is_verified,
+    secondarySource?.user?.email_verified,
+    tertiarySource?.is_verified,
+    tertiarySource?.email_verified,
+    tertiarySource?.user?.is_verified,
+    tertiarySource?.user?.email_verified
+  ].some(val => String(val) === '1' || val === true || val === 1);
+
+  const isPhoneVerified = [
+    primarySource?.phone_verified,
+    primarySource?.user?.phone_verified,
+    secondarySource?.phone_verified,
+    secondarySource?.user?.phone_verified,
+    tertiarySource?.phone_verified,
+    tertiarySource?.user?.phone_verified
+  ].some(val => String(val) === '1' || val === true || val === 1);
+
+  return isNonUsa ? !isEmailVerified : (!isEmailVerified || !isPhoneVerified);
+};
+const Main = (props) => {
+  const insets = useSafeAreaInsets();
+  const {
+    takestate,
+    addit,
+    setTakestate,
+    setAddit,
+    fulldashbaord,
+    setFulldashbaord,
+    stateCount,
+    setStateCount,
+    gtprof,
+    totalcard,
+    setTotalCred,
+    stateid,
+    setStateid,
+    renewal,
+    setRenewal,
+    setPushnew,
+    pushnew,
+    pendingCount,
+    completedCount,
+    setGtprof,
+    primeCardSessionSkipped,
+    setPrimeCardSessionSkipped
+  } = useContext(AppContext);
+  const [focusedInput, setFocusedInput] = useState(null);
+  const [linearText, setLinearText] = useState(true);
+  const [showLine, setShowLine] = useState(false);
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
+  const WebcastReducer = useSelector(state => state.WebcastReducer);
+  const AuthReducer = useSelector(state => state.AuthReducer);
+  const [cmecourse, setCmecourse] = useState(false);
+  const [finalShow, setFinalShow] = useState(null);
+  const [visible, setVisible] = useState(false);
+  const [fetcheddt, setFetchdt] = useState(null);
+  const [linedty, setLinedty] = useState();
+  const [enables, setEnables] = useState(false);
+  const [primeadd, setPrimeadd] = useState(false);
+  const [primeCardReady, setPrimeCardReady] = useState(false);
+  const [finalverifyvaultmain, setFinalverifyvaultmain] = useState(null);
+  const [finalProfessionmain, setFinalProfessionmain] = useState(null);
+  const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
+  // freeTrail and daysleft state variables are replaced with synchronous memoized values below
+  const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
+  const [isSkippedFlow, setIsSkippedFlow] = useState(false);
+  const [guestVerifyData, setGuestVerifyData] = useState(null);
+  const [guestVerifyLoading, setGuestVerifyLoading] = useState(false);
+  const [pendingGuestVerifyPayload, setPendingGuestVerifyPayload] = useState(null);
+  const [forceNewProfession, setForceNewProfession] = useState(false);
+  const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
+    professionUpdateRequired: false,
+    stateLicenseFlowCompleted: false,
+  });
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [isGuestPrimeUser, setIsGuestPrimeUser] = useState(false);
+  const [isGuestPrimeReady, setIsGuestPrimeReady] = useState(false);
+  const [hasAllProfTake, setHasAllProfTake] = useState(false);
+  const [hasEnables, setHasEnables] = useState(false);
+  const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
+  useEffect(() => {
+    const loadExploreTrialClicked = async () => {
+      try {
+        const val = await AsyncStorage.getItem('ExploreTrialClicked');
+        setExploreTrialClicked(val === 'true');
+      } catch (error) {
+        console.log('loadExploreTrialClicked error', error);
+      }
+    };
+    if (isFocus) {
+      loadExploreTrialClicked();
+    }
+  }, [isFocus]);
+  const endDateStringMain =
+    WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+    finalProfessionmain?.subscriptions?.[0]?.end_date;
+  const startDateStringMain =
+    WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+    AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+    finalProfessionmain?.subscriptions?.[0]?.start_date;
+  const isSubscriptionExpiredSync = useMemo(() => {
+    if (!endDateStringMain) return false;
+    try {
+      const endDate = new Date(endDateStringMain);
+      const startDate = startDateStringMain ? new Date(startDateStringMain) : null;
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      return normalizedCurrentDate >= normalizedEndDate &amp;&amp; (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate);
+    } catch (e) {
+      return false;
+    }
+  }, [endDateStringMain, startDateStringMain]);
+  useEffect(() => {
+    let mounted = true;
+    if (isFocus) {
+      readNonUsaFlowState().then(state => {
+        if (mounted) {
+          setNonUsaFlowState(state);
+        }
+      });
+      readNonUsaPermanentFlags().then(flags => {
+        if (mounted) {
+          setNonUsaPermanentFlags(flags);
+        }
+      });
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [isFocus]);
+
+  const isNonUsaUser = useMemo(() => {
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+    const isUsaProfile =
+      userObj?.usa_user === true ||
+      userObj?.usa_user === 1 ||
+      userObj?.usa_user === '1' ||
+      userObj?.is_non_usa === false ||
+      userObj?.is_non_usa === 0 ||
+      userObj?.is_non_usa === '0';
+    if (isUsaProfile &amp;&amp; nonUsaFlowState?.isNonUsa) {
+      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+      setNonUsaFlowState(null);
+    }
+    return !isUsaProfile &amp;&amp; (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.loginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
+  const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
+  const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
+  const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
+  const guestVerifyNavigationRef = useRef(false);
+  const guestVerifyRequestStartedRef = useRef(false);
+  const isFocus = useIsFocused();
+  const dispatch = useDispatch();
+  const [nettruedr, setNettruedr] = useState("");
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const primePromptVisibleRef = useRef(false);
+  const primeCardDelayRef = useRef(null);
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
+      setIsDrawerVisible(visible);
+    });
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setNettruedr(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (primeCardDelayRef.current) {
+      clearTimeout(primeCardDelayRef.current);
+      primeCardDelayRef.current = null;
+    }
+
+    if (primeadd &amp;&amp; !isDrawerVisible) {
+      setPrimeCardReady(false);
+      primeCardDelayRef.current = setTimeout(() => {
+        setPrimeCardReady(true);
+      }, 5000);
+    } else {
+      setPrimeCardReady(false);
+    }
+
+    return () => {
+      if (primeCardDelayRef.current) {
+        clearTimeout(primeCardDelayRef.current);
+        primeCardDelayRef.current = null;
+      }
+    };
+  }, [primeadd, isDrawerVisible]);
+  const { detectmain } = props?.route?.params || {}
+  const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
+  const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
+  const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
+  const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
+  const authProfessionInfo =
+    AuthReducer?.loginResponse?.user ||
+    AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.loginsiginResponse?.user ||
+    AuthReducer?.signupResponse?.user ||
+    AuthReducer?.verifymobileResponse?.user ||
+    AuthReducer?.verifyemailResponse?.user ||
+    AuthReducer?.verifyResponse?.user ||
+    AuthReducer?.verifyResponse?.data ||
+    (AuthReducer?.verifyResponse &amp;&amp; typeof AuthReducer.verifyResponse === 'object' ? AuthReducer.verifyResponse : null) ||
+    {};
+  const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
+  const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
+  const isDashboardProfessionReady = Boolean(dashboardProfession &amp;&amp; dashboardProfessionType);
+  const profFromDashboard = buildProfessionLabel(dashboardProfession, dashboardProfessionType);
+  const profFromAuth = buildProfessionLabel(
+    authProfessionInfo?.profession,
+    authProfessionInfo?.profession_type
+  );
+  const profFromSaved = buildProfessionLabel(
+    finalProfessionmain?.profession || finalverifyvaultmain?.profession,
+    finalProfessionmain?.profession_type || finalverifyvaultmain?.profession_type
+  );
+  const resolvedProfessionHandle = profFromDashboard
+    ? findMatchedProfessionHandle(
+      [
+        profFromDashboard,
+        dashboardProfession,
+        `${dashboardProfession} ${dashboardProfessionType}`.trim(),
+      ],
+      supportedProfessionHandles
+    )
+    : profFromAuth
+      ? findMatchedProfessionHandle(
+        [
+          profFromAuth,
+          `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
+        ],
+        supportedProfessionHandles
+      )
+      : findMatchedProfessionHandle(
+        [
+          profFromSaved,
+          `${finalProfessionmain?.profession || finalverifyvaultmain?.profession || ''} ${finalProfessionmain?.profession_type || finalverifyvaultmain?.profession_type || ''}`.trim(),
+        ],
+        supportedProfessionHandles
+      );
+  const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
+  const isPhysicianFlow = allProfTake;
+  const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+
+  useEffect(() => {
+    if (allProfTake) {
+      setHasAllProfTake(true);
+    }
+  }, [allProfTake]);
+
+  useEffect(() => {
+    if (enables) {
+      setHasEnables(true);
+    }
+  }, [enables]);
+  const shouldHoldSkeleton = !isAsyncStorageLoaded || ((isPhysicianFlow || isNursingFlow) &amp;&amp; !isDashboardProfessionReady);
+  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
+    DashboardReducer?.mainprofileResponse?.licensures?.length ||
+    DashboardReducer?.mainprofileResponse?.license_number ||
+    finalverifyvaultmain?.license_number ||
+    finalProfessionmain?.license_number
+  );
+  const shouldShowMainAddLicenseCard =
+    nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &amp;&amp;
+    !hasAnyLicenseData;
+  const bottomBannerSpacing = useMemo(() => {
+    if ((enables || isSubscriptionExpiredSync) &amp;&amp; allProfTake) {
+      return normalize(96);
+    }
+    if (freeTrail) {
+      return normalize(150);
+    }
+    return Platform.OS === 'ios' ? normalize(16) : normalize(80);
+  }, [allProfTake, enables, freeTrail, isSubscriptionExpiredSync]);
+  const homeBottomSpacing = useMemo(
+    () => bottomBannerSpacing + (Platform.OS === 'ios' ? 0 : Math.max(insets.bottom, normalize(8))),
+    [bottomBannerSpacing, insets.bottom]
+  );
+  console.log("isPhysicianFlow", isPhysicianFlow, fulldashbaord);
+  console.log("isNursingFlow", isNursingFlow);
+  const lastLicenseProfRef = useRef(null);
+
+  // 🔹 Sync licensure requirements when profession changes
+  useEffect(() => {
+    if (!isFocus) return;
+
+    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || {};
+    const profession = String(profInfo.profession || '').trim();
+    const profType = String(profInfo.profession_type || '').trim();
+
+    if (!profession || !profType) return;
+    const professionLabel = `${profession} - ${profType}`;
+
+    if (lastLicenseProfRef.current !== professionLabel) {
+      console.log('[Main.js/LicensureSync] Change detected:', { old: lastLicenseProfRef.current, new: professionLabel });
+      lastLicenseProfRef.current = professionLabel;
+      connectionrequest()
+        .then(() => {
+          console.log('[Main.js/LicensureSync] Dispatching licesensRequest for:', professionLabel);
+          dispatch(licesensRequest(professionLabel));
+        })
+        .catch(err => console.log('Licensure refresh failed', err));
+    } else {
+      console.log('[Main.js/LicensureSync] No change, skipping.');
+    }
+  }, [isFocus, DashboardReducer?.mainprofileResponse?.professional_information]);
+
+  // 🔹 Keep global context (gtprof) in sync with the latest detected profession
+  useEffect(() => {
+    if (resolvedProfessionHandle) {
+      const isPhysicianNow = physicianHandles.has(resolvedProfessionHandle);
+      if (isPhysicianNow !== gtprof) {
+        setGtprof(isPhysicianNow);
+      }
+    }
+  }, [resolvedProfessionHandle, gtprof]);
+  // const isPhysicianFlow = gtprof || allProfTake || validHandles.has(cachedProfessionHandle);
+  // const hasDashboardLicenses = Array.isArray(fulldashbaord) &amp;&amp; fulldashbaord.length > 0;
+  // const shouldRenderStateLicense = isPhysicianFlow || hasDashboardLicenses;
+  useEffect(() => {
+    if (!isFocus) return;
+    connectionrequest()
+      .then(() => {
+        // 🔹 Only show shimmer if we don't have data yet (prevents flicker on tab switch)
+        if (!DashboardReducer?.dashboardResponse?.data) {
+          setShowLoader(false);
+        }
+        dispatch(PrimeCheckRequest({}));
+        dispatch(mainprofileRequest({}));
+        dispatch(dashPerRequest({}));
+        dispatch(dashboardRequest({}));
+      })
+      .catch((err) => showErrorAlert("Please connect to internet", err));
+  }, [detectmain, isFocus]);
+
+  // Keep the main page on skeleton until dashboard profession info is ready.
+  useEffect(() => {
+    if (!isFocus) return;
+    if (shouldHoldSkeleton) {
+      setShowLoader(false);
+      return;
+    }
+    if (!isPhysicianFlow &amp;&amp; !isNursingFlow) {
+      setShowLoader(true);
+      return;
+    }
+    if (DashboardReducer?.dashboardResponse?.data) {
+      setShowLoader(true);
+    }
+  }, [isFocus, shouldHoldSkeleton, isPhysicianFlow, isNursingFlow, DashboardReducer?.dashboardResponse?.data]);
+  const backPressCount = useRef(0);
+  const isSnackbarVisible = useRef(false);
+  const snackbarTimeout = useRef(null);
+  useEffect(() => {
+    const resetState = () => {
+      backPressCount.current = 0;
+      isSnackbarVisible.current = false;
+      if (snackbarTimeout.current) {
+        clearTimeout(snackbarTimeout.current);
+        snackbarTimeout.current = null;
+      }
+    };
+
+    const onBackPress = () => {
+      if (isSnackbarVisible.current) {
+        resetState();
+        BackHandler.exitApp();
+        return true;
+      }
+      backPressCount.current = 1;
+      isSnackbarVisible.current = true;
+      Snackbar.show({
+        text: 'Press back again to exit',
+        duration: Snackbar.LENGTH_LONG,
+        backgroundColor: '#2C2C2C',
+        textColor: '#FFFFFF',
+        action: {
+          text: 'EXIT',
+          textColor: '#D87AF6',
+          onPress: () => {
+            resetState();
+            BackHandler.exitApp();
+          },
+        },
+      });
+      snackbarTimeout.current = setTimeout(() => {
+        isSnackbarVisible.current = false;
+        backPressCount.current = 0;
+      }, 3000);
+
+      return true;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => {
+      backHandler.remove();
+      resetState();
+    };
+  }, []);
+  const [showloader, setShowLoader] = useState(false);
+  const [freeze, setFreeze] = useState(false);
+  const shouldRenderDashboardContent = !shouldHoldSkeleton &amp;&amp; (showloader || (!isPhysicianFlow &amp;&amp; !isNursingFlow));
+  const shouldRenderNewProfession =
+    !isPhysicianFlow &amp;&amp; !isNursingFlow &amp;&amp; (forceNewProfession || isNonUsaUser);
+  const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
+  const renderMainAddLicenseCard = () => (
+    &lt;View style={{
+      marginHorizontal: normalize(10),
+      marginTop: normalize(4),
+      marginBottom: normalize(12),
+    }}>
+      &lt;View style={{
+        borderRadius: normalize(18),
+        backgroundColor: '#FFF8EC',
+        borderWidth: 1,
+        borderColor: '#F5D39B',
+        overflow: 'hidden',
+      }}>
+        &lt;View style={{
+          backgroundColor: '#FFEDCA',
+          paddingVertical: normalize(12),
+          paddingHorizontal: normalize(16),
+        }}>
+          &lt;Text style={{
+            fontFamily: Fonts.InterSemiBold,
+            fontSize: 16,
+            color: '#000000',
+          }}>
+            {'Add License'}
+          &lt;/Text>
+        &lt;/View>
+        &lt;View style={{
+          paddingHorizontal: normalize(16),
+          paddingVertical: normalize(16),
+        }}>
+          &lt;Text style={{
+            fontFamily: Fonts.InterRegular,
+            fontSize: 14,
+            lineHeight: 20,
+            color: '#1F2937',
+          }}>
+            {'Add at least one valid state license to unlock Credit Vault access.'}
+          &lt;/Text>
+          &lt;TouchableOpacity
+            onPress={() => props.navigation.navigate('AddLicense', { profile: 'main' })}
+            style={{
+              marginTop: normalize(14),
+              alignSelf: 'flex-start',
+              backgroundColor: Colorpath.ButtonColr,
+              borderRadius: normalize(8),
+              paddingHorizontal: normalize(16),
+              paddingVertical: normalize(10),
+            }}
+          >
+            &lt;Text style={{
+              fontFamily: Fonts.InterSemiBold,
+              fontSize: 14,
+              color: Colorpath.white,
+            }}>
+              {'Add License'}
+            &lt;/Text>
+          &lt;/TouchableOpacity>
+        &lt;/View>
+      &lt;/View>
+    &lt;/View>
+  );
+  useEffect(() => {
+    setFreeze(false);
+    enableFreeze(false);
+  }, []);
+  useEffect(() => {
+    const token_handle_vault = () => {
+      (async () => {
+        try {
+          const [board_special, profession_data, stablePrimeFlagRaw] = await Promise.all([
+            AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+            AsyncStorage.getItem(constants.PROFESSION),
+            AsyncStorage.getItem(constants.GUEST_PRIME_USER),
+            AsyncStorage.getItem('activeProfile'),
+          ]);
+          const board_special_json = board_special ? JSON.parse(board_special) : null;
+          const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+          setFinalverifyvaultmain(board_special_json);
+          setFinalProfessionmain(profession_data_json);
+          setIsGuestPrimeUser(stablePrimeFlagRaw === 'true');
+          setIsGuestPrimeReady(true);
+          setIsAsyncStorageLoaded(true);
+        } catch (error) {
+          console.log('Error fetching data:', error);
+          setIsGuestPrimeReady(true);
+          setIsAsyncStorageLoaded(true);
+        }
+      })();
+    };
+
+    token_handle_vault();
+  }, [isFocus]);
+  console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await AsyncStorage.getItem('activeProfile');
+        const stablePrimeFlagRaw = await AsyncStorage.getItem(constants.GUEST_PRIME_USER);
+        const stablePrimeFlag = stablePrimeFlagRaw === 'true';
+        setIsGuestPrimeUser(stablePrimeFlag);
+        setCurrentProfile(profile || (stablePrimeFlag ? 'PrimeCard' : null));
+        setIsGuestPrimeReady(true);
+      } catch (error) {
+        console.log('Error loading activeProfile', error);
+        setIsGuestPrimeReady(true);
+      }
+    };
+    if (isFocus) {
+      loadProfile();
+    }
+  }, [isFocus]);
+  useEffect(() => {
+    const hasDashboardData = !!DashboardReducer?.dashboardResponse?.data;
+    const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
+
+    console.log('[PrimeRedirection] Check:', {
+      isFocus,
+      hasDashboardData,
+      user_usa: user?.usa_user,
+      userExists: !!user,
+    });
+    if (!isGuestPrimeReady) {
+      return;
+    }
+    if (currentProfile === 'PrimeCard' || isGuestPrimeUser) {
+      return;
+    }
+    if (primePromptVisibleRef.current || primeadd || showGuestPrimePrompt) {
+      return;
+    }
+    if (isFocus &amp;&amp; hasDashboardData &amp;&amp; user?.usa_user === true &amp;&amp; isPhysicianFlow) {
+      const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse &amp;&amp; Object.keys(AuthReducer.primeTrailResponse).length > 0);
+      const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+      const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
+      const hasSubscriptionData = Array.isArray(user?.subscription) &amp;&amp; user.subscription.length > 0;
+      const isPrimeActive = primeTrailSuccess || PrimePaymentSuccess || isPrimeSubscriptionActive(primeCheckResponse) || hasSubscriptionData;
+      const primeCheckCompleted = Object.keys(primeCheckResponse || {}).length > 0 || WebcastReducer?.status === 'WebCast/PrimeCheckFailure';
+
+      console.log('[PrimeRedirection] Inside Condition:', {
+        primeTrailSuccess,
+        PrimePaymentSuccess,
+        isPrimeActive,
+        primeCheckCompleted,
+        isPrimeSubscriptionMissing: isPrimeSubscriptionMissing(primeCheckResponse),
+        primeCheckResponse
+      });
+
+      if (isPrimeActive || enables || isSubscriptionExpiredSync) {
+        console.log('[PrimeRedirection] Prime Active or Expired (enables/sync), route:', props.route.name);
+        AsyncStorage.getItem('activeProfile').then((activeProfile) => {
+          if (activeProfile === 'PrimeCard') {
+            return;
+          }
+          if (activeProfile !== 'SkipProfile') {
+            AsyncStorage.removeItem('activeProfile').then(() => {
+              setCurrentProfile(null);
+            }).catch(err => console.log('Error removing activeProfile', err));
+          }
+        }).catch(err => console.log('Error checking activeProfile on redirection', err));
+        if (props.route.name !== 'Home') {
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'TabNav' }]
+            })
+          );
+        }
+      }
+    }
+  }, [isFocus, DashboardReducer?.dashboardResponse?.data, DashboardReducer?.mainprofileResponse, AuthReducer.status, AuthReducer.primeTrailResponse, WebcastReducer.status, WebcastReducer.PrimePaymentResponse, WebcastReducer.PrimeCheckResponse, isPhysicianFlow, enables, isSubscriptionExpiredSync, primeadd, showGuestPrimePrompt, currentProfile, isGuestPrimeUser, isGuestPrimeReady]);
+
+  const ipAddress = getPublicIP();
+  useEffect(() => {
+    if (PRIME_CARD_TEST_COUNTRY_CODE) {
+      setResolvedIpCountryCode(PRIME_CARD_TEST_COUNTRY_CODE);
+      return;
+    }
+    let isMounted = true;
+    const fetchCountry = async () => {
+      const countryCode = await getCountryFromIP(ipAddress);
+      if (isMounted) {
+        setResolvedIpCountryCode(countryCode || 'unknown');
+      }
+    };
+    fetchCountry();
+    return () => {
+      isMounted = false;
+    };
+  }, [ipAddress]);
+  useEffect(() => {
+    if (!isFocus) return;
+    const loadForcedProfessionView = async () => {
+      try {
+        const [forceNewProfessionRaw, primeMembershipSkippedRaw] = await Promise.all([
+          AsyncStorage.getItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+        ]);
+        if ((forceNewProfessionRaw === '1' || primeMembershipSkippedRaw === 'true') &amp;&amp; !hasActivePrimeMembership) {
+          setForceNewProfession(true);
+          if (forceNewProfessionRaw === '1') {
+            await AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY);
+          }
+        } else {
+          setForceNewProfession(false);
+        }
+      } catch (error) {
+        console.log('loadForcedProfessionView error', error);
+      }
+    };
+    loadForcedProfessionView();
+  }, [isFocus, hasActivePrimeMembership]);
+  const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
+    if (!user) return;
+    if (shouldClearPendingKey) {
+      try {
+        await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+      } catch (error) {
+        console.log('openGuestVerificationAlert clear pending error', error);
+      }
+    }
+    setGuestVerifyData(user);
+    setPrimeadd(false);
+    primePromptVisibleRef.current = false;
+    setShowGuestPrimePrompt(false);
+    setTimeout(() => {
+      setGuestVerifyModalVisible(true);
+    }, 180);
+  };
+  const requestGuestVerificationCheck = async () => {
+    const token = await AsyncStorage.getItem(constants.TOKEN);
+    if (!token) return;
+    setGuestVerifyCheckRequested(true);
+    connectionrequest()
+      .then(() => {
+        dispatch(verifyRequest({ token, key: {} }));
+      })
+      .catch((err) => {
+        setGuestVerifyCheckRequested(false);
+        showErrorAlert("Please connect to internet", err);
+      });
+  };
+  const setGuestPrimeVerificationPending = async () => {
+    try {
+      await AsyncStorage.setItem(GUEST_PRIME_VERIFICATION_PENDING_KEY, 'true');
+    } catch (error) {
+      console.log('setGuestPrimeVerificationPending error', error);
+    }
+  };
+  const handleGuestPrimeSkip = async () => {
+    await setGuestPrimeVerificationPending();
+    try {
+      await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+      await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
+      await AsyncStorage.removeItem('ExploreTrialClicked');
+      setIsSkippedFlow(true);
+      setForceNewProfession(true);
+      await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
+      setPrimeCardSessionSkipped(true);
+      setExploreTrialClicked(false);
+      await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+      setCurrentProfile('SkipProfile');
+      require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'SkipProfile');
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'TabNav' }],
+        })
+      );
+    } catch (error) {
+      console.log('handleGuestPrimeSkip flag error', error);
+    }
+    setPrimeadd(false);
+    primePromptVisibleRef.current = false;
+    setShowGuestPrimePrompt(false);
+    await requestGuestVerificationCheck();
+  };
+  const handleGuestPrimeExploreTrial = async () => {
+    await setGuestPrimeVerificationPending();
+    await AsyncStorage.removeItem('activeProfile');
+    await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+    setExploreTrialClicked(true);
+    try {
+      dispatch(primeTrailRequest({}));
+    } catch (error) {
+      console.log('handleGuestPrimeExploreTrial flag error', error);
+    }
+    setPrimeadd(false);
+    primePromptVisibleRef.current = false;
+    setShowGuestPrimePrompt(false);
+  };
+  const handleGuestPrimeMembership = async () => {
+    await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+    await AsyncStorage.removeItem('ExploreTrialClicked');
+    await setGuestPrimeVerificationPending();
+    setPrimeadd(false);
+    primePromptVisibleRef.current = false;
+    setShowGuestPrimePrompt(false);
+    props.navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'PrimePayment' }],
+      })
+    );
+  };
+  useEffect(() => {
+    if (!isFocus) return;
+    const loadGuestVerifyModal = async () => {
+      try {
+        if (guestVerifyNavigationRef.current) {
+          return;
+        }
+        if (AuthReducer?.status === 'Auth/verifyRequest') {
+          return;
+        }
+        const [
+          guestFlowRaw,
+          verifyRaw,
+          professionRaw,
+          guestPrimeVerifyPendingRaw,
+          primeMembershipSkippedRaw,
+          primeCardFlowCompleteRaw,
+          exploreTrialClickedRaw,
+          suppressGuestPromptsOnceRaw,
+          isGuestConvertedUserRaw,
+          sessionPrimeSkippedRaw,
+        ] = await Promise.all([
+          AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
+          AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+          AsyncStorage.getItem(constants.PROFESSION),
+          AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+          AsyncStorage.getItem('PrimeCardFlowComplete'),
+          AsyncStorage.getItem('ExploreTrialClicked'),
+          AsyncStorage.getItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY),
+          AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
+          AsyncStorage.getItem('SessionPrimeSkipped'),
+        ]);
+        const suppressGuestPromptsOnce = suppressGuestPromptsOnceRaw === 'true';
+        const guestFlowData = parseStoredJson(guestFlowRaw);
+        const isGuestFlow = Boolean(guestFlowData);
+        const isGuestConvertedUser = isGuestConvertedUserRaw === 'true';
+        const isAnyGuestFlow = isGuestFlow || isGuestConvertedUser;
+        const isSkippedFlowVal = primeMembershipSkippedRaw === 'true';
+        setIsSkippedFlow(isSkippedFlowVal);
+        const isSessionSkippedVal = sessionPrimeSkippedRaw === 'true';
+        if (isSessionSkippedVal &amp;&amp; !primeCardSessionSkipped) {
+          setPrimeCardSessionSkipped(true);
+        }
+        const isVerificationPending = guestPrimeVerifyPendingRaw === 'true';
+        const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
+        const isExploreTrialClicked = exploreTrialClickedRaw === 'true';
+        const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
+        const hasFreshVerifyResponse =
+          Boolean(verifyResponseData &amp;&amp; Object.keys(verifyResponseData).length > 0);
+
+        if (!resolvedIpCountryCode) {
+          return;
+        }
+
+        if (primePromptVisibleRef.current) {
+          return;
+        }
+
+
+
+        if (isExploreTrialClicked) {
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          return;
+        }
+
+
+        const verifyData = parseStoredJson(verifyRaw);
+        const professionData = parseStoredJson(professionRaw);
+        console.log(professionRaw, "professionRaw======456465456")
+        const user = verifyResponseData || verifyData || professionData || DashboardReducer?.mainprofileResponse || authProfessionInfo;
+        const professionType = String(
+          verifyData?.profession_type || professionData?.profession_type ||
+          user?.profession_type ||
+          dashboardProfessionType ||
+          authProfessionInfo?.profession_type ||
+          ''
+        ).trim().toUpperCase();
+        const professionLabel = buildProfessionLabel(
+          verifyData?.profession || professionData?.profession ||
+          user?.profession || dashboardProfessionInfo?.profession || authProfessionInfo?.profession,
+          user?.profession_type || dashboardProfessionType || authProfessionInfo?.profession_type
+        ).toUpperCase();
+
+        const rawProfession =
+          verifyData?.profession ||
+          professionData?.profession ||
+          user?.profession ||
+          dashboardProfessionInfo?.profession ||
+          authProfessionInfo?.profession ||
+          '';
+        const rawProfessionType =
+          verifyData?.profession_type ||
+          professionData?.profession_type ||
+          user?.profession_type ||
+          dashboardProfessionType ||
+          authProfessionInfo?.profession_type ||
+          '';
+
+        const userProfession = (
+          rawProfession.includes(' - ')
+            ? rawProfession
+            : rawProfession &amp;&amp; rawProfessionType
+              ? `${rawProfession} - ${rawProfessionType}`
+              : rawProfession || rawProfessionType
+        ).trim();
+
+        const allowedProfessions = [
+          "Physician - MD",
+          "Physician - DO",
+          "Physician - DPM"
+        ];
+
+        const isEligibleGuestPhysician =
+          allowedProfessions.includes(userProfession) ||
+          allProfTake ||
+          ['MD', 'DO', 'DPM'].includes(professionType) ||
+          professionLabel.includes('PHYSICIAN - MD') ||
+          professionLabel.includes('PHYSICIAN - DO') ||
+          professionLabel.includes('PHYSICIAN - DPM');
+
+        const isEligibleCountry =
+          resolvedIpCountryCode === 'US' ||
+          resolvedIpCountryCode === 'USA' ||
+          isUsaBasedUser(user, resolvedIpCountryCode);
+        const isUsa =
+          user?.usa_user === true ||
+          user?.usa_user === 1 ||
+          user?.usa_user === '1';
+
+        const loginUser =
+          AuthReducer?.loginResponse?.user || professionRaw;
+
+        const activeUser = loginUser?.user ? loginUser.user : loginUser || professionRaw;
+        const isNonSubscribedNoSubscription =
+          activeUser?.subscription_user == "non-subscribed" &amp;&amp;
+          (!activeUser?.subscription || activeUser?.subscription?.length === 0) &amp;&amp;
+          (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+
+        const physicianHandles = isEligibleGuestPhysician;
+        console.log(professionRaw, activeUser, isNonSubscribedNoSubscription, "isNonSubscribedNoSubscription", physicianHandles, "physicianHandles", isEligibleCountry, "isEligibleCountry", isUsa, "isUsa", userProfession, "userProfession", professionType, "professionType", professionLabel, "professionLabel", resolvedIpCountryCode, "resolvedIpCountryCode");
+        if (
+          isNonSubscribedNoSubscription &amp;&amp;
+          physicianHandles &amp;&amp;
+          !isSkippedFlowVal &amp;&amp;
+          !isSessionSkippedVal
+        ) {
+          setGuestVerifyData(user);
+          setGuestVerifyModalVisible(false);
+          primePromptVisibleRef.current = true;
+          setShowGuestPrimePrompt(true);
+          setPrimeadd(true);
+          return;
+        }
+
+        if (suppressGuestPromptsOnce) {
+          await AsyncStorage.removeItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY);
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          return;
+        }
+
+        if (!isAnyGuestFlow &amp;&amp; !isSkippedFlowVal) {
+          return;
+        }
+
+        const shouldCheckVerificationNow =
+          !shouldShowPrimeFirst &amp;&amp;
+          !isVerificationPending &amp;&amp;
+          !hasFreshVerifyResponse &amp;&amp;
+          user;
+
+        if (shouldCheckVerificationNow) {
+          setGuestVerifyData(user);
+          await setGuestPrimeVerificationPending();
+          await requestGuestVerificationCheck();
+          return;
+        }
+
+        if (isVerificationPending) {
+          if (!hasFreshVerifyResponse) {
+            setGuestVerifyModalVisible(false);
+            return;
+          }
+          if (requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
+            await openGuestVerificationAlert(user, true);
+          } else {
+            await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+            await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+            await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+            setGuestVerifyModalVisible(false);
+            setGuestVerifyData(null);
+          }
+          return;
+        }
+
+        if (hasFreshVerifyResponse &amp;&amp; user &amp;&amp; requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
+          setGuestVerifyData(user);
+          setGuestVerifyModalVisible(true);
+        } else {
+          if (hasFreshVerifyResponse) {
+            await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+            await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+            await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+          }
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+        }
+      } catch (error) {
+        console.log('loadGuestVerifyModal error', error);
+      }
+    };
+    loadGuestVerifyModal();
+  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse]);
+  const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
+  const isPrimePaymentSuccess =
+    WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+  const hasActivePrimeMembership = Boolean(subscription || isPrimePaymentSuccess);
+  const isPrimeTrial = useMemo(() => {
+    return !hasActivePrimeMembership &amp;&amp; subscription == false &amp;&amp; allProfTake;
+  }, [subscription, allProfTake, hasActivePrimeMembership]);
+
+  const takeSub = !hasActivePrimeMembership &amp;&amp; (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || AuthReducer?.loginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
+  const hsdSub = !hasActivePrimeMembership &amp;&amp; (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
+  const { freeTrail, daysleft } = useMemo(() => {
+    if (!endDateStringMain) {
+      return { freeTrail: takeSub, daysleft: false };
+    }
+    try {
+      const endDate = new Date(endDateStringMain);
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+      const timeDifference = normalizedEndDate - normalizedCurrentDate;
+      const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
+      if (daysDifference &lt;= 30) {
+        return { freeTrail: true, daysleft: daysDiff };
+      }
+      return { freeTrail: false, daysleft: false };
+    } catch (e) {
+      return { freeTrail: takeSub, daysleft: false };
+    }
+  }, [endDateStringMain, takeSub]);
+  const primeTrialMessage = useMemo(() => {
+    return freeTrail &amp;&amp; hsdSub
+      ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+      : freeTrail &amp;&amp; daysleft == 30
+        ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+        : daysleft
+          ? Math.abs(daysleft) > 29
+            ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+            : `Your free trial of premium subscription will end in ${Math.abs(
+              daysleft,
+            )} day(s). Subscribe now to continue accessing premium features`
+          : '';
+  }, [daysleft, freeTrail, hsdSub]);
+  const setFreeTrail = () => { };
+  const setDaysleft = () => { };
+  const isNonUsaIpUser = Boolean(
+    resolvedIpCountryCode &amp;&amp;
+    resolvedIpCountryCode !== 'US' &amp;&amp;
+    resolvedIpCountryCode !== 'USA' &amp;&amp;
+    resolvedIpCountryCode !== 'unknown'
+  );
+  useEffect(() => {
+    if (endDateStringMain &amp;&amp; allProfTake) {
+      const endDateString =
+        WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
+        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+        finalProfessionmain?.subscriptions?.[0]?.end_date;
+      const startDateString =
+        WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+        AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+        finalProfessionmain?.subscriptions?.[0]?.start_date;
+      if (!endDateString) return;
+      try {
+        const endDate = new Date(endDateString);
+        const startDate = startDateString ? new Date(startDateString) : null;
+        const currentDate = new Date();
+        const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+        const normalizedStartDate = startDate ? new Date(startDate.setHours(0, 0, 0, 0)) : null;
+        const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+        if (normalizedCurrentDate >= normalizedEndDate &amp;&amp; (!normalizedStartDate || normalizedCurrentDate >= normalizedStartDate)) {
+          setEnables(true);
+          setPushnew(true);
+        } else {
+          setEnables(false);
+          setPushnew(false);
+        }
+        const timeDifference = normalizedEndDate - normalizedCurrentDate;
+        const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
+        if (daysDifference &lt;= 30) {
+          setFreeTrail(true);
+          const endDateString = endDateStringMain;
+          const endDate = new Date(endDateString);
+          const currentDate = new Date();
+          const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+          const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+          const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+          setDaysleft(daysDiff);
+        } else {
+          setFreeTrail(false);
+        }
+      } catch (error) {
+        console.error('Error parsing date:', error);
+      }
+    } else if (takeSub) {
+      setFreeTrail(true);
+      const endDateString = finalProfessionmain?.subscriptions?.[0]?.end_date
+      if (endDateString) {
+        const endDate = new Date(endDateString);
+        const currentDate = new Date();
+        const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+        const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+        const timeDiff = normalizedEndDate.getTime() - normalizedCurrentDate.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        setDaysleft(daysDiff);
+      } else {
+        setDaysleft(null);
+      }
+    }
+  }, [allProfTake, WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessionmain, finalverifyvaultmain, takeSub]);
+  useLayoutEffect(() => {
+    props.navigation.setOptions({ gestureEnabled: false });
+  }, []);
+  useEffect(() => {
+    if (!isFocus || !isPrimePaymentSuccess) return;
+    (async () => {
+      const guestPrimeVerifyPendingRaw = await AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+      if (guestPrimeVerifyPendingRaw === 'true') {
+        await requestGuestVerificationCheck();
+      }
+    })().catch(error => {
+      console.log('prime success verify trigger error', error);
+    });
+  }, [isFocus, isPrimePaymentSuccess]);
+  const closeGuestVerifyModal = async () => {
+    setGuestVerifyModalVisible(false);
+  };
+  const guestVerifyEmail =
+    guestVerifyData?.email ||
+    AuthReducer?.verifyResponse?.email ||
+    AuthReducer?.verifyResponse?.user?.email ||
+    finalverifyvaultmain?.email ||
+    finalProfessionmain?.email ||
+    '';
+  const proceedGuestVerification = async verifyPayload => {
+    const countryCode =
+      verifyPayload?.countryCode ||
+      verifyPayload?.callingCode ||
+      (verifyPayload?.usa_user ? '+1' : '');
+    const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
+    const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
+    const isNonUsaUser =
+      isNonUsaAccount(verifyPayload) ||
+      isNonUsaIpUser ||
+      finalProfessionmain?.usa_user === false ||
+      finalProfessionmain?.usa_user === 0 ||
+      finalProfessionmain?.usa_user === '0';
+    const phoneValue =
+      verifyPayload?.phone ||
+      verifyPayload?.mobile ||
+      verifyPayload?.phone_number ||
+      verifyPayload?.user?.phone;
+
+    guestVerifyNavigationRef.current = true;
+    setTimeout(() => {
+      guestVerifyNavigationRef.current = false;
+    }, 1200);
+    await closeGuestVerifyModal();
+
+    if (!isEmailVerified) {
+      props.navigation.navigate(isNonUsaUser ? 'VerifyOTPEmail' : 'VerifyOTP', {
+        nonUsaUser: isNonUsaUser,
+        newMail: verifyPayload?.email,
+        NewEmail: {
+          email: verifyPayload?.email,
+          phoneNo: phoneValue,
+          phone: phoneValue,
+          countryCode,
+          returnDat: { ...verifyPayload, phone: phoneValue, countryCode },
+          forceResend: true,
+        },
+        user: {
+          emailid: verifyPayload?.email,
+          phoneData: phoneValue,
+        },
+        verifyemail: {
+          verifyemail: verifyPayload,
+          profession: verifyPayload?.profession,
+          isNonUsaUser,
+        },
+      });
+      return;
+    }
+
+    if (!isNonUsaUser &amp;&amp; !isPhoneVerified) {
+      props.navigation.navigate('VerifyMobileOTP', {
+        validPh: {
+          validPh: phoneValue,
+          phonecode: countryCode,
+        },
+        forceResend: true,
+      });
+      return;
+    }
+
+    try {
+      await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+      await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+      await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+    } catch (error) {
+      console.log('handleGuestVerifyAccount cleanup error', error);
+    }
+  };
+  const handleGuestVerifyAccount = async () => {
+    const verifyPayload = guestVerifyData || finalverifyvaultmain || finalProfessionmain || AuthReducer?.verifyResponse || {};
+    const token = await AsyncStorage.getItem(constants.TOKEN);
+    const hasImmediateGuestContact =
+      Boolean(verifyPayload?.email) &amp;&amp;
+      Boolean(
+        verifyPayload?.phone ||
+        verifyPayload?.mobile ||
+        verifyPayload?.phone_number ||
+        verifyPayload?.user?.phone
+      );
+
+    if (token) {
+      setGuestVerifyLoading(true);
+      guestVerifyRequestStartedRef.current = false;
+      if (!hasImmediateGuestContact) {
+        setPendingGuestVerifyPayload(verifyPayload);
+      }
+      connectionrequest()
+        .then(() => {
+          dispatch(verifyRequest({ token, key: {} }));
+        })
+        .catch((err) => {
+          setPendingGuestVerifyPayload(null);
+          setGuestVerifyLoading(false);
+          showErrorAlert("Please connect to internet", err);
+        });
+      if (hasImmediateGuestContact) {
+        proceedGuestVerification(verifyPayload).catch(error => {
+          console.log('handleGuestVerifyAccount immediate flow error', error);
+          setGuestVerifyLoading(false);
+        });
+      }
+      return;
+    }
+
+    await proceedGuestVerification(verifyPayload);
+  };
+  useEffect(() => {
+    if (!pendingGuestVerifyPayload) return;
+    if (AuthReducer?.status === 'Auth/verifyRequest') {
+      guestVerifyRequestStartedRef.current = true;
+      return;
+    }
+    if (!guestVerifyRequestStartedRef.current) {
+      return;
+    }
+    if (AuthReducer?.status !== 'Auth/verifySuccess' &amp;&amp; AuthReducer?.status !== 'Auth/verifyFailure') {
+      return;
+    }
+
+    const verifyResponse = AuthReducer?.verifyResponse || {};
+    const responseUser = verifyResponse?.user || {};
+    const mergedVerifyPayload = {
+      ...pendingGuestVerifyPayload,
+      ...responseUser,
+      ...verifyResponse,
+      email:
+        verifyResponse?.email ||
+        responseUser?.email ||
+        pendingGuestVerifyPayload?.email,
+      phone:
+        verifyResponse?.phone ||
+        responseUser?.phone ||
+        pendingGuestVerifyPayload?.phone,
+    };
+
+    guestVerifyRequestStartedRef.current = false;
+    setPendingGuestVerifyPayload(null);
+    setGuestVerifyLoading(false);
+    setGuestVerifyCheckRequested(false);
+    setGuestVerifyData(mergedVerifyPayload);
+    proceedGuestVerification(mergedVerifyPayload).catch(error => {
+      console.log('proceedGuestVerification error', error);
+      setGuestVerifyLoading(false);
+    });
+  }, [AuthReducer?.status, AuthReducer?.verifyResponse, pendingGuestVerifyPayload]);
+  useEffect(() => {
+    if (!guestVerifyCheckRequested) return;
+    if (AuthReducer?.status === 'Auth/verifyRequest') {
+      return;
+    }
+    if (AuthReducer?.status !== 'Auth/verifySuccess' &amp;&amp; AuthReducer?.status !== 'Auth/verifyFailure') {
+      return;
+    }
+    setGuestVerifyCheckRequested(false);
+  }, [guestVerifyCheckRequested, AuthReducer?.status]);
+  console.log(isGuestPrimeUser ||
+    showGuestPrimePrompt ||
+    props?.route?.name == 'PrimeCard' ||
+    isSubscriptionExpiredSync ||
+    currentProfile == 'PrimeCard' ||
+    exploreTrialClicked, "dgdfkjgjkjk12222", primeadd)
+  return (
+    &lt;>
+      &lt;MyStatusBar
+        barStyle={'light-content'}
+        backgroundColor={Colorpath.Pagebg}
+      />
+      &lt;KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        &lt;SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+          &lt;View style={Platform.OS === 'android' ? { marginTop: normalize(0), paddingHorizontal: normalize(6) } : { paddingHorizontal: normalize(10) }}>
+            &lt;Image source={Imagepath.Logo} style={{ height: normalize(40), width: normalize(40) }} resizeMode="contain" />
+          &lt;/View>
+          &lt;HandleTextInput showLine={showLine} nav={props.navigation} takestate={takestate} addit={addit} setFocusedInput={setFocusedInput} focusedInput={focusedInput} />
+          &lt;View style={{ flex: 1 }}>
+            {shouldRenderDashboardContent ? (
+              &lt;ScrollView
+                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  paddingBottom: homeBottomSpacing,
+                }}
+                scrollEventThrottle={16}
+              >
+                &lt;View>
+                  &lt;View style={{ bottom: normalize(10) }}>
+                    {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
+                    {shouldRenderNewProfession
+                      ? &lt;NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard' || isGuestPrimeUser
+                        ? (isPhysicianFlow
+                          ? ((exploreTrialClicked || props?.route?.params?.exploreTrialClicked || props?.route?.params?.subscriptionDataExists)
+                            ? &lt;StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                            : &lt;StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                          : &lt;NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                        : isPhysicianFlow
+                          ? &lt;StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          : isNursingFlow
+                            ? &lt;NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                            : &lt;NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />}
+                  &lt;/View>
+                &lt;/View>
+              &lt;/ScrollView>
+            ) : (
+              &lt;View style={{
+                flex: 1,
+                backgroundColor: Colorpath.Pagebg,
+              }}>
+                &lt;DashboardMainShimmer />
+              &lt;/View>
+            )}
+          &lt;/View>
+
+          {(enables || hasEnables || isSubscriptionExpiredSync) &amp;&amp; (allProfTake || hasAllProfTake) &amp;&amp; (!isNonUsaUser || isSubscriptionExpiredSync) ? &lt;View style={{
+            position: 'absolute',
+            height: normalize(56),
+            bottom: 0,
+            left: 0,
+            right: 0,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            paddingBottom: 0,
+          }}>
+            &lt;TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25), marginBottom: normalize(-2) }}>
+              &lt;Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
+              &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}&lt;/Text>
+            &lt;/TouchableOpacity>
+          &lt;/View> : freeTrail &amp;&amp; !isNonUsaUser &amp;&amp; exploreTrialClicked ? &lt;View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              paddingBottom: 0,
+            }}
+          >
+            &lt;Pressable
+              onPress={() => setPrimeadd(true)}
+              style={{
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: normalize(340),
+                backgroundColor: '#FFEDCA',
+                borderTopLeftRadius: normalize(25),
+                borderTopRightRadius: normalize(25),
+                paddingVertical: normalize(20),
+                paddingHorizontal: normalize(10),
+                marginBottom: normalize(-2),
+              }}
+            >
+              &lt;Text
+                style={{
+                  fontFamily: Fonts.InterSemiBold,
+                  fontSize: 14,
+                  color: '#000',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  marginBottom: normalize(15),
+                }}
+              >
+                {primeTrialMessage}
+              &lt;/Text>
+
+              &lt;View
+                style={{
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: normalize(30),
+                  width: normalize(150),
+                  backgroundColor: Colorpath.ButtonColr,
+                  borderRadius: normalize(5),
+                  bottom: normalize(5)
+                }}
+              >
+                &lt;Pressable onPress={() => setPrimeadd(true)}>
+                  &lt;Text
+                    style={{
+                      fontFamily: Fonts.InterBold,
+                      fontWeight: 'bold',
+                      fontSize: 14,
+                      color: '#fff',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {'Subscribe Now'}
+                  &lt;/Text>
+                &lt;/Pressable>
+              &lt;/View>
+            &lt;/Pressable>
+          &lt;/View>
+            : null}
+          {(() => {
+            const shouldShowPrimeCardActions = isGuestPrimeUser ||
+              showGuestPrimePrompt ||
+              props?.route?.name == 'PrimeCard' ||
+              isSubscriptionExpiredSync ||
+              currentProfile == 'PrimeCard' ||
+              exploreTrialClicked;
+            return (primeadd &amp;&amp; primeCardReady &amp;&amp; !isDrawerVisible) &amp;&amp; &lt;PrimeCard
+              primeadd={primeadd}
+              setPrimeadd={setPrimeadd}
+              primaryButtonText={(enables || hasEnables || isSubscriptionExpiredSync) &amp;&amp; (allProfTake || hasAllProfTake) &amp;&amp; (!isNonUsaUser || isSubscriptionExpiredSync) ? undefined : (shouldShowPrimeCardActions ? (isSkippedFlow ? 'Explore Free Trial 30 Days' : 'Explore Free Trial 30 Days') : undefined)}
+              onPrimaryAction={shouldShowPrimeCardActions ? handleGuestPrimeExploreTrial : undefined}
+              secondaryButtonText={shouldShowPrimeCardActions ? 'Get Prime Membership' : undefined}
+              onSecondaryAction={shouldShowPrimeCardActions ? handleGuestPrimeMembership : undefined}
+              showSkip={shouldShowPrimeCardActions}
+              onSkip={isSubscriptionExpiredSync ? () => setPrimeadd(false) : (shouldShowPrimeCardActions ? handleGuestPrimeSkip : undefined)}
+              hidePrimaryButton={(enables || hasEnables || isSubscriptionExpiredSync) &amp;&amp; (allProfTake || hasAllProfTake) &amp;&amp; (!isNonUsaUser || isSubscriptionExpiredSync)}
+            />;
+          })()}
+
+          &lt;Modal
+            isVisible={guestVerifyModalVisible &amp;&amp; !isDrawerVisible}
+            onBackdropPress={() => { }}
+            onBackButtonPress={() => { }}
+            animationIn="slideInUp"
+            animationOut="slideOutDown"
+            backdropTransitionInTiming={300}
+            backdropTransitionOutTiming={0}
+            useNativeDriver={true}
+            useNativeDriverForBackdrop={true}
+            hideModalContentWhileAnimating={true}
+            style={{ justifyContent: 'flex-end', margin: 0 }}
+            coverScreen={true}
+            hasBackdrop={true}
+            backdropColor="#000000"
+            backdropOpacity={0.7}
+          >
+            &lt;View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: normalize(24),
+                borderTopRightRadius: normalize(24),
+                paddingHorizontal: normalize(20),
+                paddingTop: normalize(22),
+                paddingBottom: Math.max(insets.bottom, normalize(18)),
+              }}
+            >
+              &lt;View
+                style={{
+                  alignSelf: 'center',
+                  width: normalize(48),
+                  height: normalize(5),
+                  borderRadius: normalize(10),
+                  backgroundColor: '#D1D5DB',
+                  marginBottom: normalize(18),
+                }}
+              />
+              &lt;Text
+                style={{
+                  fontFamily: Fonts.InterBold,
+                  fontSize: 22,
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: normalize(14),
+                }}
+              >
+                {'Verification Alert !'}
+              &lt;/Text>
+              &lt;View
+                style={{
+                  height: 0.5,
+                  backgroundColor: Colorpath.ButtonColr,
+                  width: '100%',
+                  marginBottom: normalize(18),
+                }}
+              />
+              &lt;Text
+                style={{
+                  fontFamily: Fonts.InterSemiBold,
+                  fontSize: 18,
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: normalize(20),
+                  lineHeight: normalize(24),
+                }}
+              >
+                {"We've sent a verification email to your registered email address "}
+                {guestVerifyEmail ? (
+                  &lt;Text
+                    style={{
+                      color: '#FF773D',
+                      fontFamily: Fonts.InterBold,
+                      fontSize: 18,
+                    }}
+                  >
+                    {guestVerifyEmail}
+                  &lt;/Text>
+                ) : null}
+                {
+                  '. Please verify your account to access all features of your eMedEvents account.'
+                }
+              &lt;/Text>
+              &lt;TouchableOpacity
+                onPress={handleGuestVerifyAccount}
+                disabled={guestVerifyLoading}
+                style={{
+                  height: normalize(48),
+                  borderRadius: normalize(10),
+                  backgroundColor: Colorpath.ButtonColr,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 0,
+                  opacity: guestVerifyLoading ? 0.7 : 1,
+                }}
+              >
+                &lt;Text
+                  style={{
+                    fontFamily: Fonts.InterBold,
+                    fontSize: 16,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {guestVerifyLoading ? 'Please wait...' : 'Verify your account'}
+                &lt;/Text>
+              &lt;/TouchableOpacity>
+            &lt;/View>
+          &lt;/Modal>
+        &lt;/SafeAreaView>
+        &lt;Freeze freeze={freeze} />
+      &lt;/KeyboardAvoidingView>
+    &lt;/>
+
+  )
+}
+
+export default Main
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

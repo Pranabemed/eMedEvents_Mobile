@@ -4,6 +4,14 @@ import CloseIcon from 'react-native-vector-icons/AntDesign';
 import Colorpath from '../Themes/Colorpath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
+
+/**
+ * Reusable DropDownHeader component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const DropDownHeader = ({title,onClosePress}) => {
     return (
         <View style={{

@@ -8,6 +8,14 @@ import Colorpath from '../../Themes/Colorpath';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
 import Dynamicmodal from './Dynamicmodal';
+
+/**
+ * Reusable GlobalModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const GlobalModal = ({gettitle,title ,typewise, globaldrop, setGloabaldrop, maindata ,travelmodal,setTravelmodal}) => {
     console.log(maindata, "maindata---")
     const dommyData = [{ id: 0, name: "View ", Icon: "eye" }, { id: 1, name: "Edit", Icon: "edit" }, { id: 2, name: "share", Icon: "sharealt" }, { id: 3, name: "Download", Icon: "download" }];

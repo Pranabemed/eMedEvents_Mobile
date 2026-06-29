@@ -39,6 +39,14 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
+
+/**
+ * Reusable handleSnapToItem component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 const Statewebcast = props => {
     const {

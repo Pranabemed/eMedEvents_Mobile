@@ -24,6 +24,14 @@ import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/Webc
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+
+/**
+ * Reusable VerifyMobileOTP component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';

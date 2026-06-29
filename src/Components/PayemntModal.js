@@ -8,6 +8,14 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import CloseIcon from 'react-native-vector-icons/AntDesign';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
+
+/**
+ * Reusable CellModalPayemnt component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, setGocertificate, gocertificate }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);

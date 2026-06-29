@@ -8,6 +8,14 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable LicStateTakeShow component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const LicStateTakeShow = ({licstatepratice,setSearchpraticelic,activeIndexslic, searchpraticelic,handleLicStateshows, setLicstatepratice, handlePraticeLicTake, slistpraticelic}) => {
      const[showLoader,setShowLoader] = useState(false);
             useEffect(() => {

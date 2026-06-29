@@ -7,6 +7,14 @@ import Colorpath from '../../Themes/Colorpath';
 import moment from 'moment';
 import HtmlTableRenderer from './HtmlTableRenderer';
 
+/**
+ * Reusable CourseOutline component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CourseOutline = ({ wholedata }) => {
     const { width } = useWindowDimensions();
     const [expandedStates, setExpandedStates] = useState(Array(wholedata?.length).fill(false)); // Track expand/collapse state for each day

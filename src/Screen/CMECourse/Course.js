@@ -19,6 +19,14 @@ import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable Course component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Course = (props) => {
     const {
         isConnected,

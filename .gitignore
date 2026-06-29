@@ -97,3 +97,6 @@ ScreenNames.md
 
 # Deep Linking Configurations
 deeplinkingAndroid.json
+
+*storybook.log
+storybook-static

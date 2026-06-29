@@ -5,6 +5,14 @@ import { styles } from '../CMECreditValut/Statevaultstyes';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 
+/**
+ * Reusable TravelMode component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const TravelMode = ({ expenspicker, setExpenspicker, dommyData, traveltake, setTraveltake }) => {
     console.log(traveltake,"traveltake====")
     return (

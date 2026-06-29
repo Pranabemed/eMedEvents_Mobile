@@ -7,6 +7,14 @@ import Fonts from '../Themes/Fonts';
 import Imagepath from '../Themes/Imagepath';
 import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
 import { CommonActions, useNavigation } from '@react-navigation/native';
+
+/**
+ * Reusable PrimeCard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const PrimeCard = ({
   primeadd,
   setPrimeadd,

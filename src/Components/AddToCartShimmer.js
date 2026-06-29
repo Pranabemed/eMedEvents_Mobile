@@ -3,6 +3,14 @@ import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import normalize from '../Utils/Helpers/Dimen';
 
+/**
+ * Reusable CartItemShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const { width: W } = Dimensions.get('window');
 const BG = '#E8EFF7';
 const HL = '#F5F8FF';

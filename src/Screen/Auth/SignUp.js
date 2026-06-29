@@ -19,6 +19,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+
+/**
+ * Reusable SignUp component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const SignUp = (props) => {
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("")

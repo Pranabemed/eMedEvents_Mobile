@@ -31,6 +31,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/**
+ * Reusable CertficateHandle component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const dommyData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }, { id: 1, name: "View & Download", Icon: "eye" }]
 const fakedata = [{ id: 1, name: "View & Download", Icon: "eye" }]

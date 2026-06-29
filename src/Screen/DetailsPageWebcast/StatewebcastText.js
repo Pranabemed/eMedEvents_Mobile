@@ -4,6 +4,14 @@ import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 
+/**
+ * Reusable StatewebcastText component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, targetChange }) => {
     const animatedValue = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;

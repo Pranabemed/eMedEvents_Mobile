@@ -3,6 +3,14 @@ import { Text, View, StyleSheet, Platform } from 'react-native';
 import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
+
+/**
+ * Reusable CircularProgress component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CircularProgress = ({ percentage }) => {
     const size = 150;
     const strokeWidth = 7;

@@ -3,6 +3,14 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen'; 
 
+/**
+ * Reusable CustomRadioButtons component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const CustomRadioButtons = ({ options, onSelect }) => {
     const [selectedOption, setSelectedOption] = useState(null);
 

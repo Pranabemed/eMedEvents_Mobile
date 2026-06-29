@@ -11,6 +11,14 @@ import React from 'react';
 import GuestUserContent from './GuestUserContent';
 
 /**
+ * Reusable GuestUserView component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * Description: Guest user view wrapper.
  * Purpose: Keeps the container/view separation explicit for the guest home screen.
  *

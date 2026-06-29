@@ -22,6 +22,14 @@ import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 
+/**
+ * Reusable Separator component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const starStyle = { marginHorizontal: 0.5 };
 
 const conferenceTypeMap = {

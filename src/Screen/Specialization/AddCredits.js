@@ -39,6 +39,14 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import showDur from '../../Utils/Helpers/Duration';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable AddCredits component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status = "";
 const AddCredits = (props) => {
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);

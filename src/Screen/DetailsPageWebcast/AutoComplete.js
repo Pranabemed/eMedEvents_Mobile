@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import axios from 'axios';
 
+/**
+ * Reusable Autocomplete component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const Autocomplete = () => {
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState([]);

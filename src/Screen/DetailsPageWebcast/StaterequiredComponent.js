@@ -3,6 +3,14 @@ import React from 'react'
 import Fonts from '../../Themes/Fonts'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable StateRequiredCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateRequiredCourse = ({stateid,profesions,paginatedDataDpl,setIsTouching, isTouching, activeList, setActiveList, paginatedData, ExplorecastComponent, renderFooter, loadMoreData, setAllSpecial, setTootip, handleUrl, statewise }) => {
     return (
         <View style={Platform.OS === 'ios' ? { flex: 0.87}:{flex:0.60}}>

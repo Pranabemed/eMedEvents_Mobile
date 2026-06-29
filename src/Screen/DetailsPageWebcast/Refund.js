@@ -4,6 +4,14 @@ import HtmlTableRenderer from './HtmlTableRenderer';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
+
+/**
+ * Reusable RefundHtml component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const RefundHtml = ({ refundtext, disclaimerText, refunded, refundExpand, width, webcastdeatils }) => {
     const viewmoreac = webcastdeatils?.refund_policy || '';
     const showButton = viewmoreac.replace(/<\/?[^>]+>/g, '').trim().length > 500;

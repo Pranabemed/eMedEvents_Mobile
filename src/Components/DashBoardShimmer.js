@@ -3,6 +3,14 @@ import React from "react";
 import normalize from "../Utils/Helpers/Dimen";
 import SkeletonPlaceholder from "react-native-skeleton-placeholder";
 import Carousel from 'react-native-snap-carousel';
+
+/**
+ * Reusable HomeShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const HomeShimmer = () => {
     const carouselItems = Array.from({ length: 5 }).map((_, index) => ({

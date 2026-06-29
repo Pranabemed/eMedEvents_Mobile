@@ -8,6 +8,14 @@ import Fonts from '../../Themes/Fonts'
 import Imagepath from '../../Themes/Imagepath'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable SearchResult component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const dommyResult = [{ id: 0, name: "PRP and Microneedling Training in Washington DC (Falls Church, VA) ", price: "US$2,195" }, { id: 1, name: "COPD: Review of Current Treatment Guidelines", price: "US$42" }, { id: 2, name: "Unconscious Bias and Healthcare Part I", price: "US$42" }, { id: 3, name: "Antidiabetic Pharmacology Part 3: Insulin", price: "US$42" }, { id: 4, name: "Safe, Effective and Judicious Use of Antibiotics in the Outpatient Setting", price: "US$42" }];
 
 const SearchResult = (props) => {

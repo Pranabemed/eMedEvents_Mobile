@@ -17,6 +17,14 @@ let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
+/**
+ * Reusable AddMobileLogin component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const AddMobileLogin = (props) => {
     const [phone, setPhone] = useState("");
     const [mobileHd, setMobileHd] = useState("");

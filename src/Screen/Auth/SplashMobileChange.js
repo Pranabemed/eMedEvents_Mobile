@@ -14,6 +14,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable SplashMobileChange component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const SplashMobileChange = (props) => {
     const [phone, setPhone] = useState("");

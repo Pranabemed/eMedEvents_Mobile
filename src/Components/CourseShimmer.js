@@ -2,6 +2,14 @@ import { StyleSheet, View, Dimensions, Platform, ScrollView, FlatList } from "re
 import React from "react";
 import normalize from "../Utils/Helpers/Dimen";
 import SkeletonPlaceholder from "react-native-skeleton-placeholder";
+
+/**
+ * Reusable CourseShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CourseShimmer = () => {
     const shimmerDataCourse = Array.from({ length: 3 }).map((_, index) => ({
         id: index,

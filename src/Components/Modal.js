@@ -10,6 +10,14 @@ import connectionrequest from '../Utils/Helpers/NetInfo';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import { resendmobileotpRequest } from '../Redux/Reducers/AuthReducer';
 import { useDispatch } from 'react-redux';
+
+/**
+ * Reusable CustomModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CustomModal = ({ isVisible, onClose, content, navigation, phoneno, countrycode, norq, profession }) => {
     const dispatch = useDispatch();
     const resendMobileOTP = () => {

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Screen/HomePage/GuestUserModule/components/GuestProfessionPopup.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Screen/HomePage/GuestUserModule/components/GuestProfessionPopup.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import Colorpath from '../../../../Themes/Colorpath';
+import Fonts from '../../../../Themes/Fonts';
+import normalize from '../../../../Utils/Helpers/Dimen';
+import { getApi } from '../../../../Utils/Helpers/ApiRequest';
+import Buttons from '../../../../Components/Button';
+import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
+
+/**
+ * Reusable GuestProfessionPopup component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const POPUP_SHOWN_KEY = 'GUEST_PROFESSION_POPUP_SHOWN';
+
+const getDisplayValue = item =>
+  String(
+    item?.name ??
+      item?.label ??
+      item?.profession ??
+      item?.profession_name ??
+      item?.speciality_name ??
+      item?.specialty_name ??
+      item?.title ??
+      item ??
+      '',
+  ).trim();
+
+const normalizeList = source => {
+  if (!source) return [];
+
+  if (Array.isArray(source)) {
+    return source
+      .map((item, index) => {
+        const label = getDisplayValue(item);
+        if (!label) return null;
+        return {
+          id: String(item?.id ?? item?.profession_id ?? item?.speciality_id ?? index),
+          label,
+          raw: item,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof source === 'object') {
+    return Object.entries(source)
+      .map(([key, value], index) => {
+        const label = getDisplayValue(value || key);
+        if (!label) return null;
+        return {
+          id: String(key ?? index),
+          label,
+          raw: value,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  const label = getDisplayValue(source);
+  return label ? [{ id: '0', label, raw: source }] : [];
+};
+
+const normalizeProfessionResponse = responseData =>
+  normalizeList(
+    responseData?.profession_credentials ??
+      responseData?.professions ??
+      responseData?.profession ??
+      responseData?.data ??
+      responseData,
+  );
+
+const normalizeSpecialtyResponse = responseData =>
+  normalizeList(
+    responseData?.specialities ??
+      responseData?.specialties ??
+      responseData?.speciality ??
+      responseData?.data ??
+      responseData,
+  );
+
+export const GuestProfessionPopup = ({
+  visible,
+  onClose,
+  isUsaUser,
+  guestData,
+}) => {
+  const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
+  const GuestReducer = useSelector(state => state.GuestReducer);
+  const specialtyRequestIdRef = useRef(0);
+
+  const [profession, setProfession] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [professionOptions, setProfessionOptions] = useState([]);
+  const [specialtyOptions, setSpecialtyOptions] = useState([]);
+  const [professionLoading, setProfessionLoading] = useState(false);
+  const [specialtyLoading, setSpecialtyLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [professionOpen, setProfessionOpen] = useState(false);
+  const [specialtyOpen, setSpecialtyOpen] = useState(false);
+  const [errors, setErrors] = useState({
+    profession: '',
+    specialty: '',
+    email: '',
+  });
+
+  const closeAndPersist = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(POPUP_SHOWN_KEY, 'true');
+    } catch (error) {
+      console.warn('[GuestProfessionPopup] Unable to persist close flag:', error);
+    }
+    onClose?.();
+  }, [onClose]);
+
+  const resetState = useCallback(() => {
+    setProfession('');
+    setSpecialty('');
+    setProfessionOptions([]);
+    setSpecialtyOptions([]);
+    setProfessionLoading(false);
+    setSpecialtyLoading(false);
+    setIsSubmitting(false);
+    setEmail(guestData?.email || '');
+    setEmailTouched(false);
+    setProfessionOpen(false);
+    setSpecialtyOpen(false);
+    setErrors({
+      profession: '',
+      specialty: '',
+      email: '',
+    });
+    specialtyRequestIdRef.current += 1;
+  }, [guestData?.email]);
+
+  const fetchProfessions = useCallback(async () => {
+    setProfessionLoading(true);
+    try {
+      const endpoint = isUsaUser === false
+        ? 'master/professionCredentials?other_country=1'
+        : 'master/professionCredentials';
+      const response = await getApi(endpoint);
+      const normalized = normalizeProfessionResponse(response?.data);
+      setProfessionOptions(normalized);
+    } catch (error) {
+      console.warn('[GuestProfessionPopup] Failed to load professions:', error);
+      setProfessionOptions([]);
+    } finally {
+      setProfessionLoading(false);
+    }
+  }, [isUsaUser]);
+
+  const fetchSpecialties = useCallback(async selectedProfession => {
+    if (!selectedProfession) {
+      setSpecialtyOptions([]);
+      return;
+    }
+
+    const requestId = specialtyRequestIdRef.current + 1;
+    specialtyRequestIdRef.current = requestId;
+
+    setSpecialtyLoading(true);
+    try {
+      const response = await getApi(
+        `master/specialities?profession=${encodeURIComponent(selectedProfession)}`,
+      );
+      if (requestId !== specialtyRequestIdRef.current) {
+        return;
+      }
+      const normalized = normalizeSpecialtyResponse(response?.data);
+      setSpecialtyOptions(normalized);
+    } catch (error) {
+      if (requestId === specialtyRequestIdRef.current) {
+        setSpecialtyOptions([]);
+      }
+      console.warn('[GuestProfessionPopup] Failed to load specialties:', error);
+    } finally {
+      if (requestId === specialtyRequestIdRef.current) {
+        setSpecialtyLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      resetState();
+      return;
+    }
+
+    resetState();
+    fetchProfessions();
+  }, [fetchProfessions, resetState, visible]);
+
+  const professionLabel = useMemo(
+    () => (profession ? profession : 'Select your profession'),
+    [profession],
+  );
+
+  const specialtyLabel = useMemo(
+    () => (specialty ? specialty : 'Select your specialty'),
+    [specialty],
+  );
+
+  const isFormValid = Boolean(profession &amp;&amp; specialty);
+  const validateEmail = value =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+  const trimmedEmail = String(email || '').trim();
+  const isEmailValid = validateEmail(trimmedEmail);
+  const showEmailError = emailTouched &amp;&amp; !isEmailValid;
+  const emailFieldBorderColor = showEmailError
+    ? '#D11A2A'
+    : trimmedEmail &amp;&amp; isEmailValid
+      ? '#16A34A'
+      : '#D7DEEA';
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      return;
+    }
+
+    if (GuestReducer?.status === 'Guest/professionSaveSuccess') {
+      setIsSubmitting(false);
+      closeAndPersist();
+      return;
+    }
+
+    if (GuestReducer?.status === 'Guest/professionSaveFailure') {
+      setIsSubmitting(false);
+    }
+  }, [GuestReducer?.status, closeAndPersist, isSubmitting]);
+
+  const handleProfessionSelect = useCallback(
+    item => {
+      const selectedProfession = item?.label || '';
+      setProfession(selectedProfession);
+      setSpecialty('');
+      setSpecialtyOptions([]);
+      setProfessionOpen(false);
+      setSpecialtyOpen(false);
+      setErrors(prev => ({
+        ...prev,
+        profession: '',
+        specialty: '',
+      }));
+      fetchSpecialties(selectedProfession);
+    },
+    [fetchSpecialties],
+  );
+
+  const handleSpecialtySelect = useCallback(item => {
+    const selectedSpecialty = item?.label || '';
+    setSpecialty(selectedSpecialty);
+    setSpecialtyOpen(false);
+    setErrors(prev => ({
+      ...prev,
+      specialty: '',
+    }));
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    const nextErrors = {
+      profession: profession ? '' : 'Please select a profession.',
+      specialty: specialty ? '' : 'Please select a specialty.',
+      email: email ? (validateEmail(email) ? '' : 'Please enter a valid email address.') : 'Please enter your email address.',
+    };
+    setErrors(nextErrors);
+    setEmailTouched(true);
+
+    if (!profession || !specialty || !email || !validateEmail(email) || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload = {
+      profession,
+      speciality: specialty,
+      email,
+      playerSessionID: guestData?.playerSessionID || '',
+      ip: guestData?.ip || '',
+      city: '',
+      region: guestData?.country || '',
+      country_name: guestData?.country || '',
+      deviceToken: guestData?.deviceToken || '',
+      deviceType: Platform.OS === 'web' ? 'web_chrome' : Platform.OS,
+    };
+
+    dispatch(professionSaveRequest(payload));
+  }, [
+    dispatch,
+    guestData?.country,
+    guestData?.deviceToken,
+    guestData?.ip,
+    guestData?.playerSessionID,
+    email,
+    isSubmitting,
+    profession,
+    specialty,
+  ]);
+
+  const handleSkip = useCallback(() => {
+    closeAndPersist();
+  }, [closeAndPersist]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    &lt;Modal
+      isVisible={visible}
+      style={styles.modal}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      backdropOpacity={0.45}
+      useNativeDriver
+      useNativeDriverForBackdrop
+      hideModalContentWhileAnimating
+      statusBarTranslucent
+      onBackButtonPress={handleSkip}
+      onBackdropPress={handleSkip}
+    >
+      &lt;SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+        &lt;KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? normalize(12) : 0}
+        >
+          &lt;ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: Math.max(insets.bottom, normalize(12)) },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            showsVerticalScrollIndicator={false}
+          >
+            &lt;View style={[styles.header, { paddingTop: Math.max(insets.top, normalize(12)) }]}>
+              &lt;Text style={styles.title}>Select Your Profession &amp; Specialty&lt;/Text>
+              &lt;TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Close profession selection"
+                onPress={handleSkip}
+                style={styles.closeButton}
+                activeOpacity={0.8}
+              >
+                &lt;Icon name="close" size={normalize(24)} color={Colorpath.black} />
+              &lt;/TouchableOpacity>
+            &lt;/View>
+
+            &lt;View style={styles.body}>
+              &lt;Text style={styles.description}>
+                Choose the profession and specialty that best match how you use eMedEvents.
+              &lt;/Text>
+
+              &lt;View style={styles.fieldWrap}>
+                &lt;Text style={styles.fieldLabel}>
+                  &lt;Text style={styles.required}>* &lt;/Text>Profession
+                &lt;/Text>
+                &lt;TouchableOpacity
+                  style={[
+                    styles.selector,
+                    professionOpen &amp;&amp; styles.selectorActive,
+                    errors.profession ? styles.selectorError : null,
+                  ]}
+                  onPress={() => {
+                    setProfessionOpen(prev => !prev);
+                    setSpecialtyOpen(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  &lt;Text style={[styles.selectorText, !profession &amp;&amp; styles.placeholderText]}>
+                    {professionLabel}
+                  &lt;/Text>
+                  &lt;Icon
+                    name={professionOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                    size={normalize(22)}
+                    color="#8B93A7"
+                  />
+                &lt;/TouchableOpacity>
+                {errors.profession ? &lt;Text style={styles.errorText}>{errors.profession}&lt;/Text> : null}
+
+                {professionOpen ? (
+                  &lt;View style={styles.dropdownShell}>
+                    {professionLoading ? (
+                      &lt;View style={styles.loaderWrap}>
+                        &lt;ActivityIndicator color={Colorpath.ButtonColr} />
+                        &lt;Text style={styles.loaderText}>Loading professions...&lt;/Text>
+                      &lt;/View>
+                    ) : (
+                      &lt;FlatList
+                        data={professionOptions}
+                        keyExtractor={(item, index) => String(item?.id ?? index)}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                        style={styles.dropdownList}
+                        contentContainerStyle={styles.dropdownContent}
+                        ListEmptyComponent={
+                          &lt;Text style={styles.emptyText}>No professions found&lt;/Text>
+                        }
+                        renderItem={({ item }) => {
+                          const isSelected = profession === item?.label;
+                          return (
+                            &lt;TouchableOpacity
+                              style={[styles.optionRow, isSelected &amp;&amp; styles.optionRowSelected]}
+                              activeOpacity={0.8}
+                              onPress={() => handleProfessionSelect(item)}
+                            >
+                              &lt;Text style={[styles.optionText, isSelected &amp;&amp; styles.optionTextSelected]}>
+                                {item?.label}
+                              &lt;/Text>
+                              {isSelected ? (
+                                &lt;Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
+                              ) : null}
+                            &lt;/TouchableOpacity>
+                          );
+                        }}
+                      />
+                    )}
+                  &lt;/View>
+                ) : null}
+              &lt;/View>
+
+              &lt;View style={styles.fieldWrap}>
+                &lt;Text style={styles.fieldLabel}>
+                  &lt;Text style={styles.required}>* &lt;/Text>Specialty
+                &lt;/Text>
+                &lt;TouchableOpacity
+                  style={[
+                    styles.selector,
+                    (!profession || specialtyLoading) &amp;&amp; styles.selectorDisabled,
+                    specialtyOpen &amp;&amp; styles.selectorActive,
+                    errors.specialty ? styles.selectorError : null,
+                  ]}
+                  onPress={() => {
+                    if (!profession || specialtyLoading) {
+                      return;
+                    }
+                    setSpecialtyOpen(prev => !prev);
+                    setProfessionOpen(false);
+                  }}
+                  activeOpacity={0.8}
+                  disabled={!profession || specialtyLoading}
+                >
+                  &lt;Text style={[styles.selectorText, !specialty &amp;&amp; styles.placeholderText]}>
+                    {specialtyLoading ? 'Loading specialties...' : specialtyLabel}
+                  &lt;/Text>
+                  &lt;Icon
+                    name={specialtyOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                    size={normalize(22)}
+                    color="#8B93A7"
+                  />
+                &lt;/TouchableOpacity>
+                {!profession ? (
+                  &lt;Text style={styles.helperText}>Select a profession first.&lt;/Text>
+                ) : null}
+                {errors.specialty ? &lt;Text style={styles.errorText}>{errors.specialty}&lt;/Text> : null}
+
+                {specialtyOpen ? (
+                  &lt;View style={styles.dropdownShell}>
+                    {specialtyLoading ? (
+                      &lt;View style={styles.loaderWrap}>
+                        &lt;ActivityIndicator color={Colorpath.ButtonColr} />
+                        &lt;Text style={styles.loaderText}>Loading specialties...&lt;/Text>
+                      &lt;/View>
+                    ) : (
+                      &lt;FlatList
+                        data={specialtyOptions}
+                        keyExtractor={(item, index) => String(item?.id ?? index)}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                        style={styles.dropdownList}
+                        contentContainerStyle={styles.dropdownContent}
+                        ListEmptyComponent={
+                          &lt;Text style={styles.emptyText}>No specialties found&lt;/Text>
+                        }
+                        renderItem={({ item }) => {
+                          const isSelected = specialty === item?.label;
+                          return (
+                            &lt;TouchableOpacity
+                              style={[styles.optionRow, isSelected &amp;&amp; styles.optionRowSelected]}
+                              activeOpacity={0.8}
+                              onPress={() => handleSpecialtySelect(item)}
+                            >
+                              &lt;Text style={[styles.optionText, isSelected &amp;&amp; styles.optionTextSelected]}>
+                                {item?.label}
+                              &lt;/Text>
+                              {isSelected ? (
+                                &lt;Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
+                              ) : null}
+                            &lt;/TouchableOpacity>
+                          );
+                        }}
+                      />
+                    )}
+                  &lt;/View>
+                ) : null}
+              &lt;/View>
+
+              &lt;View style={styles.fieldWrap}>
+                &lt;Text style={styles.fieldLabel}>
+                  &lt;Text style={styles.required}>* &lt;/Text>Email Address
+                &lt;/Text>
+                &lt;View style={[styles.emailWrap, { borderColor: emailFieldBorderColor }]}>
+                  &lt;TextInput
+                    style={styles.emailInput}
+                    value={email}
+                    onChangeText={text => {
+                      setEmail(text);
+                      setEmailTouched(true);
+                      setErrors(prev => ({
+                        ...prev,
+                        email: text &amp;&amp; validateEmail(text)
+                          ? ''
+                          : prev.email &amp;&amp; !text
+                            ? 'Please enter your email address.'
+                            : prev.email,
+                      }));
+                    }}
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="Enter your email address"
+                    placeholderTextColor="#8D97AA"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                  />
+                &lt;/View>
+                {showEmailError ? (
+                  &lt;Text style={styles.errorText}>
+                    {!trimmedEmail
+                      ? 'Please enter your email address.'
+                      : 'Please enter a valid email address.'}
+                  &lt;/Text>
+                ) : null}
+              &lt;/View>
+
+              &lt;View style={styles.footer}>
+                &lt;Buttons
+                  text="Submit"
+                  loading={isSubmitting}
+                  disabled={!profession || !specialty || !trimmedEmail || !isEmailValid || isSubmitting}
+                  onPress={handleSubmit}
+                  height={normalize(48)}
+                  width="100%"
+                  borderRadius={normalize(10)}
+                  backgroundColor={!isFormValid || isSubmitting ? '#8DA0E5' : Colorpath.ButtonColr}
+                  color={Colorpath.white}
+                  fontSize={normalize(16)}
+                  fontFamily={Fonts.InterBold}
+                />
+
+                &lt;TouchableOpacity
+                  onPress={handleSkip}
+                  style={styles.skipButton}
+                  activeOpacity={0.8}
+                >
+                  &lt;Text style={styles.skipText}>Skip for Now&lt;/Text>
+                &lt;/TouchableOpacity>
+              &lt;/View>
+            &lt;/View>
+          &lt;/ScrollView>
+        &lt;/KeyboardAvoidingView>
+      &lt;/SafeAreaView>
+    &lt;/Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modal: {
+    margin: 0,
+    justifyContent: 'flex-end',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colorpath.white,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colorpath.white,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    paddingHorizontal: normalize(18),
+    paddingBottom: normalize(14),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECF3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: normalize(12),
+  },
+  title: {
+    flex: 1,
+    color: Colorpath.ButtonColr,
+    fontFamily: Fonts.InterBold,
+    fontSize: normalize(19),
+    lineHeight: normalize(24),
+  },
+  closeButton: {
+    width: normalize(34),
+    height: normalize(34),
+    borderRadius: normalize(17),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F6FB',
+  },
+  body: {
+    flex: 1,
+    paddingHorizontal: normalize(18),
+    paddingTop: normalize(18),
+  },
+  description: {
+    color: '#52607A',
+    fontFamily: Fonts.InterRegular,
+    fontSize: normalize(14),
+    lineHeight: normalize(22),
+    marginBottom: normalize(18),
+  },
+  fieldWrap: {
+    marginBottom: normalize(18),
+  },
+  fieldLabel: {
+    color: '#111827',
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: normalize(14),
+    marginBottom: normalize(8),
+  },
+  required: {
+    color: '#D11A2A',
+  },
+  selector: {
+    minHeight: normalize(52),
+    borderRadius: normalize(10),
+    borderWidth: 1,
+    borderColor: '#D7DEEA',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: normalize(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectorActive: {
+    borderColor: Colorpath.ButtonColr,
+    shadowColor: '#2C4DB9',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
+  },
+  selectorDisabled: {
+    backgroundColor: '#F7F8FB',
+  },
+  selectorError: {
+    borderColor: '#D11A2A',
+  },
+  emailWrap: {
+    minHeight: normalize(52),
+    borderRadius: normalize(10),
+    borderWidth: 1,
+    borderColor: '#D7DEEA',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: normalize(14),
+    justifyContent: 'center',
+  },
+  emailInput: {
+    color: '#111827',
+    fontFamily: Fonts.InterMedium,
+    fontSize: normalize(15),
+    padding: 0,
+    minHeight: normalize(22),
+  },
+  selectorText: {
+    flex: 1,
+    color: '#111827',
+    fontFamily: Fonts.InterMedium,
+    fontSize: normalize(15),
+    paddingRight: normalize(12),
+  },
+  placeholderText: {
+    color: '#8D97AA',
+  },
+  helperText: {
+    marginTop: normalize(6),
+    color: '#6B7280',
+    fontFamily: Fonts.InterRegular,
+    fontSize: normalize(12),
+  },
+  errorText: {
+    marginTop: normalize(6),
+    color: '#D11A2A',
+    fontFamily: Fonts.InterRegular,
+    fontSize: normalize(12),
+  },
+  dropdownShell: {
+    marginTop: normalize(10),
+    borderWidth: 1,
+    borderColor: '#E0E6F0',
+    borderRadius: normalize(12),
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownList: {
+    maxHeight: normalize(210),
+  },
+  dropdownContent: {
+    paddingVertical: normalize(6),
+  },
+  loaderWrap: {
+    minHeight: normalize(72),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: normalize(10),
+    paddingHorizontal: normalize(12),
+  },
+  loaderText: {
+    color: '#51607B',
+    fontFamily: Fonts.InterMedium,
+    fontSize: normalize(13),
+  },
+  emptyText: {
+    paddingVertical: normalize(18),
+    textAlign: 'center',
+    color: '#6B7280',
+    fontFamily: Fonts.InterRegular,
+    fontSize: normalize(13),
+  },
+  optionRow: {
+    minHeight: normalize(48),
+    paddingHorizontal: normalize(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E8ECF3',
+  },
+  optionRowSelected: {
+    backgroundColor: '#EEF3FF',
+  },
+  optionText: {
+    flex: 1,
+    color: '#111827',
+    fontFamily: Fonts.InterRegular,
+    fontSize: normalize(14),
+    paddingRight: normalize(10),
+  },
+  optionTextSelected: {
+    fontFamily: Fonts.InterSemiBold,
+    color: Colorpath.ButtonColr,
+  },
+  footer: {
+    marginTop: normalize(4),
+    paddingTop: normalize(12),
+    borderTopWidth: 1,
+    borderTopColor: '#E8ECF3',
+    backgroundColor: Colorpath.white,
+  },
+  skipButton: {
+    alignSelf: 'center',
+    paddingVertical: normalize(12),
+    paddingHorizontal: normalize(14),
+  },
+  skipText: {
+    color: Colorpath.ButtonColr,
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: normalize(14),
+  },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

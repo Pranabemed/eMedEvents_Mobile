@@ -7,6 +7,14 @@ import { styles } from '../Screen/CMECreditValut/Statevaultstyes';
 import MyStatusBar from '../Utils/MyStatusBar';
 import PageHeader from './PageHeader';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StateDataComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const StateDataComponent = ({navigation,searchpratice, searchStateNamePratice, setSearchState, Icon, slistpratice, setStatepratice, setSpecailidpratice }) => {
     const courseRole =()=>{
         navigation.goBack();

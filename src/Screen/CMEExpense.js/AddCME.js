@@ -21,6 +21,14 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import moment from 'moment';
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable AddCME component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const AddCME = (props) => {
     const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);
     const dispatch = useDispatch();

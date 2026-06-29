@@ -5,6 +5,14 @@ import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import Colorpath from '../Themes/Colorpath';
 
+/**
+ * Reusable AddressField component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const AddressField = ({
     label,
     value,

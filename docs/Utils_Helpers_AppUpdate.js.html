@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Utils/Helpers/AppUpdate.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Utils/Helpers/AppUpdate.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * AppUpdate.js
+ *
+ * Shows an update popup whenever the installed version is older than the store version.
+ * No static version numbers are hardcoded — all checks are fully dynamic.
+ *
+ * ┌──────────────────────┬─────────────────────────────────────────────────────┐
+ * │ Platform + Install   │ How version is fetched                              │
+ * ├──────────────────────┼─────────────────────────────────────────────────────┤
+ * │ iOS (any install)    │ Apple iTunes Lookup API → always works              │
+ * │ iOS App Store        │ ✅ Popup shown if store > installed                 │
+ * │ iOS sideloaded IPA   │ ✅ Popup shown if store > installed (API unrestricted)│
+ * ├──────────────────────┼─────────────────────────────────────────────────────┤
+ * │ Android Play Store   │ sp-react-native-in-app-updates (primary)            │
+ * │                      │ ✅ Popup + native in-app download flow               │
+ * │ Android release APK  │ Library throws APP_NOT_OWNED → Play Store scrape    │
+ * │ (sideloaded)         │ ✅ Popup shown, opens Play Store link to update     │
+ * │ Android DEV build    │ Scrape fallback only (library always fails in dev)  │
+ * │                      │ ✅ Popup shown for UI testing                       │
+ * └──────────────────────┴─────────────────────────────────────────────────────┘
+ */
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  BackHandler,
+  ActivityIndicator,
+  Platform,
+  Linking,
+  Alert,
+  AppState,
+  DeviceEventEmitter,
+} from 'react-native';
+
+import SpInAppUpdates, {
+  IAUUpdateKind,
+  IAUInstallStatus,
+} from 'sp-react-native-in-app-updates';
+
+import DeviceInfo from 'react-native-device-info';
+import Colorpath from '../../Themes/Colorpath';
+
+// ─── App identifiers — only change if you rename/republish the app ─────────────
+const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/app/emedevents/id1540770118
+const ANDROID_PACKAGE = 'com.emedevents.newapp';
+const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
+const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+const UPDATE_RECHECK_MS = 30 * 1000; // Re-check often so the popup can appear on any screen
+const NAVIGATION_RECHECK_MS = 30 * 1000; // Avoid repeated API hits during fast screen changes
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Strict semver comparison.
+ * Returns true only when storeVer is strictly greater than installedVer.
+ * e.g. isNewerVersion("1.0.7", "1.0.8") → true
+ *      isNewerVersion("1.0.8", "1.0.8") → false
+ *      isNewerVersion("1.0.9", "1.0.8") → false
+ */
+const isNewerVersion = (installedVer, storeVer) => {
+  if (!installedVer || !storeVer) return false;
+  const clean = (v) => String(v).replace(/[^0-9.]/g, '');
+  const a = clean(installedVer).split('.').map(Number);
+  const b = clean(storeVer).split('.').map(Number);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i &lt; len; i++) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (bv > av) return true;
+    if (bv &lt; av) return false;
+  }
+  return false;
+};
+
+// Version helpers: avoid showing Android versionCode (e.g., "26") in the UI
+const looksLikeSemver = (v) => /\d+\.\d+/.test(String(v ?? ''));
+const isNumericVersionCode = (v) => /^[0-9]+$/.test(String(v ?? ''));
+
+/**
+ * iOS — Fetch latest version from Apple's iTunes Lookup API.
+ * This is 100% dynamic; no version numbers are hardcoded.
+ */
+const fetchLatestIOSVersion = async () => {
+  const bundleId = DeviceInfo.getBundleId();
+  try {
+    const resById = await fetch(
+      `https://itunes.apple.com/lookup?id=${IOS_APP_STORE_ID}&amp;country=us`,
+    );
+    const jsonById = await resById.json();
+    const verById = jsonById?.results?.[0]?.version ?? null;
+    if (verById) {
+      console.log('AppUpdate [iOS]: iTunes store version (app id):', verById);
+      return verById;
+    }
+  } catch (err) {
+    console.log('AppUpdate [iOS]: iTunes lookup by id error:', err?.message);
+  }
+
+  // Fallback: lookup by bundleId (helps when id response is empty/cached unexpectedly)
+  try {
+    const resByBundle = await fetch(
+      `https://itunes.apple.com/lookup?bundleId=${bundleId}&amp;country=us`,
+    );
+    const jsonByBundle = await resByBundle.json();
+    const verByBundle = jsonByBundle?.results?.[0]?.version ?? null;
+    console.log('AppUpdate [iOS]: iTunes store version (bundle id):', verByBundle);
+    return verByBundle;
+  } catch (err) {
+    console.log('AppUpdate [iOS]: iTunes lookup by bundle id error:', err?.message);
+    return null;
+  }
+};
+
+/**
+ * Android fallback — fetches the latest version from the Play Store page.
+ *
+ * Works for:
+ *  ✅ Sideloaded release APKs  (sp-react-native-in-app-updates throws APP_NOT_OWNED)
+ *  ✅ DEV / debug builds       (library always fails in debug)
+ *
+ * Google changes their HTML structure occasionally, so we try multiple patterns
+ * to maximise reliability.
+ */
+const fetchLatestAndroidVersion = async () => {
+  try {
+    const res = await fetch(
+      // Use the ?hl=en to force English and avoid locale-specific page differences
+      `${ANDROID_STORE_URL}&amp;hl=en`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } },
+    );
+    const html = await res.text();
+
+    // Pattern 1: modern Play Store JSON embedding  [["1.0.8"]]
+    const p1 = html.match(/\[\["(\d+\.\d+(?:\.\d+)*)"\]/);
+    if (p1?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p1):', p1[1]);
+      return p1[1];
+    }
+
+    // Pattern 2: older layout  ,"1.0.8",
+    const p2 = html.match(/,"(\d+\.\d+(?:\.\d+)*)",/);
+    if (p2?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p2):', p2[1]);
+      return p2[1];
+    }
+
+    // Pattern 3: itemprop="softwareVersion">1.0.8&lt;
+    const p3 = html.match(/itemprop=["']softwareVersion["'][^>]*>([\d.]+)&lt;/);
+    if (p3?.[1]) {
+      console.log('AppUpdate [Android]: Scraped version (p3):', p3[1]);
+      return p3[1];
+    }
+
+    console.log('AppUpdate [Android]: Could not extract version from Play Store page.');
+    return null;
+  } catch (err) {
+    console.log('AppUpdate [Android]: Play Store scrape error:', err?.message);
+    return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const AppUpdateHandler = () => {
+  // Pass `false` always — dev-mode guard is handled manually below
+  const inAppUpdates = useRef(new SpInAppUpdates(false)).current;
+
+  const [showModal, setShowModal] = useState(false);
+  const [isMandatory, setIsMandatory] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState('');
+  const [showProgress, setShowProgress] = useState(false);
+  const [latestVersion, setLatestVersion] = useState('');
+  const [storeUrl, setStoreUrl] = useState('');
+
+  const listenerAdded = useRef(false);  // Android download listener guard
+  const isChecking = useRef(false);  // Debounce simultaneous checks
+  const modalShown = useRef(false);  // Track shown state without closure issues
+  const lastCheckedAt = useRef(0); // Throttle checks triggered by navigation
+
+  // ─── Open update modal ───────────────────────────────────────────────────────
+  const openUpdateModal = useCallback((version, mandatory, url) => {
+    if (modalShown.current) return; // already visible, don't stack
+    modalShown.current = true;
+    setLatestVersion(version ?? '');
+    setIsMandatory(!!mandatory);
+    setStoreUrl(url ?? (Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL));
+    setShowModal(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    modalShown.current = false;
+    setShowModal(false);
+    setShowProgress(false);
+    setProgress(0);
+    setStatusText('');
+  }, []);
+
+  // ─── iOS check ───────────────────────────────────────────────────────────────
+  const checkIOS = useCallback(async (currentVersion) => {
+    console.log(`AppUpdate [iOS]: installed=${currentVersion}`);
+    const storeVersion = await fetchLatestIOSVersion();
+    if (!storeVersion) {
+      console.log('AppUpdate [iOS]: Could not fetch store version.');
+      return;
+    }
+    if (isNewerVersion(currentVersion, storeVersion)) {
+      console.log(`AppUpdate [iOS]: Update available → ${storeVersion}`);
+      openUpdateModal(storeVersion, false, IOS_STORE_URL);
+    } else {
+      console.log('AppUpdate [iOS]: Up to date.');
+    }
+  }, [openUpdateModal]);
+
+  // ─── Android check ────────────────────────────────────────────────────────
+  const checkAndroid = useCallback(async (currentVersion, currentBuild) => {
+    console.log(`AppUpdate [Android]: installed=${currentVersion} (code: ${currentBuild})`);
+
+    let libraryStoreVersion = null;
+    let libraryMandatory = false;
+    let libraryStoreUrl = ANDROID_STORE_URL;
+    let libraryFailed = false;
+    let librarySaysUpdate = false;
+
+    // ── Step 1: Try sp-react-native-in-app-updates (works for Play Store installs) ──
+    try {
+      const result = await inAppUpdates.checkNeedsUpdate({ curVersion: currentVersion });
+      console.log('AppUpdate [Android]: library result:', JSON.stringify(result));
+
+      if (result?.shouldUpdate) {
+        librarySaysUpdate = true;
+        libraryStoreVersion = String(result.storeVersion || '');
+        libraryMandatory = (result.updatePriority ?? 0) >= 4;
+        libraryStoreUrl = result.storeUrl || ANDROID_STORE_URL;
+        console.log(`AppUpdate [Android]: Library says update available → ${libraryStoreVersion}`);
+      } else {
+        console.log('AppUpdate [Android]: Library says up to date. Running scrape to verify...');
+      }
+    } catch (libErr) {
+      libraryFailed = true;
+      console.log('AppUpdate [Android]: Library threw error (e.g. APP_NOT_OWNED):', libErr?.message);
+    }
+
+    // ── Step 2: Always scrape Play Store as a second opinion ──────────────────
+    const scrapeVersion = await fetchLatestAndroidVersion();
+    console.log(`AppUpdate [Android]: Scrape version=${scrapeVersion}`);
+
+    // ── Step 3: Decide if update is needed + choose display version ───────────
+    const scrapeLooksSemver = looksLikeSemver(scrapeVersion);
+    const libraryLooksSemver = looksLikeSemver(libraryStoreVersion);
+    const libraryLooksLikeCode = isNumericVersionCode(libraryStoreVersion);
+
+    // If both look like codes, compare them. If both look like semver, compare them.
+    // If we have a mix, trust the semver one for the UI.
+    let shouldUpdate = librarySaysUpdate;
+
+    // Safety check: if library gives us a code (e.g. "28"), compare it against local buildNumber, NOT currentVersion.
+    if (librarySaysUpdate &amp;&amp; libraryLooksLikeCode) {
+      if (!isNewerVersion(currentBuild, libraryStoreVersion)) {
+        console.log('AppUpdate [Android]: Library code is NOT newer than current build. Ignoring.');
+        shouldUpdate = false;
+      }
+    }
+
+    // If scrape says update, it's usually the most reliable for version names.
+    const scrapeSaysUpdate = scrapeLooksSemver &amp;&amp; isNewerVersion(currentVersion, scrapeVersion);
+    if (scrapeSaysUpdate) shouldUpdate = true;
+
+    // Display version should ALWAYS be a versionName like "1.1.1", never a numeric code.
+    const displayVersion =
+      scrapeLooksSemver ? scrapeVersion
+        : libraryLooksSemver ? libraryStoreVersion
+          : ''; // Never show "28" - if we don't have a semver string, show blank and let UI handle it.
+
+    if (shouldUpdate) {
+      console.log(`AppUpdate [Android]: ✅ Update confirmed → ${displayVersion || 'unknown name'}`);
+      openUpdateModal(
+        displayVersion,
+        libraryMandatory,
+        libraryFailed ? ANDROID_STORE_URL : libraryStoreUrl,
+      );
+    } else {
+      console.log('AppUpdate [Android]: ✅ App is up to date.');
+    }
+  }, [inAppUpdates, openUpdateModal]);
+
+  // ─── Main entry point ────────────────────────────────────────────────────────
+  const checkUpdate = useCallback(async ({
+    force = false,
+    minIntervalMs = 0,
+    reason = 'manual',
+  } = {}) => {
+    if (modalShown.current || isChecking.current) return;
+
+    const now = Date.now();
+    if (!force &amp;&amp; minIntervalMs > 0 &amp;&amp; now - lastCheckedAt.current &lt; minIntervalMs) {
+      console.log(`AppUpdate: Skipping check for ${reason}; throttled.`);
+      return;
+    }
+
+    isChecking.current = true;
+    lastCheckedAt.current = now;
+
+    try {
+      const currentVersion = DeviceInfo.getVersion();
+      const currentBuild = DeviceInfo.getBuildNumber();
+      console.log(
+        `AppUpdate: Checking update (${reason}). Installed: ${currentVersion} (code: ${currentBuild})`,
+      );
+
+      if (Platform.OS === 'ios') {
+        // ✅ iOS: iTunes Lookup API works for ALL install types:
+        //    - App Store official download
+        //    - Sideloaded IPA (Ad Hoc / Enterprise / TestFlight)
+        //    - DEV builds (for UI testing)
+        await checkIOS(currentVersion);
+      } else {
+        // Android strategy:
+        //
+        // __DEV__ = true  → debug APK/Metro: library always throws APP_NOT_OWNED
+        //                     → skip library, go straight to scrape fallback
+        //
+        // __DEV__ = false → release build:
+        //   - Play Store install     → library works, full in-app update flow ✅
+        //   - Sideloaded release APK → library throws APP_NOT_OWNED,
+        //                              checkAndroid() catches it and runs scrape ✅
+        if (__DEV__) {
+          console.log('AppUpdate [Android]: DEV mode — scrape fallback only.');
+          const scrapeVersion = await fetchLatestAndroidVersion();
+          const scrapeLooksSemver = looksLikeSemver(scrapeVersion);
+
+          if (scrapeVersion &amp;&amp; isNewerVersion(currentVersion, scrapeVersion)) {
+            // Even in DEV, only show the version string if it looks like semver
+            openUpdateModal(scrapeLooksSemver ? scrapeVersion : '', false, ANDROID_STORE_URL);
+          } else {
+            console.log('AppUpdate [Android]: DEV — up to date or scrape returned null.');
+          }
+        } else {
+          // checkAndroid tries library first, then automatically falls back to
+          // scrape if library fails (handles sideloaded release APKs transparently)
+          await checkAndroid(currentVersion, currentBuild);
+        }
+      }
+    } catch (err) {
+      console.log('AppUpdate: Unexpected error in checkUpdate:', err?.message);
+    } finally {
+      isChecking.current = false;
+    }
+  }, [checkIOS, checkAndroid, openUpdateModal]);
+
+  // ─── Hardware back button — block when mandatory ──────────────────────────────
+  useEffect(() => {
+    if (!isMandatory || !showModal) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [isMandatory, showModal]);
+
+  // ─── Run on mount + every time app comes to foreground ───────────────────────
+  useEffect(() => {
+    checkUpdate({ force: true, reason: 'mount' });
+
+    const retryTimeoutId = setTimeout(() => {
+      checkUpdate({ force: true, reason: 'mount-retry' });
+    }, 5000);
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        checkUpdate({ reason: 'app-active' });
+      }
+    });
+    const intervalId = setInterval(() => {
+      checkUpdate({ force: true, reason: 'interval' });
+    }, UPDATE_RECHECK_MS);
+
+    return () => {
+      sub.remove();
+      clearInterval(intervalId);
+      clearTimeout(retryTimeoutId);
+    };
+  }, [checkUpdate]);
+
+  // ─── Re-check when navigation changes so auth/login transitions do not matter ──
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(
+      'APP_UPDATE_NAVIGATION_CHANGE',
+      ({ screenName }) => {
+        const isLanding = screenName === 'GuestUser' || screenName === 'TabNav' || screenName === 'Main';
+        checkUpdate({
+          reason: `navigation:${screenName || 'unknown'}`,
+          minIntervalMs: isLanding ? 0 : NAVIGATION_RECHECK_MS,
+          force: isLanding,
+        });
+      },
+    );
+
+    return () => sub.remove();
+  }, [checkUpdate]);
+
+  // ─── Android download-status listener (registered once) ──────────────────────
+  useEffect(() => {
+    if (Platform.OS !== 'android' || listenerAdded.current) return;
+    listenerAdded.current = true;
+
+    inAppUpdates.addStatusUpdateListener((status) => {
+      console.log('AppUpdate: status event →', status?.status);
+      switch (status.status) {
+        case IAUInstallStatus.DOWNLOADING:
+          setStatusText('Downloading update…');
+          setProgress(
+            status.totalBytesToDownload > 0
+              ? status.bytesDownloaded / status.totalBytesToDownload
+              : 0,
+          );
+          break;
+        case IAUInstallStatus.DOWNLOADED:
+          setStatusText('Installing update…');
+          inAppUpdates.installUpdate();
+          break;
+        case IAUInstallStatus.INSTALLING:
+          setStatusText('Installing…');
+          break;
+        case IAUInstallStatus.FAILED:
+          setStatusText('Update failed');
+          setShowProgress(false);
+          Alert.alert('Update Failed', 'Please update manually from the Play Store.');
+          break;
+        default:
+          break;
+      }
+    });
+
+    return () => {
+      try { inAppUpdates.removeStatusUpdateListener(); } catch (_) { }
+    };
+  }, [inAppUpdates]);
+
+  // ─── Start update ─────────────────────────────────────────────────────────────
+  const startUpdate = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        await Linking.openURL(storeUrl || IOS_STORE_URL);
+        closeModal();
+        return;
+      }
+
+      // Android in-app update flow
+      const updateType = isMandatory
+        ? IAUUpdateKind.IMMEDIATE
+        : IAUUpdateKind.FLEXIBLE;
+
+      if (updateType === IAUUpdateKind.FLEXIBLE) {
+        setShowProgress(true);
+        setStatusText('Preparing update…');
+      }
+
+      await inAppUpdates.startUpdate({ updateType });
+    } catch (e) {
+      console.log('AppUpdate: startUpdate error:', e?.message);
+      setShowProgress(false);
+      // Always fallback to opening the store page
+      const url = storeUrl || (Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL);
+      await Linking.openURL(url).catch(() =>
+        Alert.alert('Error', 'Could not open the store. Please update manually.'),
+      );
+    }
+  };
+
+  // ─── Nothing to render until there's an update ───────────────────────────────
+  if (!showModal) return null;
+
+  return (
+    &lt;Modal
+      transparent
+      animationType="fade"
+      visible={showModal}
+      statusBarTranslucent
+      onRequestClose={() => {
+        if (!isMandatory) closeModal();
+      }}
+    >
+      &lt;View style={styles.overlay}>
+        &lt;View style={styles.card}>
+
+          {/* Badge */}
+          &lt;View style={styles.iconBadge}>
+            &lt;Text style={styles.iconText}>🚀&lt;/Text>
+          &lt;/View>
+
+          &lt;Text style={styles.title}>Update Available&lt;/Text>
+
+          {!!latestVersion &amp;&amp; (
+            &lt;Text style={styles.subtitle}>
+              Version {latestVersion} is now available!
+            &lt;/Text>
+          )}
+
+          &lt;Text style={styles.body}>
+            {isMandatory
+              ? 'This update is required to continue using the app.'
+              : 'A new version of the app is available. Update now to enjoy the latest features and improvements.'}
+          &lt;/Text>
+
+          {showProgress ? (
+            &lt;View style={styles.progressContainer}>
+              &lt;Text style={styles.status}>{statusText}&lt;/Text>
+              &lt;View style={styles.progressBar}>
+                &lt;View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.round(progress * 100)}%` },
+                  ]}
+                />
+              &lt;/View>
+              &lt;ActivityIndicator
+                style={{ marginTop: 16 }}
+                color={Colorpath.ButtonColr || '#2C4DB9'}
+              />
+            &lt;/View>
+          ) : (
+            &lt;View style={styles.actions}>
+              {!isMandatory &amp;&amp; (
+                &lt;TouchableOpacity
+                  style={styles.laterBtn}
+                  onPress={closeModal}
+                  activeOpacity={0.8}
+                >
+                  &lt;Text style={styles.laterText}>Later&lt;/Text>
+                &lt;/TouchableOpacity>
+              )}
+              &lt;TouchableOpacity
+                style={[styles.updateBtn, isMandatory &amp;&amp; styles.updateBtnFull]}
+                onPress={startUpdate}
+                activeOpacity={0.85}
+              >
+                &lt;Text style={styles.updateText}>Update Now&lt;/Text>
+              &lt;/TouchableOpacity>
+            &lt;/View>
+          )}
+
+        &lt;/View>
+      &lt;/View>
+    &lt;/Modal>
+  );
+};
+
+export default AppUpdateHandler;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff',
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EEF1FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconText: { fontSize: 28 },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+    color: '#111',
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colorpath.ButtonColr || '#2C4DB9',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  body: {
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 24,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  progressContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  status: {
+    textAlign: 'center',
+    marginBottom: 12,
+    color: '#555',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 3,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colorpath.ButtonColr || '#2C4DB9',
+    borderRadius: 3,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    width: '100%',
+  },
+  laterBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+  },
+  laterText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  updateBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: Colorpath.ButtonColr || '#2C4DB9',
+    alignItems: 'center',
+    shadowColor: Colorpath.ButtonColr || '#2C4DB9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  updateBtnFull: { flex: 1 },
+  updateText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

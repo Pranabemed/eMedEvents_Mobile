@@ -26,6 +26,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import Modal from 'react-native-modal';
 import { all } from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable ExploreCastCourse component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const ExploreCastCourse = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);

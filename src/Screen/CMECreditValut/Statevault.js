@@ -14,6 +14,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Colorpath from '../../Themes/Colorpath';
 import StateVaultModal from './StateVaultModal';
+
+/**
+ * Reusable Statevault component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const Statevault = ({ modalshow,

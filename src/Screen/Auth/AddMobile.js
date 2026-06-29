@@ -15,6 +15,14 @@ import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+
+/**
+ * Reusable AddMobile component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const AddMobile = (props) => {
     const [phone, setPhone] = useState("");

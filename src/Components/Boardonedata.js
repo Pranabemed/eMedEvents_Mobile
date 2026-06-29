@@ -6,6 +6,14 @@ import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import { useSelector } from 'react-redux';
 import Colorpath from '../Themes/Colorpath';
+
+/**
+ * Reusable Boardonedata component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Boardonedata = ({completedCountboard,pendingCountboard,finalShow}) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     return (

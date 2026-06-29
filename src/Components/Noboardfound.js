@@ -3,6 +3,14 @@ import React from 'react'
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
+
+/**
+ * Reusable Noboardfound component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Noboardfound = ({navigation}) => {
     return (
         <View style={styles.containercontex}>

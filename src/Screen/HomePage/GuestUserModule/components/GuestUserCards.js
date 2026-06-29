@@ -23,6 +23,14 @@ import {
 } from '../utils/guestUserCore';
 import { InfoRow } from './GuestUserShared';
 
+/**
+ * Reusable FreeConferenceCardComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const getFreeEventTypeIcon = eventType => {
   const normalizedType = String(eventType || '').trim().toLowerCase();
 

@@ -8,6 +8,14 @@ import DropDownHeader from '../../Components/DropDownHeader'
 import PageHeader from '../../Components/PageHeader'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable ProfessionComponent component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const ProfessionComponent = ({ handleProfession, clist, setcountrypicker, searchCountryName, searchtext, setSearchtext }) => {
     console.log(clist, "wekknamecustome");
     const [showLoader, setShowLoader] = useState(false);

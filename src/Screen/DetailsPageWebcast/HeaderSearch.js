@@ -25,6 +25,14 @@ import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import VoiceSearchBar from '../GlobalSupport/Voice';
 import { trackScreen } from '../../Utils/Helpers/Analytics';
+
+/**
+ * Reusable HeaderSearch component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const HeaderSearch = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);

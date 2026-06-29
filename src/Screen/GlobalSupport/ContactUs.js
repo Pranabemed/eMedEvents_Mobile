@@ -36,6 +36,14 @@ import CustomInputTouchable from '../../Components/IconTextIn'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import CustomInputTouchableX from '../Profile/CustomInputTouchableX'
 
+/**
+ * Reusable ContactUs component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 // Geocoder.init(GOOGLE_API_KEY);
 let status = "";

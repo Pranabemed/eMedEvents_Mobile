@@ -16,6 +16,14 @@ import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Reusable EmpInfo component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status1 = "";
 const EmpInfo = (props) => {
     const SearchBack = () => {

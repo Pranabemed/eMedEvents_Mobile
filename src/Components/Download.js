@@ -8,6 +8,14 @@ import MyStatusBar from "../Utils/MyStatusBar";
 import Fonts from "../Themes/Fonts";
 import normalize from "../Utils/Helpers/Dimen";
 
+/**
+ * Reusable PDFViewer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 export default class PDFViewer extends Component {
   state = {
     loading: false, // State to manage the loader

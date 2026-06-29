@@ -9,6 +9,14 @@ import CloseIcon from 'react-native-vector-icons/AntDesign';
 import FileViewer from "react-native-file-viewer";
 import RNFS from "react-native-fs";
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable PayModal component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let subscription = null;
 const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name, setGocertificate, gocertificate }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);

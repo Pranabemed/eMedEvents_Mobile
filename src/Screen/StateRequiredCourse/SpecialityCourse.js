@@ -25,6 +25,14 @@ import IntOff from '../../Utils/Helpers/IntOff'
 import { SafeAreaView } from 'react-native-safe-area-context'
 let status = "";
 // import { GestureHandlerRootView } from 'react-native-gesture-handler'
+
+/**
+ * Reusable SpecialityCourseSlide component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const SpecialityCourseSlide = (props) => {
     const { takestate, addit, isConnected, fulldashbaord, setAddit } = useContext(AppContext);
     const [visible, setVisible] = useState(false);

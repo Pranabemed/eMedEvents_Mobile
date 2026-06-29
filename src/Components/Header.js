@@ -5,6 +5,14 @@ import normalize from '../Utils/Helpers/Dimen';
 import { useNavigation } from '@react-navigation/native';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons'; 
 
+/**
+ * Reusable Header component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 export default function Header(props) {
   const navigation = useNavigation();
   

@@ -4,6 +4,14 @@ import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import { useSelector } from 'react-redux';
 import Imagepath from '../Themes/Imagepath';
+
+/**
+ * Reusable Boardtwodata component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Boardtwodata = ({ totalcard, modalFalse, cmeModalFalse }) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     return (

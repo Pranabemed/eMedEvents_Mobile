@@ -4,6 +4,14 @@ import Colorpath from '../Themes/Colorpath'
 import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
 import Fonts from '../Themes/Fonts';
+
+/**
+ * Reusable CMECard component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const CMECard = ({expiryno, allProfTake, CMEcard, setCMECard, styles, item, windowWidth, manWrng,genWrng,finalSumCred }) => {
  function formatRenewalYears(renewal_cycle, to_date) {
     const date = new Date(to_date);

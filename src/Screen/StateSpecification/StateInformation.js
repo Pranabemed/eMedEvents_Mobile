@@ -27,6 +27,14 @@ import Imagepath from '../../Themes/Imagepath';
 import { dashMbRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+/**
+ * Reusable StateInformation component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 let status1 = "";
 const StateInformation = (props) => {

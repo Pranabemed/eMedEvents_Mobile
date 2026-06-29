@@ -11,6 +11,14 @@ import RenderHTML from 'react-native-render-html';
 import { addtoCartWebcastRequest, checkoutTicketRequest } from '../../Redux/Reducers/WebcastReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+
+/**
+ * Reusable StatewebcastCheckout component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 let status = "";
 const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, guestOrigin }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;

@@ -17,6 +17,14 @@ import { useSelector } from 'react-redux';
 import ArrowNeed from 'react-native-vector-icons/Feather';
 import Search from 'react-native-vector-icons/AntDesign';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+
+/**
+ * Reusable Statevaultcomponet component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
 const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch, hideCertificateAction }) => {
     const [loads, setLoads] = useState(false);
     const [currentProfile, setCurrentProfile] = useState('');

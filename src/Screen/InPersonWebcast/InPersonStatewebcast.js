@@ -17,6 +17,14 @@ import Loader from '../../Utils/Helpers/Loader'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useIsFocused } from '@react-navigation/native';
 
+/**
+ * Reusable InPersonStatewebcast component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
 let status1 = "";
 const InPersonStatewebcast = (props) => {
     function cutomPrice(price) {

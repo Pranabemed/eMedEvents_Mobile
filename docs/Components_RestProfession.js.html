@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Components/RestProfession.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Components/RestProfession.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { View, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native'
+import React, { useContext, useEffect, useState } from 'react'
+import moment from 'moment';
+import Imagepath from '../Themes/Imagepath';
+import Fonts from '../Themes/Fonts';
+import normalize from '../Utils/Helpers/Dimen';
+import Colorpath from '../Themes/Colorpath';
+import { CommonActions } from '@react-navigation/native';
+import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
+import { useDispatch, useSelector } from 'react-redux';
+import Buttons from './Button';
+import { ConfActRequest } from '../Redux/Reducers/CMEReducer';
+import connectionrequest from '../Utils/Helpers/NetInfo';
+import ProfessionCourseShimmer from './ProfessionCourseShimmer';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../Utils/Helpers/constants';
+import NetInfo from '@react-native-community/netinfo';
+import StackNav from '../Navigator/StackNav';
+import { AppContext } from '../Screen/GlobalSupport/AppContext';
+
+/**
+ * Reusable RestProfession component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType }) => {
+    const [storeAlldata, setStoreAlldata] = useState([]);
+    // Start as true so shimmer shows immediately on mount (before API fires)
+    const [loading, setLoading] = useState(true);
+    const [wholeDa, setWholeDa] = useState("");
+    // Tracks whether at least one CME response has come back (success or failure)
+    // so we never show the empty-state text prematurely
+    const hasReceivedResponse = React.useRef(false);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const dispatch = useDispatch();
+    const {
+        setIsConnected,
+        isConnected
+    } = useContext(AppContext);
+    const [nettrue, setNettrue] = useState("");
+    console.log(isConnected, "isConnected=========")
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setNettrue(state.isConnected)
+            console.log('Connection State:', state.isConnected);
+            const token_error = () => {
+                setTimeout(() => {
+                    AsyncStorage.getItem(constants.PRODATA).then((nondata) => {
+                        const parsedDataD = JSON.parse(nondata);
+                        setWholeDa(parsedDataD);
+                        console.log(parsedDataD, "parsedData---------------")
+                    });
+                }, 500);
+            };
+            try {
+                if (state.isConnected === false) {
+                    token_error();
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+    const handleRot = () => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            console.log('Connection State:', state.isConnected);
+            setIsConnected(state.isConnected);
+            if (state.isConnected) {
+                &lt;StackNav />
+                // showErrorAlert("Internet is back!");
+            }
+        });
+
+        return () => unsubscribe();
+    }
+    const handleUrl = (onlineName) => {
+        const url = onlineName?.detailpage_url;
+        const result = url.split('/').pop();
+        console.log(result, "webcast url=======", onlineName);
+        let obj = {
+            "conference_id": onlineName?.id,
+            "action_type": "view",
+            "status": 1
+        }
+        connectionrequest()
+            .then(() => {
+                dispatch(ConfActRequest(obj));
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to internet", err);
+            });
+        if (result) {
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } })
+        }
+    }
+    console.log(completedCount, pendingCount, "fdgd0000------")
+    const searchGlobalitem = ({ item, index }) => {
+        const formatDate = (dateStr) => {
+            const date = moment(dateStr, "DD MMM'YY");
+            return date.format("MMM  D").replace(' ', '');
+        };
+        const formattedDate = formatDate(item?.startdate);
+        const formatDateEnd = (dateStr) => {
+            const date = moment(dateStr, "DD MMM'YY");
+            return date.format("MMM D, YYYY").replace('', '');
+        };
+        const formattedDateend = formatDateEnd(item?.enddate);
+        const renderLocationAndDates = () => {
+            if (item?.startdate &amp;&amp; item?.enddate &amp;&amp; item?.location) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.WrongCal}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                bottom: normalize(3),
+                                marginLeft: normalize(5),
+                                width: normalize(220)
+                            }}
+                        >
+                            {`${formattedDate} - ${formattedDateend} | ${item?.location}`}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            } else if (item?.startdate &amp;&amp; item?.enddate) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.WrongCal}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                bottom: normalize(3),
+                                marginLeft: normalize(5)
+                            }}
+                        >
+                            {`${formattedDate} - ${formattedDateend}`}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            } else if (item?.location) {
+                return (
+                    &lt;View style={{ flexDirection: "row" }}>
+                        &lt;Image
+                            source={Imagepath.WrongCal}
+                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
+                        />
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#333",
+                                bottom: normalize(3),
+                            }}
+                        >
+                            {item?.location}
+                        &lt;/Text>
+                    &lt;/View>
+                );
+            }
+            return null;
+        };
+        return (
+            &lt;View>
+                &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
+                    &lt;TouchableOpacity onPress={() => { handleUrl(item) }}>
+                        &lt;View
+                            style={{
+                                flexDirection: "column",
+                                width: normalize(300),
+                                borderRadius: normalize(10),
+                                backgroundColor: "#FFFFFF",
+                                paddingHorizontal: normalize(10),
+                                paddingVertical: normalize(10),
+                                // shadowColor: "#000",
+                                // shadowOffset: { width: 0, height: 1 },
+                                // shadowOpacity: 0.2,
+                                // shadowRadius: 2,
+                                // elevation: 5
+                            }}
+                        >
+                            &lt;View style={{ flex: 1 }}>
+                                &lt;View style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    width: '106%'
+                                }}>
+                                    &lt;View style={{ flex: 1, marginRight: 10 }}>
+                                        &lt;View>
+                                            &lt;Text
+                                                style={{
+                                                    fontFamily: Fonts.InterSemiBold,
+                                                    fontSize: 16,
+                                                    color: "#000000",
+                                                    fontWeight: "bold",
+                                                    flexWrap: 'wrap',
+                                                    lineHeight: 20,
+                                                }}
+                                                numberOfLines={2}
+                                                ellipsizeMode="tail"
+                                            >
+                                                {item?.title}
+                                            &lt;/Text>
+                                        &lt;/View>
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/View>
+                            &lt;View style={{ justifyContent: "flex-start", alignItems: "flex-start", paddingVertical: normalize(4) }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}&lt;/Text>
+                            &lt;/View>
+                            {(item?.startdate || item?.enddate || item?.location) &amp;&amp; (&lt;View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
+                                {renderLocationAndDates()}
+                            &lt;/View>)}
+                            {item?.display_price &amp;&amp; &lt;View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
+                            {!item?.display_price ? null : &lt;View style={{ justifyContent: "flex-end", alignItems: "flex-end", marginTop: normalize(3) }}>
+                                &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr }}>{item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}&lt;/Text>
+                            &lt;/View>}
+                        &lt;/View>
+                    &lt;/TouchableOpacity>
+                &lt;/View>
+            &lt;/View>
+        )
+    }
+    useEffect(() => {
+        switch (CMEReducer.status) {
+            case 'CME/cmeCourseRequest':
+                hasReceivedResponse.current = false;
+                setLoading(true);
+                setStoreAlldata([]);
+                break;
+            case 'CME/cmeCourseSuccess': {
+                hasReceivedResponse.current = true;
+                setLoading(false);
+                const conferences = CMEReducer?.cmeCourseResponse?.conferences || [];
+                const uniqueConferences = conferences.filter(
+                    (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
+                );
+                setStoreAlldata(uniqueConferences);
+                break;
+            }
+            case 'CME/cmeCourseFailure':
+                hasReceivedResponse.current = true;
+                setLoading(false);
+                setStoreAlldata([]);
+                break;
+        }
+    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse?.conferences]);
+    const getFullName = (obj) => {
+        const first = obj?.firstname;
+        const last = obj?.lastname;
+        return (first != null &amp;&amp; last != null) ? `${first} ${last}` : undefined;
+    };
+
+    const nameShow =
+        getFullName(wholeDa) ||
+        getFullName(finalProfessionmain?.user) ||
+        getFullName(AuthReducer?.loginResponse?.user) ||
+        getFullName(AuthReducer?.againloginsiginResponse?.user) ||
+        getFullName(AuthReducer?.signupResponse?.user) ||
+        getFullName(DashboardReducer?.mainprofileResponse?.personal_information) ||
+        '';
+    const getFirstTruthyProfession = (...sources) =>
+        sources.find(val => val) || '';
+    const handleProf = String(
+        getFirstTruthyProfession(
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+            AuthReducer?.signupResponse?.user?.profession,
+            AuthReducer?.loginResponse?.user?.profession,
+            finalProfessionmain?.profession
+        )
+    )
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-');
+    return (
+        &lt;View style={{ paddingHorizontal: normalize(10), paddingVertical: profileType === 'SkipProfile' ? 0 : normalize(10) }}>
+            {profileType !== 'SkipProfile' &amp;&amp; (
+                &lt;View style={{ marginTop: normalize(5) }}>
+                    &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}&lt;/Text>
+                &lt;/View>
+            )}
+            {completedCount == 1 ? &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), paddingHorizontal: normalize(10) }}>
+                &lt;TouchableOpacity onPress={() => {
+                    if (enables) {
+                        setPrimeadd(true);
+                    } else {
+                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
+                    }
+
+                }}
+                    style={{
+                        flexDirection: "row",
+                        height: normalize(110),
+                        width: normalize(300),
+                        borderRadius: normalize(10),
+                        backgroundColor: "#FFFFFF",
+                        paddingHorizontal: normalize(15),
+                        // paddingVertical: normalize(10),
+                        alignItems: "center",
+                        borderWidth: 0.5,
+                        borderColor: "#DADADA"
+                    }}
+                >
+                    &lt;View style={{ flex: 1, justifyContent: "center" }}>
+                        &lt;Text
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#000000",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            {"Your Registered Activities"}
+                        &lt;/Text>
+                        &lt;View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
+                            &lt;View style={{
+                                flexDirection: "row",
+                                height: normalize(60),
+                                width: normalize(88),
+                                borderRadius: normalize(8),
+                                // paddingHorizontal: normalize(10),
+                                backgroundColor: "#EAF5FF",
+                                marginTop: normalize(5),
+                                justifyContent: "center", alignItems: "center"
+                            }}>
+                                &lt;View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}&lt;/Text>
+                                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}&lt;/Text>
+                                &lt;/View>
+                            &lt;/View>
+                            &lt;View style={{
+                                flexDirection: "row",
+                                height: normalize(60),
+                                width: normalize(88),
+                                borderRadius: normalize(8),
+                                // paddingHorizontal: normalize(10),
+                                backgroundColor: "#E7F5E8",
+                                marginTop: normalize(5),
+                                justifyContent: "center", alignItems: "center"
+                            }}>
+                                &lt;View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}&lt;/Text>
+                                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}&lt;/Text>
+                                &lt;/View>
+                            &lt;/View>
+                            &lt;View style={{
+                                flexDirection: "row",
+                                height: normalize(60),
+                                width: normalize(88),
+                                borderRadius: normalize(8),
+                                backgroundColor: "#F1EBFF",
+                                // paddingHorizontal: normalize(10),
+                                marginTop: normalize(5),
+                                justifyContent: "center", alignItems: "center"
+                            }}>
+                                &lt;View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                    &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}&lt;/Text>
+                                    &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}&lt;/Text>
+                                &lt;/View>
+                            &lt;/View>
+                        &lt;/View>
+                    &lt;/View>
+                    &lt;TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
+                        if (enables) {
+                            setPrimeadd(true);
+                        } else {
+                            navigation.dispatch(CommonActions.reset({
+                                index: 0, routes: [{
+                                    name: "Course", params: {
+                                        taskData: { statid: takestate, creditID: addit },
+                                    }
+                                }]
+                            }));
+                        }
+                    }}>
+                        &lt;ArrowIconsAnt
+                            name="arrowright"
+                            size={18}
+                            color={Colorpath.white}
+                            style={{ alignSelf: "center" }}
+                        />
+                    &lt;/TouchableOpacity>
+                &lt;/TouchableOpacity>
+            &lt;/View> : null}
+            {profileType !== 'SkipProfile' &amp;&amp; CMEReducer?.cmeCourseResponse?.header_title &amp;&amp; storeAlldata?.length > 0 &amp;&amp; &lt;View style={{ paddingHorizontal: normalize(0), paddingVertical: (completedCount == 0 &amp;&amp; pendingCount == 0) ? normalize(10) : normalize(5) }}>
+                &lt;Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}&lt;/Text>
+            &lt;/View>}
+            &lt;View>
+                &lt;ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
+                    {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
+                    {loading ? (
+                        &lt;ProfessionCourseShimmer count={3} />
+                    ) : (
+                        &lt;FlatList
+                            scrollEnabled={false}
+                            data={storeAlldata?.slice(0, 2)}
+                            renderItem={searchGlobalitem}
+                            keyExtractor={(item, index) => item.id}
+                            onEndReachedThreshold={0.5}
+                            contentContainerStyle={{ paddingBottom: normalize(10) }}
+                            scrollEventThrottle={16}
+                            ListEmptyComponent={
+                                hasReceivedResponse.current ? (
+                                    &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
+                                        &lt;View
+                                            style={{
+                                                flexDirection: "row",
+                                                width: normalize(290),
+                                                borderRadius: normalize(10),
+                                                backgroundColor: "#FFFFFF",
+                                                paddingHorizontal: normalize(10),
+                                                paddingVertical: normalize(10),
+                                                alignItems: "center",
+                                                borderStyle: 'dotted',
+                                                borderWidth: 1,
+                                            }}
+                                        >
+                                            &lt;View style={{ flex: 1, justifyContent: "center" }}>
+                                                &lt;Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 16,
+                                                        color: Colorpath.ButtonColr,
+                                                        fontWeight: "bold",
+                                                        alignSelf: "center"
+                                                    }}
+                                                >
+                                                    {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                                &lt;/Text>
+                                            &lt;/View>
+                                        &lt;/View>
+                                    &lt;/View>
+                                ) : null
+                            }
+                        />
+                    )}
+                    {/* Browse Courses button – hidden while shimmer is showing */}
+                    {!loading &amp;&amp; (
+                        &lt;View>
+                            &lt;TouchableOpacity onPress={() => {
+                                navigation.dispatch(
+                                    CommonActions.reset({
+                                        index: 0,
+                                        routes: [
+                                            {
+                                                name: "Globalresult",
+                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
+                                            }
+                                        ]
+                                    })
+                                );
+                            }}
+                                style={{
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    height: normalize(95),
+                                    width: normalize(300),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    borderWidth: 0.5,
+                                    borderColor: "#DADADA"
+                                }}
+                            >
+                                &lt;Buttons
+                                    onPress={() => {
+                                        navigation.dispatch(
+                                            CommonActions.reset({
+                                                index: 0,
+                                                routes: [
+                                                    {
+                                                        name: "Globalresult",
+                                                        params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
+                                                    }
+                                                ]
+                                            })
+                                        );
+                                    }}
+                                    height={normalize(40)}
+                                    width={normalize(270)}
+                                    backgroundColor={Colorpath.ButtonColr}
+                                    borderRadius={normalize(5)}
+                                    text="Browse Courses"
+                                    color={Colorpath.white}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterSemiBold}
+                                />
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+                    )}
+                    {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 &amp;&amp; (
+                        &lt;View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                            &lt;TouchableOpacity
+                                onPress={() => {
+                                    const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [
+                                                {
+                                                    name: "NonMain",
+                                                    params: {
+                                                        myact: {
+                                                            realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                            creditData: creditData,
+                                                            recnt: "recnt"
+                                                        }
+                                                    },
+                                                }
+                                            ]
+                                        })
+                                    );
+                                }}
+                                style={{
+                                    flexDirection: "row",
+                                    height: normalize(95),
+                                    width: normalize(300),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    paddingHorizontal: normalize(10),
+                                    alignItems: "center",
+                                    borderWidth: 0.5,
+                                    borderColor: "#DADADA"
+                                }}
+                            >
+                                &lt;View style={{ flex: 1, justifyContent: "center" }}>
+                                    &lt;Text
+                                        style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 14,
+                                            color: "#000000",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {"Your recently viewed courses are listed below for easy access and continued learning."}
+                                    &lt;/Text>
+                                    &lt;View style={{ marginTop: normalize(10) }}>
+                                        &lt;Buttons
+                                            onPress={() => {
+                                                const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "NonMain",
+                                                                params: {
+                                                                    myact: {
+                                                                        realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                                        creditData: creditData,
+                                                                        recnt: "recnt"
+                                                                    }
+                                                                },
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }}
+                                            height={normalize(40)}
+                                            width={normalize(270)}
+                                            backgroundColor={Colorpath.ButtonColr}
+                                            borderRadius={normalize(5)}
+                                            text="Recently viewed"
+                                            color={Colorpath.white}
+                                            fontSize={16}
+                                            fontFamily={Fonts.InterSemiBold}
+                                        />
+                                    &lt;/View>
+                                &lt;/View>
+                            &lt;/TouchableOpacity>
+                        &lt;/View>
+                    )}
+                    {nettrue === false ?
+                        &lt;View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(70) }}>
+                            &lt;Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000" }}>{"No Internet Connection"}&lt;/Text>
+                            &lt;Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000", marginTop: normalize(7) }}>{"Please check your internet connection \n                    and try again"}&lt;/Text>
+                            &lt;Buttons
+                                onPress={handleRot}
+                                height={normalize(45)}
+                                width={normalize(240)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(5)}
+                                text="Retry"
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                fontWeight="bold"
+                                marginTop={normalize(25)}
+                            />
+                        &lt;/View>
+                        : null}
+                &lt;/ScrollView>
+            &lt;/View>
+        &lt;/View>
+    )
+}
+
+export default RestProfession
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dimen.html">Dimen</a></li><li><a href="module-NetInfo.html">NetInfo</a></li><li><a href="module-RootNavigation.html">RootNavigation</a></li><li><a href="module-Store.html">Store</a></li><li><a href="module-Toast.html">Toast</a></li></ul><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AddCME">AddCME</a></li><li><a href="global.html#AddExpenses">AddExpenses</a></li><li><a href="global.html#AddLicense">AddLicense</a></li><li><a href="global.html#AddMobileLogin">AddMobileLogin</a></li><li><a href="global.html#AddProfMemb">AddProfMemb</a></li><li><a href="global.html#AddToCartNo">AddToCartNo</a></li><li><a href="global.html#AddressField">AddressField</a></li><li><a href="global.html#AllDownloadCatalog">AllDownloadCatalog</a></li><li><a href="global.html#AnimatedCircle">AnimatedCircle</a></li><li><a href="global.html#AppContext">AppContext</a></li><li><a href="global.html#Autocomplete">Autocomplete</a></li><li><a href="global.html#BoardCarousel">BoardCarousel</a></li><li><a href="global.html#BoardCustomed">BoardCustomed</a></li><li><a href="global.html#BoardVaultModal">BoardVaultModal</a></li><li><a href="global.html#Boardonedata">Boardonedata</a></li><li><a href="global.html#Boardtwodata">Boardtwodata</a></li><li><a href="global.html#Boardvaultcomponent">Boardvaultcomponent</a></li><li><a href="global.html#CMECard">CMECard</a></li><li><a href="global.html#CMEChecklistModal">CMEChecklistModal</a></li><li><a href="global.html#CMEExDashboard">CMEExDashboard</a></li><li><a href="global.html#CMEExclusive">CMEExclusive</a></li><li><a href="global.html#CMEListing">CMEListing</a></li><li><a href="global.html#CMERequirement">CMERequirement</a></li><li><a href="global.html#COLOR">COLOR</a></li><li><a href="global.html#COURSE_CARD_WIDTH">COURSE_CARD_WIDTH</a></li><li><a href="global.html#CarouselSectionComponent">CarouselSectionComponent</a></li><li><a href="global.html#CartFd">CartFd</a></li><li><a href="global.html#CartPay">CartPay</a></li><li><a href="global.html#CatlogDownload">CatlogDownload</a></li><li><a href="global.html#CellModal">CellModal</a></li><li><a href="global.html#CellModalPayemnt">CellModalPayemnt</a></li><li><a href="global.html#CellModalPayemntFailed">CellModalPayemntFailed</a></li><li><a href="global.html#Certficatecomponent">Certficatecomponent</a></li><li><a href="global.html#ChangeMail">ChangeMail</a></li><li><a href="global.html#ChangeMailSplash">ChangeMailSplash</a></li><li><a href="global.html#ChangeMobileNo">ChangeMobileNo</a></li><li><a href="global.html#CheckStateShow">CheckStateShow</a></li><li><a href="global.html#CheckStateShowCont">CheckStateShowCont</a></li><li><a href="global.html#CheckThreeCity">CheckThreeCity</a></li><li><a href="global.html#CheckoutInputbox">CheckoutInputbox</a></li><li><a href="global.html#CheckoutMain">CheckoutMain</a></li><li><a href="global.html#CheckoutModalone">CheckoutModalone</a></li><li><a href="global.html#ChecktwoCountry">ChecktwoCountry</a></li><li><a href="global.html#ChecktwoCountryNew">ChecktwoCountryNew</a></li><li><a href="global.html#ChooseMandatoryComponent">ChooseMandatoryComponent</a></li><li><a href="global.html#ChooseSpecailization">ChooseSpecailization</a></li><li><a href="global.html#ChooseState">ChooseState</a></li><li><a href="global.html#CircularProgress">CircularProgress</a></li><li><a href="global.html#CityComponent">CityComponent</a></li><li><a href="global.html#Cmemodal">Cmemodal</a></li><li><a href="global.html#Colorpath">Colorpath</a></li><li><a href="global.html#ConferenceSummary">ConferenceSummary</a></li><li><a href="global.html#Course">Course</a></li><li><a href="global.html#CourseCard">CourseCard</a></li><li><a href="global.html#CourseHorizontalList">CourseHorizontalList</a></li><li><a href="global.html#CourseOutline">CourseOutline</a></li><li><a href="global.html#CourseRelevant">CourseRelevant</a></li><li><a href="global.html#CourseShimmer">CourseShimmer</a></li><li><a href="global.html#CreditPrice">CreditPrice</a></li><li><a href="global.html#CreditTypeComponent">CreditTypeComponent</a></li><li><a href="global.html#CreditValult">CreditValult</a></li><li><a href="global.html#CustomCheckBox">CustomCheckBox</a></li><li><a href="global.html#CustomInput">CustomInput</a></li><li><a href="global.html#CustomInputTouchable">CustomInputTouchable</a></li><li><a href="global.html#CustomInputTouchableX">CustomInputTouchableX</a></li><li><a href="global.html#CustomInputTouchableY">CustomInputTouchableY</a></li><li><a href="global.html#CustomInputTouchableZ">CustomInputTouchableZ</a></li><li><a href="global.html#CustomInputWithDropdown">CustomInputWithDropdown</a></li><li><a href="global.html#CustomInputs">CustomInputs</a></li><li><a href="global.html#CustomModal">CustomModal</a></li><li><a href="global.html#CustomPaymentradio">CustomPaymentradio</a></li><li><a href="global.html#CustomRadioButton">CustomRadioButton</a></li><li><a href="global.html#CustomRadioButtons">CustomRadioButtons</a></li><li><a href="global.html#CustomTextField">CustomTextField</a></li><li><a href="global.html#CustomizedYear">CustomizedYear</a></li><li><a href="global.html#DEEPLINK_BOOTSTRAP_KEY">DEEPLINK_BOOTSTRAP_KEY</a></li><li><a href="global.html#DashboardMainShimmer">DashboardMainShimmer</a></li><li><a href="global.html#DashboardTrans">DashboardTrans</a></li><li><a href="global.html#Dashboardmain">Dashboardmain</a></li><li><a href="global.html#Dashboardmaintwo">Dashboardmaintwo</a></li><li><a href="global.html#DottedButton">DottedButton</a></li><li><a href="global.html#DownloadImage">DownloadImage</a></li><li><a href="global.html#DropDownHeader">DropDownHeader</a></li><li><a href="global.html#DropdownInput">DropdownInput</a></li><li><a href="global.html#DropdownInputs">DropdownInputs</a></li><li><a href="global.html#EmpStatusModal">EmpStatusModal</a></li><li><a href="global.html#EnterOTP">EnterOTP</a></li><li><a href="global.html#ExploreInput">ExploreInput</a></li><li><a href="global.html#ExplorecastComponent">ExplorecastComponent</a></li><li><a href="global.html#ExpolrecastFlatlist">ExpolrecastFlatlist</a></li><li><a href="global.html#ExternalWebView">ExternalWebView</a></li><li><a href="global.html#FeaturedComponent">FeaturedComponent</a></li><li><a href="global.html#FilterModal">FilterModal</a></li><li><a href="global.html#FilterScreen">FilterScreen</a></li><li><a href="global.html#FiltersTopic">FiltersTopic</a></li><li><a href="global.html#FlatListShimmer">FlatListShimmer</a></li><li><a href="global.html#FlipbookComponent">FlipbookComponent</a></li><li><a href="global.html#Fonts">Fonts</a></li><li><a href="global.html#ForgotMPIN">ForgotMPIN</a></li><li><a href="global.html#FullscreenMapScreen">FullscreenMapScreen</a></li><li><a href="global.html#GOOGLE_API_KEY">GOOGLE_API_KEY</a></li><li><a href="global.html#GUEST_PROMPT_KEYS">GUEST_PROMPT_KEYS</a></li><li><a href="global.html#GUEST_REGISTRATION_FLOW_KEY">GUEST_REGISTRATION_FLOW_KEY</a></li><li><a href="global.html#GlobalModal">GlobalModal</a></li><li><a href="global.html#GlobalSearch">GlobalSearch</a></li><li><a href="global.html#GradientButton">GradientButton</a></li><li><a href="global.html#GuestCarouselShimmerComponent">GuestCarouselShimmerComponent</a></li><li><a href="global.html#GuestChipsShimmerComponent">GuestChipsShimmerComponent</a></li><li><a href="global.html#GuestHeroSectionComponent">GuestHeroSectionComponent</a></li><li><a href="global.html#GuestHeroShimmerComponent">GuestHeroShimmerComponent</a></li><li><a href="global.html#GuestHomeHeaderComponent">GuestHomeHeaderComponent</a></li><li><a href="global.html#GuestMarketplaceSectionComponent">GuestMarketplaceSectionComponent</a></li><li><a href="global.html#GuestRequirementsPanelComponent">GuestRequirementsPanelComponent</a></li><li><a href="global.html#GuestRequirementsShimmerComponent">GuestRequirementsShimmerComponent</a></li><li><a href="global.html#GuestSelectionModalsComponent">GuestSelectionModalsComponent</a></li><li><a href="global.html#GuestSpecialitySectionComponent">GuestSpecialitySectionComponent</a></li><li><a href="global.html#GuestUser">GuestUser</a></li><li><a href="global.html#GuestUserContent">GuestUserContent</a></li><li><a href="global.html#GuestUserView">GuestUserView</a></li><li><a href="global.html#HCPSub">HCPSub</a></li><li><a href="global.html#HandleTextInput">HandleTextInput</a></li><li><a href="global.html#HcpContent">HcpContent</a></li><li><a href="global.html#HospitalList">HospitalList</a></li><li><a href="global.html#HtmlTableRenderer">HtmlTableRenderer</a></li><li><a href="global.html#ImagePDF">ImagePDF</a></li><li><a href="global.html#Imagepath">Imagepath</a></li><li><a href="global.html#InfoRowComponent">InfoRowComponent</a></li><li><a href="global.html#InpersonKeydates">InpersonKeydates</a></li><li><a href="global.html#InputField">InputField</a></li><li><a href="global.html#InterestCard">InterestCard</a></li><li><a href="global.html#Internet">Internet</a></li><li><a href="global.html#LicStateTakeShow">LicStateTakeShow</a></li><li><a href="global.html#LiveConferenceSectionComponent">LiveConferenceSectionComponent</a></li><li><a href="global.html#Livecourse">Livecourse</a></li><li><a href="global.html#LocationComponent">LocationComponent</a></li><li><a href="global.html#LoginChangeMail">LoginChangeMail</a></li><li><a href="global.html#LoginMobileChange">LoginMobileChange</a></li><li><a href="global.html#MEMBERSHIP_POINTS">MEMBERSHIP_POINTS</a></li><li><a href="global.html#MOCCertification">MOCCertification</a></li><li><a href="global.html#MandatoryCertificate">MandatoryCertificate</a></li><li><a href="global.html#MapScreen">MapScreen</a></li><li><a href="global.html#MaskField">MaskField</a></li><li><a href="global.html#MembershipBannerComponent">MembershipBannerComponent</a></li><li><a href="global.html#Menu">Menu</a></li><li><a href="global.html#MobileLoginOTP">MobileLoginOTP</a></li><li><a href="global.html#Mytasks">Mytasks</a></li><li><a href="global.html#Noboardfound">Noboardfound</a></li><li><a href="global.html#NonMain">NonMain</a></li><li><a href="global.html#Nonphysicianprofile">Nonphysicianprofile</a></li><li><a href="global.html#OnlineCourse">OnlineCourse</a></li><li><a href="global.html#POPUP_SHOWN_KEY">POPUP_SHOWN_KEY</a></li><li><a href="global.html#PRIME_MEMBERSHIP_SKIPPED_KEY">PRIME_MEMBERSHIP_SKIPPED_KEY</a></li><li><a href="global.html#PageHeader">PageHeader</a></li><li><a href="global.html#PayModalCart">PayModalCart</a></li><li><a href="global.html#PayModalFd">PayModalFd</a></li><li><a href="global.html#PaymentSub">PaymentSub</a></li><li><a href="global.html#PraticingStateComponent">PraticingStateComponent</a></li><li><a href="global.html#PriceSlider">PriceSlider</a></li><li><a href="global.html#PrimeCard">PrimeCard</a></li><li><a href="global.html#PrimeSuccess">PrimeSuccess</a></li><li><a href="global.html#PrivacyPolicy">PrivacyPolicy</a></li><li><a href="global.html#ProfMember">ProfMember</a></li><li><a href="global.html#ProfessionComponent">ProfessionComponent</a></li><li><a href="global.html#ProfessionCourseShimmer">ProfessionCourseShimmer</a></li><li><a href="global.html#ProfessionDropdown">ProfessionDropdown</a></li><li><a href="global.html#ProfessionInPerson">ProfessionInPerson</a></li><li><a href="global.html#ProfessionModal">ProfessionModal</a></li><li><a href="global.html#ProfileMain">ProfileMain</a></li><li><a href="global.html#ProfileSpeciality">ProfileSpeciality</a></li><li><a href="global.html#ProgressBarLine">ProgressBarLine</a></li><li><a href="global.html#RefundHtml">RefundHtml</a></li><li><a href="global.html#RequirementCard">RequirementCard</a></li><li><a href="global.html#RestProfession">RestProfession</a></li><li><a href="global.html#ResumeDash">ResumeDash</a></li><li><a href="global.html#RingIndicatorWave">RingIndicatorWave</a></li><li><a href="global.html#SIZE">SIZE</a></li><li><a href="global.html#ScheduleCourse">ScheduleCourse</a></li><li><a href="global.html#SearchScreen">SearchScreen</a></li><li><a href="global.html#SectionTitleComponent">SectionTitleComponent</a></li><li><a href="global.html#Separator">Separator</a></li><li><a href="global.html#SepcialityComponent">SepcialityComponent</a></li><li><a href="global.html#SignUp">SignUp</a></li><li><a href="global.html#Sizes">Sizes</a></li><li><a href="global.html#Sliders">Sliders</a></li><li><a href="global.html#SpecialityComponent">SpecialityComponent</a></li><li><a href="global.html#SpecialityCourseSlide">SpecialityCourseSlide</a></li><li><a href="global.html#StateCertificate">StateCertificate</a></li><li><a href="global.html#StateCourse">StateCourse</a></li><li><a href="global.html#StateDataComponent">StateDataComponent</a></li><li><a href="global.html#StateModa">StateModa</a></li><li><a href="global.html#StateRequiredCast">StateRequiredCast</a></li><li><a href="global.html#StateRequiredCourse">StateRequiredCourse</a></li><li><a href="global.html#StateSpecification">StateSpecification</a></li><li><a href="global.html#StateVaultModal">StateVaultModal</a></li><li><a href="global.html#Statevaultcomponet">Statevaultcomponet</a></li><li><a href="global.html#StatewebcastAcc">StatewebcastAcc</a></li><li><a href="global.html#StatewebcastAddTocart">StatewebcastAddTocart</a></li><li><a href="global.html#StatewebcastComponent">StatewebcastComponent</a></li><li><a href="global.html#StatewebcastFaculty">StatewebcastFaculty</a></li><li><a href="global.html#StatewebcastOverview">StatewebcastOverview</a></li><li><a href="global.html#StatewebcastPratcing">StatewebcastPratcing</a></li><li><a href="global.html#StatewebcastRefund">StatewebcastRefund</a></li><li><a href="global.html#StatewebcastReviews">StatewebcastReviews</a></li><li><a href="global.html#StatewebcastSpeciality">StatewebcastSpeciality</a></li><li><a href="global.html#StatewebcastText">StatewebcastText</a></li><li><a href="global.html#StatsGridComponent">StatsGridComponent</a></li><li><a href="global.html#Survey">Survey</a></li><li><a href="global.html#TagChipComponent">TagChipComponent</a></li><li><a href="global.html#TaskCardItem">TaskCardItem</a></li><li><a href="global.html#TermsAndConditions">TermsAndConditions</a></li><li><a href="global.html#TextFieldIn">TextFieldIn</a></li><li><a href="global.html#TextInputSingle">TextInputSingle</a></li><li><a href="global.html#TextModal">TextModal</a></li><li><a href="global.html#TopicCast">TopicCast</a></li><li><a href="global.html#TravelMode">TravelMode</a></li><li><a href="global.html#UserSub">UserSub</a></li><li><a href="global.html#VoiceSearchBar">VoiceSearchBar</a></li><li><a href="global.html#_autoOTPSentForEmail">_autoOTPSentForEmail</a></li><li><a href="global.html#_loginOTPSentForEmail">_loginOTPSentForEmail</a></li><li><a href="global.html#_mobileOTPSentForPhone">_mobileOTPSentForPhone</a></li><li><a href="global.html#_splashMobileOTPSentForPhone">_splashMobileOTPSentForPhone</a></li><li><a href="global.html#buildProfessionLabel">buildProfessionLabel</a></li><li><a href="global.html#callWithTokenRefresh">callWithTokenRefresh</a></li><li><a href="global.html#chunkArray">chunkArray</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#doRefreshToken">doRefreshToken</a></li><li><a href="global.html#dommyResult">dommyResult</a></li><li><a href="global.html#fetchLatestAndroidVersion">fetchLatestAndroidVersion</a></li><li><a href="global.html#fetchLatestIOSVersion">fetchLatestIOSVersion</a></li><li><a href="global.html#firstArray">firstArray</a></li><li><a href="global.html#formatGuestNumber">formatGuestNumber</a></li><li><a href="global.html#formatGuestNumericText">formatGuestNumericText</a></li><li><a href="global.html#getBannerUrl">getBannerUrl</a></li><li><a href="global.html#getCmeLabel">getCmeLabel</a></li><li><a href="global.html#getConferenceTypeText">getConferenceTypeText</a></li><li><a href="global.html#getCountValue">getCountValue</a></li><li><a href="global.html#getDateRange">getDateRange</a></li><li><a href="global.html#getDetailPageUrl">getDetailPageUrl</a></li><li><a href="global.html#getDetailSlug">getDetailSlug</a></li><li><a href="global.html#getDynamicCourseSections">getDynamicCourseSections</a></li><li><a href="global.html#getFreeEventTypeIcon">getFreeEventTypeIcon</a></li><li><a href="global.html#getHtmlButtonText">getHtmlButtonText</a></li><li><a href="global.html#getHtmlLocation">getHtmlLocation</a></li><li><a href="global.html#getHtmlTitle">getHtmlTitle</a></li><li><a href="global.html#getImageSource">getImageSource</a></li><li><a href="global.html#getInitials">getInitials</a></li><li><a href="global.html#getLabel">getLabel</a></li><li><a href="global.html#getPairedCourseSections">getPairedCourseSections</a></li><li><a href="global.html#getPriceLabel">getPriceLabel</a></li><li><a href="global.html#getPriceText">getPriceText</a></li><li><a href="global.html#getSectionGroupKey">getSectionGroupKey</a></li><li><a href="global.html#getSpecialityLabel">getSpecialityLabel</a></li><li><a href="global.html#getStateCode">getStateCode</a></li><li><a href="global.html#getStateId">getStateId</a></li><li><a href="global.html#getStateName">getStateName</a></li><li><a href="global.html#getStateSlug">getStateSlug</a></li><li><a href="global.html#getText">getText</a></li><li><a href="global.html#isNewerVersion">isNewerVersion</a></li><li><a href="global.html#isTokenExpired">isTokenExpired</a></li><li><a href="global.html#matchGroup">matchGroup</a></li><li><a href="global.html#normalizeDisplayCme">normalizeDisplayCme</a></li><li><a href="global.html#normalizeProfessionHandle">normalizeProfessionHandle</a></li><li><a href="global.html#normalizeSpecialities">normalizeSpecialities</a></li><li><a href="global.html#normalizeVideoSource">normalizeVideoSource</a></li><li><a href="global.html#parseBannerMeta">parseBannerMeta</a></li><li><a href="global.html#parseExpiryDate">parseExpiryDate</a></li><li><a href="global.html#parseHtmlContent">parseHtmlContent</a></li><li><a href="global.html#persistEmailVerifiedStatus">persistEmailVerifiedStatus</a></li><li><a href="global.html#professionMapping">professionMapping</a></li><li><a href="global.html#renderSection">renderSection</a></li><li><a href="global.html#scale">scale</a></li><li><a href="global.html#sliderData">sliderData</a></li><li><a href="global.html#splitMetaLine">splitMetaLine</a></li><li><a href="global.html#starStyle">starStyle</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#status1">status1</a></li><li><a href="global.html#status2">status2</a></li><li><a href="global.html#status3">status3</a></li><li><a href="global.html#statusd">statusd</a></li><li><a href="global.html#stripHtml">stripHtml</a></li><li><a href="global.html#subscription">subscription</a></li><li><a href="global.html#useGuestUserContentData">useGuestUserContentData</a></li><li><a href="global.html#wrongRenderData">wrongRenderData</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Jun 29 2026 12:44:59 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

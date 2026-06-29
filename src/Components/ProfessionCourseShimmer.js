@@ -4,6 +4,14 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import normalize from '../Utils/Helpers/Dimen';
 
 /**
+ * Reusable ProfessionCourseShimmer component.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @returns {JSX.Element}
+ */
+
+/**
  * ProfessionCourseShimmer
  * Mimics the exact card layout rendered by RestProfession's FlatList items.
  * Show this while CME/cmeCourseRequest is in-flight.
