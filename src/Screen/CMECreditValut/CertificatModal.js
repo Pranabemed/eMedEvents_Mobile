@@ -1,3 +1,7 @@
+/**
+ * Certificat modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, CertificatModal, detectFileType, handleDelete, removeIdFromState, wrapDataInDoubleArray, hanldeState, boardTake, handlePress.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -18,11 +22,50 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Certificat modal component.
+ * @param {Object} props - Input object.
+ * @param {*} props.isNonUsaUser - Nested property value.
+ * @param {*} props.takeboard - Nested property value.
+ * @param {*} props.setStateget - Nested property value.
+ * @param {*} props.stateget - Nested property value.
+ * @param {*} props.statename - Nested property value.
+ * @param {*} props.fakedata - Nested property value.
+ * @param {*} props.dataFull - Nested property value.
+ * @param {*} props.setDataFull - Nested property value.
+ * @param {*} props.deleteIndex - Nested property value.
+ * @param {*} props.setDeleteIndex - Nested property value.
+ * @param {*} props.CreditVaultReducer - Nested property value.
+ * @param {*} props.dispatch - Nested property value.
+ * @param {*} props.certificatefecthed - Nested property value.
+ * @param {*} props.setCertificatefecthed - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @param {*} props.styles - Nested property value.
+ * @param {*} props.creditModal - Nested property value.
+ * @param {*} props.setCreditModal - Nested property value.
+ * @param {*} props.dommyData - Nested property value.
+ * @param {*} props.particular - Nested property value.
+ * @param {*} props.setParticular - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename,fakedata, dataFull, setDataFull, deleteIndex, setDeleteIndex, CreditVaultReducer, dispatch, certificatefecthed, setCertificatefecthed, navigation, styles, creditModal, setCreditModal, dommyData, particular, setParticular }) => {
     console.log(particular,stateget, "particular>>>>>>>>>>>", certificatefecthed, deleteIndex, dataFull,statename);
-    function detectFileType(file) {
+        /**
+ * Detect file type helper.
+ * @param {*} file - Input value.
+ * @returns {void}
+ */
+function detectFileType(file) {
         if (!file?.certificate || file?.certificate == null) {
-            return Alert.alert('!eMedEvents', 'Application error: png or pdf  not found .', [{ text: "Ok", onPress: () => { setCreditModal(false) } }, { text: "Close", onPress: () => { setCreditModal(false) } }]);
+            return Alert.alert('!eMedEvents', 'Application error: png or pdf  not found .', [{ text: "Ok",             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { setCreditModal(false) } }, { text: "Close",             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { setCreditModal(false) } }]);
         }
         const fileName = file?.certificate;
         if (fileName.toLowerCase().endsWith('.png')) {
@@ -35,7 +78,12 @@ const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename
             return 'unknown';
         }
     }
-    const handleDelete = (dataid) => {
+        /**
+ * Handles delete.
+ * @param {*} dataid - Input value.
+ * @returns {void}
+ */
+const handleDelete = (dataid) => {
         console.log('Data ID to delete:', dataid, 'Type:', typeof dataid);
         console.log('Current Data Full:', dataFull);
         if (!Array.isArray(dataFull) || dataFull[0]?.length === 0) {
@@ -55,7 +103,12 @@ const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename
             console.log('Item not found');
         }
     };
-    const removeIdFromState = (idToRemove) => {
+        /**
+ * Remove id from state utility.
+ * @param {*} idToRemove - Input value.
+ * @returns {void}
+ */
+const removeIdFromState = (idToRemove) => {
         const updatedState = { ...stateget };
         Object.keys(updatedState).forEach((yearKey) => {
           const yearData = updatedState[yearKey];
@@ -68,12 +121,21 @@ const CertificatModal = ({isNonUsaUser, takeboard,setStateget,stateget,statename
     
         setStateget(updatedState); 
       };
-    const wrapDataInDoubleArray = (certificates) => {
+        /**
+ * Wrap data in double array utility.
+ * @param {*} certificates - Input value.
+ * @returns {Array}
+ */
+const wrapDataInDoubleArray = (certificates) => {
         if (certificates) {
             return [[certificates]];
         }
         return [[]];
     };
+/**
+ * Hanlde state utility.
+ * @returns {void}
+ */
 const hanldeState =()=>{
     if (statename) {
         let obj = {
@@ -83,6 +145,10 @@ const hanldeState =()=>{
         dispatch(stateReportingRequest(obj))
     }
 }
+/**
+ * Board take utility.
+ * @returns {void}
+ */
 const boardTake=()=>{
     dispatch(boardvaultRequest({}))
 }
@@ -147,7 +213,12 @@ const boardTake=()=>{
                         keyExtractor={item => item.id.toString()}
                         data={particular?.edit_delete_allowed == '1' ?  dommyData :fakedata}
                         renderItem={({ item, index }) => {
-                            const handlePress = (data) => {
+                                                        /**
+ * Handles press.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const handlePress = (data) => {
                                 console.log(particular, "id=====122", data)
                                 // setCreditModal(false);
                                 if (item?.id == 0) {
@@ -158,7 +229,11 @@ const boardTake=()=>{
                                     setCreditModal(false);
                                 } else if (item?.id == 2) {
                                     Alert.alert('eMedEvents', 'Are you sure want to delete this certficate', [{
-                                        text: "Yes", onPress: () => {
+                                        text: "Yes",                                         /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                             setDeleteIndex(particular?.id);
                                             setCreditModal(false);
                                             if (stateget) {
@@ -171,7 +246,11 @@ const boardTake=()=>{
                                             }
                                             dispatch(deletevaultRequest(obj))
                                         }
-                                    }, { text: "No", onPress: () => { console.log("jello") } }])
+                                    }, { text: "No",                                     /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { console.log("jello") } }])
                                 }
 
                             };
@@ -202,4 +281,9 @@ const boardTake=()=>{
     )
 }
 
+/**
+ * Certificat modal default export.
+ *
+ * @returns {*}
+ */
 export default CertificatModal 

@@ -333,4 +333,9 @@ const GuestUserContent = ({ guest }) => {
   );
 };
 
+/**
+ * Guest user content default export.
+ *
+ * @returns {*}
+ */
 export default GuestUserContent;

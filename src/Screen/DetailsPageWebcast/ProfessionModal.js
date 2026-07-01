@@ -1,3 +1,7 @@
+/**
+ * Profession modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfessionModal, handlePress.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -55,7 +59,12 @@ const ProfessionModal = ({setProfessionstype,profesionstype,professionFetch,prof
                         keyExtractor={item => item.id.toString()}
                         data={dommyData}
                         renderItem={({ item, index }) => {
-                            const handlePress = (data) => {
+                                                        /**
+ * Handles press.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const handlePress = (data) => {
                                 console.log(item,)
                                 setParticular(item?.name);
                                 setProfessions(item?.profession)
@@ -90,4 +99,9 @@ const ProfessionModal = ({setProfessionstype,profesionstype,professionFetch,prof
     )
 }
 
+/**
+ * Profession modal default export.
+ *
+ * @returns {*}
+ */
 export default ProfessionModal 

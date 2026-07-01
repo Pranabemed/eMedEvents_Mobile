@@ -1,5 +1,28 @@
+/**
+ * Guest reducer Redux slice module. Manages application state and exposes action creators for guest. Exported members: initialState, GuestSlice.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
 
+/**
+ * Guest slice state shape.
+ *
+ * @typedef {Object} GuestState
+ * @property {string} status
+ * @property {string|null} token
+ * @property {boolean} isLoading
+ * @property {Record<string, unknown>} HomelistResponse
+ * @property {Record<string, unknown>} AboutusResponse
+ * @property {Record<string, unknown>} StateBundleLandingResponse
+ * @property {boolean} stateBundleLandingLoading
+ * @property {Record<string, unknown>} professionSaveResponse
+ * @property {string|undefined} error
+ */
+/**
+ * Initial state constant.
+ *
+ * @type {GuestState}
+ */
 const initialState = {
   status: '',
   token: null,
@@ -11,61 +34,138 @@ const initialState = {
   professionSaveResponse:{},
 };
 
+/**
+ * Guest slice value.
+ *
+ * @type {import('@reduxjs/toolkit').Slice<GuestState>}
+ */
 const GuestSlice = createSlice({
   name: 'Guest',
   initialState,
   reducers: {
-    HomelistRequest(state, action) {
+        /**
+ * Homelist request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+HomelistRequest(state, action) {
       state.status = action.type;
     },
-    HomelistSuccess(state, action) {
+        /**
+ * Homelist success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+HomelistSuccess(state, action) {
       state.HomelistResponse = action.payload;
       state.status = action.type;
     },
-    HomelistFailure(state, action) {
+        /**
+ * Homelist failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+HomelistFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    AboutusRequest(state, action) {
+        /**
+ * Aboutus request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AboutusRequest(state, action) {
       state.status = action.type;
     },
-    AboutusSuccess(state, action) {
+        /**
+ * Aboutus success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AboutusSuccess(state, action) {
       state.AboutusResponse = action.payload;
       state.status = action.type;
     },
-    AboutusFailure(state, action) {
+        /**
+ * Aboutus failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AboutusFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    StateBundleLandingRequest(state, action) {
+        /**
+ * State bundle landing request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StateBundleLandingRequest(state, action) {
       state.status = action.type;
       state.isLoading = true;
       state.stateBundleLandingLoading = true;
       state.StateBundleLandingResponse = {};
     },
-    StateBundleLandingSuccess(state, action) {
+        /**
+ * State bundle landing success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StateBundleLandingSuccess(state, action) {
       state.StateBundleLandingResponse = action.payload;
       state.status = action.type;
       state.isLoading = false;
       state.stateBundleLandingLoading = false;
     },
-    StateBundleLandingFailure(state, action) {
+        /**
+ * State bundle landing failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StateBundleLandingFailure(state, action) {
       state.status = action.type;
       state.error = action.error || action.payload;
       state.isLoading = false;
       state.stateBundleLandingLoading = false;
     },
-    professionSaveRequest(state, action) {
+        /**
+ * Reducer logic for profession save request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionSaveRequest(state, action) {
       state.status = action.type;
       state.isLoading = true;
       state.professionSaveResponse = {};
     },
-    professionSaveSuccess(state, action) {
+        /**
+ * Reducer logic for profession save success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionSaveSuccess(state, action) {
       state.professionSaveResponse = action.payload;
       state.status = action.type;
       state.isLoading = false;
     },
-    professionSaveFailure(state, action) {
+        /**
+ * Reducer logic for profession save failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionSaveFailure(state, action) {
       state.status = action.type;
       state.error = action.error || action.payload;
       state.isLoading = false;
@@ -87,4 +187,9 @@ export const {
   professionSaveRequest,
   professionSaveSuccess,
 } = GuestSlice.actions;
+/**
+ * Guest reducer default export.
+ *
+ * @returns {*}
+ */
 export default GuestSlice.reducer;

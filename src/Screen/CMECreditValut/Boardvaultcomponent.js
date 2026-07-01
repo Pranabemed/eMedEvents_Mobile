@@ -1,3 +1,7 @@
+/**
+ * Boardvaultcomponent screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Boardvaultcomponent, checkProfile, cleanNumber, stylefalse.
+ */
+
 import { View, Text, TouchableOpacity, Linking, ActivityIndicator, StyleSheet, Image, Animated, Easing, Platform, Pressable } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,7 +30,13 @@ import Search from 'react-native-vector-icons/AntDesign';
 const Boardvaultcomponent = ({ takeID, handleBoardname, lengthcheck, certificateboard, setCertificatebaord, setBoardname, setBoardexpiredate, boardexpiredate, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, dispatch, hideCertificateAction }) => {
     const [currentProfile, setCurrentProfile] = useState('');
     useEffect(() => {
-        const checkProfile = async () => {
+                /**
+ * Check profile utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkProfile = async () => {
             try {
                 const profile = await AsyncStorage.getItem("activeProfile");
                 setCurrentProfile(profile || '');
@@ -39,7 +49,12 @@ const Boardvaultcomponent = ({ takeID, handleBoardname, lengthcheck, certificate
         }
     }, [isfocused]);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -313,7 +328,16 @@ const Boardvaultcomponent = ({ takeID, handleBoardname, lengthcheck, certificate
         </View>
     )
 }
+/**
+ * Boardvaultcomponent default export.
+ *
+ * @returns {*}
+ */
 export default Boardvaultcomponent
+/**
+ * Stylefalse value.
+ * @returns {*}
+ */
 const stylefalse = StyleSheet.create({
     containercontex: {
         justifyContent: 'center',

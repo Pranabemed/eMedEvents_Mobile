@@ -1,3 +1,7 @@
+/**
+ * Catlog download screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CatlogDownload, handleLink, showPDF, openFileViewer, handlePress.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Modal from 'react-native-modal';
@@ -15,9 +19,20 @@ import FileViewer from "react-native-file-viewer";
  * @returns {JSX.Element}
  */
 const CatlogDownload = ({setDownlink,downlink,downData, setLoadingdown,loadingdown,pdfUri,setPdfUri}) => {
-  const handleLink =(link)=>{
+    /**
+ * Handles link.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLink =(link)=>{
     if (link) {
-        const showPDF = async () => {
+                /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
             setLoadingdown(true);
             try {
                 const url = link?.Path;
@@ -44,7 +59,13 @@ const CatlogDownload = ({setDownlink,downlink,downData, setLoadingdown,loadingdo
   }
   useEffect(() => {
     if (pdfUri) {
-        const openFileViewer = async () => {
+                /**
+ * Open file viewer utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewer = async () => {
             try {
                 console.log('Opening file viewer for:', pdfUri);
                 await FileViewer.open(pdfUri);
@@ -90,7 +111,12 @@ const CatlogDownload = ({setDownlink,downlink,downData, setLoadingdown,loadingdo
                         keyExtractor={item => item.id.toString()}
                         data={downData}
                         renderItem={({ item, index }) => {
-                            const handlePress = (data) => {
+                                                        /**
+ * Handles press.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const handlePress = (data) => {
                                 handleLink(data);
                                 setDownlink(false);
                             };
@@ -117,4 +143,9 @@ const CatlogDownload = ({setDownlink,downlink,downData, setLoadingdown,loadingdo
     )
 }
 
+/**
+ * Catlog download default export.
+ *
+ * @returns {*}
+ */
 export default CatlogDownload 

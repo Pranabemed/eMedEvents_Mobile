@@ -1,3 +1,7 @@
+/**
+ * Profile modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: statusd, ProfileModal, deletLic, detectFileType, removeIdFromState, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform, StyleSheet } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -18,6 +22,21 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
  * @returns {JSX.Element}
  */
 let statusd = "";
+/**
+ * Profile modal component.
+ * @param {Object} props - Input object.
+ * @param {*} props.setTicktry - Nested property value.
+ * @param {*} props.board - Nested property value.
+ * @param {*} props.main - Nested property value.
+ * @param {*} props.setPaginatedData - Nested property value.
+ * @param {*} props.paginatedData - Nested property value.
+ * @param {*} props.profiletakeshow - Nested property value.
+ * @param {*} props.setProfiletakeshow - Nested property value.
+ * @param {*} props.remove - Nested property value.
+ * @param {*} props.detectdata - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @returns {JSX.Element}
+ */
 const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData, profiletakeshow, setProfiletakeshow, remove, detectdata, nav }) => {
     const profileData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }, { id: 2, name: "Delete", Icon: "delete" }];
     const deletTake = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }];
@@ -27,7 +46,11 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
     console.log(detectdata, "detectdata--------------", paginatedData);
     const dispatch = useDispatch();
     const ProfileReducer = useSelector(state => state.ProfileReducer);
-    const deletLic = () => {
+        /**
+ * Delet lic utility.
+ * @returns {void}
+ */
+const deletLic = () => {
         let obj = {
             "id": detectdata?.id
         }
@@ -40,9 +63,23 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
             })
     }
 
-    function detectFileType() {
+        /**
+ * Detect file type utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function detectFileType() {
         if (!main) {
-            return Alert.alert('!eMedEvents', 'Application error: png or pdf  not found .', [{ text: "Ok", onPress: () => { setCreditModal(false) } }, { text: "Close", onPress: () => { setCreditModal(false) } }]);
+            return Alert.alert('!eMedEvents', 'Application error: png or pdf  not found .', [{ text: "Ok",             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { setCreditModal(false) } }, { text: "Close",             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { setCreditModal(false) } }]);
         }
         const fileName = detectdata?.license_file ? detectdata?.license_file : detectdata?.certification_file;
         console.log(fileName, "filename=======123",fileName.endsWith('.jpg'), main)
@@ -107,7 +144,11 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
                 break;
         }
     }
-    const removeIdFromState = () => {
+        /**
+ * Remove id from state utility.
+ * @returns {void}
+ */
+const removeIdFromState = () => {
         const updatedRemvoe = paginatedData.filter(item => item.id !== detectdata?.id);
         setPaginatedData(updatedRemvoe);
     };
@@ -316,11 +357,19 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
                                             nav.navigate("AddCertificate", { profiledet: detectdata })
                                         } else if (item?.id == 2) {
                                             Alert.alert("eMedEvents", "Are you sure you want to Delete this ?", [{
-                                                text: "No", onPress: () => {
+                                                text: "No",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     removeIdFromState();
                                                     setProfiletakeshow(!profiletakeshow);
                                                 }, style: "default"
-                                            }, { text: "Yes", onPress: () => { deletLic(); }, style: "default" }])
+                                            }, { text: "Yes",                                             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { deletLic(); }, style: "default" }])
                                         } else if (item?.id == 1) {
                                             detectFileType();
                                         } else {
@@ -360,11 +409,19 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
                                             nav.navigate("AddLicense", { profiledet: detectdata })
                                         } else if (item?.id == 2) {
                                             Alert.alert("eMedEvents", "Are you sure you want to Delete this ?", [{
-                                                text: "No", onPress: () => {
+                                                text: "No",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     removeIdFromState();
                                                     setProfiletakeshow(!profiletakeshow);
                                                 }, style: "default"
-                                            }, { text: "Yes", onPress: () => { deletLic(); }, style: "default" }])
+                                            }, { text: "Yes",                                             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { deletLic(); }, style: "default" }])
                                         } else if (item?.id == 1) {
                                             detectFileType();
                                             setProfiletakeshow(!profiletakeshow);
@@ -391,7 +448,16 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
     )
 }
 
+/**
+ * Profile modal default export.
+ *
+ * @returns {*}
+ */
 export default ProfileModal
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

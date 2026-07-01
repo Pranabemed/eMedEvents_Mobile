@@ -1,3 +1,7 @@
+/**
+ * Non main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: NonMain, handleUrl, titlhandleUrl, downCredit, fullAction, handleLinkst, showPDF, openFileViewerst, fetchHandle, onBackPress, courserenderData, handlePress, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Platform, BackHandler } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import Fonts from '../../Themes/Fonts';
@@ -46,7 +50,11 @@ const NonMain = (props) => {
     const Fulldata = (needReview == 1 && certificate) ? threeDotData :
         (needReview == 1 && !certificate) ? duplicateDataReview :
             (needReview == 0 && certificate) ? duplicateData : null;
-    const handleUrl = () => {
+        /**
+ * Handles url.
+ * @returns {void}
+ */
+const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", onlineName);
@@ -54,7 +62,12 @@ const NonMain = (props) => {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.myact?.creditData } })
         }
     }
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make);
@@ -62,7 +75,11 @@ const NonMain = (props) => {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: props?.route?.params?.myact?.creditData } })
         }
     }
-    const downCredit = () => {
+        /**
+ * Down credit utility.
+ * @returns {void}
+ */
+const downCredit = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -73,7 +90,12 @@ const NonMain = (props) => {
         );
 
     }
-    const fullAction = (dataItem) => {
+        /**
+ * Full action utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", dataItem);
@@ -89,9 +111,20 @@ const NonMain = (props) => {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: props?.route?.params?.myact?.creditData } })
         }
     }
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
@@ -121,7 +154,13 @@ const NonMain = (props) => {
 
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     console.log('Opening file viewer for:', pdfUrist);
                     await FileViewer.open(pdfUrist);
@@ -133,7 +172,11 @@ const NonMain = (props) => {
             openFileViewerst();
         }
     }, [pdfUrist]);
-    const fetchHandle = () => {
+        /**
+ * Fetch handle utility.
+ * @returns {void}
+ */
+const fetchHandle = () => {
         let obj = {
             "pageno": 0,
             "limit": 9,
@@ -154,7 +197,11 @@ const NonMain = (props) => {
         }
     }, [props?.route?.params?.myact?.recnt])
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             downCredit();
             return true;
         };
@@ -166,7 +213,14 @@ const NonMain = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const courserenderData = ({ item, index }) => {
+        /**
+ * Courserender data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderData = ({ item, index }) => {
         console.log(item, "item-=---------")
         return (
             <View>
@@ -383,7 +437,11 @@ const NonMain = (props) => {
                                     keyExtractor={item => item.id.toString()}
                                     data={Fulldata}
                                     renderItem={({ item }) => {
-                                        const handlePress = () => {
+                                                                                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                             setModalview(false);
                                             if (item?.id === 1) {
                                                 if (certificate) {
@@ -423,7 +481,16 @@ const NonMain = (props) => {
     );
 }
 
+/**
+ * Non main default export.
+ *
+ * @returns {*}
+ */
 export default NonMain;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

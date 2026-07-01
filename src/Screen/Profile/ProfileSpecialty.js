@@ -1,3 +1,7 @@
+/**
+ * Profile specialty screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfileSpeciality, weekFilterProfession, handlePress.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -21,11 +25,21 @@ const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepi
     console.log(selectedSpecialities, "selectedSpecialitieqwwww12233s--------", formData, previousSpec)
     const [checked, setChecked] = useState(false);
     const [showLoader,setShowLoader] = useState(false);
-    const weekFilterProfession = ({ item }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item }) => {
         const isSelected = selectedSpecialities.some(speciality => speciality.id === item?.id);
         const isPreviouslySelected = formData?.speciality_ids?.some(id => id === item.id)
         console.log("isPreviouslySelected=====", formData);
-        const handlePress = () => {
+                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
             setFormData(prevFormData => {
                 const currentSelections = prevFormData?.speciality_ids || [];
                 const currentSpecialities = prevFormData?.speciality
@@ -40,12 +54,20 @@ const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepi
                 const isCurrentlySelected = currentSelections.includes(item.id);
                 if (currentSelections.length >= 5 && controlled !== "close") {
                     Alert.alert("eMedEvents", "You can select upto 5 specialities.", [{
-                        text: "Cancel", onPress: () => {
+                        text: "Cancel",                         /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                             setstatepicker(!statepicker);
                             setSearchState("")
                         }, style: "default"
                     }, {
-                        text: "Save", onPress: () => {
+                        text: "Save",                         /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                             setstatepicker(!statepicker);
                             setSearchState("")
                         }, style: "default"
@@ -255,4 +277,9 @@ const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepi
     )
 }
 
+/**
+ * Profile specialty default export.
+ *
+ * @returns {*}
+ */
 export default ProfileSpeciality

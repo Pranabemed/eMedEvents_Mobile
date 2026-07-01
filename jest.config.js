@@ -1,3 +1,7 @@
+/**
+ * Jest.config module. Contains application logic, configuration, or shared helpers.
+ */
+
 module.exports = {
   preset: 'react-native',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],

@@ -1,3 +1,8 @@
+/**
+ * Specialized data default export.
+ *
+ * @returns {*}
+ */
 export default code = [
     {
       name: 'United States',

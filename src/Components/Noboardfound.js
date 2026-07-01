@@ -1,3 +1,7 @@
+/**
+ * Noboardfound reusable component module. Provides a React Native UI building block used across screens. Exported members: Noboardfound, styles.
+ */
+
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
 import React from 'react'
 import Imagepath from '../Themes/Imagepath';
@@ -49,6 +53,10 @@ const Noboardfound = ({navigation}) => {
         </View>
     )
 }
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     containercontex: {
         justifyContent: 'center',
@@ -136,4 +144,9 @@ const styles = StyleSheet.create({
         resizeMode: 'contain',
     },
 });
+/**
+ * Noboardfound default export.
+ *
+ * @returns {*}
+ */
 export default Noboardfound

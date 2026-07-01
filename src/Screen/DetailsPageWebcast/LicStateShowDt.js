@@ -1,4 +1,8 @@
 
+/**
+ * Lic state show dt screen module. Renders a React Native screen or a screen-scoped support component. Exported members: LicStateTakeShow, weekFilterProfessionLic, handleBackPress.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, Platform, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -26,6 +30,12 @@ const LicStateTakeShow = ({licstatepratice,setSearchpraticelic,activeIndexslic, 
                 
                         return () => clearTimeout(timeout);
                     }, []);
+/**
+ * Week filter profession lic utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
 const weekFilterProfessionLic = ({ item}) => {
     return (
         <View style={{justifyContent:"center",alignItems:"center"}}>
@@ -68,6 +78,10 @@ const weekFilterProfessionLic = ({ item}) => {
             </View>
     );
 };
+/**
+ * Handles back press.
+ * @returns {void}
+ */
 const handleBackPress = () => {
         setLicstatepratice(!licstatepratice);
         setSearchpraticelic("");
@@ -161,4 +175,9 @@ const handleBackPress = () => {
     )
 }
 
+/**
+ * Lic state show dt default export.
+ *
+ * @returns {*}
+ */
 export default LicStateTakeShow

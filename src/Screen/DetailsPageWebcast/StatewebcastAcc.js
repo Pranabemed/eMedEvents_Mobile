@@ -1,3 +1,7 @@
+/**
+ * Statewebcast acc screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastAcc.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -100,4 +104,9 @@ const StatewebcastAcc = ({ width, acc_source, expandedacc, webcastdeatils, toggl
     )
 }
 
+/**
+ * Statewebcast acc default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastAcc

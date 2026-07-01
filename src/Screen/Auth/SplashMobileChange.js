@@ -1,3 +1,7 @@
+/**
+ * Splash mobile change screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, SplashMobileChange, handleMobilNOchange, finalBack, formatPhoneNumber, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, Animated, Easing, TextInput, Image } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -23,12 +27,21 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Splash mobile change component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const SplashMobileChange = (props) => {
     const [phone, setPhone] = useState("");
       const [mobileHd, setMobileHd] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-    const handleMobilNOchange = () => {
+        /**
+ * Handles mobil nochange.
+ * @returns {void}
+ */
+const handleMobilNOchange = () => {
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
@@ -86,12 +99,21 @@ const SplashMobileChange = (props) => {
                 break;
         }
     }
-    const finalBack = () => {
+        /**
+ * Final back utility.
+ * @returns {void}
+ */
+const finalBack = () => {
         const getPhCdSent = props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.Newphone?.phonecode || props?.route?.params?.Newphone?.phonecode || props?.route?.params?.Newphone?.PhoneCdO;
         const wholeNo = props?.route?.params?.Newphone?.phonoCd?.nationalNumber || props?.route?.params?.Newphone?.Newphone?.validPh || props?.route?.params?.Newphone?.Newphone;
         props.navigation.navigate("SplashMobile", { Newphone: { phoneCode:`${getPhCdSent}${wholeNo}`, allNo: `${getPhCdSent}${wholeNo}`, "phone": phone ? phone : props?.route?.params?.Newphone?.validPh, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: `${getPhCdSent}${phone}` } })
     }
-    const formatPhoneNumber = (input) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -212,6 +234,10 @@ const SplashMobileChange = (props) => {
     );
 };
 
+/**
+ * Styles object.
+ * @returns {Object}
+ */
 const styles = {
     headerContainer: {
         justifyContent: "center",
@@ -249,4 +275,9 @@ const styles = {
     },
 };
 
+/**
+ * Splash mobile change default export.
+ *
+ * @returns {*}
+ */
 export default SplashMobileChange;

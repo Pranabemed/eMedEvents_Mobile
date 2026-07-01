@@ -43,7 +43,12 @@ import { formatGuestNumber, formatGuestNumericText, getText } from './guestUserC
  * Error Handling:
  * Handles nullish input through safe string conversion.
  */
-export const stripHtml = value =>
+export /**
+ * Strip html utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const stripHtml = value =>
   String(value || '')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
@@ -76,7 +81,13 @@ export const stripHtml = value =>
  * Error Handling:
  * Returns null when regex does not match.
  */
-export const matchGroup = (html, regex) => {
+export /**
+ * Match group utility.
+ * @param {*} html - Input value.
+ * @param {*} regex - Input value.
+ * @returns {*}
+ */
+const matchGroup = (html, regex) => {
   const match = html.match(regex);
   return match ? stripHtml(match[1]) : null;
 };
@@ -105,7 +116,12 @@ export const matchGroup = (html, regex) => {
  * Error Handling:
  * Returns empty string when no valid URL exists.
  */
-export const getBannerUrl = item => {
+export /**
+ * Returns banner url.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getBannerUrl = item => {
   const rawUrl =
     item?.banner_url ||
     item?.bannerUrl ||
@@ -153,7 +169,12 @@ export const getBannerUrl = item => {
  * Error Handling:
  * Returns empty string when no URL is available.
  */
-export const getDetailPageUrl = item =>
+export /**
+ * Returns detail page url.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getDetailPageUrl = item =>
   getText(
     item?.detailpage_url,
     item?.detailPageUrl,
@@ -188,7 +209,12 @@ export const getDetailPageUrl = item =>
  * Error Handling:
  * Returns empty string when no date data exists.
  */
-export const getDateRange = item => {
+export /**
+ * Returns date range.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getDateRange = item => {
   const formatted = FormatDateZone(
     item?.startdate || item?.startDate,
     item?.enddate || item?.endDate || item?.endate,
@@ -221,7 +247,12 @@ export const getDateRange = item => {
  * Error Handling:
  * Returns empty string when credit details do not exist.
  */
-export const getCmeLabel = item => {
+export /**
+ * Returns cme label.
+ * @param {*} item - Input value.
+ * @returns {string}
+ */
+const getCmeLabel = item => {
   if (item?.display_cme) {
     const normalizedDisplayCme = String(item.display_cme).toLowerCase().includes('contact hour')
       ? String(item.display_cme).replace(/contact hour/i, 'Contact Hour(s)')
@@ -268,7 +299,12 @@ export const getCmeLabel = item => {
  * Error Handling:
  * Returns empty string-compatible text when price parts are missing.
  */
-export const getPriceLabel = item => {
+export /**
+ * Returns price label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getPriceLabel = item => {
   if (String(item?.display_price || '').toUpperCase() === 'FREE') {
     return 'FREE';
   }
@@ -303,7 +339,12 @@ export const getPriceLabel = item => {
  * Error Handling:
  * Returns empty fields when expected HTML structure is missing.
  */
-export const parseBannerMeta = html => {
+export /**
+ * Parses banner meta.
+ * @param {*} html - Input value.
+ * @returns {Object}
+ */
+const parseBannerMeta = html => {
   const metaHtmlMatch = html.match(
     /<p[^>]*class=['"][^'"]*sliderthreecredits[^'"]*['"][^>]*>([\s\S]*?)<\/p>/i,
   );
@@ -376,7 +417,12 @@ export const parseBannerMeta = html => {
  * Error Handling:
  * Returns empty parts when value is missing.
  */
-export const splitMetaLine = value => {
+export /**
+ * Split meta line utility.
+ * @param {*} value - Input value.
+ * @returns {Object}
+ */
+const splitMetaLine = value => {
   const parts = String(value || '')
     .split('|')
     .map(part => part.trim())
@@ -412,7 +458,12 @@ export const splitMetaLine = value => {
  * Error Handling:
  * Returns null when heading is not found.
  */
-export const getHtmlTitle = item =>
+export /**
+ * Returns html title.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getHtmlTitle = item =>
   matchGroup(String(item?.html_content || ''), /<h2[^>]*>([\s\S]*?)<\/h2>/i);
 
 /**
@@ -439,7 +490,12 @@ export const getHtmlTitle = item =>
  * Error Handling:
  * Returns null when the location pattern is not present.
  */
-export const getHtmlLocation = item => {
+export /**
+ * Returns html location.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getHtmlLocation = item => {
   const html = String(item?.html_content || '');
   return matchGroup(
     html,
@@ -471,8 +527,21 @@ export const getHtmlLocation = item => {
  * Error Handling:
  * Returns null when button markup is not available.
  */
-export const getHtmlButtonText = item =>
+export /**
+ * Returns html button text.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getHtmlButtonText = item =>
   matchGroup(String(item?.html_content || ''), /<button[^>]*>([\s\S]*?)<\/button>/i);
 
+/**
+ * Shimmer bg constant.
+ * @returns {string}
+ */
 export const SHIMMER_BG = '#EAF4FB';
+/**
+ * Shimmer hl constant.
+ * @returns {string}
+ */
 export const SHIMMER_HL = '#FFFFFF';

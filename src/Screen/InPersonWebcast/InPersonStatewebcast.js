@@ -1,3 +1,7 @@
+/**
+ * In person statewebcast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, InPersonStatewebcast, cutomPrice, inPersonSaveTicket, handleIncrement, handleDecrement, formatNumberWithCommas, cleanTicketName, stateDataFilter, backPressIn, onBackPress, styles.
+ */
+
 import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler } from 'react-native'
 import React, { useEffect, useLayoutEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,8 +30,18 @@ import { useIsFocused } from '@react-navigation/native';
  */
 
 let status1 = "";
+/**
+ * In person statewebcast component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const InPersonStatewebcast = (props) => {
-    function cutomPrice(price) {
+        /**
+ * Cutom price helper.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -70,7 +84,13 @@ const InPersonStatewebcast = (props) => {
             ticketall.length > 0 &&
             ticketall.every(ticket => Number(ticket?.itemamt || 0) === 0));
     console.log(ticketall, "ticketall-----------")
-    const inPersonSaveTicket = async () => {
+        /**
+ * In person save ticket utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const inPersonSaveTicket = async () => {
         if (clickHistory?.length > 0) {
             console.log("Hello", clickHistory)
             const checkoutSpan = props?.route?.params?.realData?.realData?.conferenceId;
@@ -140,7 +160,13 @@ const InPersonStatewebcast = (props) => {
         console.log(totalLength); // Map each quantity for every index
     }, [clickHistory]);
 
-    const handleIncrement = (index, item) => {
+        /**
+ * Handles increment.
+ * @param {number} index - Input value.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const handleIncrement = (index, item) => {
         console.log(ticketall, "totalQuantity========")
         if (!ticketall[index]) {
             console.log(`No ticket found for index ${index}`);
@@ -175,7 +201,13 @@ const InPersonStatewebcast = (props) => {
         });
     };
 
-    const handleDecrement = (index, item) => {
+        /**
+ * Handles decrement.
+ * @param {number} index - Input value.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const handleDecrement = (index, item) => {
         setClickHistory((prevHistory) => {
             const currentClickHistory = prevHistory[index];
             if (currentClickHistory.length === 0) return prevHistory;
@@ -200,21 +232,38 @@ const InPersonStatewebcast = (props) => {
     };
 
     console.log(totalAmounts, "Total Amounts=====", clickHistory);
-    const formatNumberWithCommas = (value) => {
+        /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
-    const cleanTicketName = (value) => {
+        /**
+ * Clean ticket name utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const cleanTicketName = (value) => {
         if (!value) return "";
         return String(value)
             .replace(/<[^>]*>/g, "")
             .replace(/\s+/g, " ")
             .trim();
     };
-    const stateDataFilter = ({ item, index }) => {
+        /**
+ * State data filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateDataFilter = ({ item, index }) => {
         const minTickets = 0;
         const maxTickets = isFreeSingleTicketFlow ? 1 : 10;
         const clickCount = clickHistory[index]?.length || 0;
@@ -386,12 +435,20 @@ const InPersonStatewebcast = (props) => {
                 break;
         }
     }
-    const backPressIn = () => {
+        /**
+ * Back press in utility.
+ * @returns {void}
+ */
+const backPressIn = () => {
         props.navigation.goBack();
         setIssfilterVisible(false);
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             backPressIn();
             return true;
         };
@@ -501,8 +558,17 @@ const InPersonStatewebcast = (props) => {
     )
 }
 
+/**
+ * In person statewebcast default export.
+ *
+ * @returns {*}
+ */
 export default InPersonStatewebcast
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

@@ -1,3 +1,7 @@
+/**
+ * Mask reusable component module. Provides a React Native UI building block used across screens. Exported members: MaskField, toggleSecureEntry.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -71,7 +75,11 @@ const MaskField = ({
         }).start();
     }, [isFocused, hasMeaningfulValue, countryCode]);
 
-    const toggleSecureEntry = () => {
+        /**
+ * Toggle secure entry utility.
+ * @returns {void}
+ */
+const toggleSecureEntry = () => {
         setSecureTextEntry(!secureTextEntry);
     };
 
@@ -213,4 +221,9 @@ const MaskField = ({
     );
 };
 
+/**
+ * Mask default export.
+ *
+ * @returns {*}
+ */
 export default MaskField;

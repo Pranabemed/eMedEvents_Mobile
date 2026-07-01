@@ -1,3 +1,7 @@
+/**
+ * Statevaultcomponet screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Statevaultcomponet, checkProfile, handleOpenRenewalLinkCred, cleanNumber, stylesmodal.
+ */
+
 import { View, Text, TouchableOpacity, Linking, ActivityIndicator, Animated, Easing, Alert, StyleSheet, Image, Platform, Pressable } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,7 +33,13 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
     const [loads, setLoads] = useState(false);
     const [currentProfile, setCurrentProfile] = useState('');
     useEffect(() => {
-        const checkProfile = async () => {
+                /**
+ * Check profile utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkProfile = async () => {
             try {
                 const profile = await AsyncStorage.getItem("activeProfile");
                 setCurrentProfile(profile || '');
@@ -68,7 +78,12 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
             setLoadingStatewise(false);
         }, 1000);
     }, [isfocused]);
-    const handleOpenRenewalLinkCred = (renewallinkf) => {
+        /**
+ * Handles open renewal link cred.
+ * @param {*} renewallinkf - Input value.
+ * @returns {void}
+ */
+const handleOpenRenewalLinkCred = (renewallinkf) => {
         if (renewallinkf && typeof renewallinkf === 'string' && renewallinkf.trim() !== '') {
             Linking.openURL(renewallinkf)
                 .catch(err => Alert.alert('Error', 'Failed to open the URL: ' + err.message));
@@ -119,7 +134,12 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
             parseFloat(creditwise?.credits_data?.total_general_credits || gentopiccredit) === 0);
     console.log(allZero, "allZero--------", creditwise, certificatedata);
 
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -547,7 +567,16 @@ const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState,
 
     )
 }
+/**
+ * Statevaultcomponet default export.
+ *
+ * @returns {*}
+ */
 export default Statevaultcomponet
+/**
+ * Stylesmodal value.
+ * @returns {*}
+ */
 const stylesmodal = StyleSheet.create({
     modal: {
         justifyContent: 'center',

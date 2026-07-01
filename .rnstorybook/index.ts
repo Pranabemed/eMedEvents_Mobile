@@ -1,3 +1,7 @@
+/**
+ * Index Storybook module. Defines stories and controls for component previews. Exported members: StorybookUIRoot.
+ */
+
 import { AppRegistry } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LiteUI } from '@storybook/react-native-ui-lite';
@@ -22,4 +26,9 @@ const StorybookUIRoot = view.getStorybookUI({
 
 AppRegistry.registerComponent(appName, () => StorybookUIRoot);
 
+/**
+ * Index default export.
+ *
+ * @returns {*}
+ */
 export default StorybookUIRoot;

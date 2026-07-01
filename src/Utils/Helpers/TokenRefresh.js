@@ -48,10 +48,21 @@ import TokenManager from './TokenManager';
 
 // ─── Selector ────────────────────────────────────────────────────────────────
 
+/**
+ * Get auth state utility helper.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 const getAuthState = state => state.AuthReducer;
 
 // ─── Header builder ──────────────────────────────────────────────────────────
 
+/**
+ * Build header utility helper.
+ * @param {*} token - Input value.
+ * @param {Object} extra - Input value.
+ * @returns {Object}
+ */
 function buildHeader(token, extra = {}) {
     return {
         Accept: 'application/json',

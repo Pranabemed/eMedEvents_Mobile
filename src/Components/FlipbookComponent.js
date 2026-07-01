@@ -1,3 +1,7 @@
+/**
+ * Flipbook component reusable component module. Provides a React Native UI building block used across screens. Exported members: FlipbookComponent, openPDF, showPDF, onPress, styles.
+ */
+
 import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import RNFS from "react-native-fs";
@@ -20,7 +24,15 @@ const FlipbookComponent = ({ link, path }) => {
     const [pdftrue, setPdftrue] = useState(false);
     const [pDFPath, setPDFPath] = useState(null);
     const [loading,setLoading] = useState(false);
-    const openPDF = async (link, path) => {
+        /**
+ * Open pdf utility.
+ *
+ * @async
+ * @param {*} link - Input value.
+ * @param {*} path - Input value.
+ * @returns {Promise<*>}
+ */
+const openPDF = async (link, path) => {
         if (!link || !path) return;
         setLoadingdown(true);
         try {
@@ -70,7 +82,13 @@ const FlipbookComponent = ({ link, path }) => {
     }, [link, path])
     useEffect(() => {
         if (pDFPath) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoading(true);
                 try {
                     const url = pDFPath
@@ -96,7 +114,13 @@ const FlipbookComponent = ({ link, path }) => {
     }, [pDFPath])
     useEffect(() => {
         if (pdftrue) {
-            const onPress = async () => {
+                        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
                 setLoading(true);
                 try {
                     const url = pDFPath
@@ -164,7 +188,16 @@ const FlipbookComponent = ({ link, path }) => {
     );
 };
 
+/**
+ * Flipbook component default export.
+ *
+ * @returns {*}
+ */
 export default FlipbookComponent;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,

@@ -1,3 +1,7 @@
+/**
+ * Add license screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AddLicense, isZeroDate, isEmptyLike, resetToTab, addCreditBack, token_handle_vault, toggleModalcred, licesenseState, convertDate, handleFromDateConfirm, handleToDateConfirm, handleYearcust, directCameraUpload, searchStateNamePratice, onBackPress, addLicsenseHandle, handleAddState.
+ */
+
 import { View, Text, Platform, ScrollView, KeyboardAvoidingView, Alert, Animated, Easing, BackHandler, Pressable } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -54,9 +58,19 @@ const AddLicense = (props) => {
     const routeParams = props?.route?.params || {};
     const profiledet = routeParams?.profiledet;
     const addLicParam = routeParams?.myTaskask?.addLic;
-    const isZeroDate = (value) =>
+        /**
+ * Determines whether zero date is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isZeroDate = (value) =>
         typeof value == "string" && (value.trim() == "0000-00-00" || value.trim() == "0000-00-00 00:00:00");
-    const isEmptyLike = (value) => value == null || (typeof value == "string" && value.trim() == "");
+        /**
+ * Determines whether empty like is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isEmptyLike = (value) => value == null || (typeof value == "string" && value.trim() == "");
     const isMissingAddLicenseData = Boolean(addLicParam) && (
         isEmptyLike(addLicParam?.license_number) &&
         (isZeroDate(addLicParam?.to_date) || !addLicParam?.to_date)
@@ -102,7 +116,12 @@ const AddLicense = (props) => {
     const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
     const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
     const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
-    const resetToTab = (initialRoute = "Home") => {
+        /**
+ * Reset to tab utility.
+ * @param {string} initialRoute - Input value.
+ * @returns {void}
+ */
+const resetToTab = (initialRoute = "Home") => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -112,7 +131,11 @@ const AddLicense = (props) => {
             })
         );
     };
-    const addCreditBack = () => {
+        /**
+ * Add credit back utility.
+ * @returns {void}
+ */
+const addCreditBack = () => {
         if (props?.route?.params?.profile) {
             props.navigation.goBack();
         } else if (props?.route?.params?.myTaskask?.backData) {
@@ -148,7 +171,11 @@ const AddLicense = (props) => {
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -186,10 +213,18 @@ const AddLicense = (props) => {
         finalProfession,
         isFoucs
     ]);
-    const toggleModalcred = () => {
+        /**
+ * Toggle modalcred utility.
+ * @returns {void}
+ */
+const toggleModalcred = () => {
         setModalVisiblecred(!isModalVisiblecred);
     };
-    const licesenseState = () => {
+        /**
+ * Licesense state utility.
+ * @returns {void}
+ */
+const licesenseState = () => {
         if (!dashboardProfession || !dashboardProfessionType) return;
         const obj = `${dashboardProfession} - ${dashboardProfessionType}`;
         if (
@@ -214,7 +249,12 @@ const AddLicense = (props) => {
             licesenseState();
         }
     }, [dashboardProfession, dashboardProfessionType, isFoucs])
-    function convertDate(dateString) {
+        /**
+ * Convert date helper.
+ * @param {*} dateString - Input value.
+ * @returns {*}
+ */
+function convertDate(dateString) {
         const date = moment(dateString, 'MMM DD');
         date.year(2024);
         const formattedDate = date.format('YYYY-MM-DD');
@@ -447,14 +487,24 @@ const AddLicense = (props) => {
             }
         }
     }, [prefillSource, addLicParam, stateDateFetch, targt, DashboardReducer?.dashboardResponse?.data?.licensures, shouldPrefillFromAddLic, dispatch, isEditLicenseFlow]);
-    const handleFromDateConfirm = (val) => {
+        /**
+ * Handles from date confirm.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleFromDateConfirm = (val) => {
         const formattedDate = moment(val).format('YYYY-MM-DD');
         setRdate(formattedDate);
         setOpendatelic(false);
         setCdate("");
         setCdate(null); // Reset to_date when from_date changes
     };
-    const handleToDateConfirm = (val) => {
+        /**
+ * Handles to date confirm.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleToDateConfirm = (val) => {
         setCdate(moment(val).format('YYYY-MM-DD'));
         setOpendatelicy(false);
     };
@@ -495,12 +545,23 @@ const AddLicense = (props) => {
             setAddit(uniqueStates?.[0] ?? null);
         }
     }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord, isSaving]);
-    const handleYearcust = (don) => {
+        /**
+ * Handles yearcust.
+ * @param {*} don - Input value.
+ * @returns {void}
+ */
+const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
         setNewtake(don)
     }
-    function directCameraUpload() {
+        /**
+ * Direct camera upload utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function directCameraUpload() {
         ImagePicker.openCamera({
             width: 300,
             height: 400,
@@ -525,7 +586,12 @@ const AddLicense = (props) => {
             });
     }
 
-    const searchStateNamePratice = text => {
+        /**
+ * Search state name pratice utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchStateNamePratice = text => {
         if (text) {
             const praticeState = selectStatepratice?.filter(function (item) {
                 const itemData = item?.state_name
@@ -543,7 +609,11 @@ const AddLicense = (props) => {
         }
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             addCreditBack();
             return true;
         };
@@ -554,7 +624,11 @@ const AddLicense = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const addLicsenseHandle = () => {
+        /**
+ * Add licsense handle utility.
+ * @returns {void}
+ */
+const addLicsenseHandle = () => {
         if (!selectlicsense) {
             showErrorAlert("Please choose your practicing state");
             return;
@@ -611,7 +685,12 @@ const AddLicense = (props) => {
         { length: 5 },
         (_, index) => currentYear + index
     );
-    const handleAddState = (itemmode) => {
+        /**
+ * Handles add state.
+ * @param {*} itemmode - Input value.
+ * @returns {void}
+ */
+const handleAddState = (itemmode) => {
         setSelectlicsense(itemmode?.state_name);
         setSpecailidpraticelic(itemmode.id)
         setPraticelic(false);
@@ -684,14 +763,30 @@ const AddLicense = (props) => {
                                             leftIcon={ProfilePicObjlic ? <DeleteIcon name="delete" size={25} color="#949494" /> : <ScanIcon name="scan1" size={28} color="#949494" />}
                                             onLeftIconPress={() => {
                                                 if (ProfilePicObjlic) {
-                                                    Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes", onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
+                                                    Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No",                                                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes",                                                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                                 } else {
                                                     directCameraUpload();
                                                 }
                                             }}
                                             onwholePress={() => {
                                                 if (ProfilePicObjlic) {
-                                                    Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes", onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
+                                                    Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No",                                                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes",                                                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                                 } else {
                                                     setCameraPickerlic(true);
                                                 }
@@ -956,4 +1051,9 @@ const AddLicense = (props) => {
     )
 }
 
+/**
+ * Add license default export.
+ *
+ * @returns {*}
+ */
 export default AddLicense

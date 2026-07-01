@@ -1,3 +1,7 @@
+/**
+ * Final certificate reusable component module. Provides a React Native UI building block used across screens. Exported members: status, status1, DownloadCertificate, finalTakePer, showPDF, onPress, downPress, styles.
+ */
+
 import React, { useContext, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Platform, StyleSheet, ScrollView } from "react-native";
 import FileViewer from "react-native-file-viewer";
@@ -27,7 +31,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Download certificate component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const DownloadCertificate = (props) => {
     const {
         statepush,
@@ -90,7 +103,11 @@ const DownloadCertificate = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-    const finalTakePer = () => {
+        /**
+ * Final take per utility.
+ * @returns {void}
+ */
+const finalTakePer = () => {
         if (statepush) {
             const takeID = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -108,7 +125,13 @@ const DownloadCertificate = (props) => {
     }, [props?.route?.params?.PngFIle])
     useEffect(() => {
         if (pDFPath) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoading(true);
                 try {
                     const url = pDFPath
@@ -134,7 +157,13 @@ const DownloadCertificate = (props) => {
     }, [pDFPath])
     useEffect(() => {
         if (pdftrue) {
-            const onPress = async () => {
+                        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
                 setLoading(true);
                 try {
                     const url = pDFPath
@@ -158,7 +187,11 @@ const DownloadCertificate = (props) => {
             onPress()
         }
     }, [pdftrue])
-    const downPress = () => {
+        /**
+ * Down press utility.
+ * @returns {void}
+ */
+const downPress = () => {
         finalTakePer();
         props.navigation.goBack();
     };
@@ -273,6 +306,10 @@ const DownloadCertificate = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -320,4 +357,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Final certificate default export.
+ *
+ * @returns {*}
+ */
 export default DownloadCertificate;

@@ -1,3 +1,7 @@
+/**
+ * Multiple screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomInputTouchableY, getLabelAnimatedStyle.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -87,7 +91,13 @@ const CustomInputTouchableY = ({
             // backgroundColor:"yellow"
         },
     });
-    const getLabelAnimatedStyle = (index, animated) => ({
+        /**
+ * Returns label animated style.
+ * @param {number} index - Input value.
+ * @param {*} animated - Input value.
+ * @returns {Object}
+ */
+const getLabelAnimatedStyle = (index, animated) => ({
         position: 'absolute',
         left: 0,
         // Each label gets its own base top offset depending on index
@@ -160,4 +170,9 @@ const CustomInputTouchableY = ({
 
 
 
+/**
+ * Multiple default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputTouchableY;

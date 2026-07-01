@@ -66,26 +66,59 @@ import { getBasicAuthorizationHeader } from './BasicAuth';
 
 // ─── How many ms before expiry we proactively refresh ─────────────────────────
 // 90 seconds → fires at T+8m30s when token expires at T+10min.
+/**
+ * Refresh buffer ms constant.
+ * @returns {*}
+ */
 const REFRESH_BUFFER_MS = 90 * 1000;
 
 // ─── Minimum ms before we bother scheduling a timer ───────────────────────────
+/**
+ * Min schedule ms constant.
+ * @returns {*}
+ */
 const MIN_SCHEDULE_MS = 5 * 1000;
+/**
+ * Appstate active debounce ms constant.
+ * @returns {number}
+ */
 const APPSTATE_ACTIVE_DEBOUNCE_MS = 5000;
 
 // ─── State ─────────────────────────────────────────────────────────────────────
+/**
+ * Refresh timer id value.
+ * @returns {*}
+ */
 let _refreshTimerId = null;
+/**
+ * App state subscription value.
+ * @returns {*}
+ */
 let _appStateSubscription = null;
 
 // ─── Single shared refresh promise ────────────────────────────────────────────
 // KEY: All callers (timer, AppState handler, ApiRequest interceptor) share this
 // ONE promise. When a refresh is already running, new callers join it instead
 // of making a duplicate HTTP call. Refresh tokens are single-use on the server.
+/**
+ * Refresh promise value.
+ * @returns {*}
+ */
 let _refreshPromise = null;
+/**
+ * Last active check at numeric constant.
+ * @returns {number}
+ */
 let _lastActiveCheckAt = 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JWT decoder — pure JS, no external library required
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Decode jwtpayload utility helper.
+ * @param {*} token - Input value.
+ * @returns {void}
+ */
 function decodeJWTPayload(token) {
     try {
         if (!token || typeof token !== 'string') return null;
@@ -128,6 +161,11 @@ function decodeJWTPayload(token) {
 }
 
 // Returns expiry timestamp in ms, or null if undecodable
+/**
+ * Get token expiry ms utility helper.
+ * @param {*} token - Input value.
+ * @returns {*}
+ */
 function getTokenExpiryMs(token) {
     const rawPayload = decodeJWTPayload(token);
     if (!rawPayload) return null;
@@ -159,6 +197,13 @@ function getTokenExpiryMs(token) {
 // ✅  Returns new token string on success.
 // ✅  Returns null on failure. NEVER throws. NEVER forces logout.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Do actual refresh utility helper.
+ *
+ * @async
+ * @param {*} reason - Input value.
+ * @returns {Promise<*>}
+ */
 async function _doActualRefresh(reason) {
     const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
     if (!refreshToken) {
@@ -256,6 +301,11 @@ async function _doActualRefresh(reason) {
 // Refresh tokens are single-use — two concurrent calls = server rejects the
 // second one with "token expired". This function prevents that entirely.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Perform refresh utility helper.
+ * @param {*} reason - Input value.
+ * @returns {*}
+ */
 function performRefresh(reason) {
     if (_refreshPromise) {
         console.log('[TokenManager] 🔗 Joining existing refresh in progress:', reason);
@@ -269,6 +319,13 @@ function performRefresh(reason) {
     return _refreshPromise;
 }
 
+/**
+ * Ensure valid token utility helper.
+ *
+ * @async
+ * @param {string} reason - Input value.
+ * @returns {Promise<*>}
+ */
 async function ensureValidToken(reason = 'ensure-valid-token') {
     try {
         const token = await AsyncStorage.getItem(constants.TOKEN);
@@ -312,6 +369,11 @@ async function ensureValidToken(reason = 'ensure-valid-token') {
 // Timer scheduler — reads the token, decodes exp, sets a setTimeout to fire
 // REFRESH_BUFFER_MS before expiry.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Schedule timer utility helper.
+ * @param {*} token - Input value.
+ * @returns {void}
+ */
 function _scheduleTimer(token) {
     if (_refreshTimerId !== null) {
         clearTimeout(_refreshTimerId);
@@ -349,6 +411,13 @@ function _scheduleTimer(token) {
 // ─────────────────────────────────────────────────────────────────────────────
 // AppState handler — fires when app returns from background / becomes active
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * On app state change utility helper.
+ *
+ * @async
+ * @param {*} nextState - Input value.
+ * @returns {Promise<*>}
+ */
 async function _onAppStateChange(nextState) {
     // When app goes to background ('inactive' or 'background')
     if (nextState !== 'active') {
@@ -412,6 +481,12 @@ async function _onAppStateChange(nextState) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Async startup logic — called from init() in the background.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Init async utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
 async function _initAsync() {
     try {
         const token = await AsyncStorage.getItem(constants.TOKEN);
@@ -444,6 +519,10 @@ async function _initAsync() {
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Token manager object.
+ * @returns {Object}
+ */
 const TokenManager = {
     /**
      * Call ONCE from App.js on mount.
@@ -502,4 +581,9 @@ const TokenManager = {
     },
 };
 
+/**
+ * Token manager default export.
+ *
+ * @returns {*}
+ */
 export default TokenManager;

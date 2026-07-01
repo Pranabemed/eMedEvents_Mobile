@@ -1,3 +1,7 @@
+/**
+ * Native voice screen module. Renders a React Native screen or a screen-scoped support component. Exported members: speechRecognitionEmitter, NativeVoice, onSpeechResults, onSpeechEnd, startRecording, stopRecording.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Alert, Platform } from 'react-native';
 import { NativeEventEmitter, NativeModules } from 'react-native';
@@ -18,8 +22,22 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 const { SpeechRecognition } = NativeModules;
+/**
+ * Speech recognition emitter value.
+ * @returns {*}
+ */
 const speechRecognitionEmitter = new NativeEventEmitter(SpeechRecognition);
 
+/**
+ * Native voice component.
+ * @param {Object} props - Input object.
+ * @param {*} props.SearchCont - Nested property value.
+ * @param {*} props.searchText - Nested property value.
+ * @param {*} props.setSearchText - Nested property value.
+ * @param {*} props.searchEn - Nested property value.
+ * @param {*} props.setSearchEn - Nested property value.
+ * @returns {JSX.Element}
+ */
 const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearchEn }) => {
     const [isListening, setIsListening] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -31,7 +49,12 @@ const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearc
 
     useEffect(() => {
       setIsListening(true);
-        const onSpeechResults = (event) => {
+                /**
+ * On speech results utility.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onSpeechResults = (event) => {
             if (event.transcript) {
                 console.log(event, "Partial result===========");
                 SearchCont(event.transcript);
@@ -44,7 +67,12 @@ const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearc
             }
         };
 
-        const onSpeechEnd = (event) => {
+                /**
+ * On speech end utility.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onSpeechEnd = (event) => {
             console.log(event, "Speech completed (silence detected)===========");
             setIsListening(false);
             setIsSpeechDetected(false);
@@ -66,7 +94,13 @@ const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearc
         };
     }, []);
 
-    const startRecording = async () => {
+        /**
+ * Start recording utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const startRecording = async () => {
         try {
             await SpeechRecognition.startRecording();
             setIsListening(true);
@@ -86,7 +120,13 @@ const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearc
         }
     };
 
-    const stopRecording = async () => {
+        /**
+ * Stop recording utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const stopRecording = async () => {
         try {
             await SpeechRecognition.stopRecording();
             setIsListening(false);
@@ -126,4 +166,9 @@ const NativeVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearc
     );
 };
 
+/**
+ * Native voice default export.
+ *
+ * @returns {*}
+ */
 export default NativeVoice;

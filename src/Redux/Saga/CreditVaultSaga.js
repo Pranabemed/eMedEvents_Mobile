@@ -5,6 +5,13 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 let getItem = state => state.AuthReducer;
 
 
+/**
+ * Executes the creditvaultSaga saga.
+ *
+ * @function creditvaultSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* creditvaultSaga(action) {
   console.log('hi',action?.payload?.state_id);
   let items = yield select(getItem);
@@ -26,6 +33,13 @@ export function* creditvaultSaga(action) {
     yield put(creditvaultFailure(error));
   }
 }
+/**
+ * Executes the boardvaultSaga saga.
+ *
+ * @function boardvaultSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* boardvaultSaga(action) {
   console.log('hi');
   let items = yield select(getItem);
@@ -47,6 +61,13 @@ export function* boardvaultSaga(action) {
     yield put(boardvaultFailure(error));
   }
 }
+/**
+ * Executes the deletevaultSaga saga.
+ *
+ * @function deletevaultSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* deletevaultSaga(action) {
   console.log('hi');
   let items = yield select(getItem);
@@ -69,6 +90,13 @@ export function* deletevaultSaga(action) {
     yield put(deletevaultFailure(error));
   }
 }
+/**
+ * Executes the professionvaultSaga saga.
+ *
+ * @function professionvaultSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* professionvaultSaga(action) {
   console.log('hi');
   let items = yield select(getItem);
@@ -91,6 +119,13 @@ export function* professionvaultSaga(action) {
     yield put(professionvaultFailure(error));
   }
 }
+/**
+ * Executes the downloadTransSaga saga.
+ *
+ * @function downloadTransSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* downloadTransSaga(action) {
   console.log('hi');
   let items = yield select(getItem);
@@ -113,6 +148,13 @@ export function* downloadTransSaga(action) {
     yield put(downloadTranscriptFailure(error));
   }
 }
+/**
+ * Executes the downloadTransNonUsaSaga saga.
+ *
+ * @function downloadTransNonUsaSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* downloadTransNonUsaSaga(action) {
   console.log('downloadTransNonUsaSaga saga hi');
   let items = yield select(getItem);

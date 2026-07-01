@@ -1,3 +1,7 @@
+/**
+ * Interested chekout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, InterestedChekout, profileBack, fetchHandle, handleUrl, onBackPress, fullDataRefresh, CMEExclusive, formatDate, formatDateEnd, renderLocationAndDates.
+ */
+
 import { View, Text, Platform, FlatList, ImageBackground, TouchableOpacity, Image, BackHandler, ActivityIndicator, RefreshControl } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -25,10 +29,19 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Interested chekout component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const InterestedChekout = (props) => {
     const { isConnected } = useContext(AppContext);
 
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -66,7 +79,11 @@ const InterestedChekout = (props) => {
 
         return () => clearTimeout(timeout);
     }, []);
-    const fetchHandle = () => {
+        /**
+ * Fetch handle utility.
+ * @returns {void}
+ */
+const fetchHandle = () => {
         let obj = {
             "limit": limit,
             "listby_type": "interstedconferences",
@@ -92,7 +109,12 @@ const InterestedChekout = (props) => {
         setPageNum(0);
         setStoreAlldata([]);
     }, [])
-    const handleUrl = (onlineName) => {
+        /**
+ * Handles url.
+ * @param {*} onlineName - Input value.
+ * @returns {void}
+ */
+const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", onlineName);
@@ -113,7 +135,11 @@ const InterestedChekout = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             profileBack()
             return true;
         };
@@ -138,7 +164,11 @@ const InterestedChekout = (props) => {
         }
     }, [apiReq]);
 
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -182,19 +212,40 @@ const InterestedChekout = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
-    const CMEExclusive = ({ item, index }) => {
+        /**
+ * Cmeexclusive component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const CMEExclusive = ({ item, index }) => {
         console.log(item, "item---------")
-        const formatDate = (dateStr) => {
+                /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-        const formatDateEnd = (dateStr) => {
+                /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
-        const renderLocationAndDates = () => {
+                /**
+ * Render location and dates utility.
+ * @returns {*}
+ */
+const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
                     <View style={{ flexDirection: "row" }}>
@@ -409,4 +460,9 @@ const InterestedChekout = (props) => {
     )
 }
 
+/**
+ * Interested chekout default export.
+ *
+ * @returns {*}
+ */
 export default InterestedChekout

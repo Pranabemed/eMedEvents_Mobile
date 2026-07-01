@@ -91,6 +91,10 @@ const GuestSelectionModalsComponent = ({
   </>
 );
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   profOverlay: {
     flex: 1,
@@ -154,4 +158,8 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Guest selection modals value.
+ * @returns {*}
+ */
 export const GuestSelectionModals = memo(GuestSelectionModalsComponent);

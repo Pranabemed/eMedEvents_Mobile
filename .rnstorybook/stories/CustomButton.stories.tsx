@@ -1,7 +1,15 @@
+/**
+ * Custom button.stories Storybook module. Defines stories and controls for component previews. Exported members: meta, Default, Disabled, Loading, WithIcon.
+ */
+
 import type { Meta, StoryObj } from '@storybook/react';
 import Button from '../../src/Components/Button';
 import Colorpath from '../../src/Themes/Colorpath';
 
+/**
+ * Meta value.
+ * @returns {*}
+ */
 const meta = {
   title: 'Components/Button',
   component: Button,
@@ -12,10 +20,19 @@ const meta = {
   },
 } satisfies Meta<typeof Button>;
 
+/**
+ * Custom button.stories default export.
+ *
+ * @returns {*}
+ */
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {
   args: {
     text: 'Click Me',
@@ -27,6 +44,10 @@ export const Default: Story = {
   },
 };
 
+/**
+ * Disabled object.
+ * @returns {Object}
+ */
 export const Disabled: Story = {
   args: {
     text: 'Disabled',
@@ -39,6 +60,10 @@ export const Disabled: Story = {
   },
 };
 
+/**
+ * Loading object.
+ * @returns {Object}
+ */
 export const Loading: Story = {
   args: {
     text: 'Submit',
@@ -51,6 +76,10 @@ export const Loading: Story = {
   },
 };
 
+/**
+ * With icon object.
+ * @returns {Object}
+ */
 export const WithIcon: Story = {
   args: {
     text: 'Next',

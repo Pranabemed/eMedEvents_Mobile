@@ -44,4 +44,9 @@ import GuestUserContent from './GuestUserContent';
  * Pure wrapper component with no side effects.
  */
 const GuestUserView = ({ guest }) => <GuestUserContent guest={guest} />;
+/**
+ * Guest user view default export.
+ *
+ * @returns {*}
+ */
 export default GuestUserView;

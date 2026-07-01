@@ -1,3 +1,7 @@
+/**
+ * Custom text input reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomInputWithDropdown, toggleModal, handleOptionSelect, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -28,13 +32,22 @@ const CustomInputWithDropdown = ({inputdata,setInputdata,texdt,setTextdt}) => {
   const [modalVisible, setModalVisible] = useState(false);
   // const [contextText, setContextText] = useState('Select Time');
 
-  const toggleModal = () => {
+    /**
+ * Toggle modal utility.
+ * @returns {void}
+ */
+const toggleModal = () => {
     setModalVisible(!modalVisible);
   };
 useEffect(()=>{
   setInputdata("Select Time")
 },[isFocus])
-  const handleOptionSelect = (option) => {
+    /**
+ * Handles option select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleOptionSelect = (option) => {
     // setContextText(option);
     toggleModal();
     setInputdata(option)
@@ -95,6 +108,10 @@ useEffect(()=>{
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -157,4 +174,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Custom text input default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputWithDropdown;

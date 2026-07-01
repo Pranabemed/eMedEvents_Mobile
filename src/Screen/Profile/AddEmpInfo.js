@@ -1,3 +1,7 @@
+/**
+ * Add emp info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, CustomRadioButton, AddEmpInfo, SearchBack, handleInputChange, PraticingState, handleFromDateConfirm, handleToDateConfirm, AddEmpTake, handleStateshows, handlecityShows, handlehospShows, cityReq, handlePratice, handleCity, handleHosp, formatPhoneNumber, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -39,7 +43,18 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Custom radio button component.
+ * @param {Object} props - Input object.
+ * @param {*} props.selected - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CustomRadioButton = ({ selected, onPress }) => (
     <TouchableOpacity
         onPress={onPress}
@@ -58,6 +73,11 @@ const CustomRadioButton = ({ selected, onPress }) => (
         ) : null}
     </TouchableOpacity>
 );
+/**
+ * Add emp info component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const AddEmpInfo = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -95,11 +115,20 @@ const AddEmpInfo = (props) => {
     const [address, setAddress] = useState("");
     const [anoth, setAnoth] = useState("");
     const isFocus = useIsFocused();
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     const [socheck, setSocheck] = useState(false);
-    const handleInputChange = (text) => {
+        /**
+ * Handles input change.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleInputChange = (text) => {
         const numericValue = text.replace(/[^0-9]/g, '');
         setAmount(numericValue);
     };
@@ -126,7 +155,12 @@ const AddEmpInfo = (props) => {
             setSocheck(props?.route?.params?.editDats?.currently_held == 1 ? true : false)
         }
     }, [props?.route?.params?.editDats])
-    const PraticingState = (index) => {
+        /**
+ * Praticing state component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index));
@@ -166,14 +200,24 @@ const AddEmpInfo = (props) => {
         }
     }, [hospname])
     console.log(hospAll, "dfkjsdk");
-    const handleFromDateConfirm = (val) => {
+        /**
+ * Handles from date confirm.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleFromDateConfirm = (val) => {
         const formattedDate = moment(val).format('YYYY-MM-DD');
         setFromdate(formattedDate);
         setFromPicker(false);
         setTodate("");
         setTodate(null); // Reset to_date when from_date changes
     };
-    const handleToDateConfirm = (val) => {
+        /**
+ * Handles to date confirm.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleToDateConfirm = (val) => {
         setTodate(moment(val).format('YYYY-MM-DD'));
         setTopicker(false);
     };
@@ -249,7 +293,11 @@ const AddEmpInfo = (props) => {
         }
     }
     console.log(props?.route?.params?.editDats, "props?.route?.params?.editDats-----")
-    const AddEmpTake = () => {
+        /**
+ * Add emp take component.
+ * @returns {void}
+ */
+const AddEmpTake = () => {
         const cellNoRegex = /^\d{10,15}$/;
          const filteredTextcell = phoneno && phoneno?.length > 0 && phoneno.replace(/[^\d]/g, '');
         if (!state) {
@@ -325,17 +373,32 @@ const AddEmpInfo = (props) => {
             console.log(obj, "obkkkkkkkk==============");
         }
     }
-    const handleStateshows = (ctid) => {
+        /**
+ * Handles stateshows.
+ * @param {*} ctid - Input value.
+ * @returns {void}
+ */
+const handleStateshows = (ctid) => {
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);
         setState_id(ctid?.id);
     }
-    const handlecityShows = (ctshows) => {
+        /**
+ * Handlecity shows utility.
+ * @param {*} ctshows - Input value.
+ * @returns {void}
+ */
+const handlecityShows = (ctshows) => {
         setCity(ctshows?.name);
         setCity_id(ctshows?.id)
     }
-    const handlehospShows = (hosp) => {
+        /**
+ * Handlehosp shows utility.
+ * @param {*} hosp - Input value.
+ * @returns {void}
+ */
+const handlehospShows = (hosp) => {
         console.log(hosp, "hosp------------")
         if (hosp?.name === "Add New Hospital") {
             setHospname("");
@@ -346,7 +409,12 @@ const AddEmpInfo = (props) => {
             setHospid(hosp?.id)
         }
     }
-    const cityReq = (itid) => {
+        /**
+ * City req utility.
+ * @param {*} itid - Input value.
+ * @returns {void}
+ */
+const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -355,23 +423,44 @@ const AddEmpInfo = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
-    const handlePratice = (text) => {
+        /**
+ * Handles pratice.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-    const handleCity = (text) => {
+        /**
+ * Handles city.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
     }
-    const handleHosp = (text) => {
+        /**
+ * Handles hosp.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleHosp = (text) => {
         searchHospFunction(text, hospgetshow, setHospAll, setSearchhosp, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
     }
     const isValidWhatsappNodd = amount?.length > 0 && amount == 0;
-    const formatPhoneNumber = (input, isUSA = false) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @param {boolean} isUSA - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input, isUSA = false) => {
         if (isUSA) {
             // USA format: (XXX) XXX-XXXX
             const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -1215,7 +1304,16 @@ const AddEmpInfo = (props) => {
     )
 }
 
+/**
+ * Add emp info default export.
+ *
+ * @returns {*}
+ */
 export default AddEmpInfo
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',

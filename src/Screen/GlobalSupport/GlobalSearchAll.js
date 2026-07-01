@@ -1,3 +1,7 @@
+/**
+ * Global search all screen module. Renders a React Native screen or a screen-scoped support component. Exported members: renderSection, GlobalSearchAll, handleRot, styles.
+ */
+
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -185,6 +189,18 @@ const renderSection = (title, data, onPressHandler, nav, searchTextD, countShow,
         )
     );
 };
+/**
+ * Global search all component.
+ * @param {Object} props - Input object.
+ * @param {*} props.data - Nested property value.
+ * @param {*} props.handleUrl - Nested property value.
+ * @param {*} props.searchText - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @param {*} props.setSearchText - Nested property value.
+ * @param {*} props.creditDataAll - Nested property value.
+ * @param {*} props.isLoading - Nested property value.
+ * @returns {JSX.Element}
+ */
 const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearchText, creditDataAll = {}, isLoading = false }) => {
     const {
         setIsConnected,
@@ -198,7 +214,11 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const handleRot = () => {
+        /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
@@ -342,6 +362,10 @@ const GlobalSearchAll = ({ data = {}, handleUrl, searchText = '', nav, setSearch
 };
 
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     sectionTitle: {
         fontFamily: Fonts.InterBold,
@@ -423,4 +447,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Global search all default export.
+ *
+ * @returns {*}
+ */
 export default GlobalSearchAll;

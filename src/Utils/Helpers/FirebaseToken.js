@@ -1,7 +1,17 @@
+/**
+ * Firebase token utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: generateDeviceToken.
+ */
+
 import messaging from '@react-native-firebase/messaging';
 import { ensureRemoteMessagingReady } from './PushNotifications';
 
-export const generateDeviceToken = async () => {
+export /**
+ * Generate device token utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const generateDeviceToken = async () => {
   try {
     const isReady = await ensureRemoteMessagingReady();
     if (!isReady) {

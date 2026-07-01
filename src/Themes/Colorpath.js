@@ -10,6 +10,10 @@ import { Dimensions } from 'react-native';
 
 const { width, height, fontScale } = Dimensions.get('window');
 
+/**
+ * Sizes object.
+ * @returns {Object}
+ */
 export const Sizes = { width, height, fontScale };
 /**
  * Defines the color palette used across the application.
@@ -66,4 +70,9 @@ const Colorpath = {
     green:"#009E38",
     SkyBG:"#CBECFF"
 }
+/**
+ * Colorpath default export.
+ *
+ * @returns {*}
+ */
 export default Colorpath;

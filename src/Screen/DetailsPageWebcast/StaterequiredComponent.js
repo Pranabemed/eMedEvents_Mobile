@@ -1,3 +1,7 @@
+/**
+ * Staterequired component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StateRequiredCourse.
+ */
+
 import { View, Text, FlatList, Platform } from 'react-native'
 import React from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -102,4 +106,9 @@ const StateRequiredCourse = ({stateid,profesions,paginatedDataDpl,setIsTouching,
     )
 }
 
+/**
+ * Staterequired component default export.
+ *
+ * @returns {*}
+ */
 export default StateRequiredCourse

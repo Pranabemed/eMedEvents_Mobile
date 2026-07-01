@@ -1,5 +1,29 @@
+/**
+ * Cmeceexpens reducer Redux slice module. Manages application state and exposes action creators for cmeceexpens. Exported members: initialState, ExpenseSlice.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
 
+/**
+ * Expense slice state shape.
+ *
+ * @typedef {Object} ExpenseState
+ * @property {string} status
+ * @property {string|null} token
+ * @property {boolean} isLoading
+ * @property {Record<string, unknown>} AddExpensesResponse
+ * @property {Record<string, unknown>} CMECEListResponse
+ * @property {Record<string, unknown>} CMEListWiseResponse
+ * @property {Record<string, unknown>} CMEAllowanceResponse
+ * @property {Record<string, unknown>} againListResponse
+ * @property {Record<string, unknown>} deleteExpensesResponse
+ * @property {string|undefined} error
+ */
+/**
+ * Initial state constant.
+ *
+ * @type {ExpenseState}
+ */
 const initialState = {
   status: '',
   token: null,
@@ -12,73 +36,186 @@ const initialState = {
   deleteExpensesResponse:{}
 };
 
+/**
+ * Expense slice value.
+ *
+ * @type {import('@reduxjs/toolkit').Slice<ExpenseState>}
+ */
 const ExpenseSlice = createSlice({
   name: 'Expenses',
   initialState,
   reducers: {
-    AddExpensesRequest(state, action) {
+        /**
+ * Add expenses request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AddExpensesRequest(state, action) {
       state.status = action.type;
     },
-    AddExpensesSuccess(state, action) {
+        /**
+ * Add expenses success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AddExpensesSuccess(state, action) {
       state.AddExpensesResponse = action.payload;
       state.status = action.type;
     },
-    AddExpensesFailure(state, action) {
+        /**
+ * Add expenses failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+AddExpensesFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    CMECEListRequest(state, action) {
+        /**
+ * Cmecelist request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMECEListRequest(state, action) {
       state.status = action.type;
     },
-    CMECEListSuccess(state, action) {
+        /**
+ * Cmecelist success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMECEListSuccess(state, action) {
       state.CMECEListResponse = action.payload;
       state.status = action.type;
     },
-    CMECEListFailure(state, action) {
+        /**
+ * Cmecelist failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMECEListFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    CMEListWiseRequest(state, action) {
+        /**
+ * Cmelist wise request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEListWiseRequest(state, action) {
       state.status = action.type;
     },
-    CMEListWiseSuccess(state, action) {
+        /**
+ * Cmelist wise success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEListWiseSuccess(state, action) {
       state.CMEListWiseResponse = action.payload;
       state.status = action.type;
     },
-    CMEListWiseFailure(state, action) {
+        /**
+ * Cmelist wise failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEListWiseFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    CMEAllowanceRequest(state, action) {
+        /**
+ * Cmeallowance request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEAllowanceRequest(state, action) {
       state.status = action.type;
     },
-    CMEAllowanceSuccess(state, action) {
+        /**
+ * Cmeallowance success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEAllowanceSuccess(state, action) {
       state.CMEAllowanceResponse = action.payload;
       state.status = action.type;
     },
-    CMEAllowanceFailure(state, action) {
+        /**
+ * Cmeallowance failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+CMEAllowanceFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    againListRequest(state, action) {
+        /**
+ * Reducer logic for again list request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+againListRequest(state, action) {
       state.status = action.type;
     },
-    againListSuccess(state, action) {
+        /**
+ * Reducer logic for again list success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+againListSuccess(state, action) {
       state.againListResponse = action.payload;
       state.status = action.type;
     },
-    againListFailure(state, action) {
+        /**
+ * Reducer logic for again list failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+againListFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    deleteExpensesRequest(state, action) {
+        /**
+ * Reducer logic for delete expenses request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deleteExpensesRequest(state, action) {
       state.status = action.type;
     },
-    deleteExpensesSuccess(state, action) {
+        /**
+ * Reducer logic for delete expenses success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deleteExpensesSuccess(state, action) {
       state.deleteExpensesResponse = action.payload;
       state.status = action.type;
     },
-    deleteExpensesFailure(state, action) {
+        /**
+ * Reducer logic for delete expenses failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deleteExpensesFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     }
@@ -105,4 +242,9 @@ export const {
   deleteExpensesRequest,
   deleteExpensesSuccess,
 } = ExpenseSlice.actions;
+/**
+ * Cmeceexpens reducer default export.
+ *
+ * @returns {*}
+ */
 export default ExpenseSlice.reducer;

@@ -1,3 +1,7 @@
+/**
+ * Text modal reusable component module. Provides a React Native UI building block used across screens. Exported members: TextModal, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -68,7 +72,16 @@ const TextModal = ({ isVisible, onFalse,setDetailsmodal }) => {
     )
 }
 
+/**
+ * Text modal default export.
+ *
+ * @returns {*}
+ */
 export default TextModal
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

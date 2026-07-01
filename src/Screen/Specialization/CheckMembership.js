@@ -1,3 +1,7 @@
+/**
+ * Check membership screen module. Renders a React Native screen or a screen-scoped support component. Exported members: PRIME_MEMBERSHIP_SKIPPED_KEY, CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, getCountryFromIP, normalizeProfessionHandle, findMatchedProfessionHandle, buildProfessionLabel, isUsaBasedUser, CheckMembership, checkEligibility, parseStoredJson, handleClk, handlePrimeMembership, handleSkip, styles.
+ */
+
 import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, ActivityIndicator } from 'react-native';
 import React, { useLayoutEffect, useState, useContext, useEffect, useRef } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -28,8 +32,19 @@ import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
  */
 
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+/**
+ * Check membership force new profession key constant.
+ * @returns {string}
+ */
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
 
+/**
+ * Returns country from ip.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
 const getCountryFromIP = async (ip) => {
     try {
         const res = await fetch(`https://ipinfo.io/${ip}/json`);
@@ -45,12 +60,23 @@ const getCountryFromIP = async (ip) => {
     }
 };
 
+/**
+ * Normalizes profession handle.
+ * @param {*} professionHandle - Input value.
+ * @returns {*}
+ */
 const normalizeProfessionHandle = (professionHandle) =>
     String(professionHandle || '')
         .toLowerCase()
         .replace(/\s+/g, '')
         .trim();
 
+/**
+ * Find matched profession handle utility.
+ * @param {*} candidates - Input value.
+ * @param {*} supportedHandles - Input value.
+ * @returns {string}
+ */
 const findMatchedProfessionHandle = (candidates, supportedHandles) => {
     for (const candidate of candidates) {
         const normalizedCandidate = normalizeProfessionHandle(candidate);
@@ -65,6 +91,12 @@ const findMatchedProfessionHandle = (candidates, supportedHandles) => {
     return '';
 };
 
+/**
+ * Build profession label utility.
+ * @param {*} profession - Input value.
+ * @param {*} professionType - Input value.
+ * @returns {string}
+ */
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
     const cleanProfessionType = String(professionType || '').trim();
@@ -76,6 +108,12 @@ const buildProfessionLabel = (profession, professionType) => {
     return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
+/**
+ * Determines whether usa based user is true.
+ * @param {*} user - Input value.
+ * @param {string} ipCountryCode - Input value.
+ * @returns {*}
+ */
 const isUsaBasedUser = (user, ipCountryCode = '') => {
     const countryId = String(
         user?.country_id ||
@@ -117,6 +155,11 @@ const isUsaBasedUser = (user, ipCountryCode = '') => {
     );
 };
 
+/**
+ * Check membership component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const CheckMembership = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -127,7 +170,13 @@ const CheckMembership = (props) => {
 
     useEffect(() => {
         let isMounted = true;
-        const checkEligibility = async () => {
+                /**
+ * Check eligibility utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkEligibility = async () => {
             try {
                 const skipped = await AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
                 if (skipped === 'true') {
@@ -158,7 +207,12 @@ const CheckMembership = (props) => {
                     AsyncStorage.getItem(constants.PROFESSION),
                 ]);
 
-                const parseStoredJson = (value) => {
+                                /**
+ * Parses stored json.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const parseStoredJson = (value) => {
                     if (!value) return null;
                     try {
                         return JSON.parse(value);
@@ -305,14 +359,22 @@ const CheckMembership = (props) => {
         { normaltitle: 'Priority Customer Service' },
     ]
     const [linearText, setLinearText] = useState(true);
-    const handleClk = () => {
+        /**
+ * Handles clk.
+ * @returns {void}
+ */
+const handleClk = () => {
         pendingFreeTrialNavigationRef.current = true;
         dispatch(primeTrailRequest({}));
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [props.navigation]);
-    const handlePrimeMembership = () => {
+        /**
+ * Handles prime membership.
+ * @returns {void}
+ */
+const handlePrimeMembership = () => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.removeItem('SessionPrimeSkipped');
@@ -328,7 +390,13 @@ const CheckMembership = (props) => {
             console.log('CheckMembership prime flag error', error);
         });
     };
-    const handleSkip = async () => {
+        /**
+ * Handles skip.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleSkip = async () => {
         try {
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
@@ -494,6 +562,10 @@ const CheckMembership = (props) => {
         </>
     )
 }
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -630,4 +702,9 @@ const styles = StyleSheet.create({
         paddingBottom: normalize(20),
     },
 });
+/**
+ * Check membership default export.
+ *
+ * @returns {*}
+ */
 export default CheckMembership;

@@ -1,4 +1,13 @@
+/**
+ * Vtt preview utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: parseVttTimestamp, resolveUrl, parseVttPayload, parseThumbnailVtt, inferVttFromVideoUrl, extractVttCandidates, pushUnique, extractVttUrl, findCueForTime.
+ */
+
 // ─── VTT Timestamp → seconds ────────────────────────────────────────────────
+/**
+ * Parse vtt timestamp utility helper.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const parseVttTimestamp = (value) => {
   if (!value) return 0;
   const normalized = String(value).replace(',', '.').trim();
@@ -14,6 +23,12 @@ const parseVttTimestamp = (value) => {
 };
 
 // ─── Safely resolve relative/absolute URLs ───────────────────────────────────
+/**
+ * Resolve url utility helper.
+ * @param {*} baseUrl - Input value.
+ * @param {*} target - Input value.
+ * @returns {string}
+ */
 const resolveUrl = (baseUrl, target) => {
   if (!target) return null;
   const cleanTarget = String(target).trim().replace(/&amp;/g, '&');
@@ -38,6 +53,12 @@ const resolveUrl = (baseUrl, target) => {
 };
 
 // ─── Parse a single cue payload line (URL + optional #xywh crop) ─────────────
+/**
+ * Parse vtt payload utility helper.
+ * @param {*} payload - Input value.
+ * @param {*} baseUrl - Input value.
+ * @returns {Object}
+ */
 const parseVttPayload = (payload, baseUrl) => {
   if (!payload) return null;
   const cleanPayload = payload.trim();
@@ -67,6 +88,12 @@ const parseVttPayload = (payload, baseUrl) => {
 };
 
 // ─── Full WebVTT parser (handles NOTE / STYLE / REGION blocks) ───────────────
+/**
+ * Parse thumbnail vtt utility helper.
+ * @param {*} vttText - Input value.
+ * @param {*} vttUrl - Input value.
+ * @returns {*}
+ */
 const parseThumbnailVtt = (vttText, vttUrl) => {
   if (!vttText) return [];
   const lines = vttText.replace(/\r/g, '').split('\n');
@@ -128,6 +155,11 @@ const parseThumbnailVtt = (vttText, vttUrl) => {
 
 // ─── Infer a VTT sidecar URL from a plain video URL ─────────────────────────
 // Only for direct-extension video URLs (mp4, m4v, mov, webm, m3u8)
+/**
+ * Infer vtt from video url utility helper.
+ * @param {*} videoUrl - Input value.
+ * @returns {*}
+ */
 const inferVttFromVideoUrl = (videoUrl) => {
   if (!videoUrl) return null;
   const clean = String(videoUrl).trim();
@@ -140,6 +172,16 @@ const inferVttFromVideoUrl = (videoUrl) => {
 // ─── Extract the best available thumbnail-VTT URL ────────────────────────────
 // Checks (in order): route param → activity data fields → description HTML →
 // inferred sidecar. YouTube video IDs are intentionally skipped (no VTT exists).
+/**
+ * Extract vtt candidates utility helper.
+ * @param {Object} props - Input object.
+ * @param {*} props.routeVtt - Nested property value.
+ * @param {*} props.activityData - Nested property value.
+ * @param {*} props.descriptionHtml - Nested property value.
+ * @param {*} props.baseUrl - Nested property value.
+ * @param {*} props.videoUrl - Nested property value.
+ * @returns {*}
+ */
 const extractVttCandidates = ({
   routeVtt,
   activityData = {},
@@ -148,7 +190,12 @@ const extractVttCandidates = ({
   videoUrl,
 }) => {
   const candidates = [];
-  const pushUnique = (value) => {
+    /**
+ * Push unique utility helper.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const pushUnique = (value) => {
     if (!value) return;
     const clean = String(value).trim();
     if (!clean) return;
@@ -202,12 +249,23 @@ const extractVttCandidates = ({
   return candidates;
 };
 
+/**
+ * Extract vtt url utility helper.
+ * @param {*} args - Input value.
+ * @returns {*}
+ */
 const extractVttUrl = (args) => {
   const candidates = extractVttCandidates(args);
   return candidates[0] || null;
 };
 
 // ─── Binary-search–style cue lookup ─────────────────────────────────────────
+/**
+ * Find cue for time utility helper.
+ * @param {*} cues - Input value.
+ * @param {*} timeValue - Input value.
+ * @returns {*}
+ */
 const findCueForTime = (cues, timeValue) => {
   if (!Array.isArray(cues) || cues.length === 0) return null;
   const t = typeof timeValue === 'number' && isFinite(timeValue) ? timeValue : 0;

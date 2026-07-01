@@ -4,6 +4,13 @@ import { contactusSpeakerFailure, contactusSpeakerSuccess, HCPSubFailure, HCPSub
 
 
 let getItem = state => state.AuthReducer;
+/**
+ * Executes the TransPayemntSaga saga.
+ *
+ * @function TransPayemntSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* TransPayemntSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -24,6 +31,13 @@ export function* TransPayemntSaga(action) {
     yield put(registPaymentFailure(error));
   }
 }
+/**
+ * Executes the TransSubscribeSaga saga.
+ *
+ * @function TransSubscribeSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* TransSubscribeSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -44,6 +58,13 @@ export function* TransSubscribeSaga(action) {
     yield put(subscribeTransFailure(error));
   }
 }
+/**
+ * Executes the TranswalletsSaga saga.
+ *
+ * @function TranswalletsSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* TranswalletsSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -64,6 +85,13 @@ export function* TranswalletsSaga(action) {
     yield put(walletsTransFailure(error));
   }
 }
+/**
+ * Executes the getwalletsSaga saga.
+ *
+ * @function getwalletsSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* getwalletsSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -84,6 +112,13 @@ export function* getwalletsSaga(action) {
     yield put(walletsgetFailure(error));
   }
 }
+/**
+ * Executes the userSubSaga saga.
+ *
+ * @function userSubSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* userSubSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -104,6 +139,13 @@ export function* userSubSaga(action) {
     yield put(userSubFailure(error));
   }
 }
+/**
+ * Executes the HcpSubSaga saga.
+ *
+ * @function HcpSubSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* HcpSubSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -124,6 +166,13 @@ export function* HcpSubSaga(action) {
     yield put(HCPSubFailure(error));
   }
 }
+/**
+ * Executes the subRenewalSaga saga.
+ *
+ * @function subRenewalSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* subRenewalSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -144,6 +193,13 @@ export function* subRenewalSaga(action) {
     yield put(subRenewalFailure(error));
   }
 }
+/**
+ * Executes the subPaymentSaga saga.
+ *
+ * @function subPaymentSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* subPaymentSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -164,6 +220,13 @@ export function* subPaymentSaga(action) {
     yield put(subPaymentcardFailure(error));
   }
 }
+/**
+ * Executes the searchSpeakerSaga saga.
+ *
+ * @function searchSpeakerSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* searchSpeakerSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -185,6 +248,13 @@ export function* searchSpeakerSaga(action) {
     yield put(searchSpeakerFailure(error));
   }
 }
+/**
+ * Executes the profileSpeakerSaga saga.
+ *
+ * @function profileSpeakerSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* profileSpeakerSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -205,6 +275,13 @@ export function* profileSpeakerSaga(action) {
     yield put(speakerProfileFailure(error));
   }
 }
+/**
+ * Executes the contactSpeakerSaga saga.
+ *
+ * @function contactSpeakerSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* contactSpeakerSaga(action) {
   let items = yield select(getItem);
   let header = {

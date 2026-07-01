@@ -1,3 +1,7 @@
+/**
+ * User sub screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, UserSub, handleSwitchToggle, fetchuserSub, fullDataRefresh, renderItem, renderMonthItem.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -9,6 +13,10 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { subRenewalRequest, userSubRequest } from '../../Redux/Reducers/TransReducer';
 import moment from 'moment';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -39,7 +47,13 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
         setIsEnable(1);
     }, [isFocus]);
     const [switchStates, setSwitchStates] = useState({});
-    const handleSwitchToggle = (index, get) => {
+        /**
+ * Handles switch toggle.
+ * @param {number} index - Input value.
+ * @param {*} get - Input value.
+ * @returns {void}
+ */
+const handleSwitchToggle = (index, get) => {
         Alert.alert(
             "eMedEvents",
             "Are you sure you want to cancel this subscription ?",
@@ -50,7 +64,11 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
                 },
                 {
                     text: "Yes",
-                    onPress: () => {
+                                        /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setSwitchStates((prevStates) => ({
                             ...prevStates,
                             [index]: !prevStates[index],
@@ -64,7 +82,11 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
             ]
         );
     };
-    const fetchuserSub = () => {
+        /**
+ * Fetchuser sub utility.
+ * @returns {void}
+ */
+const fetchuserSub = () => {
         let obj = {
             "limit": limit,
             "page": pageNum,
@@ -106,7 +128,11 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
             }
         }
     }, [apiReq, final, TransReducer]);
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setStoreAlldatas([]);
         setPageNum(0);
         setRefreshing(false);
@@ -220,7 +246,14 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
           return result;
         }, [final]);
     console.log(final, "exdate=========")
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
         // detectExDate(index, item?.id, item?.start_date);
         console.log(item, "item-----------")
         const isLastItem = index === item?.dataLength - 1;
@@ -356,7 +389,13 @@ const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
             </View>
         );
     }
-    const renderMonthItem = ({ item }) => {
+        /**
+ * Render month item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderMonthItem = ({ item }) => {
         return (
             <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
                 <Text
@@ -431,4 +470,9 @@ const [showLoader, setShowLoader] = useState(true);
     )
 }
 
+/**
+ * User sub default export.
+ *
+ * @returns {*}
+ */
 export default UserSub

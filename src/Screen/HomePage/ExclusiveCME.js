@@ -1,3 +1,7 @@
+/**
+ * Exclusive cme screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CMEExclusive.
+ */
+
 import React from "react";
 import { Image, ImageBackground, Text, View } from "react-native";
 import Fonts from "../../Themes/Fonts";
@@ -105,4 +109,9 @@ const CMEExclusive = ({ item, index }) => {
 
     )
 }
+/**
+ * Exclusive cme default export.
+ *
+ * @returns {*}
+ */
 export default CMEExclusive 

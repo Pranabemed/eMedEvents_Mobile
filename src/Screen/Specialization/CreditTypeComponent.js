@@ -1,3 +1,7 @@
+/**
+ * Credit type component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CreditTypeComponent, weekFilterProfession, onBackPress.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, BackHandler, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -16,7 +20,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, searchCreditName, searchtext }) => {
     console.log(clist, "wekknamecustome")
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -58,7 +69,11 @@ const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, search
         return () => clearTimeout(timeout);
     }, []);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             setcountrypicker(false);
             return true;
         };
@@ -154,4 +169,9 @@ const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, search
     )
 }
 
+/**
+ * Credit type component default export.
+ *
+ * @returns {*}
+ */
 export default CreditTypeComponent

@@ -1,3 +1,7 @@
+/**
+ * Progress bar circle reusable component module. Provides a React Native UI building block used across screens. Exported members: AnimatedCircle, ProgressBarCircle, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -15,6 +19,16 @@ import Colorpath from '../Themes/Colorpath';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+/**
+ * Progress bar circle component.
+ * @param {Object} props - Input object.
+ * @param {*} props.duration - Nested property value.
+ * @param {*} props.size - Nested property value.
+ * @param {*} props.strokeWidth - Nested property value.
+ * @param {*} props.backgroundColor - Nested property value.
+ * @param {*} props.fillColor - Nested property value.
+ * @returns {JSX.Element}
+ */
 const ProgressBarCircle = ({
   duration, 
   size , 
@@ -82,6 +96,10 @@ const ProgressBarCircle = ({
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
@@ -99,4 +117,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Progress bar circle default export.
+ *
+ * @returns {*}
+ */
 export default ProgressBarCircle;

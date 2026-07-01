@@ -1,3 +1,7 @@
+/**
+ * Board course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, BoardCourse, boardCourseHandle, fullAction, boardCourse, courserenderDataBoard, registercourserenderDataBoard.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect } from 'react'
 import { View, Text, TouchableOpacity, Image, FlatList, ScrollView, Platform } from 'react-native';
 import PageHeader from '../../Components/PageHeader';
@@ -23,18 +27,32 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Board course component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const BoardCourse = (props) => {
     const dispatch = useDispatch();
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     console.log(props?.route?.params?.FullData, "course=======", DashboardReducer)
-    const boardCourseHandle = () => {
+        /**
+ * Board course handle utility.
+ * @returns {void}
+ */
+const boardCourseHandle = () => {
         props.navigation.goBack();
     }
     const {
         statepush,
         setStatepush
     } = useContext(AppContext);
-    const fullAction = (dataItem) => {
+        /**
+ * Full action utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", dataItem);
@@ -51,7 +69,11 @@ const BoardCourse = (props) => {
         }
     }
     useEffect(() => {
-        const boardCourse = () => {
+                /**
+ * Board course utility.
+ * @returns {void}
+ */
+const boardCourse = () => {
             let obj = {
                 "board_id": props?.route?.params?.FullData?.stateid,
                 "compliance": 1
@@ -79,7 +101,14 @@ const BoardCourse = (props) => {
                 break;
         }
     }
-    const courserenderDataBoard = ({ item, index }) => {
+        /**
+ * Courserender data board utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderDataBoard = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -171,7 +200,14 @@ const BoardCourse = (props) => {
         )
     }
 
-    const registercourserenderDataBoard = ({ item, index }) => {
+        /**
+ * Registercourserender data board utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const registercourserenderDataBoard = ({ item, index }) => {
         console.log(item, "item--------")
         return (
             <View>
@@ -449,4 +485,9 @@ useLayoutEffect(() => {
     )
 }
 
+/**
+ * Board course default export.
+ *
+ * @returns {*}
+ */
 export default BoardCourse

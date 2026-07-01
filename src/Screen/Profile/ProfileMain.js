@@ -1,3 +1,7 @@
+/**
+ * Profile main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfileMain, checkPrimeSkipped, read, getDisplayName, getDisplayProfession, token_error, profileBack, token_handle_vault, profileItem, handleRot, stylesd.
+ */
+
 import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -58,7 +62,13 @@ const ProfileMain = (props) => {
     const [primeSkipped, setPrimeSkipped] = useState(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
-        const checkPrimeSkipped = async () => {
+                /**
+ * Check prime skipped utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkPrimeSkipped = async () => {
             try {
                 const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
                 setPrimeSkipped(skipped === 'true');
@@ -79,21 +89,40 @@ const ProfileMain = (props) => {
             mounted = false;
         };
     }, [isFoucs]);
-    const read = (value) => (value == null ? "" : String(value).trim());
-    const getDisplayName = (source) => {
+        /**
+ * Read utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const read = (value) => (value == null ? "" : String(value).trim());
+        /**
+ * Returns display name.
+ * @param {*} source - Input value.
+ * @returns {Object}
+ */
+const getDisplayName = (source) => {
         if (!source) return { firstname: "", lastname: "" };
         const firstname = read(source?.personal_information?.firstname || source?.firstname);
         const lastname = read(source?.personal_information?.lastname || source?.lastname);
         return { firstname, lastname };
     };
-    const getDisplayProfession = (source) => {
+        /**
+ * Returns display profession.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
+const getDisplayProfession = (source) => {
         if (!source) return "";
         const profession = read(source?.professional_information?.profession || source?.profession);
         const professionType = read(source?.professional_information?.profession_type || source?.profession_type);
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     useEffect(() => {
-        const token_error = () => {
+                /**
+ * Token error utility.
+ * @returns {void}
+ */
+const token_error = () => {
             AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
                 if (loginHandleProccess) {
                     let objToken = { "token": loginHandleProccess, "key": {} }
@@ -122,7 +151,11 @@ const ProfileMain = (props) => {
 
         return () => unsubscribe();
     }, [isFoucs]);
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
             return;
@@ -217,7 +250,11 @@ const ProfileMain = (props) => {
 
     }, [DashboardReducer?.dashPerResponse])
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -287,7 +324,14 @@ const ProfileMain = (props) => {
             setPrimeitprofs(true);
         }
     }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaultprof, finalProfessionprof, takeSub, endDateStringProfile]);
-    const profileItem = ({ item, index }) => {
+        /**
+ * Profile item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const profileItem = ({ item, index }) => {
         return (
             <View style={{ margin: 15 }}>
                 <TouchableOpacity onPress={() => {
@@ -385,7 +429,11 @@ const ProfileMain = (props) => {
 
         )
     }
-    const handleRot = () => {
+        /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
@@ -559,7 +607,16 @@ const ProfileMain = (props) => {
     )
 }
 
+/**
+ * Profile main default export.
+ *
+ * @returns {*}
+ */
 export default ProfileMain
+/**
+ * Stylesd value.
+ * @returns {*}
+ */
 const stylesd = StyleSheet.create({
     container: {
         position: 'absolute',

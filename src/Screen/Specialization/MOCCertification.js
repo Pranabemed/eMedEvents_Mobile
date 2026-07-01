@@ -1,3 +1,7 @@
+/**
+ * Moccertification screen module. Renders a React Native screen or a screen-scoped support component. Exported members: MOCCertification, MOChandle.
+ */
+
 import { View, Text, TouchableOpacity, Platform } from 'react-native'
 import React, { useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -20,7 +24,11 @@ const MOCCertification = (props) => {
     const [taketrue, setTaketrue] = useState(false);
     const navigation = useNavigation();
     console.log(props?.route?.params?.boardIdMOC, "boardIdMOC===========")
-    const MOChandle = () => {
+        /**
+ * Mochandle component.
+ * @returns {void}
+ */
+const MOChandle = () => {
         navigation.navigate("TabNav", { detectmain: "main" });
     }
     useLayoutEffect(() => {
@@ -110,4 +118,9 @@ const MOCCertification = (props) => {
     )
 }
 
+/**
+ * Moccertification default export.
+ *
+ * @returns {*}
+ */
 export default MOCCertification

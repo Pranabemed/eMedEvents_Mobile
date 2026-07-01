@@ -1,3 +1,7 @@
+/**
+ * Featured banner screen module. Renders a React Native screen or a screen-scoped support component. Exported members: FeaturedComponent, formatDate.
+ */
+
 import { Alert, Image, ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import React from 'react';
 import normalize from '../../Utils/Helpers/Dimen'
@@ -13,7 +17,12 @@ import moment from "moment";
  * @returns {JSX.Element}
  */
 const FeaturedComponent = ({ item, index }) => {
-    const formatDate = (dateStr) => {
+        /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
         const date = moment(dateStr, "DD MMM'YY");
         return date.format("D  MMM").replace(' ', '');
     };
@@ -199,4 +208,9 @@ const FeaturedComponent = ({ item, index }) => {
         </View>
     );
 };
+/**
+ * Featured banner default export.
+ *
+ * @returns {*}
+ */
 export default FeaturedComponent;

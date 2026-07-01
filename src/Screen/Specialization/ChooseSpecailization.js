@@ -1,3 +1,7 @@
+/**
+ * Choose specailization screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ChooseSpecailization, handleBackPress, onBackPress, cleanNumber, renderData.
+ */
+
 import { View, Text, TouchableOpacity, FlatList, ScrollView, Platform, BackHandler, Alert } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -13,6 +17,10 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import FlatListShimmer from '../../Components/FlatlistShimmer';
 import { CommonActions } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
@@ -77,13 +85,21 @@ const ChooseSpecailization = (props) => {
         }
     }, [DashboardReducer?.stateCourseResponse?.data])
     console.log("cmedata0-------", CMEData);
-    const handleBackPress = () => {
+        /**
+ * Handles back press.
+ * @returns {void}
+ */
+const handleBackPress = () => {
         const getAda = fulldashbaord?.[0];
         setAddit(getAda);
         props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             handleBackPress();
             return true;
         };
@@ -95,7 +111,12 @@ const ChooseSpecailization = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -103,7 +124,14 @@ const ChooseSpecailization = (props) => {
         }
         return 0;
     };
-    const renderData = ({ item, index }) => {
+        /**
+ * Render data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderData = ({ item, index }) => {
         console.log(item, "itemgetingn---------", cleanNumber(item?.earned_credits), cleanNumber(item?.credits))
         return (
             <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: { fullData: item, addCreds: DashboardReducer?.stateCourseResponse?.data?.state_data } }) }}>
@@ -340,4 +368,9 @@ const ChooseSpecailization = (props) => {
     )
 }
 
+/**
+ * Choose specailization default export.
+ *
+ * @returns {*}
+ */
 export default ChooseSpecailization;

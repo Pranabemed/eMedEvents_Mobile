@@ -1,4 +1,8 @@
 
+/**
+ * Speciality component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SpecialityComponent.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform } from 'react-native'
 import React from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -133,4 +137,9 @@ const SpecialityComponent = ({handleSpecialitySelect,formData, setstatepicker, s
     )
 }
 
+/**
+ * Speciality component default export.
+ *
+ * @returns {*}
+ */
 export default SpecialityComponent

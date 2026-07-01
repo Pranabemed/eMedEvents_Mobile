@@ -1,3 +1,7 @@
+/**
+ * Cmemodal reusable component module. Provides a React Native UI building block used across screens. Exported members: Cmemodal, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -67,7 +71,16 @@ const Cmemodal = ({ isModal, onCmeFalse,setCmemodal}) => {
     )
 }
 
+/**
+ * Cmemodal default export.
+ *
+ * @returns {*}
+ */
 export default Cmemodal
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

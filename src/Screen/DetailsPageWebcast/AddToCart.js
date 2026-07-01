@@ -1,3 +1,7 @@
+/**
+ * Add to cart screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddToCart, toggleModalPaymentfreecart, toggleModalFailedfreecart, cartPress, applyCoupon, CheckCart, cartFreeTake, loadMoreData, renderFooter, handleDeletecart, exploreCart, cleanNumber, formatPrice, buildCartRoutePayload, formatNumberWithCommas.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -30,6 +34,11 @@ import { useFocusEffect } from '@react-navigation/native';
  */
 
 let status = "";
+/**
+ * Add to cart component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const AddToCart = (props) => {
     const {
         cartcount,
@@ -60,13 +69,27 @@ const AddToCart = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const toggleModalPaymentfreecart = (ddf) => {
+        /**
+ * Toggle modal paymentfreecart utility.
+ * @param {*} ddf - Input value.
+ * @returns {void}
+ */
+const toggleModalPaymentfreecart = (ddf) => {
         setPaymentcardfreecart(ddf);
     };
-    const toggleModalFailedfreecart = (tikg) => {
+        /**
+ * Toggle modal failedfreecart utility.
+ * @param {*} tikg - Input value.
+ * @returns {void}
+ */
+const toggleModalFailedfreecart = (tikg) => {
         setPaymentfdfreecart(tikg);
     };
-    const cartPress = () => {
+        /**
+ * Cart press utility.
+ * @returns {void}
+ */
+const cartPress = () => {
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
             return;
@@ -90,7 +113,11 @@ const AddToCart = (props) => {
                 });
         }, [dispatch])
     );
-    const applyCoupon = () => {
+        /**
+ * Apply coupon utility.
+ * @returns {void}
+ */
+const applyCoupon = () => {
         if (!couponapp) {
             showErrorAlert("Please enter a valid coupon ")
         } else {
@@ -115,7 +142,11 @@ const AddToCart = (props) => {
         }
     }
     const cartPayId = cart?.cartData?.tickets || [];
-    const CheckCart = () => {
+        /**
+ * Check cart component.
+ * @returns {void}
+ */
+const CheckCart = () => {
         let objcart = {
             "payment_id": cartPayId?.length > 0 && cartPayId?.map(item => item?.payment_id),
         }
@@ -127,7 +158,12 @@ const AddToCart = (props) => {
                 showErrorAlert(err, "Please connect to internet");
             })
     }
-    const cartFreeTake = (invcz) => {
+        /**
+ * Cart free take utility.
+ * @param {*} invcz - Input value.
+ * @returns {void}
+ */
+const cartFreeTake = (invcz) => {
         const objinvc = {
             "invoice": invcz
         }
@@ -258,7 +294,11 @@ const AddToCart = (props) => {
         }
     }, [cartdetails]);
 
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (addtocartview?.length && paginatedDatacart?.length < addtocartview.length) {
             setLoadingMore(true);
@@ -270,7 +310,11 @@ const AddToCart = (props) => {
             setLoadingMore(false);
         }
     };
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ paddingVertical: normalize(20) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
@@ -282,7 +326,12 @@ const AddToCart = (props) => {
         // Removed arbitrary 4s spinner — shimmer now handles initial load
         setShowLoader(false);
     }, []);
-    const handleDeletecart = (dataid) => {
+        /**
+ * Handles deletecart.
+ * @param {*} dataid - Input value.
+ * @returns {void}
+ */
+const handleDeletecart = (dataid) => {
         console.log('Data ID to delete:', dataid, 'Type:', typeof dataid);
         console.log('Current Data Full:', cartdetails);
         if (!Array.isArray(cartdetails) || cartdetails?.length === 0) {
@@ -303,7 +352,14 @@ const AddToCart = (props) => {
             console.log('Item not found');
         }
     };
-    const exploreCart = ({ item, index }) => {
+        /**
+ * Explore cart utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const exploreCart = ({ item, index }) => {
         console.log(item, index, "ietmexpolor---------")
         return (
             <View style={{ alignItems: "center", justifyContent: "center", backgroundColor: Colorpath.Pagebg }}>
@@ -337,8 +393,16 @@ const AddToCart = (props) => {
                             {`${item?.ticket_qty} X US$${item?.paid_amount}`}
                         </Text>
                         <TouchableOpacity onPress={() => {
-                            Alert.alert('eMedEvents', 'Are you sure you want to delete this item from your cart?', [{ text: "No", onPress: () => { console.log("hello") }, style: "cancel" }, {
-                                text: "Yes", onPress: () => {
+                            Alert.alert('eMedEvents', 'Are you sure you want to delete this item from your cart?', [{ text: "No",                             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { console.log("hello") }, style: "cancel" }, {
+                                text: "Yes",                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                     handleDeletecart(item?.payment_id);
                                     let obj = {
                                         "paymentId": item?.payment_id
@@ -362,7 +426,12 @@ const AddToCart = (props) => {
     const totalPaid = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount ?? 0;
     const totalValue = WebcastReducer?.couponWebcastResponse?.total_value ?? 0;
     const totalQty = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_qty ?? 0;
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value === 'number') return value;
         if (typeof value === 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -370,7 +439,12 @@ const AddToCart = (props) => {
         }
         return 0;
     };
-    const formatPrice = (price) => {
+        /**
+ * Formats price.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+const formatPrice = (price) => {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -392,7 +466,11 @@ const AddToCart = (props) => {
         cart?.cartData?.total_amount_with_fee ??
         (latestCartBaseAmount + latestCartProcessingFeeAmount)
     );
-    const buildCartRoutePayload = () => ({
+        /**
+ * Build cart route payload utility.
+ * @returns {Object}
+ */
+const buildCartRoutePayload = () => ({
         ...cart,
         cartData: {
             ...(cart?.cartData || {}),
@@ -408,7 +486,12 @@ const AddToCart = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
-     const formatNumberWithCommas = (value) => {
+          /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
@@ -665,4 +748,9 @@ const AddToCart = (props) => {
     )
 }
 
+/**
+ * Add to cart default export.
+ *
+ * @returns {*}
+ */
 export default AddToCart

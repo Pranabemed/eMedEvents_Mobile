@@ -1,3 +1,7 @@
+/**
+ * Prime card reusable component module. Provides a React Native UI building block used across screens. Exported members: PrimeCard, handlePrimaryAction, handleSecondaryAction.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, ImageBackground, ScrollView, useWindowDimensions } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -29,7 +33,11 @@ const PrimeCard = ({
   const navigate = useNavigation();
   const { height: windowHeight } = useWindowDimensions();
   const cardHeight = Math.min(normalize(500), Math.round(windowHeight * 0.9));
-  const handlePrimaryAction = () => {
+    /**
+ * Handles primary action.
+ * @returns {void}
+ */
+const handlePrimaryAction = () => {
     if (typeof onPrimaryAction === 'function') {
       onPrimaryAction();
       return;
@@ -37,7 +45,11 @@ const PrimeCard = ({
     setPrimeadd(false);
     navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimePayment" }] }))
   };
-  const handleSecondaryAction = () => {
+    /**
+ * Handles secondary action.
+ * @returns {void}
+ */
+const handleSecondaryAction = () => {
     if (typeof onSecondaryAction === 'function') {
       onSecondaryAction();
       return;
@@ -212,4 +224,9 @@ const PrimeCard = ({
     </Modal>
   )
 }
+/**
+ * Prime card default export.
+ *
+ * @returns {*}
+ */
 export default PrimeCard

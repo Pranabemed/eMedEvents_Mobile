@@ -1,3 +1,7 @@
+/**
+ * Newmultiple screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomInputTouchableZ, styles.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../../Utils/Helpers/Dimen'; // adjust your import path
@@ -62,8 +66,17 @@ const CustomInputTouchableZ = ({
     );
 };
 
+/**
+ * Newmultiple default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputTouchableZ;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         position: 'relative',

@@ -1,9 +1,21 @@
+/**
+ * Statevaultstyes screen module. Renders a React Native screen or a screen-scoped support component. Exported members: windowWidth, styles.
+ */
+
 import { Dimensions, StyleSheet } from "react-native";
 import Colorpath from "../../Themes/Colorpath";
 import Fonts from "../../Themes/Fonts";
 import normalize from '../../Utils/Helpers/Dimen';
+/**
+ * Window width value.
+ * @returns {*}
+ */
 const windowWidth = Dimensions.get('window').width;
 // const windowHeight = Dimensions.get('window').height;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 export const styles = StyleSheet.create({
     container: {
         paddingHorizontal: normalize(10),

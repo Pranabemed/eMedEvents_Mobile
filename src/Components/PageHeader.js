@@ -1,3 +1,7 @@
+/**
+ * Page header reusable component module. Provides a React Native UI building block used across screens. Exported members: PageHeader, handleSearch.
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -54,7 +58,11 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
 
   console.log(cartcount, "fdgjhjfdghjh");
 
-  const handleSearch = () => {
+    /**
+ * Handles search.
+ * @returns {void}
+ */
+const handleSearch = () => {
     if (searchPress) {
       const websiteBaseUrl = constants.BASE_URL == "https://newdev.emedevents.com"
         ? 'https://www.emedevents.com'
@@ -307,4 +315,9 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
   );
 };
 
+/**
+ * Page header default export.
+ *
+ * @returns {*}
+ */
 export default PageHeader;

@@ -1,3 +1,7 @@
+/**
+ * State data component reusable component module. Provides a React Native UI building block used across screens. Exported members: StateDataComponent, courseRole.
+ */
+
 import { View, Text, KeyboardAvoidingView, Platform, FlatList, ScrollView, TextInput, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath';
@@ -16,7 +20,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const StateDataComponent = ({navigation,searchpratice, searchStateNamePratice, setSearchState, Icon, slistpratice, setStatepratice, setSpecailidpratice }) => {
-    const courseRole =()=>{
+        /**
+ * Course role utility.
+ * @returns {void}
+ */
+const courseRole =()=>{
         navigation.goBack();
     }
     return (
@@ -170,4 +178,9 @@ const StateDataComponent = ({navigation,searchpratice, searchStateNamePratice, s
             )
 }
 
-            export default StateDataComponent
+                        /**
+             * State data component default export.
+             *
+             * @returns {*}
+             */
+export default StateDataComponent

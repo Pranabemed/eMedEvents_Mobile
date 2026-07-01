@@ -1,3 +1,7 @@
+/**
+ * Custom flat utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: CustomFlatListInner, CustomFlatList.
+ */
+
 import { useCustomFlatListHook } from "./CustomHooksFlat";
 import React, { forwardRef, useRef, useImperativeHandle, JSX } from "react";
 import { Animated, FlatListProps } from "react-native";
@@ -9,6 +13,13 @@ type CustomFlatListProps<T> = Omit<FlatListProps<T>, "ListHeaderComponent"> & {
   TopListElementComponent: JSX.Element;
 };
 
+/**
+ * Custom flat list inner component.
+ * @param {Object} props - Component props.
+ * @param {*} props.style - Nested property value.
+ * @param {*} ref - Input value.
+ * @returns {JSX.Element}
+ */
 function CustomFlatListInner<T>(
   {
     style,
@@ -68,8 +79,17 @@ function CustomFlatListInner<T>(
   );
 }
 
+/**
+ * Custom flat list value.
+ * @returns {*}
+ */
 const CustomFlatList = forwardRef(CustomFlatListInner) as <T>(
   props: CustomFlatListProps<T> & { ref?: React.Ref<Animated.FlatList<T>> }
 ) => React.ReactElement;
 
+/**
+ * Custom flat default export.
+ *
+ * @returns {*}
+ */
 export default CustomFlatList;

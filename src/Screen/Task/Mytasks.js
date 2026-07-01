@@ -1,3 +1,7 @@
+/**
+ * Mytasks screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Mytasks, resolveLicenseStateName, resolveLicenseExpiryDate, taskPress, taskHandle, taskAction, mytasktitleUrl, mytaskparticularData, formatDatetask, formatDateEndtask, onBackPress.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, ScrollView, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath';
@@ -29,14 +33,22 @@ const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
         const { isConnected,fulldashbaord,setAddit,statepush } = useContext(AppContext);
         const dispatch = useDispatch();
-    const resolveLicenseStateName = () => (
+        /**
+ * Resolve license state name utility.
+ * @returns {*}
+ */
+const resolveLicenseStateName = () => (
         props?.route?.params?.taskData?.creditID?.state ||
         props?.route?.params?.taskData?.creditID?.state_name ||
         props?.route?.params?.backget?.creditID?.state ||
         props?.route?.params?.backget?.creditID?.state_name ||
         ""
     );
-    const resolveLicenseExpiryDate = () => (
+        /**
+ * Resolve license expiry date utility.
+ * @returns {*}
+ */
+const resolveLicenseExpiryDate = () => (
         props?.route?.params?.taskData?.creditID?.to_date ||
         props?.route?.params?.taskData?.creditID?.expiry_date ||
         props?.route?.params?.taskData?.creditID?.license_expiry_date ||
@@ -69,7 +81,11 @@ const Mytasks = (props) => {
         props?.route?.params?.backget?.creditID?.expiry_date,
         props?.route?.params?.backget?.creditID?.license_expiry_date
     ]);
-    const taskPress = () => {
+        /**
+ * Task press utility.
+ * @returns {void}
+ */
+const taskPress = () => {
         setAddit(statepush);
         stateDashboardSuccess(null)
         if (props.navigation.canGoBack()) {
@@ -94,7 +110,11 @@ const Mytasks = (props) => {
         );
         // props.navigation.goBack();
     };
-       const taskHandle = () => {
+              /**
+ * Task handle utility.
+ * @returns {void}
+ */
+const taskHandle = () => {
             if (statepush) {
                 const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
                 connectionrequest()
@@ -136,7 +156,12 @@ const Mytasks = (props) => {
             setFinalTask(updatedStateDataArray);
         }
     }, [props?.route?.params?.backget, isLicenseExpired])
-    const taskAction = (taskID) => {
+        /**
+ * Task action utility.
+ * @param {*} taskID - Input value.
+ * @returns {void}
+ */
+const taskAction = (taskID) => {
         const url_webcast = taskID?.detailpage_url;
         const result_final = url_webcast.split('/').pop();
         console.log(result_final, "webcast url=======");
@@ -153,7 +178,12 @@ const Mytasks = (props) => {
             props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result_final, creditData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData } })
         }
     }
-    const mytasktitleUrl = (make) => {
+        /**
+ * Mytasktitle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const mytasktitleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make);
@@ -162,14 +192,31 @@ const Mytasks = (props) => {
         }
     }
     console.log(finalTask, "finalTask------")
-    const mytaskparticularData = ({ item, index }) => {
+        /**
+ * Mytaskparticular data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const mytaskparticularData = ({ item, index }) => {
         console.log(item, "item?.completed_percentage======")
-        const formatDatetask = (taskrole) => {
+                /**
+ * Formats datetask.
+ * @param {*} taskrole - Input value.
+ * @returns {*}
+ */
+const formatDatetask = (taskrole) => {
             const date = moment(taskrole, "DD MMM'YY");
             return date.format("MMM D").replace(' ', '');
         };
         const finalDataTasking = formatDatetask(item?.startdate);
-        const formatDateEndtask = (taskrole) => {
+                /**
+ * Formats date endtask.
+ * @param {*} taskrole - Input value.
+ * @returns {*}
+ */
+const formatDateEndtask = (taskrole) => {
             const date = moment(taskrole, "DD MMM'YY");
             return date.format("MMM D, YY").replace('', '');
         };
@@ -305,7 +352,11 @@ const Mytasks = (props) => {
         );
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             taskPress();
             return true;
         };
@@ -369,4 +420,9 @@ const Mytasks = (props) => {
     )
 }
 
+/**
+ * Mytasks default export.
+ *
+ * @returns {*}
+ */
 export default Mytasks 

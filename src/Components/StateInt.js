@@ -1,3 +1,7 @@
+/**
+ * State int reusable component module. Provides a React Native UI building block used across screens. Exported members: handleRot.
+ */
+
 import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import {
     View,
@@ -47,7 +51,11 @@ export default function StateIntData({ setRenewal, renewal, setStateid, stateid,
 
         return () => unsubscribe();
     }, []);
-      const handleRot =()=>{
+            /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot =()=>{
          const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
             if (state.isConnected) {

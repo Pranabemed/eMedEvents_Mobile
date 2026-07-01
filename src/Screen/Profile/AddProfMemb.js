@@ -1,3 +1,7 @@
+/**
+ * Add prof memb screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AddProfMemb, SearchBack.
+ */
+
 import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -20,7 +24,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 const AddProfMemb = (props) => {
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     const [take, setTake] = useState("")
@@ -179,4 +187,9 @@ const AddProfMemb = (props) => {
     )
 }
 
+/**
+ * Add prof memb default export.
+ *
+ * @returns {*}
+ */
 export default AddProfMemb

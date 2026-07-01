@@ -1,3 +1,7 @@
+/**
+ * Survey screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Survey.
+ */
+
 import { View, Text } from 'react-native'
 import React from 'react'
 
@@ -17,4 +21,9 @@ const Survey = () => {
   )
 }
 
+/**
+ * Survey default export.
+ *
+ * @returns {*}
+ */
 export default Survey

@@ -1,3 +1,7 @@
+/**
+ * Int splash.test test module. Verifies the behavior of the associated screen, component, or helper. Exported members: MockAppContextProvider.
+ */
+
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +21,13 @@ describe('SplashInt Component', () => {
         setOptions: jest.fn(),
     };
 
-    const MockAppContextProvider = ({ children }) => (
+        /**
+ * Mock app context provider component.
+ * @param {Object} props - Input object.
+ * @param {*} props.children - Nested property value.
+ * @returns {JSX.Element}
+ */
+const MockAppContextProvider = ({ children }) => (
         <AppContext.Provider
             value={{
                 setFulldashbaord: mockSetFulldashbaord,

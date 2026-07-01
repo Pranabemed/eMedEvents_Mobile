@@ -1,3 +1,7 @@
+/**
+ * Livecourse screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Livecourse, fullActionlive, titlhandleUrllive, handleLinkst, showPDF, openFileViewerst, fetchHandle, fullDataRefresh, courserenderData, formatDate, formatDateEnd, handlePress, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -66,7 +70,12 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             fetchHandle(0);
         }
     }, [isFocus, dispatch]);
-    const fullActionlive = (dataItem) => {
+        /**
+ * Full actionlive utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullActionlive = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
         if (dataItem?.current_activity_api == "activitysession") {
@@ -93,16 +102,32 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: creditwholelive } })
         }
     }
-    const titlhandleUrllive = (make) => {
+        /**
+ * Titlhandle urllive utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrllive = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: creditwholelive } })
         }
     }
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownstlv(true);
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
@@ -128,7 +153,13 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
 
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     await FileViewer.open(pdfUrist);
                     setPdfUrist(null);
@@ -139,7 +170,12 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             openFileViewerst();
         }
     }, [pdfUrist]);
-    const fetchHandle = (page = pageNum) => {
+        /**
+ * Fetch handle utility.
+ * @param {*} page - Input value.
+ * @returns {void}
+ */
+const fetchHandle = (page = pageNum) => {
         let obj = {
             "pageno": page,
             "limit": limit,
@@ -164,7 +200,11 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
         }
     }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
 
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -236,13 +276,30 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                     [];
         setDataAll(resultData);
     }, [fetchnamelive, filteredItems, pendingall, compltall]);
-    const courserenderData = ({ item, index }) => {
-        const formatDate = (dateStr) => {
+        /**
+ * Courserender data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderData = ({ item, index }) => {
+                /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-        const formatDateEnd = (dateStr) => {
+                /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
@@ -417,7 +474,11 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
                             keyExtractor={item => item.id.toString()}
                             data={Fulldatalive}
                             renderItem={({ item }) => {
-                                const handlePress = () => {
+                                                                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                     setModalviewlive(false);
                                     if (item?.id === 1) {
                                         if (certificatelive) {
@@ -452,7 +513,16 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     )
 }
 
+/**
+ * Livecourse default export.
+ *
+ * @returns {*}
+ */
 export default Livecourse
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

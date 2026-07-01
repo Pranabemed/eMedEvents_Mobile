@@ -1,3 +1,7 @@
+/**
+ * Verify mobile otp screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, VerifyMobileOTP, token_error_otp, handleChange, handleKeyPress, token_handle, toggleModal, verifyHandlevalid, resendMobileOTP, clearAllOTPFieldsMobile, stateDashboardData, stateReport, licHandl, verifyHandle, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, StyleSheet, Alert, Image, BackHandler } from 'react-native';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -33,11 +37,36 @@ import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscriptio
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Guest registration flow key constant.
+ * @returns {string}
+ */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+/**
+ * Guest prime verification pending key constant.
+ * @returns {string}
+ */
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+/**
+ * Prime membership skipped key constant.
+ * @returns {string}
+ */
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+/**
+ * Prime card flow complete key constant.
+ * @returns {string}
+ */
 const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+/**
+ * Verify mobile otp component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const VerifyMobileOTP = (props) => {
     const {
         setFulldashbaord,
@@ -94,7 +123,11 @@ const VerifyMobileOTP = (props) => {
         }
     }, [AuthReducer?.signupResponse])
     useEffect(() => {
-        const token_error_otp = () => {
+                /**
+ * Token error otp utility.
+ * @returns {void}
+ */
+const token_error_otp = () => {
             setTimeout(async () => {
                 const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
                 let objToken = { "token": loginHandleProccess, "key": {} }
@@ -116,7 +149,13 @@ const VerifyMobileOTP = (props) => {
         }
     }, [isFocus, stableGuestPrimeUser]);
     console.log(DashboardReducer?.mainprofileResponse, "mainprofile---------", props?.route?.params)
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text?.length > 1) {
             setOtpmobile(prevOtp => {
                 const newOtp = [...prevOtp];
@@ -147,7 +186,14 @@ const VerifyMobileOTP = (props) => {
         }
     };
 
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpmobile[index] === '') {
                 if (index > 0) inputsmobile.current[index - 1].focus();
@@ -159,7 +205,11 @@ const VerifyMobileOTP = (props) => {
         }
     };
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.PHONE);
                 setAllotpcheckddd(loginHandle)
@@ -257,11 +307,19 @@ const VerifyMobileOTP = (props) => {
         startNewTimer(300);
     }, [startNewTimer]);
     const [isModalVisible, setModalVisible] = useState(false);
-    const toggleModal = () => {
+        /**
+ * Toggle modal utility.
+ * @returns {void}
+ */
+const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
     const autoResendHandledRef = useRef(false);
-    const verifyHandlevalid = () => {
+        /**
+ * Verify handlevalid utility.
+ * @returns {void}
+ */
+const verifyHandlevalid = () => {
         let obj = {
             "verify_type": "phone"
         }
@@ -273,7 +331,11 @@ const VerifyMobileOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const resendMobileOTP = () => {
+        /**
+ * Resend mobile otp utility.
+ * @returns {void}
+ */
+const resendMobileOTP = () => {
         let obj = {
             "verify_type": "phone"
         }
@@ -285,7 +347,11 @@ const VerifyMobileOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const clearAllOTPFieldsMobile = () => {
+        /**
+ * Clear all otpfields mobile utility.
+ * @returns {void}
+ */
+const clearAllOTPFieldsMobile = () => {
         setOtpmobile(new Array(6).fill(''));
         if (inputsmobile.current[0]) {
             inputsmobile.current[0].focus();
@@ -443,7 +509,12 @@ const VerifyMobileOTP = (props) => {
             }
         }
     }, [DashboardReducer.status]);
-    const stateDashboardData = (id) => {
+        /**
+ * State dashboard data utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateDashboardData = (id) => {
         let obj = {
             "state_id": id
         }
@@ -453,7 +524,12 @@ const VerifyMobileOTP = (props) => {
             })
             .catch(err => { showErrorAlert("Please connect to internet", err) })
     }
-    const stateReport = (did) => {
+        /**
+ * State report utility.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const stateReport = (did) => {
         let obj = {
             "state_id": did
         }
@@ -465,7 +541,12 @@ const VerifyMobileOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const licHandl = (profFromDashboard) => {
+        /**
+ * Lic handl utility.
+ * @param {*} profFromDashboard - Input value.
+ * @returns {void}
+ */
+const licHandl = (profFromDashboard) => {
         let obj = profFromDashboard;
         console.log(obj, "obj--------")
         connectionrequest()
@@ -483,7 +564,11 @@ const VerifyMobileOTP = (props) => {
         setRenewal(renewalLink);
     }, [renewalLink]);
     console.log("manually otp1222", props?.route?.params, AuthReducer);
-    const verifyHandle = () => {
+        /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
         console.log(props?.route?.params?.Newphone?.Verifycell, "manually otp1222", props?.route?.params);
         const enteredOTP = otpmobile && otpmobile.join('');
         console.log(enteredOTP, typeof enteredOTP, "manually otp");
@@ -517,7 +602,11 @@ const VerifyMobileOTP = (props) => {
         }
     }, [phoneDetect])
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -692,6 +781,10 @@ const VerifyMobileOTP = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -744,4 +837,9 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * Verify mobile otp default export.
+ *
+ * @returns {*}
+ */
 export default VerifyMobileOTP;

@@ -1,3 +1,7 @@
+/**
+ * Interest card screen module. Renders a React Native screen or a screen-scoped support component. Exported members: InterestCard, thanksBack, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates.
+ */
+
 import { View, Text, Platform, ActivityIndicator, FlatList, TouchableOpacity, Image } from 'react-native'
 import React, { useLayoutEffect } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -22,11 +26,20 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const InterestCard = (props) => {
     const dispatch = useDispatch();
-    const thanksBack = () => {
+        /**
+ * Thanks back utility.
+ * @returns {void}
+ */
+const thanksBack = () => {
         props.navigation.replace("TabNav");
     }
     console.log(props?.route?.params, "fdfgfdg========");
-     const handleUrl = (onlineName) => {
+          /**
+ * Handles url.
+ * @param {*} onlineName - Input value.
+ * @returns {void}
+ */
+const handleUrl = (onlineName) => {
             const url = onlineName?.detailpage_url;
             const result = url.split('/').pop();
             console.log(result, "webcast url=======", onlineName);
@@ -46,18 +59,39 @@ const InterestCard = (props) => {
                 props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData:props?.route?.params?.invoiceTxt?.creditDs,acrBack:"listing",backDat:props?.route?.params?.invoiceTxt?.invoiceTxt  } })
             }
         }
-     const searchGlobalitem = ({ item, index }) => {
-        const formatDate = (dateStr) => {
+          /**
+ * Search globalitem utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const searchGlobalitem = ({ item, index }) => {
+                /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-        const formatDateEnd = (dateStr) => {
+                /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
-        const renderLocationAndDates = () => {
+                /**
+ * Render location and dates utility.
+ * @returns {*}
+ */
+const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
                     <View style={{ flexDirection: "row" }}>
@@ -252,4 +286,9 @@ const InterestCard = (props) => {
     )
 }
 
+/**
+ * Interest card default export.
+ *
+ * @returns {*}
+ */
 export default InterestCard

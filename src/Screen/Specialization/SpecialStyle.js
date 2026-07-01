@@ -1,7 +1,15 @@
+/**
+ * Special style screen module. Renders a React Native screen or a screen-scoped support component. Exported members: styles.
+ */
+
 import { StyleSheet } from "react-native";
 import Colorpath from "../../Themes/Colorpath";
 import Fonts from "../../Themes/Fonts";
 import normalize from '../../Utils/Helpers/Dimen';
+/**
+ * Styles value.
+ * @returns {*}
+ */
 export const styles = StyleSheet.create({
     container: {
         flex: 1,

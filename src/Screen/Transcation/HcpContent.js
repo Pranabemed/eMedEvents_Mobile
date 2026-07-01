@@ -1,4 +1,8 @@
 
+/**
+ * Hcp content screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, HcpContent, handleSwitchToggle, fetchHCPSub, fullDataRefresh, renderItem, renderMonthItem.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -11,6 +15,10 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { HCPSubRequest, subRenewalRequest } from '../../Redux/Reducers/TransReducer';
 import moment from 'moment';
 import Loader from '../../Utils/Helpers/Loader';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -38,7 +46,13 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
     }, [isFocus]);
     console.log("dddddd------123", storeAlldata)
     const [switchStates, setSwitchStates] = useState({});
-    const handleSwitchToggle = (index, get) => {
+        /**
+ * Handles switch toggle.
+ * @param {number} index - Input value.
+ * @param {*} get - Input value.
+ * @returns {void}
+ */
+const handleSwitchToggle = (index, get) => {
         Alert.alert(
             "eMedEvents",
             "Are you sure you want to cancel this subscription ?",
@@ -49,7 +63,11 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
                 },
                 {
                     text: "Yes",
-                    onPress: () => {
+                                        /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setSwitchStates((prevStates) => ({
                             ...prevStates,
                             [index]: !prevStates[index],
@@ -63,7 +81,11 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
             ]
         );
     };
-    const fetchHCPSub = () => {
+        /**
+ * Fetch hcpsub utility.
+ * @returns {void}
+ */
+const fetchHCPSub = () => {
         let obj = {
             "limit": limit,
             "page": pageNum,
@@ -105,7 +127,11 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
             }
         }
     }, [apiReq, final, TransReducer]);
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -199,7 +225,14 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
     }, [storeAlldata]);
 
 
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
         const isLastItem = index === item?.dataLength - 1;
         const isSwitchOn = switchStates[index] ?? (item?.can_cancel === 1);
         return (
@@ -327,7 +360,13 @@ const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
     }
 
 
-    const renderMonthItem = ({ item }) => {
+        /**
+ * Render month item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderMonthItem = ({ item }) => {
         return (
             <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
                 <Text
@@ -403,4 +442,9 @@ const [showLoader, setShowLoader] = useState(true);
     )
 }
 
+/**
+ * Hcp content default export.
+ *
+ * @returns {*}
+ */
 export default HcpContent

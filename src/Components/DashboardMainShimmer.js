@@ -1,3 +1,7 @@
+/**
+ * Dashboard main shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: DashboardMainShimmer, styles.
+ */
+
 import React from 'react';
 import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -134,8 +138,17 @@ const DashboardMainShimmer = () => {
     );
 };
 
+/**
+ * Dashboard main shimmer default export.
+ *
+ * @returns {*}
+ */
 export default DashboardMainShimmer;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingBottom: normalize(30),

@@ -1,3 +1,7 @@
+/**
+ * Global search screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GlobalSearch, SearchBack.
+ */
+
 import { View, Text, Platform } from 'react-native'
 import React from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -15,7 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const GlobalSearch = (props) => {
-    const SearchBack =()=>{
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack =()=>{
         props.navigation.dispatch(
             CommonActions.reset({
               index: 0,
@@ -53,4 +61,9 @@ const GlobalSearch = (props) => {
   )
 }
 
+/**
+ * Global search default export.
+ *
+ * @returns {*}
+ */
 export default GlobalSearch

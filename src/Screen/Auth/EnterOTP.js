@@ -1,3 +1,7 @@
+/**
+ * Enter otp screen module. Renders a React Native screen or a screen-scoped support component. Exported members: EnterOTP, handleChange, clearAllOTPFieldsPhone, handleKeyPress, verifyHandleForgot, resendOTPNeed, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, StyleSheet, Image, BackHandler } from 'react-native';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -110,7 +114,13 @@ const EnterOTP = (props) => {
     const resendOTP = useCallback(() => {
         startNewTimer(300);
     }, [startNewTimer]);
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text?.length > 1) {
             const pastedText = text.replace(/[^0-9]/g, '');
             const newOtp = [...otpforgot];
@@ -135,13 +145,24 @@ const EnterOTP = (props) => {
             inputsphone.current[index + 1].focus();
         }
     };
-    const clearAllOTPFieldsPhone = () => {
+        /**
+ * Clear all otpfields phone utility.
+ * @returns {void}
+ */
+const clearAllOTPFieldsPhone = () => {
         setotpforgot(new Array(6).fill(''));
         if (inputsphone.current[0]) {
             inputsphone.current[0].focus();
         }
     };
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpforgot[index] === '') {
                 if (index > 0) inputsphone.current[index - 1].focus();
@@ -153,7 +174,11 @@ const EnterOTP = (props) => {
         }
     };
     console.log(props?.route?.params?.forgotPh, "props?.route?.params?.forgotPh------")
-    const verifyHandleForgot = () => {
+        /**
+ * Verify handle forgot utility.
+ * @returns {void}
+ */
+const verifyHandleForgot = () => {
         const enteredOTPForgot = otpforgot && otpforgot.join('');
         console.log(enteredOTPForgot, typeof enteredOTPForgot, "manually otp");
         const forgotOTP = AuthReducer?.forgotResponse?.phone_otp
@@ -164,7 +189,11 @@ const EnterOTP = (props) => {
             showErrorAlert("Invalid OTP. Please try again.");
         }
     };
-    const resendOTPNeed = () => {
+        /**
+ * Resend otpneed utility.
+ * @returns {void}
+ */
+const resendOTPNeed = () => {
         let obj = props?.route?.params?.forgotPh?.phoneCode == "email" ? { "email": props?.route?.params?.forgotPh?.forgotPh } : {
             "phone": props?.route?.params?.forgotPh?.forgotPh ? `${props?.route?.params?.forgotPh?.phoneCode}${props?.route?.params?.forgotPh?.forgotPh}` : ''
         }
@@ -177,7 +206,11 @@ const EnterOTP = (props) => {
             })
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -309,6 +342,10 @@ const EnterOTP = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -366,6 +403,11 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * Enter otp default export.
+ *
+ * @returns {*}
+ */
 export default EnterOTP;
 
 

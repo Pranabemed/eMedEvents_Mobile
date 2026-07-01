@@ -1,3 +1,7 @@
+/**
+ * Payemnt modal reusable component module. Provides a React Native UI building block used across screens. Exported members: CellModalPayemnt, onPress, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -19,7 +23,13 @@ import RNFS from "react-native-fs";
 const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, setGocertificate, gocertificate }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);
-    const onPress = async () => {
+        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
@@ -174,6 +184,10 @@ const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -250,4 +264,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Payemnt modal default export.
+ *
+ * @returns {*}
+ */
 export default CellModalPayemnt;

@@ -1,3 +1,7 @@
+/**
+ * Add cme screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddCME, profileBack, addExpens, expenseType, deleteExpense, styles.
+ */
+
 import { View, Text, Platform, Animated, Easing, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Image, ScrollView } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -19,6 +23,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AddExpensesRequest } from '../../Redux/Reducers/CMECEExpensReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import moment from 'moment';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -48,10 +56,18 @@ const AddCME = (props) => {
     const [ProfilePicUri1, setProfilePicUri1] = useState('');
     const [notshowscan, setnNotshowscan] = useState(false);
     const [allExpenses, setAllExpenses] = useState({ expenses: [] });
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.goBack();
     }
-    const addExpens = () => {
+        /**
+ * Add expens utility.
+ * @returns {void}
+ */
+const addExpens = () => {
         let obj = new FormData();
         const dynamicFieldData = {
             travel_date: new Date().toLocaleDateString('en-CA'),
@@ -135,7 +151,14 @@ const AddCME = (props) => {
     }
     console.log(allExpenses,"allExpenses");
     const expenseData = [{ id: 0, name: "Registration Fee" }, { od: 1, name: "Travel" }, { id: 2, name: "Lodging" }, { id: 3, name: "Meals" }, { id: 4, name: "Others" }];
-    const expenseType = ({ item, index }) => {
+        /**
+ * Expense type utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const expenseType = ({ item, index }) => {
         return (
             <View style={{ paddingHorizontal: normalize(5) }}>
                 <TouchableOpacity onPress={() => {
@@ -179,7 +202,12 @@ const AddCME = (props) => {
     }
     const animatedValuesemail = useRef(new Animated.Value(1)).current;
     const scaleValuesemail = useRef(new Animated.Value(0)).current;
-    const deleteExpense = (id) => {
+        /**
+ * Delete expense utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const deleteExpense = (id) => {
         setAllExpenses((prevState) => ({
           ...prevState,
           expenses: prevState.expenses.filter((expense) => expense.id !== id),
@@ -621,7 +649,16 @@ const AddCME = (props) => {
     )
 }
 
+/**
+ * Add cme default export.
+ *
+ * @returns {*}
+ */
 export default AddCME
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(13),

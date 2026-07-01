@@ -1,3 +1,10 @@
+/**
+ * Auth saga Redux-Saga module.
+ *
+ * Coordinates auth-related side effects, API calls, token persistence,
+ * non-USA flow state, and saga watcher registration.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import {
   signupSuccess,
@@ -70,6 +77,12 @@ import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import axios from 'axios';
 import { getBasicAuthorizationHeader } from '../../Utils/Helpers/BasicAuth';
 import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
+/**
+ * Selects the auth slice from the root Redux state.
+ *
+ * @param {{ AuthReducer: Object }} state - Root Redux state.
+ * @returns {Object} Auth slice state.
+ */
 let getItem = state => state.AuthReducer;
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -90,6 +103,17 @@ import {
 
 ///token
 
+/**
+ * Refreshes the cached basic-auth token and stores it in Redux.
+ *
+ * @returns {Generator}
+ */
+/**
+ * Executes the fetchBasicAuthTokenSaga helper.
+ *
+ * @function fetchBasicAuthTokenSaga
+ * @returns {Generator}
+ */
 function* fetchBasicAuthTokenSaga() {
   try {
     const basicAuthToken = yield call(fetchAndStoreBasicAuthToken);
@@ -109,6 +133,13 @@ function* fetchBasicAuthTokenSaga() {
   }
 }
 
+/**
+ * Executes the gettokenSaga saga.
+ *
+ * @function gettokenSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* gettokenSaga(action) {
   try {
     const response = yield call(AsyncStorage.getItem, constants.TOKEN);
@@ -124,6 +155,13 @@ export function* gettokenSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the allreducerFalse saga.
+ *
+ * @function allreducerFalse
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* allreducerFalse(action) {
   try {
     if (action) {
@@ -143,6 +181,13 @@ export function* allreducerFalse(action) {
 }
 ////////signup
 
+/**
+ * Executes the signupSaga saga.
+ *
+ * @function signupSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* signupSaga(action) {
   const ipAddress = getPublicIP();
   // let items = yield select(getItem);
@@ -196,6 +241,13 @@ export function* signupSaga(action) {
   }
 }
 
+/**
+ * Executes the forgotSaga saga.
+ *
+ * @function forgotSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* forgotSaga(action) {
   // let items = yield select(getItem);
   let header = {
@@ -218,6 +270,13 @@ export function* forgotSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the resetPassSaga saga.
+ *
+ * @function resetPassSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* resetPassSaga(action) {
   // let items = yield select(getItem);
   let header = {
@@ -240,6 +299,13 @@ export function* resetPassSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the existEmailSaga saga.
+ *
+ * @function existEmailSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* existEmailSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -259,6 +325,13 @@ export function* existEmailSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the verifyEmalOTPSaga saga.
+ *
+ * @function verifyEmalOTPSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* verifyEmalOTPSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -295,6 +368,13 @@ export function* verifyEmalOTPSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the resendEmalOTPSaga saga.
+ *
+ * @function resendEmalOTPSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* resendEmalOTPSaga(action) {
   let items = yield select(getItem);
   // items.token may be null right after login (Redux hasn't propagated yet)
@@ -318,6 +398,19 @@ export function* resendEmalOTPSaga(action) {
     showErrorAlert(error?.response?.data?.msg);
   }
 }
+/**
+ * Persists the latest state-verification payload in AsyncStorage.
+ *
+ * @async
+ * @param {Record<string, unknown> | string | null | undefined} data - State verification payload.
+ * @returns {Promise<void>}
+ */
+/**
+ * Executes the storeVerifyStateData helper.
+ *
+ * @function storeVerifyStateData
+ * @returns {Promise<void>}
+ */
 const storeVerifyStateData = async (data) => {
   try {
     if (data == undefined || data == null) {
@@ -343,6 +436,13 @@ const storeVerifyStateData = async (data) => {
     console.error('Error saving data:', error);
   }
 };
+/**
+ * Executes the verifyMobileOTPSaga saga.
+ *
+ * @function verifyMobileOTPSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* verifyMobileOTPSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -366,6 +466,13 @@ export function* verifyMobileOTPSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the resendMobileOTPSaga saga.
+ *
+ * @function resendMobileOTPSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* resendMobileOTPSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -389,6 +496,13 @@ export function* resendMobileOTPSaga(action) {
   }
 }
 
+/**
+ * Executes the changeEmailSaga saga.
+ *
+ * @function changeEmailSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* changeEmailSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -412,6 +526,13 @@ export function* changeEmailSaga(action) {
   }
 }
 
+/**
+ * Executes the chnageMobilenoSaga saga.
+ *
+ * @function chnageMobilenoSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* chnageMobilenoSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -436,6 +557,13 @@ export function* chnageMobilenoSaga(action) {
 }
 /////////login
 
+/**
+ * Executes the login_Saga saga.
+ *
+ * @function login_Saga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* login_Saga(action) {
   const ipAddress = getPublicIP();
   // let items = yield select(getItem);
@@ -492,6 +620,13 @@ export function* login_Saga(action) {
   }
 }
 //Profession 
+/**
+ * Executes the ProfessionSaga saga.
+ *
+ * @function ProfessionSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* ProfessionSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -548,6 +683,13 @@ export function* ProfessionSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the SpeciallizedSaga saga.
+ *
+ * @function SpeciallizedSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* SpeciallizedSaga(action) {
   const profession = action?.payload
   let header = {
@@ -567,6 +709,13 @@ export function* SpeciallizedSaga(action) {
   }
 }
 
+/**
+ * Executes the ParticingStateSaga saga.
+ *
+ * @function ParticingStateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* ParticingStateSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -584,6 +733,13 @@ export function* ParticingStateSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the CheckLicStateSaga saga.
+ *
+ * @function CheckLicStateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* CheckLicStateSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -601,6 +757,13 @@ export function* CheckLicStateSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the countrySaga saga.
+ *
+ * @function countrySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* countrySaga(action) {
   let header = {
     Accept: 'application/json',
@@ -618,6 +781,13 @@ export function* countrySaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the citySaga saga.
+ *
+ * @function citySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* citySaga(action) {
   let header = {
     Accept: 'application/json',
@@ -635,6 +805,13 @@ export function* citySaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the mobileLoginSaga saga.
+ *
+ * @function mobileLoginSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* mobileLoginSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -699,6 +876,13 @@ export function* mobileLoginSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the againmobileLoginSaga saga.
+ *
+ * @function againmobileLoginSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* againmobileLoginSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -756,6 +940,13 @@ export function* againmobileLoginSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the stateLicsenseCardSaga saga.
+ *
+ * @function stateLicsenseCardSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateLicsenseCardSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -778,6 +969,13 @@ export function* stateLicsenseCardSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the InformationCitySaga saga.
+ *
+ * @function InformationCitySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* InformationCitySaga(action) {
   let header = {
     Accept: 'application/json',
@@ -795,6 +993,13 @@ export function* InformationCitySaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the LicesensureSaga saga.
+ *
+ * @function LicesensureSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* LicesensureSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -812,6 +1017,13 @@ export function* LicesensureSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the stateLicsenseSaveSaga saga.
+ *
+ * @function stateLicsenseSaveSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateLicsenseSaveSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -834,6 +1046,13 @@ export function* stateLicsenseSaveSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the logoutSaga saga.
+ *
+ * @function logoutSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* logoutSaga() {
   try {
     // yield call(AsyncStorage.removeItem, constants.CRED);
@@ -872,7 +1091,20 @@ export function* logoutSaga() {
     showErrorAlert('Error to logout');
   }
 }
-const emailVerf = async (data) => {
+/**
+ * Persists the email verification payload in AsyncStorage.
+ *
+ * @async
+ * @param {Record<string, unknown> | string | null | undefined} data - Email verification payload.
+ * @returns {Promise<void>}
+ */
+/**
+ * Executes the emailVerf helper.
+ *
+ * @function emailVerf
+ * @returns {Promise<unknown>}
+ */
+const emailVerf= async (data) => {
   try {
     if (data == undefined || data == null) {
       console.warn('Cannot store undefined/null in AsyncStorage');
@@ -885,7 +1117,20 @@ const emailVerf = async (data) => {
     console.error('Error saving data:', error);
   }
 };
-const mobileVer = async (data) => {
+/**
+ * Persists the mobile verification payload in AsyncStorage.
+ *
+ * @async
+ * @param {Record<string, unknown> | string | null | undefined} data - Mobile verification payload.
+ * @returns {Promise<void>}
+ */
+/**
+ * Executes the mobileVer helper.
+ *
+ * @function mobileVer
+ * @returns {Promise<unknown>}
+ */
+const mobileVer= async (data) => {
   try {
     if (data == undefined || data == null) {
       console.warn('Cannot store undefined/null in AsyncStorage');
@@ -898,6 +1143,13 @@ const mobileVer = async (data) => {
     console.error('Error saving data:', error);
   }
 };
+/**
+ * Executes the verifyTokenSaga saga.
+ *
+ * @function verifyTokenSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* verifyTokenSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -930,6 +1182,13 @@ export function* verifyTokenSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the PhoneOTPTokenSaga saga.
+ *
+ * @function PhoneOTPTokenSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* PhoneOTPTokenSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -953,6 +1212,13 @@ export function* PhoneOTPTokenSaga(action) {
   }
 }
 
+/**
+ * Executes the userPrimeCheck saga.
+ *
+ * @function userPrimeCheck
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* userPrimeCheck(action) {
   let items = yield select(getItem);
   let header = {
@@ -976,6 +1242,13 @@ export function* userPrimeCheck(action) {
   }
 }
 
+/**
+ * Executes the staticSaga saga.
+ *
+ * @function staticSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* staticSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -992,6 +1265,13 @@ export function* staticSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the urlneedSaga saga.
+ *
+ * @function urlneedSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* urlneedSaga(action) {
   let header = {
     Accept: 'application/json',
@@ -1011,6 +1291,13 @@ export function* urlneedSaga(action) {
 
 // ─── Refresh Token Saga ────────────────────────────────────────────────────
 
+/**
+ * Executes the refreshTokenSaga saga.
+ *
+ * @function refreshTokenSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* refreshTokenSaga(action) {
   /**
    * ⚠️  Uses plain axios.post (NOT postApi / axiosInstance) so this call is
@@ -1032,6 +1319,10 @@ export function* refreshTokenSaga(action) {
   }
 }
 
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Auth/signupRequest', signupSaga);
@@ -1134,4 +1425,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Auth saga default export.
+ *
+ * @returns {Array<Function>} Saga watcher effects.
+ */
 export default watchFunction;

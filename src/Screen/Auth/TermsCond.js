@@ -1,3 +1,7 @@
+/**
+ * Terms cond screen module. Renders a React Native screen or a screen-scoped support component. Exported members: TermsAndConditions, openEmail, openWebsite, Privcy, goBack, styles.
+ */
+
 import React, { useLayoutEffect } from 'react';
 import { ScrollView, Text, StyleSheet, Linking, Platform, TouchableOpacity, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -15,17 +19,33 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const TermsAndConditions = (props) => {
-    const openEmail = () => {
+        /**
+ * Open email utility.
+ * @returns {void}
+ */
+const openEmail = () => {
         Linking.openURL('mailto:legal@emedevents.com');
     };
 
-    const openWebsite = () => {
+        /**
+ * Open website utility.
+ * @returns {void}
+ */
+const openWebsite = () => {
         Linking.openURL('https://www.emedevents.com');
     };
-    const Privcy = () => {
+        /**
+ * Privcy component.
+ * @returns {void}
+ */
+const Privcy = () => {
         props.navigation.navigate("PrivacyPolicy")
     }
-    const goBack = () => {
+        /**
+ * Go back utility.
+ * @returns {void}
+ */
+const goBack = () => {
         props.navigation.goBack();
     };
     useLayoutEffect(() => {
@@ -384,6 +404,10 @@ const TermsAndConditions = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -431,4 +455,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Terms cond default export.
+ *
+ * @returns {*}
+ */
 export default TermsAndConditions;

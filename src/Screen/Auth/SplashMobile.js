@@ -1,3 +1,7 @@
+/**
+ * Splash mobile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: _splashMobileOTPSentForPhone, SplashMobile, fetch, restore, handleChange, handleKeyPress, clearAllOTPFieldsMobile, verifyHandlevalid, verifyHandle, toggleModal, stateDashboardData, stateReport, licHandl, styles.
+ */
+
 import {
     View, Text, Platform, KeyboardAvoidingView,
     TouchableOpacity, TextInput, StyleSheet, BackHandler,
@@ -48,9 +52,18 @@ import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscriptio
 //  • Tracks which phone the OTP was last sent for
 //
 // Reset on: Resend button tap, successful verification.
+/**
+ * Splash mobile otpsent for phone value.
+ * @returns {*}
+ */
 let _splashMobileOTPSentForPhone = null;
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Splash mobile component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const SplashMobile = (props) => {
     const {
         setFulldashbaord,
@@ -115,7 +128,11 @@ const SplashMobile = (props) => {
 
     // ─── Fetch phone from AsyncStorage ────────────────────────────────────────
     useEffect(() => {
-        const fetch = () => {
+                /**
+ * Fetch utility.
+ * @returns {void}
+ */
+const fetch = () => {
             setTimeout(async () => {
                 const ph = await AsyncStorage.getItem(constants.PHONE);
                 setAllotpcheckddd(ph || '');
@@ -191,7 +208,13 @@ const SplashMobile = (props) => {
 
     // Restore persisted timer on mount (handles back-navigation scenario)
     useEffect(() => {
-        const restore = async () => {
+                /**
+ * Restore utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const restore = async () => {
             const storedStart = await AsyncStorage.getItem('otpStartTime');
             const storedDuration = await AsyncStorage.getItem('otpInitialDuration');
             if (storedStart && storedDuration) {
@@ -324,7 +347,13 @@ const SplashMobile = (props) => {
     }, [DashboardReducer.status]);
 
     // ─── OTP input handlers ───────────────────────────────────────────────────
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text?.length > 1) {
             const pasted = text.replace(/[^0-9]/g, '');
             const newOtp = [...otpmobile];
@@ -343,7 +372,14 @@ const SplashMobile = (props) => {
         if (text && index < 5) inputsmobile.current[index + 1]?.focus();
     };
 
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpmobile[index] === '') {
                 if (index > 0) inputsmobile.current[index - 1]?.focus();
@@ -355,20 +391,32 @@ const SplashMobile = (props) => {
         }
     };
 
-    const clearAllOTPFieldsMobile = () => {
+        /**
+ * Clear all otpfields mobile utility.
+ * @returns {void}
+ */
+const clearAllOTPFieldsMobile = () => {
         setOtpmobile(new Array(6).fill(''));
         inputsmobile.current[0]?.focus();
     };
 
     // ─── Verify OTP ───────────────────────────────────────────────────────────
-    const verifyHandlevalid = () => {
+        /**
+ * Verify handlevalid utility.
+ * @returns {void}
+ */
+const verifyHandlevalid = () => {
         const obj = { verify_type: 'phone' };
         connectionrequest()
             .then(() => dispatch(verifymobileRequest(obj)))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-    const verifyHandle = () => {
+        /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
         const enteredOTP = otpmobile.join('').trim();
         let serverOTP = 
             AuthReducer?.resendmobileotpResponse?.phone_otp || 
@@ -385,22 +433,41 @@ const SplashMobile = (props) => {
         }
     };
 
-    const toggleModal = () => setModalVisible(v => !v);
+        /**
+ * Toggle modal utility.
+ * @returns {*}
+ */
+const toggleModal = () => setModalVisible(v => !v);
 
     // ─── Helper API dispatchers ───────────────────────────────────────────────
-    const stateDashboardData = (id) => {
+        /**
+ * State dashboard data utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateDashboardData = (id) => {
         connectionrequest()
             .then(() => dispatch(stateDashboardRequest({ state_id: id })))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-    const stateReport = (id) => {
+        /**
+ * State report utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateReport = (id) => {
         connectionrequest()
             .then(() => dispatch(stateReportingRequest({ state_id: id })))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-    const licHandl = (prof) => {
+        /**
+ * Lic handl utility.
+ * @param {*} prof - Input value.
+ * @returns {void}
+ */
+const licHandl = (prof) => {
         connectionrequest()
             .then(() => dispatch(licesensRequest(prof)))
             .catch(err => showErrorAlert('Please connect to Internet', err));
@@ -627,6 +694,10 @@ const SplashMobile = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: 'center',
@@ -678,4 +749,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Splash mobile default export.
+ *
+ * @returns {*}
+ */
 export default SplashMobile;

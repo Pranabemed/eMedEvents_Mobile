@@ -1,3 +1,7 @@
+/**
+ * Filter screen screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, FilterScreen, renderBrowseSearchInput, FilterBack, againHand, generateFilterToKeyMap, updateSearch, toggleSelection, renderFilterOption, renderProfessionItem, getIconName, getIconColor, SliderTick, hitItem, renderItem, renderContent, styles.
+ */
+
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -17,6 +21,10 @@ import { CommonActions } from '@react-navigation/native';
 import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -67,7 +75,11 @@ const FilterScreen = (props) => {
         return `Search by ${name}`;
     }, [selectedFilter]);
 
-    const renderBrowseSearchInput = () => {
+        /**
+ * Render browse search input utility.
+ * @returns {JSX.Element}
+ */
+const renderBrowseSearchInput = () => {
         if (selectedFilter === 'get_cme_points_to_stat' ||
             selectedFilter === 'get_price_to_stat' ||
             selectedFilter === 'cme_type_flags') {
@@ -160,7 +172,11 @@ const FilterScreen = (props) => {
             }
         });
     }, [props.navigation]);
-    const FilterBack = () => {
+        /**
+ * Filter back component.
+ * @returns {void}
+ */
+const FilterBack = () => {
         if (props?.route?.params?.wholeDats?.norm == "ghgh") {
             props.navigation.dispatch(
                 CommonActions.reset({
@@ -208,7 +224,11 @@ const FilterScreen = (props) => {
             }
         }
     }, [props?.route?.params?.wholeDats?.wholeDats])
-    const againHand = () => {
+        /**
+ * Again hand utility.
+ * @returns {void}
+ */
+const againHand = () => {
         const mainKey = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.mainKey ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.mainKey ?? "";
         const stateKey = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newAdd ?? "";
         const newCt = props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt ?? props?.route?.params?.wholeDats?.mainKeyAll?.trig?.newCt ?? "";
@@ -313,7 +333,12 @@ const FilterScreen = (props) => {
     //     }
     //     return filterToKeyMap;
     // };
-    const generateFilterToKeyMap = (wholeDat) => {
+        /**
+ * Generate filter to key map utility.
+ * @param {*} wholeDat - Input value.
+ * @returns {*}
+ */
+const generateFilterToKeyMap = (wholeDat) => {
         const filterToKeyMap = {};
         const getPriceFromStat = wholeDat["get_price_from_stat"];
         const getPriceToStat = wholeDat["get_price_to_stat"];
@@ -363,8 +388,19 @@ const FilterScreen = (props) => {
     //     const key = filterToKeyMap[filter];
     //     return filtertake && filtertake[key] && filtertake[key].length > 0;
     // });
-    const updateSearch = (text) => setSearch(text);
-    const toggleSelection = (item, types) => {
+        /**
+ * Update search utility.
+ * @param {*} text - Input value.
+ * @returns {*}
+ */
+const updateSearch = (text) => setSearch(text);
+        /**
+ * Toggle selection utility.
+ * @param {*} item - Input value.
+ * @param {*} types - Input value.
+ * @returns {void}
+ */
+const toggleSelection = (item, types) => {
         console.log(item, types, "---------itemtypes1122");
         setSelectedItems(prevSelectedItems => {
             const updatedItems = [...prevSelectedItems];
@@ -399,7 +435,14 @@ const FilterScreen = (props) => {
         )
     );
     console.log(validFiltersd, "validFiltersd---------", selectedItems)
-    const renderFilterOption = ({ item, index }) => (
+        /**
+ * Render filter option utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderFilterOption = ({ item, index }) => (
         <>
             {index === 0 && (
                 <>
@@ -434,7 +477,17 @@ const FilterScreen = (props) => {
             ]);
         }
     }, [selectedFilter, filtertake])
-    const renderProfessionItem = ({ item, index, types, selectedFilters, reqItem }) => {
+        /**
+ * Render profession item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @param {*} props.types - Nested property value.
+ * @param {*} props.selectedFilters - Nested property value.
+ * @param {*} props.reqItem - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderProfessionItem = ({ item, index, types, selectedFilters, reqItem }) => {
         console.log(reqItem, "reqitem======", item)
         const hasReqItem = reqItem && reqItem.length > 0;
 
@@ -445,13 +498,25 @@ const FilterScreen = (props) => {
             );
         }) : false;
 
-        const getIconName = (item, selectedItems) => {
+                /**
+ * Returns icon name.
+ * @param {*} item - Input value.
+ * @param {*} selectedItems - Input value.
+ * @returns {*}
+ */
+const getIconName = (item, selectedItems) => {
             return selectedItems.some(i => {
                 return Object.values(i).some(arr => Array.isArray(arr) && arr.includes(item));
             }) ? 'check' : 'check';
         };
 
-        const getIconColor = (item, selectedItems) => {
+                /**
+ * Returns icon color.
+ * @param {*} item - Input value.
+ * @param {*} selectedItems - Input value.
+ * @returns {*}
+ */
+const getIconColor = (item, selectedItems) => {
             // If reqItem has data and item is in reqItem, always return orange color
             if (hasReqItem && isItemInReqItem) {
                 return '#FF5733'; // Orange color
@@ -484,7 +549,12 @@ const FilterScreen = (props) => {
 
     };
     const hitData = ["Free Courses", "Non-CME Courses"];
-    const SliderTick = (item) => {
+        /**
+ * Slider tick component.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const SliderTick = (item) => {
         setSelectedItm(prevSelectedItems => {
             if (prevSelectedItems.includes(item)) {
                 return prevSelectedItems.filter(i => i !== item);
@@ -499,7 +569,14 @@ const FilterScreen = (props) => {
         }
     }, [props?.route?.params?.wholeDats?.PriceDrop?.CME])
     console.log(selectedItm, "itempo--------selectedItm")
-    const hitItem = ({ item, index }) => {
+        /**
+ * Hit item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const hitItem = ({ item, index }) => {
         return (
             <TouchableOpacity
                 style={styles.professionItem}
@@ -541,7 +618,14 @@ const FilterScreen = (props) => {
             </TouchableOpacity>
         );
     };
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {*}
+ */
+const renderItem = ({ item, index }) => {
         if (item?.type == selectedFilter) {
             const type = selectedFilter;
             const hitDat = finalds ? "" : props?.route?.params?.wholeDats?.ClearText || props?.route?.params?.wholeDats?.PriceDrop?.minget || props?.route?.params?.wholeDats?.PriceDrop?.maxget || props?.route?.params?.wholeDats?.PriceDrop?.mingetp || props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
@@ -595,7 +679,11 @@ const FilterScreen = (props) => {
         }
         return null;
     };
-    const renderContent = () => {
+        /**
+ * Render content utility.
+ * @returns {void}
+ */
+const renderContent = () => {
         switch (selectedFilter) {
             case 'conf_types':
                 return (
@@ -1043,7 +1131,11 @@ const FilterScreen = (props) => {
                 <View style={styles.footer}>
                     <TouchableOpacity disabled={!isResetActive} onPress={() => {
                         Alert.alert('eMedEvent', 'Are you sure want to clear all the data ?', [{
-                            text: "Yes", onPress: () => {
+                            text: "Yes",                             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                 setResetOn(!resetOn);
                                 setSelectedItems([]);
                                 setSelectedItm([]);
@@ -1070,7 +1162,11 @@ const FilterScreen = (props) => {
                                 navigateToResults(clearedParams);
                             }, style: "cancel"
                         }, {
-                            text: "No", onPress: () => {
+                            text: "No",                             /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                 console.log("regjnjregjtr");
                             }, style: "cancel"
                         }])
@@ -1095,6 +1191,10 @@ const FilterScreen = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     content: {
         flexDirection: 'row',
@@ -1224,4 +1324,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Filter screen default export.
+ *
+ * @returns {*}
+ */
 export default FilterScreen;

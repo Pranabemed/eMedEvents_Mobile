@@ -1,3 +1,7 @@
+/**
+ * Search result screen module. Renders a React Native screen or a screen-scoped support component. Exported members: dommyResult, SearchResult, FilterBack, intenalMedItem.
+ */
+
 import { View, Text, Platform, Image, FlatList, TouchableOpacity } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -18,11 +22,20 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 const dommyResult = [{ id: 0, name: "PRP and Microneedling Training in Washington DC (Falls Church, VA) ", price: "US$2,195" }, { id: 1, name: "COPD: Review of Current Treatment Guidelines", price: "US$42" }, { id: 2, name: "Unconscious Bias and Healthcare Part I", price: "US$42" }, { id: 3, name: "Antidiabetic Pharmacology Part 3: Insulin", price: "US$42" }, { id: 4, name: "Safe, Effective and Judicious Use of Antibiotics in the Outpatient Setting", price: "US$42" }];
 
+/**
+ * Search result component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const SearchResult = (props) => {
     const selectedSpecialty = props?.route?.params?.specialty || 'Internal Medicine';
     const [page, setPage] = useState(1);
     const itemsPerPage = 2;
-    const FilterBack = () => {
+        /**
+ * Filter back component.
+ * @returns {void}
+ */
+const FilterBack = () => {
         props.navigation.goBack();
     };
     const paginatedResults = useMemo(
@@ -30,7 +43,14 @@ const SearchResult = (props) => {
         [page]
     );
     const hasMore = paginatedResults.length < dommyResult.length;
-    const intenalMedItem = ({ item, index }) => {
+        /**
+ * Intenal med item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const intenalMedItem = ({ item, index }) => {
 
         console.log(item, "full item ===========", item?.certificate?.conference_id)
         return (
@@ -167,4 +187,9 @@ const SearchResult = (props) => {
     )
 }
 
+/**
+ * Search result default export.
+ *
+ * @returns {*}
+ */
 export default SearchResult

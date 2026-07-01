@@ -1,3 +1,7 @@
+/**
+ * React native.config module. Contains application logic, configuration, or shared helpers.
+ */
+
 module.exports = {
   project: {
     ios: {},

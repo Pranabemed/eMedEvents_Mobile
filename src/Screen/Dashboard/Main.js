@@ -1,3 +1,7 @@
+/**
+ * Main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY, PRIME_CARD_TEST_COUNTRY_CODE, normalizeProfessionHandle, findMatchedProfessionHandle, buildProfessionLabel, getCountryFromIP, isUsaBasedUser, parseStoredJson, requiresVerification, Main, loadExploreTrialClicked, resetState, onBackPress, renderMainAddLicenseCard, token_handle_vault, loadProfile, fetchCountry, loadForcedProfessionView, openGuestVerificationAlert, requestGuestVerificationCheck, setGuestPrimeVerificationPending, handleGuestPrimeSkip, handleGuestPrimeExploreTrial, handleGuestPrimeMembership, loadGuestVerifyModal, setFreeTrail, setDaysleft, closeGuestVerifyModal, proceedGuestVerification, handleGuestVerifyAccount.
+ */
+
 import { View, Text, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Image, BackHandler, ActivityIndicator, Pressable } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -40,18 +44,49 @@ import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Uti
  */
 
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+/**
+ * Guest prime verification pending key constant.
+ * @returns {string}
+ */
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+/**
+ * Prime membership skipped key constant.
+ * @returns {string}
+ */
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+/**
+ * Check membership force new profession key constant.
+ * @returns {string}
+ */
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+/**
+ * Suppress guest home prompts once key constant.
+ * @returns {string}
+ */
 const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
+/**
+ * Prime card test country code constant.
+ * @returns {string}
+ */
 const PRIME_CARD_TEST_COUNTRY_CODE = '';
 
+/**
+ * Normalizes profession handle.
+ * @param {*} professionHandle - Input value.
+ * @returns {*}
+ */
 const normalizeProfessionHandle = (professionHandle) =>
   String(professionHandle || '')
     .toLowerCase()
     .replace(/\s+/g, '')
     .trim();
 
+/**
+ * Find matched profession handle utility.
+ * @param {*} candidates - Input value.
+ * @param {*} supportedHandles - Input value.
+ * @returns {string}
+ */
 const findMatchedProfessionHandle = (candidates, supportedHandles) => {
   for (const candidate of candidates) {
     const normalizedCandidate = normalizeProfessionHandle(candidate);
@@ -67,6 +102,12 @@ const findMatchedProfessionHandle = (candidates, supportedHandles) => {
   return '';
 };
 
+/**
+ * Build profession label utility.
+ * @param {*} profession - Input value.
+ * @param {*} professionType - Input value.
+ * @returns {string}
+ */
 const buildProfessionLabel = (profession, professionType) => {
   const cleanProfession = String(profession || '').trim();
   const cleanProfessionType = String(professionType || '').trim();
@@ -78,6 +119,13 @@ const buildProfessionLabel = (profession, professionType) => {
   return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
+/**
+ * Returns country from ip.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
 const getCountryFromIP = async (ip) => {
   try {
     const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
@@ -94,6 +142,12 @@ const getCountryFromIP = async (ip) => {
   }
 };
 
+/**
+ * Determines whether usa based user is true.
+ * @param {*} user - Input value.
+ * @param {string} ipCountryCode - Input value.
+ * @returns {*}
+ */
 const isUsaBasedUser = (user, ipCountryCode = '') => {
   const countryId = String(
     user?.country_id ||
@@ -135,6 +189,11 @@ const isUsaBasedUser = (user, ipCountryCode = '') => {
   );
 };
 
+/**
+ * Parses stored json.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
 const parseStoredJson = (value) => {
   if (!value) return null;
   try {
@@ -144,6 +203,14 @@ const parseStoredJson = (value) => {
   }
 };
 
+/**
+ * Requires verification utility.
+ * @param {*} user - Input value.
+ * @param {boolean} isNonUsa - Input value.
+ * @param {*} verifyResponse - Input value.
+ * @param {*} verifyData - Input value.
+ * @returns {*}
+ */
 const requiresVerification = (user, isNonUsa = false, verifyResponse = null, verifyData = null) => {
   if (!user) return false;
   const primarySource = verifyResponse || {};
@@ -176,6 +243,11 @@ const requiresVerification = (user, isNonUsa = false, verifyResponse = null, ver
 
   return isNonUsa ? !isEmailVerified : (!isEmailVerified || !isPhoneVerified);
 };
+/**
+ * Main component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Main = (props) => {
   const insets = useSafeAreaInsets();
   const {
@@ -238,7 +310,13 @@ const Main = (props) => {
   const [hasEnables, setHasEnables] = useState(false);
   const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
   useEffect(() => {
-    const loadExploreTrialClicked = async () => {
+        /**
+ * Load explore trial clicked utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadExploreTrialClicked = async () => {
       try {
         const val = await AsyncStorage.getItem('ExploreTrialClicked');
         setExploreTrialClicked(val === 'true');
@@ -520,7 +598,11 @@ const Main = (props) => {
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
   useEffect(() => {
-    const resetState = () => {
+        /**
+ * Reset state utility.
+ * @returns {void}
+ */
+const resetState = () => {
       backPressCount.current = 0;
       isSnackbarVisible.current = false;
       if (snackbarTimeout.current) {
@@ -529,7 +611,11 @@ const Main = (props) => {
       }
     };
 
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       if (isSnackbarVisible.current) {
         resetState();
         BackHandler.exitApp();
@@ -545,7 +631,11 @@ const Main = (props) => {
         action: {
           text: 'EXIT',
           textColor: '#D87AF6',
-          onPress: () => {
+                    /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
             resetState();
             BackHandler.exitApp();
           },
@@ -570,7 +660,11 @@ const Main = (props) => {
   const shouldRenderNewProfession =
     !isPhysicianFlow && !isNursingFlow && (forceNewProfession || isNonUsaUser);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
-  const renderMainAddLicenseCard = () => (
+    /**
+ * Render main add license card utility.
+ * @returns {JSX.Element}
+ */
+const renderMainAddLicenseCard = () => (
     <View style={{
       marginHorizontal: normalize(10),
       marginTop: normalize(4),
@@ -636,7 +730,11 @@ const Main = (props) => {
     enableFreeze(false);
   }, []);
   useEffect(() => {
-    const token_handle_vault = () => {
+        /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
       (async () => {
         try {
           const [board_special, profession_data, stablePrimeFlagRaw] = await Promise.all([
@@ -664,7 +762,13 @@ const Main = (props) => {
   }, [isFocus]);
   console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
   useEffect(() => {
-    const loadProfile = async () => {
+        /**
+ * Load profile utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadProfile = async () => {
       try {
         const profile = await AsyncStorage.getItem('activeProfile');
         const stablePrimeFlagRaw = await AsyncStorage.getItem(constants.GUEST_PRIME_USER);
@@ -748,7 +852,13 @@ const Main = (props) => {
       return;
     }
     let isMounted = true;
-    const fetchCountry = async () => {
+        /**
+ * Fetch country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchCountry = async () => {
       const countryCode = await getCountryFromIP(ipAddress);
       if (isMounted) {
         setResolvedIpCountryCode(countryCode || 'unknown');
@@ -761,7 +871,13 @@ const Main = (props) => {
   }, [ipAddress]);
   useEffect(() => {
     if (!isFocus) return;
-    const loadForcedProfessionView = async () => {
+        /**
+ * Load forced profession view utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadForcedProfessionView = async () => {
       try {
         const [forceNewProfessionRaw, primeMembershipSkippedRaw] = await Promise.all([
           AsyncStorage.getItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
@@ -781,7 +897,15 @@ const Main = (props) => {
     };
     loadForcedProfessionView();
   }, [isFocus, hasActivePrimeMembership]);
-  const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
+    /**
+ * Open guest verification alert utility.
+ *
+ * @async
+ * @param {*} user - Input value.
+ * @param {boolean} shouldClearPendingKey - Input value.
+ * @returns {Promise<*>}
+ */
+const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
     if (!user) return;
     if (shouldClearPendingKey) {
       try {
@@ -798,7 +922,13 @@ const Main = (props) => {
       setGuestVerifyModalVisible(true);
     }, 180);
   };
-  const requestGuestVerificationCheck = async () => {
+    /**
+ * Request guest verification check utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const requestGuestVerificationCheck = async () => {
     const token = await AsyncStorage.getItem(constants.TOKEN);
     if (!token) return;
     setGuestVerifyCheckRequested(true);
@@ -811,14 +941,26 @@ const Main = (props) => {
         showErrorAlert("Please connect to internet", err);
       });
   };
-  const setGuestPrimeVerificationPending = async () => {
+    /**
+ * Set guest prime verification pending utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const setGuestPrimeVerificationPending = async () => {
     try {
       await AsyncStorage.setItem(GUEST_PRIME_VERIFICATION_PENDING_KEY, 'true');
     } catch (error) {
       console.log('setGuestPrimeVerificationPending error', error);
     }
   };
-  const handleGuestPrimeSkip = async () => {
+    /**
+ * Handles guest prime skip.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleGuestPrimeSkip = async () => {
     await setGuestPrimeVerificationPending();
     try {
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
@@ -846,7 +988,13 @@ const Main = (props) => {
     setShowGuestPrimePrompt(false);
     await requestGuestVerificationCheck();
   };
-  const handleGuestPrimeExploreTrial = async () => {
+    /**
+ * Handles guest prime explore trial.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleGuestPrimeExploreTrial = async () => {
     await setGuestPrimeVerificationPending();
     await AsyncStorage.removeItem('activeProfile');
     await AsyncStorage.setItem('ExploreTrialClicked', 'true');
@@ -860,7 +1008,13 @@ const Main = (props) => {
     primePromptVisibleRef.current = false;
     setShowGuestPrimePrompt(false);
   };
-  const handleGuestPrimeMembership = async () => {
+    /**
+ * Handles guest prime membership.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleGuestPrimeMembership = async () => {
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
     await AsyncStorage.removeItem('ExploreTrialClicked');
     await setGuestPrimeVerificationPending();
@@ -876,7 +1030,13 @@ const Main = (props) => {
   };
   useEffect(() => {
     if (!isFocus) return;
-    const loadGuestVerifyModal = async () => {
+        /**
+ * Load guest verify modal utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadGuestVerifyModal = async () => {
       try {
         if (guestVerifyNavigationRef.current) {
           return;
@@ -1134,8 +1294,16 @@ const Main = (props) => {
             )} day(s). Subscribe now to continue accessing premium features`
           : '';
   }, [daysleft, freeTrail, hsdSub]);
-  const setFreeTrail = () => { };
-  const setDaysleft = () => { };
+    /**
+ * Set free trail utility.
+ * @returns {void}
+ */
+const setFreeTrail = () => { };
+    /**
+ * Set daysleft utility.
+ * @returns {void}
+ */
+const setDaysleft = () => { };
   const isNonUsaIpUser = Boolean(
     resolvedIpCountryCode &&
     resolvedIpCountryCode !== 'US' &&
@@ -1215,7 +1383,13 @@ const Main = (props) => {
       console.log('prime success verify trigger error', error);
     });
   }, [isFocus, isPrimePaymentSuccess]);
-  const closeGuestVerifyModal = async () => {
+    /**
+ * Close guest verify modal utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const closeGuestVerifyModal = async () => {
     setGuestVerifyModalVisible(false);
   };
   const guestVerifyEmail =
@@ -1225,7 +1399,14 @@ const Main = (props) => {
     finalverifyvaultmain?.email ||
     finalProfessionmain?.email ||
     '';
-  const proceedGuestVerification = async verifyPayload => {
+    /**
+ * Proceed guest verification utility.
+ *
+ * @async
+ * @param {*} verifyPayload - Input value.
+ * @returns {Promise<*>}
+ */
+const proceedGuestVerification = async verifyPayload => {
     const countryCode =
       verifyPayload?.countryCode ||
       verifyPayload?.callingCode ||
@@ -1294,7 +1475,13 @@ const Main = (props) => {
       console.log('handleGuestVerifyAccount cleanup error', error);
     }
   };
-  const handleGuestVerifyAccount = async () => {
+    /**
+ * Handles guest verify account.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleGuestVerifyAccount = async () => {
     const verifyPayload = guestVerifyData || finalverifyvaultmain || finalProfessionmain || AuthReducer?.verifyResponse || {};
     const token = await AsyncStorage.getItem(constants.TOKEN);
     const hasImmediateGuestContact =
@@ -1657,4 +1844,9 @@ const Main = (props) => {
   )
 }
 
+/**
+ * Main default export.
+ *
+ * @returns {*}
+ */
 export default Main

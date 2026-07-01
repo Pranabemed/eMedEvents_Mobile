@@ -1,3 +1,7 @@
+/**
+ * Post test fail screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, PostTestFail, PrePress, takeCoursepost, getCorrectOptionIds, renderGroup, renderItem, onBackPress, CustomRadioButton, styles.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, Image, Alert, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -26,7 +30,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Post test fail component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const PostTestFail = (props) => {
     const {
         statepush,
@@ -44,7 +57,11 @@ const PostTestFail = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const PrePress = () => {
+        /**
+ * Pre press component.
+ * @returns {void}
+ */
+const PrePress = () => {
         takeCoursepost();
         props.navigation.goBack();
     };
@@ -67,7 +84,11 @@ const PostTestFail = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-    const takeCoursepost = () => {
+        /**
+ * Take coursepost utility.
+ * @returns {void}
+ */
+const takeCoursepost = () => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -129,14 +150,26 @@ const PostTestFail = (props) => {
                 break;
         }
     }
-    const getCorrectOptionIds = (options) => {
+        /**
+ * Returns correct option ids.
+ * @param {*} options - Input value.
+ * @returns {*}
+ */
+const getCorrectOptionIds = (options) => {
         return options
             .filter(option => option.correctness === "1")
             .map(option => option.id);
     };
     let questionCounter = 0;
     const totalQuestionsCount = testData && testData?.questionsAttempted || "";
-    const renderGroup = ({ item, index: groupIndex }) => (
+        /**
+ * Render group utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderGroup = ({ item, index: groupIndex }) => (
         <View>
             {item.heading && (
                 <>
@@ -188,7 +221,14 @@ const PostTestFail = (props) => {
             })}
         </View>
     );
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
         const correctOptionIds = getCorrectOptionIds(item?.question_options || []);
         return (
             <View style={styles.questionContainer}>
@@ -222,7 +262,11 @@ const PostTestFail = (props) => {
 
 
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             takeCoursepost();
             PrePress();
             return true;
@@ -413,6 +457,15 @@ const PostTestFail = (props) => {
     );
 };
 
+/**
+ * Custom radio button component.
+ * @param {Object} props - Input object.
+ * @param {*} props.selected - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @param {*} props.style - Nested property value.
+ * @param {*} props.correct - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CustomRadioButton = ({ selected, onPress, style, correct }) => (
     <TouchableOpacity onPress={onPress} style={style}>
         {selected ? (
@@ -432,6 +485,10 @@ const CustomRadioButton = ({ selected, onPress, style, correct }) => (
     </TouchableOpacity>
 );
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     questionContainer: {
         paddingHorizontal: normalize(10),
@@ -542,4 +599,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Post test fail default export.
+ *
+ * @returns {*}
+ */
 export default PostTestFail;

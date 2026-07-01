@@ -1,3 +1,7 @@
+/**
+ * Plainy text input reusable component module. Provides a React Native UI building block used across screens. Exported members: TextInputPlain.
+ */
+
 import React, { useState, forwardRef, useEffect, useRef } from 'react';
 import {
   View,
@@ -21,6 +25,10 @@ import Fonts from '../Themes/Fonts';
 // `value` (controlled mode) the component must NOT maintain its own copy or
 // clearing / pre-filling the field won't work.
 // ---------------------------------------------------------------------------
+/**
+ * Text input plain value.
+ * @returns {*}
+ */
 const TextInputPlain = forwardRef((props, ref) => {
   const [eyeVisible, setEyeVisible] = useState(true);
 
@@ -206,4 +214,9 @@ TextInputPlain.propTypes = {
   onChangeText: PropTypes.func,
 };
 
+/**
+ * Plainy text input default export.
+ *
+ * @returns {*}
+ */
 export default TextInputPlain;

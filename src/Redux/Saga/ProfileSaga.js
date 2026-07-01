@@ -6,6 +6,13 @@ import { boardListDeleteFailure, boardListDeleteSuccess, boardListProfileFailure
 
 
 let getItem = state => state.AuthReducer;
+/**
+ * Executes the profileContactSaga saga.
+ *
+ * @function profileContactSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* profileContactSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -26,6 +33,13 @@ export function* profileContactSaga(action) {
     yield put(contactInfoFailure(error));
   }
 }
+/**
+ * Executes the profilepersonalSaga saga.
+ *
+ * @function profilepersonalSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* profilepersonalSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -46,6 +60,13 @@ export function* profilepersonalSaga(action) {
     yield put(personalInfoFailure(error));
   }
 }
+/**
+ * Executes the profilePicSaga saga.
+ *
+ * @function profilePicSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* profilePicSaga(action) {
     let items = yield select(getItem);
     let header = {

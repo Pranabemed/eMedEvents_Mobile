@@ -1,3 +1,7 @@
+/**
+ * Choose state screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ChooseState, token_handle, transformData, removeLastWord, SearchCont, stateAllNPIData, onBackPress.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, ScrollView, TextInput, Image, Platform, KeyboardAvoidingView, ActivityIndicator, BackHandler } from 'react-native';
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -17,6 +21,10 @@ import constants from '../../Utils/Helpers/constants';
 import { useIsFocused } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
 import Loader from '../../Utils/Helpers/Loader';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -43,7 +51,11 @@ const ChooseState = (props) => {
     }
   }, [props?.route?.params?.dataVr])
   useEffect(() => {
-    const token_handle = () => {
+        /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
       setTimeout(async () => {
         const loginHandle_verifyfd = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
         console.log(loginHandle_verifyfd, "statelicesene=================");
@@ -65,7 +77,12 @@ const ChooseState = (props) => {
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err) })
   }, [])
-  const transformData = (oldData) => {
+    /**
+ * Transform data utility.
+ * @param {*} oldData - Input value.
+ * @returns {void}
+ */
+const transformData = (oldData) => {
     if (Array.isArray(oldData)) {
       return oldData.map(name => name);
     } else if (typeof oldData === 'object') {
@@ -75,14 +92,24 @@ const ChooseState = (props) => {
     }
   };
   const userLocation = AuthReducer?.verifymobileResponse?.user?.user_location || finalverify?.user_location;
-  const removeLastWord = (text) => {
+    /**
+ * Remove last word utility.
+ * @param {*} text - Input value.
+ * @returns {*}
+ */
+const removeLastWord = (text) => {
     const words = text.split(',')[0].trim();
     return words;
   };
   const result = useMemo(() => {
     return userLocation ? removeLastWord(userLocation) : "Alabama, USA";
   }, [userLocation]);
-  const SearchCont = text => {
+    /**
+ * Search cont component.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const SearchCont = text => {
     if (text?.length > 3) {
       let textObj = {
         "zip_code": text
@@ -110,7 +137,14 @@ const ChooseState = (props) => {
 
     return () => clearTimeout(timeout);
   }, []);
-  const stateAllNPIData = ({ item, index }) => {
+    /**
+ * State all npidata utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateAllNPIData = ({ item, index }) => {
     const oldData = item?.specialities || "Family";
     const transformedData = transformData(oldData);
     return (
@@ -267,7 +301,11 @@ const ChooseState = (props) => {
     }
   }
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       return true;
     };
     const backHandler = BackHandler.addEventListener(
@@ -386,4 +424,9 @@ const ChooseState = (props) => {
   );
 };
 
+/**
+ * Choose state default export.
+ *
+ * @returns {*}
+ */
 export default ChooseState;

@@ -1,53 +1,100 @@
-import type { Meta, StoryObj } from '@storybook/react-native';
+/**
+ * Button.stories Storybook module. Defines stories and controls for component previews. Exported members: meta, Default, Loading, Disabled, Small, Large.
+ */
 
-import { View } from 'react-native';
-import { fn } from 'storybook/test';
+import React from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
+import Buttons from '../../src/Components/Button';
 
-import { Button } from './Button';
+/**
+ * Storybook for the Buttons component.
+ */
+const meta: Meta<typeof Buttons> = {
+  title: 'Components/Button',
+  component: Buttons,
+  argTypes: {
+    onPress: { action: 'pressed' },
+    backgroundColor: { control: 'color' },
+    color: { control: 'color' },
+    text: { control: 'text' },
+    loading: { control: 'boolean' },
+    disabled: { control: 'boolean' },
+  },
+  args: {
+    height: 50,
+    width: 200,
+    borderRadius: 8,
+    backgroundColor: '#009E38',
+    color: '#FFFFFF',
+    text: 'Click Me',
+    fontSize: 16,
+  },
+  parameters: {
+    docs: {
+      description: {
+        component: 'Reusable Button component that supports text, icons, and loading states.',
+      },
+    },
+  },
+};
 
-const meta = {
-  title: 'Example/Button',
-  component: Button,
-  decorators: [
-    (Story) => (
-      <View style={{ flex: 1, alignItems: 'flex-start' }}>
-        <Story />
-      </View>
-    ),
-  ],
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
-  tags: ['autodocs'],
-  // Use `fn` to spy on the onPress arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#story-args
-  args: { onPress: fn() },
-} satisfies Meta<typeof Button>;
-
+/**
+ * Button.stories default export.
+ *
+ * @returns {*}
+ */
 export default meta;
+type Story = StoryObj<typeof Buttons>;
 
-type Story = StoryObj<typeof meta>;
+/**
+ * Default object.
+ * @returns {Object}
+ */
+export const Default: Story = {};
 
-export const Primary: Story = {
+/**
+ * Loading object.
+ * @returns {Object}
+ */
+export const Loading: Story = {
   args: {
-    primary: true,
-    label: 'Button',
+    loading: true,
   },
 };
 
-export const Secondary: Story = {
+/**
+ * Disabled object.
+ * @returns {Object}
+ */
+export const Disabled: Story = {
   args: {
-    label: 'Button',
+    disabled: true,
+    backgroundColor: '#CCCCCC',
   },
 };
 
-export const Large: Story = {
-  args: {
-    size: 'large',
-    label: 'Button',
-  },
-};
-
+/**
+ * Small object.
+ * @returns {Object}
+ */
 export const Small: Story = {
   args: {
-    size: 'small',
-    label: 'Button',
+    height: 30,
+    width: 100,
+    fontSize: 12,
+    text: 'Small',
+  },
+};
+
+/**
+ * Large object.
+ * @returns {Object}
+ */
+export const Large: Story = {
+  args: {
+    height: 60,
+    width: 300,
+    fontSize: 20,
+    text: 'Large Button',
   },
 };

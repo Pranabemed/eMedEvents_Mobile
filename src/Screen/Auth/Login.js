@@ -1,4 +1,8 @@
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
+/**
+ * Login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, normalizeProfessionHandle, Login, handleInputChange, formatPhoneNumber, formatIndianPhoneNumber, handleLogin, verifyHandle, isTrueFlag, isFalseFlag, handleNavigation, proceedNonUsaLogin, backEra, goToGuestPage, onBackPress, styles.
+ */
+
+import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -16,7 +20,15 @@ import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import InputField from '../../Components/CellInput';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
@@ -24,19 +36,56 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import styles from './Login.styles';
 
 /**
- * Reusable normalizeProfessionHandle component.
+ * Normalizes a profession handle string by converting to lowercase and removing spaces.
  * 
- * @component
- * @param {Object} props - The component props.
- * @returns {JSX.Element}
+ * **Purpose:** Ensure consistent formatting for profession handles (e.g., 'Physician - MD' -> 'physician-md').
+ * 
+ * **Parameters:**
+ * @param {string} professionHandle - The raw profession string from the API.
+ * 
+ * **Return Value:**
+ * @returns {string} The normalized string.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```javascript
+ * const normalized = normalizeProfessionHandle("Physician - MD"); // Returns "physician-md"
+ * ```
  */
 const normalizeProfessionHandle = (professionHandle) =>
   String(professionHandle || '')
     .toLowerCase()
     .replace(/\s+/g, '')
     .trim();
+
+/**
+ * Main Login Screen component.
+ * 
+ * **Purpose:** Handles user authentication via email or mobile number, manages non-USA user flows, and dispatches Redux login actions.
+ * 
+ * **Parameters:**
+ * @param {Object} props - React Navigation props.
+ * @param {Object} props.navigation - Navigation object.
+ * @param {Object} props.route - Route object containing params like `isNonUsaUser`, `email`, `phone`, etc.
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} The Login screen UI.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <Stack.Screen name="Login" component={Login} />
+ * ```
+ * 
+ * **Notes:**
+ * - Relies heavily on Redux state (`AuthReducer`, `DashboardReducer`).
+ * - Contains complex conditional routing based on user verification status and profession.
+ */
 const Login = (props) => {
   const {
     setFulldashbaord,
@@ -67,7 +116,12 @@ const Login = (props) => {
     stateLicenseFlowCompleted: false,
   });
   const [isNonUsaFlow, setIsNonUsaFlow] = useState(Boolean(props?.route?.params?.isNonUsaUser || String(props?.route?.params?.phoneCd?.phoneCd || '').trim() !== "+1"));
-  const handleInputChange = (val) => {
+    /**
+ * Handles input change.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleInputChange = (val) => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
     setEmail(val);
@@ -100,7 +154,12 @@ const Login = (props) => {
       setMobile(false);
     }
   };
-  const formatPhoneNumber = (input) => {
+    /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -113,7 +172,12 @@ const Login = (props) => {
     }
     return input;
   };
-  const formatIndianPhoneNumber = (input) => {
+    /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
     if (!input) return "";
 
     const strInput = String(input);
@@ -208,7 +272,11 @@ const Login = (props) => {
     }
   }, [props?.route?.params?.phone])
 
-  const handleLogin = () => {
+    /**
+ * Handles login.
+ * @returns {void}
+ */
+const handleLogin = () => {
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
     if (!email) {
@@ -246,7 +314,11 @@ const Login = (props) => {
         });
     }
   };
-  const verifyHandle = () => {
+    /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
     let obj = {};
     connectionrequest()
       .then(() => {
@@ -261,8 +333,18 @@ const Login = (props) => {
   const isValidEmail = !mobile && email?.length > 0 && !validateEmail.test(email);
   const mobileReg = /^\d{10}$/;
   const isMobile = !isNonUsaFlow && mobile && email?.length > 0 && !mobileReg.test(email);
-  const isTrueFlag = (value) => value == true || value == 1 || value == "1" || value == "true";
-  const isFalseFlag = (value) => value == false || value == 0 || value == "0" || value == "false";
+    /**
+ * Determines whether true flag is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isTrueFlag = (value) => value == true || value == 1 || value == "1" || value == "true";
+    /**
+ * Determines whether false flag is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isFalseFlag = (value) => value == false || value == 0 || value == "0" || value == "false";
   const lastHandledSigninResponseRef = useRef(null);
   if (status == '' || AuthReducer.status != status) {
     switch (AuthReducer.status) {
@@ -492,7 +574,13 @@ const Login = (props) => {
     // Track navigation state to prevent duplicate calls
     let navigationHandled = false;
 
-    const handleNavigation = (destination, params = {}) => {
+        /**
+ * Handles navigation.
+ * @param {*} destination - Input value.
+ * @param {Object} params - Input value.
+ * @returns {void}
+ */
+const handleNavigation = (destination, params = {}) => {
       if (!navigationHandled) {
         props?.navigation.navigate(destination, params);
         navigationHandled = true;
@@ -515,7 +603,13 @@ const Login = (props) => {
         });
         return;
       }
-      const proceedNonUsaLogin = async () => {
+            /**
+ * Proceed non usa login utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const proceedNonUsaLogin = async () => {
         try {
           await writeNonUsaFlowState({
             userType: 'non_usa',
@@ -670,14 +764,24 @@ const Login = (props) => {
         break;
     }
   }
-  const backEra = () => {
+    /**
+ * Back era utility.
+ * @returns {void}
+ */
+const backEra = () => {
     if (props.navigation.canGoBack()) {
       props.navigation.goBack();
     } else {
       props.navigation.navigate("Onboard");
     }
   }
-  const goToGuestPage = async () => {
+    /**
+ * Go to guest page utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const goToGuestPage = async () => {
     try {
       const session = await AsyncStorage.getItem('PLAYERSESSION');
       if (!session) {
@@ -696,7 +800,11 @@ const Login = (props) => {
     }
   }
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       backEra();
       return true;
     };
@@ -743,17 +851,17 @@ const Login = (props) => {
         barStyle={'light-content'}
         backgroundColor={Colorpath.Pagebg}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+      <SafeAreaView style={styles.screen}>
         <Loader visible={nonloader || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} />
         {/* <Loader visible={AuthReducer?.status == 'Auth/loginRequest' || nonloader || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} /> */}
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+          style={styles.keyboardContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
         >
-          <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(80) }}>
-            <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), justifyContent: "center", alignItems: "center" }}>
-              <Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }} />
+          <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={styles.scrollContent}>
+            <View style={[styles.logoContainer, Platform.OS === 'ios' ? styles.logoContainerIos : styles.logoContainerAndroid]}>
+              <Image source={Imagepath.eMedfulllogo} style={styles.logoImage} />
             </View>
             <View style={[styles.headerContainer]}>
               <Text style={styles.headerText}>{"Hello Again!"}</Text>
@@ -762,7 +870,7 @@ const Login = (props) => {
               </Text>
             </View>
             <View>
-              <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(15) }}>
+              <View style={styles.sectionContainer}>
 
             <View style={styles.content}>
                   <View style={styles.formContainer}>
@@ -802,25 +910,15 @@ const Login = (props) => {
                       maxlength={100}
                     />}
                     {isValidEmail && (
-                      <View style={{ bottom: normalize(10) }}>
-                        <Text
-                          style={{
-                            fontFamily: Fonts.InterRegular,
-                            fontSize: 12,
-                            color: 'red',
-                          }}>
+                      <View style={styles.validationContainer}>
+                        <Text style={styles.validationText}>
                           {"Please enter a valid email address (e.g., abc@gmail.com)"}
                         </Text>
                       </View>
                     )}
                     {isMobile && (
-                      <View style={{ bottom: normalize(10) }}>
-                        <Text
-                          style={{
-                            fontFamily: Fonts.InterRegular,
-                            fontSize: 12,
-                            color: 'red',
-                          }}>
+                      <View style={styles.validationContainer}>
+                        <Text style={styles.validationText}>
                           {"Please enter a valid cell number"}
                         </Text>
                       </View>
@@ -836,20 +934,15 @@ const Login = (props) => {
                       showCountryCode={false}
                     />}
                     {password && password?.length < 5 && (
-                      <View style={{ bottom: normalize(10) }}>
-                        <Text
-                          style={{
-                            fontFamily: Fonts.InterRegular,
-                            fontSize: 12,
-                            color: 'red',
-                          }}>
+                      <View style={styles.validationContainer}>
+                        <Text style={styles.validationText}>
                           {"Please enter your password to continue"}
                         </Text>
                       </View>
                     )}
                   </View>
                 </View>
-                {(isNonUsaFlow || (!mobile && phoneCountryCode)) ? <View style={[styles.forgotContainer, { bottom: normalize(5) }]}>
+                {(isNonUsaFlow || (!mobile && phoneCountryCode)) ? <View style={[styles.forgotContainer, styles.forgotContainerOffset]}>
                   <TouchableOpacity onPress={() => { props.navigation.navigate("ForgotMPIN", { phoneCode: phoneCountryCode || "+1", isNonUsaUser: isNonUsaFlow }) }}>
                     <Text style={styles.forgotText}>Forgot Password?</Text>
                   </TouchableOpacity>
@@ -869,9 +962,9 @@ const Login = (props) => {
                 disabled={!isButtonEnabled}
               />
             </View>
-            <View style={{ flexDirection: "row", justifyContent: "center", gap: 1, marginTop: normalize(10) }}>
+            <View style={styles.footerRow}>
               <View>
-                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#000000" }}>
+                <Text style={styles.footerText}>
                   {"New user?"}
                 </Text>
               </View>
@@ -884,13 +977,13 @@ const Login = (props) => {
                   setInputBlocked(true);
                 }
               }}>
-                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                <Text style={styles.footerLinkText}>
                   {" Sign Up"}
                 </Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={goToGuestPage} style={{ marginTop: normalize(15), alignSelf: "center" }}>
-              <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.black, fontWeight: "bold" }}>
+            <TouchableOpacity onPress={goToGuestPage} style={styles.guestButton}>
+              <Text style={styles.guestButtonText}>
                 {"Back to Guest Page"}
               </Text>
             </TouchableOpacity>
@@ -901,64 +994,9 @@ const Login = (props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  headerContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: Platform.OS === 'ios' ? normalize(50) : normalize(80)
-    // flex: 0.6,
-  },
-  headerText: {
-    fontFamily: Fonts.InterSemiBold,
-    fontSize: 32,
-    color: "#000000",
-    fontWeight: "bold"
-  },
-  subHeaderText: {
-    marginTop: normalize(10),
-    color: "#666666",
-    fontSize: 18,
-    fontFamily: Fonts.InterRegular,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    marginTop: normalize(15),
-    alignItems: 'center',
-  },
-  forgotContainer: {
-    // marginTop: normalize(10),
-    alignSelf: 'center',
-    width: normalize(280),
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  forgotText: {
-    fontFamily: Fonts.InterMedium,
-    fontSize: 14,
-    color: Colorpath.ButtonColr,
-  },
-  input: {
-    height: normalize(45),
-    width: normalize(280), padding: 10,
-    backgroundColor: Colorpath.white,
-    borderRadius: normalize(9),
-    shadowColor: "#000",
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: normalize(5),
-    elevation: normalize(5),
-    fontFamily: Fonts.InterMedium,
-    fontSize: 15,
-    color: "#000"
-  },
-  content: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  formContainer: {
-    flex: 1,
-    paddingRight: normalize(0),
-  }
-});
-
+/**
+ * Login default export.
+ *
+ * @returns {*}
+ */
 export default Login;

@@ -1,3 +1,7 @@
+/**
+ * Native iosvoice screen module. Renders a React Native screen or a screen-scoped support component. Exported members: speechRecognitionEmitter, NativeIOSVoice, onSpeechResults, startRecording, stopRecording.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Alert, Platform } from 'react-native';
 import { NativeEventEmitter, NativeModules } from 'react-native';
@@ -18,8 +22,22 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 const { SpeechRecognition } = NativeModules;
+/**
+ * Speech recognition emitter value.
+ * @returns {*}
+ */
 const speechRecognitionEmitter = new NativeEventEmitter(SpeechRecognition);
 
+/**
+ * Native iosvoice component.
+ * @param {Object} props - Input object.
+ * @param {*} props.SearchCont - Nested property value.
+ * @param {*} props.searchText - Nested property value.
+ * @param {*} props.setSearchText - Nested property value.
+ * @param {*} props.searchEn - Nested property value.
+ * @param {*} props.setSearchEn - Nested property value.
+ * @returns {JSX.Element}
+ */
 const NativeIOSVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSearchEn }) => {
     const [isListening, setIsListening] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -32,7 +50,12 @@ const NativeIOSVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSe
     useEffect(() => {
         startRecording(); // Start mic automatically when screen loads
 
-        const onSpeechResults = (event) => {
+                /**
+ * On speech results utility.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onSpeechResults = (event) => {
             if (event.transcript) {
                 console.log(event,"event===========")
                 SearchCont(event.transcript);
@@ -58,7 +81,13 @@ const NativeIOSVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSe
             // clearInterval(timerRef.current);
         };
     }, []);
-    const startRecording = async () => {
+        /**
+ * Start recording utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const startRecording = async () => {
         try {
             await SpeechRecognition.startRecording();
             setIsListening(true);
@@ -78,7 +107,13 @@ const NativeIOSVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSe
         }
     };
 
-    const stopRecording = async () => {
+        /**
+ * Stop recording utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const stopRecording = async () => {
         try {
             await SpeechRecognition.stopRecording();
             setIsListening(false);
@@ -118,4 +153,9 @@ const NativeIOSVoice = ({ SearchCont, searchText, setSearchText, searchEn, setSe
     );
 };
 
+/**
+ * Native iosvoice default export.
+ *
+ * @returns {*}
+ */
 export default NativeIOSVoice;

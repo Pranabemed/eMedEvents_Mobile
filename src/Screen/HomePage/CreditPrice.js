@@ -1,3 +1,7 @@
+/**
+ * Credit price screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CreditPrice, SliderTick, hitItem, styles.
+ */
+
 import { StyleSheet, View, TextInput, Text, TouchableOpacity, FlatList, Platform } from 'react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import Animated, {
@@ -169,7 +173,12 @@ const CreditPrice = ({
 
   const hitData = ["Free Courses", "Non-CME Courses"];
 
-  const SliderTick = (item) => {
+    /**
+ * Slider tick component.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const SliderTick = (item) => {
     setSelectedItm(prevSelectedItems => {
       if (prevSelectedItems.includes(item)) {
         return prevSelectedItems.filter(i => i !== item);
@@ -180,7 +189,14 @@ const CreditPrice = ({
   };
 console.log(CMEText,"CMEText-------")
   const cmeTack = pricehard ? "" : CMEText?.length > 0 ? CMEText :""
-  const hitItem = ({ item, index }) => {
+    /**
+ * Hit item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const hitItem = ({ item, index }) => {
     return (
       <TouchableOpacity
         style={styles.professionItem}
@@ -277,8 +293,17 @@ console.log(handleTrue,"handleTrue------",pricehard,trigmin)
 };
 
 
+/**
+ * Credit price default export.
+ *
+ * @returns {*}
+ */
 export default CreditPrice;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   sliderContainer: {
     justifyContent: 'center',

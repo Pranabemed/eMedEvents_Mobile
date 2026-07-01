@@ -1,3 +1,7 @@
+/**
+ * Drawer modal reusable component module. Provides a React Native UI building block used across screens. Exported members: checkPrimeSkipped, navigateSmooth, getInitials, handleToggle, token_handle_vault, clean, readProfileText, buildProfessionLabel, renderNestedItem, modalRender, handleRot, clearAllAsyncStorage, openEmail, modalDown, styles.
+ */
+
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   Image,
@@ -112,7 +116,13 @@ export default function DrawerModal(props) {
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
   }, [props.isVisible]);
   useEffect(() => {
-    const checkPrimeSkipped = async () => {
+        /**
+ * Check prime skipped utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkPrimeSkipped = async () => {
       try {
         const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
         setPrimeSkipped(skipped === 'true');
@@ -156,7 +166,13 @@ export default function DrawerModal(props) {
       mounted = false;
     };
   }, [isFocus]);
-  const navigateSmooth = (name, params) => {
+    /**
+ * Navigate smooth utility.
+ * @param {*} name - Input value.
+ * @param {*} params - Input value.
+ * @returns {void}
+ */
+const navigateSmooth = (name, params) => {
     props.drawerPress?.();
     props.onBackdropPress?.();
     requestAnimationFrame(() => {
@@ -234,7 +250,13 @@ export default function DrawerModal(props) {
         .catch((err) => showErrorAlert("Please connect to internet", err));
     }
   }, [props.isVisible]);
-  const getInitials = (firstname, lastname) => {
+    /**
+ * Returns initials.
+ * @param {*} firstname - Input value.
+ * @param {*} lastname - Input value.
+ * @returns {*}
+ */
+const getInitials = (firstname, lastname) => {
     const firstInitial = firstname ? firstname.charAt(0).toUpperCase() : "";
     const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
@@ -317,11 +339,20 @@ export default function DrawerModal(props) {
   const [finalverifyvault, setFinalverifyvault] = useState(null);
   const [finalProfession, setFinalProfession] = useState(null);
   const [alphaimg, setAlphaimg] = useState("");
-  const handleToggle = (id) => {
+    /**
+ * Handles toggle.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const handleToggle = (id) => {
     setExpandedId(prevId => (prevId === id ? null : id));
   };
   useEffect(() => {
-    const token_handle_vault = () => {
+        /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
       setTimeout(async () => {
         try {
           const [board_special, profession_data] = await Promise.all([
@@ -368,7 +399,12 @@ export default function DrawerModal(props) {
     finalProfession,
   ]);
   const resolvedProfessionText = useMemo(() => {
-    const clean = (value) => {
+        /**
+ * Clean utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const clean = (value) => {
       if (value == null) return '';
       return String(value).trim();
     };
@@ -426,8 +462,18 @@ export default function DrawerModal(props) {
     return valuesArray.join(', ');
   }, [resolvedDrawerUser?.specialities, resolvedProfessionSource]);
   const [stableProfileMetaText, setStableProfileMetaText] = useState('');
-  const readProfileText = (value) => (value == null ? '' : String(value).trim());
-  const buildProfessionLabel = (source) => {
+    /**
+ * Read profile text utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const readProfileText = (value) => (value == null ? '' : String(value).trim());
+    /**
+ * Build profession label utility.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
+const buildProfessionLabel = (source) => {
     if (!source) return '';
     const profession = readProfileText(source?.professional_information?.profession || source?.profession);
     const professionType = readProfileText(source?.professional_information?.profession_type || source?.profession_type);
@@ -453,7 +499,14 @@ export default function DrawerModal(props) {
       setAlphaimg(initials)
     }
   }, [resolvedDrawerUser, resolvedProfessionSource])
-  const renderNestedItem = ({ item, index }) => {
+    /**
+ * Render nested item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderNestedItem = ({ item, index }) => {
     return (
       <>
         <View style={{ paddingHorizontal: normalize(51), paddingVertical: normalize(5) }}>
@@ -478,7 +531,14 @@ export default function DrawerModal(props) {
       </>
     );
   }
-  const modalRender = ({ item, index }) => {
+    /**
+ * Modal render utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const modalRender = ({ item, index }) => {
     return (
       <>
         <Pressable onPress={() => {
@@ -549,7 +609,11 @@ export default function DrawerModal(props) {
       </>
     )
   }
-  const handleRot = () => {
+    /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
       if (state.isConnected) {
@@ -559,7 +623,13 @@ export default function DrawerModal(props) {
 
     return () => unsubscribe();
   }
-  const clearAllAsyncStorage = async () => {
+    /**
+ * Clear all async storage utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const clearAllAsyncStorage = async () => {
     try {
       const keepKeys = [
         'PRIME_CARD_SKIPPED_ONCE',
@@ -583,19 +653,38 @@ export default function DrawerModal(props) {
       console.error('Error clearing AsyncStorage:', e);
     }
   };
-  const openEmail = () => {
+    /**
+ * Open email utility.
+ * @returns {void}
+ */
+const openEmail = () => {
     Linking.openURL('mailto:support@emedevents.com');
   };
-  const modalDown = ({ item, index }) => {
+    /**
+ * Modal down utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const modalDown = ({ item, index }) => {
     return (
       <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
         <Pressable onPress={() => {
           if (item?.id == 2) {
             Alert.alert("eMedEvents", "Are you sure want to signout ?",
-              [{ text: "No", style: "cancel", onPress: () => { console.log("hello") } },
+              [{ text: "No", style: "cancel",               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { console.log("hello") } },
               {
                 text: "Yes", style: "default",
-                onPress: () => {
+                                /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                   setLogoutPending(true);
                   clearAllAsyncStorage()
                     .then(() => dispatch(logoutRequest()))
@@ -868,6 +957,10 @@ DrawerModal.propstype = {
   expandId: propstype.number,
   drawerPress: propstype.func
 };
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',

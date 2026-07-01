@@ -1,3 +1,7 @@
+/**
+ * New text in reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomInput, handleRightIconPress, styles.
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
@@ -29,7 +33,11 @@ const CustomInput = ({
 
     const inputRef = useRef(null);
     const [isFocused, setIsFocused] = useState(false);
-    const handleRightIconPress = () => {
+        /**
+ * Handles right icon press.
+ * @returns {void}
+ */
+const handleRightIconPress = () => {
         if (inputRef.current && isFocused) {
             inputRef.current.blur();
         }
@@ -66,6 +74,10 @@ const CustomInput = ({
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     inputGroup: {
         marginBottom: 10,
@@ -95,4 +107,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * New text in default export.
+ *
+ * @returns {*}
+ */
 export default CustomInput;

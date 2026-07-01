@@ -1,3 +1,7 @@
+/**
+ * Internet screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Internet, handleReload, styles.
+ */
+
 import { View, Text, StyleSheet } from 'react-native';
 import React, { useContext, useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
@@ -24,7 +28,11 @@ const Internet = () => {
         isConnected,
         setIsConnected,
     } = useContext(AppContext);
-    const handleReload = () => {
+        /**
+ * Handles reload.
+ * @returns {void}
+ */
+const handleReload = () => {
         if (isConnected) {
             <StackNav/>
             console.log('Internet is back, navigating...');
@@ -82,8 +90,17 @@ const Internet = () => {
     );
 };
 
+/**
+ * Internet default export.
+ *
+ * @returns {*}
+ */
 export default Internet;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',  

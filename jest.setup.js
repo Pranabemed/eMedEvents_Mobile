@@ -1,3 +1,7 @@
+/**
+ * Jest.setup module. Contains application logic, configuration, or shared helpers. Exported members: MapView.
+ */
+
 import 'react-native-gesture-handler/jestSetup';
 
 // Silence the warning: Animated: `useNativeDriver` is not supported (removed as no longer valid for this RN version)
@@ -12,17 +16,35 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@react-navigation/native', () => {
     return {
         ...jest.requireActual('@react-navigation/native'),
-        useNavigation: () => ({
+                /**
+ * Custom hook that manages navigation.
+ * @returns {Object}
+ */
+useNavigation: () => ({
             navigate: jest.fn(),
             goBack: jest.fn(),
             reset: jest.fn(),
             replace: jest.fn(),
         }),
-        useRoute: () => ({
+                /**
+ * Custom hook that manages route.
+ * @returns {Object}
+ */
+useRoute: () => ({
             params: {},
         }),
-        useIsFocused: () => true,
-        NavigationContainer: ({ children }) => children,
+                /**
+ * Custom hook that manages is focused.
+ * @returns {boolean}
+ */
+useIsFocused: () => true,
+                /**
+ * Navigation container component.
+ * @param {Object} props - Input object.
+ * @param {*} props.children - Nested property value.
+ * @returns {JSX.Element}
+ */
+NavigationContainer: ({ children }) => children,
     };
 });
 
@@ -77,7 +99,11 @@ jest.mock('@react-native-community/netinfo', () => require('@react-native-commun
 jest.mock('react-native-reanimated', () => {
     return {
         default: {
-            call: () => { },
+                        /**
+ * Call utility.
+ * @returns {void}
+ */
+call: () => { },
             createAnimatedComponent: jest.fn((comp) => comp),
         },
         createAnimatedComponent: jest.fn((comp) => comp),
@@ -185,7 +211,12 @@ jest.mock('react-native-file-viewer', () => {
 // Mock react-native-maps
 jest.mock('react-native-maps', () => {
     const React = require('react');
-    const MapView = (props) => React.createElement('MapView', props, props.children);
+        /**
+ * Map view component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
+const MapView = (props) => React.createElement('MapView', props, props.children);
     MapView.Marker = (props) => React.createElement('Marker', props, props.children);
     MapView.Callout = (props) => React.createElement('Callout', props, props.children);
     MapView.Polyline = (props) => React.createElement('Polyline', props, props.children);
@@ -267,7 +298,12 @@ jest.mock('react-native-pdf', () => {
     const React = require('react');
     return {
         __esModule: true,
-        default: (props) => React.createElement('Pdf', props, props.children),
+                /**
+ * Default helper.
+ * @param {*} props - Input value.
+ * @returns {*}
+ */
+default: (props) => React.createElement('Pdf', props, props.children),
     };
 });
 

@@ -1,3 +1,7 @@
+/**
+ * Statewebcast price screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status3, StatewebcastPrice, handleTickets, formatNumberWithCommas, formatPrice, renderCmeCredits.
+ */
+
 import { View, Text, Image, Alert, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import Imagepath from '../../Themes/Imagepath'
@@ -22,10 +26,25 @@ import { useDispatch, useSelector } from 'react-redux';
  * @returns {JSX.Element}
  */
 let status3 = "";
+/**
+ * Statewebcast price component.
+ * @param {Object} props - Input object.
+ * @param {*} props.refID - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @param {*} props.webcastdeatils - Nested property value.
+ * @param {*} props.ratingsall - Nested property value.
+ * @param {*} props.scrollToReviews - Nested property value.
+ * @param {*} props.calculatePrice - Nested property value.
+ * @returns {JSX.Element}
+ */
 const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToReviews, calculatePrice }) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const dispatch = useDispatch();
-    const handleTickets = () => {
+        /**
+ * Handles tickets.
+ * @returns {void}
+ */
+const handleTickets = () => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const checkoutSpan = webcastdeatils?.conferenceId;
             let obj = {
@@ -49,14 +68,24 @@ const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToRev
                 })
         }
     }
-    const formatNumberWithCommas = (value) => {
+        /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
-    function formatPrice(price) {
+        /**
+ * Formats price.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -82,7 +111,11 @@ const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToRev
                 break;
         }
     }
-    const renderCmeCredits = () => {
+        /**
+ * Render cme credits utility.
+ * @returns {*}
+ */
+const renderCmeCredits = () => {
         const credits = webcastdeatils?.cmeCreditsData;
 
         if (Array.isArray(credits) && credits.length > 0) {
@@ -407,4 +440,9 @@ const StatewebcastPrice = ({ refID, nav, webcastdeatils, ratingsall, scrollToRev
     )
 }
 
+/**
+ * Statewebcast price default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastPrice

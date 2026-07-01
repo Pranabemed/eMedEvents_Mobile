@@ -1,3 +1,7 @@
+/**
+ * Progress bar reusable component module. Provides a React Native UI building block used across screens. Exported members: CircularProgress, styles.
+ */
+
 import React from 'react';
 import { Text, View, StyleSheet, Platform } from 'react-native';
 import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -7,9 +11,25 @@ import Fonts from '../Themes/Fonts';
 /**
  * Reusable CircularProgress component.
  * 
- * @component
+ * **Purpose:** Displays a circular progress indicator showing a percentage of completion.
+ * 
+ * **Parameters:**
  * @param {Object} props - The component props.
- * @returns {JSX.Element}
+ * @param {number} props.percentage - The completion percentage (0-100) to display.
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} A View containing an SVG circular progress indicator and text.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <CircularProgress percentage={75} />
+ * ```
+ * 
+ * **Notes:**
+ * - Uses `react-native-svg` for rendering the circle.
+ * - Includes a hardcoded linear gradient from green to light green.
  */
 const CircularProgress = ({ percentage }) => {
     const size = 150;
@@ -62,6 +82,10 @@ const CircularProgress = ({ percentage }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
@@ -94,4 +118,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Progress bar default export.
+ *
+ * @returns {*}
+ */
 export default CircularProgress;

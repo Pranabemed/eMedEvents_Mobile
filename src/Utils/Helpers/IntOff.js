@@ -1,3 +1,7 @@
+/**
+ * Int off utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: IntOff, handleRot, stylesd.
+ */
+
 import { View, Text, StyleSheet, Image } from 'react-native'
 import React, { useContext } from 'react'
 import Buttons from '../../Components/Button'
@@ -8,11 +12,20 @@ import normalize from '../Helpers/Dimen';
 import { AppContext } from '../../Screen/GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
+/**
+ * Int off component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const IntOff = (props) => {
     const {
         setIsConnected,
     } = useContext(AppContext);
-    const handleRot = () => {
+        /**
+ * Handle rot utility helper.
+ * @returns {void}
+ */
+const handleRot = () => {
         NetInfo.fetch().then(state => {
             setIsConnected(state.isConnected);
         });
@@ -45,7 +58,16 @@ const IntOff = (props) => {
     )
 }
 
+/**
+ * Int off default export.
+ *
+ * @returns {*}
+ */
 export default IntOff
+/**
+ * Stylesd value.
+ * @returns {*}
+ */
 const stylesd = StyleSheet.create({
     container: {
         position: 'absolute',

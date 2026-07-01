@@ -1,3 +1,7 @@
+/**
+ * Auto data reusable component module. Provides a React Native UI building block used across screens. Exported members: AddressField.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -96,4 +100,9 @@ const AddressField = ({
 
 
 
+/**
+ * Auto data default export.
+ *
+ * @returns {*}
+ */
 export default AddressField;

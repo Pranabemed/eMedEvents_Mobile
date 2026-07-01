@@ -1,3 +1,7 @@
+/**
+ * Expolrecast flatlist screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ExpolrecastFlatlist, handleScroll.
+ */
+
 import { View, Text, FlatList, Alert } from 'react-native'
 import React, { useRef } from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -12,7 +16,12 @@ import normalize from '../../Utils/Helpers/Dimen';
  * @returns {JSX.Element}
  */
 const ExpolrecastFlatlist = ({stateid, profesions,lastScrollY, setLastScrollY, isTouching, setIsTouching, activeList, setActiveList, setIsScrolling, paginatedData, ExplorecastComponent, renderFooter, loadMoreData, setAllSpecial, setTootip, handleUrl, statewise }) => {
-    const handleScroll = (event) => {
+        /**
+ * Handles scroll.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const handleScroll = (event) => {
         const currentScrollY = event.nativeEvent.contentOffset.y;
         console.log(currentScrollY, "currentScrollY====")
         if (currentScrollY < lastScrollY.current) {
@@ -46,4 +55,9 @@ const ExpolrecastFlatlist = ({stateid, profesions,lastScrollY, setLastScrollY, i
     )
 }
 
+/**
+ * Expolrecast flatlist default export.
+ *
+ * @returns {*}
+ */
 export default ExpolrecastFlatlist

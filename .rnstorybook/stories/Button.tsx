@@ -1,3 +1,7 @@
+/**
+ * Button Storybook module. Defines stories and controls for component previews. Exported members: Button, styles, textSizeStyles.
+ */
+
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -16,7 +20,18 @@ export interface ButtonProps {
 }
 
 /** Primary UI component for user interaction */
-export const Button = ({
+export /**
+ * Button component.
+ * @param {Object} props - Input object.
+ * @param {*} props.primary - Nested property value.
+ * @param {*} props.size - Nested property value.
+ * @param {*} props.backgroundColor - Nested property value.
+ * @param {*} props.label - Nested property value.
+ * @param {*} props.style - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @returns {JSX.Element}
+ */
+const Button = ({
   primary = false,
   size = 'medium',
   backgroundColor,
@@ -48,6 +63,10 @@ export const Button = ({
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   button: {
     borderWidth: 0,
@@ -94,6 +113,10 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Text size styles object.
+ * @returns {Object}
+ */
 const textSizeStyles = {
   small: styles.smallText,
   medium: styles.mediumText,

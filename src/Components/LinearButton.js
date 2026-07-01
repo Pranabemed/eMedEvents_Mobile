@@ -1,3 +1,7 @@
+/**
+ * Linear button reusable component module. Provides a React Native UI building block used across screens. Exported members: GradientButton.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient'; 
@@ -40,4 +44,9 @@ const GradientButton = ({width,take}) => {
 
 
 
+/**
+ * Linear button default export.
+ *
+ * @returns {*}
+ */
 export default GradientButton;

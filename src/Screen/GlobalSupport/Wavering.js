@@ -1,3 +1,7 @@
+/**
+ * Wavering screen module. Renders a React Native screen or a screen-scoped support component. Exported members: RingIndicatorWave, styles.
+ */
+
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { MotiView } from 'moti';
@@ -48,6 +52,10 @@ const RingIndicatorWave = ({ isListening, stopListening, startListening }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         justifyContent: 'center',
@@ -74,4 +82,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Wavering default export.
+ *
+ * @returns {*}
+ */
 export default RingIndicatorWave;

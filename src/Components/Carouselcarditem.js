@@ -1,3 +1,7 @@
+/**
+ * Carouselcarditem reusable component module. Provides a React Native UI building block used across screens. Exported members: status, Carouselcarditem, token_handle_vault, cleanNumber, isEmptyLike, isInvalidExpireDays, isZeroDate, handleOpenRenewalLink, stylesmodal.
+ */
+
 import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable, InteractionManager } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import Colorpath from '../Themes/Colorpath';
@@ -24,6 +28,18 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Carouselcarditem component.
+ * @param {Object} props - Input object.
+ * @param {*} props.setStateCount - Nested property value.
+ * @param {*} props.fetcheddt - Nested property value.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @param {*} props.renewal - Nested property value.
+ * @param {*} props.val - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
 const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
     const {
         setExpireDate,
@@ -53,7 +69,11 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
             : '';
     const allProfTake = validHandles.has(profFromDashboard);
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -78,7 +98,12 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     }, [isFocus]);
     const [allProfession, setAllProfession] = useState(null);
 
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -96,7 +121,12 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         (topicEarned === 0 && topicTotal === 0 &&
             generalEarned === 0 && generalTotal === 0);
     const finalSumCred = topicEarned + generalEarned
-    const isEmptyLike = (value) => {
+        /**
+ * Determines whether empty like is true.
+ * @param {*} value - Input value.
+ * @returns {boolean}
+ */
+const isEmptyLike = (value) => {
         if (value == null) return true;
         if (typeof value == 'string') {
             const cleaned = value.trim().toLowerCase();
@@ -107,12 +137,22 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         }
         return false;
     };
-    const isInvalidExpireDays = (value) => {
+        /**
+ * Determines whether invalid expire days is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isInvalidExpireDays = (value) => {
         if (isEmptyLike(value)) return true;
         const parsed = Number(value);
         return Number.isNaN(parsed) || parsed <= 0;
     };
-    const isZeroDate = (value) =>
+        /**
+ * Determines whether zero date is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isZeroDate = (value) =>
         typeof value == 'string' && (value.trim() == '0000-00-00' || value.trim() == '0000-00-00 00:00:00');
 
     const isMissingLicenseData =
@@ -350,7 +390,12 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
             width: (windowWidth * 0.3 - 40) / 10,
         },
     });
-    const handleOpenRenewalLink = (renewallink) => {
+        /**
+ * Handles open renewal link.
+ * @param {*} renewallink - Input value.
+ * @returns {void}
+ */
+const handleOpenRenewalLink = (renewallink) => {
         if (renewallink && typeof renewallink === 'string' && renewallink.trim() !== '') {
             Linking.openURL(renewallink)
                 .catch(err => Alert.alert('Error', 'Failed to open the URL: ' + err.message));
@@ -535,7 +580,16 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     );
 }
 
+/**
+ * Carouselcarditem default export.
+ *
+ * @returns {*}
+ */
 export default Carouselcarditem
+/**
+ * Stylesmodal value.
+ * @returns {*}
+ */
 const stylesmodal = StyleSheet.create({
     modal: {
         justifyContent: 'center',

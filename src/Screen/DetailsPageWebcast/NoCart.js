@@ -1,3 +1,7 @@
+/**
+ * No cart screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AddToCartNo, cartPressNo.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -16,7 +20,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const AddToCartNo = (props) => {
 
-    const cartPressNo = () => {
+        /**
+ * Cart press no utility.
+ * @returns {void}
+ */
+const cartPressNo = () => {
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
             return;
@@ -76,4 +84,9 @@ useLayoutEffect(() => {
     )
 }
 
+/**
+ * No cart default export.
+ *
+ * @returns {*}
+ */
 export default AddToCartNo

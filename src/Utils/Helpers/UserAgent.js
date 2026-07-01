@@ -1,11 +1,32 @@
+/**
+ * User agent utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: _cachedUserAgentJSON, _hasSentUserAgent, _userAgentScopeMap, getUserAgentJSONOnce, getUserAgentJSONByScope.
+ */
+
 import DeviceInfo from 'react-native-device-info';
 import { Platform } from 'react-native';
 
 // Memoized userAgent JSON string to avoid recalculating on every API call
+/**
+ * Cached user agent json value.
+ * @returns {*}
+ */
 let _cachedUserAgentJSON = null;
+/**
+ * Has sent user agent value.
+ * @returns {boolean}
+ */
 let _hasSentUserAgent = false;
+/**
+ * User agent scope map value.
+ * @returns {*}
+ */
 const _userAgentScopeMap = new Set();
 
+/**
+ * User agent default export.
+ *
+ * @returns {*}
+ */
 export default function getUserAgentJSON() {
     if (_cachedUserAgentJSON) {
         return _cachedUserAgentJSON;

@@ -1,3 +1,7 @@
+/**
+ * Profession course shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: ProfessionCourseShimmer, styles.
+ */
+
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -47,8 +51,17 @@ const ProfessionCourseShimmer = ({ count = 3 }) => {
     );
 };
 
+/**
+ * Profession course shimmer default export.
+ *
+ * @returns {*}
+ */
 export default ProfessionCourseShimmer;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     wrapper: {
         paddingVertical: normalize(5),

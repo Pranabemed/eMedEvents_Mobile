@@ -1,3 +1,7 @@
+/**
+ * Pre test screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, PreTest, PrePress, takeCoursepre, handleOptionSelect, handleMultipleOptionSelect, allquestionHandle, goBackToVideoWithNextActivity, handleTextChange, estimatedTime, cleanHTML, renderGroup, renderItem, onBackPress, CustomRadioButton, styles.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, TextInput, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -28,7 +32,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Pre test component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const PreTest = (props) => {
   const {
     statepush,
@@ -40,7 +53,11 @@ const PreTest = (props) => {
   const CMEReducer = useSelector(state => state.CMEReducer);
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const dispatch = useDispatch();
-  const PrePress = () => {
+    /**
+ * Pre press component.
+ * @returns {void}
+ */
+const PrePress = () => {
     setAddit(statepush);
     takeCoursepre();
     props.navigation.goBack();
@@ -102,7 +119,11 @@ const PreTest = (props) => {
         .catch((err) => { showErrorAlert("Please connect to internet", err) })
     }
   }, [statepush])
-  const takeCoursepre = () => {
+    /**
+ * Take coursepre utility.
+ * @returns {void}
+ */
+const takeCoursepre = () => {
     if (statepush) {
       const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
       connectionrequest()
@@ -112,13 +133,25 @@ const PreTest = (props) => {
         .catch((err) => { showErrorAlert("Please connect to internet", err) })
     }
   }
-  const handleOptionSelect = (questionId, optionId) => {
+    /**
+ * Handles option select.
+ * @param {*} questionId - Input value.
+ * @param {*} optionId - Input value.
+ * @returns {void}
+ */
+const handleOptionSelect = (questionId, optionId) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: optionId };
       return updatedOptions;
     });
   };
-  const handleMultipleOptionSelect = (questionId, optionId) => {
+    /**
+ * Handles multiple option select.
+ * @param {*} questionId - Input value.
+ * @param {*} optionId - Input value.
+ * @returns {void}
+ */
+const handleMultipleOptionSelect = (questionId, optionId) => {
     setSelectedOptions((prev) => {
       const currentSelections = prev[questionId] || [];
       const updatedSelections = currentSelections.includes(optionId)
@@ -134,7 +167,11 @@ const PreTest = (props) => {
     // Scroll to the top when the page is loaded or when coming back to this page
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   }, [isFocus]);
-  const allquestionHandle = () => {
+    /**
+ * Allquestion handle utility.
+ * @returns {void}
+ */
+const allquestionHandle = () => {
     const normalizedExamAnswers = Object.fromEntries(
       Object.entries(selectedOptions || {}).map(([key, value]) => {
         // If the value is an array → keep it as is
@@ -165,7 +202,11 @@ const PreTest = (props) => {
   const awaitingNextAfterTestRef = useRef(false);
   const handledNextAfterTestRef = useRef(false);
 
-  const goBackToVideoWithNextActivity = () => {
+    /**
+ * Go back to video with next activity utility.
+ * @returns {void}
+ */
+const goBackToVideoWithNextActivity = () => {
     const nextActivityText = String(
       CMEReducer?.cmedulicateResponse?.next_activity_text ||
       props?.route?.params?.FullID?.wholedata?.next_activity_text ||
@@ -411,7 +452,13 @@ const PreTest = (props) => {
         break;
     }
   }
-  const handleTextChange = (questionId, text) => {
+    /**
+ * Handles text change.
+ * @param {*} questionId - Input value.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleTextChange = (questionId, text) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: text };
       // checkIfAllAnswered(updatedOptions);
@@ -462,13 +509,23 @@ const PreTest = (props) => {
     });
     return unsubscribe;
   }, [props?.navigation]);
-  const estimatedTime = (val) => {
+    /**
+ * Estimated time utility.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const estimatedTime = (val) => {
     if (val) {
       const convertedVal = val * 1000;
       setTimeflex(convertedVal);
     }
   }
-  const cleanHTML = (htmlString) => {
+    /**
+ * Clean html utility.
+ * @param {*} htmlString - Input value.
+ * @returns {*}
+ */
+const cleanHTML = (htmlString) => {
     if (!htmlString) return "";
     htmlString = htmlString.replace(/<p[^>]*style="[^"]*margin-left:0px;"[^>]*>(.*?)<\/p>/g, "$1");
     htmlString = htmlString.replace(/<\/?[^>]+(>|$)/g, "");
@@ -477,7 +534,14 @@ const PreTest = (props) => {
   };
   let questionCounter = 0;
   const totalQuestionsCount = testData && testData?.testData?.[0]?.total_questions || "";
-  const renderGroup = ({ item, index: groupIndex }) => {
+    /**
+ * Render group utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderGroup = ({ item, index: groupIndex }) => {
     return (
       <View>
         {item.heading && (
@@ -540,7 +604,14 @@ const PreTest = (props) => {
     );
   };
 
-  const renderItem = ({ item, index }) => {
+    /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
     estimatedTime((item?.estimated_time || 0) * (item?.question_options?.length + 1 || 0));
     const cleanStatement = cleanHTML(item?.statement);
     return (
@@ -605,7 +676,11 @@ const PreTest = (props) => {
     );
   };
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       PrePress();
       return true;
     };
@@ -756,6 +831,13 @@ const PreTest = (props) => {
   );
 };
 
+/**
+ * Custom radio button component.
+ * @param {Object} props - Input object.
+ * @param {*} props.selected - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CustomRadioButton = ({ selected, onPress }) => (
   <TouchableOpacity onPress={onPress} style={{
     height: 20,
@@ -774,6 +856,10 @@ const CustomRadioButton = ({ selected, onPress }) => (
   </TouchableOpacity>
 );
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   questionContainer: {
     paddingHorizontal: normalize(10),
@@ -905,4 +991,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Pre test default export.
+ *
+ * @returns {*}
+ */
 export default PreTest;

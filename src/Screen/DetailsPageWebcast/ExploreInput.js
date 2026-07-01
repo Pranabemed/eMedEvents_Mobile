@@ -1,3 +1,7 @@
+/**
+ * Explore input screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ExploreInput.
+ */
+
 import { View, Text, Image, TouchableOpacity, Animated, Easing } from 'react-native'
 import React, { useEffect, useRef } from 'react'
 import Imagepath from '../../Themes/Imagepath';
@@ -137,4 +141,9 @@ const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, st
     )
 }
 
+/**
+ * Explore input default export.
+ *
+ * @returns {*}
+ */
 export default ExploreInput

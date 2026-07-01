@@ -1,3 +1,7 @@
+/**
+ * All special screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, professionalTypes, nonUsaProfessionalTypes, AllSpecial, onBackPress, handlePress, searchCountryName, searchStateName, searchStateNamePratice, specaillized, handleStateSelect, handleProfession, handlePratcing, professionValueForNonUsa, formatPhoneNumber, signupHandle, licData.
+ */
+
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -33,6 +37,10 @@ import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
  */
 
 let status = "";
+/**
+ * Professional types array.
+ * @returns {Array}
+ */
 const professionalTypes = [
     { id: 1, label: 'MD', name: "Physician - MD" },
     { id: 2, label: 'DO', name: "Physician - DO" },
@@ -47,12 +55,21 @@ const professionalTypes = [
     { id: 11, label: 'PharmD', name: "Pharmacist - Pharmacist" },
     { id: 12, label: 'Other' },
 ];
+/**
+ * Non usa professional types array.
+ * @returns {Array}
+ */
 const nonUsaProfessionalTypes = [
     { id: 1, label: 'Physician', name: 'Physician' },
     { id: 2, label: 'Nursing', name: 'Nursing' },
     { id: 3, label: 'Dentist', name: 'Dentist' },
     { id: 4, label: 'Other', name: 'Other' },
 ];
+/**
+ * All special component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const AllSpecial = (props) => {
     console.log(props?.route?.params?.Alldata, "props=====")
     const isNonUsaUser = Boolean(props?.route?.params?.Alldata?.isNonUsaUser || props?.route?.params?.isNonUsaUser);
@@ -89,7 +106,11 @@ const AllSpecial = (props) => {
     const animatedValuestate = useRef(new Animated.Value(1)).current;
     const scaleValuesestate = useRef(new Animated.Value(0)).current;
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             if (props.navigation.canGoBack()) {
                 props.navigation.goBack();
             } else {
@@ -104,7 +125,12 @@ const AllSpecial = (props) => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
         return () => backHandler.remove();
     }, [isNonUsaUser, props.navigation, props?.route?.params?.Alldata?.countryCode]);
-    const handlePress = (all) => {
+        /**
+ * Handles press.
+ * @param {*} all - Input value.
+ * @returns {void}
+ */
+const handlePress = (all) => {
         const professionName = all?.name || all?.label || '';
         licData(professionName)
         setSelectedId(all?.id);
@@ -177,7 +203,12 @@ const AllSpecial = (props) => {
             professionalTypes.slice(8)
         ];
     const isfocused = useIsFocused();
-    const searchCountryName = text => {
+        /**
+ * Search country name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCountryName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -197,7 +228,12 @@ const AllSpecial = (props) => {
             setSearchtext(text);
         }
     };
-    const searchStateName = text => {
+        /**
+ * Search state name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchStateName = text => {
         console.log(text, 'text12333');
         if (text) {
             const stateListData = selectState?.filter(function (item) {
@@ -217,7 +253,12 @@ const AllSpecial = (props) => {
             setSearchState(text);
         }
     };
-    const searchStateNamePratice = text => {
+        /**
+ * Search state name pratice utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchStateNamePratice = text => {
         console.log(text, 'text12333');
         if (text) {
             const praticeState = selectStatepratice?.filter(function (item) {
@@ -247,7 +288,12 @@ const AllSpecial = (props) => {
                 showErrorAlert('Please connect to Internet');
             });
     }, [isfocused, isNonUsaUser]);
-    const specaillized = (data) => {
+        /**
+ * Specaillized utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -268,14 +314,24 @@ const AllSpecial = (props) => {
     //             showErrorAlert('Please connect to Internet', err);
     //         });
     // }
-    const handleStateSelect = (item) => {
+        /**
+ * Handles state select.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const handleStateSelect = (item) => {
         console.log("Hello=======", item);
         setState(item?.name);
         setSpecailid(item.id)
         setstatepicker(false);
         // PraticingState();
     };
-    const handleProfession = (did) => {
+        /**
+ * Handles profession.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleProfession = (did) => {
         console.log("Hello=======did", did);
         licData(did);
         setLabel(did);
@@ -289,18 +345,32 @@ const AllSpecial = (props) => {
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
     }
-    const handlePratcing = (draw) => {
+        /**
+ * Handles pratcing.
+ * @param {*} draw - Input value.
+ * @returns {void}
+ */
+const handlePratcing = (draw) => {
         setStatepratice(draw?.state_name);
         setSpecailidpratice(draw?.id)
         setPratice(false);
     }
-    const professionValueForNonUsa = () => (
+        /**
+ * Profession value for non usa utility.
+ * @returns {*}
+ */
+const professionValueForNonUsa = () => (
         selectedProfessionalGroup === 'Other'
             ? otherProfessionValue.trim()
             : selectedProfessionalGroup || label || country
     );
     console.log(selectedId ? selectedId === 12 : undefined, "heloo -------", country,statelist?.length);
-     const formatPhoneNumber = (input) => {
+          /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -314,7 +384,11 @@ const AllSpecial = (props) => {
     return input;
   };
     console.log("statepicker====", statepicker, country)
-    const signupHandle = () => {
+        /**
+ * Signup handle utility.
+ * @returns {void}
+ */
+const signupHandle = () => {
         const professionValue = isNonUsaUser
             ? (selectedProfessionalGroup === 'Other' ? otherProfessionValue.trim() : selectedProfessionalGroup || label || country)
             : (selectedId === 12 ? country : label);
@@ -436,7 +510,12 @@ const AllSpecial = (props) => {
             setSlistpratice(AuthReducer?.stateResponse?.states);
         }
     }, [searchpratice])
-    const licData = (hill) => {
+        /**
+ * Lic data utility.
+ * @param {*} hill - Input value.
+ * @returns {void}
+ */
+const licData = (hill) => {
         const obj = hill || country;
         connectionrequest()
             .then(() => {
@@ -792,4 +871,9 @@ const AllSpecial = (props) => {
         </>
     );
 };
+/**
+ * All special default export.
+ *
+ * @returns {*}
+ */
 export default AllSpecial;

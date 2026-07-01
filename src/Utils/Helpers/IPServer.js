@@ -1,6 +1,18 @@
+/**
+ * Public ip constant.
+ * @returns {*}
+ */
 let PUBLIC_IP = null;
+/**
+ * Cached country info constant.
+ * @returns {*}
+ */
 let CACHED_COUNTRY_INFO = null;
 
+/**
+ * Country dial codes constant.
+ * @returns {Object}
+ */
 const COUNTRY_DIAL_CODES = {
   IN: '+91',
   US: '+1',
@@ -10,12 +22,22 @@ const COUNTRY_DIAL_CODES = {
   SG: '+65',
 };
 
+/**
+ * Get dial code utility helper.
+ * @param {number} country - Input value.
+ * @returns {*}
+ */
 const getDialCode = (country) => {
   if (!country) return '+1';
   const upper = country.trim().toUpperCase();
   return COUNTRY_DIAL_CODES[upper] || '+1';
 };
 
+/**
+ * Get country name utility helper.
+ * @param {number} countryCode - Input value.
+ * @returns {*}
+ */
 const getCountryName = countryCode => {
   if (!countryCode) return '';
   try {
@@ -29,6 +51,11 @@ const getCountryName = countryCode => {
   return countryCode.toUpperCase();
 };
 
+/**
+ * Normalize geo info utility helper.
+ * @param {Object} data - Input value.
+ * @returns {Object}
+ */
 const normalizeGeoInfo = (data = {}) => {
   const countryCode = String(
     data.country_code ||
@@ -61,6 +88,13 @@ const normalizeGeoInfo = (data = {}) => {
   };
 };
 
+/**
+ * Fetch country and dial code utility helper.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
 const fetchCountryAndDialCode = async (ip) => {
   const targetIp = ip || '';
   console.log('[IPServer] Fetching country details for IP:', targetIp || 'self');
@@ -115,7 +149,13 @@ const fetchCountryAndDialCode = async (ip) => {
   return { country: '', country_name: '', city_name: '', state_name: '', dialCode: '' };
 };
 
-export const initPublicIP = async () => {
+export /**
+ * Init public ip utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const initPublicIP = async () => {
   try {
     const res = await fetch('https://api.ipify.org?format=json');
     const data = await res.json();
@@ -131,9 +171,19 @@ export const initPublicIP = async () => {
   }
 };
 
-export const getPublicIP = () => PUBLIC_IP;
+export /**
+ * Get public ip utility helper.
+ * @returns {*}
+ */
+const getPublicIP = () => PUBLIC_IP;
 
-export const getCountryAndDialCode = async () => {
+export /**
+ * Get country and dial code utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const getCountryAndDialCode = async () => {
   if (CACHED_COUNTRY_INFO) {
     return CACHED_COUNTRY_INFO;
   }

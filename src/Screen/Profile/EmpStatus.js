@@ -1,3 +1,7 @@
+/**
+ * Emp status screen module. Renders a React Native screen or a screen-scoped support component. Exported members: EmpStatusModal, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform, StyleSheet } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -71,7 +75,16 @@ const EmpStatusModal = ({ setEmpstatusname, empstatusname, profiletakeshow, setP
     )
 }
 
+/**
+ * Emp status default export.
+ *
+ * @returns {*}
+ */
 export default EmpStatusModal
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

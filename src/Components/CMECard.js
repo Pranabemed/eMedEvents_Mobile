@@ -1,3 +1,7 @@
+/**
+ * Cmecard reusable component module. Provides a React Native UI building block used across screens. Exported members: CMECard, formatRenewalYears, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -13,7 +17,13 @@ import Fonts from '../Themes/Fonts';
  * @returns {JSX.Element}
  */
 const CMECard = ({expiryno, allProfTake, CMEcard, setCMECard, styles, item, windowWidth, manWrng,genWrng,finalSumCred }) => {
- function formatRenewalYears(renewal_cycle, to_date) {
+  /**
+ * Formats renewal years.
+ * @param {*} renewal_cycle - Input value.
+ * @param {*} to_date - Input value.
+ * @returns {string}
+ */
+function formatRenewalYears(renewal_cycle, to_date) {
     const date = new Date(to_date);
     const endYear = date.getFullYear();
     const startYear = endYear - parseInt(renewal_cycle);
@@ -145,7 +155,16 @@ const CMECard = ({expiryno, allProfTake, CMEcard, setCMECard, styles, item, wind
     )
 }
 
+/**
+ * Cmecard default export.
+ *
+ * @returns {*}
+ */
 export default CMECard
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

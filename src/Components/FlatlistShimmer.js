@@ -1,3 +1,7 @@
+/**
+ * Flatlist shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: FlatListShimmer, renderItem, styles.
+ */
+
 import { StyleSheet, View, Dimensions, Platform, ScrollView, FlatList } from "react-native";
 import React from "react";
 import normalize from "../Utils/Helpers/Dimen";
@@ -14,7 +18,13 @@ const FlatListShimmer = () => {
     const shimmerData = Array.from({ length: 3 }).map((_, index) => ({
         id: index,
     }));
-    const renderItem = ({ item }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item }) => {
         return (
             <View style={styles.itemContainer}>
                 <SkeletonPlaceholder backgroundColor="#D9D9D9" highlightColor="#525252">
@@ -56,8 +66,17 @@ const FlatListShimmer = () => {
     );
 };
 
+/**
+ * Flatlist shimmer default export.
+ *
+ * @returns {*}
+ */
 export default FlatListShimmer;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,

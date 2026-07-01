@@ -1,7 +1,23 @@
+/**
+ * Fs value.
+ * @returns {*}
+ */
 const fs = require('fs');
+/**
+ * Path value.
+ * @returns {*}
+ */
 const path = require('path');
 
+/**
+ * Components dir value.
+ * @returns {*}
+ */
 const componentsDir = path.join(__dirname, 'src', 'Components');
+/**
+ * Storybook dir value.
+ * @returns {*}
+ */
 const storybookDir = path.join(__dirname, '.rnstorybook', 'stories');
 
 // Ensure storybook directory exists
@@ -9,6 +25,12 @@ if (!fs.existsSync(storybookDir)) {
     fs.mkdirSync(storybookDir, { recursive: true });
 }
 
+/**
+ * Process file utility.
+ * @param {*} filePath - Input value.
+ * @param {*} fileName - Input value.
+ * @returns {void}
+ */
 const processFile = (filePath, fileName) => {
     let content = fs.readFileSync(filePath, 'utf8');
 
@@ -77,6 +99,10 @@ export const Default: Story = {
     }
 };
 
+/**
+ * Run utility.
+ * @returns {void}
+ */
 const run = () => {
     console.log('Starting documentation generation...');
     const files = fs.readdirSync(componentsDir);

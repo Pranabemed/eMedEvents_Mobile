@@ -1,5 +1,9 @@
 
 
+/**
+ * Sticky flat list screen module. Renders a React Native screen or a screen-scoped support component. Exported members: data, StickyFlatList.
+ */
+
 import {View } from "react-native";
 import styles from "./StyleSticky"
 import CustomFlatList from "../../Utils/Helpers/CustomFlat";
@@ -15,6 +19,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 const data = Array(10).fill(1);
+/**
+ * Sticky flat list component.
+ * @returns {JSX.Element}
+ */
 const StickyFlatList = () => {
   return (
     <SafeAreaView style={styles.container}>
@@ -32,4 +40,9 @@ const StickyFlatList = () => {
   )
 }
 
+/**
+ * Sticky flat list default export.
+ *
+ * @returns {*}
+ */
 export default StickyFlatList

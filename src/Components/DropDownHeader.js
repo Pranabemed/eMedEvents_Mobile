@@ -1,3 +1,7 @@
+/**
+ * Drop down header reusable component module. Provides a React Native UI building block used across screens. Exported members: DropDownHeader.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import CloseIcon from 'react-native-vector-icons/AntDesign';
@@ -48,4 +52,9 @@ const DropDownHeader = ({title,onClosePress}) => {
     )
 }
 
+/**
+ * Drop down header default export.
+ *
+ * @returns {*}
+ */
 export default DropDownHeader

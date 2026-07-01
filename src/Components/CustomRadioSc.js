@@ -1,4 +1,8 @@
 
+/**
+ * Custom radio sc reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomRadioButtons, handleSelect, styles.
+ */
+
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen'; 
@@ -14,7 +18,12 @@ import normalize from '../Utils/Helpers/Dimen';
 const CustomRadioButtons = ({ options, onSelect }) => {
     const [selectedOption, setSelectedOption] = useState(null);
 
-    const handleSelect = (option) => {
+        /**
+ * Handles select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleSelect = (option) => {
         setSelectedOption(option.id);
         onSelect(option);
     };
@@ -41,8 +50,17 @@ const CustomRadioButtons = ({ options, onSelect }) => {
     );
 };
 
+/**
+ * Custom radio sc default export.
+ *
+ * @returns {*}
+ */
 export default CustomRadioButtons;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',

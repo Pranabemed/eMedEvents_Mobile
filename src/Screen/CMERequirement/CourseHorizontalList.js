@@ -32,6 +32,10 @@ import Colorpath from '../../Themes/Colorpath';
 
 const starStyle = { marginHorizontal: 0.5 };
 
+/**
+ * Conference type map object.
+ * @returns {Object}
+ */
 const conferenceTypeMap = {
   '1': 'Inperson',
   '2': 'Text Based',
@@ -103,6 +107,11 @@ const normalizeDisplayCme = value => {
     : text;
 };
 
+/**
+ * Returns course identity.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getCourseIdentity = item =>
   String(
     item?.id ||
@@ -116,6 +125,11 @@ const getCourseIdentity = item =>
     .trim()
     .toLowerCase();
 
+/**
+ * Returns button label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getButtonLabel = item =>
   String(
     item?.buttonText ||
@@ -517,6 +531,10 @@ const CourseHorizontalList = ({ data, isMandatory, highlightFirstItem = false })
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     marginTop: normalize(4),
@@ -646,4 +664,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Course horizontal list default export.
+ *
+ * @returns {*}
+ */
 export default CourseHorizontalList;

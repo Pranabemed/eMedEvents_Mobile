@@ -1,3 +1,7 @@
+/**
+ * Statewebcast overview screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastOverview, handleOverviewLink.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -14,7 +18,12 @@ import HtmlTableRenderer from './HtmlTableRenderer';
  */
 
 const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpansion, expanded, navigation, webcastdeatils, creditData }) => {
-    const handleOverviewLink = (href) => {
+        /**
+ * Handles overview link.
+ * @param {*} href - Input value.
+ * @returns {void}
+ */
+const handleOverviewLink = (href) => {
         if (!href || !navigation) return;
 
         const normalizedHref = String(href).trim();
@@ -123,4 +132,9 @@ const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpa
     )
 }
 
+/**
+ * Statewebcast overview default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastOverview

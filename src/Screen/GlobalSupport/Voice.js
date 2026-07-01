@@ -1,3 +1,7 @@
+/**
+ * Voice screen module. Renders a React Native screen or a screen-scoped support component. Exported members: VoiceSearchBar, handleSpeechStart, onSpeechResults, handleSpeechEnd, startListening, stopListening, resetFallbackTimeout, styles.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, PermissionsAndroid, Platform, Alert } from 'react-native';
 import Voice from '@dev-amirzubair/react-native-voice';
@@ -64,13 +68,22 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
         }
     }, [isListening]);
 
-    const handleSpeechStart = () => {
+        /**
+ * Handles speech start.
+ * @returns {void}
+ */
+const handleSpeechStart = () => {
         setErrorMessage('');
         setIsManuallyStopped(false);
         setIsSpeechDetected(true);
     };
 
-    const onSpeechResults = (event) => {
+        /**
+ * On speech results utility.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onSpeechResults = (event) => {
         if (event.value && event.value.length > 0) {
             SearchCont(event.value[0]);
             setSearchText(event.value[0]);
@@ -85,7 +98,11 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
             clearTimeout(speechEndTimeoutRef.current);
         }
     };
-    const handleSpeechEnd = () => {
+        /**
+ * Handles speech end.
+ * @returns {void}
+ */
+const handleSpeechEnd = () => {
         console.log("Speech ended===============", searchText);
         setSpeechResult(""); // Update the stored result
         setIsListening(false);
@@ -99,7 +116,13 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
         }
     };
 
-    const startListening = async () => {
+        /**
+ * Start listening utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const startListening = async () => {
         try {
             if (Platform.OS === 'android') {
                 const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
@@ -125,7 +148,13 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
         }
     };
 
-    const stopListening = async () => {
+        /**
+ * Stop listening utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const stopListening = async () => {
         try {
             await Voice.stop();
             setIsListening(false);
@@ -140,7 +169,11 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
         }
     };
 
-    const resetFallbackTimeout = () => {
+        /**
+ * Reset fallback timeout utility.
+ * @returns {void}
+ */
+const resetFallbackTimeout = () => {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
             if (isListening) {
@@ -182,7 +215,16 @@ const VoiceSearchBar = ({ SearchCont, searchText, setSearchText, searchEn, setSe
     );
 };
 
+/**
+ * Voice default export.
+ *
+ * @returns {*}
+ */
 export default VoiceSearchBar;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     ring: {
         width: normalize(90),

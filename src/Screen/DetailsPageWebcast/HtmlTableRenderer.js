@@ -1,3 +1,7 @@
+/**
+ * Html table renderer screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HtmlTableRenderer.
+ */
+
 import React, { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -145,7 +149,13 @@ const HtmlTableRenderer = ({ source, width, tagsStyles, onLinkPress }) => {
             tagsStyles={tagsStyles}
             renderersProps={{
                 a: {
-                    onPress: (event, href) => {
+                                        /**
+ * On press helper.
+ * @param {*} event - Input value.
+ * @param {*} href - Input value.
+ * @returns {void}
+ */
+onPress: (event, href) => {
                         if (href && onLinkPress) {
                             onLinkPress(href);
                         }
@@ -156,4 +166,9 @@ const HtmlTableRenderer = ({ source, width, tagsStyles, onLinkPress }) => {
     );
 };
 
+/**
+ * Html table renderer default export.
+ *
+ * @returns {*}
+ */
 export default HtmlTableRenderer;

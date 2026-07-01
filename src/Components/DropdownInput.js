@@ -1,3 +1,7 @@
+/**
+ * Dropdown input reusable component module. Provides a React Native UI building block used across screens. Exported members: DropdownInput, onChangeText, onFocus, onBlur.
+ */
+
 import React, { useState, forwardRef, useEffect, useRef } from 'react';
 import {
   View,
@@ -48,19 +52,32 @@ const DropdownInput = forwardRef((props, ref) => {
     ]).start();
   }, [textValue]);
 
-  const onChangeText = (text) => {
+    /**
+ * On change text utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const onChangeText = (text) => {
     setTextValue(text);
     if (props.onChangeText) {
       props.onChangeText(text);
     }
   };
-  const onFocus = () => {
+    /**
+ * On focus utility.
+ * @returns {void}
+ */
+const onFocus = () => {
     if (props.onFocus) {
       props.onFocus();
     }
   };
 
-  const onBlur = () => {
+    /**
+ * On blur utility.
+ * @returns {void}
+ */
+const onBlur = () => {
     if (props.onBlur) {
       props.onBlur();
     }
@@ -228,4 +245,9 @@ DropdownInput.propTypes = {
   rightIcon: PropTypes.node
 };
 
+/**
+ * Dropdown input default export.
+ *
+ * @returns {*}
+ */
 export default DropdownInput;

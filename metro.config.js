@@ -1,3 +1,7 @@
+/**
+ * Metro.config module. Contains application logic, configuration, or shared helpers. Exported members: config.
+ */
+
 const {
   withStorybook,
 } = require('@storybook/react-native/withStorybook');

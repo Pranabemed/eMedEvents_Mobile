@@ -1,3 +1,7 @@
+/**
+ * Dashoard vault screen module. Renders a React Native screen or a screen-scoped support component. Exported members: parseExpiryDate, DashoardVault, searchTopicNameboard, handleBoardname, onhandle, oncmeModalclose, fetchData, getDisplayProfession, searchTopicName, vaultState, downCredit, handleRot, stylesd.
+ */
+
 import { View, Text, Platform, ScrollView, TouchableOpacity, Dimensions, StyleSheet, Image } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -44,6 +48,11 @@ import CertficateHandle from './FileCheck';
  */
 const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "MM/DD/YYYY", "DD-MM-YYYY", moment.ISO_8601], true);
 
+/**
+ * Dashoard vault component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const DashoardVault = (props) => {
     const {
         isConnected,
@@ -199,7 +208,12 @@ const DashoardVault = (props) => {
             }
         }
     }, [stateidboard])
-    const searchTopicNameboard = text => {
+        /**
+ * Search topic nameboard utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchTopicNameboard = text => {
         if (text) {
             const listAllData = selectCountrytopicboard?.filter(function (item) {
                 const itemDataTopic = item?.board_data.board_name
@@ -216,7 +230,12 @@ const DashoardVault = (props) => {
             setSearchtexttopicboard(text);
         }
     };
-    const handleBoardname = (did) => {
+        /**
+ * Handles boardname.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleBoardname = (did) => {
         setStateidboard(did)
         setBoardnameboard(did?.board_data?.board_name);
         setStatepickboard(false);
@@ -227,17 +246,29 @@ const DashoardVault = (props) => {
 
     /////////state--area///////
 
-    const onhandle = () => {
+        /**
+ * Onhandle utility.
+ * @returns {void}
+ */
+const onhandle = () => {
         setCmemodal(false);
     }
-    const oncmeModalclose = () => {
+        /**
+ * Oncme modalclose utility.
+ * @returns {void}
+ */
+const oncmeModalclose = () => {
         setCmemodal(false);
     }
     useFocusEffect(
         React.useCallback(() => {
             let obj = {};
 
-            const fetchData = () => {
+                        /**
+ * Fetch data utility.
+ * @returns {void}
+ */
+const fetchData = () => {
                 connectionrequest()
                     .then(() => {
                         dispatch(stateMandatoryRequest(obj));
@@ -422,7 +453,12 @@ const DashoardVault = (props) => {
     const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const getDisplayProfession = (source) => {
+        /**
+ * Returns display profession.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
+const getDisplayProfession = (source) => {
         if (!source) return "";
         const profession = String(source?.professional_information?.profession || source?.profession || '').trim();
         const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
@@ -525,7 +561,12 @@ const DashoardVault = (props) => {
         }
 
     }, [creditwise]);
-    const searchTopicName = text => {
+        /**
+ * Search topic name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchTopicName = text => {
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
                 const itemDataTopic = item?.state_name
@@ -542,7 +583,12 @@ const DashoardVault = (props) => {
             setSearchtexttopic(text);
         }
     };
-    const vaultState = (vault) => {
+        /**
+ * Vault state utility.
+ * @param {*} vault - Input value.
+ * @returns {void}
+ */
+const vaultState = (vault) => {
         setStateid(vault?.state_id)
         setStatewise(vault?.state_name);
         setCertificatedata(vault);
@@ -580,7 +626,11 @@ const DashoardVault = (props) => {
         // setAvoid(true);
         setWidth(true);
     }, [isfocused])
-    const downCredit = () => {
+        /**
+ * Down credit utility.
+ * @returns {void}
+ */
+const downCredit = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -591,7 +641,11 @@ const DashoardVault = (props) => {
         );
 
     }
-    const handleRot = () => {
+        /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
             if (state.isConnected) {
@@ -921,7 +975,16 @@ const DashoardVault = (props) => {
     )
 }
 
+/**
+ * Dashoard vault default export.
+ *
+ * @returns {*}
+ */
 export default DashoardVault
+/**
+ * Stylesd value.
+ * @returns {*}
+ */
 const stylesd = StyleSheet.create({
     container: {
         position: 'absolute',

@@ -1,3 +1,7 @@
+/**
+ * Location component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: LocationComponent, weekFilterProfession.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -15,7 +19,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const LocationComponent = ({setDownlink,Handlestate,setStatepick,searchtexttopic,searchTopicName,clisttopic}) => {
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {*}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (item?.state_name ?<TouchableOpacity
             onPress={() => {
                 Handlestate(item);
@@ -130,4 +141,9 @@ const LocationComponent = ({setDownlink,Handlestate,setStatepick,searchtexttopic
     )
 }
 
+/**
+ * Location component default export.
+ *
+ * @returns {*}
+ */
 export default LocationComponent

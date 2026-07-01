@@ -1,3 +1,7 @@
+/**
+ * Explore cast course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ExploreCastCourse, searchTopicName, searchWebcastTopic, checkoutClear, handleUrl, checkoutCleartopic, toggleWeekSelection, statewiseFetch, professionFetch, loadMoreData, loadMoreDataCourse, Handlestate, renderFooter, renderFooterCourse.
+ */
+
 import { View, Text, Platform, FlatList, ActivityIndicator, ScrollView, Image, TouchableOpacity } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -35,6 +39,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Explore cast course component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const ExploreCastCourse = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
@@ -80,7 +89,12 @@ const ExploreCastCourse = (props) => {
     const downData = [{ id: 1, name: "Physician (MD/DO)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-04-02/global_pediatric_images/State%20Wise%20CME%20Course%20Bundle%20For%20Physicians-4.pdf" }, { id: 2, name: "Registered Nurse (RN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20RN-4.pdf" }, { id: 3, name: "Nurse Practitioner (NP/APRN)", Path: "https://emedeventslive.s3.us-west-2.amazonaws.com/uploads/newsletters/2024-12-30/State%20Wise%20CME%20Course%20Bundle%20For%20NP.pdf" }]
     const allProfession = [{ id: 0, name: "All Professions", profesions_type: "" }, { id: 1, name: "Physicians - MD", profession: "Physician", profesions_type: "" }, { id: 2, name: "Nurses - RN", profession: "Nursing", profesions_type: "RN" }, { id: 3, name: "Nurses - NP", profession: "Nursing", profesions_type: "NP" }]
     const allProfessionDp = [{ id: 1, name: "Physicians - MD", profession: "Physician", profesions_type: "" }, { id: 2, name: "Nurses - RN", profession: "Nursing", profesions_type: "RN" }, { id: 3, name: "Nurses - NP", profession: "Nursing", profesions_type: "NP" }]
-    const searchTopicName = text => {
+        /**
+ * Search topic name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchTopicName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
@@ -100,7 +114,12 @@ const ExploreCastCourse = (props) => {
             setSearchtexttopic(text);
         }
     };
-    const searchWebcastTopic = text => {
+        /**
+ * Search webcast topic utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchWebcastTopic = text => {
         console.log(text, 'text12333');
         if (text) {
             const listAllData_topic = rolesdata?.filter(function (item) {
@@ -162,11 +181,20 @@ const ExploreCastCourse = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }, [isFocus])
-    const checkoutClear = () => {
+        /**
+ * Checkout clear utility.
+ * @returns {void}
+ */
+const checkoutClear = () => {
         props.navigation.goBack();
     }
 
-    const handleUrl = (dataurl) => {
+        /**
+ * Handles url.
+ * @param {*} dataurl - Input value.
+ * @returns {void}
+ */
+const handleUrl = (dataurl) => {
         const url_webcast = dataurl?.detailpage_url;
         const result_final = url_webcast.split('/').pop();
         console.log(result_final, "webcast url=======");
@@ -228,7 +256,11 @@ const ExploreCastCourse = (props) => {
     const [weekname, setWeekname] = useState("");
     const [topicfetched, setTopicfetched] = useState("");
     console.log(activeList, "activeList======", isTouching, lastScrollY)
-    const checkoutCleartopic = () => {
+        /**
+ * Checkout cleartopic utility.
+ * @returns {void}
+ */
+const checkoutCleartopic = () => {
         setFiltering(false);
     }
     useEffect(() => {
@@ -243,7 +275,12 @@ const ExploreCastCourse = (props) => {
             console.log(topicsWithId, "topicsWithId=========");
         }
     }, [webcastall?.topics])
-    const toggleWeekSelection = (item) => {
+        /**
+ * Toggle week selection utility.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const toggleWeekSelection = (item) => {
         console.log(item, "autofetched")
         let updatedWeekname;
         if (weekname.includes(item.name)) {
@@ -356,7 +393,12 @@ const ExploreCastCourse = (props) => {
     //         }
     //     }
     // }, [WebcastReducer?.webcastviewallResponse?.state_mandate_conferences]);
-    const statewiseFetch = (fullID) => {
+        /**
+ * Statewise fetch utility.
+ * @param {*} fullID - Input value.
+ * @returns {void}
+ */
+const statewiseFetch = (fullID) => {
         const obj = {
             profession: "",
             mandate_state: fullID ? fullID : "",
@@ -371,7 +413,12 @@ const ExploreCastCourse = (props) => {
                 showErrorAlert("Please connect to the internet", err);
             });
     }
-    const professionFetch = (prof) => {
+        /**
+ * Profession fetch utility.
+ * @param {*} prof - Input value.
+ * @returns {void}
+ */
+const professionFetch = (prof) => {
         const obj = {
             profession: prof?.profession ? prof?.profession : "",
             mandate_state: "",
@@ -400,7 +447,11 @@ const ExploreCastCourse = (props) => {
             console.log(updatedStateDataArray, "updatedStateDataArray=========", allStatesItem, stateid);
         }
     }, [WebcastReducer?.webcastStateResponse?.states, stateid]);
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (paginatedData?.length < webcastview?.length) {
             setLoadingMore(true);
@@ -421,7 +472,11 @@ const ExploreCastCourse = (props) => {
             setAgain(highText);
         }
     }, [allSpecial])
-    const loadMoreDataCourse = () => {
+        /**
+ * Load more data course utility.
+ * @returns {void}
+ */
+const loadMoreDataCourse = () => {
         if (courseMore) return;
         if (pagecourseData?.length < webcastviewcourse?.length) {
             setCourseMore(true);
@@ -435,20 +490,33 @@ const ExploreCastCourse = (props) => {
             }, 1000);
         }
     };
-    const Handlestate = (role) => {
+        /**
+ * Handlestate component.
+ * @param {*} role - Input value.
+ * @returns {void}
+ */
+const Handlestate = (role) => {
         setStateid(role?.state_id)
         setStatewise(role?.state_name);
         setStatepick(false);
         statewiseFetch(role.state_id);
     }
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ marginTop: normalize(80) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
             </View>
         ) : null;
     };
-    const renderFooterCourse = () => {
+        /**
+ * Render footer course utility.
+ * @returns {*}
+ */
+const renderFooterCourse = () => {
         return courseMore ? (
             <View style={{ marginTop: normalize(80), justifyContent: "center", alignSelf: "center" }}>
                 <ActivityIndicator style={{ alignSelf: "center" }} size="small" color={Colorpath.ButtonColr} />
@@ -758,4 +826,9 @@ const ExploreCastCourse = (props) => {
         </>
     )
 }
+/**
+ * Explore cast course default export.
+ *
+ * @returns {*}
+ */
 export default ExploreCastCourse

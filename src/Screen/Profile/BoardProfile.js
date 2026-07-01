@@ -1,3 +1,7 @@
+/**
+ * Board profile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status2, BoardProfile, SearchBack, boardCheck, transformDataSpecial, loadMoreData, renderFooter, stateTakeItemboard, renderAddButton, renderMessage, onBackPress.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, BackHandler, ActivityIndicator } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -30,12 +34,25 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Status2 string constant.
+ * @returns {string}
+ */
 let status2 = "";
+/**
+ * Board profile component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const BoardProfile = (props) => {
      const {
             isConnected
           } = useContext(AppContext);
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -81,7 +98,11 @@ const BoardProfile = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const boardCheck = () => {
+        /**
+ * Board check utility.
+ * @returns {void}
+ */
+const boardCheck = () => {
         const takeSpecial = Object.keys(DashboardReducer?.mainprofileResponse?.specialities).join(", ");
         let obj = {
             "profession": DashboardReducer?.mainprofileResponse?.professional_information?.profession,
@@ -140,7 +161,12 @@ const BoardProfile = (props) => {
 
         }
     }
-    const transformDataSpecial = (data) => {
+        /**
+ * Transform data special utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const transformDataSpecial = (data) => {
         return Object.keys(data).map(key => {
             const specialities = Object.values(data[key].specialities).map(spec => spec.name);
             return {
@@ -172,7 +198,11 @@ const BoardProfile = (props) => {
             }
         }
     }, [DashboardReducer?.boardSpecialityResponse?.certification_boards, roleBoardIds, totalboardname]);
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (paginatedData?.length < webcastview?.length) {
             setLoadingMore(true);
@@ -186,14 +216,25 @@ const BoardProfile = (props) => {
             }, 1000);
         }
     };
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ paddingVertical: normalize(20) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
             </View>
         ) : null;
     };
-    const stateTakeItemboard = ({ item, index }) => {
+        /**
+ * State take itemboard utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateTakeItemboard = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -270,7 +311,11 @@ const BoardProfile = (props) => {
     const isNursingOrDentist = profession == "Nursing" || profession == "Dentist";
     const professionType = DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
     const isPhysician = professionType == "DO" || professionType == "DPM" || professionType == "MD"
-    const renderAddButton = () => (
+        /**
+ * Render add button utility.
+ * @returns {JSX.Element}
+ */
+const renderAddButton = () => (
         <View style={{ justifyContent: "center", alignContent: "center", flexDirection: "row", gap: 5 }}>
             <View style={{
                 alignItems: "center",
@@ -295,7 +340,13 @@ const BoardProfile = (props) => {
         </View>
     );
 
-    const renderMessage = (message, underline = false) => (
+        /**
+ * Render message utility.
+ * @param {*} message - Input value.
+ * @param {boolean} underline - Input value.
+ * @returns {JSX.Element}
+ */
+const renderMessage = (message, underline = false) => (
         <Text style={{
             fontFamily: Fonts.InterSemiBold,
             fontSize: 16,
@@ -307,7 +358,11 @@ const BoardProfile = (props) => {
         </Text>
     );
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             SearchBack();
             return true;
         };
@@ -444,4 +499,9 @@ const BoardProfile = (props) => {
         </>
     )
 }
+/**
+ * Board profile default export.
+ *
+ * @returns {*}
+ */
 export default BoardProfile

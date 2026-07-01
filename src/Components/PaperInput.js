@@ -1,3 +1,7 @@
+/**
+ * Paper input reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomInputs, styles.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -99,6 +103,10 @@ const CustomInputs = ({
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         width: '100%',
@@ -128,4 +136,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Paper input default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputs;

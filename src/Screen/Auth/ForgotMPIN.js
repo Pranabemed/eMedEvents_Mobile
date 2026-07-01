@@ -1,3 +1,7 @@
+/**
+ * Forgot mpin screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ForgotMPIN, fogotHandle, backEraFt, onBackPress, formatPhoneNumber, formatIndianPhoneNumber, handleInputChange, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, ScrollView, TouchableOpacity, Animated, TextInput, Easing, Image, BackHandler } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -14,6 +18,10 @@ import TextFieldIn from '../../Components/Textfield';
 import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import InputField from '../../Components/CellInput';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -33,7 +41,11 @@ const ForgotMPIN = (props) => {
     const [email, setEmail] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-    const fogotHandle = () => {
+        /**
+ * Fogot handle utility.
+ * @returns {void}
+ */
+const fogotHandle = () => {
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const mobileRegex = /^\d{10}$/;
         const cleVal = email && email.trim().replace(/\D/g, '');
@@ -102,11 +114,19 @@ const ForgotMPIN = (props) => {
                 break;
         }
     }
-    const backEraFt = () => {
+        /**
+ * Back era ft utility.
+ * @returns {void}
+ */
+const backEraFt = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             backEraFt();
             return true;
         };
@@ -118,7 +138,12 @@ const ForgotMPIN = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const formatPhoneNumber = (input) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
         const cleaned = input.replace(/\D/g, '').slice(0, 10);
         const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -131,7 +156,12 @@ const ForgotMPIN = (props) => {
         }
         return input;
     };
-    const formatIndianPhoneNumber = (input) => {
+        /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -166,7 +196,12 @@ const ForgotMPIN = (props) => {
             setMobile(true);
         }
     }, [mobilhd, cellCountry])
-    const handleInputChange = (val) => {
+        /**
+ * Handles input change.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleInputChange = (val) => {
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const mobileRegex = /^\d{10}$/;
         setEmail(val);
@@ -334,6 +369,10 @@ const ForgotMPIN = (props) => {
     );
 };
 
+/**
+ * Styles object.
+ * @returns {Object}
+ */
 const styles = {
     headerContainer: {
         justifyContent: "center",
@@ -371,4 +410,9 @@ const styles = {
     },
 };
 
+/**
+ * Forgot mpin default export.
+ *
+ * @returns {*}
+ */
 export default ForgotMPIN;

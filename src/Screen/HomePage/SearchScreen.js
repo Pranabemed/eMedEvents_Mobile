@@ -1,3 +1,7 @@
+/**
+ * Search screen screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SearchScreen, FilterBack, renderSection.
+ */
+
 import { View, Text, Platform, TextInput, TouchableOpacity, KeyboardAvoidingView, FlatList, Image } from 'react-native'
 import React, { useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -21,13 +25,23 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const SearchScreen = (props) => {
     const [search, setSearch] = useState(false);
     const [searchtxt, setSearchtxt] = useState("");
-    const FilterBack = () => {
+        /**
+ * Filter back component.
+ * @returns {void}
+ */
+const FilterBack = () => {
         props.navigation.goBack();
     };
     console.log(search, "search000000");
     const specialityData = [{ id: 0, name: "Internal Medicine" }, { id: 1, name: "Family Medicine" }, { id: 2, name: "Obstetrics and Gynecology" }, { id: 3, name: "Oncology" }, { id: 4, name: "Radiology" }, { id: 5, name: "Psychiatry" }];
     const ProfessionData = [{ id: 0, name: "Physician" }, { id: 1, name: "Physician Assistant" }, { id: 2, name: "Nursing" }, { id: 3, name: "Dentist" }, { id: 4, name: "Pharmacist" }, { id: 5, name: "Respiratory Therapist" }];
-    const renderSection = ({ item }) => {
+        /**
+ * Render section utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {void}
+ */
+const renderSection = ({ item }) => {
         console.log(item,"dfsknfjkndfg1395888")
         if (item.type === 'Popular') {
             return (
@@ -188,4 +202,9 @@ const SearchScreen = (props) => {
     )
 }
 
+/**
+ * Search screen default export.
+ *
+ * @returns {*}
+ */
 export default SearchScreen

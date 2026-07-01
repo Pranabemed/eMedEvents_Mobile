@@ -1,3 +1,7 @@
+/**
+ * Register interest screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, status, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY, RegisterInterest, intBack, PraticingState, handleProfession, licData, specaillized, searchCountryName, handlePratice, handleSearch, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, handleStateshows, toggleHand, handleFromDateConfirm, clean, formatPhoneNumberno, formatIndianPhoneNumber, formatPhoneNumber, interSubmit, buildConferencePayload.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, Image, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -43,16 +47,53 @@ import constants from '../../Utils/Helpers/constants';
  * @returns {JSX.Element}
  */
 let status1 = "";
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Guest registration flow key constant.
+ * @returns {string}
+ */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+/**
+ * Guest prime verification pending key constant.
+ * @returns {string}
+ */
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+/**
+ * Prime membership skipped key constant.
+ * @returns {string}
+ */
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+/**
+ * Check membership force new profession key constant.
+ * @returns {string}
+ */
 const CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY = 'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION';
+/**
+ * Prime card flow complete key constant.
+ * @returns {string}
+ */
 const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+/**
+ * Suppress guest home prompts once key constant.
+ * @returns {string}
+ */
 const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
+/**
+ * Register interest component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const RegisterInterest = (props) => {
     console.log(props?.route?.params, "dfghfh------")
-    const intBack = () => {
+        /**
+ * Int back utility.
+ * @returns {void}
+ */
+const intBack = () => {
         props.navigation.goBack();
     }
     const [togglecard, setTogglecard] = useState(false);
@@ -113,7 +154,12 @@ const RegisterInterest = (props) => {
         setCountryId("1");
         PraticingState(countryId);
     }, [props?.route?.params?.checkoutSpan])
-    const PraticingState = (index) => {
+        /**
+ * Praticing state component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index));
@@ -122,7 +168,12 @@ const RegisterInterest = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     };
-    const handleProfession = (did) => {
+        /**
+ * Handles profession.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleProfession = (did) => {
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
@@ -133,7 +184,12 @@ const RegisterInterest = (props) => {
         licData(did);
         setTouched(prev => ({ ...prev, country: true }));
     }
-    const licData = (hill) => {
+        /**
+ * Lic data utility.
+ * @param {*} hill - Input value.
+ * @returns {void}
+ */
+const licData = (hill) => {
         const obj = hill;
         connectionrequest()
             .then(() => {
@@ -144,7 +200,12 @@ const RegisterInterest = (props) => {
                 showErrorAlert('Please connect to Internet');
             });
     }
-    const specaillized = (data) => {
+        /**
+ * Specaillized utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -167,7 +228,12 @@ const RegisterInterest = (props) => {
                 showErrorAlert('Please connect to Internet');
             });
     }, [props?.route?.params?.checkoutSpan]);
-    const searchCountryName = text => {
+        /**
+ * Search country name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCountryName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -187,17 +253,33 @@ const RegisterInterest = (props) => {
             setSearchtext(text);
         }
     };
-    const handlePratice = (text) => {
+        /**
+ * Handles pratice.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-    const handleSearch = (text) => {
+        /**
+ * Handles search.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-    const handleSpecialitySelect = (selectedItems, formData) => {
+        /**
+ * Handles speciality select.
+ * @param {*} selectedItems - Input value.
+ * @param {*} formData - Input value.
+ * @returns {void}
+ */
+const handleSpecialitySelect = (selectedItems, formData) => {
         const updatedForm = [...formData];
         const selectedSpecialitiesNames = selectedItems.map(item => item?.name).join(', ');
         const selectedSpecialityIds = selectedItems.map(item => item?.id);
@@ -211,7 +293,13 @@ const RegisterInterest = (props) => {
         setSelectedSpecialities([]);
         setTouched(prev => ({ ...prev, speciality: true }));
     };
-    const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
+        /**
+ * Handles speciality change.
+ * @param {*} selectedSpecialities - Input value.
+ * @param {*} selectedIds - Input value.
+ * @returns {void}
+ */
+const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
@@ -225,7 +313,12 @@ const RegisterInterest = (props) => {
         setFormData(updatedFormData); // Update state
         setTouched(prev => ({ ...prev, speciality: true }));
     };
-    const removeSpeciality = (specialityId) => {
+        /**
+ * Remove speciality utility.
+ * @param {*} specialityId - Input value.
+ * @returns {void}
+ */
+const removeSpeciality = (specialityId) => {
         const currentSpecialityIds = formData?.speciality_ids || [];
         const currentSpecialities = formData?.speciality?.split(', ') || [];
         const updatedSpecialityIds = currentSpecialityIds.filter(id => id !== specialityId);
@@ -259,7 +352,12 @@ const RegisterInterest = (props) => {
             memoizedSetFormData(initialFormData);
         }
     }, [speciality, speciality_id, memoizedSetFormData]);
-    const handleStateshows = (ctid) => {
+        /**
+ * Handles stateshows.
+ * @param {*} ctid - Input value.
+ * @returns {void}
+ */
+const handleStateshows = (ctid) => {
         setState(ctid?.name);
         setState_id(ctid?.id);
         setLicdate("");
@@ -267,7 +365,11 @@ const RegisterInterest = (props) => {
         setLicnumber("");
         setTouched(prev => ({ ...prev, state: true }));
     }
-    const toggleHand = () => {
+        /**
+ * Toggle hand utility.
+ * @returns {void}
+ */
+const toggleHand = () => {
         setTogglecard(!togglecard);
     }
     const clearGuestPromptFlags = useCallback(async () => {
@@ -317,7 +419,12 @@ const RegisterInterest = (props) => {
     const customNavigation = useMemo(() => {
         return {
             ...props.navigation,
-            dispatch: (action) => {
+                        /**
+ * Dispatch helper.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+dispatch: (action) => {
                 persistGuestRegistrationSession(WebcastReducer?.RegisterIntResponse)
                     .then(() => {
                         props.navigation.dispatch(action);
@@ -390,7 +497,12 @@ const RegisterInterest = (props) => {
     useEffect(() => {
         resultFinal
     }, [state])
-    const handleFromDateConfirm = (val) => {
+        /**
+ * Handles from date confirm.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleFromDateConfirm = (val) => {
         const formattedDate = moment(val).format('YYYY-MM-DD');
         setLicdate(formattedDate);
         setOpendatelic(false);
@@ -437,7 +549,12 @@ const RegisterInterest = (props) => {
             setEmailad(DashboardReducer?.mainprofileResponse?.personal_information?.email);
             const profession = DashboardReducer?.mainprofileResponse?.professional_information?.profession;
             const profession_type = DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
-            const clean = (value) => {
+                        /**
+ * Clean utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const clean = (value) => {
                 if (value == null) return '';
                 return String(value).trim();
             };
@@ -452,7 +569,12 @@ const RegisterInterest = (props) => {
             setCellnumber(formattedCellNo || phoneNumberToUse)
         }
     }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone])
-    const formatPhoneNumberno = (input) => {
+        /**
+ * Formats phone numberno.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumberno = (input) => {
         // Handle null/undefined/empty cases
         if (!input) return "";
 
@@ -474,7 +596,12 @@ const RegisterInterest = (props) => {
         return strInput; // Return original input if formatting fails
     };
 
-    const formatIndianPhoneNumber = (input) => {
+        /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -486,7 +613,12 @@ const RegisterInterest = (props) => {
 
         return strInput;
     };
-    const formatPhoneNumber = (input) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
         const cleaned = input.replace(/\D/g, '').slice(0, 10);
         const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -505,7 +637,11 @@ const RegisterInterest = (props) => {
     const cellNoRegexwpdd = /^\d{10}$/;
     const filteredTextcell = cellnumber && cellnumber?.length > 0 && cellnumber.replace(/[^\d]/g, '');
     const isValidcell = filteredTextcell?.length > 0 && !cellNoRegexwpdd.test(filteredTextcell);
-    const interSubmit = () => {
+        /**
+ * Inter submit utility.
+ * @returns {void}
+ */
+const interSubmit = () => {
         setIsSubmitted(true);
         if (!country) {
             showErrorAlert("Please choose your profession ")
@@ -517,7 +653,11 @@ const RegisterInterest = (props) => {
             // Some inline text fields are empty/invalid.
             // Inline error messages will render since isSubmitted is true.
         } else {
-            const buildConferencePayload = () => {
+                        /**
+ * Build conference payload utility.
+ * @returns {*}
+ */
+const buildConferencePayload = () => {
                 const attendeeData = {
                     firstname: firstname || "",
                     lastname: lastname || "",
@@ -1132,4 +1272,9 @@ const RegisterInterest = (props) => {
     )
 }
 
+/**
+ * Register interest default export.
+ *
+ * @returns {*}
+ */
 export default RegisterInterest

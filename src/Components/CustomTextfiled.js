@@ -1,3 +1,7 @@
+/**
+ * Custom textfiled reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomTextField, onChangeText, onFocus, onBlur, renderRightIcon.
+ */
+
 import React, { useState, forwardRef, useEffect } from 'react';
 import {
   View,
@@ -27,25 +31,42 @@ const CustomTextField = forwardRef((props, ref) => {
     }
   }, [ref]);
 
-  const onChangeText = (text) => {
+    /**
+ * On change text utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const onChangeText = (text) => {
     if (props.onChangeText) {
       props.onChangeText(text);
     }
   };
 
-  const onFocus = () => {
+    /**
+ * On focus utility.
+ * @returns {void}
+ */
+const onFocus = () => {
     if (props.onFocus) {
       props.onFocus();
     }
   };
 
-  const onBlur = () => {
+    /**
+ * On blur utility.
+ * @returns {void}
+ */
+const onBlur = () => {
     if (props.onBlur) {
       props.onBlur();
     }
   };
 
-  const renderRightIcon = () => {
+    /**
+ * Render right icon utility.
+ * @returns {*}
+ */
+const renderRightIcon = () => {
     if (props.eye) {
       return (
         <TouchableOpacity disabled={props.onDisable}
@@ -265,4 +286,9 @@ CustomTextField.propTypes = {
   onDisable:PropTypes.bool 
 };
 
+/**
+ * Custom textfiled default export.
+ *
+ * @returns {*}
+ */
 export default CustomTextField;

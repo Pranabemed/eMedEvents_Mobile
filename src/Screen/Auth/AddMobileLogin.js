@@ -1,3 +1,7 @@
+/**
+ * Add mobile login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddMobileLogin, handleMobilNOchange, formatPhoneNumber, formatIndianPhoneNumber, getCountryFromIP, fetchCountry, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, Animated, Easing, TextInput, Image, BackHandler } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -13,6 +17,10 @@ import { changephoneRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
@@ -31,7 +39,11 @@ const AddMobileLogin = (props) => {
     const [addCount, setAddCount] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-    const handleMobilNOchange = () => {
+        /**
+ * Handles mobil nochange.
+ * @returns {void}
+ */
+const handleMobilNOchange = () => {
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
@@ -92,7 +104,12 @@ const AddMobileLogin = (props) => {
         }
     }
 
-    const formatPhoneNumber = (input) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
         const cleaned = input.replace(/\D/g, '').slice(0, 10);
         const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -105,7 +122,12 @@ const AddMobileLogin = (props) => {
         }
         return input;
     };
-    const formatIndianPhoneNumber = (input) => {
+        /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -125,7 +147,14 @@ const AddMobileLogin = (props) => {
         CA: '+1',
         SG: '+65',
     };
-    const getCountryFromIP = async (ip) => {
+        /**
+ * Returns country from ip.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
+const getCountryFromIP = async (ip) => {
         try {
             const res = await fetch(`https://ipinfo.io/${ip}/json`);
             const text = await res.text();
@@ -142,7 +171,13 @@ const AddMobileLogin = (props) => {
     const ipAddress = getPublicIP(); // global value
     useEffect(() => {
         if (!ipAddress) return; // ⛔ wait until IP exists
-        const fetchCountry = async () => {
+                /**
+ * Fetch country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchCountry = async () => {
             const countryCode = await getCountryFromIP(ipAddress);
             if (countryCode) {
                 const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
@@ -152,7 +187,11 @@ const AddMobileLogin = (props) => {
         fetchCountry();
     }, [ipAddress]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -265,6 +304,10 @@ const AddMobileLogin = (props) => {
     );
 };
 
+/**
+ * Styles object.
+ * @returns {Object}
+ */
 const styles = {
     headerContainer: {
         justifyContent: "center",
@@ -302,4 +345,9 @@ const styles = {
     },
 };
 
+/**
+ * Add mobile login default export.
+ *
+ * @returns {*}
+ */
 export default AddMobileLogin;

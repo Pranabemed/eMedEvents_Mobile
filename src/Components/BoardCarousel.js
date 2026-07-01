@@ -1,3 +1,7 @@
+/**
+ * Board carousel reusable component module. Provides a React Native UI building block used across screens. Exported members: BoardCarousel, daysLeftCountdown.
+ */
+
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native'
 import React from 'react'
 import Buttons from './Button';
@@ -21,7 +25,12 @@ const  BoardCarousel = ({ item ,boardnamereal,navigation,stateid,boardtake}) =>{
     const text = item?.board_name;
     const abpmMatch = text.match(/\((.*?)\)/);
     const abpm = abpmMatch ? abpmMatch[1] : "";
-    function daysLeftCountdown(targetDate) {
+        /**
+ * Days left countdown helper.
+ * @param {*} targetDate - Input value.
+ * @returns {*}
+ */
+function daysLeftCountdown(targetDate) {
         const today = new Date();
         const endDate = new Date(targetDate);
         const differenceMs = endDate - today;
@@ -292,4 +301,9 @@ const  BoardCarousel = ({ item ,boardnamereal,navigation,stateid,boardtake}) =>{
         </>
     );
 }
+/**
+ * Board carousel default export.
+ *
+ * @returns {*}
+ */
 export default BoardCarousel

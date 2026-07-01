@@ -1,10 +1,18 @@
+/**
+ * Page Storybook module. Defines stories and controls for component previews. Exported members: Page, styles.
+ */
+
 import { useState } from 'react';
 
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Header } from './Header';
 
-export const Page = () => {
+export /**
+ * Page component.
+ * @returns {JSX.Element}
+ */
+const Page = () => {
   const [user, setUser] = useState<{ name: string } | undefined>();
 
   return (
@@ -76,6 +84,10 @@ export const Page = () => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   section: {
     fontFamily: "'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",

@@ -1,3 +1,7 @@
+/**
+ * Stack nav navigation module. Exposes route helpers and navigation references used across the app. Exported members: GUEST_REGISTRATION_FLOW_KEY, DEEPLINK_BOOTSTRAP_KEY, isEmedDeepLink, StackNav, handleAppStateChange, handleUrl, getActiveRouteName.
+ */
+
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { NavigationContainer, DarkTheme, CommonActions, createNavigationContainerRef, StackActions, useIsFocused } from '@react-navigation/native';
 import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/stack';
@@ -118,6 +122,10 @@ import VerifyOTPEmail from '../Screen/Auth/SplashEmail';
 import ChangeMailSplash from '../Screen/Auth/SplashChangeMail';
 import LoginEmail from '../Screen/Auth/LoginEmail';
 import SplashMobile from '../Screen/Auth/SplashMobile';
+/**
+ * Guest registration flow key constant.
+ * @returns {string}
+ */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 import LoginChangeMail from '../Screen/Auth/LoginChangeMail';
 import SplashMobileChange from '../Screen/Auth/SplashMobileChange';
@@ -128,14 +136,28 @@ import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
 import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Analytics';
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
 import { useSelector } from 'react-redux';
+/**
+ * Deeplink bootstrap key constant.
+ * @returns {string}
+ */
 const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
 
+/**
+ * Navigation helper that exposes is emed deep link behavior.
+ * @param {*} url - Input value.
+ * @returns {*}
+ */
 const isEmedDeepLink = (url) => {
   if (!url || typeof url !== 'string') return false;
   const lowerUrl = url.toLowerCase().trim();
   return lowerUrl.includes('emedevents.com') || lowerUrl.includes('emedevents.net');
 };
 
+/**
+ * Stack nav component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const StackNav = props => {
   const [conn, setConn] = useState(null)
   const Stack = createStackNavigator();
@@ -295,7 +317,12 @@ const StackNav = props => {
   }, []);
 
   useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
+        /**
+ * Navigation helper that exposes handle app state change behavior.
+ * @param {*} nextAppState - Input value.
+ * @returns {void}
+ */
+const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'background') {
         // App was truly minimized
         wasBackgrounded.current = true;
@@ -732,7 +759,12 @@ const StackNav = props => {
   }, [isNavigationReady, navigateToScreen, openExternalBrowser, parseDeepLinkDetails]);
 
   useEffect(() => {
-    const handleUrl = (event) => {
+        /**
+ * Navigation helper that exposes handle url behavior.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const handleUrl = (event) => {
       const { url } = event;
       console.log('🌍 URL received:', url);
       handleDeepLink(url);
@@ -823,7 +855,12 @@ const StackNav = props => {
         linking={linking}
         onStateChange={async (state) => {
           // Recursive function to get the leaf route name
-          const getActiveRouteName = (navigationState) => {
+                    /**
+ * Navigation helper that exposes get active route name behavior.
+ * @param {*} navigationState - Input value.
+ * @returns {*}
+ */
+const getActiveRouteName = (navigationState) => {
             if (!navigationState) return null;
             const route = navigationState.routes[navigationState.index];
             if (route.state) {
@@ -883,4 +920,9 @@ const StackNav = props => {
     </AppProvider>
   );
 };
+/**
+ * Stack nav default export.
+ *
+ * @returns {*}
+ */
 export default StackNav;

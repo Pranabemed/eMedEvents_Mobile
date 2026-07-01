@@ -1,3 +1,7 @@
+/**
+ * Dash board shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: HomeShimmer, renderItem, styles.
+ */
+
 import { StyleSheet, View, Dimensions, Platform, ScrollView } from "react-native";
 import React from "react";
 import normalize from "../Utils/Helpers/Dimen";
@@ -12,11 +16,21 @@ import Carousel from 'react-native-snap-carousel';
  * @returns {JSX.Element}
  */
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
+/**
+ * Home shimmer component.
+ * @returns {JSX.Element}
+ */
 const HomeShimmer = () => {
     const carouselItems = Array.from({ length: 5 }).map((_, index) => ({
         id: index,
     }));
-    const renderItem = ({ item }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item }) => {
         return (
             <View style={styles.itemContainer}>
                 <SkeletonPlaceholder backgroundColor="#F1F9FF" highlightColor="#CCECFF">
@@ -139,8 +153,17 @@ const HomeShimmer = () => {
     );
 };
 
+/**
+ * Dash board shimmer default export.
+ *
+ * @returns {*}
+ */
 export default HomeShimmer;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,

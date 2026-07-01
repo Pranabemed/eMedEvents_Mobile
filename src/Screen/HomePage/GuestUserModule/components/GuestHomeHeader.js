@@ -1,3 +1,7 @@
+/**
+ * Guest home header reusable component module. Provides a React Native UI building block used across screens. Exported members: GuestHomeHeaderComponent, fetchStates, handleStateSelect, handleSignInPress, modalStyles, GuestHomeHeader.
+ */
+
 import React, { memo, useState, useEffect, useMemo } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View, Modal, FlatList, TextInput, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -41,7 +45,13 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
 
   useEffect(() => {
     if (isUsaUser === false) return;
-    const fetchStates = async () => {
+        /**
+ * Fetch states utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchStates = async () => {
       try {
         getUserAgentJSON();
         const response = await getApi('master/states?country_id=1');
@@ -60,7 +70,12 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
     return name.includes(stateSearch.toLowerCase().trim());
   });
 
-  const handleStateSelect = (stateObj) => {
+    /**
+ * Handles state select.
+ * @param {*} stateObj - Input value.
+ * @returns {void}
+ */
+const handleStateSelect = (stateObj) => {
     setStateModalVisible(false);
     setStateSearch('');
     
@@ -96,7 +111,13 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
     });
   };
 
-  const handleSignInPress = async () => {
+    /**
+ * Handles sign in press.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleSignInPress = async () => {
     try {
       await Promise.all([
         AsyncStorage.removeItem('GUEST_REGISTRATION_FLOW'),
@@ -323,6 +344,10 @@ const GuestHomeHeaderComponent = ({ width, navigation, selectedState, stateCode,
   );
 };
 
+/**
+ * Modal styles value.
+ * @returns {*}
+ */
 const modalStyles = StyleSheet.create({
   stateModalContainer: {
     flex: 1,
@@ -392,4 +417,8 @@ const modalStyles = StyleSheet.create({
   },
 });
 
+/**
+ * Guest home header value.
+ * @returns {*}
+ */
 export const GuestHomeHeader = memo(GuestHomeHeaderComponent);

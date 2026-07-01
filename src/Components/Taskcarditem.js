@@ -1,3 +1,7 @@
+/**
+ * Taskcarditem reusable component module. Provides a React Native UI building block used across screens. Exported members: TaskCardItem, styles.
+ */
+
 import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from "../Utils/Helpers/Dimen";
@@ -63,6 +67,10 @@ const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, ind
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flexDirection: "row",
@@ -99,4 +107,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Taskcarditem default export.
+ *
+ * @returns {*}
+ */
 export default TaskCardItem;

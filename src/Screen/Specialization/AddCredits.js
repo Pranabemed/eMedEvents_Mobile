@@ -1,3 +1,7 @@
+/**
+ * Add credits screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddCredits, addCreditBack, token_handle_vault, handleCreditType, fetchData, directCameraCredit, toggleModalcred, addcreditAgain, handleAddCredits, searchCreditName, searchTopicName, handleRequest, getStateDataByName, detectfileAddcredit, topicwiseStatehand, onBackPress, handleChange, styles.
+ */
+
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, FlatList, ImageBackground, TextInput, Animated, Easing, BackHandler, Pressable } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -48,6 +52,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Add credits component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const AddCredits = (props) => {
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
@@ -102,7 +111,11 @@ const AddCredits = (props) => {
     const [ocrData, setOCRData] = useState(null);
     const [moretext, setMoretext] = useState(false);
     console.log(finalstate, "mmmmmmmm", moretext)
-    const addCreditBack = () => {
+        /**
+ * Add credit back utility.
+ * @returns {void}
+ */
+const addCreditBack = () => {
         props.navigation.goBack();
     };
     console.log(AuthReducer, "df,mkkkk", clisttopic, clisttopic[0]?.name, cleardata, ProfilePicObj1);
@@ -115,7 +128,11 @@ const AddCredits = (props) => {
     const [finalProfession, setFinalProfession] = useState(null);
     const returnToDashboardVault = props?.route?.params?.returnToDashboardVault === true;
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -136,7 +153,12 @@ const AddCredits = (props) => {
 
         token_handle_vault();
     }, [props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard]);
-    const handleCreditType = (item) => {
+        /**
+ * Handles credit type.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const handleCreditType = (item) => {
         setCountry(item?.name);
         setcountrypicker(false);
         setCreditId(item?.id);
@@ -172,7 +194,11 @@ const AddCredits = (props) => {
         React.useCallback(() => {
             let obj = {};
 
-            const fetchData = () => {
+                        /**
+ * Fetch data utility.
+ * @returns {void}
+ */
+const fetchData = () => {
                 connectionrequest()
                     .then(() => {
                         dispatch(stateMandatoryRequest(obj));
@@ -191,7 +217,13 @@ const AddCredits = (props) => {
         }, [])
     );
 
-    function directCameraCredit() {
+        /**
+ * Direct camera credit utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function directCameraCredit() {
         ImagePicker.openCamera({
             width: 300,
             height: 400,
@@ -211,11 +243,19 @@ const AddCredits = (props) => {
             })
             .catch(err => console.log(err));
     }
-    const toggleModalcred = () => {
+        /**
+ * Toggle modalcred utility.
+ * @returns {void}
+ */
+const toggleModalcred = () => {
         setModalVisiblecred(!isModalVisiblecred);
     };
     console.log(finalProfession?.profession, "profession======122");
-    const addcreditAgain = () => {
+        /**
+ * Addcredit again utility.
+ * @returns {void}
+ */
+const addcreditAgain = () => {
         const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
             AuthReducer?.loginResponse?.user?.profession ||
             AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
@@ -243,7 +283,11 @@ const AddCredits = (props) => {
         }
     }, [isNonUsaUser, isfocused, finalProfession, finalverifyadd]);
     const StateMandatoryDat = [{ id: 0, name: "No" }, { id: 1, name: "Yes" }]
-    const handleAddCredits = () => {
+        /**
+ * Handles add credits.
+ * @returns {void}
+ */
+const handleAddCredits = () => {
         if (!ProfilePicObj1 && !isNonUsaUser) {
             showErrorAlert("Please upload a valid file (accepted formats: .docx, .pptx, .word, .jpg, .png, .jpeg)");
         } else if (!activitytitle) {
@@ -294,7 +338,12 @@ const AddCredits = (props) => {
                 .catch(err => { showErrorAlert("Please connect to internet") })
         }
     }
-    const searchCreditName = text => {
+        /**
+ * Search credit name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCreditName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -379,7 +428,12 @@ const AddCredits = (props) => {
         }
     }, [clisttopic]);
     console.log(stopic, "stopic------1222")
-    const searchTopicName = text => {
+        /**
+ * Search topic name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchTopicName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
@@ -406,7 +460,13 @@ const AddCredits = (props) => {
         const obj = new FormData();
         obj.append("document", ProfilePicObj1 || `${fullDataMemo?.certiPath?.certificate_path}${fullDataMemo?.certificate}`);
 
-        const handleRequest = async () => {
+                /**
+ * Handles request.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleRequest = async () => {
             try {
                 await connectionrequest();
                 dispatch(OCRCertificateRequest(obj));
@@ -630,7 +690,13 @@ const AddCredits = (props) => {
     const finalStateWise = stateManData ? stateManData : "No data";
     const StateNameFetch = props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || props?.route?.params?.mainAdd?.creditID?.state_name || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null;
     console.log(StateNameFetch, "StateNameFetch===========", finalStateWise)
-    function getStateDataByName(finalStateWise, StateNameFetch) {
+        /**
+ * Returns state data by name.
+ * @param {*} finalStateWise - Input value.
+ * @param {*} StateNameFetch - Input value.
+ * @returns {*}
+ */
+function getStateDataByName(finalStateWise, StateNameFetch) {
         for (const key in finalStateWise) {
             if (finalStateWise[key].state_name === StateNameFetch) {
                 return finalStateWise[key];
@@ -638,15 +704,28 @@ const AddCredits = (props) => {
         }
         return null;
     }
-    function detectfileAddcredit(file) {
+        /**
+ * Detectfile addcredit helper.
+ * @param {*} file - Input value.
+ * @returns {void}
+ */
+function detectfileAddcredit(file) {
         console.log(file, "file000");
         const fileName = typeof file === 'string' ? file : file?.uri;
         if (fileName && typeof fileName === 'string') {
             if (fileName.toLowerCase().endsWith('.png')) {
                 Alert.alert('eMedEvents', 'Are you sure you want to delete this image?', [{
-                    text: "No", onPress: () => console.log("No pressed")
+                    text: "No",                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("No pressed")
                 }, {
-                    text: "Yes", onPress: () => {
+                    text: "Yes",                     /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -655,9 +734,17 @@ const AddCredits = (props) => {
                 }]);
             } else if (fileName.toLowerCase().endsWith('.jpg')) {
                 Alert.alert('eMedEvents', 'Are you sure you want to delete this image?', [{
-                    text: "No", onPress: () => console.log("No pressed")
+                    text: "No",                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("No pressed")
                 }, {
-                    text: "Yes", onPress: () => {
+                    text: "Yes",                     /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -666,9 +753,17 @@ const AddCredits = (props) => {
                 }]);
             } else if (fileName.toLowerCase().endsWith('.pdf')) {
                 Alert.alert('eMedEvents', 'Are you sure you want to delete this PDF?', [{
-                    text: "No", onPress: () => console.log("No pressed")
+                    text: "No",                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("No pressed")
                 }, {
-                    text: "Yes", onPress: () => {
+                    text: "Yes",                     /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -677,9 +772,17 @@ const AddCredits = (props) => {
                 }]);
             } else {
                 Alert.alert('eMedEvents', 'Are you sure you want to delete this item?', [{
-                    text: "No", onPress: () => console.log("No pressed")
+                    text: "No",                     /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("No pressed")
                 }, {
-                    text: "Yes", onPress: () => {
+                    text: "Yes",                     /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -691,7 +794,12 @@ const AddCredits = (props) => {
             console.log("Invalid file or file URI");
         }
     }
-    const topicwiseStatehand = (hello) => {
+        /**
+ * Topicwise statehand utility.
+ * @param {*} hello - Input value.
+ * @returns {void}
+ */
+const topicwiseStatehand = (hello) => {
         setStopic(hello?.name);
         setTopicId(hello?.id)
         setStatetopicpicker(false);
@@ -726,7 +834,11 @@ const AddCredits = (props) => {
         }
     }, [finalstate])
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             addCreditBack();
             return true;
         };
@@ -738,7 +850,12 @@ const AddCredits = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const handleChange = (text) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleChange = (text) => {
         const numericValue = text.replace(/[^0-9.]/g, "");
         if (text.startsWith("-") || text == "-1" || parseFloat(text) < 0) {
             return;
@@ -989,14 +1106,30 @@ const AddCredits = (props) => {
                                                 leftIcon={cdate ? <CrossIcon name="closecircle" size={18} color="#949494" /> : <CalenderIcon name="calendar" size={25} color="#949494" />}
                                                 onLeftIconPress={() => {
                                                     if (cdate) {
-                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes", onPress: () => setCdate(""), style: "default" }, { text: "No", onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setCdate(""), style: "default" }, { text: "No",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("dfdf"), style: "cancel" }])
                                                     } else {
                                                         setOpendate(!opendate)
                                                     }
                                                 }}
                                                 onwholePress={() => {
                                                     if (cdate) {
-                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes", onPress: () => setCdate(""), style: "default" }, { text: "No", onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setCdate(""), style: "default" }, { text: "No",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("dfdf"), style: "cancel" }])
                                                     } else {
                                                         setOpendate(!opendate)
                                                     }
@@ -1287,6 +1420,10 @@ const AddCredits = (props) => {
     );
 }
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerText: {
         fontFamily: Fonts.InterSemiBold,
@@ -1366,4 +1503,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Add credits default export.
+ *
+ * @returns {*}
+ */
 export default AddCredits;

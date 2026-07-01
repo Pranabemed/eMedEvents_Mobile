@@ -1,7 +1,16 @@
+/**
+ * Guest user.styles screen module. Renders a React Native screen or a screen-scoped support component.
+ */
+
 import { StyleSheet, Platform } from 'react-native';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
+/**
+ * Guest user.styles default export.
+ *
+ * @returns {*}
+ */
 export default StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -96,6 +105,26 @@ export default StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
+  heroSlideWrap: {
+    width: normalize(300),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroCard: {
+    borderRadius: 16,
+  },
+  heroCardIos: {
+    width: normalize(330),
+    height: normalize(230),
+  },
+  heroCardAndroid: {
+    width: normalize(288),
+    height: normalize(190),
+  },
+  heroTopSpacerIos: {
+    flex: 0.7,
+  },
+  heroTopSpacerDefault: {},
   heroRadius: {
     borderRadius: 0,
     borderTopLeftRadius: 0,
@@ -231,6 +260,11 @@ export default StyleSheet.create({
     color: Colorpath.ButtonColr,
   },
   carouselContainer: { width: '100%', marginBottom: 4 },
+  carouselViewport: {
+    marginHorizontal: -16,
+    width: '100%',
+    overflow: 'visible',
+  },
   paginationContainer: { paddingTop: 8, paddingBottom: 10 },
   activeDot: {
     width: 8,
@@ -369,6 +403,11 @@ export default StyleSheet.create({
     color: Colorpath.ButtonColr,
     fontFamily: Fonts.InterBold,
     fontSize: 13,
+  },
+  liveCarouselViewport: {
+    marginHorizontal: -16,
+    width: '100%',
+    overflow: 'visible',
   },
   liveCardWrap: {
     width: '100%',

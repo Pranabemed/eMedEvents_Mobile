@@ -1,3 +1,7 @@
+/**
+ * Board course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, BoardCourseSlide, openFilterModal, toggleDrawerModal, addCreditBack, handleSave, titlhandleUrl, stateDashboardData, onBackPress, RequiredCourses, stylefalse.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, FlatList, ScrollView, ImageBackground, StyleSheet, Alert, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -32,6 +36,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Board course slide component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const BoardCourseSlide = (props) => {
     const { takestate, addit, isConnected, fulldashbaord, setAddit } = useContext(AppContext);
     const [visible, setVisible] = useState(false);
@@ -74,19 +83,35 @@ const BoardCourseSlide = (props) => {
             : null;
     const allProfTake = validHandles.has(authHigh) || validHandles.has(profFromDashboard);
     console.log(finalData?.length, "handle=======", finalData)
-    const openFilterModal = () => {
+        /**
+ * Open filter modal utility.
+ * @returns {void}
+ */
+const openFilterModal = () => {
         setFiltermodal(!filtermodal);
     }
-    const toggleDrawerModal = () => {
+        /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
     };
-    const addCreditBack = () => {
+        /**
+ * Add credit back utility.
+ * @returns {void}
+ */
+const addCreditBack = () => {
         const getAda = fulldashbaord?.[0];
         setAddit(getAda);
         toggleDrawerModal();
     }
-    const handleSave = () => {
+        /**
+ * Handles save.
+ * @returns {void}
+ */
+const handleSave = () => {
         console.log("Selected Filter Name: ", filterName);
         setFiltermodal(false);
     };
@@ -98,7 +123,12 @@ const BoardCourseSlide = (props) => {
             setFilterstate(convertData);
         }
     }, [DashboardReducer]);
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make);
@@ -111,7 +141,11 @@ const BoardCourseSlide = (props) => {
             stateDashboardData();
         }
     }, [stateid])
-    const stateDashboardData = () => {
+        /**
+ * State dashboard data utility.
+ * @returns {void}
+ */
+const stateDashboardData = () => {
         let obj = {
             "board_id": stateid
         }
@@ -140,7 +174,11 @@ const BoardCourseSlide = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             addCreditBack();
             return true;
         };
@@ -152,7 +190,14 @@ const BoardCourseSlide = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const RequiredCourses = ({ item, index }) => {
+        /**
+ * Required courses component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const RequiredCourses = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -508,7 +553,16 @@ const BoardCourseSlide = (props) => {
     )
 }
 
+/**
+ * Board course default export.
+ *
+ * @returns {*}
+ */
 export default BoardCourseSlide
+/**
+ * Stylefalse value.
+ * @returns {*}
+ */
 const stylefalse = StyleSheet.create({
     containercontex: {
         justifyContent: 'center',

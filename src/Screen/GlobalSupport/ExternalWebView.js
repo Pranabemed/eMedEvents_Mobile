@@ -1,3 +1,7 @@
+/**
+ * External web view screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ExternalWebView, handleBack.
+ */
+
 import React, { useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -19,7 +23,11 @@ const ExternalWebView = (props) => {
   const targetUrl = props?.route?.params?.url || '';
   const title = props?.route?.params?.title || 'eMedEvents';
 
-  const handleBack = () => {
+    /**
+ * Handles back.
+ * @returns {void}
+ */
+const handleBack = () => {
     if (canGoBack && webViewRef.current) {
       webViewRef.current.goBack();
       return;
@@ -57,4 +65,9 @@ const ExternalWebView = (props) => {
   );
 };
 
+/**
+ * External web view default export.
+ *
+ * @returns {*}
+ */
 export default ExternalWebView;

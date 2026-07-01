@@ -27,6 +27,11 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 
+/**
+ * Returns state id.
+ * @param {*} stateObj - Input value.
+ * @returns {*}
+ */
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
 /**
@@ -150,7 +155,13 @@ const GuestUser = props => {
   }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
 
   useEffect(() => {
-    const initGuestData = async () => {
+        /**
+ * Init guest data utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const initGuestData = async () => {
       try {
         let guestSessionId = await AsyncStorage.getItem('PLAYERSESSION');
         if (!guestSessionId) {
@@ -197,7 +208,11 @@ const GuestUser = props => {
   }, [isFocused]);
 
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       if (props.navigation.canGoBack()) {
         props.navigation.goBack();
       } else {
@@ -213,7 +228,13 @@ const GuestUser = props => {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchGuestUsaStates = async () => {
+        /**
+ * Fetch guest usa states utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchGuestUsaStates = async () => {
       if (!canUseGuestNetworkFlow) {
         if (isMounted) {
           setGuestUsaStates([]);
@@ -371,7 +392,13 @@ const GuestUser = props => {
 
   const guestNavigation = useMemo(() => ({
     ...props.navigation,
-    navigate: (screenName, params) => navigateIfOnline(screenName, params),
+        /**
+ * Navigate helper.
+ * @param {*} screenName - Input value.
+ * @param {*} params - Input value.
+ * @returns {*}
+ */
+navigate: (screenName, params) => navigateIfOnline(screenName, params),
   }), [navigateIfOnline, props.navigation]);
 
   const homeData =
@@ -401,14 +428,25 @@ const GuestUser = props => {
     setProfModalVisible,
     stateModalVisible,
     setStateModalVisible,
-    handleProfessionSelect: prof => {
+        /**
+ * Handles profession select.
+ * @param {*} prof - Input value.
+ * @returns {void}
+ */
+handleProfessionSelect: prof => {
       setHandledCmeRequestKey('');
       setCmeRequestStarted(false);
       setShouldOpenCmeChecklist(true);
       setSelectedProfession(prof);
       setProfModalVisible(false);
     },
-    handleStateSelect: (stateObj, source) => {
+        /**
+ * Handles state select.
+ * @param {*} stateObj - Input value.
+ * @param {*} source - Input value.
+ * @returns {void}
+ */
+handleStateSelect: (stateObj, source) => {
       if (source === 'profile') {
         setHandledCmeRequestKey('');
         setCmeRequestStarted(false);
@@ -418,7 +456,11 @@ const GuestUser = props => {
       setStateModalVisible(false);
       setStateSearchText('');
     },
-    handleStatePress: () => {
+        /**
+ * Handles state press.
+ * @returns {void}
+ */
+handleStatePress: () => {
       setStateSearchText('');
       setStateModalVisible(true);
     },
@@ -427,8 +469,16 @@ const GuestUser = props => {
     setAllProfessionData,
     allProfession: selectedProfession,
     certificatedata: { state_id: getStateId(selectedState) },
-    onCMEClose: () => setCmeModalVisible(false),
-    onSaved: () => setCmeModalVisible(false),
+        /**
+ * On cmeclose utility.
+ * @returns {*}
+ */
+onCMEClose: () => setCmeModalVisible(false),
+        /**
+ * On saved utility.
+ * @returns {*}
+ */
+onSaved: () => setCmeModalVisible(false),
     cmeRealback: 'guest',
     onFeaturedActivityPress: openFeaturedActivity,
     showGuestProfessionPopup,
@@ -443,6 +493,10 @@ const GuestUser = props => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -450,4 +504,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Guest user default export.
+ *
+ * @returns {*}
+ */
 export default GuestUser;

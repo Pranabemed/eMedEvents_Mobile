@@ -1,3 +1,7 @@
+/**
+ * Credit valult reusable component module. Provides a React Native UI building block used across screens. Exported members: CreditValult, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -68,7 +72,16 @@ const CreditValult = ({ isVault, onVaultFalse }) => {
     )
 }
 
+/**
+ * Credit valult default export.
+ *
+ * @returns {*}
+ */
 export default CreditValult
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

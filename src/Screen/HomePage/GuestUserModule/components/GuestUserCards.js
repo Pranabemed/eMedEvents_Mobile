@@ -46,8 +46,18 @@ const getFreeEventTypeIcon = eventType => {
   return Imagepath.VideoCam;
 };
 
+/**
+ * Free conference card component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
 const FreeConferenceCardComponent = ({ item }) => {
-  const handlePress = () => item?.onPress?.(item?.detailpageUrl);
+    /**
+ * Handles press.
+ * @returns {*}
+ */
+const handlePress = () => item?.onPress?.(item?.detailpageUrl);
   const eventTypeIcon = getFreeEventTypeIcon(item?.eventType);
 
   return (
@@ -86,6 +96,13 @@ const FreeConferenceCardComponent = ({ item }) => {
   );
 };
 
+/**
+ * Featured conference card component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.width - Nested property value.
+ * @returns {JSX.Element}
+ */
 const FeaturedConferenceCardComponent = ({ item, width }) => {
   const organizationName = getText(item?.organization, item?.organizer_name);
   const showOrganization = item?.showOrganization !== false;
@@ -106,7 +123,11 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
     item?.banner_url,
   );
 
-  const handlePress = () => {
+    /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
     if (detailUrl) {
       item?.onPress?.(detailUrl);
     }
@@ -190,6 +211,15 @@ const FeaturedConferenceCardComponent = ({ item, width }) => {
   );
 };
 
+/**
+ * Conference card component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.width - Nested property value.
+ * @param {*} props.dark - Nested property value.
+ * @param {*} props.compact - Nested property value.
+ * @returns {JSX.Element}
+ */
 const ConferenceCardComponent = ({ item, width, dark = false, compact = false }) => (
   <View style={styles.cardWrap}>
     <View style={[styles.card, dark ? styles.cardDark : styles.cardLight, compact && styles.cardCompact]}>
@@ -228,8 +258,19 @@ const ConferenceCardComponent = ({ item, width, dark = false, compact = false })
   </View>
 );
 
+/**
+ * Popular conference card component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.width - Nested property value.
+ * @returns {JSX.Element}
+ */
 const PopularConferenceCardComponent = ({ item, width }) => {
-  const handlePress = () => item?.onPress?.(item?.detailpageUrl);
+    /**
+ * Handles press.
+ * @returns {*}
+ */
+const handlePress = () => item?.onPress?.(item?.detailpageUrl);
   return (
     <View style={styles.popularCardWrap}>
       <Pressable onPress={handlePress} style={styles.popularCard}>
@@ -263,8 +304,18 @@ const PopularConferenceCardComponent = ({ item, width }) => {
   );
 };
 
+/**
+ * Live conference card component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
 const LiveConferenceCardComponent = ({ item }) => {
-  const handlePress = () => item?.onPress?.(item?.detailpageUrl);
+    /**
+ * Handles press.
+ * @returns {*}
+ */
+const handlePress = () => item?.onPress?.(item?.detailpageUrl);
   const organizationLogo = getImageSource(item?.organizationLogo);
 
   return (
@@ -322,8 +373,28 @@ const LiveConferenceCardComponent = ({ item }) => {
   );
 };
 
+/**
+ * Free conference card value.
+ * @returns {*}
+ */
 export const FreeConferenceCard = memo(FreeConferenceCardComponent);
+/**
+ * Featured conference card value.
+ * @returns {*}
+ */
 export const FeaturedConferenceCard = memo(FeaturedConferenceCardComponent);
+/**
+ * Conference card value.
+ * @returns {*}
+ */
 export const ConferenceCard = memo(ConferenceCardComponent);
+/**
+ * Popular conference card value.
+ * @returns {*}
+ */
 export const PopularConferenceCard = memo(PopularConferenceCardComponent);
+/**
+ * Live conference card value.
+ * @returns {*}
+ */
 export const LiveConferenceCard = memo(LiveConferenceCardComponent);

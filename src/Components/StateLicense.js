@@ -1,3 +1,7 @@
+/**
+ * State license reusable component module. Provides a React Native UI building block used across screens. Exported members: normalizeProfessionHandle, findMatchedProfessionHandle, buildProfessionLabel, status, getCurrentItem, modalFalse, cmeModalFalse, cmeValult, cleanText, hydrateCachedName, tokenHandle, dashBoarData, restOfProfession, getFirstTruthyProfession, stateTake, useActivityCounts, cleanNumber, getDynamicHeight, handleAllIndex, renderAddLicenseCard, styles.
+ */
+
 import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import {
     View,
@@ -48,6 +52,12 @@ const normalizeProfessionHandle = (professionHandle) =>
         .replace(/\s+/g, '')
         .trim();
 
+/**
+ * Find matched profession handle utility.
+ * @param {*} candidates - Input value.
+ * @param {*} supportedHandles - Input value.
+ * @returns {string}
+ */
 const findMatchedProfessionHandle = (candidates, supportedHandles) => {
     for (const candidate of candidates) {
         const normalizedCandidate = normalizeProfessionHandle(candidate);
@@ -63,6 +73,12 @@ const findMatchedProfessionHandle = (candidates, supportedHandles) => {
     return '';
 };
 
+/**
+ * Build profession label utility.
+ * @param {*} profession - Input value.
+ * @param {*} professionType - Input value.
+ * @returns {string}
+ */
 const buildProfessionLabel = (profession, professionType) => {
     const cleanProfession = String(profession || '').trim();
     const cleanProfessionType = String(professionType || '').trim();
@@ -80,7 +96,16 @@ const buildProfessionLabel = (profession, professionType) => {
     return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * State license default export.
+ *
+ * @returns {*}
+ */
 export default function StateLicense({ profileType, propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
     const isSkipProfile = profileType === 'SkipProfile';
@@ -122,20 +147,41 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
     const lastLicensureProfessionRef = useRef('');
-    const getCurrentItem = () => {
+        /**
+ * Returns current item.
+ * @returns {*}
+ */
+const getCurrentItem = () => {
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex];
     };
-    const modalFalse = () => {
+        /**
+ * Modal false utility.
+ * @returns {void}
+ */
+const modalFalse = () => {
         setDetailsmodal(true);
     }
-    const cmeModalFalse = () => {
+        /**
+ * Cme modal false utility.
+ * @returns {void}
+ */
+const cmeModalFalse = () => {
         setCmemodal(true);
     }
-    const cmeValult = () => {
+        /**
+ * Cme valult utility.
+ * @returns {void}
+ */
+const cmeValult = () => {
         setVaultmodal(!vaultModal);
     }
-    const cleanText = (val) => (typeof val == "string" ? val.trim() : "");
+        /**
+ * Clean text utility.
+ * @param {*} val - Input value.
+ * @returns {*}
+ */
+const cleanText = (val) => (typeof val == "string" ? val.trim() : "");
     const resolvedLastName = cleanText(
         DashboardReducer?.mainprofileResponse?.personal_information?.lastname,
     );
@@ -181,7 +227,13 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         };
     }, [isFocus]);
     useEffect(() => {
-        const hydrateCachedName = async () => {
+                /**
+ * Hydrate cached name utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const hydrateCachedName = async () => {
             try {
                 const raw = await AsyncStorage.getItem(constants.PRODATA);
                 if (!raw) return;
@@ -196,7 +248,13 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         hydrateCachedName();
     }, [isFocus]);
     useEffect(() => {
-        const tokenHandle = async () => {
+                /**
+ * Token handle utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const tokenHandle = async () => {
             try {
                 if (!isFocus) return;
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
@@ -222,7 +280,11 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
             dashboardFetchInFlightRef.current = false;
         }
     }, [DashboardReducer.status]);
-    const dashBoarData = () => {
+        /**
+ * Dash boar data utility.
+ * @returns {void}
+ */
+const dashBoarData = () => {
         if (dashboardFetchInFlightRef.current) return;
         dashboardFetchInFlightRef.current = true;
         connectionrequest()
@@ -235,8 +297,17 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
             })
 
     }
-    const restOfProfession = () => {
-        const getFirstTruthyProfession = (...sources) =>
+        /**
+ * Rest of profession utility.
+ * @returns {void}
+ */
+const restOfProfession = () => {
+                /**
+ * Returns first truthy profession.
+ * @param {Array} sources - Input values.
+ * @returns {*}
+ */
+const getFirstTruthyProfession = (...sources) =>
             sources.find(val => val) || '';
 
         const handleProf = String(
@@ -282,7 +353,13 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
                 showErrorAlert("Please connect to internet", err);
             });
     }
-    const stateTake = (toklen, anoth) => {
+        /**
+ * State take utility.
+ * @param {*} toklen - Input value.
+ * @param {*} anoth - Input value.
+ * @returns {void}
+ */
+const stateTake = (toklen, anoth) => {
         let obj = {
             "state": toklen ? toklen?.length : 0,
             "board": anoth ? anoth?.length : 0
@@ -508,7 +585,11 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profileType, isFocus, resolvedProfessionHandle]);
-    const useActivityCounts = () => {
+        /**
+ * Custom hook that manages activity counts.
+ * @returns {unknown}
+ */
+const useActivityCounts = () => {
         const responseData = DashboardReducer?.stateDashboardResponse?.data;
 
         return useMemo(() => {
@@ -531,7 +612,12 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         tasksData?.due_in_60_days?.length > 0 ||
         tasksData?.due_in_90_days?.length > 0
     ), [tasksData]);
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -566,7 +652,11 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         generalEarned == 0 && generalTotal == 0
     );
     const hidetext = (!enables && !bothNoRequirement);
-    const getDynamicHeight = () => {
+        /**
+ * Returns dynamic height.
+ * @returns {*}
+ */
+const getDynamicHeight = () => {
         if (profileType === 'SkipProfile') {
             return fulldashbaord?.length > 1 ? normalize(250) : normalize(230);
         }
@@ -591,7 +681,12 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         return normalize(250);
     };
 
-    const handleAllIndex = (index) => {
+        /**
+ * Handles all index.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleAllIndex = (index) => {
         const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
         if (getDtaa) {
             const nextStateId = getDtaa.state_id;
@@ -645,7 +740,11 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
         !fulldashbaord?.length &&
         !isNonUsaUser;
-    const renderAddLicenseCard = () => (
+        /**
+ * Render add license card utility.
+ * @returns {JSX.Element}
+ */
+const renderAddLicenseCard = () => (
         <View style={styles.addLicenseCardShell}>
             <View style={styles.addLicenseCard}>
                 <View style={styles.addLicenseAccentCircle} />
@@ -948,6 +1047,10 @@ export default function StateLicense({ profileType, propsData, setRenewal, renew
         </>
     );
 }
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     paginationContainer: {
         flexDirection: 'row',

@@ -1,3 +1,7 @@
+/**
+ * State certificate screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StateCertificate, certificatpress, SpecificCertificates.
+ */
+
 import { View, Text, ScrollView, Platform, KeyboardAvoidingView, TouchableOpacity, FlatList, Image, StatusBar } from 'react-native'
 import React, { useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -22,7 +26,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const StateCertificate = (props) => {
-    const certificatpress = () => {
+        /**
+ * Certificatpress utility.
+ * @returns {void}
+ */
+const certificatpress = () => {
         props.navigation.goBack();
     }
     const [searchText, setSearchText] = useState("");
@@ -38,7 +46,14 @@ const StateCertificate = (props) => {
         { id: 8, name: "Fana" }
     ]
     const certificateDatas = [{ id: 0, name: "Pranab" }, { id: 1, name: "Shaym" }, { id: 2, name: "Fana" }]
-    const SpecificCertificates = ({ item, index }) => {
+        /**
+ * Specific certificates component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const SpecificCertificates = ({ item, index }) => {
         console.log("jhhbj")
         return (
             <View>
@@ -171,4 +186,9 @@ const StateCertificate = (props) => {
     )
 }
 
+/**
+ * State certificate default export.
+ *
+ * @returns {*}
+ */
 export default StateCertificate

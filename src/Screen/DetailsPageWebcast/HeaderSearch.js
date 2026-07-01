@@ -1,3 +1,7 @@
+/**
+ * Header search screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, HeaderSearch, checkoutClear, handleUrl, SearchCont, onBackPress.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, ScrollView, Image, KeyboardAvoidingView, Alert, BackHandler } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -34,6 +38,11 @@ import { trackScreen } from '../../Utils/Helpers/Analytics';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Header search component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const HeaderSearch = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const dispatch = useDispatch();
@@ -75,7 +84,11 @@ const HeaderSearch = (props) => {
         }
     }, [searchText]);
 
-    const checkoutClear = () => {
+        /**
+ * Checkout clear utility.
+ * @returns {void}
+ */
+const checkoutClear = () => {
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
         } else {
@@ -102,7 +115,12 @@ const HeaderSearch = (props) => {
     //         inputRef.current.focus();
     //     }
     // }, [isFocus]);
-    const handleUrl = (data) => {
+        /**
+ * Handles url.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const handleUrl = (data) => {
         const url = data?.url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", data);
@@ -130,7 +148,12 @@ const HeaderSearch = (props) => {
             })
         }
     }
-    const SearchCont = text => {
+        /**
+ * Search cont component.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const SearchCont = text => {
         if (text) {
             let textObj = {
                 "searchKeyword": text
@@ -196,7 +219,11 @@ const HeaderSearch = (props) => {
     }
 
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             checkoutClear();
             return true;
         };
@@ -319,4 +346,9 @@ const HeaderSearch = (props) => {
         </>
     )
 }
+/**
+ * Header search default export.
+ *
+ * @returns {*}
+ */
 export default HeaderSearch

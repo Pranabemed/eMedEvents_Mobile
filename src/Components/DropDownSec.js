@@ -1,3 +1,7 @@
+/**
+ * Drop down sec reusable component module. Provides a React Native UI building block used across screens. Exported members: DropdownInputs, onChangeText, onFocus, onBlur.
+ */
+
 import React, { useState, forwardRef, useEffect, useRef } from 'react';
 import {
   View,
@@ -46,19 +50,32 @@ const DropdownInputs = forwardRef((props, ref) => {
     ]).start();
   }, [textValue]);
 
-  const onChangeText = (text) => {
+    /**
+ * On change text utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const onChangeText = (text) => {
     setTextValue(text); 
     if (props.onChangeText) {
       props.onChangeText(text);
     }
   };
-  const onFocus = () => {
+    /**
+ * On focus utility.
+ * @returns {void}
+ */
+const onFocus = () => {
     if (props.onFocus) {
       props.onFocus();
     }
   };
 
-  const onBlur = () => {
+    /**
+ * On blur utility.
+ * @returns {void}
+ */
+const onBlur = () => {
     if (props.onBlur) {
       props.onBlur();
     }
@@ -230,4 +247,9 @@ DropdownInputs.propTypes = {
  isDatachange: PropTypes.string
 };
 
+/**
+ * Drop down sec default export.
+ *
+ * @returns {*}
+ */
 export default DropdownInputs;

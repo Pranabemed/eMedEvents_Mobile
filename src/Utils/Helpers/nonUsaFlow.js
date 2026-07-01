@@ -1,13 +1,39 @@
+/**
+ * Non usa flow utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: NON_USA_USER_TYPE, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, normalizeText, isUsaCountryCode, isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState, clearNonUsaFlowState, readNonUsaPermanentFlags, markNonUsaProfessionUpdateRequired, markNonUsaStateLicenseFlowCompleted, clearNonUsaStateLicenseFlowCompleted.
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 
+/**
+ * Non usa user type constant.
+ * @returns {string}
+ */
 export const NON_USA_USER_TYPE = 'non_usa';
+/**
+ * Non usa profession update required key constant.
+ * @returns {string}
+ */
 export const NON_USA_PROFESSION_UPDATE_REQUIRED_KEY = 'nonUSAProfessionUpdateRequired';
+/**
+ * Non usa state license flow completed key constant.
+ * @returns {string}
+ */
 export const NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY = 'nonUSAStateLicenseFlowCompleted';
 
+/**
+ * Normalize text utility helper.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
-export const isUsaCountryCode = (value) => {
+export /**
+ * Is usa country code utility helper.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isUsaCountryCode = (value) => {
   const code = normalizeText(value).replace(/\s+/g, '');
   return (
     code === 'us' ||
@@ -19,7 +45,13 @@ export const isUsaCountryCode = (value) => {
   );
 };
 
-export const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
+export /**
+ * Is non usa account utility helper.
+ * @param {Object} user - Input value.
+ * @param {*} fallbackFlowState - Input value.
+ * @returns {boolean}
+ */
+const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
   if (
     user?.usa_user === true ||
     user?.usa_user === 1 ||
@@ -64,7 +96,13 @@ export const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
   return false;
 };
 
-export const readNonUsaFlowState = async () => {
+export /**
+ * Read non usa flow state utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const readNonUsaFlowState = async () => {
   try {
     const raw = await AsyncStorage.getItem(constants.NON_USA_FLOW_STATE);
     return raw ? JSON.parse(raw) : null;
@@ -73,7 +111,14 @@ export const readNonUsaFlowState = async () => {
   }
 };
 
-export const writeNonUsaFlowState = async (patch = {}) => {
+export /**
+ * Write non usa flow state utility helper.
+ *
+ * @async
+ * @param {Object} patch - Input value.
+ * @returns {Promise<*>}
+ */
+const writeNonUsaFlowState = async (patch = {}) => {
   try {
     const existingRaw = await AsyncStorage.getItem(constants.NON_USA_FLOW_STATE);
     const existing = existingRaw ? JSON.parse(existingRaw) : {};
@@ -92,7 +137,13 @@ export const writeNonUsaFlowState = async (patch = {}) => {
   }
 };
 
-export const clearNonUsaFlowState = async () => {
+export /**
+ * Clear non usa flow state utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const clearNonUsaFlowState = async () => {
   try {
     await AsyncStorage.removeItem(constants.NON_USA_FLOW_STATE);
   } catch (error) {
@@ -100,7 +151,13 @@ export const clearNonUsaFlowState = async () => {
   }
 };
 
-export const readNonUsaPermanentFlags = async () => {
+export /**
+ * Read non usa permanent flags utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const readNonUsaPermanentFlags = async () => {
   try {
     const [professionUpdateRequired, stateLicenseFlowCompleted] = await Promise.all([
       AsyncStorage.getItem(NON_USA_PROFESSION_UPDATE_REQUIRED_KEY),
@@ -119,7 +176,13 @@ export const readNonUsaPermanentFlags = async () => {
   }
 };
 
-export const markNonUsaProfessionUpdateRequired = async () => {
+export /**
+ * Mark non usa profession update required utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const markNonUsaProfessionUpdateRequired = async () => {
   try {
     await AsyncStorage.setItem(NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, 'true');
     return true;
@@ -128,7 +191,13 @@ export const markNonUsaProfessionUpdateRequired = async () => {
   }
 };
 
-export const markNonUsaStateLicenseFlowCompleted = async () => {
+export /**
+ * Mark non usa state license flow completed utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const markNonUsaStateLicenseFlowCompleted = async () => {
   try {
     await AsyncStorage.setItem(NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, 'true');
     return true;
@@ -137,7 +206,13 @@ export const markNonUsaStateLicenseFlowCompleted = async () => {
   }
 };
 
-export const clearNonUsaStateLicenseFlowCompleted = async () => {
+export /**
+ * Clear non usa state license flow completed utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const clearNonUsaStateLicenseFlowCompleted = async () => {
   try {
     await AsyncStorage.removeItem(NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY);
     return true;

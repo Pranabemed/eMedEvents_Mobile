@@ -1,3 +1,7 @@
+/**
+ * Add expenses screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AddExpenses, profileBack, styles.
+ */
+
 import { View, Text, Platform, Animated, Easing, TouchableOpacity, StyleSheet, TextInput } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -26,7 +30,11 @@ const AddExpenses = (props) => {
     const [membership, setMembership] = useState("");
     const [mbperiod, setMbperiod] = useState("");
     const [amount,setAmount] = useState("");
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -313,7 +321,16 @@ const AddExpenses = (props) => {
     )
 }
 
+/**
+ * Add expenses default export.
+ *
+ * @returns {*}
+ */
 export default AddExpenses
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     imageBackground: {
         height: normalize(65),

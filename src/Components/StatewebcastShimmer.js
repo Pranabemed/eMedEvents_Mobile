@@ -1,3 +1,7 @@
+/**
+ * Statewebcast shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: StatewebcastShimmer, CONTENT_PADDING, styles.
+ */
+
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import React from 'react';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -13,6 +17,10 @@ import normalize from '../Utils/Helpers/Dimen';
 
 const { width: windowWidth } = Dimensions.get('window');
 
+/**
+ * Statewebcast shimmer component.
+ * @returns {JSX.Element}
+ */
 const StatewebcastShimmer = () => {
     const BG = '#E8EFF7';
     const HL = '#F5F8FF';
@@ -114,10 +122,23 @@ const StatewebcastShimmer = () => {
     );
 };
 
+/**
+ * Statewebcast shimmer default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastShimmer;
 
+/**
+ * Content padding constant.
+ * @returns {*}
+ */
 const CONTENT_PADDING = normalize(14);
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     /* ── Top blue-ish card ── */
     topSection: {

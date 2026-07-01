@@ -1,3 +1,7 @@
+/**
+ * Board certificate reusable component module. Provides a React Native UI building block used across screens. Exported members: status, modalFalse, cmeModalFalse, cmeValult, boardIDError, handleSnapToItem, token_handle_vault, transformDataSpecial, transformData, boardSpecialty.
+ */
+
 import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import {
     View,
@@ -33,6 +37,11 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Board certificate default export.
+ *
+ * @returns {*}
+ */
 export default function BoardCertificate({finalShow, setFinalShow, boardnamereal, setBoardnamereal }) {
     const {
         setFulldashbaord
@@ -52,13 +61,25 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     const [loadingstart, setLoadingstart] = useState(false);
     const [boardtake, setBoardtake] = useState();
     const carouselRef = useRef(null);
-    const modalFalse = () => {
+        /**
+ * Modal false utility.
+ * @returns {void}
+ */
+const modalFalse = () => {
         setDetailsmodal(true);
     }
-    const cmeModalFalse = () => {
+        /**
+ * Cme modal false utility.
+ * @returns {void}
+ */
+const cmeModalFalse = () => {
         setCmemodal(true);
     }
-    const cmeValult = () => {
+        /**
+ * Cme valult utility.
+ * @returns {void}
+ */
+const cmeValult = () => {
         setVaultmodal(!vaultModal);
     }
 
@@ -83,7 +104,12 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
             setBoardtake(data[val]?.board_name);
         }
     }, [data, val]);
-    const boardIDError = (id) => {
+        /**
+ * Board iderror utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const boardIDError = (id) => {
         let obj = {
             "board_id": id,
             "compliance": 1
@@ -113,7 +139,12 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
         setPendingCountboard(total - completed);
 
     }, [DashboardReducer?.stateDashboardResponse?.data]);
-    const handleSnapToItem = (index) => {
+        /**
+ * Handles snap to item.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleSnapToItem = (index) => {
         setval(index);
     };
     if (status == '' || DashboardReducer.status != status) {
@@ -152,7 +183,11 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     const [totalboardname, setTotalboardname] = useState([]);
 
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -172,7 +207,12 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
         token_handle_vault();
     }, [isFocus]);
 
-    const transformDataSpecial = (data) => {
+        /**
+ * Transform data special utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const transformDataSpecial = (data) => {
         return Object.keys(data).map(key => {
             const specialities = Object.values(data[key].specialities).map(spec => spec.name);
             return {
@@ -207,7 +247,12 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
 
 
     useEffect(() => {
-        const transformData = (data) => {
+                /**
+ * Transform data utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const transformData = (data) => {
             return Object.keys(data).map(key => ({
                 id: parseInt(key, 10),
                 name: data[key]
@@ -234,7 +279,11 @@ export default function BoardCertificate({finalShow, setFinalShow, boardnamereal
     ]);
 
     useEffect(() => {
-        const boardSpecialty = () => {
+                /**
+ * Board specialty utility.
+ * @returns {void}
+ */
+const boardSpecialty = () => {
             if (boardspecial?.length > 0) {
                 const AllId = boardspecial.map((d) => d?.id);
                 const finalId = AllId?.join(', ');

@@ -1,3 +1,7 @@
+/**
+ * Statewebcast refund screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastRefund.
+ */
+
 import { View, Text } from 'react-native'
 import React from 'react'
 import ConferenceSummary from './ConferenceSummary'
@@ -55,4 +59,9 @@ const StatewebcastRefund = ({conferenceText,conferenceHtml,expandcon,conferShows
   )
 }
 
+/**
+ * Statewebcast refund default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastRefund

@@ -1,3 +1,7 @@
+/**
+ * Travel mode screen module. Renders a React Native screen or a screen-scoped support component. Exported members: TravelMode.
+ */
+
 import { View, Text, TouchableOpacity, FlatList, Platform } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -74,4 +78,9 @@ const TravelMode = ({ expenspicker, setExpenspicker, dommyData, traveltake, setT
     )
 }
 
+/**
+ * Travel mode default export.
+ *
+ * @returns {*}
+ */
 export default TravelMode

@@ -1,3 +1,7 @@
+/**
+ * Filter reusable component module. Provides a React Native UI building block used across screens. Exported members: FilterModal, pendingshow, adjustModalHeight, stateDataFilter, styles.
+ */
+
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Colorpath from '../Themes/Colorpath';
@@ -48,7 +52,12 @@ const FilterModal = ({
         setModalHeight(isfilterVisible ? finalLength : 300);
     }, [isfilterVisible]);
 
-    const pendingshow = (index) => {
+        /**
+ * Pendingshow utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const pendingshow = (index) => {
         console.log(index, "index------")
         setStateFiltered((prev) => {
             const newState = prev.map((item, idx) => ({
@@ -59,7 +68,12 @@ const FilterModal = ({
             return newState;
         });
     };
-    const adjustModalHeight = (data) => {
+        /**
+ * Adjust modal height utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const adjustModalHeight = (data) => {
         const visibleItems = data.filter(item => item.isShow).length;
         setModalHeight(visibleItems > 0 ? finalLength : 300);
     };
@@ -75,7 +89,14 @@ const FilterModal = ({
             setStateid(selectedData.id);
         }
     }, [stateid, filterState]);
-    const stateDataFilter = ({ item, index }) => {
+        /**
+ * State data filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateDataFilter = ({ item, index }) => {
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -173,7 +194,16 @@ const FilterModal = ({
         </Modal>
     );
 };
+/**
+ * Filter default export.
+ *
+ * @returns {*}
+ */
 export default FilterModal;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

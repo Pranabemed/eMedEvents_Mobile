@@ -1,6 +1,16 @@
+/**
+ * Timezone utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: FormatDateZone.
+ */
+
 import moment from "moment";
 
-export const FormatDateZone = (startdate, enddate) => {
+export /**
+ * Format date zone component.
+ * @param {*} startdate - Input value.
+ * @param {*} enddate - Input value.
+ * @returns {void}
+ */
+const FormatDateZone = (startdate, enddate) => {
   const fmt = "DD MMM, YYYY"; 
   const start = moment(startdate, fmt);
   const end = moment(enddate, fmt);

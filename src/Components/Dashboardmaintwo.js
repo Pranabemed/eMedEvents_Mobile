@@ -1,3 +1,7 @@
+/**
+ * Dashboardmaintwo reusable component module. Provides a React Native UI building block used across screens. Exported members: Dashboardmaintwo.
+ */
+
 import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Imagepath from '../Themes/Imagepath';
@@ -189,4 +193,9 @@ const Dashboardmaintwo = ({ cmeModalFalse, modalFalse, DashboardReducer }) => {
     )
 }
 
+/**
+ * Dashboardmaintwo default export.
+ *
+ * @returns {*}
+ */
 export default Dashboardmaintwo

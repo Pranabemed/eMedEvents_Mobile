@@ -1,3 +1,7 @@
+/**
+ * Hcpsub screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HCPSub, toggleDrawerModal, HCPBack, handleLinearTextChange, onBackPress.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Alert, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -39,12 +43,20 @@ const HCPSub = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const toggleDrawerModal = () => {
+        /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
-    const HCPBack = () => {
+        /**
+ * Hcpback component.
+ * @returns {void}
+ */
+const HCPBack = () => {
         toggleDrawerModal();
     }
     useEffect(() => {
@@ -54,11 +66,20 @@ const HCPSub = (props) => {
             handleLinearTextChange(false);
         }
     }, [storeAlldata])
-    const handleLinearTextChange = (isOnline) => {
+        /**
+ * Handles linear text change.
+ * @param {boolean} isOnline - Input value.
+ * @returns {void}
+ */
+const handleLinearTextChange = (isOnline) => {
         setLinearText(isOnline);
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             HCPBack();
             return true;
         };
@@ -209,4 +230,9 @@ const HCPSub = (props) => {
     )
 }
 
+/**
+ * Hcpsub default export.
+ *
+ * @returns {*}
+ */
 export default HCPSub

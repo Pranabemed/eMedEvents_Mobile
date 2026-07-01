@@ -1,3 +1,7 @@
+/**
+ * Registration screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Registration, toggleDrawerModal, registBaack, titlhandleUrl, fetchHandle, fullDataRefresh, onBackPress, openPDF, renderItem, renderMonthItem.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Alert, BackHandler } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -32,6 +36,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Registration component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Registration = (props) => {
     const { takestate, addit, isConnected } = useContext(AppContext);
     console.log(props?.route?.params?.name, "dddddd------", takestate, addit);
@@ -43,18 +52,31 @@ const Registration = (props) => {
     const [modalShow, setModalShow] = useState(false);
     const [showLoad, setShowLoad] = useState(false);
     const [save, setSave] = useState();
-    const toggleDrawerModal = () => {
+        /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
     const windowWidth = Dimensions.get('window').width;
-    const registBaack = () => {
+        /**
+ * Regist baack utility.
+ * @returns {void}
+ */
+const registBaack = () => {
         toggleDrawerModal();
     }
     const TransReducer = useSelector(state => state.TransReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.conferenceURL;
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make);
@@ -82,7 +104,11 @@ const Registration = (props) => {
     useEffect(() => {
         fetchHandle();
     }, [isFocus, props?.route?.params?.name]);
-    const fetchHandle = () => {
+        /**
+ * Fetch handle utility.
+ * @returns {void}
+ */
+const fetchHandle = () => {
         // let obj = {
         //     "limit": limit,
         //     "offset": pageNum,
@@ -130,7 +156,11 @@ const Registration = (props) => {
             }
         }
     }, [apiReq, final, TransReducer]);
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         if (props?.route?.params?.name == "Registrations") {
             setStoreAlldata([]);
             setPageNum(0);
@@ -139,7 +169,11 @@ const Registration = (props) => {
         }
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             registBaack();
             return true;
         };
@@ -229,7 +263,14 @@ const Registration = (props) => {
         }
     }, [storeAlldata]);
 
-    const openPDF = async (finalurl) => {
+        /**
+ * Open pdf utility.
+ *
+ * @async
+ * @param {*} finalurl - Input value.
+ * @returns {Promise<*>}
+ */
+const openPDF = async (finalurl) => {
         if (!finalurl) return;
         try {
             const url = finalurl;
@@ -264,7 +305,14 @@ const Registration = (props) => {
             setLoadingg(false);
         }
     };
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
         const isLastItem = index === item?.dataLength - 1;
         return (
             <View>
@@ -452,7 +500,13 @@ const Registration = (props) => {
     }
 
 
-    const renderMonthItem = ({ item }) => {
+        /**
+ * Render month item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderMonthItem = ({ item }) => {
         return (
             <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
                 <Text
@@ -615,4 +669,9 @@ const Registration = (props) => {
     )
 }
 
+/**
+ * Registration default export.
+ *
+ * @returns {*}
+ */
 export default Registration

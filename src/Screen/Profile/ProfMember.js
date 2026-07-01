@@ -1,3 +1,7 @@
+/**
+ * Prof member screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfMember, SearchBack, stateTakeItem.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity } from 'react-native'
 import React, { useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -18,12 +22,23 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const ProfMember = (props) => {
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     const stateTake = [{ id: 0, name: "American Academy of Allergy Asthma and Immunology - AAAAI" }, { id: 1, name: "Alpha Omega Alpha Honor Medical Society - AOA" }];
     const [profiletakeshow, setProfiletakeshow] = useState(false);
-    const stateTakeItem = ({ item, index }) => {
+        /**
+ * State take item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateTakeItem = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -140,4 +155,9 @@ const ProfMember = (props) => {
         </>
     )
 }
+/**
+ * Prof member default export.
+ *
+ * @returns {*}
+ */
 export default ProfMember

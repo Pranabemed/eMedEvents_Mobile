@@ -1,3 +1,7 @@
+/**
+ * Statewebcast add tocart screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastAddTocart, getButtonWidth.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import Buttons from '../../Components/Button';
@@ -146,7 +150,11 @@ const StatewebcastAddTocart = ({
     webcastdeatils?.organizerName == "eMedEvents Corporation" ||
     webcastdeatils?.organizerName == "eMedEd";
 
-  const getButtonWidth = () => {
+    /**
+ * Returns button width.
+ * @returns {*}
+ */
+const getButtonWidth = () => {
     if (shouldRenderAddToCartAndDownload) {
       return shouldShowDownloadCatalog ? normalize(290) : normalize(290);
     }
@@ -278,4 +286,9 @@ const StatewebcastAddTocart = ({
   );
 }
 
+/**
+ * Statewebcast add tocart default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastAddTocart;

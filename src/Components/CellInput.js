@@ -1,3 +1,7 @@
+/**
+ * Cell input reusable component module. Provides a React Native UI building block used across screens. Exported members: InputField, toggleSecureEntry, floatingLabelNode, staticStyles.
+ */
+
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import {
     View,
@@ -38,6 +42,10 @@ import EyeIcon from 'react-native-vector-icons/Entypo';
 //   touch always reaches the TextInput directly.
 // ---------------------------------------------------------------------------
 
+/**
+ * Input field value.
+ * @returns {*}
+ */
 const InputField = forwardRef((
     {
         spaceneeded,
@@ -95,7 +103,11 @@ const InputField = forwardRef((
         }).start();
     }, [isFocused, value]);
 
-    const toggleSecureEntry = () => setSecureTextEntry(prev => !prev);
+        /**
+ * Toggle secure entry utility.
+ * @returns {*}
+ */
+const toggleSecureEntry = () => setSecureTextEntry(prev => !prev);
 
     // ── Animated interpolations ───────────────────────────────────────────────
     const labelTop = animated.interpolate({
@@ -123,7 +135,12 @@ const InputField = forwardRef((
     // MUST be Animated.View (not plain View) so that animated style values
     // (labelTop, labelLeft) are handled correctly by RN without crashing.
     // pointerEvents="none" on Animated.View works reliably on Android & iOS.
-    const floatingLabelNode = (text) => (
+        /**
+ * Floating label node utility.
+ * @param {*} text - Input value.
+ * @returns {JSX.Element}
+ */
+const floatingLabelNode = (text) => (
         <Animated.View
             pointerEvents="none"
             style={[
@@ -315,6 +332,10 @@ InputField.displayName = 'InputField';
 // ---------------------------------------------------------------------------
 // Static styles – created once at module load, never inside render.
 // ---------------------------------------------------------------------------
+/**
+ * Static styles value.
+ * @returns {*}
+ */
 const staticStyles = StyleSheet.create({
     inputGroup: {
         marginBottom: normalize(16),
@@ -376,4 +397,9 @@ const staticStyles = StyleSheet.create({
     },
 });
 
+/**
+ * Cell input default export.
+ *
+ * @returns {*}
+ */
 export default InputField;

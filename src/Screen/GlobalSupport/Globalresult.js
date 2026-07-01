@@ -1,3 +1,7 @@
+/**
+ * Globalresult screen module. Renders a React Native screen or a screen-scoped support component. Exported members: getStateId, getStateLabel, getResultButtonLabel, getResultPriceLabel, getResultTypeLabel, getResultCreditLabel, Globalresult, onBackPress, fullDataRefresh, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates, handleGuestProfessionSelect, handleGuestStateSelect, handleGuestBrowseCourses, handlePress, styles.
+ */
+
 import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput, Dimensions } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -34,9 +38,19 @@ import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
 
 const getStateId = stateObj => stateObj?.id ?? stateObj?.state_id;
 
+/**
+ * Returns state label.
+ * @param {*} stateObj - Input value.
+ * @returns {*}
+ */
 const getStateLabel = stateObj =>
     stateObj?.name || stateObj?.state_name || stateObj?.title || '';
 
+/**
+ * Returns result button label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getResultButtonLabel = item =>
     item?.buttonText ||
     item?.button_text ||
@@ -47,6 +61,11 @@ const getResultButtonLabel = item =>
     item?.cta_text ||
     '';
 
+/**
+ * Returns result price label.
+ * @param {*} item - Input value.
+ * @returns {string}
+ */
 const getResultPriceLabel = item => {
     const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? '';
     const priceText = String(rawPrice).trim();
@@ -62,6 +81,11 @@ const getResultPriceLabel = item => {
     return `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}`;
 };
 
+/**
+ * Returns result type label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getResultTypeLabel = item => {
     const rawType = String(
         item?.eventType ||
@@ -82,6 +106,11 @@ const getResultTypeLabel = item => {
     return rawType;
 };
 
+/**
+ * Returns result credit label.
+ * @param {*} item - Input value.
+ * @returns {string}
+ */
 const getResultCreditLabel = item => {
     const rawCme = item?.display_cme || item?.cmeLabel || item?.credit || item?.credits || '';
     if (rawCme) {
@@ -106,6 +135,11 @@ const getResultCreditLabel = item => {
     return '';
 };
 
+/**
+ * Globalresult component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Globalresult = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -423,7 +457,11 @@ const Globalresult = (props) => {
         };
     }, [dispatch]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             SearchBack()
             return true;
         };
@@ -604,12 +642,21 @@ const Globalresult = (props) => {
         }
     }, [apiReq, canLoadMore, loading, pageNum, CMEReducer?.cmeCourseResponse?.conferences?.length, fetchHandle]);
 
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         resetResultsView({ loadingState: true });
         setRefreshing(true);
         fetchHandle(undefined, { pageNum: 0 });
     };
-    const handleUrl = (onlineName) => {
+        /**
+ * Handles url.
+ * @param {*} onlineName - Input value.
+ * @returns {void}
+ */
+const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
         if (!url) {
             return;
@@ -693,7 +740,14 @@ const Globalresult = (props) => {
                 break;
         }
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
-    const searchGlobalitem = ({ item, index }) => {
+        /**
+ * Search globalitem utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const searchGlobalitem = ({ item, index }) => {
         const buttonLabel = getResultButtonLabel(item);
         const priceLabel = getResultPriceLabel(item);
         const guestCreditLabel = getResultCreditLabel(item);
@@ -701,17 +755,31 @@ const Globalresult = (props) => {
         const guestPrimaryLabel = guestCreditLabel;
         const guestSecondaryLabel = guestTypeLabel;
         const hasBottomRow = Boolean(buttonLabel || priceLabel);
-        const formatDate = (dateStr) => {
+                /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-        const formatDateEnd = (dateStr) => {
+                /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
-        const renderLocationAndDates = () => {
+                /**
+ * Render location and dates utility.
+ * @returns {*}
+ */
+const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
                     <View style={{ flexDirection: "row" }}>
@@ -871,7 +939,12 @@ const Globalresult = (props) => {
             </View>
         )
     };
-    const handleGuestProfessionSelect = profession => {
+        /**
+ * Handles guest profession select.
+ * @param {*} profession - Input value.
+ * @returns {void}
+ */
+const handleGuestProfessionSelect = profession => {
         setCmeModalVisible(false);
         setAllProfessionData(null);
         setHandledCmeRequestKey('');
@@ -886,7 +959,12 @@ const Globalresult = (props) => {
             setShouldOpenCmeChecklist(true);
         }
     };
-    const handleGuestStateSelect = stateObj => {
+        /**
+ * Handles guest state select.
+ * @param {*} stateObj - Input value.
+ * @returns {void}
+ */
+const handleGuestStateSelect = stateObj => {
         setCmeModalVisible(false);
         setAllProfessionData(null);
         setHandledCmeRequestKey('');
@@ -901,7 +979,12 @@ const Globalresult = (props) => {
             setShouldOpenCmeChecklist(true);
         }
     };
-    const handleGuestBrowseCourses = params => {
+        /**
+ * Handles guest browse courses.
+ * @param {*} params - Input value.
+ * @returns {void}
+ */
+const handleGuestBrowseCourses = params => {
         setCmeModalVisible(false);
         setSortedFall(false);
         resetResultsView({ clearSort: true, routeKey: '' });
@@ -1098,7 +1181,12 @@ const Globalresult = (props) => {
                                 keyExtractor={item => item.id.toString()}
                                 data={sortOptions}
                                 renderItem={({ item }) => {
-                                    const handlePress = (dd) => {
+                                                                        /**
+ * Handles press.
+ * @param {*} dd - Input value.
+ * @returns {void}
+ */
+const handlePress = (dd) => {
                                         fetchHandle(dd, { pageNum: 0, sortType: dd?.type });
                                         setPageNum(0);
                                         setSortType(dd?.type);
@@ -1216,7 +1304,16 @@ const Globalresult = (props) => {
     )
 }
 
+/**
+ * Globalresult default export.
+ *
+ * @returns {*}
+ */
 export default Globalresult
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     guestTopSection: {
         paddingHorizontal: normalize(14),

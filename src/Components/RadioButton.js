@@ -1,3 +1,7 @@
+/**
+ * Radio button reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomRadioButton, styles.
+ */
+
 // CustomRadioButton.js
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
@@ -6,9 +10,30 @@ import normalize from '../Utils/Helpers/Dimen';
 /**
  * Reusable CustomRadioButton component.
  * 
- * @component
+ * **Purpose:** Renders a customizable radio button with a label, reflecting selected state.
+ * 
+ * **Parameters:**
  * @param {Object} props - The component props.
- * @returns {JSX.Element}
+ * @param {boolean} props.selected - Whether the radio button is currently selected.
+ * @param {Function} props.onPress - Callback executed when the radio button is pressed.
+ * @param {string} props.label - The text label displayed next to the radio button.
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} A React Native TouchableOpacity containing a stylized radio circle and a text label.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <CustomRadioButton 
+ *   label="Option 1" 
+ *   selected={isSelected} 
+ *   onPress={() => setIsSelected(true)} 
+ * />
+ * ```
+ * 
+ * **Notes:**
+ * - The selected state changes the border and fill color to `#2C4DB9`.
  */
 const CustomRadioButton = ({ selected, onPress, label }) => {
   return (
@@ -21,6 +46,10 @@ const CustomRadioButton = ({ selected, onPress, label }) => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -53,4 +82,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Radio button default export.
+ *
+ * @returns {*}
+ */
 export default CustomRadioButton;

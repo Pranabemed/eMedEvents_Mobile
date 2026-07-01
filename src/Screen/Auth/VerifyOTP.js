@@ -1,3 +1,7 @@
+/**
+ * Verify otp screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, persistEmailVerifiedStatus, VerifyOTP, handleChange, handleKeyPress, token_handle, verifyHandle, toggleModal, verifyHandlevalid, resendEmailOTP, clearAllOTPFields, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, StyleSheet, Image, Alert, BackHandler } from 'react-native';
 import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -17,6 +21,10 @@ import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -47,6 +55,11 @@ const persistEmailVerifiedStatus = async () => {
         console.log('persistEmailVerifiedStatus error', error);
     }
 };
+/**
+ * Verify otp component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const VerifyOTP = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -67,7 +80,13 @@ const VerifyOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }, [])
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text.length > 1) {
             const pastedText = text.replace(/[^0-9]/g, '');
             const newOtp = [...otp];
@@ -94,7 +113,14 @@ const VerifyOTP = (props) => {
         }
     };
 
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otp[index] === '') {
                 if (index > 0) inputs.current[index - 1].focus();
@@ -107,7 +133,11 @@ const VerifyOTP = (props) => {
     };
     console.log(otp, "otp--------------", props?.route?.params)
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.EMAIL);
                 setAllotpcheck(loginHandle)
@@ -210,7 +240,11 @@ const VerifyOTP = (props) => {
     }, [startNewTimer]);
 
     console.log("enteredOTP === allotpcheck", AuthReducer?.resendemailotpResponse?.email_otp);
-    const verifyHandle = () => {
+        /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
         const enteredOTP = otp && otp.join('');
         console.log(enteredOTP, typeof enteredOTP, "manually otp");
         let serverOTP;
@@ -231,11 +265,19 @@ const VerifyOTP = (props) => {
         }
     };
     const [isModalVisible, setModalVisible] = useState(false);
-    const toggleModal = () => {
+        /**
+ * Toggle modal utility.
+ * @returns {void}
+ */
+const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
     const autoResendHandledRef = useRef(false);
-    const verifyHandlevalid = () => {
+        /**
+ * Verify handlevalid utility.
+ * @returns {void}
+ */
+const verifyHandlevalid = () => {
         let obj = {
             "verify_type": "email"
         }
@@ -247,7 +289,11 @@ const VerifyOTP = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const resendEmailOTP = () => {
+        /**
+ * Resend email otp utility.
+ * @returns {void}
+ */
+const resendEmailOTP = () => {
         let obj = {
             "verify_type": "email"
         }
@@ -299,7 +345,11 @@ const VerifyOTP = (props) => {
     const phoneTake = props?.route?.params?.user?.phoneData || props?.route?.params?.mobileNo?.phone || props?.route?.params?.verifyemail?.verifyemail?.phone || props?.route?.params?.NewEmail?.phoneNo || props?.route?.params?.NewEmail?.phone || props?.route?.params?.NewEmail?.returnDat?.phone || props?.route?.params?.NewEmail?.returnDat?.phoneNo;
     const countryCode = props?.route?.params?.verifyemail?.verifyemail?.countryCode || props?.route?.params?.NewEmail?.returnDat?.countryCode
     console.log(phoneTake, "phoneTake",props?.route?.params)
-    const clearAllOTPFields = () => {
+        /**
+ * Clear all otpfields utility.
+ * @returns {void}
+ */
+const clearAllOTPFields = () => {
         setOtp(new Array(6).fill(''));
         if (inputs.current[0]) {
             inputs.current[0].focus();
@@ -311,7 +361,11 @@ const VerifyOTP = (props) => {
             ? `${DashboardReducer.mainprofileResponse.professional_information.profession} - ${DashboardReducer.mainprofileResponse.professional_information.profession_type}`
             : null);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
 
@@ -517,6 +571,10 @@ const VerifyOTP = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -566,4 +624,9 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * Verify otp default export.
+ *
+ * @returns {*}
+ */
 export default VerifyOTP;

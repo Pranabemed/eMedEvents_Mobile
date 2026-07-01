@@ -1,3 +1,7 @@
+/**
+ * Dynamicmodal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Dynamicmodal, buildDynamicFieldData, addExpens, registaddExpe, wrapDataInDoubleArray, cleanString, getData, deleteExpense, getField, validateExpenseFields, renderFields, styles.
+ */
+
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { Component, useEffect, useState } from 'react'
 import CameraPicker from '../../Components/CameraPicker'
@@ -27,6 +31,17 @@ import TravelMode from './TravelMode';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Dynamicmodal component.
+ * @param {Object} props - Input object.
+ * @param {*} props.gettitle - Nested property value.
+ * @param {*} props.title - Nested property value.
+ * @param {*} props.typewise - Nested property value.
+ * @param {*} props.maindata - Nested property value.
+ * @param {*} props.travelmodal - Nested property value.
+ * @param {*} props.setTravelmodal - Nested property value.
+ * @returns {JSX.Element}
+ */
 const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTravelmodal }) => {
     const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);
     console.log(maindata, "maindata------", typewise, title);
@@ -47,7 +62,12 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
     const [cdate, setCdate] = useState('');
     const [traveltake, setTraveltake] = useState("");
     const [closeaction, setCloseaction] = useState(false);
-    const buildDynamicFieldData = (type) => {
+        /**
+ * Build dynamic field data utility.
+ * @param {*} type - Input value.
+ * @returns {*}
+ */
+const buildDynamicFieldData = (type) => {
         const fieldData = {};
         if (type == "Travel Expenses") {
             if (cdate) fieldData["travel_date"] = cdate;
@@ -60,7 +80,11 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
         }
         return fieldData;
     };
-    const addExpens = () => {
+        /**
+ * Add expens utility.
+ * @returns {void}
+ */
+const addExpens = () => {
         const isTravelExpenseValid = validateExpenseFields(expensedate);
         if (isTravelExpenseValid) {
             let obj = new FormData();
@@ -84,7 +108,11 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
                 });
         }
     };
-    const registaddExpe = () => {
+        /**
+ * Registadd expe utility.
+ * @returns {void}
+ */
+const registaddExpe = () => {
         if (!loadingamount) {
             showErrorAlert("Please fillup amount !")
         } else {
@@ -111,14 +139,24 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
     console.log(maindata, "maindata=======122", opendate, allExpenses);
     const [processedData, setProcessedData] = useState([]);
 
-    const wrapDataInDoubleArray = (hidata) => {
+        /**
+ * Wrap data in double array utility.
+ * @param {*} hidata - Input value.
+ * @returns {Array}
+ */
+const wrapDataInDoubleArray = (hidata) => {
         if (hidata) {
             console.log(hidata, "certificates");
             return [Array.isArray(hidata) ? hidata : [hidata]];
         }
         return [[]];
     };
-    const cleanString = (str) => {
+        /**
+ * Clean string utility.
+ * @param {*} str - Input value.
+ * @returns {*}
+ */
+const cleanString = (str) => {
         if (!str) return '';
         return str.replace(/\s+/g, ' ').trim().toLowerCase();
     };
@@ -259,7 +297,11 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
             console.log("Processed data is not in the expected format or is empty:", processedData);
         }
     }, [processedData]);
-    const getData = () => {
+        /**
+ * Returns data.
+ * @returns {void}
+ */
+const getData = () => {
         let obj = {
             "type": "",
             "category": "expenses"
@@ -346,7 +388,12 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
         }
     }
 
-    const deleteExpense = (id) => {
+        /**
+ * Delete expense utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const deleteExpense = (id) => {
         setAllExpenses((prevState) => {
             const updatedExpenses = { ...prevState };
             Object.keys(updatedExpenses).forEach((expenseType) => {
@@ -367,7 +414,12 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
             })
     };
     useEffect(() => {
-        const getField = (fielddrop) => {
+                /**
+ * Returns field.
+ * @param {*} fielddrop - Input value.
+ * @returns {void}
+ */
+const getField = (fielddrop) => {
             if (fielddrop && fielddrop.field_value) {
                 const dropdownOptions = Object.values(fielddrop.field_value);
                 setCmeact(dropdownOptions);
@@ -381,7 +433,12 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
             });
         }
     }, [expensedate]);
-    const validateExpenseFields = (expenseType) => {
+        /**
+ * Validate expense fields utility.
+ * @param {*} expenseType - Input value.
+ * @returns {*}
+ */
+const validateExpenseFields = (expenseType) => {
         console.log(expenseType, "expenseType")
         const isValid = expenseType.every(field => {
             const { field_type, field_name } = field;
@@ -423,7 +480,12 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
     };
 
 
-    const renderFields = (fields) => {
+        /**
+ * Render fields utility.
+ * @param {*} fields - Input value.
+ * @returns {*}
+ */
+const renderFields = (fields) => {
         const fieldArray = Array.isArray(fields) ? fields : [];
         return fieldArray.map((field, index) => {
             const placeholderText = field.field_name;
@@ -836,7 +898,16 @@ const Dynamicmodal = ({ gettitle, title, typewise, maindata, travelmodal, setTra
     )
 }
 
+/**
+ * Dynamicmodal default export.
+ *
+ * @returns {*}
+ */
 export default Dynamicmodal
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(13),

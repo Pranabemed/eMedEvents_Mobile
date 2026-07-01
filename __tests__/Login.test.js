@@ -1,3 +1,7 @@
+/**
+ * Login.test test module. Verifies the behavior of the associated screen, component, or helper. Exported members: mockStore, renderComponent.
+ */
+
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
@@ -31,6 +35,10 @@ jest.mock('react-native-safe-area-context', () => {
     };
 });
 
+/**
+ * Mock store value.
+ * @returns {*}
+ */
 const mockStore = configureStore([]);
 
 describe('Login Component', () => {
@@ -65,7 +73,12 @@ describe('Login Component', () => {
 
     });
 
-    const renderComponent = (props = {}) => {
+        /**
+ * Render component utility.
+ * @param {Object} props - Input value.
+ * @returns {*}
+ */
+const renderComponent = (props = {}) => {
         return render(
             <Provider store={store}>
                 <AppContext.Provider value={{ setGtprof: mockSetGtprof, setFulldashbaord: mockSetFulldashbaord }}>

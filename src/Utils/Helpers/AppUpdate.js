@@ -45,11 +45,35 @@ import DeviceInfo from 'react-native-device-info';
 import Colorpath from '../../Themes/Colorpath';
 
 // ─── App identifiers — only change if you rename/republish the app ─────────────
+/**
+ * Ios app store id constant.
+ * @returns {string}
+ */
 const IOS_APP_STORE_ID = '1540770118';           // https://apps.apple.com/us/app/emedevents/id1540770118
+/**
+ * Android package constant.
+ * @returns {string}
+ */
 const ANDROID_PACKAGE = 'com.emedevents.newapp';
+/**
+ * Ios store url constant.
+ * @returns {*}
+ */
 const IOS_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_STORE_ID}`;
+/**
+ * Android store url constant.
+ * @returns {*}
+ */
 const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+/**
+ * Update recheck ms constant.
+ * @returns {*}
+ */
 const UPDATE_RECHECK_MS = 30 * 1000; // Re-check often so the popup can appear on any screen
+/**
+ * Navigation recheck ms constant.
+ * @returns {*}
+ */
 const NAVIGATION_RECHECK_MS = 30 * 1000; // Avoid repeated API hits during fast screen changes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -64,7 +88,12 @@ const NAVIGATION_RECHECK_MS = 30 * 1000; // Avoid repeated API hits during fast 
  */
 const isNewerVersion = (installedVer, storeVer) => {
   if (!installedVer || !storeVer) return false;
-  const clean = (v) => String(v).replace(/[^0-9.]/g, '');
+    /**
+ * Clean utility helper.
+ * @param {*} v - Input value.
+ * @returns {*}
+ */
+const clean = (v) => String(v).replace(/[^0-9.]/g, '');
   const a = clean(installedVer).split('.').map(Number);
   const b = clean(storeVer).split('.').map(Number);
   const len = Math.max(a.length, b.length);
@@ -78,7 +107,17 @@ const isNewerVersion = (installedVer, storeVer) => {
 };
 
 // Version helpers: avoid showing Android versionCode (e.g., "26") in the UI
+/**
+ * Looks like semver utility helper.
+ * @param {*} v - Input value.
+ * @returns {*}
+ */
 const looksLikeSemver = (v) => /\d+\.\d+/.test(String(v ?? ''));
+/**
+ * Is numeric version code utility helper.
+ * @param {*} v - Input value.
+ * @returns {*}
+ */
 const isNumericVersionCode = (v) => /^[0-9]+$/.test(String(v ?? ''));
 
 /**
@@ -166,6 +205,10 @@ const fetchLatestAndroidVersion = async () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * App update handler component.
+ * @returns {JSX.Element}
+ */
 const AppUpdateHandler = () => {
   // Pass `false` always — dev-mode guard is handled manually below
   const inAppUpdates = useRef(new SpInAppUpdates(false)).current;
@@ -440,7 +483,13 @@ const AppUpdateHandler = () => {
   }, [inAppUpdates]);
 
   // ─── Start update ─────────────────────────────────────────────────────────────
-  const startUpdate = async () => {
+    /**
+ * Start update utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const startUpdate = async () => {
     try {
       if (Platform.OS === 'ios') {
         await Linking.openURL(storeUrl || IOS_STORE_URL);
@@ -548,9 +597,18 @@ const AppUpdateHandler = () => {
   );
 };
 
+/**
+ * App update default export.
+ *
+ * @returns {*}
+ */
 export default AppUpdateHandler;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,

@@ -1,3 +1,7 @@
+/**
+ * Prime payment reusable component module. Provides a React Native UI building block used across screens. Exported members: status1, PrimePayment, paymentPress, primepaymentHandle, onBackPress.
+ */
+
 import { View, Text, Platform, Linking, TouchableOpacity, Image, Alert, BackHandler } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import Colorpath from '../Themes/Colorpath';
@@ -34,6 +38,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status1 = "";
+/**
+ * Prime payment component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const PrimePayment = (props) => {
     const {
         isConnected
@@ -62,7 +71,11 @@ const PrimePayment = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const paymentPress = () => {
+        /**
+ * Payment press utility.
+ * @returns {void}
+ */
+const paymentPress = () => {
         navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
     }
     useEffect(() => {
@@ -80,7 +93,13 @@ const PrimePayment = (props) => {
             console.log(apiFormattedDate);
         }
     }, [maskedEx])
-    function primepaymentHandle() {
+        /**
+ * Primepayment handle utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function primepaymentHandle() {
         const errors = {
             nameEmpty: 'Enter the cardholder name.',
             nameInvalid: 'Enter a valid cardholder name ',
@@ -189,7 +208,11 @@ const PrimePayment = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             paymentPress();
             return true;
         };
@@ -431,4 +454,9 @@ const PrimePayment = (props) => {
     )
 }
 
+/**
+ * Prime payment default export.
+ *
+ * @returns {*}
+ */
 export default PrimePayment

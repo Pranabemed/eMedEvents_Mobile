@@ -1,3 +1,7 @@
+/**
+ * Auto complete screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Autocomplete, fetchSuggestions, handleSelect, styles.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import axios from 'axios';
@@ -24,7 +28,13 @@ const Autocomplete = () => {
     }
   }, [input]);
 
-  const fetchSuggestions = async () => {
+    /**
+ * Fetch suggestions utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchSuggestions = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
@@ -44,7 +54,12 @@ const Autocomplete = () => {
     }
   };
 
-  const handleSelect = (description) => {
+    /**
+ * Handles select.
+ * @param {*} description - Input value.
+ * @returns {void}
+ */
+const handleSelect = (description) => {
     setInput(description);
     setSuggestions([]);
   };
@@ -74,6 +89,10 @@ const Autocomplete = () => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     width: '100%',
@@ -103,4 +122,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Auto complete default export.
+ *
+ * @returns {*}
+ */
 export default Autocomplete;

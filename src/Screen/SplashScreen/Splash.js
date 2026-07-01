@@ -1,3 +1,7 @@
+/**
+ * Splash screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, DEEPLINK_BOOTSTRAP_KEY, INVALID_TOKEN_MESSAGES, isVerifiedFlag, getTokenErrorMessage, isInvalidTokenFailure, isEmedDeepLink, detectCountry, resetToSafeEntry, handleNavigation, token_error, token_handle, stateDashboardData, stateReport, licHandl, navigateToVerification, styles.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, View, Text, Linking } from 'react-native';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
@@ -26,11 +30,35 @@ import { loginSuccess, signupSuccess, tokenSuccess } from '../../Redux/Reducers/
  */
 
 let status1 = "";
+/**
+ * Guest registration flow key constant.
+ * @returns {string}
+ */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+/**
+ * Guest prime verification pending key constant.
+ * @returns {string}
+ */
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+/**
+ * Prime membership skipped key constant.
+ * @returns {string}
+ */
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+/**
+ * Prime card flow complete key constant.
+ * @returns {string}
+ */
 const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+/**
+ * Deeplink bootstrap key constant.
+ * @returns {string}
+ */
 const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
+/**
+ * Invalid token messages constant.
+ * @returns {Array}
+ */
 const INVALID_TOKEN_MESSAGES = [
   'missing or invalid token',
   'invalid token',
@@ -39,7 +67,17 @@ const INVALID_TOKEN_MESSAGES = [
   'token is expired',
 ];
 
+/**
+ * Determines whether verified flag is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const isVerifiedFlag = (value) => value == "1" || value == 1 || value === true;
+/**
+ * Returns token error message.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const getTokenErrorMessage = (value) => (
   value?.data?.msg ||
   value?.data?.message ||
@@ -47,17 +85,32 @@ const getTokenErrorMessage = (value) => (
   value?.message ||
   ''
 ).toLowerCase().trim();
+/**
+ * Determines whether invalid token failure is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const isInvalidTokenFailure = (value) => {
   const msg = getTokenErrorMessage(value);
   return INVALID_TOKEN_MESSAGES.some(pattern => msg === pattern || msg.startsWith(pattern));
 };
 
+/**
+ * Determines whether emed deep link is true.
+ * @param {*} url - Input value.
+ * @returns {*}
+ */
 const isEmedDeepLink = (url) => {
   if (!url || typeof url !== 'string') return false;
   const lowerUrl = url.toLowerCase().trim();
   return lowerUrl.includes('emedevents.com') || lowerUrl.includes('emedevents.net');
 };
 
+/**
+ * Splash default export.
+ *
+ * @returns {*}
+ */
 export default function Splash(props) {
   const {
     setFulldashbaord,
@@ -104,7 +157,13 @@ export default function Splash(props) {
 
   useEffect(() => {
     let mounted = true;
-    const detectCountry = async () => {
+        /**
+ * Detect country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const detectCountry = async () => {
       try {
         const geoInfo = await getCountryAndDialCode();
         if (mounted && geoInfo) {
@@ -123,7 +182,13 @@ export default function Splash(props) {
     };
   }, []);
 
-  const resetToSafeEntry = async () => {
+    /**
+ * Reset to safe entry utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const resetToSafeEntry = async () => {
     try {
       const playerSession = await AsyncStorage.getItem('PLAYERSESSION');
       await Promise.all([
@@ -153,7 +218,13 @@ export default function Splash(props) {
   };
 
   useEffect(() => {
-    const handleNavigation = async () => {
+        /**
+ * Handles navigation.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleNavigation = async () => {
       try {
         const [
           emaileer,
@@ -287,7 +358,11 @@ export default function Splash(props) {
   }, [dispatch]);
 
   useEffect(() => {
-    const token_error = () => {
+        /**
+ * Token error utility.
+ * @returns {void}
+ */
+const token_error = () => {
       setTimeout(async () => {
         try {
           const initialUrl = await Linking.getInitialURL();
@@ -390,7 +465,11 @@ export default function Splash(props) {
   }, [AuthReducer?.status]);
 
   useEffect(() => {
-    const token_handle = () => {
+        /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
       setTimeout(async () => {
         const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
         const jsonObject = loginHandle_verify ? JSON.parse(loginHandle_verify) : null;
@@ -492,7 +571,12 @@ export default function Splash(props) {
   const lastStateIdHandledRef = useRef(null);
   const lastReportIdHandledRef = useRef(null);
 
-  const stateDashboardData = (id) => {
+    /**
+ * State dashboard data utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateDashboardData = (id) => {
     if (!id || lastStateIdHandledRef.current === id) return;
     lastStateIdHandledRef.current = id;
 
@@ -501,7 +585,12 @@ export default function Splash(props) {
       .catch(err => showErrorAlert("Please connect to internet", err));
   };
 
-  const stateReport = (did) => {
+    /**
+ * State report utility.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const stateReport = (did) => {
     if (!did || lastReportIdHandledRef.current === did) return;
     lastReportIdHandledRef.current = did;
 
@@ -512,7 +601,12 @@ export default function Splash(props) {
 
   const lastLicHandledRef = useRef(null);
 
-  const licHandl = (profFromDashboard) => {
+    /**
+ * Lic handl utility.
+ * @param {*} profFromDashboard - Input value.
+ * @returns {void}
+ */
+const licHandl = (profFromDashboard) => {
     if (!profFromDashboard || lastLicHandledRef.current === profFromDashboard) return;
     lastLicHandledRef.current = profFromDashboard;
 
@@ -774,7 +868,13 @@ export default function Splash(props) {
       }
     }
 
-    function navigateToVerification() {
+        /**
+ * Navigate to verification utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function navigateToVerification() {
       if (!isVerified) {
         hasNavigatedRef.current = true;
         props.navigation.dispatch(
@@ -858,6 +958,10 @@ export default function Splash(props) {
   );
 }
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

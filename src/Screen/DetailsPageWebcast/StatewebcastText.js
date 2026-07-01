@@ -1,3 +1,7 @@
+/**
+ * Statewebcast text screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastText, handleScroll, handleContentSizeChange, specialityShow.
+ */
+
 import { View, Text, ScrollView, Animated, Dimensions } from 'react-native'
 import React, { useRef, useEffect, useState } from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -49,13 +53,23 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
         outputRange: [0.3, 0.3, 1, 0.3],
     });
 
-    const handleScroll = (event) => {
+        /**
+ * Handles scroll.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const handleScroll = (event) => {
         const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
         const isEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 15;
         setShowIndicator(!isEnd);
     };
 
-    const handleContentSizeChange = (contentWidth) => {
+        /**
+ * Handles content size change.
+ * @param {*} contentWidth - Input value.
+ * @returns {void}
+ */
+const handleContentSizeChange = (contentWidth) => {
         if (contentWidth > screenWidth - normalize(21)) {
             setShowIndicator(true);
         } else {
@@ -64,7 +78,14 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
     };
 
     console.log(allSpecailities?.length, "allSpecailities-----", webcastdeatils?.targetAudience);
-    const specialityShow = ({ index, item }) => {
+        /**
+ * Speciality show utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.index - Nested property value.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const specialityShow = ({ index, item }) => {
         return (
             <View style={{ paddingVertical: normalize(3) }}>
                 <View style={{ padding: 10, borderWidth: 0.5, borderColor: "#DDDDDD", paddingVertical: normalize(7), marginLeft: normalize(8), backgroundColor: "#F5FAFF", borderRadius: normalize(5) }}>
@@ -126,4 +147,9 @@ const StatewebcastText = ({ webcastdeatils, allSpecailities, expandspecailtar, t
     )
 }
 
+/**
+ * Statewebcast text default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastText

@@ -1,3 +1,7 @@
+/**
+ * Icon text in reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomInputTouchable, styles.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -128,6 +132,10 @@ const CustomInputTouchable = ({
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     inputGroup: {
         marginBottom: 10,
@@ -162,4 +170,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Icon text in default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputTouchable;

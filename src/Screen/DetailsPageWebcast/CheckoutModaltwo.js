@@ -1,3 +1,7 @@
+/**
+ * Checkout modaltwo screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ChecktwoCountry, weekFilterProfession.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -27,7 +31,13 @@ const ChecktwoCountry = ({ countrypicker, setSearchcountry, activeIndex, searchc
                 
                         return () => clearTimeout(timeout);
                     }, []);
-    const weekFilterProfession = ({ item }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item }) => {
         console.log("isPreviouslySelected=====", activeIndex);
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -164,4 +174,9 @@ const ChecktwoCountry = ({ countrypicker, setSearchcountry, activeIndex, searchc
     )
 }
 
+/**
+ * Checkout modaltwo default export.
+ *
+ * @returns {*}
+ */
 export default ChecktwoCountry

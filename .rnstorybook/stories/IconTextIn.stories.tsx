@@ -1,15 +1,32 @@
+/**
+ * Icon text in.stories Storybook module. Defines stories and controls for component previews. Exported members: meta, Default.
+ */
+
 import type { Meta, StoryObj } from '@storybook/react';
 import CustomInputTouchable from '../../src/Components/IconTextIn';
 
+/**
+ * Meta value.
+ * @returns {*}
+ */
 const meta = {
   title: 'Components/IconTextIn',
   component: CustomInputTouchable,
 } satisfies Meta<typeof CustomInputTouchable>;
 
+/**
+ * Icon text in.stories default export.
+ *
+ * @returns {*}
+ */
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {
   args: {
     // Add default props here

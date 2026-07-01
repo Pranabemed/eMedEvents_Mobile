@@ -1,3 +1,7 @@
+/**
+ * Cart ticket reusable component module. Provides a React Native UI building block used across screens. Exported members: PayModalCart, onPress, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -19,7 +23,13 @@ import RNFS from "react-native-fs";
 const PayModalCart = ({ dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const [pdfsee, setPdfsee] = useState(false);
-    const onPress = async () => {
+        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
@@ -115,6 +125,10 @@ const PayModalCart = ({ dataPayemnt, maindata, isVisible, setPaymentcard, conten
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -182,4 +196,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Cart ticket default export.
+ *
+ * @returns {*}
+ */
 export default PayModalCart;

@@ -1,3 +1,7 @@
+/**
+ * Payment sub screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, PaymentSub, paymentPress, paymentwalletHandle, onBackPress.
+ */
+
 import { View, Platform, Alert, BackHandler } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -20,6 +24,10 @@ import MaskField from '../../Components/Mask';
 import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -54,7 +62,11 @@ const PaymentSub = (props) => {
         return () => unsubscribe();
     }, [isConnected]);
     console.log(props?.route?.params?.takeid, "props?.route?.params?.takeid", finalex, maskedEx);
-    const paymentPress = () => {
+        /**
+ * Payment press utility.
+ * @returns {void}
+ */
+const paymentPress = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
@@ -72,7 +84,13 @@ const PaymentSub = (props) => {
             console.log(apiFormattedDate);
         }
     }, [maskedEx])
-    function paymentwalletHandle() {
+        /**
+ * Paymentwallet handle utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function paymentwalletHandle() {
         const errors = {
             nameEmpty: 'Please enter cardholder name',
             nameInvalid: 'Please enter cardholder name correctly',
@@ -181,7 +199,11 @@ const PaymentSub = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             paymentPress();
             return true;
         };
@@ -335,4 +357,9 @@ const PaymentSub = (props) => {
     )
 }
 
+/**
+ * Payment sub default export.
+ *
+ * @returns {*}
+ */
 export default PaymentSub

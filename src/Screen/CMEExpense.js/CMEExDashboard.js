@@ -1,3 +1,7 @@
+/**
+ * Cmeex dashboard screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, CMEExDashboard, profileBack, toggleExpand, handleSelectAll, CMEItem, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, StyleSheet } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -14,6 +18,10 @@ import { CMECEListRequest } from '../../Redux/Reducers/CMECEExpensReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import LinearGradient from 'react-native-linear-gradient';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -30,7 +38,11 @@ const CMEExDashboard = (props) => {
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     // const CMEData = [{ id: 0, name: "CME/CE Activities" }, { id: 1, name: "Licensing and Certification Fees" }, { id: 2, name: "Professional Membership Fees" }, { id: 3, name: "Educational Materials" }, { id: 4, name: "Technology and Equipment" }]
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -74,17 +86,33 @@ const CMEExDashboard = (props) => {
                 break;
         }
     }
-    const toggleExpand = (index) => {
+        /**
+ * Toggle expand utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const toggleExpand = (index) => {
         const newStates = [...expandedStatescheck];
         newStates[index] = !newStates[index];
         setExpandedStatescheck(newStates);
     };
-    const handleSelectAll = () => {
+        /**
+ * Handles select all.
+ * @returns {void}
+ */
+const handleSelectAll = () => {
         setSocheck(!socheck);
         const newStates = expandedStatescheck.map(() => !socheck);
         setExpandedStatescheck(newStates);
     };
-    const CMEItem = ({ item, index }) => {
+        /**
+ * Cmeitem component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const CMEItem = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                 <View style={{
@@ -265,8 +293,17 @@ const CMEExDashboard = (props) => {
     )
 }
 
+/**
+ * Cmeex dashboard default export.
+ *
+ * @returns {*}
+ */
 export default CMEExDashboard
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     button: {
         height:40,

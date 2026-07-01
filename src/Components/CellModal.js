@@ -1,3 +1,7 @@
+/**
+ * Cell modal reusable component module. Provides a React Native UI building block used across screens. Exported members: CellModal, resetToTabHome, handleDone, styles.
+ */
+
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, InteractionManager } from 'react-native';
 import Modal from 'react-native-modal';
@@ -24,7 +28,11 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
         }
     }, [isVisible]);
 
-    const resetToTabHome = () => {
+        /**
+ * Reset to tab home utility.
+ * @returns {void}
+ */
+const resetToTabHome = () => {
         navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -33,7 +41,13 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
         );
     };
 
-    const handleDone = async () => {
+        /**
+ * Handles done.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleDone = async () => {
         if (pressed.current) return;
         pressed.current = true;
 
@@ -113,6 +127,10 @@ const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMer
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -180,4 +198,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Cell modal default export.
+ *
+ * @returns {*}
+ */
 export default CellModal;

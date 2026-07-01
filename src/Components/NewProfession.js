@@ -1,3 +1,7 @@
+/**
+ * New profession reusable component module. Provides a React Native UI building block used across screens. Exported members: status, normalizeProfessionHandle, token_handle, dashBoarData, restOfProfession, stateTake, stateDashboardData, stateReport.
+ */
+
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
@@ -23,12 +27,22 @@ import RestProfession from './RestProfession';
  */
 let status = "";
 
+/**
+ * Normalizes profession handle.
+ * @param {*} professionHandle - Input value.
+ * @returns {*}
+ */
 const normalizeProfessionHandle = (professionHandle) =>
     String(professionHandle || '')
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '-');
 
+/**
+ * New profession default export.
+ *
+ * @returns {*}
+ */
 export default function NewProfession({ finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const dispatch = useDispatch();
     const {
@@ -51,7 +65,11 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
     const lastRequestedProfessionRef = useRef('');
     console.log(fulldashbaord, "fulldashbaord====")
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
                 if (loginHandle) {
@@ -65,7 +83,11 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
             console.log(error);
         }
     }, [isFocus]);
-    const dashBoarData = () => {
+        /**
+ * Dash boar data utility.
+ * @returns {void}
+ */
+const dashBoarData = () => {
         connectionrequest()
             .then(() => {
                 dispatch(dashboardRequest({}))
@@ -81,7 +103,11 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
         AuthReducer?.loginResponse?.user?.profession ||
         finalProfessionmain?.profession
     );
-    const restOfProfession = () => {
+        /**
+ * Rest of profession utility.
+ * @returns {void}
+ */
+const restOfProfession = () => {
         const handleProf = resolvedProfessionHandle;
         if (!handleProf) return;
         let obj =
@@ -116,7 +142,13 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
                 showErrorAlert("Please connect to internet", err);
             });
     }
-    const stateTake = (toklen, anoth) => {
+        /**
+ * State take utility.
+ * @param {*} toklen - Input value.
+ * @param {*} anoth - Input value.
+ * @returns {void}
+ */
+const stateTake = (toklen, anoth) => {
         let obj = {
             "state": toklen ? toklen?.length : 0,
             "board": anoth ? anoth?.length : 0
@@ -201,7 +233,12 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
         lastRequestedProfessionRef.current = resolvedProfessionHandle;
         restOfProfession();
     }, [isFocus, resolvedProfessionHandle])
-    const stateDashboardData = (id) => {
+        /**
+ * State dashboard data utility.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateDashboardData = (id) => {
         let obj = {
             "state_id": id
         }
@@ -211,7 +248,12 @@ export default function NewProfession({ finalProfessionmain, setPrimeadd, enable
             })
             .catch(err => { showErrorAlert("Please connect to internet", err) })
     }
-    const stateReport = (did) => {
+        /**
+ * State report utility.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const stateReport = (did) => {
         let obj = {
             "state_id": did
         }

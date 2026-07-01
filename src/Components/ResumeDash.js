@@ -1,3 +1,7 @@
+/**
+ * Resume dash reusable component module. Provides a React Native UI building block used across screens. Exported members: ResumeDash, handleUrl, titlhandleUrl, fullAction, handleLinkst, showPDF, openFileViewerst, cmehit, handlePress, styles.
+ */
+
 import { View, Text, TouchableOpacity, Image, StyleSheet, FlatList } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native';
@@ -37,21 +41,35 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     const Fulldata = (needReview == 1 && certificate) ? threeDotData :
         (needReview == 1 && !certificate) ? duplicateDataReview :
             (needReview == 0 && certificate) ? duplicateData : null;
-    const handleUrl = () => {
+        /**
+ * Handles url.
+ * @returns {void}
+ */
+const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: addit } })
         }
     }
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, detailpage_url: urltitle, creditData: addit } })
         }
     }
-    const fullAction = (dataItem) => {
+        /**
+ * Full action utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
         if (dataItem?.current_activity_api == "activitysession") {
@@ -66,9 +84,20 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: addit } })
         }
     }
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
@@ -94,7 +123,13 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
     };
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     setTimeout(async () => {
                         await FileViewer.open(pdfUrist);
@@ -107,7 +142,11 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
             openFileViewerst();
         }
     }, [pdfUrist]);
-    const cmehit = () => {
+        /**
+ * Cmehit utility.
+ * @returns {*}
+ */
+const cmehit = () => {
         if (allProfTake && item?.display_cme) {
             return (
                 <View>
@@ -321,7 +360,11 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
                             keyExtractor={item => item.id.toString()}
                             data={Fulldata}
                             renderItem={({ item }) => {
-                                const handlePress = () => {
+                                                                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                     setModalview(false);
                                     if (item?.id === 1) {
                                         if (certificate) {
@@ -359,6 +402,10 @@ const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
 
     );
 };
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,
@@ -378,4 +425,9 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.InterMedium
     },
 })
+/**
+ * Resume dash default export.
+ *
+ * @returns {*}
+ */
 export default ResumeDash

@@ -1,3 +1,7 @@
+/**
+ * Analytics utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: SCREEN_NAME_MAP, CURRENT_SCREEN, setCurrentScreen, getCurrentScreenName, resolveAnalyticsScreenName, getCountryFromIP, trackEvent, trackScreen.
+ */
+
 // analyticsTracker.js
 
 import analytics from '@react-native-firebase/analytics';
@@ -15,6 +19,10 @@ import { getPublicIP } from './IPServer';
 // Screens NOT listed here will NOT send a screen_view_log analytics event.
 // They will still receive the default Firebase automatic screen tracking.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Screen name map constant.
+ * @returns {Object}
+ */
 const SCREEN_NAME_MAP = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   Login: 'Sign In',
@@ -101,19 +109,37 @@ const SCREEN_NAME_MAP = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Store current screen (raw route name set by navigator)
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Current screen constant.
+ * @returns {string}
+ */
 let CURRENT_SCREEN = 'unknown';
 
 // 👉 Called by StackNav's onStateChange
-export const setCurrentScreen = (screenName) => {
+export /**
+ * Set current screen utility helper.
+ * @param {*} screenName - Input value.
+ * @returns {void}
+ */
+const setCurrentScreen = (screenName) => {
   CURRENT_SCREEN = screenName;
 };
 
-export const getCurrentScreenName = () => CURRENT_SCREEN;
+export /**
+ * Get current screen name utility helper.
+ * @returns {*}
+ */
+const getCurrentScreenName = () => CURRENT_SCREEN;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: resolve the analytics-friendly name from the SCREEN_NAME_MAP.
 // Returns null if the screen has no mapping (should NOT log analytics event).
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Resolve analytics screen name utility helper.
+ * @param {*} routeName - Input value.
+ * @returns {*}
+ */
 const resolveAnalyticsScreenName = (routeName) => {
   return SCREEN_NAME_MAP[routeName] ?? null;
 };
@@ -121,6 +147,13 @@ const resolveAnalyticsScreenName = (routeName) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // IP Geo-lookup fallback
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Get country from ip utility helper.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
 const getCountryFromIP = async (ip) => {
   try {
     const res = await fetch(`https://ipinfo.io/${ip}/json`);
@@ -139,7 +172,15 @@ const getCountryFromIP = async (ip) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 👉 Generic event tracker — sends any custom Firebase event
 // ─────────────────────────────────────────────────────────────────────────────
-export const trackEvent = async (eventName, additionalParams = {}) => {
+export /**
+ * Track event utility helper.
+ *
+ * @async
+ * @param {*} eventName - Input value.
+ * @param {Object} additionalParams - Input value.
+ * @returns {Promise<*>}
+ */
+const trackEvent = async (eventName, additionalParams = {}) => {
   try {
     const state = Store.getState();
     const AuthReducer = state.AuthReducer;
@@ -192,7 +233,15 @@ export const trackEvent = async (eventName, additionalParams = {}) => {
 //    Only screens present in SCREEN_NAME_MAP will fire analytics events.
 //    The resolved human-readable name is used for Firebase logScreenView.
 // ─────────────────────────────────────────────────────────────────────────────
-export const trackScreen = async (routeName, screenClassOverride) => {
+export /**
+ * Track screen utility helper.
+ *
+ * @async
+ * @param {*} routeName - Input value.
+ * @param {*} screenClassOverride - Input value.
+ * @returns {Promise<*>}
+ */
+const trackScreen = async (routeName, screenClassOverride) => {
   try {
     // Resolve the analytics display name from the map
     const analyticsName = resolveAnalyticsScreenName(routeName);

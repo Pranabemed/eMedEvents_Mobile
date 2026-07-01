@@ -1,3 +1,7 @@
+/**
+ * Nonphysicianprofile reusable component module. Provides a React Native UI building block used across screens. Exported members: Nonphysicianprofile, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Pressable, Platform, Dimensions, StyleSheet } from 'react-native'
 import React, { useRef, useState } from 'react'
 import Fonts from '../Themes/Fonts';
@@ -227,7 +231,16 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
     )
 }
 
+/**
+ * Nonphysicianprofile default export.
+ *
+ * @returns {*}
+ */
 export default Nonphysicianprofile
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     paginationContainer: {
         flexDirection: 'row',

@@ -5,6 +5,13 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
 let getItem = state => state.AuthReducer;
+/**
+ * Executes the webcastSearchSaga saga.
+ *
+ * @function webcastSearchSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* webcastSearchSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -24,6 +31,13 @@ export function* webcastSearchSaga(action) {
   }
 }
 
+/**
+ * Executes the webcastDetailsSaga saga.
+ *
+ * @function webcastDetailsSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* webcastDetailsSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -45,6 +59,13 @@ export function* webcastDetailsSaga(action) {
     yield put(webcastDeatilsFailure(error));
   }
 }
+/**
+ * Executes the webcastAllSaga saga.
+ *
+ * @function webcastAllSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* webcastAllSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -63,6 +84,13 @@ export function* webcastAllSaga(action) {
     yield put(webcastviewallFailure(error));
   }
 }
+/**
+ * Executes the webcastStateSaga saga.
+ *
+ * @function webcastStateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* webcastStateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -81,6 +109,13 @@ export function* webcastStateSaga(action) {
     yield put(webcastStateFailure(error));
   }
 }
+/**
+ * Executes the saveTicketSaga saga.
+ *
+ * @function saveTicketSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* saveTicketSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -101,6 +136,13 @@ export function* saveTicketSaga(action) {
     yield put(saveTicketFailure(error));
   }
 }
+/**
+ * Executes the saveTicketCartSaga saga.
+ *
+ * @function saveTicketCartSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* saveTicketCartSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -121,6 +163,13 @@ export function* saveTicketCartSaga(action) {
     yield put(saveTicketCartFailure(error));
   }
 }
+/**
+ * Executes the saveTicketAddtoCartSaga saga.
+ *
+ * @function saveTicketAddtoCartSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* saveTicketAddtoCartSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -141,6 +190,13 @@ export function* saveTicketAddtoCartSaga(action) {
     yield put(saveTicketAddFailure(error));
   }
 }
+/**
+ * Executes the checkoutTicketSaga saga.
+ *
+ * @function checkoutTicketSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* checkoutTicketSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -161,6 +217,13 @@ export function* checkoutTicketSaga(action) {
     yield put(checkoutTicketFailure(error));
   }
 }
+/**
+ * Executes the saveTicketInpersonSaga saga.
+ *
+ * @function saveTicketInpersonSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* saveTicketInpersonSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -181,6 +244,13 @@ export function* saveTicketInpersonSaga(action) {
     yield put(saveTicketInpersonFailure(error));
   }
 }
+/**
+ * Executes the saveRegistSaga saga.
+ *
+ * @function saveRegistSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* saveRegistSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -201,6 +271,13 @@ export function* saveRegistSaga(action) {
     yield put(saveRegistFailure(error));
   }
 }
+/**
+ * Executes the webcastPaymentSaga saga.
+ *
+ * @function webcastPaymentSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* webcastPaymentSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);
@@ -221,6 +298,13 @@ export function* webcastPaymentSaga(action) {
     yield put(webcastPaymentFailure(error));
   }
 }
+/**
+ * Executes the StatusPaymentSaga saga.
+ *
+ * @function StatusPaymentSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* StatusPaymentSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -239,6 +323,13 @@ export function* StatusPaymentSaga(action) {
     yield put(StatusPaymentFailure(error));
   }
 }
+/**
+ * Executes the PaymentCheckSaga saga.
+ *
+ * @function PaymentCheckSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* PaymentCheckSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -257,6 +348,13 @@ export function* PaymentCheckSaga(action) {
     yield put(PaymentCheckFailure(error));
   }
 }
+/**
+ * Executes the addtoCartWebcastSaga saga.
+ *
+ * @function addtoCartWebcastSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* addtoCartWebcastSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -276,6 +374,13 @@ export function* addtoCartWebcastSaga(action) {
     yield put(addtoCartWebcastFailure(error));
   }
 }
+/**
+ * Executes the cartCountWebcastSaga saga.
+ *
+ * @function cartCountWebcastSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cartCountWebcastSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -294,6 +399,13 @@ export function* cartCountWebcastSaga(action) {
     yield put(cartcountWebcastFailure(error));
   }
 }
+/**
+ * Executes the cartDetailsWebcastSaga saga.
+ *
+ * @function cartDetailsWebcastSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cartDetailsWebcastSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -312,6 +424,13 @@ export function* cartDetailsWebcastSaga(action) {
     yield put(cartdetailsWebcastFailure(error));
   }
 }
+/**
+ * Executes the cartdeleteWebcastSaga saga.
+ *
+ * @function cartdeleteWebcastSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cartdeleteWebcastSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -330,6 +449,13 @@ export function* cartdeleteWebcastSaga(action) {
     yield put(cartdeleteWebcastFailure(error));
   }
 }
+/**
+ * Executes the couponapplySaga saga.
+ *
+ * @function couponapplySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* couponapplySaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -348,6 +474,13 @@ export function* couponapplySaga(action) {
     yield put(couponWebcastFailure(error));
   }
 }
+/**
+ * Executes the cancelcouponSaga saga.
+ *
+ * @function cancelcouponSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cancelcouponSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -366,6 +499,13 @@ export function* cancelcouponSaga(action) {
     yield put(cancelcouponFailure(error));
   }
 }
+/**
+ * Executes the cartCheckoutSaga saga.
+ *
+ * @function cartCheckoutSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cartCheckoutSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -384,6 +524,13 @@ export function* cartCheckoutSaga(action) {
     yield put(cartCheckoutFailure(error));
   }
 }
+/**
+ * Executes the cartPaymentSaga saga.
+ *
+ * @function cartPaymentSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cartPaymentSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -402,6 +549,13 @@ export function* cartPaymentSaga(action) {
     yield put(cartPaymentFailure(error));
   }
 }
+/**
+ * Executes the TransEmailCheckSaga saga.
+ *
+ * @function TransEmailCheckSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* TransEmailCheckSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -420,6 +574,13 @@ export function* TransEmailCheckSaga(action) {
     yield put(TransemailcheckFailure(error));
   }
 }
+/**
+ * Executes the walletCheckSaga saga.
+ *
+ * @function walletCheckSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* walletCheckSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -438,6 +599,13 @@ export function* walletCheckSaga(action) {
     yield put(walletCheckFailure(error));
   }
 }
+/**
+ * Executes the FreeCheckSaga saga.
+ *
+ * @function FreeCheckSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* FreeCheckSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -456,6 +624,13 @@ export function* FreeCheckSaga(action) {
     yield put(FreeTransFailure(error));
   }
 }
+/**
+ * Executes the FreeCartSaga saga.
+ *
+ * @function FreeCartSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* FreeCartSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -474,6 +649,13 @@ export function* FreeCartSaga(action) {
     yield put(FreeCartFailure(error));
   }
 }
+/**
+ * Executes the PrimePayemntSaga saga.
+ *
+ * @function PrimePayemntSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* PrimePayemntSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -492,6 +674,13 @@ export function* PrimePayemntSaga(action) {
     yield put(PrimePaymentFailure(error));
   }
 }
+/**
+ * Executes the PrimeCheckSaga saga.
+ *
+ * @function PrimeCheckSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* PrimeCheckSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -510,6 +699,13 @@ export function* PrimeCheckSaga(action) {
     yield put(PrimeCheckFailure(error));
   }
 }
+/**
+ * Executes the RegisterIntPrSaga saga.
+ *
+ * @function RegisterIntPrSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* RegisterIntPrSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -528,6 +724,13 @@ export function* RegisterIntPrSaga(action) {
     yield put(RegisterIntFailure(error));
   }
 }
+/**
+ * Executes the refIDSaga saga.
+ *
+ * @function refIDSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* refIDSaga(action) {
   const ipAddress = getPublicIP();
   let items = yield select(getItem);

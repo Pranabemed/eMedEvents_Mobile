@@ -1,15 +1,32 @@
+/**
+ * Dropdown input.stories Storybook module. Defines stories and controls for component previews. Exported members: meta, Default.
+ */
+
 import type { Meta, StoryObj } from '@storybook/react';
 import onChangeText from '../../src/Components/DropdownInput';
 
+/**
+ * Meta value.
+ * @returns {*}
+ */
 const meta = {
   title: 'Components/DropdownInput',
   component: onChangeText,
 } satisfies Meta<typeof onChangeText>;
 
+/**
+ * Dropdown input.stories default export.
+ *
+ * @returns {*}
+ */
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {
   args: {
     // Add default props here

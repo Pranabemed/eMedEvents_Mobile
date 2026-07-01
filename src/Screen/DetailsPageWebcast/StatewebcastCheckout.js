@@ -1,3 +1,7 @@
+/**
+ * Statewebcast checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, StatewebcastCheckout, fullAction, formatPrice, formatNumberWithCommas.
+ */
+
 import { View, Text, Linking, useWindowDimensions, Alert } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -20,6 +24,22 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Statewebcast checkout component.
+ * @param {Object} props - Input object.
+ * @param {*} props.refID - Nested property value.
+ * @param {*} props.takePrice - Nested property value.
+ * @param {*} props.urlneed - Nested property value.
+ * @param {*} props.creditData - Nested property value.
+ * @param {*} props.setAddtocartload - Nested property value.
+ * @param {*} props.isBundleAddToCart - Nested property value.
+ * @param {*} props.bundle_conference_id - Nested property value.
+ * @param {*} props.conferenceIDs - Nested property value.
+ * @param {*} props.webcastdeatils - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @param {*} props.guestOrigin - Nested property value.
+ * @returns {JSX.Element}
+ */
 const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, guestOrigin }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;
   const AuthReducer = useSelector(state => state.AuthReducer);
@@ -72,7 +92,12 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   console.log(webcastdeatils, creditData, "webcastdeatils=====11", urlneed);
   const { width } = useWindowDimensions();
   const dispatch = useDispatch();
-  const fullAction = (dataItem) => {
+    /**
+ * Full action utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullAction = (dataItem) => {
     if (dataItem?.current_activity_api == "activitysession") {
       navigation.navigate("VideoComponent", { RoleData: videoNavigationData(dataItem) });
     } else if (dataItem?.current_activity_api == "introduction") {
@@ -81,7 +106,12 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
       navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.conferenceId } })
     }
   }
-  function formatPrice(price) {
+    /**
+ * Formats price.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function formatPrice(price) {
     let num = parseFloat(price);
     if (isNaN(num)) {
       return price;
@@ -110,7 +140,12 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
         showErrorAlert("Please connect to internet")
       })
   }, [bundle_conference_id, conferenceIDs, dispatch]);
-  const formatNumberWithCommas = (value) => {
+    /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
     if (value == null || value == undefined) return '';
     const stringValue = value.toString().replace(/,/g, '');
     const parts = stringValue.split('.');
@@ -378,7 +413,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                     <>
                       <Buttons
                         onPress={() => {
-                          Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Close", onPress: () => { "demi" }, style: "default" }])
+                          Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Close",                           /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { "demi" }, style: "default" }])
                         }}
                         height={normalize(45)}
                         width={normalize(140)}
@@ -449,7 +488,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
                           webcastdeatils.interested_allow === 0 ? (
                           <Buttons
                             onPress={() => {
-                              Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Cancel", onPress: () => { "demi" }, style: "default" }])
+                              Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Cancel",                               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { "demi" }, style: "default" }])
                             }}
                             height={normalize(45)}
                             width={normalize(140)}
@@ -605,4 +648,9 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   )
 }
 
+/**
+ * Statewebcast checkout default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastCheckout

@@ -1,3 +1,7 @@
+/**
+ * Change mail screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ChangeMail, handleChangeEmail, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, Animated, Easing, Image } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -13,6 +17,10 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -29,7 +37,11 @@ const ChangeMail = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
 console.log(props?.route?.params,"heollll==========",AuthReducer)
-    const handleChangeEmail = () => {
+        /**
+ * Handles change email.
+ * @returns {void}
+ */
+const handleChangeEmail = () => {
         const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
 
         if (!email) {
@@ -175,6 +187,10 @@ console.log(props?.route?.params,"heollll==========",AuthReducer)
     );
 };
 
+/**
+ * Styles object.
+ * @returns {Object}
+ */
 const styles = {
     headerContainer: {
         justifyContent: "center",
@@ -212,4 +228,9 @@ const styles = {
     },
 };
 
+/**
+ * Change mail default export.
+ *
+ * @returns {*}
+ */
 export default ChangeMail;

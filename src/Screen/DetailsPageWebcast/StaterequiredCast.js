@@ -1,3 +1,7 @@
+/**
+ * Staterequired cast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StateRequiredCast, customRound.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import StarRating from 'react-native-star-rating-widget';
@@ -13,7 +17,12 @@ import normalize from '../../Utils/Helpers/Dimen';
  * @returns {JSX.Element}
  */
 const StateRequiredCast = ({ tooltip, item, index, setAllSpecial, setTootip, handleUrl }) => {
-    function customRound(price) {
+        /**
+ * Custom round helper.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function customRound(price) {
         price = price.replace(/[^0-9.]/g, '');
         price = Number(price);
         if (isNaN(price)) return NaN;
@@ -114,4 +123,9 @@ const StateRequiredCast = ({ tooltip, item, index, setAllSpecial, setTootip, han
         </View>
     )
 }
+/**
+ * Staterequired cast default export.
+ *
+ * @returns {*}
+ */
 export default StateRequiredCast

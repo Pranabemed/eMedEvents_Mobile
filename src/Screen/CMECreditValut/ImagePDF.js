@@ -1,3 +1,7 @@
+/**
+ * Image pdf screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ImagePDF.
+ */
+
 import { View, Text, Image } from 'react-native'
 import React from 'react'
 
@@ -25,4 +29,9 @@ const ImagePDF = (props) => {
     )
 }
 
+/**
+ * Image pdf default export.
+ *
+ * @returns {*}
+ */
 export default ImagePDF

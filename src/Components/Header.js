@@ -1,3 +1,7 @@
+/**
+ * Header reusable component module. Provides a React Native UI building block used across screens.
+ */
+
 import React from 'react';
 import { Platform, TouchableOpacity, View } from 'react-native';
 import PropTypes from 'prop-types'; 
@@ -8,9 +12,27 @@ import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 /**
  * Reusable Header component.
  * 
- * @component
+ * **Purpose:** Provides a consistent header for screens, typically including a back button or left/right actions.
+ * 
+ * **Parameters:**
  * @param {Object} props - The component props.
- * @returns {JSX.Element}
+ * @param {Function} props.onPress - Callback executed when the header (or back button) is pressed.
+ * @param {string} props.justifyContent - Flexbox justify-content for the header layout.
+ * @param {string} props.tintColor - Color for the back arrow icon.
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} A React Native TouchableOpacity containing a view with an arrow icon.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <Header onPress={() => navigation.goBack()} tintColor="#333" />
+ * ```
+ * 
+ * **Notes:**
+ * - The component adapts its layout depending on whether the platform is iOS or Android.
+ * - Uses `MaterialIcons` for the back arrow.
  */
 
 export default function Header(props) {

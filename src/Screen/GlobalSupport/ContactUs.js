@@ -1,3 +1,7 @@
+/**
+ * Contact us screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, status, status1, ContactUs, contactUsPage, countryReq, specaillized, PraticingState, handleSearch, handleCountry, handlePratice, handleCity, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, cityReq, normalizeCountryName, getCurrentLocation, getComponent, handleCountrySet, handleStateshows, handlecityShows, onBackPress, submitContact, formatPhoneNumber.
+ */
+
 import { View, Text, Platform, TouchableOpacity, ScrollView, Alert, FlatList, PermissionsAndroid, Linking } from 'react-native'
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -46,11 +50,28 @@ import CustomInputTouchableX from '../Profile/CustomInputTouchableX'
 
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 // Geocoder.init(GOOGLE_API_KEY);
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Contact us component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const ContactUs = (props) => {
     const isFoucus = useIsFocused();
-    const contactUsPage = () => {
+        /**
+ * Contact us page utility.
+ * @returns {void}
+ */
+const contactUsPage = () => {
         props.navigation.goBack();
     }
     const conf_Type = [{ id: 0, name: "In-Person" }, { id: 1, name: "Virtual" }, { id: 2, name: "In-Person & Virtual" }];
@@ -106,7 +127,11 @@ const ContactUs = (props) => {
     const [newmob, setNewmob] = useState("");
     const [mobileHd, setMobileHd] = useState("");
     const [speids, setSpeids] = useState("");
-    const countryReq = () => {
+        /**
+ * Country req utility.
+ * @returns {void}
+ */
+const countryReq = () => {
         connectionrequest()
             .then(() => {
                 dispatch(countryRequest())
@@ -119,7 +144,11 @@ const ContactUs = (props) => {
         setConfformat(conf_Type?.[0]?.name);
     }, [])
 
-    const specaillized = () => {
+        /**
+ * Specaillized utility.
+ * @returns {void}
+ */
+const specaillized = () => {
         const obj = { "master": "" }
         connectionrequest()
             .then(() => {
@@ -134,7 +163,12 @@ const ContactUs = (props) => {
         specaillized();
         countryReq()
     }, [])
-    const PraticingState = (index) => {
+        /**
+ * Praticing state component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index)); // Dispatch the API call with the country_id
@@ -144,27 +178,53 @@ const ContactUs = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     };
-    const handleSearch = (text) => {
+        /**
+ * Handles search.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-    const handleCountry = (text) => {
+        /**
+ * Handles country.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCountry = (text) => {
         searchCountryNameFunction(text, countryshow, setCountryall, setSearchcountry, (countryfil, searchcount) => {
             console.log('countryfil Data:', countryfil, 'Search Text:', searchcount);
         })
     }
-    const handlePratice = (text) => {
+        /**
+ * Handles pratice.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-    const handleCity = (text) => {
+        /**
+ * Handles city.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
     }
-    const handleSpecialitySelect = (selectedItems, formData) => {
+        /**
+ * Handles speciality select.
+ * @param {*} selectedItems - Input value.
+ * @param {*} formData - Input value.
+ * @returns {void}
+ */
+const handleSpecialitySelect = (selectedItems, formData) => {
         // Create a copy of the formData to avoid direct mutation
         const updatedForm = [...formData];
         // Extract selected names and IDs
@@ -183,7 +243,13 @@ const ContactUs = (props) => {
         setSelectedSpecialities([]);
     };
 
-    const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
+        /**
+ * Handles speciality change.
+ * @param {*} selectedSpecialities - Input value.
+ * @param {*} selectedIds - Input value.
+ * @returns {void}
+ */
+const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
         const uniqueIds = [...new Set(selectedIds)];
@@ -195,7 +261,12 @@ const ContactUs = (props) => {
         };
         setFormData(updatedFormData); // Update state
     };
-    const removeSpeciality = (specialityId) => {
+        /**
+ * Remove speciality utility.
+ * @param {*} specialityId - Input value.
+ * @returns {void}
+ */
+const removeSpeciality = (specialityId) => {
         const currentSpecialityIds = formData?.speciality_ids || [];
         const currentSpecialities = formData?.speciality?.split(', ') || [];
         const updatedSpecialityIds = currentSpecialityIds.filter(id => id !== specialityId);
@@ -230,7 +301,12 @@ const ContactUs = (props) => {
             memoizedSetFormData(initialFormData);
         }
     }, [speciality, speciality_id, memoizedSetFormData]);
-    const cityReq = (itid) => {
+        /**
+ * City req utility.
+ * @param {*} itid - Input value.
+ * @returns {void}
+ */
+const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -240,7 +316,12 @@ const ContactUs = (props) => {
             });
     }
 
-    const normalizeCountryName = (country) => {
+        /**
+ * Normalizes country name.
+ * @param {number} country - Input value.
+ * @returns {*}
+ */
+const normalizeCountryName = (country) => {
         // Normalize country names to align with entries in countryall
         const countryMap = {
             "United States": "United States of America",
@@ -301,7 +382,13 @@ const ContactUs = (props) => {
     useEffect(() => {
         getCurrentLocation();
     }, [countryall, countryshow])
-    const getCurrentLocation = async () => {
+        /**
+ * Returns current location.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const getCurrentLocation = async () => {
         try {
             if (Platform.OS === 'android') {
                 const hasPermission = await PermissionsAndroid.check(
@@ -381,7 +468,12 @@ const ContactUs = (props) => {
                 const address = geoData.results[0];
                 const components = address.address_components;
 
-                const getComponent = (types) => {
+                                /**
+ * Returns component.
+ * @param {*} types - Input value.
+ * @returns {*}
+ */
+const getComponent = (types) => {
                     const component = components.find(c => types.some(t => c.types.includes(t)));
                     return component?.long_name || '';
                 };
@@ -431,7 +523,11 @@ const ContactUs = (props) => {
                         [
                             {
                                 text: 'Open Settings',
-                                onPress: () => Linking.openSettings()
+                                                                /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => Linking.openSettings()
                             },
                             { text: 'Cancel' }
                         ]
@@ -459,14 +555,23 @@ const ContactUs = (props) => {
             if (error.code == 3) { // TIMEOUT
                 setTimeout(() => {
                     Alert.alert('Retry?', 'Would you like to try location detection again?', [
-                        { text: 'Yes', onPress: () => getCurrentLocation() },
+                        { text: 'Yes',                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => getCurrentLocation() },
                         { text: 'No' }
                     ]);
                 }, 1000);
             }
         }
     };
-    const handleCountrySet = (didi) => {
+        /**
+ * Handles country set.
+ * @param {*} didi - Input value.
+ * @returns {void}
+ */
+const handleCountrySet = (didi) => {
         PraticingState(didi?.id);
         setPhoneCountryCode(didi?.callingcode);
         setCountryCode_cont(didi?.country_code)
@@ -480,13 +585,23 @@ const ContactUs = (props) => {
             setMobileHd(formattedNumber);
         }
     };
-    const handleStateshows = (ctid) => {
+        /**
+ * Handles stateshows.
+ * @param {*} ctid - Input value.
+ * @returns {void}
+ */
+const handleStateshows = (ctid) => {
         cityReq(ctid?.id)
         setState_cont(ctid?.name);
         cityRequest(ctid?.id);
         setState_id(ctid?.id)
     }
-    const handlecityShows = (ctshows) => {
+        /**
+ * Handlecity shows utility.
+ * @param {*} ctshows - Input value.
+ * @returns {void}
+ */
+const handlecityShows = (ctshows) => {
         setCity_cont(ctshows?.name);
         setCity_id(ctshows?.id)
     }
@@ -525,7 +640,11 @@ const ContactUs = (props) => {
             }
         }
     }, [cityAll, citynew])
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
         Snackbar.show({
             text: 'The tentative date should be at least 30 days from now.',
             duration: Snackbar.LENGTH_LONG,
@@ -553,7 +672,11 @@ const ContactUs = (props) => {
         const fullDisable = organ_name && contact_name && !isButtonEnabled && !emailDetect && speaker_cont;
         setGetAcc(fullDisable);
     }, [organ_name, contact_name, isButtonEnabled, emailDetect, speaker_cont])
-    const submitContact = () => {
+        /**
+ * Submit contact utility.
+ * @returns {void}
+ */
+const submitContact = () => {
         let obj = {
             "speaker_id": props?.route?.params?.makeIt?.speaker_id,
             "specialties": formData && formData?.speciality,
@@ -598,7 +721,13 @@ const ContactUs = (props) => {
                 break;
         }
     }
-    const formatPhoneNumber = (input, isUSA = false) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @param {boolean} isUSA - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input, isUSA = false) => {
         if (isUSA) {
             // USA format: (XXX) XXX-XXXX
             const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -1166,4 +1295,9 @@ const ContactUs = (props) => {
     )
 }
 
+/**
+ * Contact us default export.
+ *
+ * @returns {*}
+ */
 export default ContactUs

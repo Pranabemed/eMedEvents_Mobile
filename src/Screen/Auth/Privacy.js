@@ -1,3 +1,7 @@
+/**
+ * Privacy screen module. Renders a React Native screen or a screen-scoped support component. Exported members: PrivacyPolicy, openEmail, openPhone, openFTC, openEDPS, PrvBack, styles.
+ */
+
 import React, { useLayoutEffect } from 'react';
 import { ScrollView, Text, StyleSheet, Linking, Platform, TouchableOpacity, View } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
@@ -15,22 +19,42 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const PrivacyPolicy = (props) => {
-    const openEmail = () => {
+        /**
+ * Open email utility.
+ * @returns {void}
+ */
+const openEmail = () => {
         Linking.openURL('mailto:legal@emedevents.com');
     };
 
-    const openPhone = () => {
+        /**
+ * Open phone utility.
+ * @returns {void}
+ */
+const openPhone = () => {
         Linking.openURL('tel:1-800-828-2059');
     };
 
-    const openFTC = () => {
+        /**
+ * Open ftc utility.
+ * @returns {void}
+ */
+const openFTC = () => {
         Linking.openURL('https://www.emedevents.com/');
     };
 
-    const openEDPS = () => {
+        /**
+ * Open edps utility.
+ * @returns {void}
+ */
+const openEDPS = () => {
         Linking.openURL('https://edps.europa.eu/data-protection/our-role-supervisor/complaints_en');
     };
-    const PrvBack = () => {
+        /**
+ * Prv back component.
+ * @returns {void}
+ */
+const PrvBack = () => {
         props.navigation.goBack();
     }
     useLayoutEffect(() => {
@@ -153,6 +177,10 @@ const PrivacyPolicy = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -228,4 +256,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Privacy default export.
+ *
+ * @returns {*}
+ */
 export default PrivacyPolicy;

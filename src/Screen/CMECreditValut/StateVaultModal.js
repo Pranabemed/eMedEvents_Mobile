@@ -1,3 +1,7 @@
+/**
+ * State vault modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StateVaultModal, weekFilterProfession.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -25,7 +29,14 @@ const StateVaultModal = ({ vaultState, clisttopic, setStatepick, searchTopicName
     
             return () => clearTimeout(timeout);
         }, []);
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
                 <TouchableOpacity
@@ -147,4 +158,9 @@ const StateVaultModal = ({ vaultState, clisttopic, setStatepick, searchTopicName
     )
 }
 
+/**
+ * State vault modal default export.
+ *
+ * @returns {*}
+ */
 export default StateVaultModal

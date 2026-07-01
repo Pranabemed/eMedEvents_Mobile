@@ -1,3 +1,7 @@
+/**
+ * Register modal reusable component module. Provides a React Native UI building block used across screens. Exported members: GUEST_PROMPT_KEYS, RegisterModal, handleDismiss, styles.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
@@ -23,8 +27,22 @@ const GUEST_PROMPT_KEYS = [
     'CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION',
 ];
 
+/**
+ * Register modal component.
+ * @param {Object} props - Input object.
+ * @param {*} props.isVisible - Nested property value.
+ * @param {*} props.onClose - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @returns {JSX.Element}
+ */
 const RegisterModal = ({ isVisible, onClose, navigation }) => {
-    const handleDismiss = async () => {
+        /**
+ * Handles dismiss.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleDismiss = async () => {
         try {
             await AsyncStorage.multiRemove(GUEST_PROMPT_KEYS);
             const token = await AsyncStorage.getItem(constants.TOKEN);
@@ -74,6 +92,10 @@ const RegisterModal = ({ isVisible, onClose, navigation }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -120,4 +142,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Register modal default export.
+ *
+ * @returns {*}
+ */
 export default RegisterModal;

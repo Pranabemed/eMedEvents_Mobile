@@ -35,7 +35,12 @@ import {
  * Description: Guest user content data hook.
  * Purpose: Moves data derivation and section mapping out of the large UI component.
  */
-export const useGuestUserContentData = guest => {
+export /**
+ * Custom hook that manages guest user content data.
+ * @param {*} guest - Input value.
+ * @returns {Object}
+ */
+const useGuestUserContentData = guest => {
   const {
     navigation,
     homeData,
@@ -189,11 +194,20 @@ export const useGuestUserContentData = guest => {
       price: getPriceLabel(c),
       button: getText(c?.button, c?.buttonText, c?.button_text, c?.cta_text) || 'Register',
       detailpageUrl: getDetailPageUrl(c),
-      onPress: detailUrl => {
+            /**
+ * On press helper.
+ * @param {*} detailUrl - Input value.
+ * @returns {void}
+ */
+onPress: detailUrl => {
         const url = detailUrl || getDetailPageUrl(c);
         if (url) onFeaturedActivityPress?.(url);
       },
-      onOrganizerPress: () => {
+            /**
+ * On organizer press utility.
+ * @returns {void}
+ */
+onOrganizerPress: () => {
         const organizationUrl = getText(c?.organization_url, c?.organizer_url, c?.user_url);
         const slug = getDetailSlug(organizationUrl);
         if (slug) {
@@ -228,7 +242,12 @@ export const useGuestUserContentData = guest => {
         cmeLabel: getCmeLabel(c),
         price: getPriceLabel(c),
         detailpageUrl,
-        onPress: detailUrl => {
+                /**
+ * On press helper.
+ * @param {*} detailUrl - Input value.
+ * @returns {void}
+ */
+onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
             navigation.navigate('Statewebcast', {
@@ -263,7 +282,11 @@ export const useGuestUserContentData = guest => {
           : `${currencyPrefix}${rawPrice}`,
         buttonText: getText(c?.buttonText, c?.button_text, c?.button, c?.cta_text) || getHtmlButtonText(c) || 'Register Now',
         detailpageUrl,
-        onOrganizerPress: () => {
+                /**
+ * On organizer press utility.
+ * @returns {void}
+ */
+onOrganizerPress: () => {
           const slug = getDetailSlug(getText(c?.organization_url, c?.organizer_url, c?.user_url));
           if (slug) {
             navigation.navigate('SpeakerProfile', {
@@ -281,7 +304,12 @@ export const useGuestUserContentData = guest => {
             });
           }
         },
-        onPress: detailUrl => {
+                /**
+ * On press helper.
+ * @param {*} detailUrl - Input value.
+ * @returns {void}
+ */
+onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
             navigation.navigate('Statewebcast', {
@@ -307,7 +335,12 @@ export const useGuestUserContentData = guest => {
         price: getPriceLabel(c),
         buttonText: getText(c?.buttonText, c?.button_text, c?.button, c?.cta_text) || 'REGISTER NOW',
         detailpageUrl,
-        onPress: detailUrl => {
+                /**
+ * On press helper.
+ * @param {*} detailUrl - Input value.
+ * @returns {void}
+ */
+onPress: detailUrl => {
           const slug = getDetailSlug(detailUrl);
           if (slug) {
             navigation.navigate('Statewebcast', {

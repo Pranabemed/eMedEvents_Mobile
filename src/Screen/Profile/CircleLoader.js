@@ -1,3 +1,7 @@
+/**
+ * Circle loader screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, CircleLoader, token_handle_vault, getInitials, updatProfile, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Text, View, StyleSheet, Platform, ImageBackground, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Svg, { Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -25,7 +29,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Circle loader component.
+ * @param {Object} props - Input object.
+ * @param {*} props.allProfTake - Nested property value.
+ * @param {*} props.percentage - Nested property value.
+ * @param {*} props.mainData - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CircleLoader = ({allProfTake, percentage, mainData }) => {
     const size = 150;
     const strokeWidth = 7;
@@ -58,7 +74,11 @@ const CircleLoader = ({allProfTake, percentage, mainData }) => {
     const [finalProfession, setFinalProfession] = useState(null);
     const [alphaimg, setAlphaimg] = useState("");
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -90,7 +110,13 @@ const CircleLoader = ({allProfTake, percentage, mainData }) => {
 
         setAllProfession(profession);
     }, [AuthReducer, finalverifyvault, finalProfession]);
-    const getInitials = (firstname, lastname) => {
+        /**
+ * Returns initials.
+ * @param {*} firstname - Input value.
+ * @param {*} lastname - Input value.
+ * @returns {*}
+ */
+const getInitials = (firstname, lastname) => {
         const firstInitial = firstname ? firstname.charAt(0).toUpperCase() : "";
         const lastInitial = lastname ? lastname.charAt(0).toUpperCase() : "";
         return firstInitial + lastInitial;
@@ -103,7 +129,11 @@ const CircleLoader = ({allProfTake, percentage, mainData }) => {
             setAlphaimg(initials)
         }
     }, [mainData, allProfession])
-    const updatProfile = () => {
+        /**
+ * Updat profile utility.
+ * @returns {void}
+ */
+const updatProfile = () => {
         let obj = new FormData();
         obj.append("profile_picture", ProfilePicObj1);
         connectionrequest()
@@ -256,6 +286,10 @@ const CircleLoader = ({allProfTake, percentage, mainData }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
@@ -272,4 +306,9 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * Circle loader default export.
+ *
+ * @returns {*}
+ */
 export default CircleLoader;

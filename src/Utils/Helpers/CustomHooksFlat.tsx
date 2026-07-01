@@ -1,3 +1,7 @@
+/**
+ * Custom hooks flat utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: window, useCustomFlatListHook, onLayoutHeaderElement, onLayoutTopListElement, onLayoutTopStickyElement.
+ */
+
 import { useRef, useState } from "react";
 import {
   Animated,
@@ -21,9 +25,17 @@ type TUseCustomFlatListHook=[
   (event: LayoutChangeEvent) => void
 ]
 
+/**
+ * Window value.
+ * @returns {*}
+ */
 const window = Dimensions.get("window");
 
-export const useCustomFlatListHook = (): TUseCustomFlatListHook => {
+export /**
+ * Custom hook that manages custom flat list hook.
+ * @returns {Array}
+ */
+const useCustomFlatListHook = (): TUseCustomFlatListHook => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [heights, setHeights] = useState({
     header: 0,
@@ -73,15 +85,30 @@ export const useCustomFlatListHook = (): TUseCustomFlatListHook => {
     }
   };
 
-  const onLayoutHeaderElement = (event: LayoutChangeEvent): void => {
+    /**
+ * On layout header element utility helper.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onLayoutHeaderElement = (event: LayoutChangeEvent): void => {
     setHeights({ ...heights, header: event.nativeEvent.layout.height });
   };
 
-  const onLayoutTopListElement = (event: LayoutChangeEvent): void => {
+    /**
+ * On layout top list element utility helper.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onLayoutTopListElement = (event: LayoutChangeEvent): void => {
     setHeights({ ...heights, topList: event.nativeEvent.layout.height });
   };
 
-  const onLayoutTopStickyElement = (event: LayoutChangeEvent): void => {
+    /**
+ * On layout top sticky element utility helper.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const onLayoutTopStickyElement = (event: LayoutChangeEvent): void => {
     setHeights({ ...heights, sticky: event.nativeEvent.layout.height });
   };
 

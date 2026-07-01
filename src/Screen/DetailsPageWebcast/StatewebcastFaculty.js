@@ -1,3 +1,7 @@
+/**
+ * Statewebcast faculty screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastFaculty.
+ */
+
 import { View, Text, Platform } from 'react-native'
 import React from 'react'
 import Carousel, { Pagination } from 'react-native-snap-carousel'
@@ -65,4 +69,9 @@ const StatewebcastFaculty = ({webcastdeatils,windowWidth,windowHeight,handleSnap
   )
 }
 
+/**
+ * Statewebcast faculty default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastFaculty

@@ -1,3 +1,7 @@
+/**
+ * Checkout inputbox screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, CheckoutInputbox, openDatePicker, closeDatePicker, handleDateSelect, handleInputChange, fetchSpecialities, countryPick, DatePick, DobPick, statePick, cityPick, professionTrack, medicalState, shouldShowMedicalLicenseState, normalizeCountryName, btnClick_galeryUpload, syncAnimatedValue, ensureAnimatedValue, getLabelStyle, handleFocus, handleBlur, handlePlaceSelected, fetchPostalCodeFromGeocode, toggleExpand, handleCheckboxChange, formatPhoneNumber, renderForms, billingForms.
+ */
+
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ScrollView, Image, View, Text, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Button, TextInput, Alert, StyleSheet, Pressable, Animated, Easing } from 'react-native';
 import TextFieldIn from '../../Components/Textfield';
@@ -22,6 +26,10 @@ import CustomInputTouchableZ from './Newmultiple';
 import CustomInputTouchableY from './Multiple';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
+/**
+ * Google api key constant.
+ * @returns {string}
+ */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import NetInfo from '@react-native-community/netinfo';
 import moment from 'moment';
@@ -152,7 +160,13 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   });
 
   // Function to open date picker for a specific field
-  const openDatePicker = (index, fieldName) => {
+    /**
+ * Open date picker utility.
+ * @param {number} index - Input value.
+ * @param {*} fieldName - Input value.
+ * @returns {void}
+ */
+const openDatePicker = (index, fieldName) => {
     setDatePickerState({
       visible: true,
       index: index,
@@ -161,7 +175,11 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   };
 
   // Function to close date picker
-  const closeDatePicker = () => {
+    /**
+ * Close date picker utility.
+ * @returns {void}
+ */
+const closeDatePicker = () => {
     setDatePickerState({
       visible: false,
       index: null,
@@ -170,7 +188,14 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   };
 
   // Function to handle date selection
-  const handleDateSelect = (date, index, fieldName) => {
+    /**
+ * Handles date select.
+ * @param {*} date - Input value.
+ * @param {number} index - Input value.
+ * @param {*} fieldName - Input value.
+ * @returns {void}
+ */
+const handleDateSelect = (date, index, fieldName) => {
     handleInputChange(index, fieldName, date.toISOString().split('T')[0]);
     closeDatePicker();
   };
@@ -195,7 +220,14 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     });
     return () => unsubscribe();
   }, [isConnected]);
-  const handleInputChange = (index, key, value) => {
+    /**
+ * Handles input change.
+ * @param {number} index - Input value.
+ * @param {*} key - Input value.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const handleInputChange = (index, key, value) => {
     ensureAnimatedValue(index);
     const shouldBeUp = !!value;
     if (!isFieldFocused[index]) {
@@ -235,7 +267,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     };
     setCustomFieldsLabels(updatedCustomFieldsLabels);
   };
-  const fetchSpecialities = (index) => {
+    /**
+ * Fetch specialities utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const fetchSpecialities = (index) => {
     if (allProfession?.profession) {
       const fetchedSpecialities = specaillized(allProfession.profession);
       if (Array.isArray(fetchedSpecialities)) {
@@ -245,41 +282,81 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     setActiveIndex(index);
     setstatepicker(true);
   };
-  const countryPick = (index) => {
+    /**
+ * Country pick utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const countryPick = (index) => {
     console.log(index, "fghekjghjfk123344")
     setActiveIndexc(index);
     setCountrypicker(true);
     countryReq();
   }
-  const DatePick = (index) => {
+    /**
+ * Date pick component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const DatePick = (index) => {
     setDateindex(index);
     setOpendatelicyall(!opendatelicyall);
   }
-  const DobPick = (index) => {
+    /**
+ * Dob pick component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const DobPick = (index) => {
     setDobindex(index);
     setDobchoose(!dobchoose);
   }
-  const statePick = (index) => {
+    /**
+ * State pick utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const statePick = (index) => {
     console.log(index, "fghekjghjfk123344")
     setActiveindexs(index);
     setPratice(true);
     // PraticingState();
   }
-  const cityPick = (index) => {
+    /**
+ * City pick utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const cityPick = (index) => {
     console.log(index, "fghekjghjfk123344")
     setActiveIndexct(index);
     setCityPicker(true);
     // PraticingState();
   }
-  const professionTrack = (index) => {
+    /**
+ * Profession track utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const professionTrack = (index) => {
     setProfindex(index);
     setcountrypickerprof(true)
   }
-  const medicalState = (index) => {
+    /**
+ * Medical state utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const medicalState = (index) => {
     setActiveIndexslic(index);
     setLicstatepratice(true)
   }
-  const shouldShowMedicalLicenseState = (index) => {
+    /**
+ * Should show medical license state utility.
+ * @param {number} index - Input value.
+ * @returns {*}
+ */
+const shouldShowMedicalLicenseState = (index) => {
     const countryName = String(formData?.[index]?.country || country || '').trim().toLowerCase();
     const countryIdentifier = String(formData?.[index]?.country_id || country_id || '').trim();
     const phoneDialCode = String(formData?.[index]?.dialcode || dialcode || '').trim();
@@ -293,7 +370,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
       phoneDialCode === '1'
     );
   };
-  const normalizeCountryName = (country) => {
+    /**
+ * Normalizes country name.
+ * @param {number} country - Input value.
+ * @returns {*}
+ */
+const normalizeCountryName = (country) => {
     // Normalize country names to align with entries in countryall
     const countryMap = {
       "United States": "United States of America",
@@ -372,7 +454,15 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
       setSelectedCityData(null);
     }
   }, [selectedCityData, cityIndex]);
-  async function btnClick_galeryUpload(ind, namx) {
+    /**
+ * Btn click galery upload helper.
+ *
+ * @async
+ * @param {*} ind - Input value.
+ * @param {*} namx - Input value.
+ * @returns {Promise<*>}
+ */
+async function btnClick_galeryUpload(ind, namx) {
     try {
       const response = await DocumentPicker.pick({
         type: [
@@ -433,14 +523,24 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
       syncAnimatedValue(index);
     });
   }, [formData]);
-  const syncAnimatedValue = (index) => {
+    /**
+ * Sync animated value utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const syncAnimatedValue = (index) => {
     ensureAnimatedValue(index);
     const shouldBeUp = !!formData[index]?.address;
     if (!isFieldFocused[index]) { // sync only when not focused
       animatedValues[index].setValue(shouldBeUp ? 1 : 0);
     }
   };
-  const ensureAnimatedValue = (index) => {
+    /**
+ * Ensure animated value utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const ensureAnimatedValue = (index) => {
     if (!animatedValues[index]) {
       animatedValues[index] = new Animated.Value(formData[index]?.address ? 1 : 0);
     }
@@ -457,7 +557,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
       }).start();
     });
   }, [formData, isFieldFocused]);
-  const getLabelStyle = (index) => {
+    /**
+ * Returns label style.
+ * @param {number} index - Input value.
+ * @returns {Object}
+ */
+const getLabelStyle = (index) => {
     ensureAnimatedValue(index);
     return {
       position: 'absolute',
@@ -476,7 +581,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     };
   };
 
-  const handleFocus = (index) => {
+    /**
+ * Handles focus.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleFocus = (index) => {
     ensureAnimatedValue(index);
     Animated.timing(animatedValues[index], {
       toValue: 1,
@@ -487,7 +597,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     setIsFieldFocused(prev => ({ ...prev, [index]: true }));
   };
 
-  const handleBlur = (index) => {
+    /**
+ * Handles blur.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleBlur = (index) => {
     ensureAnimatedValue(index);
     if (!formData[index]?.address) {
       Animated.timing(animatedValues[index], {
@@ -558,7 +673,16 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
       color: '#000000',
     },
   });
-  const handlePlaceSelected = async (data, details, index) => {
+    /**
+ * Handles place selected.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @param {*} details - Input value.
+ * @param {number} index - Input value.
+ * @returns {Promise<*>}
+ */
+const handlePlaceSelected = async (data, details, index) => {
     console.log(details, "details==========", details?.formatted_address);
 
     if (details) {
@@ -622,7 +746,15 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     }
   };
   console.log(newCity, "newcity++++++++")
-  const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
+    /**
+ * Fetch postal code from geocode utility.
+ *
+ * @async
+ * @param {*} latitude - Input value.
+ * @param {*} longitude - Input value.
+ * @returns {Promise<*>}
+ */
+const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
@@ -642,13 +774,25 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     }
   };
   const [expandedSections, setExpandedSections] = useState({ 0: true });
-  const toggleExpand = (sectionIndex) => {
+    /**
+ * Toggle expand utility.
+ * @param {number} sectionIndex - Input value.
+ * @returns {void}
+ */
+const toggleExpand = (sectionIndex) => {
     setExpandedSections((prevState) => ({
       ...prevState,
       [sectionIndex]: !prevState[sectionIndex]
     }));
   };
-  const handleCheckboxChange = (index, fieldName, value) => {
+    /**
+ * Handles checkbox change.
+ * @param {number} index - Input value.
+ * @param {*} fieldName - Input value.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const handleCheckboxChange = (index, fieldName, value) => {
     if (!formData[index]) {
       formData[index] = {};
     }
@@ -686,7 +830,13 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     };
     setCustomFieldsLabels(updatedCustomFieldsLabels);
   };
-  const formatPhoneNumber = (input, isUSA = false) => {
+    /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @param {boolean} isUSA - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input, isUSA = false) => {
     if (isUSA) {
       // USA format: (XXX) XXX-XXXX
       const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -708,7 +858,11 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   console.log(ticketSave, "ticketime-----")
 
   const custom_fieldsTake = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields
-  const renderForms = () => {
+    /**
+ * Render forms utility.
+ * @returns {*}
+ */
+const renderForms = () => {
     return Array.from({ length: totalQuantity }, (_, index) => (
       <View key={index} style={{ flex: 1 }}>
         {totalQuantity > 1 && <TouchableOpacity onPress={() => toggleExpand(index)} style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
@@ -1303,14 +1457,27 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   textInputProps={{
                     multiline: true,
                     value: formData[index]?.address || '',
-                    onChangeText: (val) => {
+                                        /**
+ * On change text helper.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+onChangeText: (val) => {
                       handleInputChange(index, 'address', val);
                       ensureAnimatedValue(index);
                       const shouldBeUp = !!val;
                       animatedValues[index].setValue(shouldBeUp ? 1 : 0);
                     },
-                    onFocus: () => handleFocus(index),
-                    onBlur: () => handleBlur(index),
+                                        /**
+ * On focus utility.
+ * @returns {*}
+ */
+onFocus: () => handleFocus(index),
+                                        /**
+ * On blur utility.
+ * @returns {*}
+ */
+onBlur: () => handleBlur(index),
                     placeholderTextColor: '#999999',
                   }}
                   debounce={300}
@@ -1473,7 +1640,11 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
     ));
   };
 
-  const billingForms = () => {
+    /**
+ * Billing forms utility.
+ * @returns {*}
+ */
+const billingForms = () => {
     const totalQuantity = 1
     return Array.from({ length: totalQuantity }, (_, index) => (
       <View key={index} style={{ flex: 1 }}>
@@ -1580,14 +1751,27 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
                   textInputProps={{
                     multiline: true,
                     value: formData[index]?.address || '',
-                    onChangeText: (val) => {
+                                        /**
+ * On change text helper.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+onChangeText: (val) => {
                       handleInputChange(index, 'address', val);
                       ensureAnimatedValue(index);
                       const shouldBeUp = !!val;
                       animatedValues[index].setValue(shouldBeUp ? 1 : 0);
                     },
-                    onFocus: () => handleFocus(index),
-                    onBlur: () => handleBlur(index),
+                                        /**
+ * On focus utility.
+ * @returns {*}
+ */
+onFocus: () => handleFocus(index),
+                                        /**
+ * On blur utility.
+ * @returns {*}
+ */
+onBlur: () => handleBlur(index),
                     placeholderTextColor: '#999999',
                   }}
                   debounce={300}
@@ -1721,4 +1905,9 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
 };
 
 
+/**
+ * Checkout inputbox default export.
+ *
+ * @returns {*}
+ */
 export default CheckoutInputbox;

@@ -1,8 +1,16 @@
+/**
+ * Basic auth utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: basicAuthPromise, fetchAndStoreBasicAuthToken, getBasicAuthorizationHeader.
+ */
+
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 import getUserAgentJSON from './UserAgent';
 
+/**
+ * Basic auth promise value.
+ * @returns {*}
+ */
 let basicAuthPromise = null;
 
 export async function fetchAndStoreBasicAuthToken() {

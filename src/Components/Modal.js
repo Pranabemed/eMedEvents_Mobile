@@ -1,3 +1,7 @@
+/**
+ * Modal reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomModal, resendMobileOTP, styles.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
@@ -20,7 +24,11 @@ import { useDispatch } from 'react-redux';
  */
 const CustomModal = ({ isVisible, onClose, content, navigation, phoneno, countrycode, norq, profession }) => {
     const dispatch = useDispatch();
-    const resendMobileOTP = () => {
+        /**
+ * Resend mobile otp utility.
+ * @returns {void}
+ */
+const resendMobileOTP = () => {
         let obj = {
             "verify_type": "phone"
         }
@@ -76,6 +84,10 @@ const CustomModal = ({ isVisible, onClose, content, navigation, phoneno, country
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center', // Centers the modal vertically
@@ -110,4 +122,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Modal default export.
+ *
+ * @returns {*}
+ */
 export default CustomModal;

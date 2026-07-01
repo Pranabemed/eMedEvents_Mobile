@@ -1,3 +1,7 @@
+/**
+ * City component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CityComponent, weekFilterProfession, onBackPress.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, ActivityIndicator, BackHandler } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -25,7 +29,14 @@ const CityComponent = ({ handleCityName, citywiseallow, setCitypicker, searchCit
                     
                             return () => clearTimeout(timeout);
                         }, []);
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
                 <TouchableOpacity
@@ -64,7 +75,11 @@ const CityComponent = ({ handleCityName, citywiseallow, setCitypicker, searchCit
         );
     };
       useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
           setCitypicker(false);
           return true;
         };
@@ -160,4 +175,9 @@ const CityComponent = ({ handleCityName, citywiseallow, setCitypicker, searchCit
     )
 }
 
+/**
+ * City component default export.
+ *
+ * @returns {*}
+ */
 export default CityComponent

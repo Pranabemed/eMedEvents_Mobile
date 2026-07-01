@@ -1,4 +1,17 @@
-export const searchCountryNameFunction = (text,countryshow,setCountryall,setSearchcountry,searchCountryName) => {
+/**
+ * Search countryname screen module. Renders a React Native screen or a screen-scoped support component. Exported members: searchCountryNameFunction.
+ */
+
+export /**
+ * Search country name function utility.
+ * @param {*} text - Input value.
+ * @param {number} countryshow - Input value.
+ * @param {number} setCountryall - Input value.
+ * @param {number} setSearchcountry - Input value.
+ * @param {number} searchCountryName - Input value.
+ * @returns {void}
+ */
+const searchCountryNameFunction = (text,countryshow,setCountryall,setSearchcountry,searchCountryName) => {
     console.log(text, 'text12333');
     if (text) {
         const stateListData = countryshow?.filter(function (item) {

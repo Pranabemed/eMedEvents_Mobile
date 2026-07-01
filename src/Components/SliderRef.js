@@ -1,3 +1,7 @@
+/**
+ * Slider ref reusable component module. Provides a React Native UI building block used across screens. Exported members: Sliders.
+ */
+
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Slider } from '@rneui/themed';
@@ -65,4 +69,9 @@ const Sliders = ({
 
 
 
+/**
+ * Slider ref default export.
+ *
+ * @returns {*}
+ */
 export default Sliders;

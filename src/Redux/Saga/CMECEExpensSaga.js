@@ -1,8 +1,17 @@
+/**
+ * Cmeceexpens saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for cmeceexpens. Exported members: getItem, AddExpensesSaga, CMECEListSaga, againListSaga, CMECEListWiseSaga, CMEAllowanceSaga, deleteExpensSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { AddExpensesFailure, AddExpensesSuccess, againListFailure, againListSuccess, CMEAllowanceFailure, CMEAllowanceSuccess, CMECEListFailure, CMECEListSuccess, CMEListWiseFailure, CMEListWiseSuccess, deleteExpensesFailure, deleteExpensesSuccess } from '../Reducers/CMECEExpensReducer';
 
 
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 export function* AddExpensesSaga(action) {
   let items = yield select(getItem);
@@ -111,6 +120,10 @@ export function* deleteExpensSaga(action) {
     yield put(deleteExpensesFailure(error));
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Expenses/AddExpensesRequest', AddExpensesSaga);
@@ -132,4 +145,9 @@ const watchFunction = [
   })(),
 ];
 
+/**
+ * Cmeceexpens saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

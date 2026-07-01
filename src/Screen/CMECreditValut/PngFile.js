@@ -1,3 +1,7 @@
+/**
+ * Png file screen module. Renders a React Native screen or a screen-scoped support component. Exported members: DownloadImage, downPressImage, downloadImageJpg, downloadImagePng, openFile, downloadImage, styles.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Button, Alert, PermissionsAndroid, Platform, View, TouchableOpacity, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import RNFS from 'react-native-fs';
@@ -33,7 +37,11 @@ const DownloadImage = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const downPressImage = () => {
+        /**
+ * Down press image utility.
+ * @returns {void}
+ */
+const downPressImage = () => {
         props.navigation.goBack();
     };
     const [imageshow, setImageshow] = useState("")
@@ -45,7 +53,13 @@ const DownloadImage = (props) => {
         }
     }, [props?.route?.params?.PngFIle])
     console.log(props?.route?.params, "pngfooooopooo=========", imageshow)
-    const downloadImageJpg = async () => {
+        /**
+ * Download image jpg utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const downloadImageJpg = async () => {
         const fileUrl = `${props?.route?.params?.PngFIle?.Path?.certificate_path}${props?.route?.params?.PngFIle?.PngFIle}`;
         const savefileName = props?.route?.params?.PngFIle?.Title || 'eMedEvents';
         try {
@@ -62,7 +76,11 @@ const DownloadImage = (props) => {
                     [
                         {
                             text: 'Open',
-                            onPress: () => openFile(fileDown),
+                                                        /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => openFile(fileDown),
                         },
                         { text: 'OK', style: 'cancel' },
                     ]
@@ -74,7 +92,13 @@ const DownloadImage = (props) => {
             Alert.alert('eMedEvents', error.message);
         }
     };
-    const downloadImagePng = async () => {
+        /**
+ * Download image png utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const downloadImagePng = async () => {
         const fileUrl = `${props?.route?.params?.PngFIle?.Path?.certificate_path}${props?.route?.params?.PngFIle?.PngFIle}`;
         const savefileName = props?.route?.params?.PngFIle?.Title || 'eMedEvents';
         try {
@@ -93,7 +117,11 @@ const DownloadImage = (props) => {
                     [
                         {
                             text: 'Open',
-                            onPress: () => openFile(fileDown),
+                                                        /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => openFile(fileDown),
                         },
                         { text: 'OK', style: 'cancel' },
                     ]
@@ -106,7 +134,12 @@ const DownloadImage = (props) => {
         }
     };
 
-    const openFile = (filePath) => {
+        /**
+ * Open file utility.
+ * @param {*} filePath - Input value.
+ * @returns {void}
+ */
+const openFile = (filePath) => {
         FileViewer.open(filePath)
             .then(() => {
                 console.log('File opened successfully');
@@ -115,7 +148,13 @@ const DownloadImage = (props) => {
                 Alert.alert('eMedEvents', `Cannot open file: ${error.message}`);
             });
     };
-    const downloadImage = async () => {
+        /**
+ * Download image utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const downloadImage = async () => {
         const fileUrl = `${props?.route?.params?.PngFIle?.Path?.certificate_path}${props?.route?.params?.PngFIle?.PngFIle}`;
         console.log(fileUrl, "fileUrl========");
 
@@ -140,7 +179,11 @@ const DownloadImage = (props) => {
                             [
                                 {
                                     text: 'Done',
-                                    onPress: () => { navigation.navigate("ImagePDF", { pdffile: destinationPath }) },
+                                                                        /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { navigation.navigate("ImagePDF", { pdffile: destinationPath }) },
                                 },
                             ]
                         );
@@ -237,7 +280,16 @@ const DownloadImage = (props) => {
     );
 };
 
+/**
+ * Png file default export.
+ *
+ * @returns {*}
+ */
 export default DownloadImage;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,

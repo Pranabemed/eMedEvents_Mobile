@@ -1,3 +1,7 @@
+/**
+ * Specialized reusable component module. Provides a React Native UI building block used across screens. Exported members: searchData, onSelectData, renderData, openModal.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Text,
@@ -26,7 +30,12 @@ export default function Specialized(props) {
   const [search, setSearch] = useState('');
   const [tempDataList, setTempDataList] = useState([]);
 
-  const searchData = text => {
+    /**
+ * Search data utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchData = text => {
     if (Array.isArray(props.dataList)) {
       if (text == '') {
         setTempDataList(props.dataList);
@@ -56,12 +65,22 @@ export default function Specialized(props) {
     props.initialValue,
   );
 
-  function onSelectData(data) {
+    /**
+ * On select data helper.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+function onSelectData(data) {
     if (props.onSelectData) {
       props.onSelectData(data);
     }
   }
-  function renderData(data) {
+    /**
+ * Render data helper.
+ * @param {*} data - Input value.
+ * @returns {JSX.Element}
+ */
+function renderData(data) {
     return (
       <TouchableOpacity
         onPress={() => {
@@ -103,7 +122,11 @@ export default function Specialized(props) {
     );
   }
 
-  function openModal() {
+    /**
+ * Open modal utility.
+ * @returns {JSX.Element}
+ */
+function openModal() {
     return (
       <Modal
         style={{ margin: 0 }}

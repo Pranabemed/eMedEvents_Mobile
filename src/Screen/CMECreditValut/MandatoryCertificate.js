@@ -1,3 +1,7 @@
+/**
+ * Mandatory certificate screen module. Renders a React Native screen or a screen-scoped support component. Exported members: MandatoryCertificate.
+ */
+
 import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
 import IconDot from 'react-native-vector-icons/Entypo';
@@ -58,4 +62,9 @@ const MandatoryCertificate = ({ item }) => {
     )
 }
 
+/**
+ * Mandatory certificate default export.
+ *
+ * @returns {*}
+ */
 export default MandatoryCertificate

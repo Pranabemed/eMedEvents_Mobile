@@ -1,3 +1,7 @@
+/**
+ * All download catlog reusable component module. Provides a React Native UI building block used across screens. Exported members: AllDownloadCatalog, showPDF, openFileViewer, downPress, styles.
+ */
+
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Platform, StyleSheet, ScrollView } from "react-native";
 import FileViewer from "react-native-file-viewer";
@@ -32,7 +36,13 @@ const AllDownloadCatalog = (props) => {
 
     useEffect(() => {
         if (pDFPath) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoading(true);
                 try {
                     const url = pDFPath;
@@ -55,7 +65,13 @@ const AllDownloadCatalog = (props) => {
 
     useEffect(() => {
         if (pdftrue) {
-            const openFileViewer = async () => {
+                        /**
+ * Open file viewer utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewer = async () => {
                 try {
                     await FileViewer.open(pdfUri);
                 } catch (error) {
@@ -66,7 +82,11 @@ const AllDownloadCatalog = (props) => {
         }
     }, [pdftrue, pdfUri]);
 
-    const downPress = () => {
+        /**
+ * Down press utility.
+ * @returns {void}
+ */
+const downPress = () => {
         props.navigation.goBack();
     };
 
@@ -136,6 +156,10 @@ const AllDownloadCatalog = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     scrollContainer: {
         paddingVertical: normalize(20),
@@ -183,4 +207,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * All download catlog default export.
+ *
+ * @returns {*}
+ */
 export default AllDownloadCatalog;

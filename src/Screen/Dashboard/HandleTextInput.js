@@ -1,11 +1,15 @@
+/**
+ * Handle text input screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HandleTextInput.
+ */
+
 import { View, Text, TouchableOpacity, Platform } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import TextFieldIn from '../../Components/Textfield';
 import Fonts from '../../Themes/Fonts';
-import { CommonActions } from '@react-navigation/native';
 import normalize from '../../Utils/Helpers/Dimen';
 import SearchIcon from 'react-native-vector-icons/Ionicons';
 import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
+import styles from './HandleTextInput.styles';
 
 /**
  * Reusable HandleTextInput component.
@@ -15,35 +19,18 @@ import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
  * @returns {JSX.Element}
  */
 const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, focusedInput }) => {
-  const placeholders = [
-    "Search for CME/CE courses",
-    "Search for your state required courses ",
-    "Search for topic",
-    "Search for specialty",
-    "Search for medical conferences",
-    "Search for conferences by location "
-  ];
-
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-
-  // useEffect(() => {
-  //   const timeoutId = setTimeout(() => {
-  //       setPlaceholderIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
-  //   }, 3000); 
-  //   return () => clearTimeout(timeoutId); 
-  // }, [placeholderIndex]);
   return (showLine ? <TouchableOpacity onPress={() => {
     nav.navigate("HeaderSearch", {
       taskData: { statid: takestate, creditID: addit },
     })
-  }} style={Platform.OS === 'ios' ? { backgroundColor: "#FFFFFF", paddingHorizontal: normalize(10), paddingVertical: normalize(10), marginTop: normalize(10) } : { backgroundColor: "#FFFFFF", paddingVertical: normalize(10), marginTop: normalize(35) }}>
+  }} style={[styles.searchWrapper, Platform.OS === 'ios' ? styles.searchWrapperIos : styles.searchWrapperAndroid]}>
     <TextFieldIn
       height={normalize(38)}
       width={normalize(300)}
       backgroundColor={"#f9fafc"}
       alignSelf={'center'}
       borderRadius={normalize(8)}
-      placeholder={placeholders[placeholderIndex]}
+      placeholder={"Search for CME/CE courses"}
       placeholderTextColor={"RGB(170, 170, 170)"}
       fontSize={14}
       fontFamily={Fonts.InterMedium}
@@ -82,34 +69,14 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
     nav.navigate("HeaderSearch", {
       taskData: { statid: takestate, creditID: addit },
     });
-  }} style={Platform.OS === 'ios' ? { backgroundColor: "#FFFFFF", paddingHorizontal: normalize(10), paddingVertical: normalize(10), marginTop: normalize(10), justifyContent: "center", alignItems: "center" } : { backgroundColor: "#FFFFFF", paddingVertical: normalize(10), marginTop: normalize(10),justifyContent: "center", alignItems: "center" }}>
-    <View
-      style={{
-        height: normalize(35),
-        width: normalize(290),
-        borderWidth: 1,
-        borderColor: "#DADADA",
-        borderRadius: normalize(5),
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f9fafc",
-        gap: normalize(10),
-        paddingHorizontal: normalize(10)
-      }}
-    >
+  }} style={[styles.searchWrapper, Platform.OS === 'ios' ? styles.searchWrapperIosCompact : styles.searchWrapperAndroidCompact]}>
+    <View style={styles.searchCard}>
       <SearchIcon
         name="search"
         color={"#63748b"}
         size={25}
       />
-      <Text
-        style={{
-          fontFamily: Fonts.InterMedium,
-          fontSize: 16,
-          color: "#798492",
-          flex: 1
-        }}
-      >
+      <Text style={styles.searchText}>
         {"Search for CME/CE courses"}
       </Text>
 
@@ -162,8 +129,13 @@ const HandleTextInput = ({ showLine, nav, takestate, addit, setFocusedInput, foc
       searchIconName={'keyboard-voice'}
       searchIconColor={"#999"}
       editable={false} /> */}
-  </TouchableOpacity>
+    </TouchableOpacity>
   )
 }
 
+/**
+ * Handle text input default export.
+ *
+ * @returns {*}
+ */
 export default HandleTextInput

@@ -1,7 +1,23 @@
+/**
+ * Fs value.
+ * @returns {*}
+ */
 const fs = require('fs');
+/**
+ * Path value.
+ * @returns {*}
+ */
 const path = require('path');
 
+/**
+ * Screens dir value.
+ * @returns {*}
+ */
 const screensDir = path.join(__dirname, 'src', 'Screen');
+/**
+ * Storybook dir value.
+ * @returns {*}
+ */
 const storybookDir = path.join(__dirname, '.rnstorybook', 'stories');
 
 // Ensure storybook directory exists
@@ -9,6 +25,11 @@ if (!fs.existsSync(storybookDir)) {
     fs.mkdirSync(storybookDir, { recursive: true });
 }
 
+/**
+ * Returns files recursively.
+ * @param {*} directory - Input value.
+ * @returns {*}
+ */
 function getFilesRecursively(directory) {
     let results = [];
     const list = fs.readdirSync(directory);
@@ -24,6 +45,11 @@ function getFilesRecursively(directory) {
     return results;
 }
 
+/**
+ * Process file utility.
+ * @param {*} filePath - Input value.
+ * @returns {void}
+ */
 const processFile = (filePath) => {
     let content = fs.readFileSync(filePath, 'utf8');
     const fileName = path.basename(filePath);
@@ -63,6 +89,10 @@ const processFile = (filePath) => {
     }
 };
 
+/**
+ * Run utility.
+ * @returns {void}
+ */
 const run = () => {
     console.log('Starting Screen documentation generation...');
     const files = getFilesRecursively(screensDir);

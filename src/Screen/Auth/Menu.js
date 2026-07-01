@@ -1,3 +1,7 @@
+/**
+ * Menu screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Menu, toggleDrawerModal.
+ */
+
 import { View, Text, BackHandler, Alert } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
@@ -17,7 +21,11 @@ const Menu = () => {
     const [visible, setVisible] = useState(false);
     const[care,setCare] = useState("closeit");
     const navigation = useNavigation()
-    const toggleDrawerModal = () => {
+        /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
         setVisible(!visible);
         setCare("closeit")
     };
@@ -54,4 +62,9 @@ const Menu = () => {
     )
 }
 
+/**
+ * Menu default export.
+ *
+ * @returns {*}
+ */
 export default Menu

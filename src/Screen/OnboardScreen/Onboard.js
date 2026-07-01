@@ -1,3 +1,7 @@
+/**
+ * Onboard screen module. Renders a React Native screen or a screen-scoped support component. Exported members: sliderData, COUNTRY_DIAL_CODES, Onboard, _renderItem, onBackPress, getCountryFromIP, fetchCountry, styles.
+ */
+
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
     Image,
@@ -58,6 +62,10 @@ const sliderData = [
     },
 ];
 
+/**
+ * Country dial codes constant.
+ * @returns {Object}
+ */
 const COUNTRY_DIAL_CODES = {
     IN: '+91',
     US: '+1',
@@ -67,6 +75,11 @@ const COUNTRY_DIAL_CODES = {
     SG: '+65',
 };
 
+/**
+ * Onboard component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Onboard = (props) => {
     const { width } = useWindowDimensions();
     const [codegt, setCodegt] = useState("");
@@ -111,7 +124,13 @@ const Onboard = (props) => {
         setCurrentIndex(index);
     }, []);
 
-    const _renderItem = ({ item }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const _renderItem = ({ item }) => {
         const lines = item.hText.split('\n');
         return (
             <View style={[styles.slide, { width }]}>
@@ -162,7 +181,11 @@ const Onboard = (props) => {
     }, [props.navigation]);
 
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             BackToback();
             return true;
         };
@@ -178,7 +201,14 @@ const Onboard = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [props.navigation]);
-    const getCountryFromIP = async (ip) => {
+        /**
+ * Returns country from ip.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
+const getCountryFromIP = async (ip) => {
         try {
             const res = await fetch(`https://ipinfo.io/${ip}/json`);
             const text = await res.text();
@@ -195,7 +225,13 @@ const Onboard = (props) => {
     const ipAddress = getPublicIP(); // global value
     useEffect(() => {
         if (!ipAddress) return; // ⛔ wait until IP exists
-        const fetchCountry = async () => {
+                /**
+ * Fetch country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const fetchCountry = async () => {
             const countryCode = await getCountryFromIP(ipAddress);
             if (countryCode) {
                 const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
@@ -319,6 +355,10 @@ const Onboard = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     imageBackground: {
         flex: 1,
@@ -425,4 +465,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Onboard default export.
+ *
+ * @returns {*}
+ */
 export default Onboard;

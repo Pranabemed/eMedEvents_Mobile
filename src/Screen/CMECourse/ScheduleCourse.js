@@ -1,3 +1,7 @@
+/**
+ * Schedule course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ScheduleCourse, pendingshow, duartionshow, handleSelect, toggleWeekSelection, PlannowHandle, stateDataFilter, durationFilter, weekFilter, styles.
+ */
+
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -70,11 +74,21 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
         setModalHeight(isfilterVisible ? 600 : 300);
     }, [isfilterVisible]);
 
-    const pendingshow = (index) => {
+        /**
+ * Pendingshow utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const pendingshow = (index) => {
         const selectedName = dataAvail[index].name;
         setSelectedState(selectedName);
     };
-    const duartionshow = (index) => {
+        /**
+ * Duartionshow utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const duartionshow = (index) => {
         const selectedTime = durationData[index].name;
         setDurationset(selectedTime);
     };
@@ -83,12 +97,22 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
         { id: 2, label: 'Email' },
     ];
 
-    const handleSelect = (option) => {
+        /**
+ * Handles select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleSelect = (option) => {
         setRemind(option);
         console.log('Selected option:', option);
     };
 
-    const toggleWeekSelection = (item) => {
+        /**
+ * Toggle week selection utility.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const toggleWeekSelection = (item) => {
         if (weekname.includes(item.name)) {
             setWeekname(weekname.filter(week => week !== item.name));
         } else {
@@ -96,7 +120,11 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
         }
     };
     console.log(texdt, inputdata,frequency,weekname, "weekname============")
-    const PlannowHandle = () => {
+        /**
+ * Plannow handle component.
+ * @returns {void}
+ */
+const PlannowHandle = () => {
         let obj = {
             "id": selectedItem?.id,
             "conference_id": selectedItem?.confid,
@@ -118,7 +146,14 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
             showErrorAlert("Please connect to internet",err)
         })
     }
-    const stateDataFilter = ({ item, index }) => {
+        /**
+ * State data filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateDataFilter = ({ item, index }) => {
         const isSelected = selectedState === item.name;
         return (
             <TouchableOpacity
@@ -146,7 +181,14 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
         );
     };
 
-    const durationFilter = ({ item, index }) => {
+        /**
+ * Duration filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const durationFilter = ({ item, index }) => {
         const duartionisset = durationset === item.name;
         return (
             <TouchableOpacity
@@ -171,7 +213,14 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
             </TouchableOpacity>
         );
     };
-    const weekFilter = ({ item, index }) => {
+        /**
+ * Week filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilter = ({ item, index }) => {
         const isSelectedWeek = weekname.includes(item.name);
         return (
             <TouchableOpacity onPress={() => { toggleWeekSelection(item); }}>
@@ -519,8 +568,17 @@ const ScheduleCourse = ({ isfilterVisible, onfilterFalse, onSave, selectedItem, 
     );
 };
 
+/**
+ * Schedule course default export.
+ *
+ * @returns {*}
+ */
 export default ScheduleCourse;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

@@ -1,3 +1,7 @@
+/**
+ * State required reusable component module. Provides a React Native UI building block used across screens. Exported members: COURSE_CARD_WIDTH, COURSE_CARD_HEIGHT, COURSE_CARD_GAP, StateRequireditem, titlhandleUrl, formatDate, formatDateEnd, renderLocationAndDates, cmehit, styles.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import Fonts from '../Themes/Fonts';
@@ -13,11 +17,35 @@ import { FormatDateZone } from '../Utils/Helpers/Timezone';
  * @returns {JSX.Element}
  */
 const COURSE_CARD_WIDTH = normalize(230);
+/**
+ * Course card height constant.
+ * @returns {*}
+ */
 const COURSE_CARD_HEIGHT = normalize(165);
+/**
+ * Course card gap constant.
+ * @returns {*}
+ */
 const COURSE_CARD_GAP = normalize(4);
 
+/**
+ * State requireditem component.
+ * @param {Object} props - Input object.
+ * @param {*} props.allNoDetData - Nested property value.
+ * @param {*} props.allProfTake - Nested property value.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @param {*} props.addit - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @returns {JSX.Element}
+ */
 const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navigation }) => {
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         console.log(resulttitle, "webcast url=======", make, allNoDetData);
@@ -25,17 +53,31 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, detailpage_url: urltitle, creditData: addit } })
         }
     }
-    const formatDate = (dateStr) => {
+        /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
         const date = moment(dateStr, "DD MMM'YY");
         return date.format("MMM  D").replace(' ', '');
     };
     const formattedDate = formatDate(item?.startdate);
-    const formatDateEnd = (dateStr) => {
+        /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
         const date = moment(dateStr, "DD MMM'YY");
         return date.format("D, YYYY").replace('', '');
     };
     const formattedDateend = formatDateEnd(item?.enddate);
-    const renderLocationAndDates = () => {
+        /**
+ * Render location and dates utility.
+ * @returns {*}
+ */
+const renderLocationAndDates = () => {
         if (item?.startdate && item?.enddate) {
             return (
                 <View style={{ flexDirection: "row" }}>
@@ -81,7 +123,11 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
         }
         return null;
     };
-    const cmehit = () => {
+        /**
+ * Cmehit utility.
+ * @returns {*}
+ */
+const cmehit = () => {
         if (allProfTake && item?.display_cme) {
             return (
                 <View style={styles.cmeContainer}>
@@ -240,6 +286,10 @@ const StateRequireditem = ({ allNoDetData, allProfTake, item, index, addit, navi
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     cardOuter: {
         width: COURSE_CARD_WIDTH + (COURSE_CARD_GAP * 2),
@@ -341,4 +391,9 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * State required default export.
+ *
+ * @returns {*}
+ */
 export default StateRequireditem;

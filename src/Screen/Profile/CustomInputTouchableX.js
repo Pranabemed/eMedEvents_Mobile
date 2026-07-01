@@ -1,3 +1,7 @@
+/**
+ * Custom input touchable x screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomInputTouchableX.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -177,4 +181,9 @@ const CustomInputTouchableX = ({
 
 
 
+/**
+ * Custom input touchable x default export.
+ *
+ * @returns {*}
+ */
 export default CustomInputTouchableX;

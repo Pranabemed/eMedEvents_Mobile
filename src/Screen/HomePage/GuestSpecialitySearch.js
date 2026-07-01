@@ -1,3 +1,7 @@
+/**
+ * Guest speciality search screen module. Renders a React Native screen or a screen-scoped support component. Exported members: getLabel, getSlug, SpecialtyItem, GuestSpecialitySearch, goBack, openSpecialityResult, handleUrl, searchContent, navigateToBrowse, renderDefaultContent, styles.
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -48,11 +52,23 @@ const getLabel = item => {
   ).trim();
 };
 
+/**
+ * Returns slug.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getSlug = item =>
   getLabel(item)
     .toLowerCase()
     .replace(/\s+/g, '-');
 
+/**
+ * Specialty item component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @returns {JSX.Element}
+ */
 const SpecialtyItem = ({ item, onPress }) => {
   const label = getLabel(item);
   if (!label) return null;
@@ -74,6 +90,11 @@ const SpecialtyItem = ({ item, onPress }) => {
   );
 };
 
+/**
+ * Guest speciality search component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const GuestSpecialitySearch = props => {
   const dispatch = useDispatch();
   const BrowsReducer = useSelector(state => state.BrowsReducer);
@@ -194,11 +215,20 @@ const GuestSpecialitySearch = props => {
     }
   }, [WebcastReducer?.webcastsearchResponse]);
 
-  const goBack = () => {
+    /**
+ * Go back utility.
+ * @returns {void}
+ */
+const goBack = () => {
     props.navigation.goBack();
   };
 
-  const openSpecialityResult = item => {
+    /**
+ * Open speciality result utility.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const openSpecialityResult = item => {
     const slug = getSlug(item);
     if (!slug) return;
 
@@ -214,7 +244,12 @@ const GuestSpecialitySearch = props => {
     });
   };
 
-  const handleUrl = data => {
+    /**
+ * Handles url.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const handleUrl = data => {
     const detailUrl = data?.detailpage_url || data?.url || data?.emed_url || '';
     const result = detailUrl.split('/')?.pop();
     if (!result) return;
@@ -245,7 +280,12 @@ const GuestSpecialitySearch = props => {
     });
   };
 
-  const searchContent = text => {
+    /**
+ * Search content utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchContent = text => {
     setSearchText(text);
     setIsLoading(true);
 
@@ -268,11 +308,19 @@ const GuestSpecialitySearch = props => {
       });
   };
 
-  const navigateToBrowse = () => {
+    /**
+ * Navigate to browse utility.
+ * @returns {void}
+ */
+const navigateToBrowse = () => {
     props.navigation.navigate('BrowseScreen', { creditData: taskData });
   };
 
-  const renderDefaultContent = () => {
+    /**
+ * Render default content utility.
+ * @returns {JSX.Element}
+ */
+const renderDefaultContent = () => {
     if (browseLoading && topSpecialties.length === 0) {
       return (
         <View style={styles.loaderWrap}>
@@ -467,6 +515,10 @@ const GuestSpecialitySearch = props => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   content: {
     flex: 1,
@@ -524,4 +576,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Guest speciality search default export.
+ *
+ * @returns {*}
+ */
 export default GuestSpecialitySearch;

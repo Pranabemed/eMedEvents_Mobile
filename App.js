@@ -1,3 +1,7 @@
+/**
+ * Application root module. Sets up the app shell, providers, and navigation container. Exported members: App.
+ */
+
 import React, { useEffect } from 'react'
 import StackNav from './src/Navigator/StackNav'
 import { tokenRequest } from './src/Redux/Reducers/AuthReducer'
@@ -13,6 +17,10 @@ import TokenManager from './src/Utils/Helpers/TokenManager';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { registerPushNotificationListeners } from './src/Utils/Helpers/PushNotifications';
 
+/**
+ * App component.
+ * @returns {JSX.Element}
+ */
 const App = () => {
   const dispatch = useDispatch()
 
@@ -61,4 +69,9 @@ const App = () => {
   )
 }
 
+/**
+ * App default export.
+ *
+ * @returns {*}
+ */
 export default App

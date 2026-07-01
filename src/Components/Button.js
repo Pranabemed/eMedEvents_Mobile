@@ -1,14 +1,20 @@
+/**
+ * Button reusable component module. Provides a React Native UI building block used across screens.
+ */
+
 import React from 'react';
-import { TouchableOpacity, Text, View, Image, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, View, ActivityIndicator } from 'react-native';
 import propstype from 'prop-types';
-import normalize from '../Utils/Helpers/Dimen';
 import Colorpath from '../Themes/Colorpath';
 import ArrowNeed from 'react-native-vector-icons/Feather';
+import { createButtonStyles } from './Button.styles';
 
 /**
  * Reusable Button component that supports text, icons, and loading states.
  * 
- * @component
+ * **Purpose:** Provide a customizable, interactive button for the application, supporting various visual styles, loading states, and icon configurations.
+ * 
+ * **Parameters:**
  * @param {Object} props - The component props.
  * @param {number} props.height - The height of the button.
  * @param {number} props.width - The width of the button.
@@ -21,46 +27,45 @@ import ArrowNeed from 'react-native-vector-icons/Feather';
  * @param {boolean} props.disabled - If true, the button is disabled.
  * @param {boolean} props.image - If true, displays an icon (requires `source` prop).
  * @param {string} props.source - The icon name for `react-native-vector-icons/Feather`.
- * @returns {JSX.Element}
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} A React Native TouchableOpacity containing either an ActivityIndicator, an Icon, or Text.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <Buttons 
+ *   text="Submit" 
+ *   backgroundColor="#009E38" 
+ *   color="#FFF" 
+ *   onPress={() => console.log('Pressed')} 
+ * />
+ * ```
+ * 
+ * **Notes:**
+ * - The component automatically applies `activeOpacity={0.8}`.
+ * - Icon support requires `react-native-vector-icons/Feather`.
  */
 export default function Buttons(props) {
+  const styles = createButtonStyles(props);
+
   return (
     <TouchableOpacity
       onPress={() => props?.onPress()}
       disabled={props.disabled}
       activeOpacity={0.8}
-      style={{
-        height: props.height,
-        width: props.width,
-        borderRadius: props.borderRadius,
-        backgroundColor: props.backgroundColor,
-        marginTop: props.marginTop,
-        marginLeft: props.marginLeft,
-        borderWidth: props.borderWidth,
-        borderColor: props.borderColor,
-        borderTopWidth: props.borderTopWidth,
-        justifyContent: 'center',
-        alignSelf: props.alignSelf ? props.alignSelf : 'center',
-        marginBottom: props.marginBottom,
-        borderBottomLeftRadius: props.borderBottomLeftRadius,
-        borderBottomRightRadius: props.borderBottomRightRadius,
-        shadowOpacity: props.shadowOpacity,
-        shadowRadius: props.shadowRadius,
-        shadowOffset: props.shadowOffset,
-        shadowColor: props.shadowColor,
-        elevation: props.elevation,
-      }}>
+      style={styles.button}>
 
       {props.image && !props.loading && (
-        <View style={{ position: 'absolute', justifyContent: "center", alignItems: "center", marginLeft: props.imageMarginLeft  }}>
-          <TouchableOpacity onPress={()=>props?.iconPress()}>
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={()=>props?.iconPress()} style={styles.iconButton}>
             <ArrowNeed name={props.source} color="#FFFFFF" size={props.size} />
-            {/* <Image source={props.source} style={{ resizeMode: 'contain', height: props.iheight, width: props.iwidth, tintColor: props.tintColor, transform: props.transform }} /> */}
           </TouchableOpacity>
         </View>
       )}
       {props.loading ? <ActivityIndicator size={"small"} color={props.loaderColor ? props.loaderColor : Colorpath.white} />
-        : <Text style={{fontSize: props.fontSize, color: props.color, textAlign: props.textAlign ? props.textAlign : 'center',fontWeight:props.fontWeight, fontFamily: props.fontFamily, paddingLeft: props.paddingLeft ? props.paddingLeft : null,marginRight:props.imarginRight }}>
+        : <Text style={styles.label}>
           {props.text}
         </Text>}
     </TouchableOpacity>

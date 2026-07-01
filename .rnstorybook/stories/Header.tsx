@@ -1,3 +1,7 @@
+/**
+ * Header Storybook module. Defines stories and controls for component previews. Exported members: Header, styles.
+ */
+
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from './Button';
@@ -9,7 +13,16 @@ export type HeaderProps = {
   onCreateAccount: () => void;
 };
 
-export const Header = ({ user, onLogin, onLogout, onCreateAccount }: HeaderProps) => (
+export /**
+ * Header component.
+ * @param {Object} props - Input object.
+ * @param {*} props.user - Nested property value.
+ * @param {*} props.onLogin - Nested property value.
+ * @param {*} props.onLogout - Nested property value.
+ * @param {*} props.onCreateAccount - Nested property value.
+ * @returns {JSX.Element}
+ */
+const Header = ({ user, onLogin, onLogout, onCreateAccount }: HeaderProps) => (
   <View>
     <View style={styles.wrapper}>
       <View style={styles.logoContainer}>
@@ -41,6 +54,10 @@ export const Header = ({ user, onLogin, onLogout, onCreateAccount }: HeaderProps
   </View>
 );
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   wrapper: {
     borderBottomWidth: 1,

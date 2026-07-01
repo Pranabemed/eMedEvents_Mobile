@@ -1,4 +1,8 @@
 
+/**
+ * Checkout modalthree screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckStateShow, weekFilterProfession, handleBackPress.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -28,7 +32,13 @@ const CheckStateShow = ({ pratice, setSearchState, activeIndex, searchpratice, h
                 
                         return () => clearTimeout(timeout);
                     }, []);
-    const weekFilterProfession = ({ item }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item }) => {
         console.log("isPreviouslySelected=====", activeIndex);
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -71,7 +81,11 @@ const CheckStateShow = ({ pratice, setSearchState, activeIndex, searchpratice, h
             </View>
         );
     };
-    const handleBackPress = () => {
+        /**
+ * Handles back press.
+ * @returns {void}
+ */
+const handleBackPress = () => {
         setPratice(!pratice);
         setSearchState("");
     };
@@ -164,4 +178,9 @@ const CheckStateShow = ({ pratice, setSearchState, activeIndex, searchpratice, h
     )
 }
 
+/**
+ * Checkout modalthree default export.
+ *
+ * @returns {*}
+ */
 export default CheckStateShow

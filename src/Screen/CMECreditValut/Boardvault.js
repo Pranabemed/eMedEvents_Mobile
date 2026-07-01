@@ -1,3 +1,7 @@
+/**
+ * Boardvault screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Boardvault.
+ */
+
 import { Platform, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -16,6 +20,58 @@ import moment from 'moment';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Boardvault component.
+ * @param {Object} props - Input object.
+ * @param {*} props.takeID - Nested property value.
+ * @param {*} props.isfocused - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @param {*} props.dispatch - Nested property value.
+ * @param {*} props.statepickboard - Nested property value.
+ * @param {*} props.setStatepickboard - Nested property value.
+ * @param {*} props.statewiseboard - Nested property value.
+ * @param {*} props.setStatewiseboard - Nested property value.
+ * @param {*} props.clisttopicboard - Nested property value.
+ * @param {*} props.setClisttopicboard - Nested property value.
+ * @param {*} props.selectCountrytopicboard - Nested property value.
+ * @param {*} props.setSelectCountrytopicboard - Nested property value.
+ * @param {*} props.searchtexttopicboard - Nested property value.
+ * @param {*} props.setSearchtexttopicboard - Nested property value.
+ * @param {*} props.stateidboard - Nested property value.
+ * @param {*} props.setStateidboard - Nested property value.
+ * @param {*} props.expireDatecreditboard - Nested property value.
+ * @param {*} props.setExpireDatecreditboard - Nested property value.
+ * @param {*} props.countdownMessagecreditboard - Nested property value.
+ * @param {*} props.setCountdownMessagecreditboard - Nested property value.
+ * @param {*} props.loadingCreditwiseboard - Nested property value.
+ * @param {*} props.setLoadingCreditwiseboard - Nested property value.
+ * @param {*} props.loadingStatewiseboard - Nested property value.
+ * @param {*} props.setLoadingStatewiseboard - Nested property value.
+ * @param {*} props.boardnameboard - Nested property value.
+ * @param {*} props.setBoardnameboard - Nested property value.
+ * @param {*} props.licesenseboard - Nested property value.
+ * @param {*} props.setLicesenseboard - Nested property value.
+ * @param {*} props.totalCreditboard - Nested property value.
+ * @param {*} props.setTotalCreditboard - Nested property value.
+ * @param {*} props.mancreditboard - Nested property value.
+ * @param {*} props.setMancreditboard - Nested property value.
+ * @param {*} props.mantopiccreditboard - Nested property value.
+ * @param {*} props.setMantopiccreditboard - Nested property value.
+ * @param {*} props.gencreditboard - Nested property value.
+ * @param {*} props.setGencreditboard - Nested property value.
+ * @param {*} props.gentopiccreditboard - Nested property value.
+ * @param {*} props.setGentopiccreditboard - Nested property value.
+ * @param {*} props.boardexpiredate - Nested property value.
+ * @param {*} props.setBoardexpiredate - Nested property value.
+ * @param {*} props.certificateboard - Nested property value.
+ * @param {*} props.setCertificatebaord - Nested property value.
+ * @param {*} props.lengthcheck - Nested property value.
+ * @param {*} props.setLengthcheck - Nested property value.
+ * @param {*} props.searchTopicNameboard - Nested property value.
+ * @param {*} props.handleBoardname - Nested property value.
+ * @param {*} props.styles - Nested property value.
+ * @returns {JSX.Element}
+ */
 const Boardvault = ({takeID, isfocused,
     navigation,
     dispatch,
@@ -104,4 +160,9 @@ const Boardvault = ({takeID, isfocused,
          />
     )
 }
+/**
+ * Boardvault default export.
+ *
+ * @returns {*}
+ */
 export default Boardvault

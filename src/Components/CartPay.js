@@ -1,3 +1,7 @@
+/**
+ * Cart pay reusable component module. Provides a React Native UI building block used across screens. Exported members: CartPay, onPress, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -18,7 +22,13 @@ import RNFS from "react-native-fs";
  */
 const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, navigation, name, setGocertificate, gocertificate }) => {
     const [pdfsee, setPdfsee] = useState(false);
-    const onPress = async () => {
+        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
@@ -166,6 +176,10 @@ const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, 
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -234,4 +248,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Cart pay default export.
+ *
+ * @returns {*}
+ */
 export default CartPay;

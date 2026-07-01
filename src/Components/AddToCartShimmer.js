@@ -1,3 +1,7 @@
+/**
+ * Add to cart shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: BG, HL, CartItemShimmer, AddToCartShimmer, styles.
+ */
+
 import React from 'react';
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -12,9 +16,21 @@ import normalize from '../Utils/Helpers/Dimen';
  */
 
 const { width: W } = Dimensions.get('window');
+/**
+ * Bg constant.
+ * @returns {string}
+ */
 const BG = '#E8EFF7';
+/**
+ * Hl constant.
+ * @returns {string}
+ */
 const HL = '#F5F8FF';
 
+/**
+ * Cart item shimmer component.
+ * @returns {JSX.Element}
+ */
 const CartItemShimmer = () => (
     <SkeletonPlaceholder backgroundColor={BG} highlightColor={HL}>
         <View style={styles.itemCard}>
@@ -34,6 +50,10 @@ const CartItemShimmer = () => (
     </SkeletonPlaceholder>
 );
 
+/**
+ * Add to cart shimmer component.
+ * @returns {JSX.Element}
+ */
 const AddToCartShimmer = () => (
     <ScrollView
         showsVerticalScrollIndicator={false}
@@ -94,6 +114,10 @@ const AddToCartShimmer = () => (
     </ScrollView>
 );
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     itemCard: {
         paddingHorizontal: normalize(20),
@@ -154,4 +178,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Add to cart shimmer default export.
+ *
+ * @returns {*}
+ */
 export default AddToCartShimmer;

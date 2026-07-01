@@ -1,3 +1,7 @@
+/**
+ * Ring support screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SIZE, COLOR, Ring, styles.
+ */
+
 import { StyleSheet } from 'react-native';
 import React, { useEffect } from 'react';
 import Animated, {
@@ -18,8 +22,18 @@ import Colorpath from '../../Themes/Colorpath';
  */
 
 const SIZE = 100;
+/**
+ * Color constant.
+ * @returns {*}
+ */
 const COLOR = Colorpath.ButtonColr;
 
+/**
+ * Ring component.
+ * @param {Object} props - Input object.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
 const Ring = ({ index }) => {
   const opacityValue = useSharedValue(0.7);
   const scaleValue = useSharedValue(1);
@@ -55,6 +69,10 @@ const Ring = ({ index }) => {
   return <Animated.View style={[styles.dot, rStyle]} />;
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   dot: {
     height: SIZE,
@@ -65,4 +83,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Ring support default export.
+ *
+ * @returns {*}
+ */
 export default Ring;

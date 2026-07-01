@@ -1,3 +1,7 @@
+/**
+ * Change password screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, ChangePassword, clearAllAsyncStorage, Passback, finalHit, backTo.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, ScrollView } from 'react-native'
 import React, {useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader';
@@ -28,6 +32,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status1 = "";
+/**
+ * Change password component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const ChangePassword = (props) => {
 
     const [oldpass, setOldpass] = useState("");
@@ -44,7 +53,13 @@ const ChangePassword = (props) => {
     const final = !(oldPasswordExists && isPasswordValid && cnfrmPasswordValid && passwordsMatch && !dontMatch);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const dispatch = useDispatch();
-    const clearAllAsyncStorage = async () => {
+        /**
+ * Clear all async storage utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const clearAllAsyncStorage = async () => {
         try {
             const keepKeys = [
                 'PRIME_CARD_SKIPPED_ONCE',
@@ -68,7 +83,11 @@ const ChangePassword = (props) => {
             console.error('Error clearing AsyncStorage:', e);
         }
     };
-    const Passback = () => {
+        /**
+ * Passback component.
+ * @returns {void}
+ */
+const Passback = () => {
         clearAllAsyncStorage()
             .then(() => dispatch(logoutRequest()))
             .then(() => dispatch(allreducerRequest({ "obj": "" })))
@@ -82,7 +101,11 @@ const ChangePassword = (props) => {
             })
             .catch(err => console.log("Logout flow error:", err));
     }
-    const finalHit = () => {
+        /**
+ * Final hit utility.
+ * @returns {void}
+ */
+const finalHit = () => {
         let obj = {
             "current_password": oldpass,
             "new_password": cnfmpass
@@ -112,7 +135,11 @@ const ChangePassword = (props) => {
                 break;
         }
     }
-    const backTo = () => {
+        /**
+ * Back to utility.
+ * @returns {void}
+ */
+const backTo = () => {
         props?.navigation.goBack();
     }
     useLayoutEffect(() => {
@@ -258,4 +285,9 @@ const ChangePassword = (props) => {
     )
 }
 
+/**
+ * Change password default export.
+ *
+ * @returns {*}
+ */
 export default ChangePassword

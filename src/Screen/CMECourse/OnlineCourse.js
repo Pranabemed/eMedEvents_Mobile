@@ -1,3 +1,7 @@
+/**
+ * Online course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: OnlineCourse, openFilterModal, handleSave, handleUrl, titlhandleUrl, fullAction, fetchHandle, fullDataRefresh, handleLinkst, showPDF, openFileViewerst, courserenderData, handlePress, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Alert } from 'react-native';
 import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import Fonts from '../../Themes/Fonts';
@@ -48,10 +52,18 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const [filtermodal, setFiltermodal] = useState(false);
     const [pdfUrist, setPdfUrist] = useState("");
     const [showloader, setShowLoader] = useState(false);
-    const openFilterModal = () => {
+        /**
+ * Open filter modal utility.
+ * @returns {void}
+ */
+const openFilterModal = () => {
         setFiltermodal(!filtermodal);
     }
-    const handleSave = () => {
+        /**
+ * Handles save.
+ * @returns {void}
+ */
+const handleSave = () => {
         setFiltermodal(false);
     };
     const threeDotData = [{ id: 0, name: "Rate & Review" }, { id: 1, name: "Download Certificate" }]
@@ -61,21 +73,35 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
         (needReview == 1 && !certificate) ? duplicateDataReview :
             (needReview == 0 && certificate) ? duplicateData : null;
 
-    const handleUrl = () => {
+        /**
+ * Handles url.
+ * @returns {void}
+ */
+const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
         }
     }
-    const titlhandleUrl = (make) => {
+        /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: crediwhole } })
         }
     }
-    const fullAction = (dataItem) => {
+        /**
+ * Full action utility.
+ * @param {*} dataItem - Input value.
+ * @returns {void}
+ */
+const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = url.split('/').pop();
         if (dataItem?.current_activity_api == "activitysession") {
@@ -102,7 +128,12 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
         }
     }
-    const fetchHandle = (page = pageNum) => {
+        /**
+ * Fetch handle utility.
+ * @param {*} page - Input value.
+ * @returns {void}
+ */
+const fetchHandle = (page = pageNum) => {
         let obj = {
             "pageno": page,
             "limit": limit,
@@ -135,7 +166,11 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
         }
     }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
 
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -199,9 +234,20 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                     [];
         setDataAll(resultData);
     }, [fetchname, filteredItems, pendingall, compltall]);
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
@@ -227,7 +273,13 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
 
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     await FileViewer.open(pdfUrist);
                     setPdfUrist(null);
@@ -246,7 +298,14 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
 
         return () => clearTimeout(timeout);
     }, []);
-    const courserenderData = ({ item, index }) => {
+        /**
+ * Courserender data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderData = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
@@ -523,7 +582,11 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
                             keyExtractor={item => item.id.toString()}
                             data={Fulldata}
                             renderItem={({ item }) => {
-                                const handlePress = () => {
+                                                                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                     setModalview(false);
                                     if (item?.id === 1) {
                                         if (certificate) {
@@ -561,7 +624,16 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     );
 }
 
+/**
+ * Online course default export.
+ *
+ * @returns {*}
+ */
 export default OnlineCourse;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

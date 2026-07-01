@@ -43,16 +43,72 @@ import constants from './constants';
 import TokenManager from './TokenManager';
 import getUserAgentJSON from './UserAgent';
 import { fetchAndStoreBasicAuthToken, getBasicAuthorizationHeader } from './BasicAuth';
+/**
+ * API endpoints that use dashboard request coalescing.
+ *
+ * @type {Set<string>}
+ */
 const DASHBOARD_ENDPOINTS = new Set(['user/dashboard', '/user/dashboard']);
+/**
+ * Minimum interval before the same dashboard response can be reused.
+ *
+ * @type {number}
+ */
 const DASHBOARD_COOLDOWN_MS = 3000;
+/**
+ * Shared in-flight dashboard request promise.
+ *
+ * @type {Promise<import('axios').AxiosResponse> | null}
+ */
 let dashboardInFlightPromise = null;
+/**
+ * Cache key for the current in-flight dashboard request.
+ *
+ * @type {string}
+ */
 let dashboardInFlightKey = '';
+/**
+ * Last successful dashboard response.
+ *
+ * @type {import('axios').AxiosResponse | null}
+ */
 let lastDashboardResponse = null;
+/**
+ * Timestamp of the last dashboard response reuse.
+ *
+ * @type {number}
+ */
 let lastDashboardHitAt = 0;
+/**
+ * Cache key for the last completed dashboard request.
+ *
+ * @type {string}
+ */
 let lastDashboardRequestKey = '';
 
+/**
+ * Normalizes an endpoint path for cache lookups.
+ *
+ * @function normalizeEndpoint
+ * @param {string} url - Raw endpoint path.
+ * @returns {string} Lowercased trimmed endpoint path.
+ */
 const normalizeEndpoint = (url = '') => String(url).trim().toLowerCase();
+/**
+ * Determines whether an endpoint should use dashboard request coalescing.
+ *
+ * @function isDashboardEndpoint
+ * @param {string} url - Raw endpoint path.
+ * @returns {boolean} `true` when the endpoint is a dashboard route.
+ */
 const isDashboardEndpoint = (url = '') => DASHBOARD_ENDPOINTS.has(normalizeEndpoint(url));
+/**
+ * Serializes a dashboard request payload into a stable cache key.
+ *
+ * @function getDashboardRequestKey
+ * @param {Record<string, unknown> | null | undefined} payload - Request payload.
+ * @returns {string} Serialized cache key or a fallback token when serialization fails.
+ */
 const getDashboardRequestKey = (payload) => {
   try {
     return JSON.stringify(payload ?? {});
@@ -60,8 +116,26 @@ const getDashboardRequestKey = (payload) => {
     return '__unserializable_dashboard_payload__';
   }
 };
+/**
+ * Determines whether dashboard caching should be bypassed for a request.
+ *
+ * @function shouldBypassDashboardCache
+ * @param {Record<string, unknown> & {
+ *   force_dashboard_refresh?: boolean;
+ *   _forceDashboardRefresh?: boolean;
+ *   bypass_cache?: boolean;
+ * }} payload - Request payload.
+ * @returns {boolean} `true` when cache reuse should be skipped.
+ */
 const shouldBypassDashboardCache = (payload) =>
   Boolean(payload?.force_dashboard_refresh || payload?._forceDashboardRefresh || payload?.bypass_cache);
+/**
+ * Builds a fully qualified API URL from a relative path.
+ *
+ * @function buildApiUrl
+ * @param {string} url - Relative endpoint path.
+ * @returns {string} Absolute API URL.
+ */
 const buildApiUrl = (url = '') => `${constants.BASE_URL}/${String(url).replace(/^\/+/, '')}`;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +148,11 @@ const buildApiUrl = (url = '') => `${constants.BASE_URL}/${String(url).replace(/
 //
 // Only match the server's EXACT known token-expiry messages.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Known server messages that indicate an expired access token.
+ *
+ * @type {string[]}
+ */
 const TOKEN_EXPIRY_MESSAGES = [
   'missing or invalid token',
   'token is missing or invalid',
@@ -83,6 +162,13 @@ const TOKEN_EXPIRY_MESSAGES = [
   'missing token',
 ];
 
+/**
+ * Detects whether an API response indicates that the token expired.
+ *
+ * @function isTokenExpiredResponse
+ * @param {{ data?: { success?: boolean, msg?: string, message?: string, error?: string } } | null | undefined} response - Axios response payload.
+ * @returns {boolean} `true` when the response matches a known token-expiry shape.
+ */
 function isTokenExpiredResponse(response) {
   if (!response) return false;
 
@@ -107,6 +193,15 @@ function isTokenExpiredResponse(response) {
 // ─────────────────────────────────────────────────────────────────────────────
 // handleTokenExpiry — delegates token refresh to the SINGLE LOCK TokenManager
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Handles token expiry by retrying the original request after refresh.
+ *
+ * @function handleTokenExpiry
+ * @async
+ * @param {import('axios').InternalAxiosRequestConfig & { _retried?: boolean, headers?: Record<string, string> }} originalConfig - Original Axios request config.
+ * @param {import('axios').AxiosResponse} originalResponse - Original Axios response.
+ * @returns {Promise<import('axios').AxiosResponse>} The retried response when refresh succeeds, otherwise the original response.
+ */
 async function handleTokenExpiry(originalConfig, originalResponse) {
   // Guard: don't retry the same request twice
   if (originalConfig._retried) {
@@ -142,6 +237,14 @@ async function handleTokenExpiry(originalConfig, originalResponse) {
   }
 }
 
+/**
+ * Retries a request after refreshing the basic authorization token.
+ *
+ * @function retryWithFreshBasicAuth
+ * @async
+ * @param {import('axios').InternalAxiosRequestConfig & { _retriedBasicAuth?: boolean, skipBasicAuth?: boolean, headers?: Record<string, string> }} originalConfig - Original Axios request config.
+ * @returns {Promise<import('axios').AxiosResponse | null>} The retried response when refresh succeeds, otherwise `null`.
+ */
 async function retryWithFreshBasicAuth(originalConfig) {
   if (!originalConfig || originalConfig._retriedBasicAuth || originalConfig.skipBasicAuth) {
     return null;
@@ -169,6 +272,11 @@ async function retryWithFreshBasicAuth(originalConfig) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Axios instance — all app API calls go through this
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Shared Axios instance used by all application API calls.
+ *
+ * @type {import('axios').AxiosInstance}
+ */
 const axiosInstance = axios.create();
 
 // ─── [R1] Request interceptor ─────────────────────────────────────────────────
@@ -235,6 +343,11 @@ axiosInstance.interceptors.request.use(
 // Note: we save even when success:false (unverified-user temporary tokens).
 // Also reschedules the proactive refresh timer via TokenManager.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Endpoints that should not trigger token refresh persistence.
+ *
+ * @type {Set<string>}
+ */
 const RECOVERY_ENDPOINTS = new Set([
   'user/forgotpasswordphone',
   '/user/forgotpasswordphone',
@@ -317,6 +430,20 @@ axiosInstance.interceptors.response.use(
 );
 
 // ─── Public API functions ──────────────────────────────────────────────────────
+/**
+ * Fetches data from the API using a GET request.
+ *
+ * @function getApi
+ * @async
+ * @param {string} url - Relative endpoint path.
+ * @param {Object} header - Request header options.
+ * @param {string} [header.Accept] - Accept header value.
+ * @param {string} [header.contenttype] - Content-Type header value.
+ * @param {string} [header.authorization] - eMed authorization token.
+ * @param {boolean} [header.skipBasicAuth] - Skips basic auth header when `true`.
+ * @returns {Promise<import('axios').AxiosResponse>} API response.
+ * @throws {Error} Throws when the request fails.
+ */
 export async function getApi(url, header = {}) {
   const userAgentHeader = getUserAgentJSON();
   const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
@@ -333,6 +460,21 @@ export async function getApi(url, header = {}) {
   });
 }
 
+/**
+ * Fetches data from the API using a GET request with query parameters.
+ *
+ * @function getApiWithParam
+ * @async
+ * @param {string} url - Relative endpoint path.
+ * @param {Record<string, unknown>} param - Query parameters.
+ * @param {Object} header - Request header options.
+ * @param {string} [header.Accept] - Accept header value.
+ * @param {string} [header.contenttype] - Content-Type header value.
+ * @param {string} [header.authorization] - eMed authorization token.
+ * @param {boolean} [header.skipBasicAuth] - Skips basic auth header when `true`.
+ * @returns {Promise<import('axios').AxiosResponse>} API response.
+ * @throws {Error} Throws when the request fails.
+ */
 export async function getApiWithParam(url, param, header = {}) {
   const userAgentHeader = getUserAgentJSON();
   const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
@@ -353,6 +495,22 @@ export async function getApiWithParam(url, param, header = {}) {
   });
 }
 
+/**
+ * Sends a POST request to the API.
+ *
+ * @function postApi
+ * @async
+ * @param {string} url - Relative endpoint path.
+ * @param {Record<string, unknown>} payload - Request body payload.
+ * @param {Object} header - Request header options.
+ * @param {string} [header.Accept] - Accept header value.
+ * @param {string} [header.contenttype] - Content-Type header value.
+ * @param {string} [header.authorization] - eMed authorization token.
+ * @param {string} [header.IPADDRESS] - Client IP address header.
+ * @param {boolean} [header.skipBasicAuth] - Skips basic auth header when `true`.
+ * @returns {Promise<import('axios').AxiosResponse>} API response.
+ * @throws {Error} Throws when the request fails.
+ */
 export async function postApi(url, payload, header = {}) {
   if (isDashboardEndpoint(url)) {
     const bypassCache = shouldBypassDashboardCache(payload);
@@ -407,6 +565,21 @@ export async function postApi(url, payload, header = {}) {
   return requestPromise;
 }
 
+/**
+ * Sends a DELETE request to the API.
+ *
+ * @function deleteApi
+ * @async
+ * @param {string} url - Relative endpoint path.
+ * @param {Record<string, unknown>} payload - Request body payload.
+ * @param {Object} header - Request header options.
+ * @param {string} [header.Accept] - Accept header value.
+ * @param {string} [header.contenttype] - Content-Type header value.
+ * @param {string} [header.authorization] - eMed authorization token.
+ * @param {boolean} [header.skipBasicAuth] - Skips basic auth header when `true`.
+ * @returns {Promise<import('axios').AxiosResponse>} API response.
+ * @throws {Error} Throws when the request fails.
+ */
 export async function deleteApi(url, payload, header = {}) {
   const cleanUrl = buildApiUrl(url).trim();
   const userAgentHeader = getUserAgentJSON();

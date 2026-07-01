@@ -1,3 +1,7 @@
+/**
+ * Hospital list screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HospitalList, hospFilterTake.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform } from 'react-native'
 import React from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -15,6 +19,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const HospitalList  = ({hosppicker,hospAll,setSearchhosp, searchhosp,handlehospShows, setHosppicker, searchHospName}) => {
+/**
+ * Hosp filter take utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
 const hospFilterTake = ({ item}) => {
     return (
         <TouchableOpacity onPress={()=>{
@@ -140,4 +150,9 @@ const hospFilterTake = ({ item}) => {
     )
 }
 
+/**
+ * Hospital list default export.
+ *
+ * @returns {*}
+ */
 export default HospitalList 

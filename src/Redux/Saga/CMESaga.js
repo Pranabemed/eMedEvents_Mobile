@@ -4,6 +4,13 @@ import { CMEPlannerDelFailure, CMEPlannerDelSuccess, CMEPlannerEditFailure, CMEP
 let getItem = state => state.AuthReducer;
 
 
+/**
+ * Executes the cmeCourseSaga saga.
+ *
+ * @function cmeCourseSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cmeCourseSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -22,6 +29,13 @@ export function* cmeCourseSaga(action) {
     yield put(cmeCourseFailure(error));
   }
 }
+/**
+ * Executes the cmeReviewSaga saga.
+ *
+ * @function cmeReviewSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cmeReviewSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -40,6 +54,13 @@ export function* cmeReviewSaga(action) {
     yield put(cmereviewFailure(error));
   }
 }
+/**
+ * Executes the cmeActivitySaga saga.
+ *
+ * @function cmeActivitySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cmeActivitySaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -58,6 +79,13 @@ export function* cmeActivitySaga(action) {
     yield put(cmenextactionFailure(error));
   }
 }
+/**
+ * Executes the cmeNextactionSaga saga.
+ *
+ * @function cmeNextactionSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cmeNextactionSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -76,6 +104,13 @@ export function* cmeNextactionSaga(action) {
     yield put(cmeactivityFailure(error));
   }
 }
+/**
+ * Executes the cmeDupicateSaga saga.
+ *
+ * @function cmeDupicateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* cmeDupicateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -94,6 +129,13 @@ export function* cmeDupicateSaga(action) {
     yield put(cmedulicateFailure(error));
   }
 }
+/**
+ * Executes the AgainNextactionSaga saga.
+ *
+ * @function AgainNextactionSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* AgainNextactionSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -112,6 +154,13 @@ export function* AgainNextactionSaga(action) {
     yield put(nextactionagainFailure(error));
   }
 }
+/**
+ * Executes the activityFulfilSaga saga.
+ *
+ * @function activityFulfilSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* activityFulfilSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -130,6 +179,13 @@ export function* activityFulfilSaga(action) {
     yield put(activityfulfilmentFailure(error));
   }
 }
+/**
+ * Executes the startTestSaga saga.
+ *
+ * @function startTestSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* startTestSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -148,6 +204,13 @@ export function* startTestSaga(action) {
     yield put(startTestFailure(error));
   }
 }
+/**
+ * Executes the activityBreakupSaga saga.
+ *
+ * @function activityBreakupSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* activityBreakupSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -166,6 +229,13 @@ export function* activityBreakupSaga(action) {
     yield put(actvityBreakupFailure(error));
   }
 }
+/**
+ * Executes the startEvaulateSaga saga.
+ *
+ * @function startEvaulateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* startEvaulateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -185,6 +255,13 @@ export function* startEvaulateSaga(action) {
     yield put(evaulateexamFailure(error));
   }
 }
+/**
+ * Executes the resultEvaulateSaga saga.
+ *
+ * @function resultEvaulateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* resultEvaulateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -203,6 +280,13 @@ export function* resultEvaulateSaga(action) {
     yield put(evaulatecalculateFailure(error));
   }
 } 
+/**
+ * Executes the certificateExamSaga saga.
+ *
+ * @function certificateExamSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* certificateExamSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -221,6 +305,13 @@ export function* certificateExamSaga(action) {
     yield put(certificatewiseexamFailure(error));
   }
 }
+/**
+ * Executes the CMEPlannerSaga saga.
+ *
+ * @function CMEPlannerSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* CMEPlannerSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -239,6 +330,13 @@ export function* CMEPlannerSaga(action) {
     yield put(CMEPlannerFailure(error));
   }
 }
+/**
+ * Executes the CMEPlannerAddSaga saga.
+ *
+ * @function CMEPlannerAddSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* CMEPlannerAddSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -257,6 +355,13 @@ export function* CMEPlannerAddSaga(action) {
     yield put(CMEPlannerEditFailure(error));
   }
 }
+/**
+ * Executes the CMEPlannerDelSaga saga.
+ *
+ * @function CMEPlannerDelSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* CMEPlannerDelSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -275,6 +380,13 @@ export function* CMEPlannerDelSaga(action) {
     yield put(CMEPlannerDelFailure(error));
   }
 }
+/**
+ * Executes the ConfActSaga saga.
+ *
+ * @function ConfActSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* ConfActSaga(action) {
   let items = yield select(getItem);
   let header = {

@@ -32,7 +32,12 @@
  * Error Handling:
  * Safely handles undefined and non-array values.
  */
-export const firstArray = (...values) =>
+export /**
+ * First array utility.
+ * @param {Array} values - Input values.
+ * @returns {*}
+ */
+const firstArray = (...values) =>
   values.find(value => Array.isArray(value) && value.length > 0) ||
   values.find(Array.isArray) ||
   [];
@@ -62,7 +67,13 @@ export const firstArray = (...values) =>
  * Error Handling:
  * Assumes numeric inputs from controlled callers.
  */
-export const scale = (width, value) =>
+export /**
+ * Scale utility.
+ * @param {*} width - Input value.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const scale = (width, value) =>
   Math.round((Math.min(width, 430) / 390) * value);
 
 /**
@@ -89,7 +100,12 @@ export const scale = (width, value) =>
  * Error Handling:
  * Skips null and undefined values safely.
  */
-export const getText = (...values) => {
+export /**
+ * Returns text.
+ * @param {Array} values - Input values.
+ * @returns {string}
+ */
+const getText = (...values) => {
   for (const value of values) {
     if (value == null) continue;
     const text = String(value).trim();
@@ -122,7 +138,12 @@ export const getText = (...values) => {
  * Error Handling:
  * Falls back to the original value when parsing is not possible.
  */
-export const formatGuestNumber = value => {
+export /**
+ * Formats guest number.
+ * @param {*} value - Input value.
+ * @returns {string}
+ */
+const formatGuestNumber = value => {
   const raw = String(value ?? '').trim();
   if (!raw || !/^-?\d+(?:\.\d+)?$/.test(raw)) return raw;
 
@@ -158,7 +179,12 @@ export const formatGuestNumber = value => {
  * Error Handling:
  * Returns an empty string for nullish inputs.
  */
-export const formatGuestNumericText = value =>
+export /**
+ * Formats guest numeric text.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatGuestNumericText = value =>
   String(value ?? '').replace(/-?\d+(?:\.\d+)?/g, match => formatGuestNumber(match));
 
 /**
@@ -185,7 +211,12 @@ export const formatGuestNumericText = value =>
  * Error Handling:
  * Returns empty string when label cannot be resolved.
  */
-export const getSpecialityLabel = item =>
+export /**
+ * Returns speciality label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const getSpecialityLabel = item =>
   typeof item === 'string'
     ? item
     : getText(item?.name, item?.specialty_name, item?.speciality_name, item?.title);
@@ -214,7 +245,12 @@ export const getSpecialityLabel = item =>
  * Error Handling:
  * Falls back to an empty array for unsupported values.
  */
-export const normalizeSpecialities = value => {
+export /**
+ * Normalizes specialities.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const normalizeSpecialities = value => {
   if (Array.isArray(value)) {
     return value.map(getSpecialityLabel).filter(Boolean);
   }
@@ -249,7 +285,13 @@ export const normalizeSpecialities = value => {
  * Error Handling:
  * Assumes a positive chunk size from controlled callers.
  */
-export const chunkArray = (items, size) =>
+export /**
+ * Chunk array utility.
+ * @param {*} items - Input value.
+ * @param {number} size - Input value.
+ * @returns {*}
+ */
+const chunkArray = (items, size) =>
   items.reduce((chunks, item, index) => {
     if (index % size === 0) {
       chunks.push([]);
@@ -282,7 +324,12 @@ export const chunkArray = (items, size) =>
  * Error Handling:
  * Returns undefined when the value is empty.
  */
-export const getImageSource = value => {
+export /**
+ * Returns image source.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const getImageSource = value => {
   if (!value) return undefined;
   if (typeof value === 'object') return value;
   const uri = String(value).trim();
@@ -313,7 +360,12 @@ export const getImageSource = value => {
  * Error Handling:
  * Returns an empty string for invalid input.
  */
-export const getInitials = value =>
+export /**
+ * Returns initials.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const getInitials = value =>
   String(value || '')
     .split(/\s+/)
     .filter(Boolean)
@@ -345,7 +397,12 @@ export const getInitials = value =>
  * Error Handling:
  * Safely skips nullish values.
  */
-export const getCountValue = (...values) => {
+export /**
+ * Returns count value.
+ * @param {Array} values - Input values.
+ * @returns {string}
+ */
+const getCountValue = (...values) => {
   for (const value of values) {
     if (value == null) continue;
     const text = String(value).trim();
@@ -378,7 +435,12 @@ export const getCountValue = (...values) => {
  * Error Handling:
  * Returns empty string for invalid URLs.
  */
-export const getDetailSlug = value => {
+export /**
+ * Returns detail slug.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const getDetailSlug = value => {
   const cleanUrl = String(value || '').split('#')[0];
   const segments = cleanUrl.split('/').filter(Boolean);
   if (!segments.length) return '';
@@ -411,7 +473,12 @@ export const getDetailSlug = value => {
  * Error Handling:
  * Returns empty string when state name is unavailable.
  */
-export const getStateName = stateObj =>
+export /**
+ * Returns state name.
+ * @param {*} stateObj - Input value.
+ * @returns {*}
+ */
+const getStateName = stateObj =>
   getText(stateObj?.name, stateObj?.state_name, stateObj?.title);
 
 /**
@@ -438,7 +505,12 @@ export const getStateName = stateObj =>
  * Error Handling:
  * Returns empty string when state code is unavailable.
  */
-export const getStateCode = stateObj =>
+export /**
+ * Returns state code.
+ * @param {*} stateObj - Input value.
+ * @returns {*}
+ */
+const getStateCode = stateObj =>
   getText(stateObj?.state_code, stateObj?.code, stateObj?.abbr, stateObj?.short_name);
 
 /**
@@ -465,7 +537,12 @@ export const getStateCode = stateObj =>
  * Error Handling:
  * Returns an empty string when no state info exists.
  */
-export const getStateSlug = stateObj => {
+export /**
+ * Returns state slug.
+ * @param {*} stateObj - Input value.
+ * @returns {*}
+ */
+const getStateSlug = stateObj => {
   const rawUrl = getText(stateObj?.url, stateObj?.state_url);
   if (rawUrl) return rawUrl;
   return getStateName(stateObj).toLowerCase().replace(/\s+/g, '-');

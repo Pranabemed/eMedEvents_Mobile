@@ -1,3 +1,7 @@
+/**
+ * Customized year screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomizedYear, weekFilterProfession, onBackPress.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, BackHandler } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -16,7 +20,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const CustomizedYear = ({ handleYearcust, yearRange, setCitypickeryear }) => {
     console.log(yearRange, "wekknamecustome")
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -48,7 +59,11 @@ const CustomizedYear = ({ handleYearcust, yearRange, setCitypickeryear }) => {
         );
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             setCitypickeryear(false);
             return true;
         };
@@ -108,4 +123,9 @@ const CustomizedYear = ({ handleYearcust, yearRange, setCitypickeryear }) => {
     )
 }
 
+/**
+ * Customized year default export.
+ *
+ * @returns {*}
+ */
 export default CustomizedYear

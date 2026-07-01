@@ -1,3 +1,7 @@
+/**
+ * Course relevant screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CourseRelevant, courseRele, stateActionCourse, handleUrl, courserenderDataMain, getActualPrice, registercourserenderDataMain, onBackPress, cleanNumber.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, Image, FlatList, ScrollView, Platform, Alert, BackHandler } from 'react-native';
 import PageHeader from '../../Components/PageHeader';
@@ -36,10 +40,19 @@ const CourseRelevant = (props) => {
         return () => unsubscribe();
     }, [isConnected]);
     console.log(AuthReducer, "helolo5555", props?.route?.params?.mainData?.state_data?.id, props?.route?.params?.mainData?.speciality_cources?.registered_cources);
-    const courseRele = () => {
+        /**
+ * Course rele utility.
+ * @returns {void}
+ */
+const courseRele = () => {
         props.navigation.goBack();
     }
-    const stateActionCourse = (courserole) => {
+        /**
+ * State action course utility.
+ * @param {*} courserole - Input value.
+ * @returns {void}
+ */
+const stateActionCourse = (courserole) => {
         console.log(courserole, "courserole===============");
         if (courserole?.current_activity_api == "activitysession") {
             props?.navigation.navigate("VideoComponent", { RoleData: courserole });
@@ -58,7 +71,12 @@ const CourseRelevant = (props) => {
             setSpecalty(convertData);
         }
     }, [DashboardReducer]);
-    const handleUrl = (did) => {
+        /**
+ * Handles url.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleUrl = (did) => {
         const url = did?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", did);
@@ -69,8 +87,21 @@ const CourseRelevant = (props) => {
     const registeredParams = props?.route?.params?.mainData?.speciality_cources?.registered_cources || [];
     const suggestedParams = props?.route?.params?.mainData?.speciality_cources?.suggested_cources || [];
     const totalParams = registeredParams.length + suggestedParams.length;
-    const courserenderDataMain = ({ item, index }) => {
-        const getActualPrice = (percent, discountPrice) => {
+        /**
+ * Courserender data main utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderDataMain = ({ item, index }) => {
+                /**
+ * Returns actual price.
+ * @param {*} percent - Input value.
+ * @param {number} discountPrice - Input value.
+ * @returns {*}
+ */
+const getActualPrice = (percent, discountPrice) => {
             let price = parseFloat((discountPrice || "0").toString().replace(/,/g, ""));
             return Math.round(price / (1 - percent));
         };
@@ -242,7 +273,14 @@ const CourseRelevant = (props) => {
         )
     }
 
-    const registercourserenderDataMain = ({ item, index }) => {
+        /**
+ * Registercourserender data main utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const registercourserenderDataMain = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
@@ -372,7 +410,11 @@ const CourseRelevant = (props) => {
         )
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             courseRele();
             return true;
         };
@@ -384,7 +426,12 @@ const CourseRelevant = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -629,4 +676,9 @@ const CourseRelevant = (props) => {
     )
 }
 
+/**
+ * Course relevant default export.
+ *
+ * @returns {*}
+ */
 export default CourseRelevant;

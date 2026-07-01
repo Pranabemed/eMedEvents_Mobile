@@ -1,3 +1,7 @@
+/**
+ * Tab nav navigation module. Exposes route helpers and navigation references used across the app. Exported members: status1, buildProfessionLabel, Tab, TabScreen, checkPrimeSkipped, hydrateDashboardState, token_error, stateDashboardData, stateReport, licHandl, loadLastActiveTab, handleTabPress, token_handle_vault, toggleDrawerModal, closeDrawerModal.
+ */
+
 import React, { useState, useEffect, useLayoutEffect, useContext, useRef } from 'react';
 import { Image, Text, View, TouchableOpacity, Platform, Alert, Pressable, Linking, DeviceEventEmitter } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -36,8 +40,18 @@ import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } 
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
 
+/**
+ * Navigation helper that exposes build profession label behavior.
+ * @param {*} profession - Input value.
+ * @param {*} professionType - Input value.
+ * @returns {string}
+ */
 const buildProfessionLabel = (profession, professionType) => {
   const cleanProfession = String(profession || '').trim();
   const cleanProfessionType = String(professionType || '').trim();
@@ -51,7 +65,15 @@ const buildProfessionLabel = (profession, professionType) => {
   return `${cleanProfession} - ${cleanProfessionType}`;
 };
 
+/**
+ * Tab value.
+ * @returns {*}
+ */
 const Tab = createBottomTabNavigator();
+/**
+ * Tab screen component.
+ * @returns {JSX.Element}
+ */
 function TabScreen() {
   const insets = useSafeAreaInsets();
   const {
@@ -112,7 +134,13 @@ function TabScreen() {
   const [wholeProf, setWholeProf] = useState()
   const [primeSkipped, setPrimeSkipped] = useState(false);
   useEffect(() => {
-    const checkPrimeSkipped = async () => {
+        /**
+ * Navigation helper that exposes check prime skipped behavior.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkPrimeSkipped = async () => {
       try {
         const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
         setPrimeSkipped(skipped === 'true');
@@ -140,7 +168,11 @@ function TabScreen() {
     } : {}),
   };
   useEffect(() => {
-    const hydrateDashboardState = () => {
+        /**
+ * Navigation helper that exposes hydrate dashboard state behavior.
+ * @returns {void}
+ */
+const hydrateDashboardState = () => {
       AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
         if (loginHandleProccess) {
           hydratedStateIdRef.current = null; // ensure state dashboard fetch re-hydrates for new account
@@ -197,7 +229,11 @@ function TabScreen() {
   }, [refreshLicensesAt, dispatch]);
 
   useEffect(() => {
-    const token_error = () => {
+        /**
+ * Navigation helper that exposes token error behavior.
+ * @returns {void}
+ */
+const token_error = () => {
       AsyncStorage.getItem(constants.PRODATA).then((profdatset) => {
         if (profdatset) {
           const parsedData = JSON.parse(profdatset);
@@ -243,7 +279,12 @@ function TabScreen() {
       licHandl(latestProfessionLabel);
     }
   }, [DashboardReducer?.status, DashboardReducer?.dashPerResponse?.data?.licensures, DashboardReducer?.mainprofileResponse?.professional_information, AuthReducer?.signupResponse?.user, ProfileReducer?.latestProfessionInfo, wholeProf]);
-  const stateDashboardData = (id) => {
+    /**
+ * Navigation helper that exposes state dashboard data behavior.
+ * @param {*} id - Input value.
+ * @returns {void}
+ */
+const stateDashboardData = (id) => {
     let obj = {
       "state_id": id
     }
@@ -253,7 +294,12 @@ function TabScreen() {
       })
       .catch(err => { showErrorAlert("Please connect to internet", err) })
   }
-  const stateReport = (did) => {
+    /**
+ * Navigation helper that exposes state report behavior.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const stateReport = (did) => {
     let obj = {
       "state_id": did
     }
@@ -265,7 +311,12 @@ function TabScreen() {
         showErrorAlert("Please connect to internet", err)
       })
   }
-  const licHandl = (professionLabel) => {
+    /**
+ * Navigation helper that exposes lic handl behavior.
+ * @param {*} professionLabel - Input value.
+ * @returns {void}
+ */
+const licHandl = (professionLabel) => {
     if (!professionLabel) return;
     if (professionLabel.toLowerCase().includes('undefined')) return;
     if (lastLicensureProfessionRef.current === professionLabel) return;
@@ -288,7 +339,13 @@ function TabScreen() {
       : '';
   const allProfTake = validHandles.has(profFromDashboard);
   useEffect(() => {
-    const loadLastActiveTab = async () => {
+        /**
+ * Navigation helper that exposes load last active tab behavior.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadLastActiveTab = async () => {
       try {
         const lastTab = await AsyncStorage.getItem('lastActiveTab');
         if (lastTab) {
@@ -300,7 +357,14 @@ function TabScreen() {
     };
     loadLastActiveTab();
   }, []);
-  const handleTabPress = async (tabName) => {
+    /**
+ * Navigation helper that exposes handle tab press behavior.
+ *
+ * @async
+ * @param {*} tabName - Input value.
+ * @returns {Promise<*>}
+ */
+const handleTabPress = async (tabName) => {
     if (tabName == "Volts") return;
     try {
       await AsyncStorage.setItem('lastActiveTab', tabName);
@@ -330,7 +394,11 @@ function TabScreen() {
     return () => unsubscribe();
   }, [isFoucs]);
   useEffect(() => {
-    const token_handle_vault = () => {
+        /**
+ * Navigation helper that exposes token handle vault behavior.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
       (async () => {
         try {
           const [board_special, profession_data] = await Promise.all([
@@ -405,12 +473,20 @@ function TabScreen() {
   const creditVaultComponent = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true
     ? DashoardVault
     : (isNonUsaUser ? CertficateHandle : DashoardVault);
-  const toggleDrawerModal = () => {
+    /**
+ * Navigation helper that exposes toggle drawer modal behavior.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
     setVisible(true);
   };
-  const closeDrawerModal = () => {
+    /**
+ * Navigation helper that exposes close drawer modal behavior.
+ * @returns {void}
+ */
+const closeDrawerModal = () => {
     setVisible(false);
   };
   useEffect(() => {
@@ -447,7 +523,12 @@ function TabScreen() {
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-        tabPress: (e) => {
+                /**
+ * Navigation helper that exposes tab press behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -460,7 +541,12 @@ function TabScreen() {
           }
           handleTabPress(route.name);
         },
-        focus: (e) => {
+                /**
+ * Navigation helper that exposes focus behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -482,7 +568,13 @@ function TabScreen() {
             component={item.component}
             initialParams={{ detectmain: "newadd" }}
             options={{
-              tabBarIcon: ({ focused }) => {
+                            /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => {
                 if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                   return (
                     <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -544,7 +636,13 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarIcon: ({ focused }) => (
+                    /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}
@@ -606,7 +704,12 @@ function TabScreen() {
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-        tabPress: (e) => {
+                /**
+ * Navigation helper that exposes tab press behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -619,7 +722,12 @@ function TabScreen() {
           }
           handleTabPress(route.name);
         },
-        focus: (e) => {
+                /**
+ * Navigation helper that exposes focus behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -640,7 +748,13 @@ function TabScreen() {
           component={item.component}
           initialParams={{ detectmain: "newadd" }}
           options={{
-            tabBarIcon: ({ focused }) => {
+                        /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => {
               if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -705,7 +819,13 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarIcon: ({ focused }) => (
+                    /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}
@@ -767,7 +887,12 @@ function TabScreen() {
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-        tabPress: (e) => {
+                /**
+ * Navigation helper that exposes tab press behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -780,7 +905,12 @@ function TabScreen() {
           }
           handleTabPress(route.name);
         },
-        focus: (e) => {
+                /**
+ * Navigation helper that exposes focus behavior.
+ * @param {*} e - Input value.
+ * @returns {void}
+ */
+focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -801,7 +931,13 @@ function TabScreen() {
           component={item.component}
           initialParams={{ detectmain: "newadd" }}
           options={{
-            tabBarIcon: ({ focused }) => {
+                        /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => {
               if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -866,7 +1002,13 @@ function TabScreen() {
         name="Volts"
         component={Menu}
         options={{
-          tabBarIcon: ({ focused }) => (
+                    /**
+ * Navigation helper that exposes tab bar icon behavior.
+ * @param {Object} props - Input object.
+ * @param {*} props.focused - Nested property value.
+ * @returns {JSX.Element}
+ */
+tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}
@@ -919,6 +1061,11 @@ function TabScreen() {
 }
 
 
+/**
+ * Tab nav default export.
+ *
+ * @returns {*}
+ */
 export default function TabNavigator() {
   return <TabScreen />;
 }

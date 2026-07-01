@@ -1,3 +1,7 @@
+/**
+ * Rate review reusable component module. Provides a React Native UI building block used across screens. Exported members: status, status1, RateReview, Ratingpage, rateReviewSave.
+ */
+
 import { View, Text, Platform, Image, StyleSheet, TextInput, KeyboardAvoidingView, ScrollView } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import Colorpath from '../Themes/Colorpath'
@@ -26,7 +30,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Rate review component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const RateReview = (props) => {
     const {
         statepush,
@@ -43,13 +56,21 @@ const RateReview = (props) => {
     const [ratingex, setRatingex] = useState(0);
     const [ratingct, setRatingct] = useState(0);
     const [comment, setComment] = useState("");
-    const Ratingpage = () => {
+        /**
+ * Ratingpage component.
+ * @returns {void}
+ */
+const Ratingpage = () => {
         const getAda = fulldashbaord?.[0];
         setAddit(getAda);
         props.navigation.navigate("TabNav");
     }
     const isButtonEnabled = rating && ratingct && ratingex && comment;
-    const rateReviewSave = () => {
+        /**
+ * Rate review save utility.
+ * @returns {void}
+ */
+const rateReviewSave = () => {
         let obj = {
             "conference_id": props?.route?.params?.onlineName?.id || props?.route?.params?.reviewCon,
             "overall_experience": ratingex,
@@ -378,4 +399,9 @@ const RateReview = (props) => {
     )
 }
 
+/**
+ * Rate review default export.
+ *
+ * @returns {*}
+ */
 export default RateReview;

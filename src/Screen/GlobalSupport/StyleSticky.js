@@ -1,5 +1,14 @@
+/**
+ * Style sticky screen module. Renders a React Native screen or a screen-scoped support component.
+ */
+
 import {StyleSheet} from "react-native";
 
+/**
+ * Style sticky default export.
+ *
+ * @returns {*}
+ */
 export default StyleSheet.create({
   container: {
     backgroundColor: "#fff",

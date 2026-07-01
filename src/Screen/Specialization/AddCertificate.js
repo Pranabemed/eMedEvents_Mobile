@@ -1,3 +1,7 @@
+/**
+ * Add certificate screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddCertificate, addCretBack, toggleModalcert, directUploadBoard, handleBoardname, token_handle_vault, transformDataSpecial, transformData, boardSpecialty, searchBoardNameFinal, boardCertificateAdd, onBackPress, styles.
+ */
+
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -44,6 +48,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Add certificate component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const AddCertificate = (props) => {
     console.log(totalboardname, "boardnamerealData=====", props?.route?.params);
     const [certificateboard, setCertificateboard] = useState(false);
@@ -66,7 +75,11 @@ const AddCertificate = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const navigation = useNavigation();
     const dispatch = useDispatch();
-    const addCretBack = () => {
+        /**
+ * Add cret back utility.
+ * @returns {void}
+ */
+const addCretBack = () => {
         if (props?.route?.params?.profile) {
             props.navigation.dispatch(
                 CommonActions.reset({
@@ -90,7 +103,11 @@ const AddCertificate = (props) => {
             navigation.navigate("TabNav", { detectmain: "main" });
         }
     }
-    const toggleModalcert = () => {
+        /**
+ * Toggle modalcert utility.
+ * @returns {void}
+ */
+const toggleModalcert = () => {
         setModalcert(!modalcert);
     };
     console.log(AuthReducer?.verifymobileResponse?.user?.specialities, DashboardReducer?.mainprofileResponse, "jel========;ooo", AuthReducer);
@@ -209,7 +226,13 @@ const AddCertificate = (props) => {
                 break;
         }
     }
-    function directUploadBoard() {
+        /**
+ * Direct upload board utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function directUploadBoard() {
         ImagePicker.openCamera({
             width: 300,
             height: 400,
@@ -230,7 +253,12 @@ const AddCertificate = (props) => {
             .catch(err => console.log(err));
     }
     console.log(bspecialityname, "AuthReducer?.loginResponse?.user?.specialities=========", boardID, searchboardname);
-    const handleBoardname = (roled) => {
+        /**
+ * Handles boardname.
+ * @param {*} roled - Input value.
+ * @returns {void}
+ */
+const handleBoardname = (roled) => {
         setCertificateboard(roled?.name);
         setBoardID(roled?.id)
         setBoardnamepick(false);
@@ -242,7 +270,11 @@ const AddCertificate = (props) => {
     const [totalboardname, setTotalboardname] = useState([]);
 
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -264,7 +296,12 @@ const AddCertificate = (props) => {
         token_handle_vault();
     }, [isFocus]);
 
-    const transformDataSpecial = (data) => {
+        /**
+ * Transform data special utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const transformDataSpecial = (data) => {
         return Object.keys(data).map(key => {
             const specialities = Object.values(data[key].specialities).map(spec => spec.name);
             return {
@@ -310,7 +347,12 @@ const AddCertificate = (props) => {
     }, [props?.route?.params?.profiledet])
 
     useEffect(() => {
-        const transformData = (data) => {
+                /**
+ * Transform data utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const transformData = (data) => {
             return Object.keys(data).map(key => ({
                 id: parseInt(key, 10),
                 name: data[key]
@@ -339,7 +381,11 @@ const AddCertificate = (props) => {
     ]);
 
     useEffect(() => {
-        const boardSpecialty = () => {
+                /**
+ * Board specialty utility.
+ * @returns {void}
+ */
+const boardSpecialty = () => {
             if (boardspecial?.length > 0) {
                 const AllId = boardspecial.map((d) => d?.id);
                 const finalId = AllId?.join(', ');
@@ -370,7 +416,12 @@ const AddCertificate = (props) => {
         finalverifyboard?.specialities,
         finalProfession?.specialities
     ]);
-    const searchBoardNameFinal = text => {
+        /**
+ * Search board name final utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchBoardNameFinal = text => {
         console.log(text, 'text12333', totalboardname);
         if (text) {
             const boardState = totalboardname?.filter(function (item) {
@@ -395,7 +446,11 @@ const AddCertificate = (props) => {
             setsearchboardname("");
         }
     }, [certificateboard])
-    const boardCertificateAdd = () => {
+        /**
+ * Board certificate add utility.
+ * @returns {void}
+ */
+const boardCertificateAdd = () => {
         // if (!boardPic) {
         //     showErrorAlert("Please choose a image !")
         // } else 
@@ -425,7 +480,11 @@ const AddCertificate = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             addCretBack();
             return true;
         };
@@ -469,7 +528,15 @@ const AddCertificate = (props) => {
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
                                 <Pressable onPress={() => {
                                     if (boardPic) {
-                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No",                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes",                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setBoardPic(""), onCancel: "default" }])
                                     } else {
                                         setBoardcamera(true);
                                     }
@@ -497,14 +564,30 @@ const AddCertificate = (props) => {
                                                 leftIcon={boardPic ? <DeleteIcon name="delete" size={25} color="#949494" /> : <ScanIcon name="scan1" size={28} color="#949494" />}
                                                 onLeftIconPress={() => {
                                                     if (boardPic) {
-                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("fbfg"), onCancel: "default" }, { text: "Yes",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setBoardPic(""), onCancel: "default" }])
                                                     } else {
                                                         directUploadBoard();
                                                     }
                                                 }}
                                                 onwholePress={() => {
                                                     if (boardPic) {
-                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No", onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes", onPress: () => setBoardPic(""), onCancel: "default" }])
+                                                        Alert.alert("eMedEvents", "Are you sure want to delete this file ?", [{ text: "No",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => console.log("dgfhdj"), onCancel: "default" }, { text: "Yes",                                                         /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => setBoardPic(""), onCancel: "default" }])
                                                     } else {
                                                         setBoardcamera(true);
                                                     }
@@ -785,7 +868,16 @@ const AddCertificate = (props) => {
     )
 }
 
+/**
+ * Add certificate default export.
+ *
+ * @returns {*}
+ */
 export default AddCertificate;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     imageBackground: {
         height: normalize(65),

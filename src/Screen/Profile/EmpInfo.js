@@ -1,3 +1,7 @@
+/**
+ * Emp info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, EmpInfo, SearchBack, stateTakeItemEmp, formatUSPhoneNumber, loadMoreData, renderFooter.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, ActivityIndicator, Image } from 'react-native'
 import React, { useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -25,8 +29,17 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status1 = "";
+/**
+ * Emp info component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const EmpInfo = (props) => {
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     const [webcastview, setWebcastview] = useState(null);
@@ -70,8 +83,20 @@ const EmpInfo = (props) => {
                 break;
         }
     }
-    const stateTakeItemEmp = ({ item, index }) => {
-        function formatUSPhoneNumber(input) {
+        /**
+ * State take item emp utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateTakeItemEmp = ({ item, index }) => {
+                /**
+ * Formats usphone number.
+ * @param {*} input - Input value.
+ * @returns {void}
+ */
+function formatUSPhoneNumber(input) {
             // Remove all non-digit characters
             const digits = input.replace(/\D/g, '');
 
@@ -206,7 +231,11 @@ const EmpInfo = (props) => {
             </View>
         )
     }
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (paginatedData?.length < webcastview?.length) {
             setLoadingMore(true);
@@ -220,7 +249,11 @@ const EmpInfo = (props) => {
             }, 1000);
         }
     };
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ paddingVertical: normalize(20) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
@@ -325,4 +358,9 @@ const EmpInfo = (props) => {
         </>
     )
 }
+/**
+ * Emp info default export.
+ *
+ * @returns {*}
+ */
 export default EmpInfo

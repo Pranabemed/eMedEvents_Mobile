@@ -46,8 +46,19 @@ const professionMapping = {
   Pharmacist: 173,
 };
 
+/**
+ * Default us state constant.
+ * @returns {Object}
+ */
 const DEFAULT_US_STATE = { name: 'Alabama', state_id: 1, id: 1 };
 
+/**
+ * Returns country from ip.
+ *
+ * @async
+ * @param {*} ip - Input value.
+ * @returns {Promise<*>}
+ */
 const getCountryFromIP = async ip => {
   try {
     if (!ip) {
@@ -148,14 +159,29 @@ const getSectionGroupKey = key =>
     .replace(/_bundle_conference$/i, '')
     .replace(/_bundle$/i, '');
 
+/**
+ * Determines whether bundle conference key is true.
+ * @param {*} key - Input value.
+ * @returns {*}
+ */
 const isBundleConferenceKey = key =>
   String(key).includes('_bundle_conference');
 
+/**
+ * Determines whether primary bundle key is true.
+ * @param {*} key - Input value.
+ * @returns {*}
+ */
 const isPrimaryBundleKey = key =>
   String(key).includes('_bundle') &&
   !String(key).includes('_bundle_conference') &&
   !String(key).includes('other_courses_list');
 
+/**
+ * Returns course identity.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getCourseIdentity = item =>
   String(
     item?.id ||
@@ -169,6 +195,12 @@ const getCourseIdentity = item =>
     .trim()
     .toLowerCase();
 
+/**
+ * Filter unique section utility.
+ * @param {*} section - Input value.
+ * @param {*} seenItems - Input value.
+ * @returns {*}
+ */
 const filterUniqueSection = (section, seenItems) => {
   if (!section || !Array.isArray(section.data)) {
     return null;
@@ -191,6 +223,11 @@ const filterUniqueSection = (section, seenItems) => {
   return uniqueItems.length > 0 ? { ...section, data: uniqueItems } : null;
 };
 
+/**
+ * Remove duplicate course sections utility.
+ * @param {*} sections - Input value.
+ * @returns {*}
+ */
 const removeDuplicateCourseSections = sections => {
   const seenItems = new Set();
 
@@ -212,6 +249,11 @@ const removeDuplicateCourseSections = sections => {
     .filter(group => group.conference || group.bundle || group.extras.length > 0);
 };
 
+/**
+ * Prioritize bundle groups utility.
+ * @param {*} groups - Input value.
+ * @returns {*}
+ */
 const prioritizeBundleGroups = groups =>
   [...groups].sort((firstGroup, secondGroup) => {
     const firstHasBundle = Boolean(firstGroup?.bundle?.data?.length);
@@ -811,6 +853,10 @@ const CMERequirement = props => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -890,4 +936,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Cmerequirement default export.
+ *
+ * @returns {*}
+ */
 export default CMERequirement;

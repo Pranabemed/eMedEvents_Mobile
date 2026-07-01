@@ -1,4 +1,8 @@
 
+/**
+ * State moda reusable component module. Provides a React Native UI building block used across screens. Exported members: StateModa, handleDone, styles.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
@@ -23,7 +27,11 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
         }
     }, [isVisible]);
 
-    const handleDone = () => {
+        /**
+ * Handles done.
+ * @returns {void}
+ */
+const handleDone = () => {
         if (pressed.current) return;   // block double-tap
         pressed.current = true;
 
@@ -67,6 +75,10 @@ const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -134,4 +146,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * State moda default export.
+ *
+ * @returns {*}
+ */
 export default StateModa;

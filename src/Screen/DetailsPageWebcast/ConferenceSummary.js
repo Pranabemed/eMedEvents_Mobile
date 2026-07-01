@@ -1,3 +1,7 @@
+/**
+ * Conference summary screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ConferenceSummary.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import HtmlTableRenderer from './HtmlTableRenderer';
@@ -63,4 +67,9 @@ const ConferenceSummary = ({ conferenceHtml, expandcon, conferShows, width, conf
     );
 };
 
+/**
+ * Conference summary default export.
+ *
+ * @returns {*}
+ */
 export default ConferenceSummary;

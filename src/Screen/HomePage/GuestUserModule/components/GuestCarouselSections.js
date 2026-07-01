@@ -43,7 +43,7 @@ const CarouselSectionComponent = ({
   return (
     <View style={styles.carouselContainer}>
       <SectionTitle title={title} action={action} onAction={onAction} width={width} />
-      <View style={{ marginHorizontal: -16, width: viewportWidth, overflow: 'visible' }}>
+      <View style={styles.carouselViewport}>
         <Carousel
           layout="default"
           data={data}
@@ -56,8 +56,8 @@ const CarouselSectionComponent = ({
           useScrollView={false}
           removeClippedSubviews={false}
           activeSlideAlignment="center"
-          containerCustomStyle={{ overflow: 'visible' }}
-          contentContainerCustomStyle={{ overflow: 'visible' }}
+          containerCustomStyle={styles.carouselViewport}
+          contentContainerCustomStyle={styles.carouselViewport}
         />
       </View>
       <Pagination
@@ -98,7 +98,7 @@ const LiveConferenceSectionComponent = ({
           <Text style={styles.liveViewAll}>View All</Text>
         </TouchableOpacity>
       </View>
-      <View style={{ marginHorizontal: -16, width: viewportWidth, overflow: 'visible' }}>
+      <View style={styles.liveCarouselViewport}>
         <Carousel
           layout="default"
           data={data}
@@ -111,8 +111,8 @@ const LiveConferenceSectionComponent = ({
           useScrollView={false}
           removeClippedSubviews={false}
           activeSlideAlignment="center"
-          containerCustomStyle={{ overflow: 'visible' }}
-          contentContainerCustomStyle={{ overflow: 'visible' }}
+          containerCustomStyle={styles.liveCarouselViewport}
+          contentContainerCustomStyle={styles.liveCarouselViewport}
         />
       </View>
       <Pagination
@@ -128,5 +128,13 @@ const LiveConferenceSectionComponent = ({
   );
 };
 
+/**
+ * Carousel section value.
+ * @returns {*}
+ */
 export const CarouselSection = memo(CarouselSectionComponent);
+/**
+ * Live conference section value.
+ * @returns {*}
+ */
 export const LiveConferenceSection = memo(LiveConferenceSectionComponent);

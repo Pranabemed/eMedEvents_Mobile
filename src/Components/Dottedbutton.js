@@ -1,3 +1,7 @@
+/**
+ * Dottedbutton reusable component module. Provides a React Native UI building block used across screens. Exported members: DottedButton.
+ */
+
 import React from 'react';
 import { Dimensions } from "react-native";
 import Svg, { G, Rect } from "react-native-svg";
@@ -34,4 +38,9 @@ const DottedButton = () => {
   );
 };
 
+/**
+ * Dottedbutton default export.
+ *
+ * @returns {*}
+ */
 export default DottedButton;

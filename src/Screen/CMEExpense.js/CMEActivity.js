@@ -1,3 +1,7 @@
+/**
+ * Cmeactivity screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, CMEActivity, CMECEActBack, toggleExpandKey, loadMoreData, renderFooter, toggleCourseTitle, toggleSelectAll, toggleTitlecheckbox, goDown, downloadZipFile, openZipFile, CmeceActivityItem, renderValidKeys, renderAllDocumentsTypes, extractDynamicAmounts, renderFilteredData.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, ActivityIndicator, Alert, Linking } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -29,6 +33,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Cmeactivity component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const CMEActivity = (props) => {
     console.log(props?.route?.params?.name, "mgblfhik000000");
     const CMECEExpensReducer = useSelector(state => state.CMECEExpensReducer);
@@ -39,7 +48,11 @@ const CMEActivity = (props) => {
     const [selectedCourseTitles, setSelectedCourseTitles] = useState([]);
     const [down,setDown] = useState("");
     const dispatch = useDispatch();
-    const CMECEActBack = () => {
+        /**
+ * Cmeceact back component.
+ * @returns {void}
+ */
+const CMECEActBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -159,13 +172,23 @@ const CMEActivity = (props) => {
             }, 1000);
         }
     }, [updatedData]);
-    const toggleExpandKey = (key, index) => {
+        /**
+ * Toggle expand key utility.
+ * @param {*} key - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const toggleExpandKey = (key, index) => {
         setExpandedIndexes((prev) => ({
             ...prev,
             [`${index}-${key}`]: !prev[`${index}-${key}`],
         }));
     };
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (paginatedData?.length < updatedData?.length) {
             setLoadingMore(true);
@@ -179,7 +202,11 @@ const CMEActivity = (props) => {
             }, 1000);
         }
     };
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ paddingVertical: normalize(20) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
@@ -187,14 +214,23 @@ const CMEActivity = (props) => {
         ) : null;
     };
     const [courseTitleExpanded, setCourseTitleExpanded] = useState({});
-    const toggleCourseTitle = (index) => {
+        /**
+ * Toggle course title utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const toggleCourseTitle = (index) => {
         setCourseTitleExpanded((prevState) => ({
             ...prevState,
             [index]: !prevState[index],
         }));
     };
     const [selectedCourses, setSelectedCourses] = useState({});
-    const toggleSelectAll = () => {
+        /**
+ * Toggle select all utility.
+ * @returns {void}
+ */
+const toggleSelectAll = () => {
         const newSelectAll = !cmeceopen;
         setCmeceopen(newSelectAll);
         if (paginatedData?.length > 0) {
@@ -208,7 +244,13 @@ const CMEActivity = (props) => {
             }
         }
     };
-    const toggleTitlecheckbox = (index, item) => {
+        /**
+ * Toggle titlecheckbox utility.
+ * @param {number} index - Input value.
+ * @param {*} item - Input value.
+ * @returns {void}
+ */
+const toggleTitlecheckbox = (index, item) => {
         setSelectedCourses((prev) => {
             const updatedSelectedCourses = {
                 ...prev,
@@ -229,7 +271,11 @@ const CMEActivity = (props) => {
         });
     };
     console.log(selectedCourseTitles?.length > 0, "selectedCourseTitles------");
-    const goDown = () => {
+        /**
+ * Go down utility.
+ * @returns {void}
+ */
+const goDown = () => {
         let obj = {
             "type": props?.route?.params?.name,
             "titles": selectedCourseTitles?.length > 0 && selectedCourseTitles?.join('|'),
@@ -249,7 +295,13 @@ const CMEActivity = (props) => {
             downloadZipFile();
         }
     }, [CMECEExpensReducer?.CMEListWiseResponse])
-    const downloadZipFile = async () => {
+        /**
+ * Download zip file utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const downloadZipFile = async () => {
         const fileUrl = `${down?.document_path}${down?.archive_document}`
         const filePath = `${RNFS.DocumentDirectoryPath}/${down?.archive_document}`;
         try {
@@ -275,7 +327,14 @@ const CMEActivity = (props) => {
             // Alert.alert('Download failed', error.message);
         }
     };
-    const openZipFile = async (filePath) => {
+        /**
+ * Open zip file utility.
+ *
+ * @async
+ * @param {*} filePath - Input value.
+ * @returns {Promise<*>}
+ */
+const openZipFile = async (filePath) => {
         try {
             const isFileExist = await RNFS.exists(filePath);
             if (!isFileExist) {
@@ -292,7 +351,11 @@ const CMEActivity = (props) => {
                         'It seems there is no app installed to open ZIP files. Please download one from the Play Store.',
                         [
                             { text: 'Cancel', style: 'cancel' },
-                            { text: 'Go to Play Store', onPress: () => Linking.openURL('market://details?id=com.winzip.android') }
+                            { text: 'Go to Play Store',                             /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => Linking.openURL('market://details?id=com.winzip.android') }
                         ]
                     );
                 }
@@ -306,7 +369,11 @@ const CMEActivity = (props) => {
                         'It seems there is no app installed to open ZIP files. Please download one from the App Store.',
                         [
                             { text: 'Cancel', style: 'cancel' },
-                            { text: 'Go to App Store', onPress: () => Linking.openURL('itms-apps://apps.apple.com/us/app/winzip/id500637987') }
+                            { text: 'Go to App Store',                             /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => Linking.openURL('itms-apps://apps.apple.com/us/app/winzip/id500637987') }
                         ]
                     );
                 }
@@ -316,12 +383,27 @@ const CMEActivity = (props) => {
             Alert.alert('Error', 'Unable to open the file. Please check if a ZIP file viewer app is installed.');
         }
     };
-    const CmeceActivityItem = ({ item, index }) => {
-        const renderValidKeys = () => {
+        /**
+ * Cmece activity item component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const CmeceActivityItem = ({ item, index }) => {
+                /**
+ * Render valid keys utility.
+ * @returns {*}
+ */
+const renderValidKeys = () => {
             return renderAllDocumentsTypes();
         };
 
-        const renderAllDocumentsTypes = () => {
+                /**
+ * Render all documents types utility.
+ * @returns {*}
+ */
+const renderAllDocumentsTypes = () => {
             const uniqueKeys = new Set();
 
             const keysToRender = item.all_documents_types.filter((type) => {
@@ -472,7 +554,12 @@ const CMEActivity = (props) => {
                 );
             });
         };
-        const extractDynamicAmounts = (data) => {
+                /**
+ * Extract dynamic amounts utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const extractDynamicAmounts = (data) => {
             const result = [];
             for (const key in data) {
                 if (Array.isArray(data[key]) && key !== "all_documents" && key !== "all_documents_types") {
@@ -497,7 +584,14 @@ const CMEActivity = (props) => {
             return result;
         };
 
-        const renderFilteredData = (type, data, mainid) => {
+                /**
+ * Render filtered data utility.
+ * @param {*} type - Input value.
+ * @param {*} data - Input value.
+ * @param {*} mainid - Input value.
+ * @returns {*}
+ */
+const renderFilteredData = (type, data, mainid) => {
             const dynamicAmounts = mainid ? extractDynamicAmounts(mainid) || [] : [];
             console.log(type, "type-------", data, mainid, dynamicAmounts);
             if (!data || data.length == 0) {
@@ -881,4 +975,9 @@ const CMEActivity = (props) => {
     )
 }
 
+/**
+ * Cmeactivity default export.
+ *
+ * @returns {*}
+ */
 export default CMEActivity

@@ -1,3 +1,7 @@
+/**
+ * Refund screen module. Renders a React Native screen or a screen-scoped support component. Exported members: RefundHtml.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import HtmlTableRenderer from './HtmlTableRenderer';
@@ -102,4 +106,9 @@ const RefundHtml = ({ refundtext, disclaimerText, refunded, refundExpand, width,
     );
 };
 
+/**
+ * Refund default export.
+ *
+ * @returns {*}
+ */
 export default RefundHtml;

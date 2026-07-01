@@ -1,3 +1,7 @@
+/**
+ * Checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, GUEST_REGISTRATION_FLOW_KEY, Checkout, cleanNumber, getRouteTransactionFee, buildPaymentPrice, persistGuestRegistrationSession, checkoutClear, handleSearch, handleCountry, handlePratice, handlePraticeLic, handleCity, toggleModalPaymentfree, toggleModalFailedfree, resetGuestCheckoutFields, searchCountryNameProfession, handleProfession, onBackPress, loadGuestRegistrationFlow, token_handle_vault, defaultCountryToGeo, clean, specaillized, countryReq, PraticingState, LicStateTakeDo, cityReq, handleFree, statusCheck, allTicketsFree, formatPhoneNumberno, formatIndianPhoneNumber, showModal, isUSASelected, getRequiredFieldsForAttendee, handleInputChange, validateEmail, validateCellNo, validateSingleAttendee, emailCheck, sendEmailCheckRequests, mergeCustomFieldsWithLabels, handleInputChangeeamilad, proceedPayment, convertToISODate, allTicketsFreeac, cartPayment, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, formatPhoneNumber, handleCountrySet, handleStateshows, handleLicStateshows, handleLicDate, handleDobDate, handlecityShows, applyCoupon, styles.
+ */
+
 import { TouchableOpacity, Text, View, Image, Platform, KeyboardAvoidingView, ActivityIndicator, Alert, StyleSheet, BackHandler } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -40,8 +44,20 @@ import CellModalPayemntFailed from '../../Components/PaymentFailed';
 import CellModal from '../../Components/CellModal';
 import Snackbar from 'react-native-snackbar';
 import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Google api key constant.
+ * @returns {string}
+ */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -53,6 +69,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
+/**
+ * Checkout component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Checkout = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer)
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -213,7 +234,12 @@ const Checkout = (props) => {
         }
     }, [props?.route?.params?.checkoutSpan?.cartData?.tickets])
     console.log(ticketSave, props?.route?.params?.checkoutSpan?.cartData?.tickets, "ticketSave========", props?.route?.params?.checkoutSpan?.finalTicket)
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -222,7 +248,12 @@ const Checkout = (props) => {
         return 0;
     };
     const routePaymentPrice = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket || {};
-    const getRouteTransactionFee = (source = routePaymentPrice) => {
+        /**
+ * Returns route transaction fee.
+ * @param {*} source - Input value.
+ * @returns {number}
+ */
+const getRouteTransactionFee = (source = routePaymentPrice) => {
         if (source?.transaction_fee !== undefined) {
             return cleanNumber(source.transaction_fee);
         }
@@ -269,7 +300,12 @@ const Checkout = (props) => {
             : routePaymentPrice?.cartData?.total_amount_with_fee != null
                 ? cleanNumber(routePaymentPrice?.cartData?.total_amount_with_fee)
                 : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
-    const buildPaymentPrice = (source = {}) => ({
+        /**
+ * Build payment price utility.
+ * @param {Object} source - Input value.
+ * @returns {Object}
+ */
+const buildPaymentPrice = (source = {}) => ({
         subtotalAmount: checkoutBaseAmount,
         processingFeeAmount: checkoutProcessingFeeAmount,
         totalTicketPrice: checkoutTotalAmount,
@@ -277,7 +313,14 @@ const Checkout = (props) => {
         total_amount_with_fee: checkoutTotalAmount,
         ...source,
     });
-    const persistGuestRegistrationSession = async (registrationResponse) => {
+        /**
+ * Persist guest registration session utility.
+ *
+ * @async
+ * @param {*} registrationResponse - Input value.
+ * @returns {Promise<*>}
+ */
+const persistGuestRegistrationSession = async (registrationResponse) => {
         console.log('Persisting====', registrationResponse);
         const token = registrationResponse?.token;
         const refreshToken = registrationResponse?.refresh_token;
@@ -317,7 +360,11 @@ const Checkout = (props) => {
             }
         }
     };
-    const checkoutClear = () => {
+        /**
+ * Checkout clear utility.
+ * @returns {void}
+ */
+const checkoutClear = () => {
         if (navigation.canGoBack()) {
             navigation.goBack();
             return;
@@ -331,27 +378,52 @@ const Checkout = (props) => {
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
     console.log(country_id, "country_id=======");
-    const handleSearch = (text) => {
+        /**
+ * Handles search.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-    const handleCountry = (text) => {
+        /**
+ * Handles country.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCountry = (text) => {
         searchCountryNameFunction(text, countryshow, setCountryall, setSearchcountry, (countryfil, searchcount) => {
             console.log('countryfil Data:', countryfil, 'Search Text:', searchcount);
         })
     }
-    const handlePratice = (text) => {
+        /**
+ * Handles pratice.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-    const handlePraticeLic = (text) => {
+        /**
+ * Handles pratice lic.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePraticeLic = (text) => {
         searchStateLicNamePraticeFunction(text, selectStatepraticelic, setSlistpraticelic, setSearchpraticelic, (praticefillic, praticetxtcountlic) => {
             console.log('countryfil Data:', praticefillic, 'Search Text:', praticetxtcountlic);
         })
     }
-    const handleCity = (text) => {
+        /**
+ * Handles city.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
@@ -359,11 +431,21 @@ const Checkout = (props) => {
     const [paymentcardfree, setPaymentcardfree] = useState(false);
     const [paymentfdfree, setPaymentfdfree] = useState(false);
     const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
-    const toggleModalPaymentfree = (dd) => {
+        /**
+ * Toggle modal paymentfree utility.
+ * @param {*} dd - Input value.
+ * @returns {void}
+ */
+const toggleModalPaymentfree = (dd) => {
         console.log(paymentcardfree, "paymentcardfree-----", dd)
         setPaymentcardfree(dd);
     };
-    const toggleModalFailedfree = (tik) => {
+        /**
+ * Toggle modal failedfree utility.
+ * @param {*} tik - Input value.
+ * @returns {void}
+ */
+const toggleModalFailedfree = (tik) => {
         console.log(paymentfdfree, "paymentcardfree-----", tik)
         setPaymentfdfree(tik);
     };
@@ -398,7 +480,11 @@ const Checkout = (props) => {
             }
             : null;
     const checkoutCompletionRoute = isGuestCheckout ? 'GuestUser' : 'TabNav';
-    const resetGuestCheckoutFields = () => {
+        /**
+ * Reset guest checkout fields utility.
+ * @returns {void}
+ */
+const resetGuestCheckoutFields = () => {
         setFirstname("");
         setLastname("");
         setEmailad("");
@@ -422,7 +508,12 @@ const Checkout = (props) => {
         setSpeciality_id([]);
         setPreviousSpec("");
     };
-    const searchCountryNameProfession = text => {
+        /**
+ * Search country name profession utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCountryNameProfession = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -442,7 +533,13 @@ const Checkout = (props) => {
             setSearchtext(text);
         }
     };
-    const handleProfession = (did, ixd) => {
+        /**
+ * Handles profession.
+ * @param {*} did - Input value.
+ * @param {*} ixd - Input value.
+ * @returns {void}
+ */
+const handleProfession = (did, ixd) => {
         console.log(did, "he;;;;======")
         specaillized(did?.split(' - ')[0])
         setFormData((prevFormData) => {
@@ -455,7 +552,11 @@ const Checkout = (props) => {
         });
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             checkoutClear();
             return true;
         };
@@ -468,7 +569,13 @@ const Checkout = (props) => {
         return () => backHandler.remove();
     }, []);
     useEffect(() => {
-        const loadGuestRegistrationFlow = async () => {
+                /**
+ * Load guest registration flow utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadGuestRegistrationFlow = async () => {
             try {
                 const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
                 setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
@@ -481,7 +588,11 @@ const Checkout = (props) => {
         loadGuestRegistrationFlow();
     }, [isfocus, props?.route?.params?.checkoutSpan?.checkoutSpan, props?.route?.params?.inPersonTicket?.inpersonSpanrole]);
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     if (isGuestCheckout && !guestRegistrationFlowActive) {
@@ -529,7 +640,11 @@ const Checkout = (props) => {
         if (country || country_id) return; // country already selected/initialized
         if (detectedCountry === null) return; // Wait until we know the detected country
 
-        const defaultCountryToGeo = () => {
+                /**
+ * Default country to geo utility.
+ * @returns {void}
+ */
+const defaultCountryToGeo = () => {
             try {
                 const targetCode = detectedCountry.toUpperCase();
                 const matchedCountry = countryall.find(c => 
@@ -578,7 +693,12 @@ const Checkout = (props) => {
         if (allProfession?.professional_information?.profession || allProfession?.profession) {
             const profession = allProfession?.professional_information?.profession || allProfession?.profession;
             const profession_type = allProfession?.professional_information?.profession_type || allProfession?.profession_type
-            const clean = (value) => {
+                        /**
+ * Clean utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const clean = (value) => {
                 if (value == null) return '';
                 return String(value).trim();
             };
@@ -620,7 +740,12 @@ const Checkout = (props) => {
 
     console.log(previousSpec, "previousSpec=======12223", formData, ticketSave?.discounts)
 
-    const specaillized = (data) => {
+        /**
+ * Specaillized utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -631,7 +756,11 @@ const Checkout = (props) => {
                 showErrorAlert('Please connect to Internet');
             });
     }
-    const countryReq = () => {
+        /**
+ * Country req utility.
+ * @returns {void}
+ */
+const countryReq = () => {
         connectionrequest()
             .then(() => {
                 dispatch(countryRequest())
@@ -640,7 +769,12 @@ const Checkout = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const PraticingState = (index) => {
+        /**
+ * Praticing state component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index)); // Dispatch the API call with the country_id
@@ -655,7 +789,12 @@ const Checkout = (props) => {
             LicStateTakeDo(countrygo);
         }
     }, [isfocus])
-    const LicStateTakeDo = (kol) => {
+        /**
+ * Lic state take do component.
+ * @param {*} kol - Input value.
+ * @returns {void}
+ */
+const LicStateTakeDo = (kol) => {
         connectionrequest()
             .then(() => {
                 dispatch(checkstateRequest(kol)); // Dispatch the API call with the country_id
@@ -665,7 +804,12 @@ const Checkout = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
-    const cityReq = (itid) => {
+        /**
+ * City req utility.
+ * @param {*} itid - Input value.
+ * @returns {void}
+ */
+const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -760,7 +904,12 @@ const Checkout = (props) => {
         }
     }
 
-    const handleFree = (takeit) => {
+        /**
+ * Handles free.
+ * @param {*} takeit - Input value.
+ * @returns {void}
+ */
+const handleFree = (takeit) => {
         let obj = {
             "invoice": takeit
         }
@@ -772,7 +921,12 @@ const Checkout = (props) => {
                 showErrorAlert("Please connect to intenet", err)
             })
     }
-    const statusCheck = (dochall) => {
+        /**
+ * Status check utility.
+ * @param {*} dochall - Input value.
+ * @returns {void}
+ */
+const statusCheck = (dochall) => {
         if (dochall) {
             let obj = { "invoice": dochall }
             connectionrequest()
@@ -797,7 +951,12 @@ const Checkout = (props) => {
                 const iseMededDoPass =
                     (emededAcc == "1" || emededAcc == 1) &&
                     (professionType == "DO" || professionType == "MD" || professionType == "DPM");
-                const allTicketsFree = (ticketsArray) =>
+                                /**
+ * All tickets free utility.
+ * @param {*} ticketsArray - Input value.
+ * @returns {*}
+ */
+const allTicketsFree = (ticketsArray) =>
                     ticketsArray?.length > 0 && ticketsArray.every(ticket => ticket?.ticket_type == "Free");
                 const isAllFree = allTicketsFree(props?.route?.params?.checkoutSpan?.finalTicket?.tickets) ||
                     allTicketsFree(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
@@ -1013,7 +1172,12 @@ const Checkout = (props) => {
     }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isGuestCheckout]);
 
 
-    const formatPhoneNumberno = (input) => {
+        /**
+ * Formats phone numberno.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumberno = (input) => {
         // Handle null/undefined/empty cases
         if (!input) return "";
 
@@ -1035,7 +1199,12 @@ const Checkout = (props) => {
         return strInput; // Return original input if formatting fails
     };
 
-    const formatIndianPhoneNumber = (input) => {
+        /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -1077,7 +1246,11 @@ const Checkout = (props) => {
             mounted = false;
         };
     }, [isfocus]);
-    const showModal = () => {
+        /**
+ * Show modal utility.
+ * @returns {void}
+ */
+const showModal = () => {
         setIsVisibletext(true);
         setTimeout(() => {
             setIsVisibletext(false);
@@ -1131,7 +1304,12 @@ const Checkout = (props) => {
             }
         });
     }
-    const isUSASelected = (attendee = {}) => {
+        /**
+ * Determines whether usaselected is true.
+ * @param {Object} attendee - Input value.
+ * @returns {*}
+ */
+const isUSASelected = (attendee = {}) => {
         const countryName = String(attendee?.country || '').trim().toLowerCase();
         const countryIdentifier = String(attendee?.country_id || '').trim();
         const phoneDialCode = String(attendee?.dialcode || '').trim();
@@ -1170,7 +1348,12 @@ const Checkout = (props) => {
             });
     }, [isfocus, dispatch, isNonUsaUser]);
 
-    const getRequiredFieldsForAttendee = (attendee = {}) => {
+        /**
+ * Returns required fields for attendee.
+ * @param {Object} attendee - Input value.
+ * @returns {*}
+ */
+const getRequiredFieldsForAttendee = (attendee = {}) => {
         if (isUSASelected(attendee)) {
             return baseRequiredFields;
         }
@@ -1186,7 +1369,14 @@ const Checkout = (props) => {
         "firstname", "lastname", "emailad", "address", "country", "state",
         "city", "zipcode", "cellno"
     ];
-    const handleInputChange = (index, field, value) => {
+        /**
+ * Handles input change.
+ * @param {number} index - Input value.
+ * @param {*} field - Input value.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const handleInputChange = (index, field, value) => {
         const updatedFormData = [...formData];
         updatedFormData[index][field] = value;
         setFormData(updatedFormData);
@@ -1201,13 +1391,23 @@ const Checkout = (props) => {
             setIsCellNoTouched(updatedCellNoTouched);
         }
     };
-    const validateEmail = (email) => {
+        /**
+ * Validate email utility.
+ * @param {*} email - Input value.
+ * @returns {*}
+ */
+const validateEmail = (email) => {
         // Regular expression to validate email format
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         return emailRegex.test(email);
     };
 
-    const validateCellNo = (cellno) => {
+        /**
+ * Validate cell no utility.
+ * @param {*} cellno - Input value.
+ * @returns {*}
+ */
+const validateCellNo = (cellno) => {
         const cleaned = cellno.replace(/\D/g, '');
         return /^\d{10,15}$/.test(cleaned);
     };
@@ -1261,7 +1461,12 @@ const Checkout = (props) => {
     // Determine if all attendees are valid
     const fullAccess = attendeesFilledStatus.every(isFilled => isFilled);
     console.log(fullAccess, "fullaccess---")
-    const validateSingleAttendee = (attendee) => {
+        /**
+ * Validate single attendee utility.
+ * @param {*} attendee - Input value.
+ * @returns {*}
+ */
+const validateSingleAttendee = (attendee) => {
         if (!attendee) {
             console.error("No attendee to validate!");
             return false;
@@ -1319,7 +1524,14 @@ const Checkout = (props) => {
     });
 
 
-    const emailCheck = (index, key, value) => {
+        /**
+ * Email check utility.
+ * @param {number} index - Input value.
+ * @param {*} key - Input value.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const emailCheck = (index, key, value) => {
         console.log(index, key, value, "updatedFormData============12222");
         const attendees = (Array.isArray(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets)
             ? props.route.params.inPersonTicket?.inPersonTicket?.tickets
@@ -1348,7 +1560,11 @@ const Checkout = (props) => {
         console.log(emailCheckRequests, "emailCheckRequests");
 
         // Function to send email check requests
-        const sendEmailCheckRequests = () => {
+                /**
+ * Send email check requests utility.
+ * @returns {*}
+ */
+const sendEmailCheckRequests = () => {
             const requests = emailCheckRequests.map((obj) =>
                 dispatch(TransemailcheckRequest(obj))  // Ensure you have this dispatch function set up
             );
@@ -1374,7 +1590,11 @@ const Checkout = (props) => {
     const [mergedData, setMergedData] = useState({ custom_fields: [], custom_fields_labels: [] });
 
     useEffect(() => {
-        const mergeCustomFieldsWithLabels = () => {
+                /**
+ * Merge custom fields with labels utility.
+ * @returns {Object}
+ */
+const mergeCustomFieldsWithLabels = () => {
             const customFieldsMerged = [];
             const customFieldsLabelsMerged = [];
 
@@ -1415,7 +1635,14 @@ const Checkout = (props) => {
     }, [customFields, customFieldsLabels]);
 
     console.log(mergedData, "mergedData0-0----------", formData, customField)
-    const handleInputChangeeamilad = (index, key, value) => {
+        /**
+ * Handles input changeeamilad.
+ * @param {number} index - Input value.
+ * @param {*} key - Input value.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const handleInputChangeeamilad = (index, key, value) => {
         console.log(value, "val======");
         const regexEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const isValidEmail = regexEmail.test(value);
@@ -1423,7 +1650,11 @@ const Checkout = (props) => {
             emailCheck(index, key, value);
         }
     };
-    const proceedPayment = () => {
+        /**
+ * Proceed payment utility.
+ * @returns {void}
+ */
+const proceedPayment = () => {
         // Flattening attendees based on their quantity
         const attendees = (Array.isArray(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets)
             ? props.route.params.inPersonTicket.inPersonTicket.tickets
@@ -1440,7 +1671,12 @@ const Checkout = (props) => {
         console.log("Flattened Attendees with Duplicates by Quantity:", attendees);
 
         const attendeeData = formData.map((data, index) => {
-            function convertToISODate(dateString) {
+                        /**
+ * Convert to isodate helper.
+ * @param {*} dateString - Input value.
+ * @returns {*}
+ */
+function convertToISODate(dateString) {
                 const dateObj = new Date(dateString);
                 if (isNaN(dateObj.getTime())) {
                     throw new Error("Invalid date string");
@@ -1494,7 +1730,12 @@ const Checkout = (props) => {
         const jsonString = JSON.stringify(mergedData);
         const jsonWithoutBraces = jsonString.slice(1, -1);
         // Create the final object to be sent
-        const allTicketsFreeac = (ticketsArray) =>
+                /**
+ * All tickets freeac utility.
+ * @param {*} ticketsArray - Input value.
+ * @returns {*}
+ */
+const allTicketsFreeac = (ticketsArray) =>
             ticketsArray?.length > 0 && ticketsArray.every(ticket => ticket?.ticket_type == "Free");
         const isAllFreeAccess = allTicketsFreeac(props?.route?.params?.checkoutSpan?.finalTicket?.tickets) ||
             allTicketsFreeac(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
@@ -1524,7 +1765,11 @@ const Checkout = (props) => {
 
     const fullPaymentId = props?.route?.params?.checkoutSpan?.cartData?.tickets;
 
-    const cartPayment = () => {
+        /**
+ * Cart payment utility.
+ * @returns {void}
+ */
+const cartPayment = () => {
         let objcart = {
             "payment_id": fullPaymentId?.length > 0 && fullPaymentId?.map(item => item?.payment_id),
             "billing": {
@@ -1551,7 +1796,13 @@ const Checkout = (props) => {
     const [selectedSpecialities, setSelectedSpecialities] = useState([]); // Track selected specialties
 
     // Handle the speciality selection (multi-select only)
-    const handleSpecialitySelect = (selectedItems, formData) => {
+        /**
+ * Handles speciality select.
+ * @param {*} selectedItems - Input value.
+ * @param {*} formData - Input value.
+ * @returns {void}
+ */
+const handleSpecialitySelect = (selectedItems, formData) => {
         if (activeIndex !== null) {
             const updatedForm = [...formData];
 
@@ -1584,7 +1835,14 @@ const Checkout = (props) => {
     //         return updatedForm;
     //     });
     // };
-    const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
+        /**
+ * Handles speciality change.
+ * @param {number} index - Input value.
+ * @param {*} selectedSpecialities - Input value.
+ * @param {*} selectedIds - Input value.
+ * @returns {void}
+ */
+const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
         const updatedFormData = [...formData];
 
         // Initialize formData for the current index if not present
@@ -1603,7 +1861,13 @@ const Checkout = (props) => {
     };
 
 
-    const removeSpeciality = (index, specialityId) => {
+        /**
+ * Remove speciality utility.
+ * @param {number} index - Input value.
+ * @param {*} specialityId - Input value.
+ * @returns {void}
+ */
+const removeSpeciality = (index, specialityId) => {
         const currentSpecialityIds = formData[index]?.speciality_ids || [];
         const currentSpecialities = formData[index]?.speciality.split(', ') || [];
 
@@ -1620,7 +1884,13 @@ const Checkout = (props) => {
         // Update formData for the specific index
         handleSpecialityChange(index, updatedSpecialityNames, updatedSpecialityIds);
     };
-    const formatPhoneNumber = (input, isUSA = false) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @param {boolean} isUSA - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input, isUSA = false) => {
         if (isUSA) {
             // USA format: (XXX) XXX-XXXX
             const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -1639,7 +1909,13 @@ const Checkout = (props) => {
         }
         return input;
     };
-    const handleCountrySet = (didi, index) => {
+        /**
+ * Handles country set.
+ * @param {*} didi - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleCountrySet = (didi, index) => {
         if (!props?.route?.params?.checkoutSpan) {
             Snackbar.show({
                 text: `Since you have updated the country for ${index == 0 ? "primary registrant" : `attendee ${index + 1}`}, kindly update your profession and specialty.`,
@@ -1690,7 +1966,13 @@ const Checkout = (props) => {
             return updatedFormData;
         });
     };
-    const handleStateshows = (ctid, indexsatte) => {
+        /**
+ * Handles stateshows.
+ * @param {*} ctid - Input value.
+ * @param {number} indexsatte - Input value.
+ * @returns {void}
+ */
+const handleStateshows = (ctid, indexsatte) => {
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);
@@ -1707,7 +1989,13 @@ const Checkout = (props) => {
             return updatedFormData; // Return the updated form data
         });
     }
-    const handleLicStateshows = (lictid, indexsattelic) => {
+        /**
+ * Handles lic stateshows.
+ * @param {*} lictid - Input value.
+ * @param {number} indexsattelic - Input value.
+ * @returns {void}
+ */
+const handleLicStateshows = (lictid, indexsattelic) => {
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[indexsattelic] = {
@@ -1719,7 +2007,13 @@ const Checkout = (props) => {
             return updatedFormData; // Return the updated form data
         });
     }
-    const handleLicDate = (expID, datInde) => {
+        /**
+ * Handles lic date.
+ * @param {*} expID - Input value.
+ * @param {*} datInde - Input value.
+ * @returns {void}
+ */
+const handleLicDate = (expID, datInde) => {
         const formattedDate = moment(expID).format('YYYY-MM-DD');
         setOpendatelicyall(false);
         setFormData(prevFormData => {
@@ -1739,7 +2033,13 @@ const Checkout = (props) => {
             return prevFormData;
         });
     };
-    const handleDobDate = (dobID, dobix) => {
+        /**
+ * Handles dob date.
+ * @param {*} dobID - Input value.
+ * @param {*} dobix - Input value.
+ * @returns {void}
+ */
+const handleDobDate = (dobID, dobix) => {
         const formattedDateDob = moment(dobID).format('YYYY-MM-DD');
         setDobchoose(false);
         setFormData(prevFormData => {
@@ -1759,7 +2059,13 @@ const Checkout = (props) => {
             return prevFormData;
         });
     };
-    const handlecityShows = (ctshows, cityindex) => {
+        /**
+ * Handlecity shows utility.
+ * @param {*} ctshows - Input value.
+ * @param {number} cityindex - Input value.
+ * @returns {void}
+ */
+const handlecityShows = (ctshows, cityindex) => {
         console.log(ctshows, cityindex, "ctshows+++++cityindex")
         setCity(ctshows?.name);
         setCity_id(ctshows?.id)
@@ -1776,7 +2082,11 @@ const Checkout = (props) => {
         });
     }
 
-    const applyCoupon = () => {
+        /**
+ * Apply coupon utility.
+ * @returns {void}
+ */
+const applyCoupon = () => {
         if (!couponapp) {
             showErrorAlert("Please enter a valid coupon ")
         } else {
@@ -2041,7 +2351,16 @@ const Checkout = (props) => {
     )
 }
 
+/**
+ * Checkout default export.
+ *
+ * @returns {*}
+ */
 export default Checkout
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',

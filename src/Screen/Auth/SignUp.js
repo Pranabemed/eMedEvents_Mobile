@@ -1,4 +1,8 @@
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, StyleSheet, Image, BackHandler } from 'react-native';
+/**
+ * Sign up screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SignUp, detectCountry, CreateAccount, handleInput, setMobileNo, setEmailExist, formatPhoneNumber, formatIndianPhoneNumber, backSingUp, onBackPress, styles.
+ */
+
+import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, Image, BackHandler } from 'react-native';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -19,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import styles from './SignUp.styles';
 
 /**
  * Reusable SignUp component.
@@ -48,7 +53,13 @@ const SignUp = (props) => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log(AuthReducer, "Auth========", props?.route?.params?.phoneCd)
   useEffect(() => {
-    const detectCountry = async () => {
+        /**
+ * Detect country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const detectCountry = async () => {
       try {
         const geoInfo = await getCountryAndDialCode();
         if (geoInfo) {
@@ -65,7 +76,11 @@ const SignUp = (props) => {
     };
     detectCountry();
   }, []);
-  const CreateAccount = () => {
+    /**
+ * Create account component.
+ * @returns {void}
+ */
+const CreateAccount = () => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;;
     const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobilePattern = /^\d{10}$/;
@@ -118,7 +133,12 @@ const SignUp = (props) => {
       })
     }
   }
-  const handleInput = (val) => {
+    /**
+ * Handles input.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+const handleInput = (val) => {
     setPassword(val);
     const regexPass = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (regexPass.test(val)) {
@@ -126,7 +146,12 @@ const SignUp = (props) => {
     }
   };
 
-  const setMobileNo = (text) => {
+    /**
+ * Set mobile no utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const setMobileNo = (text) => {
     setCellno(text);
     setGettrue(true);
     const mobilePattern = /^\d{10}$/;
@@ -143,7 +168,12 @@ const SignUp = (props) => {
       console.log("Invalid cell no");
     }
   }
-  const setEmailExist = (text) => {
+    /**
+ * Set email exist utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const setEmailExist = (text) => {
     setEmail(text);
     setGettrue(false);
     const emailPattern = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
@@ -161,7 +191,12 @@ const SignUp = (props) => {
       console.log("Invalid email format");
     }
   }
-  const formatPhoneNumber = (input) => {
+    /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input) => {
     const cleaned = input.replace(/\D/g, '').slice(0, 10);
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -174,7 +209,12 @@ const SignUp = (props) => {
     }
     return input;
   };
-  const formatIndianPhoneNumber = (input) => {
+    /**
+ * Formats indian phone number.
+ * @param {*} input - Input value.
+ * @returns {*}
+ */
+const formatIndianPhoneNumber = (input) => {
     if (!input) return "";
 
     const strInput = String(input);
@@ -205,7 +245,11 @@ const SignUp = (props) => {
         if (isPhoneCheck) {
           Alert.alert('eMedEvents', 'This cell number already exists in eMedEvents.', [
             {
-              text: 'Cancel', onPress: () => {
+              text: 'Cancel',               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                 setMobileHd("");
                 setCellno("");
                 dispatch(clearEmailexistState());
@@ -213,7 +257,11 @@ const SignUp = (props) => {
               }, style: 'cancel'
             },
             {
-              text: 'OK', onPress: () => {
+              text: 'OK',               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
                 props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: signupCountryCode, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
@@ -223,14 +271,22 @@ const SignUp = (props) => {
         } else if (AuthReducer?.emailexistType === 'email') {
           Alert.alert('eMedEvents', 'This email already exists in eMedEvents.', [
             {
-              text: 'Cancel', onPress: () => {
+              text: 'Cancel',               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                 setEmail("");
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
               }, style: 'cancel'
             },
             {
-              text: 'OK', onPress: () => {
+              text: 'OK',               /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
                 props.navigation.navigate("Login", { "email": email, isNonUsaUser: isNonUsaFlow })
@@ -243,7 +299,11 @@ const SignUp = (props) => {
       lastHandledStatusRef.current = "";
     }
   }, [AuthReducer.status, AuthReducer.emailexistResponse, AuthReducer.emailexistType, cellno, email]);
-  const backSingUp = () => {
+    /**
+ * Back sing up utility.
+ * @returns {void}
+ */
+const backSingUp = () => {
     if (props.navigation.canGoBack()) {
       props.navigation.goBack();
     } else {
@@ -251,7 +311,11 @@ const SignUp = (props) => {
     }
   }
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       backSingUp();
       return true;
     };
@@ -277,14 +341,14 @@ const SignUp = (props) => {
         barStyle={'light-content'}
         backgroundColor={Colorpath.Pagebg}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+      <SafeAreaView style={styles.screen}>
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          style={styles.keyboardContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(60) }}>
-            <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), justifyContent: "center", alignItems: "center" }}>
-              <Image source={Imagepath.eMedfulllogo} style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }} />
+          <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={styles.scrollContent}>
+            <View style={[styles.logoContainer, Platform.OS === 'ios' ? styles.logoContainerIos : styles.logoContainerAndroid]}>
+              <Image source={Imagepath.eMedfulllogo} style={styles.logoImage} />
             </View>
             <View style={styles.headerContainer}>
               <Text style={styles.headerText}>{"Sign Up"}</Text>
@@ -293,16 +357,10 @@ const SignUp = (props) => {
               </Text>
             </View>
             <View>
-              <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(10) }}>
+              <View style={styles.sectionContainer}>
 
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1
-                }}>
-                  <View style={{
-                    flex: 1,
-                    paddingRight: normalize(0)
-                  }}>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputColumn}>
                     <InputField
                       label='First Name*'
                       value={fname}
@@ -316,25 +374,14 @@ const SignUp = (props) => {
                   </View>
                 </View>
                 {fname && fname?.length < 3 && (
-                  <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterRegular,
-                        fontSize: 12,
-                        color: 'red',
-                      }}>
+                  <View style={styles.validationContainer}>
+                    <Text style={styles.validationText}>
                       {"Please enter your first name."}
                     </Text>
                   </View>
                 )}
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1
-                }}>
-                  <View style={{
-                    flex: 1,
-                    paddingRight: normalize(0)
-                  }}>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputColumn}>
                     <InputField
                       label='Last Name*'
                       value={lname}
@@ -348,26 +395,15 @@ const SignUp = (props) => {
                   </View>
                 </View>
                 {lname && lname?.length < 3 && (
-                  <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterRegular,
-                        fontSize: 12,
-                        color: 'red',
-                      }}>
+                  <View style={styles.validationContainer}>
+                    <Text style={styles.validationText}>
                       {"Please enter your last name."}
                     </Text>
                   </View>
                 )}
                 {!isNonUsaFlow && (
-                  <View style={{
-                    flexDirection: 'row',
-                    flex: 1
-                  }}>
-                    <View style={{
-                      flex: 1,
-                      paddingRight: normalize(0)
-                    }}>
+                  <View style={styles.inputRow}>
+                    <View style={styles.inputColumn}>
                       <InputField
                         label="Cell Number*"
                         value={mobileHd}
@@ -395,25 +431,14 @@ const SignUp = (props) => {
                   </View>
                 )}
                 {!isNonUsaFlow && isValidWhatsappNodd && (
-                  <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterRegular,
-                        fontSize: 12,
-                        color: 'red',
-                      }}>
+                  <View style={styles.validationContainer}>
+                    <Text style={styles.validationText}>
                       {"Please enter a valid cell number"}
                     </Text>
                   </View>
                 )}
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1
-                }}>
-                  <View style={{
-                    flex: 1,
-                    paddingRight: normalize(0)
-                  }}>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputColumn}>
                     <InputField
                       label='Email Address*'
                       value={email}
@@ -427,25 +452,14 @@ const SignUp = (props) => {
                   </View>
                 </View>
                 {isValidEmail && (
-                  <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
-                    <Text
-                      style={{
-                        fontFamily: Fonts.InterRegular,
-                        fontSize: 12,
-                        color: 'red',
-                      }}>
+                  <View style={styles.validationContainer}>
+                    <Text style={styles.validationText}>
                       {"Please enter a valid email address (e.g., abc@gmail.com)"}
                     </Text>
                   </View>
                 )}
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1
-                }}>
-                  <View style={{
-                    flex: 1,
-                    paddingRight: normalize(0)
-                  }}>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputColumn}>
                     <InputField
                       label="Password*"
                       value={password}
@@ -459,39 +473,39 @@ const SignUp = (props) => {
                   </View>
                 </View>
                 {(isPasswordValid || error && password) &&
-                  <View style={{ paddingHorizontal: normalize(1), bottom: normalize(10) }}>
-                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "red" }}>
+                  <View style={styles.validationContainer}>
+                    <Text style={styles.validationText}>
                       {"Password must be 8+ chars, with 1 uppercase , 1 special character and 1 number."}
                     </Text>
                   </View>}
               </View>
             </View>
-            <View style={{ paddingHorizontal: normalize(21) }}>
-              <View style={{ flexDirection: "row" }}>
-                <View style={{ flexDirection: "row", gap: normalize(10) }}>
+            <View style={styles.termsContainer}>
+              <View style={styles.termsRow}>
+                <View style={styles.termsInnerRow}>
                   <TouchableOpacity onPress={() => { setChecked(!checked) }}>
-                    {!checked ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
+                    {!checked ? <View style={styles.checkboxChecked}>
                       <TickMark name="checkmark" color={Colorpath.white} size={20} />
                     </View> :
-                      <View style={{ borderColor: Colorpath.black, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
+                      <View style={styles.checkboxEmpty} />
                     }
                   </TouchableOpacity>
 
-                  <View style={{ flexDirection: "column" }}>
-                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#666666" }}>
+                  <View style={styles.consentColumn}>
+                    <Text style={styles.consentText}>
                       {"I agree with eMedEvents"}
                     </Text>
-                    <View style={{ flexDirection: "row", gap: 10 }}>
+                    <View style={styles.consentLinksRow}>
                       <TouchableOpacity onPress={(() => props.navigation.navigate("TermsAndConditions"))}>
-                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
+                        <Text style={styles.consentLinkText}>
                           {"Terms of Use"}
                         </Text>
                       </TouchableOpacity>
-                      <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
+                      <Text style={styles.consentBodyText}>
                         {"and"}
                       </Text>
                       <TouchableOpacity onPress={(() => props.navigation.navigate("PrivacyPolicy"))}>
-                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
+                        <Text style={styles.consentLinkText}>
                           {"Privacy Policy"}
                         </Text>
                       </TouchableOpacity>
@@ -499,17 +513,17 @@ const SignUp = (props) => {
                   </View>
                 </View>
               </View>
-              <View style={{ flexDirection: "row", marginTop: normalize(15) }}>
-                <View style={{ flexDirection: "row", gap: normalize(10) }}>
+              <View style={styles.optInRow}>
+                <View style={styles.termsInnerRow}>
                   <TouchableOpacity onPress={() => { setSocheck(!socheck) }} >
-                    {!socheck ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
+                    {!socheck ? <View style={styles.checkboxChecked}>
                       <TickMark name="checkmark" color={Colorpath.white} size={20} />
                     </View> :
-                      <View style={{ height: normalize(20), width: normalize(20), borderColor: Colorpath.black, borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
+                      <View style={styles.checkboxEmpty} />
                     }
                   </TouchableOpacity>
-                  <View style={{ flexDirection: "row" }}>
-                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
+                  <View style={styles.optInTextContainer}>
+                    <Text style={styles.optInText}>
                       {"I agree to receive messages and OTPs for\nsecure account access from eMedEvents."}
                     </Text>
                   </View>
@@ -531,14 +545,14 @@ const SignUp = (props) => {
                 marginTop={normalize(20)}
               />
             </TouchableOpacity>
-            <View style={{ flexDirection: "row", justifyContent: "center", gap: 1, marginTop: normalize(10) }}>
+            <View style={styles.footerRow}>
               <View>
-                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#000000" }}>
+                <Text style={styles.footerText}>
                   {"Already a member?"}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => { props.navigation.navigate('Login') }}>
-                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                <Text style={styles.footerLinkText}>
                   {"Log In"}
                 </Text>
               </TouchableOpacity>
@@ -550,51 +564,9 @@ const SignUp = (props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  headerContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: Platform.OS === 'ios' ? normalize(40) : normalize(60)
-    // flex: 0.6
-    // backgroundColor:"red"
-  },
-  headerText: {
-    fontFamily: Fonts.InterSemiBold,
-    fontSize: 32,
-    color: "#000000",
-    fontWeight: "bold"
-
-  },
-  subHeaderText: {
-    paddingVertical: normalize(10),
-    color: "#666666",
-    fontSize: 18,
-    fontFamily: Fonts.InterRegular,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    alignItems: 'center',
-    marginTop: normalize(20)
-  },
-  forgotContainer: {
-    marginTop: normalize(10),
-    alignSelf: 'center',
-    width: normalize(280),
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  forgotText: {
-    fontFamily: Fonts.InterMedium,
-    fontSize: 14,
-    color: Colorpath.ButtonColr,
-  },
-  scrollViewContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: normalize(20),
-    paddingHorizontal: normalize(16),
-  },
-});
-
+/**
+ * Sign up default export.
+ *
+ * @returns {*}
+ */
 export default SignUp;

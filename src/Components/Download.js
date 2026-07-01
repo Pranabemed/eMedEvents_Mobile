@@ -1,3 +1,7 @@
+/**
+ * Download reusable component module. Provides a React Native UI building block used across screens.
+ */
+
 import React, { Component } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import FileViewer from "react-native-file-viewer";

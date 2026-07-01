@@ -1,3 +1,7 @@
+/**
+ * Boardonedata reusable component module. Provides a React Native UI building block used across screens. Exported members: Boardonedata.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
@@ -208,4 +212,9 @@ const Boardonedata = ({completedCountboard,pendingCountboard,finalShow}) => {
     )
 }
 
+/**
+ * Boardonedata default export.
+ *
+ * @returns {*}
+ */
 export default Boardonedata

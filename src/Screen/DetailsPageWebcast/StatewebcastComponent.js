@@ -1,3 +1,7 @@
+/**
+ * Statewebcast component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastComponent.
+ */
+
 import { View, Text, ImageBackground, TouchableOpacity } from 'react-native';
 import React from 'react';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -70,4 +74,9 @@ const StatewebcastComponent = ({ item, index, nav,creditData,datawhole }) => {
     );
 }
 
+/**
+ * Statewebcast component default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastComponent

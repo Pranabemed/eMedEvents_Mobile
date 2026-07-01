@@ -1,3 +1,7 @@
+/**
+ * Wallets screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Wallets, toggleDrawerModal, registBaack, walletsVal, fetchHandle, fullDataRefresh, onBackPress, searchTopicName, renderItem, renderMonthItem.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, ImageBackground, TextInput, KeyboardAvoidingView, ScrollView, Keyboard, TouchableWithoutFeedback, Alert, BackHandler } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -31,17 +35,30 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Wallets component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Wallets = (props) => {
     const { isConnected } = useContext(AppContext);
     const [visible, setVisible] = useState(false);
     const [nodata, setNodata] = useState("drawerclose");
     const [idget, setIdget] = useState("6");
-    const toggleDrawerModal = () => {
+        /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
-    const registBaack = () => {
+        /**
+ * Regist baack utility.
+ * @returns {void}
+ */
+const registBaack = () => {
         toggleDrawerModal();
     }
     const TransReducer = useSelector(state => state.TransReducer);
@@ -77,7 +94,11 @@ const Wallets = (props) => {
             walletsVal();
         }
     }, [props?.route?.params?.name]);
-    const walletsVal = () => {
+        /**
+ * Wallets val utility.
+ * @returns {void}
+ */
+const walletsVal = () => {
         let obj = {};
         connectionrequest()
             .then(() => {
@@ -87,7 +108,11 @@ const Wallets = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const fetchHandle = () => {
+        /**
+ * Fetch handle utility.
+ * @returns {void}
+ */
+const fetchHandle = () => {
         let obj = {
             "limit": limit,
             "offset": pageNum,
@@ -133,7 +158,11 @@ const Wallets = (props) => {
             fetchHandle();
         }
     }, [apiReq, final, TransReducer]);
-    const fullDataRefresh = () => {
+        /**
+ * Full data refresh utility.
+ * @returns {void}
+ */
+const fullDataRefresh = () => {
         setFinal([]);
         setSelectCountrytopic([]);
         setStoreAlldata([]);
@@ -142,7 +171,11 @@ const Wallets = (props) => {
         fetchHandle();
     };
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             registBaack();
             return true;
         };
@@ -255,7 +288,12 @@ const Wallets = (props) => {
             console.log(storetakeAll, "storetakeAll", final);
         }
     }, [storeAlldata]);
-    const searchTopicName = (text) => {
+        /**
+ * Search topic name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchTopicName = (text) => {
         console.log(text, 'Input Text');
         setProvideName(text);
         if (text.trim() == '') {
@@ -308,7 +346,14 @@ const Wallets = (props) => {
             setFinal([]);
         }
     };
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItem = ({ item, index }) => {
         const isLastItem = index === item?.dataLength - 1;
         return (
             <View>
@@ -406,7 +451,13 @@ const Wallets = (props) => {
     }
 
 
-    const renderMonthItem = ({ item }) => {
+        /**
+ * Render month item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderMonthItem = ({ item }) => {
         return (
             <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
                 <Text
@@ -734,4 +785,9 @@ const Wallets = (props) => {
     )
 }
 
+/**
+ * Wallets default export.
+ *
+ * @returns {*}
+ */
 export default Wallets

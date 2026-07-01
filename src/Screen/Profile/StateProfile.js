@@ -1,3 +1,7 @@
+/**
+ * State profile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status2, status3, StateProfile, SearchBack, token_handle_vault, onBackPress, loadMoreData, renderFooter, stateProfileget.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, ActivityIndicator, Image, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -34,15 +38,32 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Status2 string constant.
+ * @returns {string}
+ */
 let status2 = "";
+/**
+ * Status3 string constant.
+ * @returns {string}
+ */
 let status3 = "";
+/**
+ * State profile component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const StateProfile = (props) => {
     const {
         stateCount,
         pushnew,
         isConnected
       } = useContext(AppContext);
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -91,7 +112,11 @@ const StateProfile = (props) => {
 
     }, [isFocus, ticktry]);
     useEffect(() => {
-        const token_handle_vault = () => {
+                /**
+ * Token handle vault utility.
+ * @returns {void}
+ */
+const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -183,7 +208,11 @@ const StateProfile = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             SearchBack();
             return true;
         };
@@ -194,7 +223,11 @@ const StateProfile = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const loadMoreData = () => {
+        /**
+ * Load more data utility.
+ * @returns {void}
+ */
+const loadMoreData = () => {
         if (loadingMore) return;
         if (paginatedDatapr?.length < webcastviewpr?.length) {
             setLoadingMore(true);
@@ -208,14 +241,25 @@ const StateProfile = (props) => {
             }, 1000);
         }
     };
-    const renderFooter = () => {
+        /**
+ * Render footer utility.
+ * @returns {*}
+ */
+const renderFooter = () => {
         return loadingMore ? (
             <View style={{ paddingVertical: normalize(20) }}>
                 <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
             </View>
         ) : null;
     };
-    const stateProfileget = ({ item, index }) => {
+        /**
+ * State profileget utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const stateProfileget = ({ item, index }) => {
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
@@ -393,4 +437,9 @@ const StateProfile = (props) => {
         </>
     )
 }
+/**
+ * State profile default export.
+ *
+ * @returns {*}
+ */
 export default StateProfile

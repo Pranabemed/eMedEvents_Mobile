@@ -1,3 +1,7 @@
+/**
+ * Checkout main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckoutMain, formatNumberWithCommas, handleToggleExpand, handleSoftDelete, parseDate, formatPrice.
+ */
+
 import { View, Text, Image, TouchableOpacity, ScrollView, FlatList, StyleSheet, Platform, TextInput } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -106,7 +110,12 @@ const CheckoutMain = ({
     const allPickersAreFalse = !licstatepratice && !statepicker && !countrypicker && !pratice && !cityPicker && !countrypickerprof;
     const [isExpanded, setIsExpanded] = useState(false); // State to control the collapse/expand
     const [displayedTickets, setDisplayedTickets] = useState(spanroute?.inPersonTicket?.tickets || []); // Track tickets to display
-    const formatNumberWithCommas = (value) => {
+        /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
@@ -134,7 +143,11 @@ const CheckoutMain = ({
     const isGuestCheckout = ['guest', 'guestuser'].includes(
         String(guestOrigin || '').toLowerCase()
     );
-    const handleToggleExpand = () => {
+        /**
+ * Handles toggle expand.
+ * @returns {void}
+ */
+const handleToggleExpand = () => {
         setIsExpanded(!isExpanded);
     };
     const isErrorsEmpty = Object.keys(errors).length == 0;
@@ -166,7 +179,12 @@ const CheckoutMain = ({
         activeConference?.endDate ||
         activeConference?.key_dates?.conferenceEnddate ||
         '';
-    const handleSoftDelete = (index) => {
+        /**
+ * Handles soft delete.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleSoftDelete = (index) => {
         // Use slice to remove only the selected index
         setDisplayedTickets((prevTickets) => [
             ...prevTickets.slice(0, index),
@@ -191,7 +209,12 @@ const CheckoutMain = ({
         setTotalcount(totalQuantity); // Update state with totalQuantity
     }, [spanroute]);
     useEffect(() => {
-        const parseDate = (dateStr) => {
+                /**
+ * Parses date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const parseDate = (dateStr) => {
             if (!dateStr) return null;
             const parsed = moment(dateStr, [
                 "DD MMM, YYYY",
@@ -244,7 +267,12 @@ const CheckoutMain = ({
         }
         return "";
     })();
-    function formatPrice(price) {
+        /**
+ * Formats price.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -944,4 +972,9 @@ const CheckoutMain = ({
     )
 }
 
+/**
+ * Checkout main default export.
+ *
+ * @returns {*}
+ */
 export default CheckoutMain

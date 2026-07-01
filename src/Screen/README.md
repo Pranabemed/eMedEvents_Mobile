@@ -1,21 +1,11 @@
-# Screens Documentation
+# eMedEvents Screens
 
-## Purpose
-The `Screen` directory contains all the main top-level views/pages of the application. These components are typically stateful, connected to Redux, and orchestrate navigation, API calls, and local UI logic.
+This directory contains all the stateful screen components, typically grouped by feature or navigation flow.
 
-## Folder Structure
-Screens are logically grouped by feature/domain:
-- **`Auth/`**: Login, Signup, Forgot Password flows.
-- **`Dashboard/`**: Main authenticated landing pages.
-- **`Profile/`**: User settings and profile management.
-- **`HomePage/`**: Unauthenticated and Guest user experiences.
-- **`CMERequirement/`**: Workflows regarding CME state tracking.
-- And various other specialized modules.
+## Documentation Rules
+- **No Storybook:** Do NOT generate Storybook files for screens. Screens are stateful and often connected to Redux or Navigation context, making them unsuitable for isolated Storybook testing without complex mocking.
+- **JSDoc/TSDoc:** Every screen MUST include a comprehensive JSDoc block explaining its purpose, parameters (route props), return value, and an example usage.
 
-## Architecture & Best Practices
-- **Separation of Concerns**: Screens should orchestrate data flow but avoid heavy UI rendering inside a single file. Complex UI elements within a screen should be extracted to `src/Components`.
-- **Redux Integration**: Use `useSelector` and `useDispatch` to interact with global state. Do not use local state (`useState`) for data that needs to persist across screens.
-- **Navigation**: Access navigation parameters via `route.params`. Navigate using the `navigation` prop passed by React Navigation.
-
-## Documentation Standard
-Every screen component includes a JSDoc block identifying it as a component, defining its accepted props (if any), and explaining its role in the application flow.
+## Architecture
+- Screens should map UI events to Redux actions or navigation events.
+- Keep complex logic in custom hooks or Redux Sagas.

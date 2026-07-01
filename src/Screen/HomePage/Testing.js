@@ -1,3 +1,7 @@
+/**
+ * Testing screen module. Renders a React Native screen or a screen-scoped support component. Exported members: parseHtmlContent, BannerComponent, Testing, styles.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, Dimensions, ImageBackground, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -32,6 +36,12 @@ const parseHtmlContent = (htmlContent) => {
     content: content,
   };
 };
+/**
+ * Banner component component.
+ * @param {Object} props - Input object.
+ * @param {*} props.htmlContent - Nested property value.
+ * @returns {JSX.Element}
+ */
 const BannerComponent = ({ htmlContent }) => {
   const [htmlStructure, setHtmlStructure] = useState({ title: '', content: [] });
 
@@ -85,6 +95,10 @@ const BannerComponent = ({ htmlContent }) => {
 };
 
 // Sample usage of BannerComponent
+/**
+ * Testing component.
+ * @returns {JSX.Element}
+ */
 const Testing = () => {
   const bannerHtmlContent = [
     {
@@ -134,7 +148,16 @@ const Testing = () => {
   );
 };
 
+/**
+ * Testing default export.
+ *
+ * @returns {*}
+ */
 export default Testing;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   imageBackground: {
       height: normalize(170),

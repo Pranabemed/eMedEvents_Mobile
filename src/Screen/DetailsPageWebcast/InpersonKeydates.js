@@ -1,3 +1,7 @@
+/**
+ * Inperson keydates screen module. Renders a React Native screen or a screen-scoped support component. Exported members: InpersonKeydates.
+ */
+
 import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import Fonts from '../../Themes/Fonts'
@@ -139,4 +143,9 @@ console.log(wholedata?.registrationOpen, "wholedata?.registrationOpen")
     )
 }
 
+/**
+ * Inperson keydates default export.
+ *
+ * @returns {*}
+ */
 export default InpersonKeydates

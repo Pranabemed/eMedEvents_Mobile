@@ -1,3 +1,7 @@
+/**
+ * Dashboardmain reusable component module. Provides a React Native UI building block used across screens. Exported members: Dashboardmain, styles.
+ */
+
 import { View, Text, Image, FlatList, TouchableOpacity, Dimensions, Platform, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
 import React, { useContext, useMemo, useRef, useState } from 'react'
 import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
@@ -321,6 +325,10 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
         </>
     )
 }
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     paginationContainer: {
         flexDirection: 'row',
@@ -348,4 +356,9 @@ const styles = StyleSheet.create({
         backgroundColor: Colorpath.ButtonColr,
     }
 })
+/**
+ * Dashboardmain default export.
+ *
+ * @returns {*}
+ */
 export default Dashboardmain

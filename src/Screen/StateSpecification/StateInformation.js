@@ -1,3 +1,7 @@
+/**
+ * State information screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, StateInformation, token_handle, transformData, splitFormattedDate, handleAutoInforSave, handleYearcust, onBackPress.
+ */
+
 import { View, Text, TouchableOpacity, KeyboardAvoidingView, FlatList, Platform, Animated, Easing, Image, BackHandler } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -36,7 +40,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * State information component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const StateInformation = (props) => {
     const {
         setFulldashbaord,
@@ -55,7 +68,11 @@ const StateInformation = (props) => {
     const [noloadnew, setNoloadnew] = useState(false);
     const isFocus = useIsFocused();
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle_verifyfd = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
                 console.log(loginHandle_verifyfd, "statelicesene=================");
@@ -77,7 +94,12 @@ const StateInformation = (props) => {
     );
     console.log("Try programiz.pro", yearRange, cdate);
     const dispatch = useDispatch();
-    const transformData = (oldData) => {
+        /**
+ * Transform data utility.
+ * @param {*} oldData - Input value.
+ * @returns {void}
+ */
+const transformData = (oldData) => {
         if (Array.isArray(oldData)) {
             return oldData.map(name => name);
         } else if (typeof oldData === 'object') {
@@ -132,7 +154,12 @@ const StateInformation = (props) => {
     }, [AuthReducer?.verifymobileResponse?.user?.renewal_date
         || finalverify?.renewal_date
         || formattedDate?.dayMonth]);
-    function splitFormattedDate(dateString) {
+        /**
+ * Split formatted date helper.
+ * @param {*} dateString - Input value.
+ * @returns {Object}
+ */
+function splitFormattedDate(dateString) {
         if (!dateString || isNaN(Date.parse(dateString))) {
             return {
                 dayMonth: 'Date',
@@ -154,7 +181,11 @@ const StateInformation = (props) => {
     const formattedDate = splitFormattedDate(dateStr);
     console.log(formattedDate?.dayMonth);
     console.log(formattedDate?.year);
-    const handleAutoInforSave = () => {
+        /**
+ * Handles auto infor save.
+ * @returns {void}
+ */
+const handleAutoInforSave = () => {
         const renewalDate = AuthReducer?.verifymobileResponse?.user?.renewal_date || finalverify?.renewal_date;
         if (!cdate) {
             if (!renewalDate) {
@@ -243,12 +274,21 @@ const StateInformation = (props) => {
                 break;
         }
     }
-    const handleYearcust = (don) => {
+        /**
+ * Handles yearcust.
+ * @param {*} don - Input value.
+ * @returns {void}
+ */
+const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -513,4 +553,9 @@ const StateInformation = (props) => {
     );
 };
 
+/**
+ * State information default export.
+ *
+ * @returns {*}
+ */
 export default StateInformation;

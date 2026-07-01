@@ -1,3 +1,7 @@
+/**
+ * App context screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AppContext, AppProvider, resetSessionContext, clearContextData.
+ */
+
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
@@ -19,7 +23,17 @@ import { useSelector } from 'react-redux';
  * @returns {JSX.Element}
  */
 
+/**
+ * App context value.
+ * @returns {*}
+ */
 export const AppContext = createContext();
+/**
+ * App provider component.
+ * @param {Object} props - Input object.
+ * @param {*} props.children - Nested property value.
+ * @returns {JSX.Element}
+ */
 const AppProvider = ({ children }) => {
   const [takestate, setTakestate] = useState('');
   const [addit, setAddit] = useState('');
@@ -46,7 +60,11 @@ const AppProvider = ({ children }) => {
   );
   const prevAuthTokenRef = useRef(authToken);
 
-  const resetSessionContext = () => {
+    /**
+ * Reset session context utility.
+ * @returns {void}
+ */
+const resetSessionContext = () => {
     setTakestate('');
     setAddit('');
     setFulldashbaord(null);
@@ -96,7 +114,11 @@ const AppProvider = ({ children }) => {
       prevAuthTokenRef.current = authToken;
     }
   }, [authToken]);
-  const clearContextData = () => {
+    /**
+ * Clear context data utility.
+ * @returns {void}
+ */
+const clearContextData = () => {
     setFinddata(null);
   };
   const values = {
@@ -158,6 +180,11 @@ const AppProvider = ({ children }) => {
   );
 };
 
+/**
+ * App context default export.
+ *
+ * @returns {*}
+ */
 export default AppProvider;
 
 

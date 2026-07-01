@@ -1,4 +1,8 @@
 
+/**
+ * Topic cast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: TopicCast, styles.
+ */
+
 import React from "react";
 import { View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import normalize from '../../Utils/Helpers/Dimen';
@@ -108,6 +112,10 @@ const TopicCast = ({ topics, expandedtopic, toggleTopic, topiccast }) => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -157,4 +165,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Topic cast default export.
+ *
+ * @returns {*}
+ */
 export default TopicCast;

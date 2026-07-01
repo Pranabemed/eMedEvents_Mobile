@@ -327,6 +327,10 @@ const RequirementCard = ({
   );
 };
 
+/**
+ * Html tags styles object.
+ * @returns {Object}
+ */
 const htmlTagsStyles = {
   ul: {
     marginVertical: normalize(4),
@@ -357,6 +361,10 @@ const htmlTagsStyles = {
   },
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
@@ -490,4 +498,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Requirement card default export.
+ *
+ * @returns {*}
+ */
 export default RequirementCard;

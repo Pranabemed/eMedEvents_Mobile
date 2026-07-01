@@ -1,3 +1,7 @@
+/**
+ * Cart fd reusable component module. Provides a React Native UI building block used across screens. Exported members: CartFd, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -43,6 +47,10 @@ const CartFd = ({dataPayemnt, maindata, isVisible, setPaymentfdfreecart, content
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -110,4 +118,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Cart fd default export.
+ *
+ * @returns {*}
+ */
 export default CartFd;

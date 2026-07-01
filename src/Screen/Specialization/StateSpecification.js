@@ -1,3 +1,7 @@
+/**
+ * State specification screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StateSpecification, StateHeader, stateAction, getStatusText, handleLinkst, showPDF, openFileViewerst, courserenderData, getStatePrice, handleUrlPage, registercourserenderData, onBackPress, cleanNumber, handlePress, styles.
+ */
+
 import { View, Text, TouchableOpacity, Image, FlatList, ScrollView, Platform, StyleSheet, Alert, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader';
@@ -54,10 +58,19 @@ const StateSpecification = (props) => {
     const Fulldata = (needReview == 1 && certificatestate) ? threeDotData :
         (needReview == 1 && !certificatestate) ? duplicateDataReview :
             (needReview == 0 && certificatestate) ? duplicateData : null;
-    const StateHeader = () => {
+        /**
+ * State header component.
+ * @returns {void}
+ */
+const StateHeader = () => {
         props.navigation.goBack();
     }
-    const stateAction = (stateRole) => {
+        /**
+ * State action utility.
+ * @param {*} stateRole - Input value.
+ * @returns {void}
+ */
+const stateAction = (stateRole) => {
         console.log(stateRole, "stateRole===============");
         if (stateRole?.current_activity_api == "activitysession") {
             props?.navigation.navigate("VideoComponent", { RoleData: stateRole });
@@ -70,7 +83,12 @@ const StateSpecification = (props) => {
         }
     }
     useEffect(() => {
-        const getStatusText = (courses) => {
+                /**
+ * Returns status text.
+ * @param {*} courses - Input value.
+ * @returns {*}
+ */
+const getStatusText = (courses) => {
             return courses.every(course => course.completed_percentage == 100) ? "Suggestedtext" : "nottrue";
         };
         if (props?.route?.params?.fullData?.fullData?.registered_cources?.length > 0) {
@@ -80,9 +98,20 @@ const StateSpecification = (props) => {
         }
 
     }, [props?.route?.params?.fullData])
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const cleanedPath = link.replace(/\s+/g, '');
@@ -112,7 +141,13 @@ const StateSpecification = (props) => {
 
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     console.log('Opening file viewer for:', pdfUrist);
                     setTimeout(async () => {
@@ -127,9 +162,22 @@ const StateSpecification = (props) => {
             openFileViewerst();
         }
     }, [pdfUrist]);
-    const courserenderData = ({ item, index }) => {
+        /**
+ * Courserender data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courserenderData = ({ item, index }) => {
         console.log(item, "courserenderData--------")
-        const getStatePrice = (swipe, down) => {
+                /**
+ * Returns state price.
+ * @param {*} swipe - Input value.
+ * @param {*} down - Input value.
+ * @returns {*}
+ */
+const getStatePrice = (swipe, down) => {
             let price = parseFloat(down?.replace(/,/g, ""));
             return Math.round(price / (1 - swipe));
         };
@@ -287,7 +335,12 @@ const StateSpecification = (props) => {
             </View>
         )
     }
-    const handleUrlPage = (did) => {
+        /**
+ * Handles url page.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleUrlPage = (did) => {
         const url = did?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", did);
@@ -295,7 +348,14 @@ const StateSpecification = (props) => {
             props?.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result } })
         }
     }
-    const registercourserenderData = ({ item, index }) => {
+        /**
+ * Registercourserender data utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const registercourserenderData = ({ item, index }) => {
         console.log(item, "itemregisterid--------")
         return (
             <View>
@@ -455,7 +515,11 @@ const StateSpecification = (props) => {
         )
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             StateHeader();
             return true;
         };
@@ -467,7 +531,12 @@ const StateSpecification = (props) => {
 
         return () => backHandler.remove();
     }, []);
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -733,7 +802,11 @@ const StateSpecification = (props) => {
                                 keyExtractor={item => item.id.toString()}
                                 data={Fulldata}
                                 renderItem={({ item }) => {
-                                    const handlePress = () => {
+                                                                        /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                         setModalviewstate(false);
                                         if (item?.id === 1) {
                                             setLoads(true);
@@ -764,7 +837,16 @@ const StateSpecification = (props) => {
     )
 }
 
+/**
+ * State specification default export.
+ *
+ * @returns {*}
+ */
 export default StateSpecification
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

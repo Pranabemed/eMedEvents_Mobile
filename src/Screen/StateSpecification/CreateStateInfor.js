@@ -1,3 +1,7 @@
+/**
+ * Create state infor screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, CreateStateInfor, token_handle, removeLastWord, Praticing_State, searchCityHandle, splitFormattedDate, wrapDataInDoubleArray, fetchIdByName, cityTake, handleCityName, handleYearcust, handleStateInforSave, saveFlagsAndRequestDashboard, onBackPress, styles.
+ */
+
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform, FlatList, Animated, Easing, Image, BackHandler } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -43,7 +47,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Create state infor component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const CreateStateInfor = (props) => {
     const {
         setFulldashbaord,
@@ -57,7 +70,11 @@ const CreateStateInfor = (props) => {
     const [thoun, setThoun] = useState("")
     const isFocus = useIsFocused();
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
                 console.log(loginHandle_verify, "statelicesene=================");
@@ -119,7 +136,12 @@ const CreateStateInfor = (props) => {
             });
     }, [licenseStateId, isFocus]);
     const userLocation = AuthReducer?.verifymobileResponse?.user?.user_location || finalverify?.user_location || finalverify?.user?.user_location || props?.route?.params?.dataVerify?.user_location || props?.route?.params?.dataVerify?.allDat?.user_location || props?.route?.params?.dataVerify?.allDat?.user?.user_location;
-    const removeLastWord = (text) => {
+        /**
+ * Remove last word utility.
+ * @param {*} text - Input value.
+ * @returns {*}
+ */
+const removeLastWord = (text) => {
         const words = text.split(',')[0].trim();
         return words;
     };
@@ -162,7 +184,11 @@ const CreateStateInfor = (props) => {
             Praticing_State();
         }
     }, [isFocus, shouldCallPracticeState]);
-    const Praticing_State = () => {
+        /**
+ * Praticing state component.
+ * @returns {void}
+ */
+const Praticing_State = () => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(1));
@@ -172,7 +198,12 @@ const CreateStateInfor = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
-    const searchCityHandle = text => {
+        /**
+ * Search city handle utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCityHandle = text => {
         console.log(text, 'text12333');
         if (text) {
             const praticeState = cityallfetched?.filter(function (item) {
@@ -192,7 +223,12 @@ const CreateStateInfor = (props) => {
             setCitysave(text);
         }
     };
-    function splitFormattedDate(dateString) {
+        /**
+ * Split formatted date helper.
+ * @param {*} dateString - Input value.
+ * @returns {Object}
+ */
+function splitFormattedDate(dateString) {
         if (!dateString || isNaN(Date.parse(dateString))) {
             return {
                 dayMonth: 'Date',
@@ -227,14 +263,24 @@ const CreateStateInfor = (props) => {
         }
     }, [AuthReducer?.verifymobileResponse?.user?.renewal_date, finalverify?.renewal_date, finalverify?.user?.renewal_date, formattedDate?.dayMonth, props?.route?.params?.dataVerify?.allDat]);
 
-    const wrapDataInDoubleArray = () => {
+        /**
+ * Wrap data in double array utility.
+ * @returns {Array}
+ */
+const wrapDataInDoubleArray = () => {
         const certificates = takestate;
         if (certificates) {
             return [certificates];
         }
         return [];
     };
-    const fetchIdByName = (data, name) => {
+        /**
+ * Fetch id by name utility.
+ * @param {*} data - Input value.
+ * @param {*} name - Input value.
+ * @returns {*}
+ */
+const fetchIdByName = (data, name) => {
         console.log(data, name, "name-------")
         const foundItem = data.find(item => item.name.toLowerCase() === name.toLowerCase());
         return foundItem ? foundItem.id : null;
@@ -251,7 +297,12 @@ const CreateStateInfor = (props) => {
             console.log(takeAll, "takeAll-----", stateId, states);
         }
     }, [takestate]);
-    const cityTake = (handletake) => {
+        /**
+ * City take utility.
+ * @param {*} handletake - Input value.
+ * @returns {void}
+ */
+const cityTake = (handletake) => {
         const handleID = DashboardReducer?.mainprofileResponse?.user_address?.state_id || handletake;
         connectionrequest()
             .then(() => {
@@ -272,7 +323,12 @@ const CreateStateInfor = (props) => {
             })
     }, [cityReq, DashboardReducer?.mainprofileResponse?.user_address?.state_id])
     console.log(finalShowDate, "finaldatae");
-    const handleCityName = (did) => {
+        /**
+ * Handles city name.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleCityName = (did) => {
         setCity(did?.name);
         setCityId(did.id)
         setCitypicker(false);
@@ -407,13 +463,22 @@ const CreateStateInfor = (props) => {
             }),
         ]).start();
     }, [zipcode]);
-    const handleYearcust = (don) => {
+        /**
+ * Handles yearcust.
+ * @param {*} don - Input value.
+ * @returns {void}
+ */
+const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
     }
     const cellNoRegexwpdd = /^\d{10}$/;
     const isValidWhatsappNodd = npino?.length > 0 && !cellNoRegexwpdd.test(npino);
-    const handleStateInforSave = () => {
+        /**
+ * Handles state infor save.
+ * @returns {void}
+ */
+const handleStateInforSave = () => {
         const renewalDate =
             AuthReducer?.verifymobileResponse?.user?.renewal_date ||
             finalverify?.renewal_date ||
@@ -494,7 +559,13 @@ const CreateStateInfor = (props) => {
                 status = AuthReducer.status;
                 setGtprof(true);
                 setNoloadnew(true);
-                const saveFlagsAndRequestDashboard = async () => {
+                                /**
+ * Save flags and request dashboard utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const saveFlagsAndRequestDashboard = async () => {
                     try {
                         const flags = await readNonUsaPermanentFlags();
                         if (flags?.professionUpdateRequired) {
@@ -544,7 +615,11 @@ const CreateStateInfor = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -1195,7 +1270,16 @@ const CreateStateInfor = (props) => {
     );
 };
 
+/**
+ * Create state infor default export.
+ *
+ * @returns {*}
+ */
 export default CreateStateInfor;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     input: {
         height: normalize(50),

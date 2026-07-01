@@ -1,5 +1,14 @@
+/**
+ * Phone normalize utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: processPhoneNumber.
+ */
+
 import { parsePhoneNumber } from 'libphonenumber-js';
-export const processPhoneNumber = (number) => {
+export /**
+ * Process phone number utility helper.
+ * @param {number} number - Input value.
+ * @returns {void}
+ */
+const processPhoneNumber = (number) => {
   try {
     const phoneNumber = parsePhoneNumber(number);
     const countryCode = phoneNumber.countryCallingCode;

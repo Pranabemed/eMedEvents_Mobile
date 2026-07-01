@@ -1,3 +1,7 @@
+/**
+ * Course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Course, CMEPress, handleLinearTextChange, onBackPress, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, StyleSheet, FlatList, Animated, Easing, BackHandler, Alert, Image } from 'react-native';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import PageHeader from '../../Components/PageHeader';
@@ -36,7 +40,11 @@ const Course = (props) => {
     } = useContext(AppContext);
     console.log(props?.route?.params?.taskData, "taskData====",statepush);
     const CMEReducer = useSelector(state => state.CMEReducer);
-    const CMEPress = () => {
+        /**
+ * Cmepress component.
+ * @returns {void}
+ */
+const CMEPress = () => {
         setAddit(statepush);
         props.navigation.replace("TabNav");
         // props.navigation.goBack();
@@ -48,7 +56,12 @@ const Course = (props) => {
     const [modalShow, setModalShow] = useState(false);
     const [loadingdownst, setLoadingdownst] = useState(false);
     const [loadingdownstlv, setLoadingdownstlv] = useState(false);
-    const handleLinearTextChange = (isOnline) => {
+        /**
+ * Handles linear text change.
+ * @param {boolean} isOnline - Input value.
+ * @returns {void}
+ */
+const handleLinearTextChange = (isOnline) => {
         setLinearText(isOnline);
         setFetchname("All");
         setFetchnamechange("All");
@@ -105,7 +118,11 @@ const Course = (props) => {
         ]).start();
     }, [fetchnamechnage]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             CMEPress();
             return true;
         };
@@ -304,8 +321,17 @@ const Course = (props) => {
     )
 }
 
+/**
+ * Course default export.
+ *
+ * @returns {*}
+ */
 export default Course
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

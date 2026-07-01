@@ -1,3 +1,7 @@
+/**
+ * Single textinput reusable component module. Provides a React Native UI building block used across screens. Exported members: TextInputSingle, onChangeText.
+ */
+
 import React, { useState, forwardRef, useRef, useEffect } from 'react';
 import {
   View,
@@ -36,7 +40,12 @@ const TextInputSingle = forwardRef((props, ref) => {
       }),
     ]).start();
   }, [textValue]);
-  const onChangeText = (text) => {
+    /**
+ * On change text utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const onChangeText = (text) => {
     setTextValue(text);
     if (props.onChangeText) {
       props.onChangeText(text);
@@ -142,4 +151,9 @@ TextInputSingle.propTypes = {
   disabledPress:PropTypes.bool
 };
 
+/**
+ * Single textinput default export.
+ *
+ * @returns {*}
+ */
 export default TextInputSingle;

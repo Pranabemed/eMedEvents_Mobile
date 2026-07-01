@@ -1,3 +1,7 @@
+/**
+ * File check screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, dommyData, fakedata, CertficateHandle, wrapDataInDoubleArray, checkPrimeSkipped, certificatpress, onhandle, oncmeModalclose, toggleShowMore, downloadZipFile, openZipFile, downloadTrans, stateTranscript, categorizeDataDynamically, categorizeData, mergeData, AnothcategorizeData, searchCredit, searchBoard, renderCertificateCard, styles.
+ */
+
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, ImageBackground, Animated, Alert, Linking, KeyboardAvoidingView } from 'react-native';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
@@ -40,8 +44,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Dommy data array.
+ * @returns {Array}
+ */
 const dommyData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }, { id: 1, name: "View & Download", Icon: "eye" }]
+/**
+ * Fakedata array.
+ * @returns {Array}
+ */
 const fakedata = [{ id: 1, name: "View & Download", Icon: "eye" }]
+/**
+ * Certficate handle component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const CertficateHandle = (props) => {
     const {
         isConnected
@@ -61,7 +78,11 @@ const CertficateHandle = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     console.log(props?.route?.params?.boardID, props?.route?.params?.boardCert, "route=========");
     // console.log(props?.route?.params?.boardID?.certificates,"array of data " ,typeof props?.route?.params?.boardID?.certificates);
-    const wrapDataInDoubleArray = () => {
+        /**
+ * Wrap data in double array utility.
+ * @returns {Array}
+ */
+const wrapDataInDoubleArray = () => {
         const certificates = props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.certificates : props?.route?.params?.boardCert?.certificate;
         if (certificates) {
             return [[certificates]];
@@ -72,7 +93,13 @@ const CertficateHandle = (props) => {
     const [isNonUsaLoading, setIsNonUsaLoading] = useState(false);
     const [primeSkipped, setPrimeSkipped] = useState(false);
     useEffect(() => {
-        const checkPrimeSkipped = async () => {
+                /**
+ * Check prime skipped utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkPrimeSkipped = async () => {
             try {
                 const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
                 setPrimeSkipped(skipped === 'true');
@@ -140,7 +167,11 @@ const CertficateHandle = (props) => {
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [fetchCreditVaultData, props?.route?.params?.isNonUsaUser])
     );
-    const certificatpress = () => {
+        /**
+ * Certificatpress utility.
+ * @returns {void}
+ */
+const certificatpress = () => {
         props.navigation.goBack();
     }
     const [showMore, setShowMore] = useState({});
@@ -151,14 +182,28 @@ const CertficateHandle = (props) => {
     const [deleteIndex, setDeleteIndex] = useState(-1);
     const [dataFull, setDataFull] = useState([]);
     const [cmemodal, setCmemodal] = useState(false);
-    const onhandle = () => {
+        /**
+ * Onhandle utility.
+ * @returns {void}
+ */
+const onhandle = () => {
         setCmemodal(false);
     }
-    const oncmeModalclose = () => {
+        /**
+ * Oncme modalclose utility.
+ * @returns {void}
+ */
+const oncmeModalclose = () => {
         setCmemodal(!cmemodal)
     }
 
-    const toggleShowMore = (year, category) => {
+        /**
+ * Toggle show more utility.
+ * @param {*} year - Input value.
+ * @param {*} category - Input value.
+ * @returns {void}
+ */
+const toggleShowMore = (year, category) => {
         setShowMore(prev => ({
             ...prev,
             [year]: {
@@ -219,7 +264,14 @@ const CertficateHandle = (props) => {
             downloadZipFile(CreditVaultReducer?.downloadTranscriptNonUsaResponse);
         }
     }, [CreditVaultReducer?.downloadTranscriptNonUsaResponse])
-    const downloadZipFile = async (data = zippath) => {
+        /**
+ * Download zip file utility.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @returns {Promise<*>}
+ */
+const downloadZipFile = async (data = zippath) => {
         const fileUrl = `${data?.archive_file_path}${data?.archive_file}`
         const filePath = `${RNFS.DocumentDirectoryPath}/${data?.archive_file}`;
         try {
@@ -245,7 +297,14 @@ const CertficateHandle = (props) => {
             // Alert.alert('Download failed', error.message);
         }
     };
-    const openZipFile = async (filePath) => {
+        /**
+ * Open zip file utility.
+ *
+ * @async
+ * @param {*} filePath - Input value.
+ * @returns {Promise<*>}
+ */
+const openZipFile = async (filePath) => {
         try {
             const isFileExist = await RNFS.exists(filePath);
             if (!isFileExist) {
@@ -262,7 +321,11 @@ const CertficateHandle = (props) => {
                         'It seems there is no app installed to open ZIP files. Please download one from the Play Store.',
                         [
                             { text: 'Cancel', style: 'cancel' },
-                            { text: 'Go to Play Store', onPress: () => Linking.openURL('market://details?id=com.winzip.android') }
+                            { text: 'Go to Play Store',                             /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => Linking.openURL('market://details?id=com.winzip.android') }
                         ]
                     );
                 }
@@ -276,7 +339,11 @@ const CertficateHandle = (props) => {
                         'It seems there is no app installed to open ZIP files. Please download one from the App Store.',
                         [
                             { text: 'Cancel', style: 'cancel' },
-                            { text: 'Go to App Store', onPress: () => Linking.openURL('itms-apps://apps.apple.com/us/app/winzip/id500637987') }
+                            { text: 'Go to App Store',                             /**
+ * On press utility.
+ * @returns {*}
+ */
+onPress: () => Linking.openURL('itms-apps://apps.apple.com/us/app/winzip/id500637987') }
                         ]
                     );
                 }
@@ -286,7 +353,11 @@ const CertficateHandle = (props) => {
             Alert.alert('Error', 'Unable to open the file. Please check if a ZIP file viewer app is installed.');
         }
     };
-    const downloadTrans = () => {
+        /**
+ * Download trans utility.
+ * @returns {void}
+ */
+const downloadTrans = () => {
         if (isNonUsaUser) {
             const statedown = {
                 "board_id": 0,
@@ -313,7 +384,13 @@ const CertficateHandle = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    const stateTranscript = (data, range) => {
+        /**
+ * State transcript utility.
+ * @param {*} data - Input value.
+ * @param {*} range - Input value.
+ * @returns {void}
+ */
+const stateTranscript = (data, range) => {
         console.log(data, range, "transcript-------");
         let statedown = {
             "board_id": props?.route?.params?.boardID?.board_data?.board_id,
@@ -381,7 +458,12 @@ const CertficateHandle = (props) => {
         const fulFinal = doubleArrayCertificates[0];
         setDataFull(fulFinal);
     }, [props?.route?.params?.boardCert]);
-    const categorizeDataDynamically = (data) => {
+        /**
+ * Categorize data dynamically utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const categorizeDataDynamically = (data) => {
         const result = {};
         Object.keys(data).forEach((yearRange) => {
             if (!result[yearRange]) {
@@ -426,7 +508,12 @@ const CertficateHandle = (props) => {
 
     const [stateget, setStateget] = useState("");
     const [stategetdt, setStategetdt] = useState("");
-    const categorizeData = (data) => {
+        /**
+ * Categorize data utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const categorizeData = (data) => {
         console.log(data, "data1222");
         const currentYear = new Date().getFullYear();
         const nextYear = currentYear + 1;
@@ -454,7 +541,13 @@ const CertficateHandle = (props) => {
 
     const [boardTake, setboardTake] = useState("");
     const [boardTakedt, setboardTakedt] = useState("");
-    function mergeData(existingData, newTransformedData) {
+        /**
+ * Merge data helper.
+ * @param {*} existingData - Input value.
+ * @param {*} newTransformedData - Input value.
+ * @returns {*}
+ */
+function mergeData(existingData, newTransformedData) {
         Object.keys(newTransformedData).forEach(year => {
             if (!existingData[year]) {
                 existingData[year] = newTransformedData[year];
@@ -492,7 +585,12 @@ const CertficateHandle = (props) => {
             console.log(stateFull, "sattef----------")
         }
     }, [stateget])
-    const AnothcategorizeData = (data) => {
+        /**
+ * Anothcategorize data component.
+ * @param {*} data - Input value.
+ * @returns {JSX.Element}
+ */
+const AnothcategorizeData = (data) => {
         console.log(data, "data1222");
         const result = {};
         if (data) {
@@ -509,7 +607,12 @@ const CertficateHandle = (props) => {
         }
         return result;
     };
-    const searchCredit = (searchTerm) => {
+        /**
+ * Search credit utility.
+ * @param {*} searchTerm - Input value.
+ * @returns {*}
+ */
+const searchCredit = (searchTerm) => {
         const result = {};
         const isYearSearch = /^[0-9-]+$/.test(searchTerm);
         Object.entries(stategetdt).forEach(([yearRange, details]) => {
@@ -536,7 +639,12 @@ const CertficateHandle = (props) => {
         setSearchText(searchTerm);
         return Object.keys(result).length ? setStateget(result) : setStateget({});
     };
-    const searchBoard = (searchTerm) => {
+        /**
+ * Search board utility.
+ * @param {*} searchTerm - Input value.
+ * @returns {*}
+ */
+const searchBoard = (searchTerm) => {
         const result = {};
         const isYearSearch = /^[0-9-]+$/.test(searchTerm);
         Object.entries(boardTakedt).forEach(([yearRange, details]) => {
@@ -565,7 +673,13 @@ const CertficateHandle = (props) => {
         return Object.keys(result).length == 0 ? setboardTake("") : setboardTake(result);
     };
     console.log(boardTakedt, "boardTakedt", boardTake)
-    const renderCertificateCard = (item, category) => {
+        /**
+ * Render certificate card utility.
+ * @param {*} item - Input value.
+ * @param {*} category - Input value.
+ * @returns {JSX.Element}
+ */
+const renderCertificateCard = (item, category) => {
         console.log(item, "state_mandatory=====>>>>>>")
         return (
             <View>
@@ -1115,6 +1229,10 @@ const CertficateHandle = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -1258,4 +1376,9 @@ const styles = StyleSheet.create({
 
 
 
+/**
+ * File check default export.
+ *
+ * @returns {*}
+ */
 export default CertficateHandle;

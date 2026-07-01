@@ -1,3 +1,7 @@
+/**
+ * Check country new screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ChecktwoCountryNew, weekFilterProfession.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -27,7 +31,13 @@ const ChecktwoCountryNew = ({ setCountryNew, countrypicker, setSearchcountry, ac
     
             return () => clearTimeout(timeout);
         }, []);
-    const weekFilterProfession = ({ item }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item }) => {
         console.log("isPreviouslySelected=====", activeIndex);
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -161,4 +171,9 @@ const ChecktwoCountryNew = ({ setCountryNew, countrypicker, setSearchcountry, ac
     )
 }
 
+/**
+ * Check country new default export.
+ *
+ * @returns {*}
+ */
 export default ChecktwoCountryNew

@@ -1,3 +1,7 @@
+/**
+ * Check box screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomCheckBox, styles.
+ */
+
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Install if not already: npm install react-native-vector-icons
@@ -24,6 +28,10 @@ const CustomCheckBox = ({ selected, onPress }) => {
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   checkBox: {
     width: 24,
@@ -35,4 +43,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Check box default export.
+ *
+ * @returns {*}
+ */
 export default CustomCheckBox;

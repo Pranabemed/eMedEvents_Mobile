@@ -13,6 +13,13 @@ import {
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 
+/**
+ * Executes the HomelistSaga saga.
+ *
+ * @function HomelistSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* HomelistSaga(action) {
   console.log('hi');
   getUserAgentJSON();
@@ -36,6 +43,13 @@ export function* HomelistSaga(action) {
   }
 }
 
+/**
+ * Executes the AboutusSaga saga.
+ *
+ * @function AboutusSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* AboutusSaga(action) {
   getUserAgentJSON();
   let header = {
@@ -54,6 +68,13 @@ export function* AboutusSaga(action) {
   }
 }
 
+/**
+ * Executes the StateBundleLandingSaga saga.
+ *
+ * @function StateBundleLandingSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* StateBundleLandingSaga(action) {
   getUserAgentJSON();
   let header = {
@@ -77,6 +98,13 @@ export function* StateBundleLandingSaga(action) {
   }
 }
 
+/**
+ * Executes the professionSaveSaga saga.
+ *
+ * @function professionSaveSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* professionSaveSaga(action) {
   getUserAgentJSON();
   const ipAddress = action?.payload?.ip || getPublicIP();

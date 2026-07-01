@@ -1,3 +1,7 @@
+/**
+ * Profession component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfessionComponent, onBackPress, weekFilterProfession.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, StyleSheet, ActivityIndicator, BackHandler } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -28,7 +32,11 @@ const ProfessionComponent = ({ handleProfession, clist, setcountrypicker, search
         return () => clearTimeout(timeout);
     }, []);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             setSearchtext("");
             setcountrypicker(false);
             return true;
@@ -39,7 +47,14 @@ const ProfessionComponent = ({ handleProfession, clist, setcountrypicker, search
         );
         return () => backHandler.remove();
     }, []);
-    const weekFilterProfession = ({ item, index }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item, index }) => {
         return (
             <>
                 <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -169,4 +184,9 @@ const ProfessionComponent = ({ handleProfession, clist, setcountrypicker, search
     )
 }
 
+/**
+ * Profession component default export.
+ *
+ * @returns {*}
+ */
 export default ProfessionComponent

@@ -277,6 +277,10 @@ const ProfessionDropdown = ({
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   dropdownContainer: {
     flexDirection: 'row',
@@ -431,4 +435,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Profession dropdown default export.
+ *
+ * @returns {*}
+ */
 export default ProfessionDropdown;

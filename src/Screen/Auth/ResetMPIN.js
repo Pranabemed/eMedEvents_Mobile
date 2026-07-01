@@ -1,3 +1,7 @@
+/**
+ * Reset mpin screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ResetMPIN, toggleModal, resetHandle, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, StyleSheet, Animated, Easing, TextInput, Image, BackHandler } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -27,6 +31,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Reset mpin component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const ResetMPIN = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -34,10 +43,18 @@ const ResetMPIN = (props) => {
     const [cellno, setCellno] = useState("");
     const [isModalVisible, setModalVisible] = useState(false);
 
-    const toggleModal = () => {
+        /**
+ * Toggle modal utility.
+ * @returns {void}
+ */
+const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
-    const resetHandle = () => {
+        /**
+ * Reset handle utility.
+ * @returns {void}
+ */
+const resetHandle = () => {
         console.log(cellno)
         if (!cellno) {
             showErrorAlert("New password is required !")
@@ -121,7 +138,11 @@ const ResetMPIN = (props) => {
     const passwordsMatch = cellno === resetmpin;
     const final = !(isPasswordValid && cnfrmPasswordValid && passwordsMatch); // button should be disabled if NOT valid
  useEffect(() => {
-            const onBackPress = () => {
+                        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
                 return true;
             };
             const backHandler = BackHandler.addEventListener(
@@ -248,6 +269,10 @@ const ResetMPIN = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -284,4 +309,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Reset mpin default export.
+ *
+ * @returns {*}
+ */
 export default ResetMPIN;

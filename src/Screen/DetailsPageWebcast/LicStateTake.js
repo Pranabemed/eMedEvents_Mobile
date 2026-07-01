@@ -1,4 +1,17 @@
-export const searchStateLicNamePraticeFunction = (text,selectStatepratice,setSlistpratice,setSearchpratice,searchStateNamePratice) => {
+/**
+ * Lic state take screen module. Renders a React Native screen or a screen-scoped support component. Exported members: searchStateLicNamePraticeFunction.
+ */
+
+export /**
+ * Search state lic name pratice function utility.
+ * @param {*} text - Input value.
+ * @param {*} selectStatepratice - Input value.
+ * @param {*} setSlistpratice - Input value.
+ * @param {*} setSearchpratice - Input value.
+ * @param {*} searchStateNamePratice - Input value.
+ * @returns {void}
+ */
+const searchStateLicNamePraticeFunction = (text,selectStatepratice,setSlistpratice,setSearchpratice,searchStateNamePratice) => {
     console.log(text, 'text12333');
     if (text) {
         const praticeState = selectStatepratice?.filter(function (item) {

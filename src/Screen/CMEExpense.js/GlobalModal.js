@@ -1,3 +1,7 @@
+/**
+ * Global modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GlobalModal, onPressUrl.
+ */
+
 import { View, Text, TouchableOpacity, FlatList, Platform, Alert } from 'react-native'
 import React from 'react'
 import Modal from 'react-native-modal';
@@ -19,7 +23,13 @@ import Dynamicmodal from './Dynamicmodal';
 const GlobalModal = ({gettitle,title ,typewise, globaldrop, setGloabaldrop, maindata ,travelmodal,setTravelmodal}) => {
     console.log(maindata, "maindata---")
     const dommyData = [{ id: 0, name: "View ", Icon: "eye" }, { id: 1, name: "Edit", Icon: "edit" }, { id: 2, name: "share", Icon: "sharealt" }, { id: 3, name: "Download", Icon: "download" }];
-    const onPressUrl = async () => {
+        /**
+ * On press url utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPressUrl = async () => {
         try {
             const url = `https://static.emedevents.com/uploads/invoices/${maindata?.documents}`;
             console.log(url, "url========");
@@ -137,4 +147,9 @@ const GlobalModal = ({gettitle,title ,typewise, globaldrop, setGloabaldrop, main
     )
 }
 
+/**
+ * Global modal default export.
+ *
+ * @returns {*}
+ */
 export default GlobalModal

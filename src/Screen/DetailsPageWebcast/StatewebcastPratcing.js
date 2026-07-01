@@ -1,3 +1,7 @@
+/**
+ * Statewebcast pratcing screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastPratcing.
+ */
+
 import { View, Text } from 'react-native'
 import React from 'react'
 import Buttons from '../../Components/Button';
@@ -68,4 +72,9 @@ const StatewebcastPratcing = ({navigate}) => {
   )
 }
 
+/**
+ * Statewebcast pratcing default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastPratcing

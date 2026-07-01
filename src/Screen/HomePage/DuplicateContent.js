@@ -1,4 +1,13 @@
-export const parseHtmlContent = (htmlContent) => {
+/**
+ * Duplicate content screen module. Renders a React Native screen or a screen-scoped support component. Exported members: parseHtmlContent.
+ */
+
+export /**
+ * Parses html content.
+ * @param {*} htmlContent - Input value.
+ * @returns {Object}
+ */
+const parseHtmlContent = (htmlContent) => {
     const titleMatch = htmlContent.match(/<h2 class='orange-color'>(.*?)<\/h2>/i);
     const dateMatch = htmlContent.match(/<p class='paratex sliderthreecredits[^>]*'>\s*<img[^>]*>\s*(.*?)<\/p>/i);
     const locationMatch = htmlContent.match(/<p class='d-flex credits'>\s*<img[^>]*>\s*(.*?)<\/p>/i);

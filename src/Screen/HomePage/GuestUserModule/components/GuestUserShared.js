@@ -134,8 +134,28 @@ const MembershipBannerComponent = ({ width }) => (
   </LinearGradient>
 );
 
+/**
+ * Section title value.
+ * @returns {*}
+ */
 export const SectionTitle = memo(SectionTitleComponent);
+/**
+ * Tag chip value.
+ * @returns {*}
+ */
 export const TagChip = memo(TagChipComponent);
+/**
+ * Info row value.
+ * @returns {*}
+ */
 export const InfoRow = memo(InfoRowComponent);
+/**
+ * Stats grid value.
+ * @returns {*}
+ */
 export const StatsGrid = memo(StatsGridComponent);
+/**
+ * Membership banner value.
+ * @returns {*}
+ */
 export const MembershipBanner = memo(MembershipBannerComponent);

@@ -1,3 +1,7 @@
+/**
+ * Guest profession popup reusable component module. Provides a React Native UI building block used across screens. Exported members: POPUP_SHOWN_KEY, getDisplayValue, normalizeList, normalizeProfessionResponse, normalizeSpecialtyResponse, GuestProfessionPopup, validateEmail, styles.
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,8 +28,17 @@ import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import Buttons from '../../../../Components/Button';
 import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
 
+/**
+ * Popup shown key constant.
+ * @returns {string}
+ */
 const POPUP_SHOWN_KEY = 'GUEST_PROFESSION_POPUP_SHOWN';
 
+/**
+ * Returns display value.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getDisplayValue = item =>
   String(
     item?.name ??
@@ -39,6 +52,11 @@ const getDisplayValue = item =>
     '',
   ).trim();
 
+/**
+ * Normalizes list.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
 const normalizeList = source => {
   if (!source) return [];
 
@@ -74,6 +92,11 @@ const normalizeList = source => {
   return label ? [{ id: '0', label, raw: source }] : [];
 };
 
+/**
+ * Normalizes profession response.
+ * @param {*} responseData - Input value.
+ * @returns {*}
+ */
 const normalizeProfessionResponse = responseData =>
   normalizeList(
     responseData?.profession_credentials ??
@@ -83,6 +106,11 @@ const normalizeProfessionResponse = responseData =>
     responseData,
   );
 
+/**
+ * Normalizes specialty response.
+ * @param {*} responseData - Input value.
+ * @returns {*}
+ */
 const normalizeSpecialtyResponse = responseData =>
   normalizeList(
     responseData?.specialities ??
@@ -92,7 +120,16 @@ const normalizeSpecialtyResponse = responseData =>
     responseData,
   );
 
-export const GuestProfessionPopup = ({
+export /**
+ * Guest profession popup component.
+ * @param {Object} props - Input object.
+ * @param {*} props.visible - Nested property value.
+ * @param {*} props.onClose - Nested property value.
+ * @param {*} props.isUsaUser - Nested property value.
+ * @param {*} props.guestData - Nested property value.
+ * @returns {JSX.Element}
+ */
+const GuestProfessionPopup = ({
   visible,
   onClose,
   isUsaUser,
@@ -220,7 +257,12 @@ export const GuestProfessionPopup = ({
   );
 
   const isFormValid = Boolean(profession && specialty);
-  const validateEmail = value =>
+    /**
+ * Validate email utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const validateEmail = value =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
   const trimmedEmail = String(email || '').trim();
   const isEmailValid = validateEmail(trimmedEmail);
@@ -606,6 +648,10 @@ export const GuestProfessionPopup = ({
   );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   modal: {
     margin: 0,

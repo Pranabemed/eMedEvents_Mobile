@@ -1,3 +1,7 @@
+/**
+ * Conference venue screen module. Renders a React Native screen or a screen-scoped support component. Exported members: MapScreen, resetToInitialLocation, zoomIn, zoomOut, handleRegionChangeComplete, styles.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image,Text, ScrollView} from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Marker, Circle } from 'react-native-maps';
@@ -32,7 +36,11 @@ const MapScreen = ({ webcastdeatils, navto }) => {
             });
         }
     }, [webcastdeatils?.latitude, webcastdeatils?.longitude]);
-    const resetToInitialLocation = () => {
+        /**
+ * Reset to initial location utility.
+ * @returns {void}
+ */
+const resetToInitialLocation = () => {
         if (webcastdeatils?.latitude && webcastdeatils?.longitude) {
             const latitude = parseFloat(webcastdeatils.latitude);
             const longitude = parseFloat(webcastdeatils.longitude);
@@ -47,7 +55,11 @@ const MapScreen = ({ webcastdeatils, navto }) => {
             });
         }
     };
-    const zoomIn = () => {
+        /**
+ * Zoom in utility.
+ * @returns {void}
+ */
+const zoomIn = () => {
         if (region) {
             const newLatitudeDelta = region.latitudeDelta * 0.8;
             const newLongitudeDelta = region.longitudeDelta * 0.8;
@@ -58,7 +70,11 @@ const MapScreen = ({ webcastdeatils, navto }) => {
             });
         }
     };
-    const zoomOut = () => {
+        /**
+ * Zoom out utility.
+ * @returns {void}
+ */
+const zoomOut = () => {
         if (region) {
             const newLatitudeDelta = region.latitudeDelta * 1.2;
             const newLongitudeDelta = region.longitudeDelta * 1.2;
@@ -69,7 +85,13 @@ const MapScreen = ({ webcastdeatils, navto }) => {
             });
         }
     };
-    const handleRegionChangeComplete = (newRegion, gesture) => {
+        /**
+ * Handles region change complete.
+ * @param {*} newRegion - Input value.
+ * @param {*} gesture - Input value.
+ * @returns {void}
+ */
+const handleRegionChangeComplete = (newRegion, gesture) => {
         if (gesture && !gesture.isGesture) {
             return;
         }
@@ -130,6 +152,10 @@ const MapScreen = ({ webcastdeatils, navto }) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     controlsContainer: {
         position: 'absolute',
@@ -166,4 +192,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Conference venue default export.
+ *
+ * @returns {*}
+ */
 export default MapScreen;

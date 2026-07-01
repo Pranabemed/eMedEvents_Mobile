@@ -1,3 +1,7 @@
+/**
+ * Speaker screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Speaker, speakerItem, SearchBack, handleLoadMore.
+ */
+
 import { View, Text, ImageBackground, ActivityIndicator, RefreshControl, Platform, Image, TouchableOpacity, FlatList, Alert } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -25,6 +29,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Speaker component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Speaker = (props) => {
        const {
         isConnected
@@ -49,7 +58,14 @@ const Speaker = (props) => {
         hasScrolled.current = true;
     }, []);
     console.log(props?.route?.params, "get---------")
-    const speakerItem = ({ item, index }) => {
+        /**
+ * Speaker item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const speakerItem = ({ item, index }) => {
         return (
             <TouchableOpacity onPress={() => {
                 props.navigation.navigate("SpeakerProfile", { fullUrl: { hitDat: props?.route?.params?.highText?.highText, fullUrl: item?.user_url || item?.url, creditData: props?.route?.params?.highText?.CreditData, speaks: props?.route?.params?.highText?.organ ? "organ" : "speaker" } });
@@ -108,7 +124,11 @@ const Speaker = (props) => {
             </TouchableOpacity>
         )
     }
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
@@ -178,7 +198,11 @@ const Speaker = (props) => {
                 break;
         }
     }
-    const handleLoadMore = () => {
+        /**
+ * Handles load more.
+ * @returns {void}
+ */
+const handleLoadMore = () => {
         const startIndex = currentPage * perPage;
         const endIndex = startIndex + perPage;
         const newData = TransReducer?.searchSpeakerResponse?.Search_speakerlist && TransReducer?.searchSpeakerResponse?.Search_speakerlist.slice(startIndex, endIndex) || TransReducer?.searchSpeakerResponse?.searchOrganizerList && TransReducer?.searchSpeakerResponse?.searchOrganizerList.slice(startIndex, endIndex);
@@ -277,4 +301,9 @@ const Speaker = (props) => {
     )
 }
 
+/**
+ * Speaker default export.
+ *
+ * @returns {*}
+ */
 export default Speaker

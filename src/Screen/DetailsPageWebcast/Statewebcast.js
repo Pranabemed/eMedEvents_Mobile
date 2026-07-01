@@ -1,3 +1,7 @@
+/**
+ * Statewebcast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, Statewebcast, handleSnapToItem, scrollToReviews, toggleExpansion, toggleTopic, toggleExpansionacc, refundExpand, conferShows, specailityChange, targetChange, reviewChange, onBackPress, handleTicketsCart, cartHand, calculatePrice, styles.
+ */
+
 import { Image, Text, View, Platform, TouchableOpacity, ScrollView, Dimensions, useWindowDimensions, Alert, StyleSheet, TextInput, BackHandler, Linking } from 'react-native';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,6 +52,11 @@ import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
  * @returns {JSX.Element}
  */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
+/**
+ * Statewebcast component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Statewebcast = props => {
     const {
         cartcount,
@@ -267,7 +276,12 @@ const Statewebcast = props => {
             resetToHome();
         }
     }, [allProfTake, goBackToGuestUser, props.navigation, props?.route?.params?.webCastURL, resetToHome, setAddit, setGtprof, statepush]);
-    const handleSnapToItem = (index) => {
+        /**
+ * Handles snap to item.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleSnapToItem = (index) => {
         setval(index);
     };
     const shouldRenderAddToCartAndDownload = useMemo(() => {
@@ -287,7 +301,11 @@ const Statewebcast = props => {
     const scrollViewRef = useRef(null);
     const [reviewsPosition, setReviewsPosition] = useState(0);
     console.log(reviewsPosition, "reviewsPosition=========")
-    const scrollToReviews = () => {
+        /**
+ * Scroll to reviews utility.
+ * @returns {void}
+ */
+const scrollToReviews = () => {
         setExpandreview(true);
         scrollViewRef.current?.scrollTo({
             y: 2000,
@@ -488,40 +506,72 @@ const Statewebcast = props => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const toggleExpansion = () => {
+        /**
+ * Toggle expansion utility.
+ * @returns {void}
+ */
+const toggleExpansion = () => {
         if (!expanded) {
             setHtmlContents(prevContent => prevContent);
         }
         setExpanded(!expanded);
     };
-    const toggleTopic = () => {
+        /**
+ * Toggle topic utility.
+ * @returns {void}
+ */
+const toggleTopic = () => {
         setExpandedtopic(!expandedtopic);
     };
-    const toggleExpansionacc = () => {
+        /**
+ * Toggle expansionacc utility.
+ * @returns {void}
+ */
+const toggleExpansionacc = () => {
         if (!expandedacc) {
             setViewmore(prevContent => prevContent);
         }
         setExpandedacc(!expandedacc);
     };
-    const refundExpand = () => {
+        /**
+ * Refund expand utility.
+ * @returns {void}
+ */
+const refundExpand = () => {
         if (!refunded) {
             setViewmoreac(prevContent => prevContent);
         }
         setRefunded(!refunded);
     };
-    const conferShows = () => {
+        /**
+ * Confer shows utility.
+ * @returns {void}
+ */
+const conferShows = () => {
         if (!expandcon) {
             setConferenceText(prevContent => prevContent);
         }
         setExpandcon(!expandcon);
     };
-    const specailityChange = () => {
+        /**
+ * Specaility change utility.
+ * @returns {void}
+ */
+const specailityChange = () => {
         setExpandspecail(!expandspecail);
     };
-    const targetChange = () => {
+        /**
+ * Target change utility.
+ * @returns {void}
+ */
+const targetChange = () => {
         setExpandspecailtar(!expandspecailtar);
     };
-    const reviewChange = () => {
+        /**
+ * Review change utility.
+ * @returns {void}
+ */
+const reviewChange = () => {
         setExpandreview(!expandreview)
     }
     const stripHtmlForPreview = useCallback((html = '') => {
@@ -574,7 +624,11 @@ const Statewebcast = props => {
     //                      WebcastReducer?.status === 'WebCast/saveTicketRequest';
     useFocusEffect(
         useCallback(() => {
-            const onBackPress = () => {
+                        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
                 boardCast();
                 return true;
             };
@@ -593,7 +647,11 @@ const Statewebcast = props => {
     useEffect(() => {
         setCartcount(takeCount);
     }, [takeCount]);
-    const handleTicketsCart = () => {
+        /**
+ * Handles tickets cart.
+ * @returns {void}
+ */
+const handleTicketsCart = () => {
         if (webcastdeatils?.registrationTickets?.length > 0) {
             const checkoutSpan = webcastdeatils?.conferenceId;
             const obj = {
@@ -618,7 +676,11 @@ const Statewebcast = props => {
         }
     };
 
-    const cartHand = () => {
+        /**
+ * Cart hand utility.
+ * @returns {void}
+ */
+const cartHand = () => {
         const latestCartCount = Number(
             WebcastReducer?.cartcountWebcastResponse?.cartItemsCount ?? cartcount ?? 0
         );
@@ -643,7 +705,13 @@ const Statewebcast = props => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
 
-    const calculatePrice = (price, commission) => {
+        /**
+ * Calculate price utility.
+ * @param {*} price - Input value.
+ * @param {*} commission - Input value.
+ * @returns {*}
+ */
+const calculatePrice = (price, commission) => {
         const amount = Number(price);
         const comm = Number(commission);
         if (!comm) {
@@ -702,7 +770,15 @@ const Statewebcast = props => {
                     break;
                 }
                 setLoading(false);
-                Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel", onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save", onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
+                Alert.alert('eMedEvents', 'This confernece have no data ', [{ text: "Cancel",                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { props.navigation.goBack() }, style: "cancel" }, { text: "Save",                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
                 break;
             case 'WebCast/saveTicketCartSuccess':
                 if (cartcount !== 0) {
@@ -885,8 +961,17 @@ const Statewebcast = props => {
     );
 };
 
+/**
+ * Statewebcast default export.
+ *
+ * @returns {*}
+ */
 export default Statewebcast;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     textInputContainer: {
         backgroundColor: '#ffffff',

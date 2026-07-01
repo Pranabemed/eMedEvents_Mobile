@@ -1,4 +1,8 @@
 
+/**
+ * Cmelisting screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CMEListing, profileBack, toggleExpand, CMEListItem.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image, Alert } from 'react-native'
 import React, { useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -27,7 +31,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const CMEListing = (props) => {
     const [CMEmodal, setCMEModal] = useState(false);
     console.log(props?.route?.params?.headerName, "fkjfkj")
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -42,12 +50,24 @@ const CMEListing = (props) => {
     const [socheck, setSocheck] = useState(false);
     const [expandedStates, setExpandedStates] = useState(Array(CMEListingData?.length).fill(false)); // Track expand/collapse state for each day
     const dommyData = [{ id: 0, name: "View ", Icon: "eye" },{ id: 1, name: "Edit", Icon: "edit" },{ id: 2, name: "share", Icon: "sharealt" }, { id: 3, name: "Download", Icon: "download" }]
-    const toggleExpand = (index) => {
+        /**
+ * Toggle expand utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const toggleExpand = (index) => {
         const newStates = [...expandedStates];
         newStates[index] = !newStates[index];
         setExpandedStates(newStates);
     };
-    const CMEListItem = ({ item, index }) => {
+        /**
+ * Cmelist item component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const CMEListItem = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                 <View style={{
@@ -335,4 +355,9 @@ const CMEListing = (props) => {
     )
 }
 
+/**
+ * Cmelisting default export.
+ *
+ * @returns {*}
+ */
 export default CMEListing

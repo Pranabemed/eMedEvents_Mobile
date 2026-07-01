@@ -1,3 +1,7 @@
+/**
+ * Browse screen screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, monthNames, BrowseScreen, onBackPress, processAlphabetData, processAlphabetStateData, processAlphabeCityData, processAlphabetYear, alphbetSelect, alphbetSelectState, stateToggleSingle, cityToggleSingle, cityToggleMulti, updateSearch, toggleSelection, toggleSelectionyear, monthyearToggle, renderBrowseSearchInput, renderFilterOption, renderProfessionItem, renderItem, renderContent, styles.
+ */
+
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, TextInput, KeyboardAvoidingView, Alert, ScrollView, ActivityIndicator, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -28,6 +32,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Month names object.
+ * @returns {Object}
+ */
 const monthNames = {
     "January": 1,
     "February": 2,
@@ -42,6 +50,11 @@ const monthNames = {
     "November": 11,
     "December": 12
 };
+/**
+ * Browse screen component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const BrowseScreen = (props) => {
     const [search, setSearch] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('');
@@ -111,7 +124,11 @@ const BrowseScreen = (props) => {
         }
     }, [props.navigation, props?.route?.params]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             FilterBack();
             return true;
         };
@@ -193,7 +210,12 @@ const BrowseScreen = (props) => {
             flatListRef.current.scrollToOffset({ offset: 0, animated: false });
         }
     }, [selectedFilter, combinedData]);
-    const processAlphabetData = (specialties) => {
+        /**
+ * Process alphabet data utility.
+ * @param {*} specialties - Input value.
+ * @returns {void}
+ */
+const processAlphabetData = (specialties) => {
         const tempAlphabetData = {};
         specialties.forEach((specialty) => {
             if (specialty.name) {
@@ -220,7 +242,12 @@ const BrowseScreen = (props) => {
         }));
         setAlphabetListing(tempAlphabetListing);
     };
-    const processAlphabetStateData = (allStates) => {
+        /**
+ * Process alphabet state data utility.
+ * @param {*} allStates - Input value.
+ * @returns {void}
+ */
+const processAlphabetStateData = (allStates) => {
         const tempAlphabetData = {};
         Object.entries(allStates).forEach(([country, states]) => {
             Object.entries(states).forEach(([stateName, stateData]) => {
@@ -249,7 +276,12 @@ const BrowseScreen = (props) => {
         setAlphabetData(sortedData);
         setAlphabetListing(tempAlphabetListing);
     };
-    const processAlphabeCityData = (allStates) => {
+        /**
+ * Process alphabe city data utility.
+ * @param {*} allStates - Input value.
+ * @returns {void}
+ */
+const processAlphabeCityData = (allStates) => {
         const tempAlphabetData = {};
 
         Object.entries(allStates).forEach(([countryName, states]) => {
@@ -283,7 +315,12 @@ const BrowseScreen = (props) => {
         setAlphabetData(sortedData);
         setAlphabetListing(tempAlphabetListing);
     };
-    const processAlphabetYear = (yearTake) => {
+        /**
+ * Process alphabet year utility.
+ * @param {*} yearTake - Input value.
+ * @returns {void}
+ */
+const processAlphabetYear = (yearTake) => {
         const tempFutureConferences = {};
 
         // Group all "year"-based data
@@ -368,39 +405,117 @@ const BrowseScreen = (props) => {
             { type: selectedFilter == "Month-Year" ? "Future Conferences" : "alphabetlisting", data: selectedFilter == "Month-Year" ? futureConferences : alphabetlisting },
         ]);
     }, [search, filteredProfessions, alphabetlisting, selectedFilter, futureConferences])
-    const alphbetSelect = (specialty, rqsttype, mainkey, totalData) => {
+        /**
+ * Alphbet select utility.
+ * @param {*} specialty - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const alphbetSelect = (specialty, rqsttype, mainkey, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { trig: specialty, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     };
-    const alphbetSelectState = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
+        /**
+ * Alphbet select state utility.
+ * @param {*} statebefore - Input value.
+ * @param {*} statecareafter - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} newState - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const alphbetSelectState = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     }
-    const stateToggleSingle = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
+        /**
+ * State toggle single utility.
+ * @param {*} statebefore - Input value.
+ * @param {*} statecareafter - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} newState - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const stateToggleSingle = (statebefore, statecareafter, rqsttype, mainkey, newState, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { beforetake: statebefore, trig: statecareafter, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([totalData]);
     }
-    const cityToggleSingle = (partAll, rqsttype, mainkey, newState, newcity, totalData) => {
+        /**
+ * City toggle single utility.
+ * @param {*} partAll - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} newState - Input value.
+ * @param {*} newcity - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const cityToggleSingle = (partAll, rqsttype, mainkey, newState, newcity, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAll, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([totalData]);
     }
-    const cityToggleMulti = (partAllMul, rqsttype, mainkey, newState, newcity, totalData) => {
+        /**
+ * City toggle multi utility.
+ * @param {*} partAllMul - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} newState - Input value.
+ * @param {*} newcity - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const cityToggleMulti = (partAllMul, rqsttype, mainkey, newState, newcity, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { beforetakecity: partAllMul, rqstType: rqsttype, mainKey: mainkey, newAdd: newState, newCt: newcity, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     }
-    const updateSearch = (text) => setSearch(text);
-    const toggleSelection = (singleera, rqsttype, mainkey, totalData) => {
+        /**
+ * Update search utility.
+ * @param {*} text - Input value.
+ * @returns {*}
+ */
+const updateSearch = (text) => setSearch(text);
+        /**
+ * Toggle selection utility.
+ * @param {*} singleera - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const toggleSelection = (singleera, rqsttype, mainkey, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { trig: singleera, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setSelectedItems([singleera]);
     };
-    const toggleSelectionyear = (stateTakeit) => {
+        /**
+ * Toggle selectionyear utility.
+ * @param {*} stateTakeit - Input value.
+ * @returns {void}
+ */
+const toggleSelectionyear = (stateTakeit) => {
         setSelectedItemsyr([stateTakeit]);
     };
-    const monthyearToggle = (monthyear, rqsttype, mainkey, totalData) => {
+        /**
+ * Monthyear toggle utility.
+ * @param {*} monthyear - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} totalData - Input value.
+ * @returns {void}
+ */
+const monthyearToggle = (monthyear, rqsttype, mainkey, totalData) => {
         props.navigation.navigate("Globalresult", { trig: { monthAds: monthyear, rqstType: rqsttype, mainKey: mainkey, totalDaa: totalData, creditAll: props?.route?.params?.highText?.CreditData || props?.route?.params?.creditData, Realback: browseRealback } });
         setAlphabetItems([totalData]);
     };
-    const renderBrowseSearchInput = () => (
+        /**
+ * Render browse search input utility.
+ * @returns {JSX.Element}
+ */
+const renderBrowseSearchInput = () => (
         <View style={styles.stickySearchWrap}>
             <Icon name="search" size={18} color="#9CA3AF" style={styles.searchIcon} />
             <TextInput
@@ -422,7 +537,14 @@ const BrowseScreen = (props) => {
         </View>
     );
 
-    const renderFilterOption = ({ item, index }) => (
+        /**
+ * Render filter option utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderFilterOption = ({ item, index }) => (
         <>
             {index === 0 && (
                 <>
@@ -452,7 +574,13 @@ const BrowseScreen = (props) => {
             </TouchableOpacity>
         </>
     );
-    const renderProfessionItem = ({ item }) => (
+        /**
+ * Render profession item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderProfessionItem = ({ item }) => (
         <TouchableOpacity
             style={styles.professionItem}
             onPress={() => {
@@ -489,7 +617,14 @@ const BrowseScreen = (props) => {
             </View>
         </TouchableOpacity>
     );
-    const renderItem = ({ item, index }) => {
+        /**
+ * Render item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {*}
+ */
+const renderItem = ({ item, index }) => {
         const wholeData = Object.keys(item?.data).length;
         if (item?.type == selectedFilter && filteredProfessions.length > 0) {
             return (
@@ -668,7 +803,11 @@ const BrowseScreen = (props) => {
         }
         return null;
     };
-    const renderContent = () => {
+        /**
+ * Render content utility.
+ * @returns {void}
+ */
+const renderContent = () => {
         switch (selectedFilter) {
             case 'Specialty':
                 return (
@@ -972,6 +1111,10 @@ const BrowseScreen = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     content: {
         flexDirection: 'row',
@@ -1125,4 +1268,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Browse screen default export.
+ *
+ * @returns {*}
+ */
 export default BrowseScreen;

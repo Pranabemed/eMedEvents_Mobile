@@ -1,3 +1,7 @@
+/**
+ * Certficatecomponent screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Certficatecomponent, toggleShowMore.
+ */
+
 import { View, Text, FlatList, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
@@ -17,7 +21,11 @@ const Certficatecomponent = ({ certificateData,navigation }) => {
    const [showMore, setShowMore] = useState(false); 
     const [maxToShow, setMaxToShow] = useState(3);
 
-    const toggleShowMore = () => {
+        /**
+ * Toggle show more utility.
+ * @returns {void}
+ */
+const toggleShowMore = () => {
         setShowMore(!showMore);
         setMaxToShow(showMore ? 3 : certificateData.length); 
     };
@@ -70,4 +78,9 @@ const Certficatecomponent = ({ certificateData,navigation }) => {
     );
 }
 
+/**
+ * Certficatecomponent default export.
+ *
+ * @returns {*}
+ */
 export default Certficatecomponent

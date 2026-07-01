@@ -1,3 +1,7 @@
+/**
+ * Statewebcast reviews screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastReviews, reviewsShows.
+ */
+
 import { View, Text, Image, TouchableOpacity, FlatList } from 'react-native'
 import React from 'react'
 import Imagepath from '../../Themes/Imagepath';
@@ -15,7 +19,14 @@ import StarRating from 'react-native-star-rating-widget';
  */
 const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, reviewpost, expandreview, reviewChange }) => {
     console.log(reviewpost, "expandreview-------")
-    const reviewsShows = ({ item, index }) => {
+        /**
+ * Reviews shows utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const reviewsShows = ({ item, index }) => {
         return (
             <View
                 style={{
@@ -193,4 +204,9 @@ const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, r
     )
 }
 
+/**
+ * Statewebcast reviews default export.
+ *
+ * @returns {*}
+ */
 export default StatewebcastReviews

@@ -1,3 +1,7 @@
+/**
+ * Custom radio reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomPaymentradio, handleSelect.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
@@ -19,7 +23,12 @@ const CustomPaymentradio = ({walletmo, options, onSelect, stylechange,selectedOp
             onSelect(options[0]); 
         }
     }, []);
-    const handleSelect = (option) => {
+        /**
+ * Handles select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleSelect = (option) => {
         console.log(option, '0000otp')
         setSelectedOption(option.id);
         onSelect(option);
@@ -90,6 +99,11 @@ const CustomPaymentradio = ({walletmo, options, onSelect, stylechange,selectedOp
     );
 };
 
+/**
+ * Custom radio default export.
+ *
+ * @returns {*}
+ */
 export default CustomPaymentradio;
 
 

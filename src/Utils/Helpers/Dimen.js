@@ -6,6 +6,10 @@
  */
 import { PixelRatio, Dimensions } from "react-native";
 
+/**
+ * Scale value.
+ * @returns {*}
+ */
 const scale = (Dimensions.get("window").width / 320);
 
 /**

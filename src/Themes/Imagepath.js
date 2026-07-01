@@ -124,4 +124,9 @@ const Imagepath = {
    GuestPrime: require('../Assets/Images/guestuserPrime.png'),
 }
 
+/**
+ * Imagepath default export.
+ *
+ * @returns {*}
+ */
 export default Imagepath;

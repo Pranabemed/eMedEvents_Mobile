@@ -150,11 +150,20 @@ const GuestSpecialitySectionComponent = ({
     };
   }, [arrowShift, showScrollHint, specialityColumns.length]);
 
-  const handleUserInteraction = () => {
+    /**
+ * Handles user interaction.
+ * @returns {void}
+ */
+const handleUserInteraction = () => {
     userInteractedRef.current = true;
   };
 
-  const handleScroll = event => {
+    /**
+ * Handles scroll.
+ * @param {*} event - Input value.
+ * @returns {void}
+ */
+const handleScroll = event => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const canScrollMore = (contentSize.width - (contentOffset.x + layoutMeasurement.width)) > 24;
     setShowScrollHint(canScrollMore);
@@ -250,10 +259,26 @@ const GuestMarketplaceSectionComponent = ({ width, stats, navigation }) => (
   </>
 );
 
+/**
+ * Guest requirements panel value.
+ * @returns {*}
+ */
 export const GuestRequirementsPanel = memo(GuestRequirementsPanelComponent);
+/**
+ * Guest speciality section value.
+ * @returns {*}
+ */
 export const GuestSpecialitySection = memo(GuestSpecialitySectionComponent);
+/**
+ * Guest marketplace section value.
+ * @returns {*}
+ */
 export const GuestMarketplaceSection = memo(GuestMarketplaceSectionComponent);
 
+/**
+ * Local styles value.
+ * @returns {*}
+ */
 const localStyles = StyleSheet.create({
   requirementsIconImage: {
     height: 18,

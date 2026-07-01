@@ -1,3 +1,7 @@
+/**
+ * Wrong global data screen module. Renders a React Native screen or a screen-scoped support component. Exported members: wrongRenderData, letters, getItemLabel, openSpecialityResult, SpecialtyRow, GuestSpecialities, WrongGlobalData, handleRot, styles.
+ */
+
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -115,14 +119,30 @@ const wrongRenderData = (title, data, onPressHandler, creditDataAll, nav, setPla
     );
 };
 
+/**
+ * Letters value.
+ * @returns {*}
+ */
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+/**
+ * Returns item label.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
 const getItemLabel = item => {
     if (item == null) return '';
     if (typeof item === 'string') return item.trim();
     return String(item.label || item.name || item.title || item.specialty_name || item.speciality_name || '').trim();
 };
 
+/**
+ * Open speciality result utility.
+ * @param {*} item - Input value.
+ * @param {*} nav - Input value.
+ * @param {*} creditDataAll - Input value.
+ * @returns {void}
+ */
 const openSpecialityResult = (item, nav, creditDataAll) => {
     const label = getItemLabel(item);
     if (!label) return;
@@ -138,6 +158,14 @@ const openSpecialityResult = (item, nav, creditDataAll) => {
     });
 };
 
+/**
+ * Specialty row component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @param {*} props.creditDataAll - Nested property value.
+ * @returns {JSX.Element}
+ */
 const SpecialtyRow = ({ item, nav, creditDataAll }) => {
     const label = getItemLabel(item);
     if (!label) return null;
@@ -156,6 +184,14 @@ const SpecialtyRow = ({ item, nav, creditDataAll }) => {
     );
 };
 
+/**
+ * Guest specialities component.
+ * @param {Object} props - Input object.
+ * @param {*} props.data - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @param {*} props.creditDataAll - Nested property value.
+ * @returns {JSX.Element}
+ */
 const GuestSpecialities = ({ data, nav, creditDataAll }) => {
     const [selectedLetter, setSelectedLetter] = useState('A');
     const specialtyData = useMemo(
@@ -255,6 +291,17 @@ const GuestSpecialities = ({ data, nav, creditDataAll }) => {
     );
 };
 
+/**
+ * Wrong global data component.
+ * @param {Object} props - Input object.
+ * @param {*} props.wrongData - Nested property value.
+ * @param {*} props.handleUrl - Nested property value.
+ * @param {*} props.creditDataAll - Nested property value.
+ * @param {*} props.nav - Nested property value.
+ * @param {*} props.setPlaceholderIndex - Nested property value.
+ * @param {*} props.isLoading - Nested property value.
+ * @returns {JSX.Element}
+ */
 const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlaceholderIndex, isLoading = false }) => {
     const [conn, setConn] = useState(null);
     const {
@@ -268,7 +315,11 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
         });
         return () => unsubscribe();
     }, [isConnected]);
-    const handleRot = () => {
+        /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
@@ -384,6 +435,10 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
 };
 
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     sectionTitle: {
         fontFamily: Fonts.InterBold,
@@ -538,4 +593,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Wrong global data default export.
+ *
+ * @returns {*}
+ */
 export default WrongGlobalData;

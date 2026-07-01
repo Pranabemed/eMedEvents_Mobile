@@ -1,3 +1,7 @@
+/**
+ * Textfield reusable component module. Provides a React Native UI building block used across screens. Exported members: TextFieldIn, onChangeText, onFocus, onBlur.
+ */
+
 import React, { useState, forwardRef, useEffect } from 'react';
 import {
   View,
@@ -14,11 +18,41 @@ import VoiceIcon from 'react-native-vector-icons/MaterialIcons';
 import Colorpath from '../Themes/Colorpath';
 
 /**
- * Reusable onChangeText component.
+ * Reusable TextFieldIn component.
  * 
- * @component
+ * **Purpose:** Provides a customizable text input field with optional icons, secure entry toggling, and rich styling options.
+ * 
+ * **Parameters:**
  * @param {Object} props - The component props.
- * @returns {JSX.Element}
+ * @param {string} props.value - The current value of the input.
+ * @param {Function} props.onChangeText - Callback executed when text changes.
+ * @param {string} props.placeholder - Placeholder text.
+ * @param {boolean} props.isSecure - If true, masks the text (useful for passwords).
+ * @param {boolean} props.eye - If true, shows an eye icon to toggle secure entry.
+ * @param {elementType} props.leftIcon - A React component to use as a left icon.
+ * @param {string} props.leftIconName - The name of the left icon.
+ * @param {boolean} props.searchIcon - If true, displays a search icon on the right.
+ * @param {Function} props.SearchLeft - Callback executed when the search icon is pressed.
+ * 
+ * **Return Value:**
+ * @returns {JSX.Element} A customizable TextInput wrapped in a View with optional icons.
+ * 
+ * **Throws:** None
+ * 
+ * **Example Usage:**
+ * ```jsx
+ * <TextFieldIn
+ *   placeholder="Enter your email"
+ *   value={email}
+ *   onChangeText={setEmail}
+ *   leftIcon={MaterialIcons}
+ *   leftIconName="email"
+ * />
+ * ```
+ * 
+ * **Notes:**
+ * - Uses `forwardRef` to allow focusing from a parent component.
+ * - Platform specific styling is applied for icons and positioning.
  */
 const TextFieldIn = forwardRef((props, ref) => {
   const [eyeVisible, setEyeVisible] = useState(true);
@@ -29,19 +63,32 @@ const TextFieldIn = forwardRef((props, ref) => {
     }
   }, [ref]);
 
-  const onChangeText = (text) => {
+    /**
+ * On change text utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const onChangeText = (text) => {
     if (props.onChangeText) {
       props.onChangeText(text);
     }
   };
 
-  const onFocus = () => {
+    /**
+ * On focus utility.
+ * @returns {void}
+ */
+const onFocus = () => {
     if (props.onFocus) {
       props.onFocus();
     }
   };
 
-  const onBlur = () => {
+    /**
+ * On blur utility.
+ * @returns {void}
+ */
+const onBlur = () => {
     if (props.onBlur) {
       props.onBlur();
     }
@@ -250,4 +297,9 @@ TextFieldIn.propTypes = {
   marginprops:PropTypes.number
 };
 
+/**
+ * Textfield default export.
+ *
+ * @returns {*}
+ */
 export default TextFieldIn;

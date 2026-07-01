@@ -1,3 +1,7 @@
+/**
+ * Cmeplanner screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, CMEPlanner, handleSave, PlannerPress, openFilterModal, cmePlan, plannerDataRender, handlePress, styles.
+ */
+
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Fonts from '../../Themes/Fonts';
@@ -23,6 +27,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Cmeplanner component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const CMEPlanner = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const dispatch = useDispatch();
@@ -30,19 +39,36 @@ const CMEPlanner = (props) => {
     const [courseplan, setCourseplan] = useState([]);
     const [filtermodal, setFiltermodal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-    const handleSave = () => {
+        /**
+ * Handles save.
+ * @returns {void}
+ */
+const handleSave = () => {
         setFiltermodal(false);
     };
-    const PlannerPress = () => {
+        /**
+ * Planner press component.
+ * @returns {void}
+ */
+const PlannerPress = () => {
         props.navigation.goBack();
     };
-    const openFilterModal = (data) => {
+        /**
+ * Open filter modal utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const openFilterModal = (data) => {
         setFiltermodal(!filtermodal);
         setSelectedItem(data);
     }
     const isFoucus = useIsFocused();
     useEffect(() => {
-        const cmePlan = () => {
+                /**
+ * Cme plan utility.
+ * @returns {void}
+ */
+const cmePlan = () => {
             connectionrequest()
                 .then(() => {
                     dispatch(CMEPlannerRequest())
@@ -69,7 +95,14 @@ const CMEPlanner = (props) => {
         }
     }
     const deletData = [{ id: 0, name: "Edit" }, { id: 1, name: "Delete" }]
-    const plannerDataRender = ({ item, index }) => {
+        /**
+ * Planner data render utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const plannerDataRender = ({ item, index }) => {
 
         return (
             <View>
@@ -224,7 +257,11 @@ const CMEPlanner = (props) => {
                                         keyExtractor={item => item.id.toString()}
                                         data={deletData}
                                         renderItem={({ item }) => {
-                                            const handlePress = () => {
+                                                                                        /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
                                                 setPlanner(false);
                                             };
 
@@ -258,7 +295,16 @@ const CMEPlanner = (props) => {
     );
 }
 
+/**
+ * Cmeplanner default export.
+ *
+ * @returns {*}
+ */
 export default CMEPlanner;
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     dropDownItem: {
         borderWidth: 1,

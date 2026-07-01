@@ -1,3 +1,7 @@
+/**
+ * Rest profession reusable component module. Provides a React Native UI building block used across screens. Exported members: RestProfession, token_error, handleRot, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates, getFullName, getFirstTruthyProfession.
+ */
+
 import { View, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import moment from 'moment';
@@ -47,7 +51,11 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         const unsubscribe = NetInfo.addEventListener(state => {
             setNettrue(state.isConnected)
             console.log('Connection State:', state.isConnected);
-            const token_error = () => {
+                        /**
+ * Token error utility.
+ * @returns {void}
+ */
+const token_error = () => {
                 setTimeout(() => {
                     AsyncStorage.getItem(constants.PRODATA).then((nondata) => {
                         const parsedDataD = JSON.parse(nondata);
@@ -66,7 +74,11 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         });
         return () => unsubscribe();
     }, []);
-    const handleRot = () => {
+        /**
+ * Handles rot.
+ * @returns {*}
+ */
+const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
@@ -78,7 +90,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
 
         return () => unsubscribe();
     }
-    const handleUrl = (onlineName) => {
+        /**
+ * Handles url.
+ * @param {*} onlineName - Input value.
+ * @returns {void}
+ */
+const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         console.log(result, "webcast url=======", onlineName);
@@ -99,18 +116,39 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         }
     }
     console.log(completedCount, pendingCount, "fdgd0000------")
-    const searchGlobalitem = ({ item, index }) => {
-        const formatDate = (dateStr) => {
+        /**
+ * Search globalitem utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const searchGlobalitem = ({ item, index }) => {
+                /**
+ * Formats date.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-        const formatDateEnd = (dateStr) => {
+                /**
+ * Formats date end.
+ * @param {*} dateStr - Input value.
+ * @returns {*}
+ */
+const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
-        const renderLocationAndDates = () => {
+                /**
+ * Render location and dates utility.
+ * @returns {*}
+ */
+const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
                     <View style={{ flexDirection: "row" }}>
@@ -260,7 +298,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 break;
         }
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse?.conferences]);
-    const getFullName = (obj) => {
+        /**
+ * Returns full name.
+ * @param {*} obj - Input value.
+ * @returns {*}
+ */
+const getFullName = (obj) => {
         const first = obj?.firstname;
         const last = obj?.lastname;
         return (first != null && last != null) ? `${first} ${last}` : undefined;
@@ -274,7 +317,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         getFullName(AuthReducer?.signupResponse?.user) ||
         getFullName(DashboardReducer?.mainprofileResponse?.personal_information) ||
         '';
-    const getFirstTruthyProfession = (...sources) =>
+        /**
+ * Returns first truthy profession.
+ * @param {Array} sources - Input values.
+ * @returns {*}
+ */
+const getFirstTruthyProfession = (...sources) =>
         sources.find(val => val) || '';
     const handleProf = String(
         getFirstTruthyProfession(
@@ -609,4 +657,9 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
     )
 }
 
+/**
+ * Rest profession default export.
+ *
+ * @returns {*}
+ */
 export default RestProfession

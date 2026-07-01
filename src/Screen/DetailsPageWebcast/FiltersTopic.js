@@ -1,3 +1,7 @@
+/**
+ * Filters topic screen module. Renders a React Native screen or a screen-scoped support component. Exported members: FiltersTopic, weekFilter.
+ */
+
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -18,7 +22,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const FiltersTopic = ({ webcasttopic, searchWebcastTopic, checkoutCleartopic, topicfetched, setTopicfetched, weekname, setWeekname, rolesdata, setRolesdata, webcastall, setWebcastall, toggleWeekSelection }) => {
     console.log(weekname,"wekknamecustome",topicfetched)
-    const weekFilter = ({ item, index }) => {
+        /**
+ * Week filter utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilter = ({ item, index }) => {
         const isSelectedWeek = weekname.includes(item.name);
         return (
             <TouchableOpacity onPress={()=>{
@@ -99,7 +110,15 @@ const FiltersTopic = ({ webcasttopic, searchWebcastTopic, checkoutCleartopic, to
                                 placeholderTextColor={"RGB(170, 170, 170)"}
                             />
                             {weekname ? (<TouchableOpacity onPress={() => {
-                            Alert.alert("eMEdEvents","Are you sure want to clear all topics ?",[{text:"No",onPress:()=>{console.log("hello")},style:"cancel"},{text:"Yes",onPress:()=>{
+                            Alert.alert("eMEdEvents","Are you sure want to clear all topics ?",[{text:"No",                            /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress:()=>{console.log("hello")},style:"cancel"},{text:"Yes",                            /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress:()=>{
                                 // setTopicfetched("");
                                 setWeekname("");},style:"default"}]);
                             }}>
@@ -141,4 +160,9 @@ const FiltersTopic = ({ webcasttopic, searchWebcastTopic, checkoutCleartopic, to
     )
 }
 
+/**
+ * Filters topic default export.
+ *
+ * @returns {*}
+ */
 export default FiltersTopic

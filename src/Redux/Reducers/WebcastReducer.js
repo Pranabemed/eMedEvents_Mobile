@@ -1,5 +1,52 @@
+/**
+ * Webcast reducer Redux slice module. Manages application state and exposes action creators for webcast. Exported members: initialState, WebCastSlice.
+ */
+
 import { createSlice } from '@reduxjs/toolkit';
 
+/**
+ * Webcast slice state shape.
+ *
+ * @typedef {Object} WebcastState
+ * @property {string} status
+ * @property {string|null} token
+ * @property {boolean} isLoading
+ * @property {Record<string, unknown>} webcastDeatilsResponse
+ * @property {Record<string, unknown>} webcastsearchResponse
+ * @property {Record<string, unknown>} webcastviewallResponse
+ * @property {Record<string, unknown>} webcastStateResponse
+ * @property {Record<string, unknown>} saveTicketResponse
+ * @property {Record<string, unknown>} saveTicketInpersonResponse
+ * @property {Record<string, unknown>} saveRegistResponse
+ * @property {Record<string, unknown>} webcastPaymentResponse
+ * @property {Record<string, unknown>} addtoCartWebcastResponse
+ * @property {Record<string, unknown>} cartcountWebcastResponse
+ * @property {Record<string, unknown>} cartdetailsWebcastResponse
+ * @property {Record<string, unknown>} cartdeleteWebcastResponse
+ * @property {Record<string, unknown>} couponWebcastResponse
+ * @property {Record<string, unknown>} cancelcouponResponse
+ * @property {Record<string, unknown>} cartCheckoutResponse
+ * @property {Record<string, unknown>} cartPaymentResponse
+ * @property {Record<string, unknown>} walletCheckResponse
+ * @property {Record<string, unknown>} TransemailcheckResponse
+ * @property {Record<string, unknown>} StatusPaymentResponse
+ * @property {Record<string, unknown>} FreeTransResponse
+ * @property {Record<string, unknown>} FreeCartResponse
+ * @property {Record<string, unknown>} PaymentCheckResponse
+ * @property {Record<string, unknown>} PrimePaymentResponse
+ * @property {Record<string, unknown>} PrimeCheckResponse
+ * @property {Record<string, unknown>} RegisterIntResponse
+ * @property {Record<string, unknown>} saveTicketCartResponse
+ * @property {Record<string, unknown>} saveTicketAddResponse
+ * @property {Record<string, unknown>} checkoutTicketResponse
+ * @property {Record<string, unknown>} refIDResponse
+ * @property {string|undefined} error
+ */
+/**
+ * Initial state constant.
+ *
+ * @type {WebcastState}
+ */
 const initialState = {
   status: '',
   token: null,
@@ -35,326 +82,853 @@ const initialState = {
   refIDResponse: {},
 };
 
+/**
+ * Web cast slice value.
+ *
+ * @type {import('@reduxjs/toolkit').Slice<WebcastState>}
+ */
 const WebCastSlice = createSlice({
   name: 'WebCast',
   initialState,
   reducers: {
-    webcastDeatilsRequest(state, action) {
+        /**
+ * Reducer logic for webcast deatils request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastDeatilsRequest(state, action) {
       state.status = action.type;
     },
-    webcastDeatilsSuccess(state, action) {
+        /**
+ * Reducer logic for webcast deatils success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastDeatilsSuccess(state, action) {
       state.webcastDeatilsResponse = action.payload;
       state.status = action.type;
     },
-    webcastDeatilsFailure(state, action) {
+        /**
+ * Reducer logic for webcast deatils failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastDeatilsFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    webcastsearchRequest(state, action) {
+        /**
+ * Reducer logic for webcastsearch request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastsearchRequest(state, action) {
       state.status = action.type;
     },
-    webcastsearchSuccess(state, action) {
+        /**
+ * Reducer logic for webcastsearch success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastsearchSuccess(state, action) {
       state.webcastsearchResponse = action.payload;
       state.status = action.type;
     },
-    webcastsearchFailure(state, action) {
+        /**
+ * Reducer logic for webcastsearch failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastsearchFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    webcastviewallRequest(state, action) {
+        /**
+ * Reducer logic for webcastviewall request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastviewallRequest(state, action) {
       state.status = action.type;
     },
-    webcastviewallSuccess(state, action) {
+        /**
+ * Reducer logic for webcastviewall success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastviewallSuccess(state, action) {
       state.webcastviewallResponse = action.payload;
       state.status = action.type;
     },
-    webcastviewallFailure(state, action) {
+        /**
+ * Reducer logic for webcastviewall failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastviewallFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    webcastStateRequest(state, action) {
+        /**
+ * Reducer logic for webcast state request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastStateRequest(state, action) {
       state.status = action.type;
     },
-    webcastStateSuccess(state, action) {
+        /**
+ * Reducer logic for webcast state success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastStateSuccess(state, action) {
       state.webcastStateResponse = action.payload;
       state.status = action.type;
     },
-    webcastStateFailure(state, action) {
+        /**
+ * Reducer logic for webcast state failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastStateFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    saveTicketRequest(state, action) {
+        /**
+ * Reducer logic for save ticket request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketRequest(state, action) {
       state.status = action.type;
     },
-    saveTicketSuccess(state, action) {
+        /**
+ * Reducer logic for save ticket success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketSuccess(state, action) {
       state.saveTicketResponse = action.payload;
       state.status = action.type;
     },
-    saveTicketFailure(state, action) {
+        /**
+ * Reducer logic for save ticket failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    saveTicketInpersonRequest(state, action) {
+        /**
+ * Reducer logic for save ticket inperson request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketInpersonRequest(state, action) {
       state.status = action.type;
     },
-    saveTicketInpersonSuccess(state, action) {
+        /**
+ * Reducer logic for save ticket inperson success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketInpersonSuccess(state, action) {
       state.saveTicketInpersonResponse = action.payload;
       state.status = action.type;
     },
-    saveTicketInpersonFailure(state, action) {
+        /**
+ * Reducer logic for save ticket inperson failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketInpersonFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    saveRegistRequest(state, action) {
+        /**
+ * Reducer logic for save regist request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveRegistRequest(state, action) {
       state.status = action.type;
     },
-    saveRegistSuccess(state, action) {
+        /**
+ * Reducer logic for save regist success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveRegistSuccess(state, action) {
       state.saveRegistResponse = action.payload;
       state.status = action.type;
     },
-    saveRegistFailure(state, action) {
+        /**
+ * Reducer logic for save regist failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveRegistFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    StatusPaymentRequest(state, action) {
+        /**
+ * Status payment request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StatusPaymentRequest(state, action) {
       state.status = action.type;
     },
-    StatusPaymentSuccess(state, action) {
+        /**
+ * Status payment success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StatusPaymentSuccess(state, action) {
       state.StatusPaymentResponse = action.payload;
       state.status = action.type;
     },
-    StatusPaymentFailure(state, action) {
+        /**
+ * Status payment failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+StatusPaymentFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    PaymentCheckRequest(state, action) {
+        /**
+ * Payment check request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PaymentCheckRequest(state, action) {
       state.status = action.type;
     },
-    PaymentCheckSuccess(state, action) {
+        /**
+ * Payment check success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PaymentCheckSuccess(state, action) {
       state.PaymentCheckResponse = action.payload;
       state.status = action.type;
     },
-    PaymentCheckFailure(state, action) {
+        /**
+ * Payment check failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PaymentCheckFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    webcastPaymentRequest(state, action) {
+        /**
+ * Reducer logic for webcast payment request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastPaymentRequest(state, action) {
       state.status = action.type;
     },
-    webcastPaymentSuccess(state, action) {
+        /**
+ * Reducer logic for webcast payment success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastPaymentSuccess(state, action) {
       state.webcastPaymentResponse = action.payload;
       state.status = action.type;
     },
-    webcastPaymentFailure(state, action) {
+        /**
+ * Reducer logic for webcast payment failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+webcastPaymentFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    addtoCartWebcastRequest(state, action) {
+        /**
+ * Reducer logic for addto cart webcast request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+addtoCartWebcastRequest(state, action) {
       state.status = action.type;
     },
-    addtoCartWebcastSuccess(state, action) {
+        /**
+ * Reducer logic for addto cart webcast success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+addtoCartWebcastSuccess(state, action) {
       state.addtoCartWebcastResponse = action.payload;
       state.status = action.type;
     },
-    addtoCartWebcastFailure(state, action) {
+        /**
+ * Reducer logic for addto cart webcast failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+addtoCartWebcastFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cartcountWebcastRequest(state, action) {
+        /**
+ * Reducer logic for cartcount webcast request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartcountWebcastRequest(state, action) {
       state.status = action.type;
     },
-    cartcountWebcastSuccess(state, action) {
+        /**
+ * Reducer logic for cartcount webcast success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartcountWebcastSuccess(state, action) {
       state.cartcountWebcastResponse = action.payload;
       state.status = action.type;
     },
-    cartcountWebcastFailure(state, action) {
+        /**
+ * Reducer logic for cartcount webcast failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartcountWebcastFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cartdetailsWebcastRequest(state, action) {
+        /**
+ * Reducer logic for cartdetails webcast request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdetailsWebcastRequest(state, action) {
       state.status = action.type;
     },
-    cartdetailsWebcastSuccess(state, action) {
+        /**
+ * Reducer logic for cartdetails webcast success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdetailsWebcastSuccess(state, action) {
       state.cartdetailsWebcastResponse = action.payload;
       state.status = action.type;
     },
-    cartdetailsWebcastFailure(state, action) {
+        /**
+ * Reducer logic for cartdetails webcast failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdetailsWebcastFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cartdeleteWebcastRequest(state, action) {
+        /**
+ * Reducer logic for cartdelete webcast request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdeleteWebcastRequest(state, action) {
       state.status = action.type;
     },
-    cartdeleteWebcastSuccess(state, action) {
+        /**
+ * Reducer logic for cartdelete webcast success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdeleteWebcastSuccess(state, action) {
       state.cartdeleteWebcastResponse = action.payload;
       state.status = action.type;
     },
-    cartdeleteWebcastFailure(state, action) {
+        /**
+ * Reducer logic for cartdelete webcast failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartdeleteWebcastFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    couponWebcastRequest(state, action) {
+        /**
+ * Reducer logic for coupon webcast request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+couponWebcastRequest(state, action) {
       state.status = action.type;
     },
-    couponWebcastSuccess(state, action) {
+        /**
+ * Reducer logic for coupon webcast success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+couponWebcastSuccess(state, action) {
       state.couponWebcastResponse = action.payload;
       state.status = action.type;
     },
-    couponWebcastFailure(state, action) {
+        /**
+ * Reducer logic for coupon webcast failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+couponWebcastFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cancelcouponRequest(state, action) {
+        /**
+ * Reducer logic for cancelcoupon request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cancelcouponRequest(state, action) {
       state.status = action.type;
     },
-    cancelcouponSuccess(state, action) {
+        /**
+ * Reducer logic for cancelcoupon success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cancelcouponSuccess(state, action) {
       state.cancelcouponResponse = action.payload;
       state.status = action.type;
     },
-    cancelcouponFailure(state, action) {
+        /**
+ * Reducer logic for cancelcoupon failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cancelcouponFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cartCheckoutRequest(state, action) {
+        /**
+ * Reducer logic for cart checkout request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartCheckoutRequest(state, action) {
       state.status = action.type;
     },
-    cartCheckoutSuccess(state, action) {
+        /**
+ * Reducer logic for cart checkout success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartCheckoutSuccess(state, action) {
       state.cartCheckoutResponse = action.payload;
       state.status = action.type;
     },
-    cartCheckoutFailure(state, action) {
+        /**
+ * Reducer logic for cart checkout failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartCheckoutFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    cartPaymentRequest(state, action) {
+        /**
+ * Reducer logic for cart payment request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartPaymentRequest(state, action) {
       state.status = action.type;
     },
-    cartPaymentSuccess(state, action) {
+        /**
+ * Reducer logic for cart payment success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartPaymentSuccess(state, action) {
       state.cartPaymentResponse = action.payload;
       state.status = action.type;
     },
-    cartPaymentFailure(state, action) {
+        /**
+ * Reducer logic for cart payment failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+cartPaymentFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    walletCheckRequest(state, action) {
+        /**
+ * Reducer logic for wallet check request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+walletCheckRequest(state, action) {
       state.status = action.type;
     },
-    walletCheckSuccess(state, action) {
+        /**
+ * Reducer logic for wallet check success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+walletCheckSuccess(state, action) {
       state.walletCheckResponse = action.payload;
       state.status = action.type;
     },
-    walletCheckFailure(state, action) {
+        /**
+ * Reducer logic for wallet check failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+walletCheckFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    TransemailcheckRequest(state, action) {
+        /**
+ * Transemailcheck request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+TransemailcheckRequest(state, action) {
       state.status = action.type;
     },
-    TransemailcheckSuccess(state, action) {
+        /**
+ * Transemailcheck success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+TransemailcheckSuccess(state, action) {
       state.TransemailcheckResponse = action.payload;
       state.status = action.type;
     },
-    TransemailcheckFailure(state, action) {
+        /**
+ * Transemailcheck failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+TransemailcheckFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    FreeTransRequest(state, action) {
+        /**
+ * Free trans request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeTransRequest(state, action) {
       state.status = action.type;
     },
-    FreeTransSuccess(state, action) {
+        /**
+ * Free trans success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeTransSuccess(state, action) {
       state.FreeTransResponse = action.payload;
       state.status = action.type;
     },
-    FreeTransFailure(state, action) {
+        /**
+ * Free trans failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeTransFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    FreeCartRequest(state, action) {
+        /**
+ * Free cart request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeCartRequest(state, action) {
       state.status = action.type;
     },
-    FreeCartSuccess(state, action) {
+        /**
+ * Free cart success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeCartSuccess(state, action) {
       state.FreeCartResponse = action.payload;
       state.status = action.type;
     },
-    FreeCartFailure(state, action) {
+        /**
+ * Free cart failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+FreeCartFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    PrimePaymentRequest(state, action) {
+        /**
+ * Prime payment request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimePaymentRequest(state, action) {
       state.status = action.type;
     },
-    PrimePaymentSuccess(state, action) {
+        /**
+ * Prime payment success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimePaymentSuccess(state, action) {
       state.PrimePaymentResponse = action.payload;
       state.status = action.type;
     },
-    PrimePaymentFailure(state, action) {
+        /**
+ * Prime payment failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimePaymentFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    PrimeCheckRequest(state, action) {
+        /**
+ * Prime check request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimeCheckRequest(state, action) {
       state.status = action.type;
     },
-    PrimeCheckSuccess(state, action) {
+        /**
+ * Prime check success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimeCheckSuccess(state, action) {
       state.PrimeCheckResponse = action.payload;
       state.status = action.type;
     },
-    PrimeCheckFailure(state, action) {
+        /**
+ * Prime check failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+PrimeCheckFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    RegisterIntRequest(state, action) {
+        /**
+ * Register int request component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+RegisterIntRequest(state, action) {
       state.status = action.type;
     },
-    RegisterIntSuccess(state, action) {
+        /**
+ * Register int success component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+RegisterIntSuccess(state, action) {
       state.RegisterIntResponse = action.payload;
       state.status = action.type;
     },
-    RegisterIntFailure(state, action) {
+        /**
+ * Register int failure component.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+RegisterIntFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    saveTicketCartRequest(state, action) {
+        /**
+ * Reducer logic for save ticket cart request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketCartRequest(state, action) {
       state.status = action.type;
     },
-    saveTicketCartSuccess(state, action) {
+        /**
+ * Reducer logic for save ticket cart success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketCartSuccess(state, action) {
       state.saveTicketCartResponse = action.payload;
       state.status = action.type;
     },
-    saveTicketCartFailure(state, action) {
+        /**
+ * Reducer logic for save ticket cart failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketCartFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    saveTicketAddRequest(state, action) {
+        /**
+ * Reducer logic for save ticket add request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketAddRequest(state, action) {
       state.status = action.type;
     },
-    saveTicketAddSuccess(state, action) {
+        /**
+ * Reducer logic for save ticket add success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketAddSuccess(state, action) {
       state.saveTicketAddResponse = action.payload;
       state.status = action.type;
     },
-    saveTicketAddFailure(state, action) {
+        /**
+ * Reducer logic for save ticket add failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+saveTicketAddFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    checkoutTicketRequest(state, action) {
+        /**
+ * Reducer logic for checkout ticket request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+checkoutTicketRequest(state, action) {
       state.status = action.type;
     },
-    checkoutTicketSuccess(state, action) {
+        /**
+ * Reducer logic for checkout ticket success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+checkoutTicketSuccess(state, action) {
       state.checkoutTicketResponse = action.payload;
       state.status = action.type;
     },
-    checkoutTicketFailure(state, action) {
+        /**
+ * Reducer logic for checkout ticket failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+checkoutTicketFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    refIDRequest(state, action) {
+        /**
+ * Reducer logic for ref idrequest state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+refIDRequest(state, action) {
       state.status = action.type;
     },
-    refIDSuccess(state, action) {
+        /**
+ * Reducer logic for ref idsuccess state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+refIDSuccess(state, action) {
       state.refIDResponse = action.payload;
       state.status = action.type;
     },
-    refIDFailure(state, action) {
+        /**
+ * Reducer logic for ref idfailure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+refIDFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
@@ -450,4 +1024,9 @@ export const {
   refIDSuccess,
   refIDFailure,
 } = WebCastSlice.actions;
+/**
+ * Webcast reducer default export.
+ *
+ * @returns {*}
+ */
 export default WebCastSlice.reducer;

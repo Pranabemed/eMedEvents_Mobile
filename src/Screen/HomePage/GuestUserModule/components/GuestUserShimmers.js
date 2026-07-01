@@ -122,7 +122,23 @@ const GuestRequirementsShimmerComponent = () => (
   </View>
 );
 
+/**
+ * Guest hero shimmer value.
+ * @returns {*}
+ */
 export const GuestHeroShimmer = memo(GuestHeroShimmerComponent);
+/**
+ * Guest carousel shimmer value.
+ * @returns {*}
+ */
 export const GuestCarouselShimmer = memo(GuestCarouselShimmerComponent);
+/**
+ * Guest chips shimmer value.
+ * @returns {*}
+ */
 export const GuestChipsShimmer = memo(GuestChipsShimmerComponent);
+/**
+ * Guest requirements shimmer value.
+ * @returns {*}
+ */
 export const GuestRequirementsShimmer = memo(GuestRequirementsShimmerComponent);

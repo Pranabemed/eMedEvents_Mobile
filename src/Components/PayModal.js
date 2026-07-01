@@ -1,3 +1,7 @@
+/**
+ * Pay modal reusable component module. Provides a React Native UI building block used across screens. Exported members: subscription, PayModal, onPress, handleAppStateChange, styles.
+ */
+
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState } from 'react-native';
 import Modal from 'react-native-modal';
@@ -18,6 +22,23 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 let subscription = null;
+/**
+ * Pay modal component.
+ * @param {Object} props - Input object.
+ * @param {*} props.setPrintgo - Nested property value.
+ * @param {*} props.printgo - Nested property value.
+ * @param {*} props.cartData - Nested property value.
+ * @param {*} props.dataPayemnt - Nested property value.
+ * @param {*} props.maindata - Nested property value.
+ * @param {*} props.isVisible - Nested property value.
+ * @param {*} props.setPaymentcard - Nested property value.
+ * @param {*} props.content - Nested property value.
+ * @param {*} props.navigation - Nested property value.
+ * @param {*} props.name - Nested property value.
+ * @param {*} props.setGocertificate - Nested property value.
+ * @param {*} props.gocertificate - Nested property value.
+ * @returns {JSX.Element}
+ */
 const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name, setGocertificate, gocertificate }) => {
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const {
@@ -26,7 +47,13 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
     } = useContext(AppContext);
     const [pdfsee, setPdfsee] = useState(false);
     const appState = useRef(AppState.currentState);
-    const onPress = async () => {
+        /**
+ * On press utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
@@ -47,7 +74,12 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
 
             if (downloadResult.statusCode === 200) {
                 console.log("File downloaded successfully:", localFile);
-                const handleAppStateChange = (nextAppState) => {
+                                /**
+ * Handles app state change.
+ * @param {*} nextAppState - Input value.
+ * @returns {void}
+ */
+const handleAppStateChange = (nextAppState) => {
                     if (
                         appState.current.match(/inactive|background/) &&
                         nextAppState === 'active'
@@ -262,6 +294,10 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -356,4 +392,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Pay modal default export.
+ *
+ * @returns {*}
+ */
 export default PayModal;

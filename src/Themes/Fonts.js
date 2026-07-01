@@ -33,4 +33,9 @@ const Fonts = {
   InterThin:'Inter-Thin'
 }
 
+/**
+ * Fonts default export.
+ *
+ * @returns {*}
+ */
 export default Fonts;

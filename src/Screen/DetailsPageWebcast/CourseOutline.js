@@ -1,3 +1,7 @@
+/**
+ * Course outline screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CourseOutline, toggleExpand, courseOutlineItem.
+ */
+
 import { View, Text, TouchableOpacity, useWindowDimensions, FlatList } from 'react-native';
 import React, { useState } from 'react';
 import Fonts from '../../Themes/Fonts';
@@ -19,13 +23,25 @@ const CourseOutline = ({ wholedata }) => {
     const { width } = useWindowDimensions();
     const [expandedStates, setExpandedStates] = useState(Array(wholedata?.length).fill(false)); // Track expand/collapse state for each day
 
-    const toggleExpand = (index) => {
+        /**
+ * Toggle expand utility.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const toggleExpand = (index) => {
         const newStates = [...expandedStates];
         newStates[index] = !newStates[index];
         setExpandedStates(newStates);
     };
 
-    const courseOutlineItem = ({ item, index }) => (
+        /**
+ * Course outline item utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const courseOutlineItem = ({ item, index }) => (
         <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(0) }}>
             <View style={{ flexDirection: "column" }}>
                 <TouchableOpacity
@@ -125,4 +141,9 @@ const CourseOutline = ({ wholedata }) => {
     );
 };
 
+/**
+ * Course outline default export.
+ *
+ * @returns {*}
+ */
 export default CourseOutline;

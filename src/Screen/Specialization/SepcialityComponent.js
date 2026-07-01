@@ -1,4 +1,8 @@
 
+/**
+ * Sepciality component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SepcialityComponent, onBackPress.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, ActivityIndicator, BackHandler } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -26,7 +30,11 @@ const SepcialityComponent = ({ handleStateSelect, formData, setstatepicker, setS
         return () => clearTimeout(timeout);
     }, []);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             setstatepicker(false);
             setSearchState("")
             return true;
@@ -163,4 +171,9 @@ const SepcialityComponent = ({ handleStateSelect, formData, setstatepicker, setS
     )
 }
 
+/**
+ * Sepciality component default export.
+ *
+ * @returns {*}
+ */
 export default SepcialityComponent

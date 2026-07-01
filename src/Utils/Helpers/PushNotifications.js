@@ -1,17 +1,58 @@
+/**
+ * Push notifications utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: ANDROID_CHANNEL_ID, ANDROID_CHANNEL_NAME, foregroundUnsubscribe, openedUnsubscribe, initialNotificationHandled, channelPromise, notifeeForegroundUnsubscribe, notifeeBackgroundRegistered, resolveNotificationUrl, isEmedEventsUrl, normalizeNotificationUrlForApp, forwardNotificationToDeepLink, getRemoteMessagePayload, ensureAndroidChannel, displayIncomingNotification, requestPushPermission, ensureRemoteMessagingReady, registerPushNotificationListeners, registerBackgroundPushHandler.
+ */
+
 import { DeviceEventEmitter, PermissionsAndroid, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, AndroidStyle, EventType } from '@notifee/react-native';
 
+/**
+ * Android channel id constant.
+ * @returns {string}
+ */
 const ANDROID_CHANNEL_ID = 'emed-events-default';
+/**
+ * Android channel name constant.
+ * @returns {string}
+ */
 const ANDROID_CHANNEL_NAME = 'eMedEvents Updates';
 
+/**
+ * Foreground unsubscribe value.
+ * @returns {*}
+ */
 let foregroundUnsubscribe = null;
+/**
+ * Opened unsubscribe value.
+ * @returns {*}
+ */
 let openedUnsubscribe = null;
+/**
+ * Initial notification handled constant.
+ * @returns {boolean}
+ */
 let initialNotificationHandled = false;
+/**
+ * Channel promise value.
+ * @returns {*}
+ */
 let channelPromise = null;
+/**
+ * Notifee foreground unsubscribe value.
+ * @returns {*}
+ */
 let notifeeForegroundUnsubscribe = null;
+/**
+ * Notifee background registered value.
+ * @returns {boolean}
+ */
 let notifeeBackgroundRegistered = false;
 
+/**
+ * Resolve notification url utility helper.
+ * @param {*} remoteMessage - Input value.
+ * @returns {*}
+ */
 const resolveNotificationUrl = remoteMessage => {
   return (
     remoteMessage?.data?.activity_url ||
@@ -24,6 +65,11 @@ const resolveNotificationUrl = remoteMessage => {
   );
 };
 
+/**
+ * Is emed events url utility helper.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
 const isEmedEventsUrl = value => {
   if (!value) return false;
   const normalized = String(value).toLowerCase();
@@ -33,6 +79,11 @@ const isEmedEventsUrl = value => {
   );
 };
 
+/**
+ * Normalize notification url for app utility helper.
+ * @param {*} remoteMessage - Input value.
+ * @returns {string}
+ */
 const normalizeNotificationUrlForApp = remoteMessage => {
   const rawUrl = resolveNotificationUrl(remoteMessage);
   if (!rawUrl) {
@@ -47,6 +98,12 @@ const normalizeNotificationUrlForApp = remoteMessage => {
   return `https://www.emedevents.com/c/${rawUrl.replace(/^\/+/, '')}`;
 };
 
+/**
+ * Forward notification to deep link utility helper.
+ * @param {*} remoteMessage - Input value.
+ * @param {*} source - Input value.
+ * @returns {void}
+ */
 const forwardNotificationToDeepLink = (remoteMessage, source) => {
   const url = normalizeNotificationUrlForApp(remoteMessage);
 
@@ -61,6 +118,11 @@ const forwardNotificationToDeepLink = (remoteMessage, source) => {
   }
 };
 
+/**
+ * Get remote message payload utility helper.
+ * @param {*} remoteMessage - Input value.
+ * @returns {Object}
+ */
 const getRemoteMessagePayload = remoteMessage => {
   const title =
     remoteMessage?.data?.title ||
@@ -80,6 +142,12 @@ const getRemoteMessagePayload = remoteMessage => {
   return { title, body, data };
 };
 
+/**
+ * Ensure android channel utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
 const ensureAndroidChannel = async () => {
   if (Platform.OS !== 'android') {
     return ANDROID_CHANNEL_ID;
@@ -96,6 +164,14 @@ const ensureAndroidChannel = async () => {
   return channelPromise;
 };
 
+/**
+ * Display incoming notification utility helper.
+ *
+ * @async
+ * @param {*} remoteMessage - Input value.
+ * @param {*} source - Input value.
+ * @returns {Promise<*>}
+ */
 const displayIncomingNotification = async (remoteMessage, source) => {
   try {
     const { title, body, data } = getRemoteMessagePayload(remoteMessage);
@@ -139,7 +215,13 @@ const displayIncomingNotification = async (remoteMessage, source) => {
   }
 };
 
-export const requestPushPermission = async () => {
+export /**
+ * Request push permission utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const requestPushPermission = async () => {
   try {
     if (Platform.OS === 'ios') {
       const authStatus = await messaging().requestPermission();
@@ -164,7 +246,13 @@ export const requestPushPermission = async () => {
   }
 };
 
-export const ensureRemoteMessagingReady = async () => {
+export /**
+ * Ensure remote messaging ready utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const ensureRemoteMessagingReady = async () => {
   const granted = await requestPushPermission();
   if (!granted) {
     return false;
@@ -175,7 +263,11 @@ export const ensureRemoteMessagingReady = async () => {
   return true;
 };
 
-export const registerPushNotificationListeners = () => {
+export /**
+ * Register push notification listeners utility helper.
+ * @returns {*}
+ */
+const registerPushNotificationListeners = () => {
   if (!foregroundUnsubscribe) {
     foregroundUnsubscribe = messaging().onMessage(async remoteMessage => {
       await displayIncomingNotification(remoteMessage, 'Foreground message');
@@ -232,7 +324,11 @@ export const registerPushNotificationListeners = () => {
   };
 };
 
-export const registerBackgroundPushHandler = () => {
+export /**
+ * Register background push handler utility helper.
+ * @returns {void}
+ */
+const registerBackgroundPushHandler = () => {
   if (!notifeeBackgroundRegistered) {
     notifeeBackgroundRegistered = true;
     notifee.onBackgroundEvent(async ({ type, detail }) => {

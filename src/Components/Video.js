@@ -1,3 +1,7 @@
+/**
+ * Video reusable component module. Provides a React Native UI building block used across screens. Exported members: status, status1, normalizeVideoSource, getEmbedUrl, getExternalVideoUrl, isPlayableVideoSource, extractVideoUrl, getFirstIncompleteModule, VideoComponent, takeCourseVideo, onLoad, onProgress, onEnd, onReadyForDisplay, toggleFullscreen, videoPress, formatTime, handleSliderChange, applyCue, loadVtt, handleLink, showPDF, openFileViewer, onBackPress, isValidCme, renderThumbnailPreview, pageViewPositionSlider.
+ */
+
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, ScrollView, StatusBar, BackHandler, Pressable, Linking } from 'react-native';
 import Video from 'react-native-video';
@@ -26,7 +30,15 @@ import { stateDashboardRequest } from '../Redux/Reducers/DashboardReducer';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../Utils/Helpers/IntOff';
 import { extractVttCandidates, findCueForTime, parseThumbnailVtt, resolveUrl } from '../Utils/Helpers/VttPreview';
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview';
@@ -44,6 +56,11 @@ const normalizeVideoSource = (url) => {
     return url.trim().replace(/&amp;/g, '&');
 };
 
+/**
+ * Returns embed url.
+ * @param {*} url - Input value.
+ * @returns {*}
+ */
 const getEmbedUrl = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -56,6 +73,11 @@ const getEmbedUrl = (url) => {
 
 
 
+/**
+ * Returns external video url.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
 const getExternalVideoUrl = (source) => {
     if (!source) return null;
     const normalized = normalizeVideoSource(source);
@@ -66,11 +88,21 @@ const getExternalVideoUrl = (source) => {
     return null;
 };
 
+/**
+ * Determines whether playable video source is true.
+ * @param {*} source - Input value.
+ * @returns {*}
+ */
 const isPlayableVideoSource = (source) => {
     const normalized = normalizeVideoSource(source);
     return /\.(mp4|m4v|mov|webm|m3u8)(\?|$)/i.test(normalized);
 };
 
+/**
+ * Extract video url utility.
+ * @param {*} htmlString - Input value.
+ * @returns {*}
+ */
 const extractVideoUrl = (htmlString) => {
     if (!htmlString) return null;
     const videoUrlMatch = htmlString.match(/<iframe[^>]+src=["']([^"']+\.(m3u8|mp4|m4v|mov|webm)[^"']*)["']|<source[^>]+src=["']([^"']+\.(m4v|mp4|mov|webm|m3u8)[^"']*)["']/i);
@@ -80,11 +112,21 @@ const extractVideoUrl = (htmlString) => {
     return null;
 };
 
+/**
+ * Returns first incomplete module.
+ * @param {*} modules - Input value.
+ * @returns {*}
+ */
 const getFirstIncompleteModule = (modules) => {
     if (!Array.isArray(modules)) return null;
     return modules.find((item) => Number(item?.completedSection) === 0) || null;
 };
 
+/**
+ * Video component component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const VideoComponent = (props) => {
     const {
         statepush,
@@ -159,7 +201,11 @@ const VideoComponent = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-    const takeCourseVideo = () => {
+        /**
+ * Take course video utility.
+ * @returns {void}
+ */
+const takeCourseVideo = () => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -533,7 +579,12 @@ const VideoComponent = (props) => {
             fontSize: 14,
         },
     });
-    const onLoad = (data) => {
+        /**
+ * On load utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const onLoad = (data) => {
         setDuration(data.duration || 0);
         const naturalWidth = Number(data?.naturalSize?.width) || 0;
         const naturalHeight = Number(data?.naturalSize?.height) || 0;
@@ -567,20 +618,33 @@ const VideoComponent = (props) => {
     }, [videoDic]); // Runs whenever `videoDic` changes
 
 
-    const onProgress = (data) => {
+        /**
+ * On progress utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const onProgress = (data) => {
         if (isSeeking) return;
         setCurrentTime(data.currentTime);
         setSliderDragTime(data.currentTime);
     };
 
-    const onEnd = () => {
+        /**
+ * On end utility.
+ * @returns {void}
+ */
+const onEnd = () => {
         setPaused(true);
         setCurrentTime(0);
         videoRef.current?.seek(0);
         setShowThumb(true);
     };
 
-    const onReadyForDisplay = () => {
+        /**
+ * On ready for display utility.
+ * @returns {void}
+ */
+const onReadyForDisplay = () => {
         setLoading(false);
         if (fullscreenTransitionRef.current && showTransitionCover) {
             if (hideTransitionCoverTimerRef.current) {
@@ -619,7 +683,11 @@ const VideoComponent = (props) => {
         };
     }, [previewFrame, thumbnailCues, currentTime, videoDic, videoUrl]);
 
-    const toggleFullscreen = () => {
+        /**
+ * Toggle fullscreen utility.
+ * @returns {void}
+ */
+const toggleFullscreen = () => {
         const cover = getTransitionCoverFrame();
         if (cover?.uri) {
             setTransitionCoverFrame(cover);
@@ -677,13 +745,22 @@ const VideoComponent = (props) => {
         };
     }, []);
 
-    const videoPress = () => {
+        /**
+ * Video press utility.
+ * @returns {void}
+ */
+const videoPress = () => {
         setAddit(statepush);
         takeCourseVideo();
         props.navigation.goBack();
     };
 
-    const formatTime = (time) => {
+        /**
+ * Formats time.
+ * @param {*} time - Input value.
+ * @returns {string}
+ */
+const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes < 10 ? '0' : ''}${minutes}.${seconds < 10 ? '0' : ''}${seconds}`;
@@ -790,7 +867,12 @@ const VideoComponent = (props) => {
         cueFrameCacheRef.current = nextCache;
     }, []);
 
-    const handleSliderChange = (value) => {
+        /**
+ * Handles slider change.
+ * @param {*} value - Input value.
+ * @returns {void}
+ */
+const handleSliderChange = (value) => {
         sliderValueRef.current = value;
         setSliderDragTime(value);
         setPreviewTime(value);
@@ -845,7 +927,12 @@ const VideoComponent = (props) => {
         const cue = cueFrameCacheRef.current[currentIndex] || currentCue;
         const thisToken = previewTokenRef.current + 1;
         previewTokenRef.current = thisToken;
-        const applyCue = (spriteSize = null) => {
+                /**
+ * Apply cue utility.
+ * @param {number} spriteSize - Input value.
+ * @returns {void}
+ */
+const applyCue = (spriteSize = null) => {
             if (previewTokenRef.current !== thisToken) return;
             setPreviewFrame({ ...cue, spriteSize });
         };
@@ -1031,7 +1118,13 @@ const VideoComponent = (props) => {
             return () => { };
         }
 
-        const loadVtt = async () => {
+                /**
+ * Load vtt utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadVtt = async () => {
             for (let idx = 0; idx < thumbnailVttCandidates.length; idx += 1) {
                 const candidateUrl = thumbnailVttCandidates[idx];
                 try {
@@ -1165,9 +1258,21 @@ const VideoComponent = (props) => {
             nextActivityButtonText.includes('pre-test') ||
             nextActivityButtonText.includes('assessment'));
     const displayedTime = isSeeking ? sliderDragTime : currentTime;
-    const handleLink = (link, path) => {
+        /**
+ * Handles link.
+ * @param {*} link - Input value.
+ * @param {*} path - Input value.
+ * @returns {void}
+ */
+const handleLink = (link, path) => {
         if (link && path) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdown(true);
                 try {
                     // Remove any spaces from the link and path
@@ -1196,7 +1301,13 @@ const VideoComponent = (props) => {
 
     useEffect(() => {
         if (pdfUri) {
-            const openFileViewer = async () => {
+                        /**
+ * Open file viewer utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewer = async () => {
                 try {
                     await FileViewer.open(pdfUri);
                     setPdfUri(null);
@@ -1208,7 +1319,11 @@ const VideoComponent = (props) => {
         }
     }, [pdfUri]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             if (fullscreen) {
                 toggleFullscreen();
             } else {
@@ -1234,7 +1349,12 @@ const VideoComponent = (props) => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [fullscreen]);
     const finalText = CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen;
-    const isValidCme = (value) =>
+        /**
+ * Determines whether valid cme is true.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const isValidCme = (value) =>
         value && value.replace(/\s/g, "") !== "-0";
     const cmeValue =
         isValidCme(props?.route?.params?.RoleData?.display_cme)
@@ -1246,7 +1366,12 @@ const VideoComponent = (props) => {
                     : isValidCme(props?.route?.params?.activityID?.conferenceCmePoints)
                         ? props.route.params.activityID.conferenceCmePoints
                         : null;
-    const renderThumbnailPreview = (isFullscreen = false) => {
+        /**
+ * Render thumbnail preview utility.
+ * @param {boolean} isFullscreen - Input value.
+ * @returns {JSX.Element}
+ */
+const renderThumbnailPreview = (isFullscreen = false) => {
         if (!duration) return null;
         const ratio = Math.max(0, Math.min(1, (duration > 0 ? previewTime / duration : 0)));
         const previewWidth = isFullscreen ? normalize(138) : normalize(120);
@@ -1678,7 +1803,16 @@ const VideoComponent = (props) => {
     );
 };
 
+/**
+ * Video default export.
+ *
+ * @returns {*}
+ */
 export default VideoComponent;
+/**
+ * Page view position slider object.
+ * @returns {Object}
+ */
 const pageViewPositionSlider = {
     trackColor: '#ABABAB',
     thumbColor: '#1411AB',

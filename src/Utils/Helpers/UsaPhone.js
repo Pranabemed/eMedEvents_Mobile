@@ -1,5 +1,14 @@
+/**
+ * Usa phone utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: processPhoneNumberUSA.
+ */
+
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
-export const processPhoneNumberUSA = (number) => {
+export /**
+ * Process phone number usa utility helper.
+ * @param {number} number - Input value.
+ * @returns {void}
+ */
+const processPhoneNumberUSA = (number) => {
   console.log("phoneNumber-------", number);
   try {
     let phoneNumber = parsePhoneNumberFromString(number);

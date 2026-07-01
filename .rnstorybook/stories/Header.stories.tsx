@@ -1,33 +1,57 @@
-import type { Meta, StoryObj } from '@storybook/react-native';
+/**
+ * Header.stories Storybook module. Defines stories and controls for component previews. Exported members: meta, Default, DarkTheme.
+ */
 
-import { Header } from './Header';
+import React from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
+import Header from '../../src/Components/Header';
 
-const meta = {
-  title: 'Example/Header',
+/**
+ * Meta object.
+ * @returns {Object}
+ */
+const meta: Meta<typeof Header> = {
+  title: 'Components/Header',
   component: Header,
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
-  tags: ['autodocs'],
-} satisfies Meta<typeof Header>;
-
-export default meta;
-
-type Story = StoryObj<typeof meta>;
-
-export const LoggedIn: Story = {
+  argTypes: {
+    onPress: { action: 'pressed' },
+    tintColor: { control: 'color' },
+  },
   args: {
-    user: {
-      name: 'Jane Doe',
+    tintColor: '#333333',
+  },
+  parameters: {
+    docs: {
+      description: {
+        component: 'Reusable Header component.',
+      },
     },
-    onLogin: () => {},
-    onLogout: () => {},
-    onCreateAccount: () => {},
   },
 };
 
-export const LoggedOut: Story = {
+/**
+ * Header.stories default export.
+ *
+ * @returns {*}
+ */
+export default meta;
+type Story = StoryObj<typeof Header>;
+
+/**
+ * Default object.
+ * @returns {Object}
+ */
+export const Default: Story = {};
+
+/**
+ * Dark theme object.
+ * @returns {Object}
+ */
+export const DarkTheme: Story = {
   args: {
-    onLogin: () => {},
-    onLogout: () => {},
-    onCreateAccount: () => {},
+    tintColor: '#FFFFFF',
+  },
+  parameters: {
+    backgrounds: { default: 'dark' },
   },
 };

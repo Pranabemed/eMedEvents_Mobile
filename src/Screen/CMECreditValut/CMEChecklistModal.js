@@ -1,3 +1,7 @@
+/**
+ * Cmechecklist modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CMEChecklistModal, handleOptionSelect, handleTabLayout, StateCMEChekck, styles.
+ */
+
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Pressable } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -34,11 +38,22 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
         setModalHeightcme(isVisibelCME ? 600 : 300);
         console.log("Modal visibility changed:", isVisibelCME);
     }, [isVisibelCME]);
-    const handleOptionSelect = (option) => {
+        /**
+ * Handles option select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleOptionSelect = (option) => {
         setSelectedOption(option);
         console.log("Option selected:", option);
     };
-    const handleTabLayout = (optionKey, widthValue) => {
+        /**
+ * Handles tab layout.
+ * @param {*} optionKey - Input value.
+ * @param {*} widthValue - Input value.
+ * @returns {void}
+ */
+const handleTabLayout = (optionKey, widthValue) => {
         setTabWidths(prev => {
             if (prev[optionKey] === widthValue) return prev;
             return { ...prev, [optionKey]: widthValue };
@@ -53,7 +68,18 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
         return null;
     }
     console.log(firstOption)
-    const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, anothKey, keySmain) => {
+        /**
+ * State cmechekck component.
+ * @param {*} professionValue - Input value.
+ * @param {*} stateID - Input value.
+ * @param {*} rqsttype - Input value.
+ * @param {*} mainkey - Input value.
+ * @param {*} newState - Input value.
+ * @param {*} anothKey - Input value.
+ * @param {*} keySmain - Input value.
+ * @returns {void}
+ */
+const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, anothKey, keySmain) => {
         const params = {
             trig: {
                 allProfessionMain: professionValue,
@@ -188,7 +214,13 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
                                     source={{ html: selectedData?.additional_notes }}
                                     renderersProps={{
                                         a: {
-                                            onPress: (event, href) => {
+                                                                                        /**
+ * On press helper.
+ * @param {*} event - Input value.
+ * @param {*} href - Input value.
+ * @returns {void}
+ */
+onPress: (event, href) => {
                                                 if (href) {
                                                     let resultTopic = href.substring(href.lastIndexOf('/') + 1);
                                                     if (href.includes('/topic/')) {
@@ -254,8 +286,17 @@ const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, 
     );
 };
 
+/**
+ * Cmechecklist modal default export.
+ *
+ * @returns {*}
+ */
 export default CMEChecklistModal;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),

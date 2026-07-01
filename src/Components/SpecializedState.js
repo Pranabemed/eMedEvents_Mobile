@@ -1,3 +1,8 @@
+/**
+ * Specialized state default export.
+ *
+ * @returns {*}
+ */
 export default code = [
     {
       name: 'Florida',

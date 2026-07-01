@@ -1,5 +1,29 @@
+/**
+ * Credit vault reducer Redux slice module. Manages application state and exposes action creators for credit vault. Exported members: initialState, CreditVaultSlice.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
 
+/**
+ * Credit vault slice state shape.
+ *
+ * @typedef {Object} CreditVaultState
+ * @property {string} status
+ * @property {string|null} token
+ * @property {boolean} isLoading
+ * @property {Record<string, unknown>} creditVaultResponse
+ * @property {Record<string, unknown>} boardvaultResponse
+ * @property {Record<string, unknown>} deletevaultResponse
+ * @property {Record<string, unknown>} professionvaultResponse
+ * @property {Record<string, unknown>} downloadTranscriptResponse
+ * @property {Record<string, unknown>} downloadTranscriptNonUsaResponse
+ * @property {string|undefined} error
+ */
+/**
+ * Initial state constant.
+ *
+ * @type {CreditVaultState}
+ */
 const initialState = {
   status: '',
   token: null,
@@ -12,73 +36,186 @@ const initialState = {
   downloadTranscriptNonUsaResponse:{}
 };
 
+/**
+ * Credit vault slice value.
+ *
+ * @type {import('@reduxjs/toolkit').Slice<CreditVaultState>}
+ */
 const CreditVaultSlice = createSlice({
   name: 'CreditVault',
   initialState,
   reducers: {
-    creditvaultRequest(state, action) {
+        /**
+ * Reducer logic for creditvault request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+creditvaultRequest(state, action) {
       state.status = action.type;
     },
-    creditvaultSuccess(state, action) {
+        /**
+ * Reducer logic for creditvault success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+creditvaultSuccess(state, action) {
       state.creditVaultResponse = action.payload;
       state.status = action.type;
     },
-    creditvaultFailure(state, action) {
+        /**
+ * Reducer logic for creditvault failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+creditvaultFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    boardvaultRequest(state, action) {
+        /**
+ * Reducer logic for boardvault request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+boardvaultRequest(state, action) {
       state.status = action.type;
     },
-    boardvaultSuccess(state, action) {
+        /**
+ * Reducer logic for boardvault success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+boardvaultSuccess(state, action) {
       state.boardvaultResponse = action.payload;
       state.status = action.type;
     },
-    boardvaultFailure(state, action) {
+        /**
+ * Reducer logic for boardvault failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+boardvaultFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    deletevaultRequest(state, action) {
+        /**
+ * Reducer logic for deletevault request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deletevaultRequest(state, action) {
       state.status = action.type;
     },
-    deletevaultSuccess(state, action) {
+        /**
+ * Reducer logic for deletevault success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deletevaultSuccess(state, action) {
       state.deletevaultResponse = action.payload;
       state.status = action.type;
     },
-    deletevaultFailure(state, action) {
+        /**
+ * Reducer logic for deletevault failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+deletevaultFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    professionvaultRequest(state, action) {
+        /**
+ * Reducer logic for professionvault request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionvaultRequest(state, action) {
       state.status = action.type;
     },
-    professionvaultSuccess(state, action) {
+        /**
+ * Reducer logic for professionvault success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionvaultSuccess(state, action) {
       state.professionvaultResponse = action.payload;
       state.status = action.type;
     },
-    professionvaultFailure(state, action) {
+        /**
+ * Reducer logic for professionvault failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+professionvaultFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    downloadTranscriptRequest(state, action) {
+        /**
+ * Reducer logic for download transcript request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptRequest(state, action) {
       state.status = action.type;
     },
-    downloadTranscriptSuccess(state, action) {
+        /**
+ * Reducer logic for download transcript success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptSuccess(state, action) {
       state.downloadTranscriptResponse = action.payload;
       state.status = action.type;
     },
-    downloadTranscriptFailure(state, action) {
+        /**
+ * Reducer logic for download transcript failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-    downloadTranscriptNonUsaRequest(state, action) {
+        /**
+ * Reducer logic for download transcript non usa request state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptNonUsaRequest(state, action) {
       state.status = action.type;
     },
-    downloadTranscriptNonUsaSuccess(state, action) {
+        /**
+ * Reducer logic for download transcript non usa success state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptNonUsaSuccess(state, action) {
       state.downloadTranscriptNonUsaResponse = action.payload;
       state.status = action.type;
     },
-    downloadTranscriptNonUsaFailure(state, action) {
+        /**
+ * Reducer logic for download transcript non usa failure state.
+ * @param {*} state - Input value.
+ * @param {*} action - Input value.
+ * @returns {void}
+ */
+downloadTranscriptNonUsaFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     }
@@ -105,4 +242,9 @@ export const {
   downloadTranscriptNonUsaRequest,
   downloadTranscriptNonUsaSuccess
 } = CreditVaultSlice.actions;
+/**
+ * Credit vault reducer default export.
+ *
+ * @returns {*}
+ */
 export default CreditVaultSlice.reducer;

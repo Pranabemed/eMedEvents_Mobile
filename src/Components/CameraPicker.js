@@ -1,3 +1,7 @@
+/**
+ * Camera picker reusable component module. Provides a React Native UI building block used across screens. Exported members: btnClick_galeryUpload, btnClick_ImageUpload, btnClick_cameraUpload, onBackdropPress, styles.
+ */
+
 import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Platform, Image } from 'react-native';
 import PropTypes from 'prop-types';
@@ -21,7 +25,13 @@ import { ResizeMode } from 'react-native-video';
  */
 export default function CameraPicker(props) {
   // function to open gallery
-  async function btnClick_galeryUpload() {
+    /**
+ * Btn click galery upload utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+async function btnClick_galeryUpload() {
     if (props.btnClick_galeryUpload) {
       try {
         const response = await DocumentPicker.pick({
@@ -46,7 +56,13 @@ export default function CameraPicker(props) {
       }
     }
   }
-  function btnClick_ImageUpload() {
+    /**
+ * Btn click image upload utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function btnClick_ImageUpload() {
     if (props.btnClick_ImageUpload) {
       ImagePicker.openPicker({
         width: normalize(300),
@@ -83,7 +99,13 @@ export default function CameraPicker(props) {
     }
   }
   // function to open camera
-  function btnClick_cameraUpload() {
+    /**
+ * Btn click camera upload utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function btnClick_cameraUpload() {
     if (props.btnClick_cameraUpload) {
       ImagePicker.openCamera({
         width: 300,
@@ -105,7 +127,13 @@ export default function CameraPicker(props) {
     }
   }
 
-  function onBackdropPress() {
+    /**
+ * On backdrop press utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function onBackdropPress() {
     if (props.onBackdropPress) {
       props.onBackdropPress();
     }
@@ -186,14 +214,34 @@ CameraPicker.propTypes = {
 // // defaultPropsvalue
 CameraPicker.defaultProps = {
   pickerVisible: false,
-  btnClick_galeryUpload: () => { },
-  btnClick_cameraUpload: () => { },
-  btnClick_ImageUpload: () => { },
-  onBackdropPress: () => { },
+    /**
+ * Btn click galery upload utility.
+ * @returns {void}
+ */
+btnClick_galeryUpload: () => { },
+    /**
+ * Btn click camera upload utility.
+ * @returns {void}
+ */
+btnClick_cameraUpload: () => { },
+    /**
+ * Btn click image upload utility.
+ * @returns {void}
+ */
+btnClick_ImageUpload: () => { },
+    /**
+ * On backdrop press utility.
+ * @returns {void}
+ */
+onBackdropPress: () => { },
   multiple: false,
   // cropping: PropTypes.bool
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   container: {
     paddingVertical: normalize(10),

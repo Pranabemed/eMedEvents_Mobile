@@ -1,3 +1,7 @@
+/**
+ * Prime success reusable component module. Provides a React Native UI building block used across screens. Exported members: PrimeSuccess, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -130,6 +134,10 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -205,4 +213,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Prime success default export.
+ *
+ * @returns {*}
+ */
 export default PrimeSuccess;

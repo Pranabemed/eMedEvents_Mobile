@@ -1,3 +1,7 @@
+/**
+ * Mobile login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, status, MobileLoginOTP, restoreTimerState, VeirfyUserByMobile, verifyHandle, resendMobileOTP, normalizeFlag, handleNavigation, handleChange, clearAllOTPFieldsPhone, handleKeyPress, loginBaack, onBackPress, styles.
+ */
+
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, TextInput, StyleSheet, Image, BackHandler } from 'react-native';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -19,7 +23,15 @@ import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -54,7 +66,13 @@ const MobileLoginOTP = (props) => {
     });
     useEffect(() => {
         let mounted = true;
-        const restoreTimerState = async () => {
+                /**
+ * Restore timer state utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const restoreTimerState = async () => {
             try {
                 const [storedStartTime, storedDuration] = await Promise.all([
                     AsyncStorage.getItem('otpStartTime'),
@@ -87,7 +105,12 @@ const MobileLoginOTP = (props) => {
         restoreTimerState();
         return () => clearInterval(timerRef.current);
     }, []);
-    const VeirfyUserByMobile = (otpdata) => {
+        /**
+ * Veirfy user by mobile component.
+ * @param {*} otpdata - Input value.
+ * @returns {void}
+ */
+const VeirfyUserByMobile = (otpdata) => {
         let finalFormattedPhone = "";
         if (props?.route?.params?.mobileNo?.phoneCode == "+1" && props?.route?.params?.mobileNo?.mobileNo) {
             const finalCont = processPhoneNumberUSA(props?.route?.params?.mobileNo?.mobileNo);
@@ -162,7 +185,11 @@ const MobileLoginOTP = (props) => {
     }, [startNewTimer]);
     const isEnabledMobile = countdown > 0;
     console.log(props?.route?.params, "enteredOTP === allotpcheck", isEnabledMobile, AuthReducer?.againloginsiginResponse?.phone_otp);
-    const verifyHandle = () => {
+        /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
         const enteredOTP = otpphone && otpphone.join('');
         if (!enteredOTP || enteredOTP.length !== 6) {
             showErrorAlert("Please enter a valid 6-digit OTP.");
@@ -174,7 +201,11 @@ const MobileLoginOTP = (props) => {
         VeirfyUserByMobile(enteredOTP);
     };
     console.log(props?.route?.params, "fdsgjkdfhkh----------")
-    const resendMobileOTP = () => {
+        /**
+ * Resend mobile otp utility.
+ * @returns {void}
+ */
+const resendMobileOTP = () => {
         let finalFormattedPhone = "";
         if (props?.route?.params?.mobileNo?.phoneCode == "+1" && props?.route?.params?.mobileNo?.mobileNo) {
             const finalCont = processPhoneNumberUSA(props?.route?.params?.mobileNo?.mobileNo);
@@ -237,7 +268,12 @@ const MobileLoginOTP = (props) => {
         "Physician - DO",
         "Physician - DPM"
     ]), []);
-    const normalizeFlag = (value) => {
+        /**
+ * Normalizes flag.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const normalizeFlag = (value) => {
         if (value === true || value === 1 || value === "1" || value === "true") return true;
         if (value === false || value === 0 || value === "0" || value === "false") return false;
         return null;
@@ -315,7 +351,13 @@ const MobileLoginOTP = (props) => {
         // Track navigation state to prevent duplicate calls
         let navigationHandled = false;
 
-        const handleNavigation = (destination, params = {}) => {
+                /**
+ * Handles navigation.
+ * @param {*} destination - Input value.
+ * @param {Object} params - Input value.
+ * @returns {void}
+ */
+const handleNavigation = (destination, params = {}) => {
             if (!navigationHandled) {
                 props?.navigation.navigate(destination, params);
                 navigationHandled = true;
@@ -399,7 +441,13 @@ const MobileLoginOTP = (props) => {
     }, [DashboardReducer?.dashboardResponse])
 
 
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text?.length > 1) {
             setOtpphone(prevOtp => {
                 const newOtp = [...prevOtp];
@@ -429,13 +477,24 @@ const MobileLoginOTP = (props) => {
             inputsphone.current[index + 1]?.focus();
         }
     };
-    const clearAllOTPFieldsPhone = () => {
+        /**
+ * Clear all otpfields phone utility.
+ * @returns {void}
+ */
+const clearAllOTPFieldsPhone = () => {
         setOtpphone(new Array(6).fill(''));
         if (inputsphone.current[0]) {
             inputsphone.current[0].focus();
         }
     };
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpphone[index] === '') {
                 if (index > 0) inputsphone.current[index - 1].focus();
@@ -446,11 +505,19 @@ const MobileLoginOTP = (props) => {
             }
         }
     };
-    const loginBaack = () => {
+        /**
+ * Login baack utility.
+ * @returns {void}
+ */
+const loginBaack = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             loginBaack();
             return true;
         };
@@ -592,6 +659,10 @@ const MobileLoginOTP = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: "center",
@@ -641,4 +712,9 @@ const styles = StyleSheet.create({
     }
 });
 
+/**
+ * Mobile login default export.
+ *
+ * @returns {*}
+ */
 export default MobileLoginOTP;

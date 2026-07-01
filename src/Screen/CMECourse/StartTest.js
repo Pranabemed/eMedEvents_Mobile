@@ -1,3 +1,7 @@
+/**
+ * Start test screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, StartTest, startPress, getFirstIncompleteModule, takeCourse, handleLinkst, showPDF, openFileViewerst, onBackPress, styles.
+ */
+
 import { View, Text, Platform, ImageBackground, StyleSheet, TouchableOpacity, Image, ScrollView, useWindowDimensions, Alert, BackHandler, ActivityIndicator } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -32,7 +36,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Start test component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const StartTest = (props) => {
     const {
         statepush,
@@ -44,7 +57,11 @@ const StartTest = (props) => {
         setFulldashbaord,
         addit
     } = useContext(AppContext);
-    const startPress = () => {
+        /**
+ * Start press utility.
+ * @returns {void}
+ */
+const startPress = () => {
         // const fullDta = fulldashbaord?.[0];
         setAddit(statepush);
         // setFulldashbaord(addit)
@@ -73,7 +90,12 @@ const StartTest = (props) => {
     const isFocus = useIsFocused();
     const [loadingdownst, setLoadingdownst] = useState(false);
     const [pdfUrist, setPdfUrist] = useState("");
-    const getFirstIncompleteModule = (modules) => {
+        /**
+ * Returns first incomplete module.
+ * @param {*} modules - Input value.
+ * @returns {*}
+ */
+const getFirstIncompleteModule = (modules) => {
         if (!Array.isArray(modules)) return null;
         return modules.find((item) => Number(item?.completedSection) === 0) || null;
     };
@@ -87,7 +109,11 @@ const StartTest = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-    const takeCourse = () => {
+        /**
+ * Take course utility.
+ * @returns {void}
+ */
+const takeCourse = () => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -231,9 +257,20 @@ const StartTest = (props) => {
                 break;
         }
     }
-    const handleLinkst = (link) => {
+        /**
+ * Handles linkst.
+ * @param {*} link - Input value.
+ * @returns {void}
+ */
+const handleLinkst = (link) => {
         if (link) {
-            const showPDF = async () => {
+                        /**
+ * Show pdf utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const url = `${link}`;
@@ -262,7 +299,13 @@ const StartTest = (props) => {
 
     useEffect(() => {
         if (pdfUrist) {
-            const openFileViewerst = async () => {
+                        /**
+ * Open file viewerst utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const openFileViewerst = async () => {
                 try {
                     console.log('Opening file viewer for:', pdfUrist);
                     await FileViewer.open(pdfUrist);
@@ -275,7 +318,11 @@ const StartTest = (props) => {
         }
     }, [pdfUrist]);
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             takeCourse();
             startPress();
             return true;
@@ -616,7 +663,16 @@ const StartTest = (props) => {
     )
 }
 
+/**
+ * Start test default export.
+ *
+ * @returns {*}
+ */
 export default StartTest
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         justifyContent: 'center',

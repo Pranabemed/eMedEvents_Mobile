@@ -1,3 +1,7 @@
+/**
+ * Login email screen module. Renders a React Native screen or a screen-scoped support component. Exported members: _loginOTPSentForEmail, LoginEmail, token_handle, restore, proceedNonUsaLogin, handleChange, handleKeyPress, clearAllOTPFields, verifyHandle, toggleModal, styles.
+ */
+
 import {
     View, Text, Platform, KeyboardAvoidingView,
     TouchableOpacity, TextInput, StyleSheet, BackHandler,
@@ -38,9 +42,18 @@ import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 //  • Tracks which email the OTP was last sent for, so a new email always works
 //
 // Reset on: Resend button tap, successful verification.
+/**
+ * Login otpsent for email value.
+ * @returns {*}
+ */
 let _loginOTPSentForEmail = null;
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Login email component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const LoginEmail = (props) => {
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
@@ -65,7 +78,11 @@ const LoginEmail = (props) => {
 
     // ─── Fetch email from AsyncStorage on focus ───────────────────────────────
     useEffect(() => {
-        const token_handle = () => {
+                /**
+ * Token handle utility.
+ * @returns {void}
+ */
+const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.EMAIL);
                 setAllotpcheck(loginHandle);
@@ -127,7 +144,13 @@ const LoginEmail = (props) => {
 
     // Restore persisted timer on mount (handles back-navigation scenario)
     useEffect(() => {
-        const restore = async () => {
+                /**
+ * Restore utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const restore = async () => {
             const storedStart = await AsyncStorage.getItem('otpStartTime');
             const storedDuration = await AsyncStorage.getItem('otpInitialDuration');
             if (storedStart && storedDuration) {
@@ -199,7 +222,13 @@ const LoginEmail = (props) => {
             // Reset the module-level guard so a future login email flow works correctly
             _loginOTPSentForEmail = null;
             if (isNonUsaUser) {
-                const proceedNonUsaLogin = async () => {
+                                /**
+ * Proceed non usa login utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const proceedNonUsaLogin = async () => {
                     try {
                         await writeNonUsaFlowState({
                             userType: 'non_usa',
@@ -226,7 +255,13 @@ const LoginEmail = (props) => {
     }, [AuthReducer.status]);
 
     // ─── OTP input handlers ───────────────────────────────────────────────────
-    const handleChange = (text, index) => {
+        /**
+ * Handles change.
+ * @param {*} text - Input value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleChange = (text, index) => {
         if (text.length > 1) {
             const pasted = text.replace(/[^0-9]/g, '');
             const newOtp = [...otp];
@@ -245,7 +280,14 @@ const LoginEmail = (props) => {
         if (text && index < 5) inputs.current[index + 1]?.focus();
     };
 
-    const handleKeyPress = ({ nativeEvent }, index) => {
+        /**
+ * Handles key press.
+ * @param {Object} props - Input object.
+ * @param {*} props.nativeEvent - Nested property value.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otp[index] === '') {
                 if (index > 0) inputs.current[index - 1]?.focus();
@@ -257,13 +299,21 @@ const LoginEmail = (props) => {
         }
     };
 
-    const clearAllOTPFields = () => {
+        /**
+ * Clear all otpfields utility.
+ * @returns {void}
+ */
+const clearAllOTPFields = () => {
         setOtp(new Array(6).fill(''));
         inputs.current[0]?.focus();
     };
 
     // ─── Verify ───────────────────────────────────────────────────────────────
-    const verifyHandle = () => {
+        /**
+ * Verify handle utility.
+ * @returns {void}
+ */
+const verifyHandle = () => {
         const enteredOTP = otp.join('');
         let serverOTP;
         if (resendtrue && AuthReducer?.resendemailotpResponse?.email_otp) {
@@ -285,7 +335,11 @@ const LoginEmail = (props) => {
         }
     };
 
-    const toggleModal = () => setModalVisible(v => !v);
+        /**
+ * Toggle modal utility.
+ * @returns {*}
+ */
+const toggleModal = () => setModalVisible(v => !v);
 
     // ─── Derived values ───────────────────────────────────────────────────────
     const isEnabled = countdown > 0;
@@ -487,6 +541,10 @@ const LoginEmail = (props) => {
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     headerContainer: {
         justifyContent: 'center',
@@ -535,4 +593,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Login email default export.
+ *
+ * @returns {*}
+ */
 export default LoginEmail;

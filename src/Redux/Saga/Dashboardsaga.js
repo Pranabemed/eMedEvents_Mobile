@@ -43,6 +43,13 @@ const dashboardCacheStore = async (data) => {
     console.error('Error saving dashboard cache:', error);
   }
 };
+/**
+ * Executes the dashboardSaga saga.
+ *
+ * @function dashboardSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* dashboardSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -72,6 +79,13 @@ export function* dashboardSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the dashMBSaga saga.
+ *
+ * @function dashMBSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* dashMBSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -91,6 +105,13 @@ export function* dashMBSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the dashPersonSaga saga.
+ *
+ * @function dashPersonSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* dashPersonSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -110,6 +131,13 @@ export function* dashPersonSaga(action) {
     // showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the stateDashboardSaga saga.
+ *
+ * @function stateDashboardSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateDashboardSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -132,6 +160,13 @@ export function* stateDashboardSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the stateCourseSaga saga.
+ *
+ * @function stateCourseSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateCourseSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -154,6 +189,13 @@ export function* stateCourseSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the creditTypeSaga saga.
+ *
+ * @function creditTypeSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* creditTypeSaga(action) {
   // let items = yield select(getItem);
   let header = {
@@ -176,6 +218,13 @@ export function* creditTypeSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the AddCreditVaultSaga saga.
+ *
+ * @function AddCreditVaultSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* AddCreditVaultSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -207,6 +256,13 @@ export function* AddCreditVaultSaga(action) {
   }
 }
 
+/**
+ * Executes the addLicesenseSaga saga.
+ *
+ * @function addLicesenseSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* addLicesenseSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -229,6 +285,13 @@ export function* addLicesenseSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the stateMandatorySaga saga.
+ *
+ * @function stateMandatorySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateMandatorySaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -251,6 +314,13 @@ export function* stateMandatorySaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the stateReportingSaga saga.
+ *
+ * @function stateReportingSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* stateReportingSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -273,6 +343,13 @@ export function* stateReportingSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the boardSpecialitySaga saga.
+ *
+ * @function boardSpecialitySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* boardSpecialitySaga(action) {
   let header = {
     Accept: 'application/json',
@@ -293,6 +370,13 @@ export function* boardSpecialitySaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the addboardcertificateSaga saga.
+ *
+ * @function addboardcertificateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* addboardcertificateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -314,6 +398,13 @@ export function* addboardcertificateSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the OCRCertificateSaga saga.
+ *
+ * @function OCRCertificateSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* OCRCertificateSaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -335,6 +426,13 @@ export function* OCRCertificateSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the countStateBoardSaga saga.
+ *
+ * @function countStateBoardSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* countStateBoardSaga(action) {
   try {
     if (action.payload) {
@@ -346,6 +444,13 @@ export function* countStateBoardSaga(action) {
     yield put(countFailure(error));
   }
 }
+/**
+ * Executes the BoardcountSaga saga.
+ *
+ * @function BoardcountSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* BoardcountSaga(action) {
   try {
     if (action.payload) {
@@ -357,6 +462,13 @@ export function* BoardcountSaga(action) {
     yield put(boardcountFailure(error));
   }
 }
+/**
+ * Executes the mainProfileSaga saga.
+ *
+ * @function mainProfileSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* mainProfileSaga(action) {
   let items = yield select(getItem);
   // items.token may be null right after login (Redux hasn't propagated yet)
@@ -382,6 +494,13 @@ export function* mainProfileSaga(action) {
     showErrorAlert("!Oops something went wrong ");
   }
 }
+/**
+ * Executes the mainSpecialtySaga saga.
+ *
+ * @function mainSpecialtySaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* mainSpecialtySaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -404,6 +523,13 @@ export function* mainSpecialtySaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Executes the changePassSaga saga.
+ *
+ * @function changePassSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
 export function* changePassSaga(action) {
   let items = yield select(getItem);
   let header = {

@@ -1,3 +1,7 @@
+/**
+ * Checkout modalone screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckoutModalone, weekFilterProfession, handlePress, determineIndexToMerge.
+ */
+
 import { View, Text, KeyboardAvoidingView, TouchableOpacity, TextInput, FlatList, ScrollView, Platform, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -29,11 +33,21 @@ const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id
                 
                         return () => clearTimeout(timeout);
                     }, []);
-    const weekFilterProfession = ({ item }) => {
+        /**
+ * Week filter profession utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const weekFilterProfession = ({ item }) => {
         const isSelected = selectedSpecialities.some(speciality => speciality.id === item?.id);
         const isPreviouslySelected = formData[activeIndex]?.speciality_ids?.some(id => id === item.id)
         console.log("isPreviouslySelected=====", activeIndex);
-        const handlePress = () => {
+                /**
+ * Handles press.
+ * @returns {void}
+ */
+const handlePress = () => {
             setSelectedSpecialities(prev => {
                 const newSelections = prev.map((item, index) =>
                     index === activeIndex ? [...item] : []
@@ -68,7 +82,11 @@ const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id
             });
         };
 
-        const determineIndexToMerge = () => {
+                /**
+ * Determine index to merge utility.
+ * @returns {number}
+ */
+const determineIndexToMerge = () => {
             return 0;
         };
 
@@ -233,4 +251,9 @@ const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id
     )
 }
 
+/**
+ * Checkout modalone default export.
+ *
+ * @returns {*}
+ */
 export default CheckoutModalone

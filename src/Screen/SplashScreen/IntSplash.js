@@ -1,3 +1,7 @@
+/**
+ * Int splash screen module. Renders a React Native screen or a screen-scoped support component. Exported members: DEEPLINK_BOOTSTRAP_KEY, handleNavigation, navigateTo.
+ */
+
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Image, ImageBackground, LogBox, Text, View } from 'react-native';
 import Imagepath from '../../Themes/Imagepath';
@@ -17,6 +21,11 @@ import { AppContext } from '../GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 const DEEPLINK_BOOTSTRAP_KEY = 'DEEPLINK_BOOTSTRAP';
+/**
+ * Int splash default export.
+ *
+ * @returns {*}
+ */
 export default function SplashInt(props) {
   const {
     setFulldashbaord,
@@ -27,7 +36,13 @@ export default function SplashInt(props) {
 
   useEffect(() => {
     let timeoutId;
-    const handleNavigation = async () => {
+        /**
+ * Handles navigation.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const handleNavigation = async () => {
       if (!isFocus) return; // Only run when actively in focus
         try {
           const [wholeDashData, profdatset, token, playerSession] = await Promise.all([
@@ -44,7 +59,11 @@ export default function SplashInt(props) {
         const parsedProfData = profdatset ? JSON.parse(profdatset) : null;
         const hasValidToken = Boolean(String(token || '').trim());
 
-        const navigateTo = () => {
+                /**
+ * Navigate to utility.
+ * @returns {void}
+ */
+const navigateTo = () => {
           if (!hasValidToken) {
             return playerSession ? "GuestUser" : "Onboard";
           }

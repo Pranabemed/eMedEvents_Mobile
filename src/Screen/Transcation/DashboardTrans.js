@@ -1,3 +1,7 @@
+/**
+ * Dashboard trans screen module. Renders a React Native screen or a screen-scoped support component. Exported members: DashboardTrans, profileBack, tarnsListing.
+ */
+
 import { View, Text, Platform, TouchableOpacity, FlatList, Image } from 'react-native'
 import React, { useLayoutEffect } from 'react'
 import Colorpath from '../../Themes/Colorpath'
@@ -18,7 +22,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const DashboardTrans = (props) => {
-    const profileBack = () => {
+        /**
+ * Profile back utility.
+ * @returns {void}
+ */
+const profileBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -28,7 +36,14 @@ const DashboardTrans = (props) => {
             }))
     }
     const transData = [{ id: 0, name: "Registration" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscription" }]
-    const tarnsListing = ({ item, index }) => {
+        /**
+ * Tarns listing utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const tarnsListing = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                 <View style={{
@@ -116,4 +131,9 @@ const DashboardTrans = (props) => {
     )
 }
 
+/**
+ * Dashboard trans default export.
+ *
+ * @returns {*}
+ */
 export default DashboardTrans

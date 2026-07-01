@@ -1,3 +1,7 @@
+/**
+ * Payment failed reusable component module. Provides a React Native UI building block used across screens. Exported members: CellModalPayemntFailed, styles.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
@@ -43,6 +47,10 @@ const CellModalPayemntFailed = ({dataPayemnt, maindata, isVisible, setPaymentfdf
     );
 };
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modal: {
         justifyContent: 'center',
@@ -111,4 +119,9 @@ const styles = StyleSheet.create({
 });
 
 
+/**
+ * Payment failed default export.
+ *
+ * @returns {*}
+ */
 export default CellModalPayemntFailed;

@@ -1,3 +1,7 @@
+/**
+ * Contact screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, isPhysicianProfessionalInformation, ContactProfile, SearchBack, detectCountry, getLabelStyle, handleFocus, handleBlur, closeProfessionModal, handleContactTake, handleCountry, handlePratice, handleCity, formatDobWithMoment, handlePlaceSelected, normalizeCountryName, fetchPostalCodeFromGeocode, handleCountrySet, handleStateshows, handlecityShows, countryReq, PraticingState, cityReq, formatPhoneNumber, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Easing, Animated, Modal } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -43,8 +47,21 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Google api key constant.
+ * @returns {string}
+ */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
+/**
+ * Determines whether physician professional information is true.
+ * @param {Object} info - Input value.
+ * @returns {*}
+ */
 const isPhysicianProfessionalInformation = (info = {}) => {
     const profession = String(info?.profession || '').trim().toLowerCase();
     const professionType = String(info?.profession_type || '').trim().toLowerCase();
@@ -52,8 +69,17 @@ const isPhysicianProfessionalInformation = (info = {}) => {
     if (profession !== 'physician') return false;
     return ['md', 'do', 'dpm'].includes(professionType);
 };
+/**
+ * Contact profile component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const ContactProfile = (props) => {
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     const [firstname, setFirstname] = useState("");
@@ -199,7 +225,13 @@ const ContactProfile = (props) => {
     }, [address, isFieldFocused]);
 
     useEffect(() => {
-        const detectCountry = async () => {
+                /**
+ * Detect country utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const detectCountry = async () => {
             try {
                 const geoInfo = await getCountryAndDialCode();
                 if (geoInfo) {
@@ -231,7 +263,11 @@ const ContactProfile = (props) => {
         };
     }, []);
 
-    const getLabelStyle = () => {
+        /**
+ * Returns label style.
+ * @returns {Object}
+ */
+const getLabelStyle = () => {
         const isActive = isFieldFocused || !!address;
         return {
             position: 'absolute',
@@ -255,7 +291,11 @@ const ContactProfile = (props) => {
         };
     };
 
-    const handleFocus = () => {
+        /**
+ * Handles focus.
+ * @returns {void}
+ */
+const handleFocus = () => {
         Animated.timing(animatedValue, {
             toValue: 1,
             duration: 150,
@@ -265,7 +305,11 @@ const ContactProfile = (props) => {
         setIsFieldFocused(true);
     };
 
-    const handleBlur = () => {
+        /**
+ * Handles blur.
+ * @returns {void}
+ */
+const handleBlur = () => {
         if (!address) {
             Animated.timing(animatedValue, {
                 toValue: 0,
@@ -276,7 +320,11 @@ const ContactProfile = (props) => {
         }
         setIsFieldFocused(false);
     };
-    const closeProfessionModal = () => {
+        /**
+ * Close profession modal utility.
+ * @returns {void}
+ */
+const closeProfessionModal = () => {
         setProfessionModalVisible(false);
         if (pendingPersonal) {
             if (hasExistingPhysicianDashboardProfile) {
@@ -286,7 +334,11 @@ const ContactProfile = (props) => {
             }
         }
     };
-    const handleContactTake = () => {
+        /**
+ * Handles contact take.
+ * @returns {void}
+ */
+const handleContactTake = () => {
         const cellNoRegex = /^\d{10,15}$/;
         const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
         if (!firstname) {
@@ -342,17 +394,32 @@ const ContactProfile = (props) => {
                 })
         }
     }
-    const handleCountry = (text) => {
+        /**
+ * Handles country.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCountry = (text) => {
         searchCountryNameFunction(text, countryshow, setCountryall, setSearchcountry, (countryfil, searchcount) => {
             console.log('countryfil Data:', countryfil, 'Search Text:', searchcount);
         })
     }
-    const handlePratice = (text) => {
+        /**
+ * Handles pratice.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-    const handleCity = (text) => {
+        /**
+ * Handles city.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
@@ -360,7 +427,12 @@ const ContactProfile = (props) => {
     console.log("details==========", address, country_id, slistpratice, props?.route?.params?.wholedata);
     useEffect(() => {
         if (props?.route?.params?.wholedata) {
-            const formatDobWithMoment = (dob) => {
+                        /**
+ * Formats dob with moment.
+ * @param {*} dob - Input value.
+ * @returns {void}
+ */
+const formatDobWithMoment = (dob) => {
                 if (!dob || dob == "0000-00-00" || dob == "null" || dob == "undefined") {
                     return "";
                 }
@@ -396,7 +468,15 @@ const ContactProfile = (props) => {
             setIsNonUsaFlow(nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(resolvedUser, nonUsaFlowState));
         }
     }, [props?.route?.params?.wholedata, nonUsaFlowState])
-    const handlePlaceSelected = async (data, details) => {
+        /**
+ * Handles place selected.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @param {*} details - Input value.
+ * @returns {Promise<*>}
+ */
+const handlePlaceSelected = async (data, details) => {
         console.log(details, "details==========");
         if (details) {
             try {
@@ -446,7 +526,12 @@ const ContactProfile = (props) => {
             }
         }
     };
-    const normalizeCountryName = (country) => {
+        /**
+ * Normalizes country name.
+ * @param {number} country - Input value.
+ * @returns {*}
+ */
+const normalizeCountryName = (country) => {
         // Normalize country names to align with entries in countryall
         const countryMap = {
             "United States": "United States of America",
@@ -454,7 +539,15 @@ const ContactProfile = (props) => {
         };
         return countryMap[country] || country;
     };
-    const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
+        /**
+ * Fetch postal code from geocode utility.
+ *
+ * @async
+ * @param {*} latitude - Input value.
+ * @param {*} longitude - Input value.
+ * @returns {Promise<*>}
+ */
+const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
         try {
             const response = await fetch(
                 `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
@@ -472,7 +565,12 @@ const ContactProfile = (props) => {
             countryReq();
         }
     }, [props?.route?.params?.wholedata])
-    const handleCountrySet = (didi) => {
+        /**
+ * Handles country set.
+ * @param {*} didi - Input value.
+ * @returns {void}
+ */
+const handleCountrySet = (didi) => {
         console.log(cellno, "cellno======", didi)
         PraticingState(didi?.id);
         setCountry(didi?.name);
@@ -492,17 +590,31 @@ const ContactProfile = (props) => {
             setWhatsappno(formattedNumber);
         }
     };
-    const handleStateshows = (ctid) => {
+        /**
+ * Handles stateshows.
+ * @param {*} ctid - Input value.
+ * @returns {void}
+ */
+const handleStateshows = (ctid) => {
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);
         setState_id(ctid?.id);
     }
-    const handlecityShows = (ctshows) => {
+        /**
+ * Handlecity shows utility.
+ * @param {*} ctshows - Input value.
+ * @returns {void}
+ */
+const handlecityShows = (ctshows) => {
         setCity(ctshows?.name);
         setCity_id(ctshows?.id)
     }
-    const countryReq = () => {
+        /**
+ * Country req utility.
+ * @returns {void}
+ */
+const countryReq = () => {
         connectionrequest()
             .then(() => {
                 dispatch(countryRequest())
@@ -546,7 +658,12 @@ const ContactProfile = (props) => {
             setSelectedCityData(null);
         }
     }, [selectedCityData]);
-    const PraticingState = (index) => {
+        /**
+ * Praticing state component.
+ * @param {number} index - Input value.
+ * @returns {void}
+ */
+const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index));
@@ -556,7 +673,12 @@ const ContactProfile = (props) => {
             });
     };
 
-    const cityReq = (itid) => {
+        /**
+ * City req utility.
+ * @param {*} itid - Input value.
+ * @returns {void}
+ */
+const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -580,7 +702,13 @@ const ContactProfile = (props) => {
             setSearchcity("");
         }
     }, [city])
-    const formatPhoneNumber = (input, isUSA = false) => {
+        /**
+ * Formats phone number.
+ * @param {*} input - Input value.
+ * @param {boolean} isUSA - Input value.
+ * @returns {*}
+ */
+const formatPhoneNumber = (input, isUSA = false) => {
         if (isUSA) {
             // USA format: (XXX) XXX-XXXX
             const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -790,11 +918,24 @@ const ContactProfile = (props) => {
                                                     textInputProps={{
                                                         multiline: false,
                                                         value: address || '',
-                                                        onChangeText: (val) => {
+                                                                                                                /**
+ * On change text helper.
+ * @param {*} val - Input value.
+ * @returns {void}
+ */
+onChangeText: (val) => {
                                                             setAddress(val);
                                                         },
-                                                        onFocus: () => handleFocus(),
-                                                        onBlur: () => handleBlur(),
+                                                                                                                /**
+ * On focus utility.
+ * @returns {*}
+ */
+onFocus: () => handleFocus(),
+                                                                                                                /**
+ * On blur utility.
+ * @returns {*}
+ */
+onBlur: () => handleBlur(),
                                                         placeholder: '',
                                                         placeholderTextColor: '#999999',
                                                     }}
@@ -1047,6 +1188,10 @@ const ContactProfile = (props) => {
     )
 }
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
@@ -1092,4 +1237,9 @@ const styles = StyleSheet.create({
     },
 });
 
+/**
+ * Contact default export.
+ *
+ * @returns {*}
+ */
 export default ContactProfile

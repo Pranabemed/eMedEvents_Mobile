@@ -1,3 +1,7 @@
+/**
+ * Boardtwodata reusable component module. Provides a React Native UI building block used across screens. Exported members: Boardtwodata.
+ */
+
 import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Fonts from '../Themes/Fonts';
@@ -252,4 +256,9 @@ const Boardtwodata = ({ totalcard, modalFalse, cmeModalFalse }) => {
     )
 }
 
+/**
+ * Boardtwodata default export.
+ *
+ * @returns {*}
+ */
 export default Boardtwodata

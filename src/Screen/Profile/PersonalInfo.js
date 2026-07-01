@@ -1,3 +1,7 @@
+/**
+ * Personal info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: buildProfessionLabel, isPhysicianProfessionalInformation, CustomRadioButton, status, status1, status2, PersonalInfo, SearchBack, clean, specaillized, loadStateCards, searchCountryName, handleProfession, handleSearch, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, makeUpdateProf, styles.
+ */
+
 import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Alert, Image } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -52,6 +56,11 @@ const buildProfessionLabel = (profession, professionType) => {
 
     return `${cleanProfession} - ${cleanProfessionType}`;
 };
+/**
+ * Determines whether physician professional information is true.
+ * @param {Object} info - Input value.
+ * @returns {*}
+ */
 const isPhysicianProfessionalInformation = (info = {}) => {
     const profession = String(info?.profession || '').trim().toLowerCase();
     const professionType = String(info?.profession_type || '').trim().toLowerCase();
@@ -60,6 +69,13 @@ const isPhysicianProfessionalInformation = (info = {}) => {
     return ['md', 'do', 'dpm'].includes(professionType);
 };
 
+/**
+ * Custom radio button component.
+ * @param {Object} props - Input object.
+ * @param {*} props.selected - Nested property value.
+ * @param {*} props.onPress - Nested property value.
+ * @returns {JSX.Element}
+ */
 const CustomRadioButton = ({ selected, onPress }) => (
     <TouchableOpacity
         onPress={onPress}
@@ -78,9 +94,26 @@ const CustomRadioButton = ({ selected, onPress }) => (
         ) : null}
     </TouchableOpacity>
 );
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
+/**
+ * Status1 string constant.
+ * @returns {string}
+ */
 let status1 = "";
+/**
+ * Status2 string constant.
+ * @returns {string}
+ */
 let status2 = "";
+/**
+ * Personal info component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const PersonalInfo = (props) => {
     const {
         setFulldashbaord,
@@ -134,14 +167,23 @@ const PersonalInfo = (props) => {
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
     const hasExistingPhysicianDashboardProfile = isPhysicianProfessionalInformation(dashboardProfessionalInformation);
 
-    const SearchBack = () => {
+        /**
+ * Search back component.
+ * @returns {void}
+ */
+const SearchBack = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
         if (props?.route?.params?.personal) {
             const profession = props?.route?.params?.personal?.professional_information?.profession;
             const profession_type = props?.route?.params?.personal?.professional_information?.profession_type;
-            const clean = (value) => {
+                        /**
+ * Clean utility.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const clean = (value) => {
                 if (value == null) return '';
                 return String(value).trim();
             };
@@ -160,7 +202,12 @@ const PersonalInfo = (props) => {
         }
     }, [props?.route?.params?.personal])
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
-    const specaillized = (data) => {
+        /**
+ * Specaillized utility.
+ * @param {*} data - Input value.
+ * @returns {void}
+ */
+const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -186,7 +233,13 @@ const PersonalInfo = (props) => {
             });
     }, [props?.route?.params?.personal, isNonUsaUser, isNonUsaUpdateFlow]);
     useEffect(() => {
-        const loadStateCards = async () => {
+                /**
+ * Load state cards utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadStateCards = async () => {
             const token = AuthReducer?.token || await AsyncStorage.getItem(constants.TOKEN);
             dispatch(chooseStatecardRequest(token ? { token, key: {} } : {}));
         };
@@ -281,7 +334,12 @@ const PersonalInfo = (props) => {
 
         }
     }
-    const searchCountryName = text => {
+        /**
+ * Search country name utility.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const searchCountryName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -301,18 +359,34 @@ const PersonalInfo = (props) => {
             setSearchtext(text);
         }
     };
-    const handleProfession = (did) => {
+        /**
+ * Handles profession.
+ * @param {*} did - Input value.
+ * @returns {void}
+ */
+const handleProfession = (did) => {
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
         setFormData("");
     }
-    const handleSearch = (text) => {
+        /**
+ * Handles search.
+ * @param {*} text - Input value.
+ * @returns {void}
+ */
+const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-    const handleSpecialitySelect = (selectedItems, formData) => {
+        /**
+ * Handles speciality select.
+ * @param {*} selectedItems - Input value.
+ * @param {*} formData - Input value.
+ * @returns {void}
+ */
+const handleSpecialitySelect = (selectedItems, formData) => {
         // Create a copy of the formData to avoid direct mutation
         const updatedForm = [...formData];
         // Extract selected names and IDs
@@ -331,7 +405,13 @@ const PersonalInfo = (props) => {
         setSelectedSpecialities([]);
     };
 
-    const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
+        /**
+ * Handles speciality change.
+ * @param {*} selectedSpecialities - Input value.
+ * @param {*} selectedIds - Input value.
+ * @returns {void}
+ */
+const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
@@ -344,7 +424,12 @@ const PersonalInfo = (props) => {
         };
         setFormData(updatedFormData); // Update state
     };
-    const removeSpeciality = (specialityId) => {
+        /**
+ * Remove speciality utility.
+ * @param {*} specialityId - Input value.
+ * @returns {void}
+ */
+const removeSpeciality = (specialityId) => {
         // Ensure speciality_ids and speciality are arrays
         const currentSpecialityIds = formData?.speciality_ids || [];
         const currentSpecialities = formData?.speciality?.split(', ') || [];
@@ -382,7 +467,11 @@ const PersonalInfo = (props) => {
     }, [speciality, speciality_id, memoizedSetFormData]);
     const makeDid = formData && formData?.speciality_ids?.length;
     console.log(makeDid, "makeDid============");
-    const makeUpdateProf = () => {
+        /**
+ * Make update prof utility.
+ * @returns {void}
+ */
+const makeUpdateProf = () => {
         if (!country) {
             showErrorAlert("Please choose profession ")
         } else if (!makeDid) {
@@ -609,11 +698,19 @@ useLayoutEffect(() => {
                                     onPress={() => {
                                         if (makeDid == 5) {
                                             Alert.alert("eMedEvents", "You can select upto 5 specialities.", [{
-                                                text: "Cancel", onPress: () => {
+                                                text: "Cancel",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }, {
-                                                text: "Save", onPress: () => {
+                                                text: "Save",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }])
@@ -625,11 +722,19 @@ useLayoutEffect(() => {
                                     onIconpres={() => {
                                         if (makeDid == 5) {
                                             Alert.alert("eMedEvents", "You can select upto 5 specialities.", [{
-                                                text: "Cancel", onPress: () => {
+                                                text: "Cancel",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }, {
-                                                text: "Save", onPress: () => {
+                                                text: "Save",                                                 /**
+ * On press utility.
+ * @returns {void}
+ */
+onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }])
@@ -703,7 +808,16 @@ useLayoutEffect(() => {
     )
 }
 
+/**
+ * Personal info default export.
+ *
+ * @returns {*}
+ */
 export default PersonalInfo
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',

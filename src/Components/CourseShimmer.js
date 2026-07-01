@@ -1,3 +1,7 @@
+/**
+ * Course shimmer reusable component module. Provides a React Native UI building block used across screens. Exported members: CourseShimmer, renderItemCourse, styles.
+ */
+
 import { StyleSheet, View, Dimensions, Platform, ScrollView, FlatList } from "react-native";
 import React from "react";
 import normalize from "../Utils/Helpers/Dimen";
@@ -14,7 +18,13 @@ const CourseShimmer = () => {
     const shimmerDataCourse = Array.from({ length: 3 }).map((_, index) => ({
         id: index,
     }));
-    const renderItemCourse = ({ item }) => {
+        /**
+ * Render item course utility.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @returns {JSX.Element}
+ */
+const renderItemCourse = ({ item }) => {
         return (
             <View style={styles.itemContainer}>
                 <SkeletonPlaceholder backgroundColor="#D9D9D9" highlightColor="#525252">
@@ -72,8 +82,17 @@ const CourseShimmer = () => {
     );
 };
 
+/**
+ * Course shimmer default export.
+ *
+ * @returns {*}
+ */
 export default CourseShimmer;
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
     container: {
         flex: 1,

@@ -1,3 +1,7 @@
+/**
+ * Progress perce reusable component module. Provides a React Native UI building block used across screens. Exported members: ProgressBarLine.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Text } from 'react-native';
 import Fonts from '../Themes/Fonts';
@@ -79,4 +83,9 @@ const ProgressBarLine = ({needwidth,textadd, progress, height = 10, backgroundCo
     );
 };
 
+/**
+ * Progress perce default export.
+ *
+ * @returns {*}
+ */
 export default ProgressBarLine;

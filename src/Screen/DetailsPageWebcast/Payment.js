@@ -1,3 +1,7 @@
+/**
+ * Payment screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, Payment, formatPrice, handleSelect, toggleModalPayment, toggleModalFailed, takeStatus, walletpayemnthand, paymentHandle, paymentwalletHandle, paymentPress, onBackPress, cutomPrice, formatNumberWithCommas, cleanNumber, getCartTransactionFeeValue, getRegisterTransactionFeeValue.
+ */
+
 import { View, Text, Platform, Linking, TouchableOpacity, Image, Alert, BackHandler, ScrollView } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
@@ -37,6 +41,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 let status1 = "";
+/**
+ * Payment component.
+ * @param {*} props - Input value.
+ * @returns {JSX.Element}
+ */
 const Payment = (props) => {
     const {
         isConnected,
@@ -44,7 +53,12 @@ const Payment = (props) => {
         setAddit
     } = useContext(AppContext);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
-    function formatPrice(price) {
+        /**
+ * Formats price.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -89,16 +103,31 @@ const Payment = (props) => {
             })
     }, [isFocus])
     // Options are defined dynamically based on wallet balance availability below
-    const handleSelect = (option) => {
+        /**
+ * Handles select.
+ * @param {*} option - Input value.
+ * @returns {void}
+ */
+const handleSelect = (option) => {
         setRemind(option);
     };
     const [paymentcard, setPaymentcard] = useState(false);
     const [finalex, setFinalex] = useState("")
     const [paymentfd, setPaymentfd] = useState(false);
-    const toggleModalPayment = (tick) => {
+        /**
+ * Toggle modal payment utility.
+ * @param {*} tick - Input value.
+ * @returns {void}
+ */
+const toggleModalPayment = (tick) => {
         setPaymentcard(tick);
     };
-    const toggleModalFailed = (vlk) => {
+        /**
+ * Toggle modal failed utility.
+ * @param {*} vlk - Input value.
+ * @returns {void}
+ */
+const toggleModalFailed = (vlk) => {
         setPaymentfd(vlk);
     };
     useEffect(() => {
@@ -115,7 +144,11 @@ const Payment = (props) => {
             }
         }
     }, [maskedEx])
-    const takeStatus = () => {
+        /**
+ * Take status utility.
+ * @returns {void}
+ */
+const takeStatus = () => {
         const routeParams = props?.route?.params;
 
         const takeCourse =
@@ -142,7 +175,11 @@ const Payment = (props) => {
             });
     };
 
-    const walletpayemnthand = () => {
+        /**
+ * Walletpayemnthand utility.
+ * @returns {void}
+ */
+const walletpayemnthand = () => {
         if (checked) {
             showErrorAlert("Please accept terms and conditions");
             return;
@@ -177,7 +214,13 @@ const Payment = (props) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-    function paymentHandle() {
+        /**
+ * Payment handle utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function paymentHandle() {
         const errors = {
             nameEmpty: 'Enter the cardholder name.',
             nameInvalid: 'Enter a valid cardholder name ',
@@ -281,7 +324,13 @@ const Payment = (props) => {
                 showErrorAlert(errors.noInternet);
             });
     }
-    function paymentwalletHandle() {
+        /**
+ * Paymentwallet handle utility.
+ * @returns {void}
+ *
+ * @remarks Does not return a value.
+ */
+function paymentwalletHandle() {
         const errors = {
             nameEmpty: 'Please enter card holder name',
             nameInvalid: 'Please enter card holder name correctly',
@@ -462,7 +511,11 @@ const Payment = (props) => {
         }
     }
     const handlePayemnt = WebcastReducer?.webcastPaymentResponse?.payment_status == 'success' || WebcastReducer?.cartPaymentResponse?.payment_status == 'success' || WebcastReducer?.PaymentCheckResponse?.payment_status == 'success';
-    const paymentPress = () => {
+        /**
+ * Payment press utility.
+ * @returns {void}
+ */
+const paymentPress = () => {
         if (handlePayemnt) {
             const fullDta = fulldashbaord?.[0];
             setAddit(fullDta);
@@ -472,7 +525,11 @@ const Payment = (props) => {
         }
     }
     useEffect(() => {
-        const onBackPress = () => {
+                /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
             paymentPress();
             return true;
         };
@@ -492,7 +549,12 @@ const Payment = (props) => {
             }, 10000);
         }
     }, [printgo])
-    function cutomPrice(price) {
+        /**
+ * Cutom price helper.
+ * @param {*} price - Input value.
+ * @returns {*}
+ */
+function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -501,14 +563,24 @@ const Payment = (props) => {
 
         return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
     }
-    const formatNumberWithCommas = (value) => {
+        /**
+ * Formats number with commas.
+ * @param {*} value - Input value.
+ * @returns {*}
+ */
+const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
-    const cleanNumber = (value) => {
+        /**
+ * Clean number utility.
+ * @param {*} value - Input value.
+ * @returns {number}
+ */
+const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -522,7 +594,11 @@ const Payment = (props) => {
     const paymentPrice = invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
     const isCartFlow = !!cartInvoice || !!paymentPrice?.cartData;
 
-    const getCartTransactionFeeValue = () => {
+        /**
+ * Returns cart transaction fee value.
+ * @returns {number}
+ */
+const getCartTransactionFeeValue = () => {
         if (paymentPrice?.transaction_fee !== undefined) {
             return cleanNumber(paymentPrice.transaction_fee);
         }
@@ -543,7 +619,11 @@ const Payment = (props) => {
         return 0;
     };
 
-    const getRegisterTransactionFeeValue = () => {
+        /**
+ * Returns register transaction fee value.
+ * @returns {number}
+ */
+const getRegisterTransactionFeeValue = () => {
         if (paymentPrice?.transaction_fee !== undefined) {
             return cleanNumber(paymentPrice.transaction_fee);
         }
@@ -1204,4 +1284,9 @@ const Payment = (props) => {
     )
 }
 
+/**
+ * Payment default export.
+ *
+ * @returns {*}
+ */
 export default Payment

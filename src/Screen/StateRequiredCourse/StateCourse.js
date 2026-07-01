@@ -1,3 +1,7 @@
+/**
+ * State course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, StateCourse, openFilterModal, toggleDrawerModal, addCreditBack, handleSave, onBackPress, titlhandleUrl, stateDashboardData, RequiredCourses, getActualPrice.
+ */
+
 import { View, Text, Platform, TouchableOpacity, Image, FlatList, ScrollView, ImageBackground, BackHandler, Alert } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
@@ -24,6 +28,10 @@ import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = "";
 // import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
@@ -64,15 +72,27 @@ const StateCourse = (props) => {
     });
     return () => unsubscribe();
   }, [isConnected]);
-  const openFilterModal = () => {
+    /**
+ * Open filter modal utility.
+ * @returns {void}
+ */
+const openFilterModal = () => {
     setFiltermodal(!filtermodal);
   }
-  const toggleDrawerModal = () => {
+    /**
+ * Toggle drawer modal utility.
+ * @returns {void}
+ */
+const toggleDrawerModal = () => {
     setVisible(!visible);
     setNodata("drawerclose");
 
   };
-  const addCreditBack = () => {
+    /**
+ * Add credit back utility.
+ * @returns {void}
+ */
+const addCreditBack = () => {
     const getAda = fulldashbaord?.[0];
     setAddit(getAda);
     if (props?.route?.params?.back == "tabnav") {
@@ -81,13 +101,21 @@ const StateCourse = (props) => {
       toggleDrawerModal();
     }
   }
-  const handleSave = () => {
+    /**
+ * Handles save.
+ * @returns {void}
+ */
+const handleSave = () => {
     console.log("Selected Filter Name: ", filterName);
     setFiltermodal(false);
   };
   console.log(filterName, "jdjfjjjj")
   useEffect(() => {
-    const onBackPress = () => {
+        /**
+ * On back press utility.
+ * @returns {boolean}
+ */
+const onBackPress = () => {
       addCreditBack();
       return true;
     };
@@ -106,7 +134,12 @@ const StateCourse = (props) => {
       setFilterstate(convertData);
     }
   }, [DashboardReducer]);
-  const titlhandleUrl = (make) => {
+    /**
+ * Titlhandle url utility.
+ * @param {*} make - Input value.
+ * @returns {void}
+ */
+const titlhandleUrl = (make) => {
     const urltitle = make?.detailpage_url;
     const resulttitle = urltitle.split('/').pop();
     console.log(resulttitle, "webcast url=======", make);
@@ -119,7 +152,11 @@ const StateCourse = (props) => {
       stateDashboardData();
     }
   }, [stateid])
-  const stateDashboardData = () => {
+    /**
+ * State dashboard data utility.
+ * @returns {void}
+ */
+const stateDashboardData = () => {
     let obj = {
       "state_id": stateid
     }
@@ -148,8 +185,21 @@ const StateCourse = (props) => {
     }
   }
   console.log(finalData, "finalData-----", finalData?.length)
-  const RequiredCourses = ({ item, index }) => {
-    const getActualPrice = (percent, discountPrice) => {
+    /**
+ * Required courses component.
+ * @param {Object} props - Input object.
+ * @param {*} props.item - Nested property value.
+ * @param {*} props.index - Nested property value.
+ * @returns {JSX.Element}
+ */
+const RequiredCourses = ({ item, index }) => {
+        /**
+ * Returns actual price.
+ * @param {*} percent - Input value.
+ * @param {number} discountPrice - Input value.
+ * @returns {*}
+ */
+const getActualPrice = (percent, discountPrice) => {
       if (!discountPrice) return 0; // Handle undefined or null gracefully
       let price = parseFloat(String(discountPrice).replace(/,/g, ""));
       return Math.round(price / (1 - percent));
@@ -497,4 +547,9 @@ const StateCourse = (props) => {
   )
 }
 
+/**
+ * State course default export.
+ *
+ * @returns {*}
+ */
 export default StateCourse
