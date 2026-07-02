@@ -22,7 +22,7 @@ export default StyleSheet.create({
   },
   page: {
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
     paddingTop: 8
   },
   topBar: {

@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
  * Base url constant.
  * @returns {*}
  */
-const BASE_URL = !__DEV__
+const BASE_URL = __DEV__
   ? 'https://v2api.emedevents.com'   // Staging
   : 'https://newdev.emedevents.com'; // Production
 /**
@@ -56,5 +56,6 @@ export default {
   REFRESH_TOKEN: "REFRESH_TOKEN",
   REFID: "REFID",
   NON_USA_FLOW_STATE: "NON_USA_FLOW_STATE",
-  GUEST_PRIME_USER: "isGuestPrimeUser"
+  GUEST_PRIME_USER: "isGuestPrimeUser",
+  GUEST_SIGNUP_DRAFT: "GUEST_SIGNUP_DRAFT"
 };

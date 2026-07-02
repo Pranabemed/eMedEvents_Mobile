@@ -8,7 +8,7 @@
  * Dependencies: react, react-native, react-native-snap-carousel, ../../HomePage/GuestUser.styles, ./GuestUserShared
  */
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import styles from '../../GuestUser.styles';
@@ -39,11 +39,12 @@ const CarouselSectionComponent = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const viewportWidth = Math.max(width || sliderWidth || 0, 0);
   const cardWidth = Math.max(itemWidth || viewportWidth - 32, 0);
+  const carouselViewportStyle = useMemo(() => [styles.carouselViewport, { width: viewportWidth }], [viewportWidth]);
 
   return (
     <View style={styles.carouselContainer}>
       <SectionTitle title={title} action={action} onAction={onAction} width={width} />
-      <View style={styles.carouselViewport}>
+      <View style={carouselViewportStyle}>
         <Carousel
           layout="default"
           data={data}
@@ -54,10 +55,11 @@ const CarouselSectionComponent = ({
           inactiveSlideScale={1}
           inactiveSlideOpacity={1}
           useScrollView={false}
+          nestedScrollEnabled
           removeClippedSubviews={false}
           activeSlideAlignment="center"
-          containerCustomStyle={styles.carouselViewport}
-          contentContainerCustomStyle={styles.carouselViewport}
+          containerCustomStyle={carouselViewportStyle}
+          contentContainerCustomStyle={carouselViewportStyle}
         />
       </View>
       <Pagination
@@ -86,9 +88,11 @@ const LiveConferenceSectionComponent = ({
   width,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  if (!data.length) return null;
   const viewportWidth = Math.max(width || sliderWidth || 0, 0);
   const cardWidth = Math.max(itemWidth || viewportWidth - 32, 0);
+  const liveCarouselViewportStyle = useMemo(() => [styles.liveCarouselViewport, { width: viewportWidth }], [viewportWidth]);
+
+  if (!data.length) return null;
 
   return (
     <View style={styles.liveSection}>
@@ -98,7 +102,7 @@ const LiveConferenceSectionComponent = ({
           <Text style={styles.liveViewAll}>View All</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.liveCarouselViewport}>
+      <View style={liveCarouselViewportStyle}>
         <Carousel
           layout="default"
           data={data}
@@ -109,10 +113,11 @@ const LiveConferenceSectionComponent = ({
           inactiveSlideScale={1}
           inactiveSlideOpacity={1}
           useScrollView={false}
+          nestedScrollEnabled
           removeClippedSubviews={false}
           activeSlideAlignment="center"
-          containerCustomStyle={styles.liveCarouselViewport}
-          contentContainerCustomStyle={styles.liveCarouselViewport}
+          containerCustomStyle={liveCarouselViewportStyle}
+          contentContainerCustomStyle={liveCarouselViewportStyle}
         />
       </View>
       <Pagination

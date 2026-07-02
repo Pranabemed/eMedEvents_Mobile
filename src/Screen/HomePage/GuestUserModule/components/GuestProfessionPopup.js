@@ -27,6 +27,7 @@ import { getApi } from '../../../../Utils/Helpers/ApiRequest';
 import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import Buttons from '../../../../Components/Button';
 import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
+import { clearGuestSignupDraft, saveGuestSignupDraft } from '../../../../Utils/Helpers/GuestSignupDraft';
 
 /**
  * Popup shown key constant.
@@ -332,6 +333,16 @@ const validateEmail = value =>
 
     setIsSubmitting(true);
 
+    try {
+      await saveGuestSignupDraft({
+        profession,
+        specialty,
+        email: trimmedEmail,
+      });
+    } catch (error) {
+      console.warn('[GuestProfessionPopup] Unable to save guest signup draft:', error);
+    }
+
     let dynamicCity = guestData?.city_name || '';
     let dynamicState = guestData?.state_name || '';
     let dynamicCountryName = guestData?.country_name || '';
@@ -375,9 +386,11 @@ const validateEmail = value =>
     isSubmitting,
     profession,
     specialty,
+    trimmedEmail,
   ]);
 
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback(async () => {
+    await clearGuestSignupDraft();
     closeAndPersist();
   }, [closeAndPersist]);
 

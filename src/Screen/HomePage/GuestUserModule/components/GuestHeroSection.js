@@ -8,7 +8,7 @@
  * Dependencies: react, react-native, react-native-snap-carousel, react-native-vector-icons/MaterialIcons, react-native-linear-gradient, ../../../Themes/Imagepath, ../../HomePage/GuestUser.styles, ../utils/guestUserContentParsers
  */
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -38,6 +38,7 @@ import { GuestHeroShimmer } from './GuestUserShimmers';
  */
 const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, width }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const carouselViewportStyle = useMemo(() => [styles.carouselViewport, { width }], [width]);
 
   if (isHomeLoading) {
     return <GuestHeroShimmer width={width} />;
@@ -51,7 +52,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
 
   return (
     <>
-      <View style={styles.carouselViewport}>
+      <View style={carouselViewportStyle}>
         <Carousel
           layout="default"
           data={topBanners}
@@ -63,9 +64,10 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
           inactiveSlideScale={1}
           inactiveSlideOpacity={1}
           useScrollView={false}
+          nestedScrollEnabled
           removeClippedSubviews={false}
-          containerCustomStyle={styles.carouselViewport}
-          contentContainerCustomStyle={styles.carouselViewport}
+          containerCustomStyle={carouselViewportStyle}
+          contentContainerCustomStyle={carouselViewportStyle}
           renderItem={({ item }) => {
             let parsedHtml = {};
             if (item.html_content) {

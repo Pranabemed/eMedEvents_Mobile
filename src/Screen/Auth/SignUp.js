@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, Image, BackHandler } from 'react-native';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -23,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 import styles from './SignUp.styles';
 
 /**
@@ -51,7 +52,11 @@ const SignUp = (props) => {
   );
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
+  const emailRef = useRef(email);
   console.log(AuthReducer, "Auth========", props?.route?.params?.phoneCd)
+  useEffect(() => {
+    emailRef.current = email;
+  }, [email]);
   useEffect(() => {
         /**
  * Detect country utility.
@@ -76,6 +81,34 @@ const detectCountry = async () => {
     };
     detectCountry();
   }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+
+      /**
+ * Loads guest signup draft utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+      const hydrateGuestDraft = async () => {
+        const guestDraft = await loadGuestSignupDraft();
+        const guestEmail = String(guestDraft?.email || '').trim();
+
+        if (!isActive || !guestEmail || emailRef.current) {
+          return;
+        }
+
+        setEmailExist(guestEmail);
+      };
+
+      hydrateGuestDraft();
+
+      return () => {
+        isActive = false;
+      };
+    }, [setEmailExist])
+  );
     /**
  * Create account component.
  * @returns {void}
@@ -173,7 +206,7 @@ const setMobileNo = (text) => {
  * @param {*} text - Input value.
  * @returns {void}
  */
-const setEmailExist = (text) => {
+const setEmailExist = React.useCallback((text) => {
     setEmail(text);
     setGettrue(false);
     const emailPattern = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
@@ -190,7 +223,7 @@ const setEmailExist = (text) => {
     } else {
       console.log("Invalid email format");
     }
-  }
+  }, [dispatch]);
     /**
  * Formats phone number.
  * @param {*} input - Input value.

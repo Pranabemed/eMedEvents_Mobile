@@ -2,7 +2,7 @@
  * All special screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, professionalTypes, nonUsaProfessionalTypes, AllSpecial, onBackPress, handlePress, searchCountryName, searchStateName, searchStateNamePratice, specaillized, handleStateSelect, handleProfession, handlePratcing, professionValueForNonUsa, formatPhoneNumber, signupHandle, licData.
  */
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -27,6 +27,7 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { clearGuestSignupDraft, loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 
 /**
  * Reusable AllSpecial component.
@@ -97,14 +98,122 @@ const AllSpecial = (props) => {
     const [countryId, setCountryId] = useState("1")
     const [otherProfessionValue, setOtherProfessionValue] = useState('');
     const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState('');
+    const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isfocused = useIsFocused();
     const animatedValuespass = useRef(new Animated.Value(1)).current;
     const scaleValuesespass = useRef(new Animated.Value(0)).current;
     const animatedValuesprof = useRef(new Animated.Value(1)).current;
     const scaleValuesesprof = useRef(new Animated.Value(0)).current;
     const animatedValuestate = useRef(new Animated.Value(1)).current;
     const scaleValuesestate = useRef(new Animated.Value(0)).current;
+    const guestProfessionAppliedRef = useRef(false);
+    const guestSpecialtyAppliedRef = useRef(false);
+    useEffect(() => {
+        let isActive = true;
+        /**
+ * Loads guest signup draft utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const hydrateGuestSignupDraft = async () => {
+            const draft = await loadGuestSignupDraft();
+            if (!isActive) {
+                return;
+            }
+            setGuestSignupDraft(draft);
+            guestProfessionAppliedRef.current = false;
+            guestSpecialtyAppliedRef.current = false;
+        };
+
+        if (isfocused) {
+            hydrateGuestSignupDraft();
+        }
+        return () => {
+            isActive = false;
+        };
+    }, [isfocused]);
+
+    useEffect(() => {
+        if (!guestSignupDraft || guestProfessionAppliedRef.current) {
+            return;
+        }
+
+        if (selectedId || selectedProfessionalGroup || label || country) {
+            guestProfessionAppliedRef.current = true;
+            return;
+        }
+
+        const draftProfession = String(guestSignupDraft?.profession || '').trim().toLowerCase();
+        if (!draftProfession) {
+            guestProfessionAppliedRef.current = true;
+            return;
+        }
+
+        const professionOptions = isNonUsaUser ? nonUsaProfessionalTypes : professionalTypes;
+        const matchedProfession = professionOptions.find(option => {
+            const optionLabel = String(option?.label || '').trim().toLowerCase();
+            const optionName = String(option?.name || '').trim().toLowerCase();
+            const optionBaseName = optionName.split(' - ')[0].trim();
+            const guestBaseName = draftProfession.split(' - ')[0].trim();
+            return (
+                optionLabel === draftProfession ||
+                optionName === draftProfession ||
+                optionBaseName === guestBaseName
+            );
+        });
+
+        if (matchedProfession) {
+            guestProfessionAppliedRef.current = true;
+            handlePress(matchedProfession);
+        }
+    }, [country, guestSignupDraft, handlePress, isNonUsaUser, label, selectedId, selectedProfessionalGroup]);
+
+    useEffect(() => {
+        if (!guestSignupDraft) {
+            return;
+        }
+
+        const draftSpecialty = String(guestSignupDraft?.specialty || '').trim();
+        if (draftSpecialty && !state) {
+            setState(draftSpecialty);
+        }
+    }, [guestSignupDraft, state]);
+
+    useEffect(() => {
+        if (!guestSignupDraft || guestSpecialtyAppliedRef.current) {
+            return;
+        }
+
+        if (specialid) {
+            guestSpecialtyAppliedRef.current = true;
+            return;
+        }
+
+        const draftSpecialty = String(guestSignupDraft?.specialty || '').trim().toLowerCase();
+        if (!draftSpecialty || !Array.isArray(slist) || slist.length === 0) {
+            return;
+        }
+
+        const matchedSpecialty = slist.find(option => {
+            const optionLabel = String(option?.label || option?.name || option?.speciality_name || option?.specialty_name || '').trim().toLowerCase();
+            const optionName = String(option?.name || option?.speciality_name || option?.specialty_name || '').trim().toLowerCase();
+            return optionLabel === draftSpecialty || optionName === draftSpecialty;
+        });
+
+        if (matchedSpecialty) {
+            guestSpecialtyAppliedRef.current = true;
+            handleStateSelect(matchedSpecialty);
+            return;
+        }
+
+        if (!state) {
+          setState(String(guestSignupDraft?.specialty || '').trim());
+        }
+    }, [guestSignupDraft, handleStateSelect, specialid, slist, state]);
+
     useEffect(() => {
                 /**
  * On back press utility.
@@ -130,7 +239,7 @@ const onBackPress = () => {
  * @param {*} all - Input value.
  * @returns {void}
  */
-const handlePress = (all) => {
+const handlePress = useCallback((all) => {
         const professionName = all?.name || all?.label || '';
         licData(professionName)
         setSelectedId(all?.id);
@@ -138,7 +247,7 @@ const handlePress = (all) => {
         setSelectedProfessionalGroup(professionName);
         setOtherProfessionValue('');
         specaillized(professionName?.split(' - ')?.[0]);
-    };
+    }, []);
 
     useEffect(() => {
         const targetScaleprof = state ? 1 : 0.8;
@@ -202,7 +311,6 @@ const handlePress = (all) => {
             professionalTypes.slice(4, 8),
             professionalTypes.slice(8)
         ];
-    const isfocused = useIsFocused();
         /**
  * Search country name utility.
  * @param {*} text - Input value.
@@ -319,13 +427,13 @@ const specaillized = (data) => {
  * @param {*} item - Input value.
  * @returns {void}
  */
-const handleStateSelect = (item) => {
+const handleStateSelect = useCallback((item) => {
         console.log("Hello=======", item);
         setState(item?.name);
         setSpecailid(item.id)
         setstatepicker(false);
         // PraticingState();
-    };
+    }, []);
         /**
  * Handles profession.
  * @param {*} did - Input value.
@@ -568,6 +676,7 @@ const licData = (hill) => {
                 break;
             case 'Auth/signupSuccess':
                 status = AuthReducer.status;
+                clearGuestSignupDraft();
                 if (isNonUsaUser) {
                     writeNonUsaFlowState({
                         userType: 'non_usa',
