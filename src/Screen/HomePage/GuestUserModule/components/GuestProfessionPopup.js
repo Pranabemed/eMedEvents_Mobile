@@ -27,7 +27,7 @@ import { getApi } from '../../../../Utils/Helpers/ApiRequest';
 import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import Buttons from '../../../../Components/Button';
 import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
-import { clearGuestSignupDraft, saveGuestSignupDraft } from '../../../../Utils/Helpers/GuestSignupDraft';
+import { clearGuestSignupDraft, loadGuestSignupDraft, saveGuestSignupDraft } from '../../../../Utils/Helpers/GuestSignupDraft';
 
 /**
  * Popup shown key constant.
@@ -158,6 +158,21 @@ const GuestProfessionPopup = ({
     email: '',
   });
 
+  const persistGuestDraft = useCallback(
+    async (nextProfession = profession, nextSpecialty = specialty, nextEmail = email) => {
+      try {
+        await saveGuestSignupDraft({
+          profession: nextProfession,
+          specialty: nextSpecialty,
+          email: nextEmail,
+        });
+      } catch (error) {
+        console.warn('[GuestProfessionPopup] Unable to persist guest draft:', error);
+      }
+    },
+    [email, profession, specialty],
+  );
+
   const closeAndPersist = useCallback(async () => {
     try {
       await AsyncStorage.setItem(POPUP_SHOWN_KEY, 'true');
@@ -245,7 +260,33 @@ const GuestProfessionPopup = ({
 
     resetState();
     fetchProfessions();
-  }, [fetchProfessions, resetState, visible]);
+    let isActive = true;
+
+    const hydrateGuestDraft = async () => {
+      try {
+        const guestDraft = await loadGuestSignupDraft();
+        if (!isActive || !guestDraft) {
+          return;
+        }
+
+        setProfession(guestDraft.profession || '');
+        setSpecialty(guestDraft.specialty || '');
+        setEmail(guestDraft.email || '');
+
+        if (guestDraft.profession) {
+          fetchSpecialties(guestDraft.profession);
+        }
+      } catch (error) {
+        console.warn('[GuestProfessionPopup] Unable to load guest draft:', error);
+      }
+    };
+
+    hydrateGuestDraft();
+
+    return () => {
+      isActive = false;
+    };
+  }, [fetchProfessions, fetchSpecialties, resetState, visible]);
 
   const professionLabel = useMemo(
     () => (profession ? profession : 'Select your profession'),
@@ -303,9 +344,10 @@ const validateEmail = value =>
         profession: '',
         specialty: '',
       }));
+      persistGuestDraft(selectedProfession, '', email);
       fetchSpecialties(selectedProfession);
     },
-    [fetchSpecialties],
+    [email, fetchSpecialties, persistGuestDraft],
   );
 
   const handleSpecialtySelect = useCallback(item => {
@@ -316,7 +358,8 @@ const validateEmail = value =>
       ...prev,
       specialty: '',
     }));
-  }, []);
+    persistGuestDraft(profession, selectedSpecialty, email);
+  }, [email, persistGuestDraft, profession]);
 
   const handleSubmit = useCallback(async () => {
     const nextErrors = {
@@ -611,6 +654,7 @@ const validateEmail = value =>
                             ? 'Please enter your email address.'
                             : prev.email,
                       }));
+                      persistGuestDraft(profession, specialty, text);
                     }}
                     onBlur={() => setEmailTouched(true)}
                     placeholder="Enter your email address"

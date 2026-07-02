@@ -92,26 +92,26 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   console.log(webcastdeatils, creditData, "webcastdeatils=====11", urlneed);
   const { width } = useWindowDimensions();
   const dispatch = useDispatch();
-    /**
- * Full action utility.
- * @param {*} dataItem - Input value.
- * @returns {void}
- */
-const fullAction = (dataItem) => {
+  /**
+* Full action utility.
+* @param {*} dataItem - Input value.
+* @returns {void}
+*/
+  const fullAction = (dataItem) => {
     if (dataItem?.current_activity_api == "activitysession") {
       navigation.navigate("VideoComponent", { RoleData: videoNavigationData(dataItem) });
     } else if (dataItem?.current_activity_api == "introduction") {
       navigation.navigate("StartTest", { conference: dataItem?.conferenceId })
     } else if (dataItem?.current_activity_api == "startTest") {
-      navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.conferenceId } })
+      navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.conferenceId, webcastdeatils: dataItem } })
     }
   }
-    /**
- * Formats price.
- * @param {*} price - Input value.
- * @returns {*}
- */
-function formatPrice(price) {
+  /**
+* Formats price.
+* @param {*} price - Input value.
+* @returns {*}
+*/
+  function formatPrice(price) {
     let num = parseFloat(price);
     if (isNaN(num)) {
       return price;
@@ -123,9 +123,9 @@ function formatPrice(price) {
   const ticketPriceAmount = parseFloat(takePrice || "0") || 0;
   const hasCartActionButton = Boolean(
     webcastdeatils?.buttonType &&
-      webcastdeatils.buttonType.toLowerCase() !== "interest" &&
-      webcastdeatils?.is_cart_applicable == 1 &&
-      webcastdeatils?.isHavingActivity !== 1
+    webcastdeatils.buttonType.toLowerCase() !== "interest" &&
+    webcastdeatils?.is_cart_applicable == 1 &&
+    webcastdeatils?.isHavingActivity !== 1
   );
   const handleAddtoCart = useCallback(() => {
     let obj = {
@@ -140,12 +140,12 @@ function formatPrice(price) {
         showErrorAlert("Please connect to internet")
       })
   }, [bundle_conference_id, conferenceIDs, dispatch]);
-    /**
- * Formats number with commas.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const formatNumberWithCommas = (value) => {
+  /**
+* Formats number with commas.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+  const formatNumberWithCommas = (value) => {
     if (value == null || value == undefined) return '';
     const stringValue = value.toString().replace(/,/g, '');
     const parts = stringValue.split('.');
@@ -413,11 +413,13 @@ const formatNumberWithCommas = (value) => {
                     <>
                       <Buttons
                         onPress={() => {
-                          Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Close",                           /**
+                          Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{
+                            text: "Close",                           /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => { "demi" }, style: "default" }])
+                            onPress: () => { "demi" }, style: "default"
+                          }])
                         }}
                         height={normalize(45)}
                         width={normalize(140)}
@@ -488,11 +490,13 @@ onPress: () => { "demi" }, style: "default" }])
                           webcastdeatils.interested_allow === 0 ? (
                           <Buttons
                             onPress={() => {
-                              Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{ text: "Cancel",                               /**
+                              Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{
+                                text: "Cancel",                               /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => { "demi" }, style: "default" }])
+                                onPress: () => { "demi" }, style: "default"
+                              }])
                             }}
                             height={normalize(45)}
                             width={normalize(140)}
@@ -518,7 +522,7 @@ onPress: () => { "demi" }, style: "default" }])
                                 } else if (webcastdeatils?.current_activity_api == "introduction") {
                                   navigation.navigate("StartTest", { conference: webcastdeatils?.conferenceId })
                                 } else if (webcastdeatils?.current_activity_api == "startTest") {
-                                  navigation.navigate("PreTest", { activityID: { activityID: webcastdeatils?.current_activity_id, conference_id: webcastdeatils?.conferenceId } })
+                                  navigation.navigate("PreTest", { activityID: { activityID: webcastdeatils?.current_activity_id, conference_id: webcastdeatils?.conferenceId, webcastdeatils: webcastdeatils } })
                                 }
                               }}
                               height={normalize(45)}

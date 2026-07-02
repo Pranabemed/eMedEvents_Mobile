@@ -38,6 +38,8 @@ import CustomInputTouchableX from '../Profile/CustomInputTouchableX'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
+import { useIsFocused } from '@react-navigation/native';
+import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 
 /**
  * Reusable RegisterInterest component.
@@ -141,10 +143,45 @@ const intBack = () => {
     const [fetchdata, setFetchdata] = useState(null);
     const [proftree, setProftree] = useState(false);
     const [zerocm, setZerocm] = useState(false);
+    const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const dispatch = useDispatch();
+    const isFocus = useIsFocused();
+    const guestOrigin =
+        props?.route?.params?.checkoutSpan?.guestOrigin ||
+        props?.route?.params?.checkoutSpan?.checkoutSpan?.Realback ||
+        props?.route?.params?.checkoutSpan?.inpersonSpanrole?.Realback;
+    const isGuestInterestCheckout = ['guest', 'guestuser'].includes(
+        String(guestOrigin || '').toLowerCase()
+    );
+    useEffect(() => {
+        if (!isFocus || !isGuestInterestCheckout) {
+            setGuestSignupDraft(null);
+            return;
+        }
+
+        let isActive = true;
+
+        const hydrateGuestSignupDraft = async () => {
+            try {
+                const draft = await loadGuestSignupDraft();
+                if (!isActive) {
+                    return;
+                }
+                setGuestSignupDraft(draft);
+            } catch (error) {
+                console.log('[RegisterInterest] guest draft load error', error);
+            }
+        };
+
+        hydrateGuestSignupDraft();
+
+        return () => {
+            isActive = false;
+        };
+    }, [isFocus, isGuestInterestCheckout]);
     useEffect(() => {
         if (DashboardReducer?.dashboardResponse?.data?.licensures) {
             setFetchdata(DashboardReducer?.dashboardResponse?.data?.licensures);
@@ -569,6 +606,58 @@ const clean = (value) => {
             setCellnumber(formattedCellNo || phoneNumberToUse)
         }
     }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone])
+    useEffect(() => {
+        if (!isGuestInterestCheckout || !guestSignupDraft?.email || emailad) {
+            return;
+        }
+
+        setEmailad(guestSignupDraft.email);
+    }, [emailad, guestSignupDraft?.email, isGuestInterestCheckout]);
+    useEffect(() => {
+        if (!isGuestInterestCheckout || !guestSignupDraft?.profession || country) {
+            return;
+        }
+
+        const professionValue = String(guestSignupDraft.profession || '').trim();
+        setCountry(professionValue);
+
+        const professionKey = professionValue.split(' - ')[0].trim();
+        if (professionKey) {
+            specaillized(professionKey);
+        }
+    }, [country, guestSignupDraft?.profession, isGuestInterestCheckout]);
+    useEffect(() => {
+        if (!isGuestInterestCheckout || speciality_id?.length > 0 || !guestSignupDraft?.specialty) {
+            return;
+        }
+
+        const targetSpecialty = String(guestSignupDraft.specialty || '').trim().toLowerCase();
+        const availableSpecialities = Array.isArray(slist)
+            ? slist
+            : Array.isArray(selectState)
+                ? selectState
+                : [];
+        const matchedSpeciality = availableSpecialities.find(item => {
+            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
+            return candidate === targetSpecialty;
+        });
+
+        if (matchedSpeciality) {
+            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
+            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
+            if (!speciality) {
+                setSpeciality(matchedName || guestSignupDraft.specialty);
+            }
+            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
+                setSpeciality_id(matchedId ? [matchedId] : []);
+            }
+            return;
+        }
+
+        if (!speciality) {
+            setSpeciality(guestSignupDraft.specialty);
+        }
+    }, [guestSignupDraft?.specialty, isGuestInterestCheckout, selectState, slist, speciality, speciality_id]);
         /**
  * Formats phone numberno.
  * @param {*} input - Input value.

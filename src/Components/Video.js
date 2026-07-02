@@ -201,11 +201,11 @@ const VideoComponent = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-        /**
- * Take course video utility.
- * @returns {void}
- */
-const takeCourseVideo = () => {
+    /**
+* Take course video utility.
+* @returns {void}
+*/
+    const takeCourseVideo = () => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -579,12 +579,12 @@ const takeCourseVideo = () => {
             fontSize: 14,
         },
     });
-        /**
- * On load utility.
- * @param {*} data - Input value.
- * @returns {void}
- */
-const onLoad = (data) => {
+    /**
+* On load utility.
+* @param {*} data - Input value.
+* @returns {void}
+*/
+    const onLoad = (data) => {
         setDuration(data.duration || 0);
         const naturalWidth = Number(data?.naturalSize?.width) || 0;
         const naturalHeight = Number(data?.naturalSize?.height) || 0;
@@ -618,33 +618,33 @@ const onLoad = (data) => {
     }, [videoDic]); // Runs whenever `videoDic` changes
 
 
-        /**
- * On progress utility.
- * @param {*} data - Input value.
- * @returns {void}
- */
-const onProgress = (data) => {
+    /**
+* On progress utility.
+* @param {*} data - Input value.
+* @returns {void}
+*/
+    const onProgress = (data) => {
         if (isSeeking) return;
         setCurrentTime(data.currentTime);
         setSliderDragTime(data.currentTime);
     };
 
-        /**
- * On end utility.
- * @returns {void}
- */
-const onEnd = () => {
+    /**
+* On end utility.
+* @returns {void}
+*/
+    const onEnd = () => {
         setPaused(true);
         setCurrentTime(0);
         videoRef.current?.seek(0);
         setShowThumb(true);
     };
 
-        /**
- * On ready for display utility.
- * @returns {void}
- */
-const onReadyForDisplay = () => {
+    /**
+* On ready for display utility.
+* @returns {void}
+*/
+    const onReadyForDisplay = () => {
         setLoading(false);
         if (fullscreenTransitionRef.current && showTransitionCover) {
             if (hideTransitionCoverTimerRef.current) {
@@ -683,11 +683,11 @@ const onReadyForDisplay = () => {
         };
     }, [previewFrame, thumbnailCues, currentTime, videoDic, videoUrl]);
 
-        /**
- * Toggle fullscreen utility.
- * @returns {void}
- */
-const toggleFullscreen = () => {
+    /**
+* Toggle fullscreen utility.
+* @returns {void}
+*/
+    const toggleFullscreen = () => {
         const cover = getTransitionCoverFrame();
         if (cover?.uri) {
             setTransitionCoverFrame(cover);
@@ -745,22 +745,22 @@ const toggleFullscreen = () => {
         };
     }, []);
 
-        /**
- * Video press utility.
- * @returns {void}
- */
-const videoPress = () => {
+    /**
+* Video press utility.
+* @returns {void}
+*/
+    const videoPress = () => {
         setAddit(statepush);
         takeCourseVideo();
         props.navigation.goBack();
     };
 
-        /**
- * Formats time.
- * @param {*} time - Input value.
- * @returns {string}
- */
-const formatTime = (time) => {
+    /**
+* Formats time.
+* @param {*} time - Input value.
+* @returns {string}
+*/
+    const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes < 10 ? '0' : ''}${minutes}.${seconds < 10 ? '0' : ''}${seconds}`;
@@ -867,12 +867,12 @@ const formatTime = (time) => {
         cueFrameCacheRef.current = nextCache;
     }, []);
 
-        /**
- * Handles slider change.
- * @param {*} value - Input value.
- * @returns {void}
- */
-const handleSliderChange = (value) => {
+    /**
+* Handles slider change.
+* @param {*} value - Input value.
+* @returns {void}
+*/
+    const handleSliderChange = (value) => {
         sliderValueRef.current = value;
         setSliderDragTime(value);
         setPreviewTime(value);
@@ -927,12 +927,12 @@ const handleSliderChange = (value) => {
         const cue = cueFrameCacheRef.current[currentIndex] || currentCue;
         const thisToken = previewTokenRef.current + 1;
         previewTokenRef.current = thisToken;
-                /**
- * Apply cue utility.
- * @param {number} spriteSize - Input value.
- * @returns {void}
- */
-const applyCue = (spriteSize = null) => {
+        /**
+* Apply cue utility.
+* @param {number} spriteSize - Input value.
+* @returns {void}
+*/
+        const applyCue = (spriteSize = null) => {
             if (previewTokenRef.current !== thisToken) return;
             setPreviewFrame({ ...cue, spriteSize });
         };
@@ -1033,9 +1033,9 @@ const applyCue = (spriteSize = null) => {
     }, []);
 
     useEffect(() => {
-        const activeDic = (videoDic && videoDic.activityData && videoDic.activityData.length > 0)
+        const activeDic = (videoDic && ((videoDic.activityData && videoDic.activityData.length > 0) || (videoDic.video_audio_details && videoDic.video_audio_details.length > 0)))
             ? videoDic
-            : (props?.route?.params?.RoleData && props?.route?.params?.RoleData.activityData && props?.route?.params?.RoleData.activityData.length > 0)
+            : (props?.route?.params?.RoleData && ((props?.route?.params?.RoleData.activityData && props?.route?.params?.RoleData.activityData.length > 0) || (props?.route?.params?.RoleData.video_audio_details && props?.route?.params?.RoleData.video_audio_details.length > 0)))
                 ? props.route.params.RoleData
                 : null;
 
@@ -1050,9 +1050,10 @@ const applyCue = (spriteSize = null) => {
             return;
         }
 
-        const descriptionHtml = activeDic?.activityData?.[0]?.description || '';
+        const descriptionHtml = activeDic?.activityData?.[0]?.description || activeDic?.video_audio_details?.[0]?.description || '';
         const descriptionUrl = extractVideoUrl(descriptionHtml);
         const rawVideoId = activeDic?.activityData?.[0]?.youtube_video_id
+            || activeDic?.video_audio_details?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.activityData?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.video_audio_details?.[0]?.youtube_video_id
             || '';
@@ -1118,13 +1119,13 @@ const applyCue = (spriteSize = null) => {
             return () => { };
         }
 
-                /**
- * Load vtt utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadVtt = async () => {
+        /**
+* Load vtt utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const loadVtt = async () => {
             for (let idx = 0; idx < thumbnailVttCandidates.length; idx += 1) {
                 const candidateUrl = thumbnailVttCandidates[idx];
                 try {
@@ -1258,21 +1259,21 @@ const loadVtt = async () => {
             nextActivityButtonText.includes('pre-test') ||
             nextActivityButtonText.includes('assessment'));
     const displayedTime = isSeeking ? sliderDragTime : currentTime;
-        /**
- * Handles link.
- * @param {*} link - Input value.
- * @param {*} path - Input value.
- * @returns {void}
- */
-const handleLink = (link, path) => {
+    /**
+* Handles link.
+* @param {*} link - Input value.
+* @param {*} path - Input value.
+* @returns {void}
+*/
+    const handleLink = (link, path) => {
         if (link && path) {
-                        /**
- * Show pdf utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const showPDF = async () => {
+            /**
+* Show pdf utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+            const showPDF = async () => {
                 setLoadingdown(true);
                 try {
                     // Remove any spaces from the link and path
@@ -1301,13 +1302,13 @@ const showPDF = async () => {
 
     useEffect(() => {
         if (pdfUri) {
-                        /**
- * Open file viewer utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const openFileViewer = async () => {
+            /**
+* Open file viewer utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+            const openFileViewer = async () => {
                 try {
                     await FileViewer.open(pdfUri);
                     setPdfUri(null);
@@ -1319,11 +1320,11 @@ const openFileViewer = async () => {
         }
     }, [pdfUri]);
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             if (fullscreen) {
                 toggleFullscreen();
             } else {
@@ -1349,12 +1350,12 @@ const onBackPress = () => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [fullscreen]);
     const finalText = CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen;
-        /**
- * Determines whether valid cme is true.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const isValidCme = (value) =>
+    /**
+* Determines whether valid cme is true.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+    const isValidCme = (value) =>
         value && value.replace(/\s/g, "") !== "-0";
     const cmeValue =
         isValidCme(props?.route?.params?.RoleData?.display_cme)
@@ -1366,12 +1367,12 @@ const isValidCme = (value) =>
                     : isValidCme(props?.route?.params?.activityID?.conferenceCmePoints)
                         ? props.route.params.activityID.conferenceCmePoints
                         : null;
-        /**
- * Render thumbnail preview utility.
- * @param {boolean} isFullscreen - Input value.
- * @returns {JSX.Element}
- */
-const renderThumbnailPreview = (isFullscreen = false) => {
+    /**
+* Render thumbnail preview utility.
+* @param {boolean} isFullscreen - Input value.
+* @returns {JSX.Element}
+*/
+    const renderThumbnailPreview = (isFullscreen = false) => {
         if (!duration) return null;
         const ratio = Math.max(0, Math.min(1, (duration > 0 ? previewTime / duration : 0)));
         const previewWidth = isFullscreen ? normalize(138) : normalize(120);
@@ -1454,7 +1455,7 @@ const renderThumbnailPreview = (isFullscreen = false) => {
             </View>
         );
     };
-    console.log(props?.route?.params?.postdata , nextAction ,CMEReducer?.cmenextactionResponse,activeNextAction, "activeNextAction====", activeCourseModuleName, activeCourseModuleId)
+    console.log(props?.route?.params, nextAction, CMEReducer?.cmenextactionResponse, activeNextAction, "activeNextAction====", activeCourseModuleName, activeCourseModuleId)
     return (
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />

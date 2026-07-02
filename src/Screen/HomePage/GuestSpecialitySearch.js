@@ -116,7 +116,7 @@ const GuestSpecialitySearch = props => {
 
   const placeholders = useMemo(() => [
     "Search for CME/CE courses",
-    "Search for your state required courses ",
+    "Search for your state required ... ",
     "Search for topic",
     "Search for specialty",
     "Search for medical conferences",

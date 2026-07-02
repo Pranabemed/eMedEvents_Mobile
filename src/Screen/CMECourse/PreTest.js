@@ -88,7 +88,8 @@ const PrePress = () => {
   const isPostTestFlow =
     testFlowType === 'post' ||
     routeActivityText.includes('post') ||
-    String(props?.route?.params?.FullID?.wholedata?.next_activity_text || '').trim().toLowerCase().includes('post');
+    String(props?.route?.params?.FullID?.wholedata?.next_activity_text || '').trim().toLowerCase().includes('post') ||
+    String(CMEReducer?.startTestResponse?.testData?.[0]?.title || '').trim().toLowerCase().includes('post');
   const shouldOpenVideoFirst =
     routeActivityText.includes('course') ||
     routeActivityText.includes('video') ||
@@ -106,6 +107,7 @@ const PrePress = () => {
       activityID: props?.route?.params?.activityID,
       FullID: props?.route?.params?.FullID,
       postdata: props?.route?.params?.nodata || props?.route?.params?.postdata,
+      RoleData: props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
     });
   }, [isFocus, shouldOpenVideoFirst, props.navigation, props?.route?.params]);
 
@@ -257,7 +259,7 @@ const goBackToVideoWithNextActivity = () => {
     }
 
     props.navigation.replace("VideoComponent", {
-      RoleData: props?.route?.params?.videoContentData || props?.route?.params?.RoleData,
+      RoleData: props?.route?.params?.videoContentData || props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
     });
   };
 
@@ -270,7 +272,7 @@ const goBackToVideoWithNextActivity = () => {
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err); });
   }, [isFocus]);
-
+   console.log("props?.route?.params?.nodata", props?.route?.params)
   useEffect(() => {
     if (props?.route?.params?.nodata) {
       setSelectedOptions({});
@@ -341,6 +343,8 @@ const goBackToVideoWithNextActivity = () => {
       },
       RoleData: {
         ...props?.route?.params?.videoContentData,
+        ...props?.route?.params?.RoleData,
+        ...props?.route?.params?.activityID?.webcastdeatils,
         ...nextResponse,
         current_activity_id: nextModuleActivityId,
         conferenceId: nextModuleConferenceId,

@@ -3,7 +3,7 @@
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler, Platform } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Fonts from '../../Themes/Fonts';
@@ -28,6 +28,8 @@ import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { clearGuestSignupDraft, loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 
 /**
  * Reusable AllSpecial component.
@@ -99,6 +101,8 @@ const AllSpecial = (props) => {
     const [otherProfessionValue, setOtherProfessionValue] = useState('');
     const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState('');
     const [guestSignupDraft, setGuestSignupDraft] = useState(null);
+    const [playerSessionID, setPlayerSessionID] = useState('');
+    const [fcm, setFcm] = useState(false);
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const isfocused = useIsFocused();
@@ -110,6 +114,23 @@ const AllSpecial = (props) => {
     const scaleValuesestate = useRef(new Animated.Value(0)).current;
     const guestProfessionAppliedRef = useRef(false);
     const guestSpecialtyAppliedRef = useRef(false);
+    useEffect(() => {
+        const loadPlayerSession = async () => {
+            const session = await AsyncStorage.getItem('PLAYERSESSION');
+            setPlayerSessionID(session || '');
+        };
+
+        loadPlayerSession();
+    }, []);
+    useEffect(() => {
+        generateDeviceToken()
+            .then((res) => {
+                setFcm(res);
+            })
+            .catch((err) => {
+                showErrorAlert("Please connect to Internet", err);
+            });
+    }, [isfocused, fcm]);
     useEffect(() => {
         let isActive = true;
         /**
@@ -575,7 +596,10 @@ const signupHandle = () => {
                 "specialities": specialtyId ? [specialtyId] : [],
                 "signup_usa": false,
                 "is_mobile": 0,
-                "accept_updates": 1
+                "accept_updates": 1,
+                "playerSessionID": playerSessionID,
+                "deviceToken": fcm,
+                "deviceType": Platform.OS
             } : finalFormattedPhone ? {
                 "first_name": props?.route?.params?.Alldata?.first_name,
                 "last_name": props?.route?.params?.Alldata?.last_name,
@@ -589,7 +613,10 @@ const signupHandle = () => {
                 "specialities": specialtyId ? [specialtyId] : [],
                 "signup_usa": true,
                 "accept_updates": 1,
-                "is_mobile": 1
+                "is_mobile": 1,
+                "playerSessionID": playerSessionID,
+                "deviceToken": fcm,
+                "deviceType": Platform.OS
             } :
                 {
                     "first_name": props?.route?.params?.Alldata?.first_name,
@@ -603,7 +630,10 @@ const signupHandle = () => {
                     "npi_number": "",
                     "specialities": specialtyId ? [specialtyId] : [],
                     "signup_usa": true,
-                    "is_mobile": 1
+                    "is_mobile": 1,
+                    "playerSessionID": playerSessionID,
+                    "deviceToken": fcm,
+                    "deviceType": Platform.OS
                 }
             console.log(obj, "sign up obj ===========")
             connectionrequest()

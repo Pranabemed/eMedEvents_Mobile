@@ -26,6 +26,7 @@ import CustomInputTouchableZ from './Newmultiple';
 import CustomInputTouchableY from './Multiple';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
+import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 /**
  * Google api key constant.
  * @returns {string}
@@ -213,6 +214,65 @@ const handleDateSelect = (date, index, fieldName) => {
   const customHandle = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
   console.log(customHandle, "customHandle--------------")
   const [conn, setConn] = useState("")
+  useEffect(() => {
+    if (!isGuestCheckout) {
+      return;
+    }
+
+    let isActive = true;
+
+    const hydrateGuestDraft = async () => {
+      try {
+        const guestDraft = await loadGuestSignupDraft();
+        if (!isActive || !guestDraft) {
+          return;
+        }
+
+        if (!emailad && guestDraft.email) {
+          setEmailad(guestDraft.email);
+        }
+
+        if (!professionad && guestDraft.profession) {
+          const professionValue = String(guestDraft.profession || '').trim();
+          setProfessionad(professionValue);
+          const professionKey = professionValue.split(' - ')[0].trim();
+          if (professionKey) {
+            specaillized(professionKey);
+          }
+        }
+
+        if ((!speciality || !speciality_id?.length) && guestDraft.specialty) {
+          const targetSpecialty = String(guestDraft.specialty || '').trim().toLowerCase();
+          const availableSpecialities = Array.isArray(slist) ? slist : [];
+          const matchedSpeciality = availableSpecialities.find(item => {
+            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
+            return candidate === targetSpecialty;
+          });
+
+          if (matchedSpeciality) {
+            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
+            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
+            if (!speciality) {
+              setSpeciality(matchedName || guestDraft.specialty);
+            }
+            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
+              setSpeciality_id(matchedId ? [matchedId] : []);
+            }
+          } else if (!speciality) {
+            setSpeciality(guestDraft.specialty);
+          }
+        }
+      } catch (error) {
+        console.log('[CheckoutInputbox] guest draft load error', error);
+      }
+    };
+
+    hydrateGuestDraft();
+
+    return () => {
+      isActive = false;
+    };
+  }, [emailad, isGuestCheckout, professionad, setEmailad, setProfessionad, setSpeciality, setSpeciality_id, speciality, speciality_id, slist, specaillized]);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       console.log('Connection State:', state.isConnected);

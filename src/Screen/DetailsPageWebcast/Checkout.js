@@ -60,6 +60,7 @@ let status1 = "";
  */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 
 /**
  * Reusable Checkout component.
@@ -157,6 +158,7 @@ const Checkout = (props) => {
     const [savefull, setSavefull] = useState(null);
     const [customFields, setCustomFields] = useState(Array.from({ length: formData?.length }, () => ({})));  // Store custom fields for each attendee
     const [customFieldsLabels, setCustomFieldsLabels] = useState(Array.from({ length: formData?.length }, () => ({})));
+    const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     console.log(countrypickerprof, "countrypickerprof", clist, props?.route?.params?.inPersonTicket?.totalTicketPrice)
     // const isInitialLoad = useRef(false); 
     console.log(ticketSave, props?.route?.params, "1cheochg", props?.route?.params?.inPersonTicket?.inpersonSpanrole?.conferenceTypeId == "2", formData, "checkoutSpan=============");
@@ -480,7 +482,85 @@ const toggleModalFailedfree = (tik) => {
             }
             : null;
     const checkoutCompletionRoute = isGuestCheckout ? 'GuestUser' : 'TabNav';
-        /**
+    useEffect(() => {
+        if (!isfocus || !isGuestCheckout) {
+            setGuestSignupDraft(null);
+            return;
+        }
+
+        let isActive = true;
+
+        const hydrateGuestSignupDraft = async () => {
+            try {
+                const draft = await loadGuestSignupDraft();
+                if (!isActive) {
+                    return;
+                }
+                setGuestSignupDraft(draft);
+            } catch (error) {
+                console.log('[Checkout] guest draft load error', error);
+            }
+        };
+
+        hydrateGuestSignupDraft();
+
+        return () => {
+            isActive = false;
+        };
+    }, [isGuestCheckout, isfocus]);
+    useEffect(() => {
+        if (!isGuestCheckout || !guestSignupDraft?.email || emailad) {
+            return;
+        }
+
+        setEmailad(guestSignupDraft.email);
+    }, [emailad, guestSignupDraft?.email, isGuestCheckout]);
+    useEffect(() => {
+        if (!isGuestCheckout || !guestSignupDraft?.profession || professionad) {
+            return;
+        }
+
+        const professionValue = String(guestSignupDraft.profession || '').trim();
+        setProfessionad(professionValue);
+
+        const professionKey = professionValue.split(' - ')[0].trim();
+        if (professionKey) {
+            specaillized(professionKey);
+        }
+    }, [guestSignupDraft?.profession, isGuestCheckout, professionad]);
+    useEffect(() => {
+        if (!isGuestCheckout || speciality_id?.length > 0 || !guestSignupDraft?.specialty) {
+            return;
+        }
+
+        const targetSpecialty = String(guestSignupDraft.specialty || '').trim().toLowerCase();
+        const availableSpecialities = Array.isArray(slist)
+            ? slist
+            : Array.isArray(selectState)
+                ? selectState
+                : [];
+        const matchedSpeciality = availableSpecialities.find(item => {
+            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
+            return candidate === targetSpecialty;
+        });
+
+        if (matchedSpeciality) {
+            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
+            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
+            if (!speciality) {
+                setSpeciality(matchedName || guestSignupDraft.specialty);
+            }
+            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
+                setSpeciality_id(matchedId ? [matchedId] : []);
+            }
+            return;
+        }
+
+        if (!speciality) {
+            setSpeciality(guestSignupDraft.specialty);
+        }
+    }, [guestSignupDraft?.specialty, isGuestCheckout, selectState, slist, speciality, speciality_id]);
+    /**
  * Reset guest checkout fields utility.
  * @returns {void}
  */
