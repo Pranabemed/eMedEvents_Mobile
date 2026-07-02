@@ -86,7 +86,7 @@ const AllSpecial = (props) => {
     const [searchState, setSearchState] = useState('');
     const [statepicker, setstatepicker] = useState(false);
     const [state, setState] = useState('');
-    const [specialid, setSpecailid] = useState([]);
+    const [specialid, setSpecailid] = useState('');
     const [label, setLabel] = useState("");
     const [pratice, setPratice] = useState(false);
     const [searchpratice, setSearchpratice] = useState('');
@@ -168,8 +168,35 @@ const hydrateGuestSignupDraft = async () => {
         if (matchedProfession) {
             guestProfessionAppliedRef.current = true;
             handlePress(matchedProfession);
+            return;
         }
-    }, [country, guestSignupDraft, handlePress, isNonUsaUser, label, selectedId, selectedProfessionalGroup]);
+
+        const rawDraftProfession = String(guestSignupDraft?.profession || '').trim();
+        guestProfessionAppliedRef.current = true;
+        if (isNonUsaUser) {
+            setSelectedId(4);
+            setLabel('Other');
+            setCountry('Other');
+            setSelectedProfessionalGroup('Other');
+            setOtherProfessionValue(rawDraftProfession);
+        } else {
+            setSelectedId(12);
+            setLabel('Other');
+            setCountry(rawDraftProfession);
+            setSelectedProfessionalGroup('Other');
+            setOtherProfessionValue('');
+        }
+
+        connectionrequest()
+            .then(() => {
+                dispatch(licesensRequest(rawDraftProfession || 'Other'));
+                dispatch(specializationRequest('Other'));
+            })
+            .catch(err => {
+                console.log(err);
+                showErrorAlert('Please connect to Internet');
+            });
+    }, [country, dispatch, guestSignupDraft, handlePress, isNonUsaUser, label, selectedId, selectedProfessionalGroup]);
 
     useEffect(() => {
         if (!guestSignupDraft) {
@@ -497,6 +524,7 @@ const formatPhoneNumber = (input) => {
  * @returns {void}
  */
 const signupHandle = () => {
+        const specialtyId = Array.isArray(specialid) ? specialid[0] : specialid;
         const professionValue = isNonUsaUser
             ? (selectedProfessionalGroup === 'Other' ? otherProfessionValue.trim() : selectedProfessionalGroup || label || country)
             : (selectedId === 12 ? country : label);
@@ -544,7 +572,7 @@ const signupHandle = () => {
                 "state_id": "",
                 "profession": professionValue,
                 "npi_number": "",
-                "specialities": [specialid],
+                "specialities": specialtyId ? [specialtyId] : [],
                 "signup_usa": false,
                 "is_mobile": 0,
                 "accept_updates": 1
@@ -558,7 +586,7 @@ const signupHandle = () => {
                 "state_id": specialidpratice,
                 "profession": selectedId === 12 ? country : label,
                 "npi_number": "",
-                "specialities": [specialid],
+                "specialities": specialtyId ? [specialtyId] : [],
                 "signup_usa": true,
                 "accept_updates": 1,
                 "is_mobile": 1
@@ -573,7 +601,7 @@ const signupHandle = () => {
                     "state_id": specialidpratice || "",
                     "profession": selectedId === 12 ? country : label,
                     "npi_number": "",
-                    "specialities": [specialid],
+                    "specialities": specialtyId ? [specialtyId] : [],
                     "signup_usa": true,
                     "is_mobile": 1
                 }

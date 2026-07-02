@@ -9,13 +9,12 @@
  */
 
 import React, { memo, useState, useMemo } from 'react';
-import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import Imagepath from '../../../../Themes/Imagepath';
 import styles from '../../GuestUser.styles';
-import normalize from '../../../../Utils/Helpers/Dimen';
 import {
   getBannerUrl,
   matchGroup,
@@ -23,6 +22,7 @@ import {
   splitMetaLine,
 } from '../utils/guestUserContentParsers';
 import { GuestHeroShimmer } from './GuestUserShimmers';
+import normalize from '../../../../Utils/Helpers/Dimen';
 
 /**
  * Reusable GuestHeroSectionComponent component.
@@ -38,7 +38,6 @@ import { GuestHeroShimmer } from './GuestUserShimmers';
  */
 const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, width }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const carouselViewportStyle = useMemo(() => [styles.carouselViewport, { width }], [width]);
 
   if (isHomeLoading) {
     return <GuestHeroShimmer width={width} />;
@@ -49,10 +48,12 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
   }
 
   const slideWidth = normalize(300);
+  const cardWidth = Platform.OS === 'ios' ? normalize(330) : normalize(288);
+  const cardHeight = Platform.OS === 'ios' ? normalize(230) : normalize(190);
 
   return (
     <>
-      <View style={carouselViewportStyle}>
+      <View style={{ marginHorizontal: -16, width, overflow: 'visible' }}>
         <Carousel
           layout="default"
           data={topBanners}
@@ -66,8 +67,8 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
           useScrollView={false}
           nestedScrollEnabled
           removeClippedSubviews={false}
-          containerCustomStyle={carouselViewportStyle}
-          contentContainerCustomStyle={carouselViewportStyle}
+          containerCustomStyle={{ overflow: 'visible' }}
+          contentContainerCustomStyle={{ overflow: 'visible' }}
           renderItem={({ item }) => {
             let parsedHtml = {};
             if (item.html_content) {
@@ -138,11 +139,7 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
               item.venue ||
               item.city;
             const stateWebcastUrl = getBannerUrl(item);
-                        /**
- * Handles register press.
- * @returns {void}
- */
-const handleRegisterPress = () => {
+            const handleRegisterPress = () => {
               if (stateWebcastUrl) {
                 navigation.navigate('Statewebcast', {
                   webCastURL: { webCastURL: stateWebcastUrl, shareUrl: stateWebcastUrl, detailpage_url: stateWebcastUrl, Realback: 'guest' },
@@ -151,14 +148,14 @@ const handleRegisterPress = () => {
             };
 
             return (
-              <View style={styles.heroSlideWrap}>
+              <View style={{ width: slideWidth, alignItems: 'center', justifyContent: 'center' }}>
                 <LinearGradient
                   colors={['#2C4DB9', '#7A22B8']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={[styles.heroCard, Platform.OS === 'ios' ? styles.heroCardIos : styles.heroCardAndroid]}
+                  style={[styles.hero, { width: cardWidth, height: cardHeight, borderRadius: 16 }]}
                 >
-                  <View style={Platform.OS === 'ios' ? styles.heroTopSpacerIos : styles.heroTopSpacerDefault}>
+                  <View style={Platform.OS === 'ios' ? { flex: 0.7 } : {}}>
                     <Text style={styles.heroKicker}>{displayKicker}</Text>
                     <Text numberOfLines={2} style={styles.heroTitle}>{displayTitle}</Text>
                   </View>
@@ -210,8 +207,10 @@ const handleRegisterPress = () => {
   );
 };
 
-/**
- * Guest hero section value.
- * @returns {*}
- */
 export const GuestHeroSection = memo(GuestHeroSectionComponent);
+
+const localStyles = StyleSheet.create({
+  heroSlideWrap: {
+    alignItems: 'center',
+  },
+});
