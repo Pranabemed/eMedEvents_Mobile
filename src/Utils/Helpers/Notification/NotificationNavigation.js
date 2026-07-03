@@ -67,6 +67,7 @@ export const handleActivityUrlNavigation = (conference_id, activity_id) => {
           const currentParams = RootNavigation.getCurrentRouteParams() || {};
           RootNavigation.navigate("PreTest", { 
             ...currentParams,
+            fromNotification: true,
             testFlowType: "pre", 
             FullID: { 
               FullID: response.next_activity_id, 

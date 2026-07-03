@@ -60,7 +60,14 @@ const PreTest = (props) => {
   const PrePress = () => {
     setAddit(statepush);
     takeCoursepre();
-    props.navigation.goBack();
+    if (props.navigation.canGoBack()) {
+      props.navigation.goBack();
+    } else {
+      props.navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    }
   };
   const [conn, setConn] = useState("")
   useEffect(() => {
@@ -330,8 +337,9 @@ const PreTest = (props) => {
       nextResponse?.conferenceId ||
       nextResponse?.conference_id;
 
-    if (isPostTestFlow) {
+    if (isPostTestFlow || props?.route?.params?.fromNotification) {
       props.navigation.navigate("PostTestFail", {
+        ...(props?.route?.params || {}),
         examID: CMEReducer?.evaulateexamResponse?.examId,
       });
       return;
@@ -394,8 +402,8 @@ const PreTest = (props) => {
         status = CMEReducer.status;
         if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
           props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
-        } else if (isPostTestFlow) {
-          props.navigation.navigate("PostTestFail", { examID: CMEReducer?.evaulateexamResponse?.examId });
+        } else if (isPostTestFlow || props?.route?.params?.fromNotification) {
+          props.navigation.navigate("PostTestFail", { ...(props?.route?.params || {}), examID: CMEReducer?.evaulateexamResponse?.examId });
         } else {
           goBackToVideoWithNextActivity();
         }
@@ -542,6 +550,11 @@ const PreTest = (props) => {
     htmlString = htmlString.replace(/<p[^>]*style="[^"]*margin-left:0px;"[^>]*>(.*?)<\/p>/g, "$1");
     htmlString = htmlString.replace(/<\/?[^>]+(>|$)/g, "");
     htmlString = htmlString.replace(/&nbsp;/g, " ");
+    htmlString = htmlString.replace(/&gt;/g, ">");
+    htmlString = htmlString.replace(/&lt;/g, "<");
+    htmlString = htmlString.replace(/&amp;/g, "&");
+    htmlString = htmlString.replace(/&quot;/g, '"');
+    htmlString = htmlString.replace(/&#39;|&#x27;|&apos;/g, "'");
     return htmlString.trim();
   };
   let questionCounter = 0;

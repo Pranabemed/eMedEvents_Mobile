@@ -139,7 +139,7 @@ const onPress = async () => {
                     <View style={dataPayemnt?.invoice ? [styles.buttonContainer, { marginTop: normalize(7) }] : [styles.buttonContainerg, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate(name, getMergedParams());
+                                navigation?.navigate("TabNav", getMergedParams());
                                 setPaymentcardfree(false);
                             }}
                             style={dataPayemnt?.invoice ? styles.button : styles.singlebutton}

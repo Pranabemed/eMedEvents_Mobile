@@ -237,7 +237,7 @@ const handleAppStateChange = (nextAppState) => {
                     <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate(name, getMergedParams());
+                                navigation?.navigate("TabNav", getMergedParams());
                                 setPaymentcard(false);
                                 const fullDta = fulldashbaord?.[0];
                                 setAddit(fullDta);

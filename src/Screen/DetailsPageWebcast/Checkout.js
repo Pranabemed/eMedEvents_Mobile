@@ -481,7 +481,7 @@ const toggleModalFailedfree = (tik) => {
                 },
             }
             : null;
-    const checkoutCompletionRoute = isGuestCheckout ? 'GuestUser' : 'TabNav';
+    const checkoutCompletionRoute = 'TabNav';
     useEffect(() => {
         if (!isfocus || !isGuestCheckout) {
             setGuestSignupDraft(null);
