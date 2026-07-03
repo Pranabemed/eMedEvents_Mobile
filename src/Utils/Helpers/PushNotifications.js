@@ -5,6 +5,8 @@
 import { DeviceEventEmitter, PermissionsAndroid, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, AndroidStyle, EventType } from '@notifee/react-native';
+import { saveNotification } from './Notification/NotificationStorage';
+import { handleNotification } from './Notification/NotificationService';
 
 /**
  * Android channel id constant.
@@ -47,6 +49,15 @@ let notifeeForegroundUnsubscribe = null;
  * @returns {boolean}
  */
 let notifeeBackgroundRegistered = false;
+
+/**
+ * Log exact notification payload utility helper.
+ * @param {*} payload - Input value.
+ * @returns {void}
+ */
+const logExactNotificationJson = payload => {
+  console.log(JSON.stringify(payload ?? {}, null, 2),"newnotification===");
+};
 
 /**
  * Resolve notification url utility helper.
@@ -98,23 +109,28 @@ const normalizeNotificationUrlForApp = remoteMessage => {
   return `https://www.emedevents.com/c/${rawUrl.replace(/^\/+/, '')}`;
 };
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 /**
  * Forward notification to deep link utility helper.
  * @param {*} remoteMessage - Input value.
  * @param {*} source - Input value.
  * @returns {void}
  */
-const forwardNotificationToDeepLink = (remoteMessage, source) => {
-  const url = normalizeNotificationUrlForApp(remoteMessage);
+const forwardNotificationToDeepLink = async remoteMessage => {
+  logExactNotificationJson(remoteMessage);
 
-  console.log('[PushNotifications] Raw payload:', JSON.stringify(remoteMessage || {}, null, 2));
-  console.log('[PushNotifications]', source, {
-    messageId: remoteMessage?.messageId || remoteMessage?.notification?.id,
-    url,
-  });
-
-  if (url) {
-    DeviceEventEmitter.emit('DEEP_LINK_URL', { url });
+  if (remoteMessage) {
+    await saveNotification(remoteMessage);
+    const resolvedUrl = normalizeNotificationUrlForApp(remoteMessage);
+    if (resolvedUrl && resolvedUrl !== 'https://emedevents.com') {
+      try {
+        await AsyncStorage.setItem('PENDING_NOTIFICATION_URL', resolvedUrl);
+        DeviceEventEmitter.emit('DEEP_LINK_URL', { url: resolvedUrl });
+      } catch (e) {
+        console.log('[PushNotifications] Error saving pending notification url', e);
+      }
+    }
   }
 };
 
@@ -172,8 +188,13 @@ const ensureAndroidChannel = async () => {
  * @param {*} source - Input value.
  * @returns {Promise<*>}
  */
-const displayIncomingNotification = async (remoteMessage, source) => {
+const displayIncomingNotification = async remoteMessage => {
   try {
+    logExactNotificationJson(remoteMessage);
+    
+    // Save to storage immediately when received
+    await saveNotification(remoteMessage);
+
     const { title, body, data } = getRemoteMessagePayload(remoteMessage);
     if (!title && !body) {
       return;
@@ -209,7 +230,6 @@ const displayIncomingNotification = async (remoteMessage, source) => {
       },
     });
 
-    console.log('[PushNotifications] Displayed notification from:', source);
   } catch (error) {
     console.warn('[PushNotifications] Failed to display notification:', error?.message || error);
   }

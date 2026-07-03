@@ -43,26 +43,24 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
     }, 3000);
     return () => clearInterval(interval);
   }, [placeholders]);
-  const isPaymentOrCheckout = cleanTitle === 'payment' || 
-                              cleanTitle === 'checkout' || 
-                              cleanTitle.includes('payment') || 
-                              cleanTitle.includes('checkout') ||
-                              cleanTitle.includes('profession') ||
-                              cleanTitle.includes('specialty') ||
-                              cleanTitle.includes('speciality') ||
-                              cleanTitle.includes('specialities') ||
-                              cleanTitle.includes('state') ||
-                              cleanTitle.includes('country') ||
-                              cleanTitle.includes('city') ||
-                              cleanTitle.includes('medical license state');
+  const isPaymentOrCheckout = cleanTitle === 'payment' ||
+    cleanTitle === 'checkout' ||
+    cleanTitle.includes('payment') ||
+    cleanTitle.includes('checkout') ||
+    cleanTitle.includes('profession') ||
+    cleanTitle.includes('specialty') ||
+    cleanTitle.includes('speciality') ||
+    cleanTitle.includes('specialities') ||
+    cleanTitle.includes('state') ||
+    cleanTitle.includes('country') ||
+    cleanTitle.includes('city') ||
+    cleanTitle.includes('medical license state');
 
-  console.log(cartcount, "fdgjhjfdghjh");
-
-    /**
- * Handles search.
- * @returns {void}
- */
-const handleSearch = () => {
+  /**
+* Handles search.
+* @returns {void}
+*/
+  const handleSearch = () => {
     if (searchPress) {
       const websiteBaseUrl = constants.BASE_URL == "https://newdev.emedevents.com"
         ? 'https://www.emedevents.com'
@@ -87,9 +85,6 @@ const handleSearch = () => {
         });
     }
   };
-
-  console.log(search, "search=========", "https://v2.emedevents.com/online-cme-courses/webcasts");
-
   return (
     sharetrue ? (
       <View style={{
@@ -132,7 +127,7 @@ const handleSearch = () => {
               }}
             >
               <SearchIcn name="search" size={16} color="#AAAAAA" />
-              <Text 
+              <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
                 style={{
@@ -254,7 +249,7 @@ const handleSearch = () => {
               }}
             >
               <SearchIcn name="search" size={16} color="#AAAAAA" />
-              <Text 
+              <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
                 style={{

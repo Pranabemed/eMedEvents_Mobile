@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
+import { useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
@@ -21,6 +23,29 @@ import RNFS from "react-native-fs";
  * @returns {JSX.Element}
  */
 const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, navigation, name, setGocertificate, gocertificate }) => {
+    const route = useRoute();
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+
+    const getMergedParams = (extraParams = {}) => {
+        return {
+            ...(route?.params || {}),
+            ...extraParams,
+            maindata: {
+                checkoutSpan: route?.params?.checkoutSpan?.checkoutSpan,
+                inpersonSpanrole: route?.params?.inPersonTicket?.inpersonSpanrole,
+                invoiceWebcast: route?.params?.invoiceTxt?.webcastTake,
+                cartInvoiceWebcast: route?.params?.cartInvoice?.webcastTake,
+                addToCartWebcast: route?.params?.addtocart?.webcast,
+                webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+                paymentCheck: WebcastReducer?.PaymentCheckResponse,
+                statusPayment: WebcastReducer?.StatusPaymentResponse,
+                freeCart: WebcastReducer?.FreeCartResponse,
+            },
+            webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+            paymentResponse: WebcastReducer?.PaymentCheckResponse || WebcastReducer?.StatusPaymentResponse || WebcastReducer?.FreeCartResponse,
+        };
+    };
+
     const [pdfsee, setPdfsee] = useState(false);
         /**
  * On press utility.
@@ -75,7 +100,7 @@ const onPress = async () => {
         >
             {dataPayemnt?.ButtonArr ? (<View style={styles.container}>
                 <TouchableOpacity onPress={() => {
-                    navigation?.navigate(name);
+                    navigation?.navigate(name, getMergedParams());
                     setPaymentcardfree(false);
                 }} style={styles.closeIcon}>
                     <CloseIcon name="close" size={24} color={Colorpath.white} />
@@ -90,7 +115,7 @@ const onPress = async () => {
                     <TouchableOpacity
                         onPress={() => {
                             setPaymentcardfree(false);
-                            navigation.navigate("StartTest", { startCourse: maindata });
+                            navigation.navigate("StartTest", getMergedParams({ startCourse: maindata }));
                         }}
                         style={styles.singlebutton}
                     >
@@ -106,7 +131,7 @@ const onPress = async () => {
                      <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate(name);
+                                navigation?.navigate(name, getMergedParams());
                                 setPaymentcardfree(false);
                             }}
                             style={dataPayemnt?.invoice ? styles.button:styles.singlebutton}
@@ -139,7 +164,7 @@ const onPress = async () => {
                     <TouchableOpacity
                         onPress={() => {
                             setPaymentcardfree(false);
-                            navigation?.navigate(name);
+                            navigation?.navigate(name, getMergedParams());
                         }}
                         style={styles.button}
                     >
@@ -162,7 +187,7 @@ const onPress = async () => {
                 </View>
                 <TouchableOpacity onPress={() => {
                     setPaymentcardfree(false);
-                    navigation?.navigate(name);
+                    navigation?.navigate(name, getMergedParams());
                     if (gocertificate) {
                         setGocertificate(!gocertificate);
                     }

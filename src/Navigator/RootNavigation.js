@@ -63,3 +63,17 @@ export function getCurrentRoute() {
   }
   return null;
 }
+
+/**
+ * Gets the params of the current active route.
+ * 
+ * @function getCurrentRouteParams
+ * @returns {Object|null} The params of the current route, or null.
+ */
+export function getCurrentRouteParams() {
+  if (navigationRef.isReady() && navigationRef.current) {
+    const currentRoute = navigationRef.current.getCurrentRoute();
+    return currentRoute ? currentRoute.params : null;
+  }
+  return null;
+}

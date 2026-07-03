@@ -5,6 +5,8 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState } from 'react-native';
 import Modal from 'react-native-modal';
+import { useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
@@ -40,6 +42,29 @@ let subscription = null;
  * @returns {JSX.Element}
  */
 const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name, setGocertificate, gocertificate }) => {
+    const route = useRoute();
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+
+    const getMergedParams = (extraParams = {}) => {
+        return {
+            ...(route?.params || {}),
+            ...extraParams,
+            maindata: {
+                checkoutSpan: route?.params?.checkoutSpan?.checkoutSpan,
+                inpersonSpanrole: route?.params?.inPersonTicket?.inpersonSpanrole,
+                invoiceWebcast: route?.params?.invoiceTxt?.webcastTake,
+                cartInvoiceWebcast: route?.params?.cartInvoice?.webcastTake,
+                addToCartWebcast: route?.params?.addtocart?.webcast,
+                webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+                paymentCheck: WebcastReducer?.PaymentCheckResponse,
+                statusPayment: WebcastReducer?.StatusPaymentResponse,
+                freeCart: WebcastReducer?.FreeCartResponse,
+            },
+            webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+            paymentResponse: WebcastReducer?.PaymentCheckResponse || WebcastReducer?.StatusPaymentResponse || WebcastReducer?.FreeCartResponse,
+        };
+    };
+
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
     const {
         fulldashbaord,
@@ -86,7 +111,7 @@ const handleAppStateChange = (nextAppState) => {
                     ) {
                         if (subscription?.remove) {
                             subscription.remove();
-                            navigation.navigate('TabNav');
+                            navigation.navigate('TabNav', getMergedParams());
                         }
                     }
                     appState.current = nextAppState;
@@ -126,7 +151,7 @@ const handleAppStateChange = (nextAppState) => {
         <View style={styles.containercart}>
             <TouchableOpacity onPress={() => {
                 setPaymentcard(false);
-                navigation?.navigate(name);
+                navigation?.navigate(name, getMergedParams());
                 const fullDta = fulldashbaord?.[0];
                 setAddit(fullDta);
             }} style={styles.closeIcon}>
@@ -140,7 +165,7 @@ const handleAppStateChange = (nextAppState) => {
                 <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                     <TouchableOpacity
                         onPress={() => {
-                            navigation?.navigate(name);
+                            navigation?.navigate(name, getMergedParams());
                             setPaymentcard(false);
                             const fullDta = fulldashbaord?.[0];
                             setAddit(fullDta);
@@ -178,7 +203,7 @@ const handleAppStateChange = (nextAppState) => {
             {dataPayemnt?.ButtonArr ? (<View style={styles.container}>
                 <TouchableOpacity onPress={() => {
                     setPaymentcard(false);
-                    navigation?.navigate(name);
+                    navigation?.navigate(name, getMergedParams());
                     const fullDta = fulldashbaord?.[0];
                     setAddit(fullDta);
                 }} style={styles.closeIcon}>
@@ -193,9 +218,8 @@ const handleAppStateChange = (nextAppState) => {
                     {/* Single Button */}
                     <TouchableOpacity
                         onPress={() => {
-                            console.log("fdjlsjf")
                             setPaymentcard(false);
-                            navigation.navigate("StartTest", { startCourse: maindata });
+                            navigation.navigate("StartTest", getMergedParams({ startCourse: maindata }));
                             const fullDta = fulldashbaord?.[0];
                             setAddit(fullDta);
                         }}
@@ -213,7 +237,7 @@ const handleAppStateChange = (nextAppState) => {
                     <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate(name);
+                                navigation?.navigate(name, getMergedParams());
                                 setPaymentcard(false);
                                 const fullDta = fulldashbaord?.[0];
                                 setAddit(fullDta);
@@ -251,7 +275,7 @@ const handleAppStateChange = (nextAppState) => {
                 <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                     <TouchableOpacity
                         onPress={() => {
-                            navigation?.navigate(name);
+                            navigation?.navigate(name, getMergedParams());
                             setPaymentcard(false);
                             const fullDta = fulldashbaord?.[0];
                             setAddit(fullDta);
@@ -280,7 +304,7 @@ const handleAppStateChange = (nextAppState) => {
                 </View>
                 <TouchableOpacity onPress={() => {
                     setPaymentcard(false);
-                    navigation?.navigate(name);
+                    navigation?.navigate(name, getMergedParams());
                     const fullDta = fulldashbaord?.[0];
                     setAddit(fullDta);
                     if (gocertificate) {

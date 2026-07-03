@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
+import { useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
@@ -18,6 +20,29 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
  * @returns {JSX.Element}
  */
 const PayModalFd = ({ dataPayemnt, maindata, isVisible, setPaymentfd, content, navigation, name, setGocertificate, gocertificate }) => {
+    const route = useRoute();
+    const WebcastReducer = useSelector(state => state.WebcastReducer);
+
+    const getMergedParams = (extraParams = {}) => {
+        return {
+            ...(route?.params || {}),
+            ...extraParams,
+            maindata: {
+                checkoutSpan: route?.params?.checkoutSpan?.checkoutSpan,
+                inpersonSpanrole: route?.params?.inPersonTicket?.inpersonSpanrole,
+                invoiceWebcast: route?.params?.invoiceTxt?.webcastTake,
+                cartInvoiceWebcast: route?.params?.cartInvoice?.webcastTake,
+                addToCartWebcast: route?.params?.addtocart?.webcast,
+                webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+                paymentCheck: WebcastReducer?.PaymentCheckResponse,
+                statusPayment: WebcastReducer?.StatusPaymentResponse,
+                freeCart: WebcastReducer?.FreeCartResponse,
+            },
+            webcastDetails: WebcastReducer?.webcastDeatilsResponse,
+            paymentResponse: WebcastReducer?.PaymentCheckResponse || WebcastReducer?.StatusPaymentResponse || WebcastReducer?.FreeCartResponse,
+        };
+    };
+
     return (
         <Modal
             isVisible={isVisible}
@@ -34,7 +59,7 @@ const PayModalFd = ({ dataPayemnt, maindata, isVisible, setPaymentfd, content, n
                     <Text style={styles.content}>{content}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
-                    navigation?.navigate(name);
+                    navigation?.navigate(name, getMergedParams());
                     if (gocertificate) {
                         setGocertificate(!gocertificate);
                     }

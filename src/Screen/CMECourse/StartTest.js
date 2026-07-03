@@ -57,11 +57,11 @@ const StartTest = (props) => {
         setFulldashbaord,
         addit
     } = useContext(AppContext);
-        /**
- * Start press utility.
- * @returns {void}
- */
-const startPress = () => {
+    /**
+* Start press utility.
+* @returns {void}
+*/
+    const startPress = () => {
         // const fullDta = fulldashbaord?.[0];
         setAddit(statepush);
         // setFulldashbaord(addit)
@@ -90,12 +90,12 @@ const startPress = () => {
     const isFocus = useIsFocused();
     const [loadingdownst, setLoadingdownst] = useState(false);
     const [pdfUrist, setPdfUrist] = useState("");
-        /**
- * Returns first incomplete module.
- * @param {*} modules - Input value.
- * @returns {*}
- */
-const getFirstIncompleteModule = (modules) => {
+    /**
+* Returns first incomplete module.
+* @param {*} modules - Input value.
+* @returns {*}
+*/
+    const getFirstIncompleteModule = (modules) => {
         if (!Array.isArray(modules)) return null;
         return modules.find((item) => Number(item?.completedSection) === 0) || null;
     };
@@ -109,11 +109,11 @@ const getFirstIncompleteModule = (modules) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }, [statepush])
-        /**
- * Take course utility.
- * @returns {void}
- */
-const takeCourse = () => {
+    /**
+* Take course utility.
+* @returns {void}
+*/
+    const takeCourse = () => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
             connectionrequest()
@@ -257,20 +257,20 @@ const takeCourse = () => {
                 break;
         }
     }
-        /**
- * Handles linkst.
- * @param {*} link - Input value.
- * @returns {void}
- */
-const handleLinkst = (link) => {
+    /**
+* Handles linkst.
+* @param {*} link - Input value.
+* @returns {void}
+*/
+    const handleLinkst = (link) => {
         if (link) {
-                        /**
- * Show pdf utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const showPDF = async () => {
+            /**
+* Show pdf utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+            const showPDF = async () => {
                 setLoadingdownst(true);
                 try {
                     const url = `${link}`;
@@ -299,13 +299,13 @@ const showPDF = async () => {
 
     useEffect(() => {
         if (pdfUrist) {
-                        /**
- * Open file viewerst utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const openFileViewerst = async () => {
+            /**
+* Open file viewerst utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+            const openFileViewerst = async () => {
                 try {
                     console.log('Opening file viewer for:', pdfUrist);
                     await FileViewer.open(pdfUrist);
@@ -318,11 +318,11 @@ const openFileViewerst = async () => {
         }
     }, [pdfUrist]);
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             takeCourse();
             startPress();
             return true;
@@ -347,7 +347,7 @@ const onBackPress = () => {
 
         return () => clearTimeout(timeout);
     }, []);
-    console.log(mainData, "maindata--------", actvityData, actvityDatas);
+    console.log(mainData, "maindata--------", actvityData, actvityDatas, props?.route?.params);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
@@ -473,18 +473,42 @@ const onBackPress = () => {
                                         if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession" || nextModuleName?.toLowerCase()?.includes("section") || nextModuleName?.toLowerCase()?.includes("course")) {
                                             takeCourse();
                                             props.navigation.navigate("VideoComponent", {
+                                                ...(props?.route?.params || {}),
+                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
                                                 activityID: {
                                                     ...CMEReducer?.cmenextactionResponse,
                                                     current_activity_id: nextModuleId,
                                                     next_activity_id: nextModuleId,
                                                     next_activity_text: nextModuleName,
                                                     courseModule: courseModuleList,
+                                                    webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+                                                    webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
                                                 },
                                                 preserveVideoContent: false,
                                             })
-                                        } else if (CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest") {
+                                        } else if (
+                                            CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest" ||
+                                            CMEReducer?.cmenextactionResponse?.next_activity_api == "introduction" ||
+                                            CMEReducer?.actvityBreakupResponse?.current_activity_api == "introduction" ||
+                                            (typeof CMEReducer?.actvityBreakupResponse?.button_text === "string" &&
+                                                (CMEReducer?.actvityBreakupResponse?.button_text.toLowerCase().includes("start test") ||
+                                                    CMEReducer?.actvityBreakupResponse?.button_text.toLowerCase().includes("start course")))
+                                        ) {
                                             takeCourse();
-                                            props.navigation.navigate("PreTest", { testFlowType: "pre", FullID: { FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, startTest: "startTest", wholedata: CMEReducer?.cmenextactionResponse, Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text } });
+                                            props.navigation.navigate("PreTest", { 
+                                                ...(props?.route?.params || {}),
+                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+                                                testFlowType: "pre", 
+                                                videoContentData: CMEReducer?.cmenextactionResponse, 
+                                                FullID: { 
+                                                    FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, 
+                                                    startTest: "startTest", 
+                                                    wholedata: CMEReducer?.cmenextactionResponse, 
+                                                    Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text,
+                                                    webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+                                                    webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+                                                } 
+                                            });
                                         }
                                     }}
                                     height={normalize(45)}

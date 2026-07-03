@@ -537,6 +537,7 @@ const handleAppStateChange = (nextAppState) => {
       slug,
       refID,
       isInternalLink,
+      pathname,
     };
   }, [cleanTrackingParams, extractNestedTargetUrl]);
 
@@ -645,6 +646,7 @@ const handleAppStateChange = (nextAppState) => {
       slug,
       refID,
       isInternalLink,
+      pathname,
     } = parseDeepLinkDetails(trimmedUrl);
 
     console.log('🔥 FINAL CLEAN URL:', resolvedUrl);
@@ -822,6 +824,25 @@ const handleUrl = (event) => {
       checkAndProcessPendingDeepLinkAfterLogin();
     }
   }, [AuthReducer?.status, isAuthReady, isNavigationReady, checkAndProcessPendingDeepLinkAfterLogin]);
+
+  useEffect(() => {
+    const checkPendingNotification = async () => {
+      try {
+        const pendingNotificationUrl = await AsyncStorage.getItem('PENDING_NOTIFICATION_URL');
+        if (pendingNotificationUrl) {
+          console.log('[DeepLink] Found pending notification URL from closed state:', pendingNotificationUrl);
+          await AsyncStorage.removeItem('PENDING_NOTIFICATION_URL');
+          handleDeepLink(pendingNotificationUrl);
+        }
+      } catch (e) {
+        console.log('[DeepLink] Error checking pending notification URL:', e);
+      }
+    };
+    
+    if (isNavigationReady && isAuthReady) {
+      checkPendingNotification();
+    }
+  }, [isNavigationReady, isAuthReady, handleDeepLink]);
 
   const linking = {
     prefixes: [

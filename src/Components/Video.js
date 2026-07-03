@@ -1033,11 +1033,19 @@ const VideoComponent = (props) => {
     }, []);
 
     useEffect(() => {
-        const activeDic = (videoDic && ((videoDic.activityData && videoDic.activityData.length > 0) || (videoDic.video_audio_details && videoDic.video_audio_details.length > 0)))
+        const hasData = (data) => data && ((data.activityData && data.activityData.length > 0) || (data.video_audio_details && data.video_audio_details.length > 0));
+
+        const activeDic = hasData(videoDic)
             ? videoDic
-            : (props?.route?.params?.RoleData && ((props?.route?.params?.RoleData.activityData && props?.route?.params?.RoleData.activityData.length > 0) || (props?.route?.params?.RoleData.video_audio_details && props?.route?.params?.RoleData.video_audio_details.length > 0)))
+            : hasData(props?.route?.params?.RoleData)
                 ? props.route.params.RoleData
-                : null;
+                : hasData(props?.route?.params?.webcastDetails)
+                    ? props.route.params.webcastDetails
+                    : hasData(props?.route?.params?.maindata?.webcastDetails)
+                        ? props.route.params.maindata.webcastDetails
+                        : hasData(props?.route?.params?.startCourse)
+                            ? props.route.params.startCourse
+                            : null;
 
         if (!activeDic) {
             setVideoUrl(null);
@@ -1056,6 +1064,12 @@ const VideoComponent = (props) => {
             || activeDic?.video_audio_details?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.activityData?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.video_audio_details?.[0]?.youtube_video_id
+            || props?.route?.params?.webcastDetails?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.webcastDetails?.video_audio_details?.[0]?.youtube_video_id
+            || props?.route?.params?.maindata?.webcastDetails?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.maindata?.webcastDetails?.video_audio_details?.[0]?.youtube_video_id
+            || props?.route?.params?.startCourse?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.startCourse?.video_audio_details?.[0]?.youtube_video_id
             || '';
         const candidateSource = descriptionUrl || rawVideoId;
 

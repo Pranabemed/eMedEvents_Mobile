@@ -920,7 +920,7 @@ const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) =
     setShowGuestPrimePrompt(false);
     setTimeout(() => {
       setGuestVerifyModalVisible(true);
-    }, 180);
+    }, 500);
   };
     /**
  * Request guest verification check utility.
@@ -1201,6 +1201,14 @@ const loadGuestVerifyModal = async () => {
           return;
         }
 
+        const isNonUsaGuest = isNonUsaUser;
+        const shouldShowPrimeFirst = Boolean(
+          isNonSubscribedNoSubscription &&
+          physicianHandles &&
+          !isSkippedFlowVal &&
+          !isSessionSkippedVal
+        );
+
         const shouldCheckVerificationNow =
           !shouldShowPrimeFirst &&
           !isVerificationPending &&
@@ -1233,7 +1241,9 @@ const loadGuestVerifyModal = async () => {
 
         if (hasFreshVerifyResponse && user && requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
           setGuestVerifyData(user);
-          setGuestVerifyModalVisible(true);
+          setTimeout(() => {
+            setGuestVerifyModalVisible(true);
+          }, 500);
         } else {
           if (hasFreshVerifyResponse) {
             await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
@@ -1737,8 +1747,8 @@ const handleGuestVerifyAccount = async () => {
             animationOut="slideOutDown"
             backdropTransitionInTiming={300}
             backdropTransitionOutTiming={0}
-            useNativeDriver={true}
-            useNativeDriverForBackdrop={true}
+            useNativeDriver={Platform.OS === 'android'}
+            useNativeDriverForBackdrop={Platform.OS === 'android'}
             hideModalContentWhileAnimating={true}
             style={{ justifyContent: 'flex-end', margin: 0 }}
             coverScreen={true}

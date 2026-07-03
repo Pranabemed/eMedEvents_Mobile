@@ -53,11 +53,11 @@ const PreTest = (props) => {
   const CMEReducer = useSelector(state => state.CMEReducer);
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const dispatch = useDispatch();
-    /**
- * Pre press component.
- * @returns {void}
- */
-const PrePress = () => {
+  /**
+* Pre press component.
+* @returns {void}
+*/
+  const PrePress = () => {
     setAddit(statepush);
     takeCoursepre();
     props.navigation.goBack();
@@ -104,10 +104,11 @@ const PrePress = () => {
     redirectedToVideoRef.current = true;
     props.navigation.replace("VideoComponent", {
       ...props?.route?.params,
+      webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       activityID: props?.route?.params?.activityID,
       FullID: props?.route?.params?.FullID,
       postdata: props?.route?.params?.nodata || props?.route?.params?.postdata,
-      RoleData: props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
+      RoleData: props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils || props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
     });
   }, [isFocus, shouldOpenVideoFirst, props.navigation, props?.route?.params]);
 
@@ -121,11 +122,11 @@ const PrePress = () => {
         .catch((err) => { showErrorAlert("Please connect to internet", err) })
     }
   }, [statepush])
-    /**
- * Take coursepre utility.
- * @returns {void}
- */
-const takeCoursepre = () => {
+  /**
+* Take coursepre utility.
+* @returns {void}
+*/
+  const takeCoursepre = () => {
     if (statepush) {
       const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
       connectionrequest()
@@ -135,25 +136,25 @@ const takeCoursepre = () => {
         .catch((err) => { showErrorAlert("Please connect to internet", err) })
     }
   }
-    /**
- * Handles option select.
- * @param {*} questionId - Input value.
- * @param {*} optionId - Input value.
- * @returns {void}
- */
-const handleOptionSelect = (questionId, optionId) => {
+  /**
+* Handles option select.
+* @param {*} questionId - Input value.
+* @param {*} optionId - Input value.
+* @returns {void}
+*/
+  const handleOptionSelect = (questionId, optionId) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: optionId };
       return updatedOptions;
     });
   };
-    /**
- * Handles multiple option select.
- * @param {*} questionId - Input value.
- * @param {*} optionId - Input value.
- * @returns {void}
- */
-const handleMultipleOptionSelect = (questionId, optionId) => {
+  /**
+* Handles multiple option select.
+* @param {*} questionId - Input value.
+* @param {*} optionId - Input value.
+* @returns {void}
+*/
+  const handleMultipleOptionSelect = (questionId, optionId) => {
     setSelectedOptions((prev) => {
       const currentSelections = prev[questionId] || [];
       const updatedSelections = currentSelections.includes(optionId)
@@ -169,11 +170,11 @@ const handleMultipleOptionSelect = (questionId, optionId) => {
     // Scroll to the top when the page is loaded or when coming back to this page
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   }, [isFocus]);
-    /**
- * Allquestion handle utility.
- * @returns {void}
- */
-const allquestionHandle = () => {
+  /**
+* Allquestion handle utility.
+* @returns {void}
+*/
+  const allquestionHandle = () => {
     const normalizedExamAnswers = Object.fromEntries(
       Object.entries(selectedOptions || {}).map(([key, value]) => {
         // If the value is an array → keep it as is
@@ -204,11 +205,11 @@ const allquestionHandle = () => {
   const awaitingNextAfterTestRef = useRef(false);
   const handledNextAfterTestRef = useRef(false);
 
-    /**
- * Go back to video with next activity utility.
- * @returns {void}
- */
-const goBackToVideoWithNextActivity = () => {
+  /**
+* Go back to video with next activity utility.
+* @returns {void}
+*/
+  const goBackToVideoWithNextActivity = () => {
     const nextActivityText = String(
       CMEReducer?.cmedulicateResponse?.next_activity_text ||
       props?.route?.params?.FullID?.wholedata?.next_activity_text ||
@@ -259,7 +260,9 @@ const goBackToVideoWithNextActivity = () => {
     }
 
     props.navigation.replace("VideoComponent", {
-      RoleData: props?.route?.params?.videoContentData || props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
+      ...(props?.route?.params || {}),
+      webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+      RoleData: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.videoContentData || props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
     });
   };
 
@@ -272,7 +275,7 @@ const goBackToVideoWithNextActivity = () => {
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err); });
   }, [isFocus]);
-   console.log("props?.route?.params?.nodata", props?.route?.params)
+  console.log("props?.route?.params?.nodata", props?.route?.params)
   useEffect(() => {
     if (props?.route?.params?.nodata) {
       setSelectedOptions({});
@@ -335,13 +338,18 @@ const goBackToVideoWithNextActivity = () => {
     }
 
     props.navigation.replace("VideoComponent", {
+      ...(props?.route?.params || {}),
+      webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       activityID: {
+        ...(props?.route?.params?.activityID || {}),
         activityID: nextModuleActivityId,
         conference_id: nextModuleConferenceId,
         text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
         courseModule: courseModules,
       },
       RoleData: {
+        ...props?.route?.params?.webcastDetails,
+        ...props?.route?.params?.maindata?.webcastDetails,
         ...props?.route?.params?.videoContentData,
         ...props?.route?.params?.RoleData,
         ...props?.route?.params?.activityID?.webcastdeatils,
@@ -364,7 +372,7 @@ const goBackToVideoWithNextActivity = () => {
         next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text,
         courseModule: courseModules,
       },
-      preserveVideoContent: true,
+      preserveVideoContent: false,
     });
   }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params]);
   if (status === '' || CMEReducer.status !== status) {
@@ -456,13 +464,13 @@ const goBackToVideoWithNextActivity = () => {
         break;
     }
   }
-    /**
- * Handles text change.
- * @param {*} questionId - Input value.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleTextChange = (questionId, text) => {
+  /**
+* Handles text change.
+* @param {*} questionId - Input value.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+  const handleTextChange = (questionId, text) => {
     setSelectedOptions(prev => {
       const updatedOptions = { ...prev, [questionId]: text };
       // checkIfAllAnswered(updatedOptions);
@@ -513,23 +521,23 @@ const handleTextChange = (questionId, text) => {
     });
     return unsubscribe;
   }, [props?.navigation]);
-    /**
- * Estimated time utility.
- * @param {*} val - Input value.
- * @returns {void}
- */
-const estimatedTime = (val) => {
+  /**
+* Estimated time utility.
+* @param {*} val - Input value.
+* @returns {void}
+*/
+  const estimatedTime = (val) => {
     if (val) {
       const convertedVal = val * 1000;
       setTimeflex(convertedVal);
     }
   }
-    /**
- * Clean html utility.
- * @param {*} htmlString - Input value.
- * @returns {*}
- */
-const cleanHTML = (htmlString) => {
+  /**
+* Clean html utility.
+* @param {*} htmlString - Input value.
+* @returns {*}
+*/
+  const cleanHTML = (htmlString) => {
     if (!htmlString) return "";
     htmlString = htmlString.replace(/<p[^>]*style="[^"]*margin-left:0px;"[^>]*>(.*?)<\/p>/g, "$1");
     htmlString = htmlString.replace(/<\/?[^>]+(>|$)/g, "");
@@ -538,14 +546,14 @@ const cleanHTML = (htmlString) => {
   };
   let questionCounter = 0;
   const totalQuestionsCount = testData && testData?.testData?.[0]?.total_questions || "";
-    /**
- * Render group utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderGroup = ({ item, index: groupIndex }) => {
+  /**
+* Render group utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @param {*} props.index - Nested property value.
+* @returns {JSX.Element}
+*/
+  const renderGroup = ({ item, index: groupIndex }) => {
     return (
       <View>
         {item.heading && (
@@ -608,14 +616,14 @@ const renderGroup = ({ item, index: groupIndex }) => {
     );
   };
 
-    /**
- * Render item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderItem = ({ item, index }) => {
+  /**
+* Render item utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @param {*} props.index - Nested property value.
+* @returns {JSX.Element}
+*/
+  const renderItem = ({ item, index }) => {
     estimatedTime((item?.estimated_time || 0) * (item?.question_options?.length + 1 || 0));
     const cleanStatement = cleanHTML(item?.statement);
     return (
@@ -680,11 +688,11 @@ const renderItem = ({ item, index }) => {
     );
   };
   useEffect(() => {
-        /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+    /**
+* On back press utility.
+* @returns {boolean}
+*/
+    const onBackPress = () => {
       PrePress();
       return true;
     };
@@ -719,7 +727,7 @@ const onBackPress = () => {
     const title = CMEReducer?.startTestResponse?.testData?.[0]?.title;
     const duplicateName = CMEReducer?.cmedulicateResponse?.conferenceName;
     const nextName = CMEReducer?.nextactionagainResponse?.conferenceName;
-    
+
     return title || duplicateName || nextName;
   }, [
     CMEReducer?.startTestResponse?.testData?.[0]?.title,
@@ -732,45 +740,45 @@ const onBackPress = () => {
 
   return (
     shouldHidePreTestView ? null : (
-    <>
-      <MyStatusBar
-        barStyle={'light-content'}
-        backgroundColor={Colorpath.Pagebg}
-      />
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
-        <Loader
-          visible={CMEReducer?.status == 'CME/startTestRequest' || CMEReducer?.status == 'CME/evaulateexamRequest'} />
-        {Platform.OS === 'ios' ? (
-          <PageHeader
-            title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
-            onBackPress={PrePress}
-            nol={"yes"}
-          />
-        ) : (
-          <View>
+      <>
+        <MyStatusBar
+          barStyle={'light-content'}
+          backgroundColor={Colorpath.Pagebg}
+        />
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
+          <Loader
+            visible={CMEReducer?.status == 'CME/startTestRequest' || CMEReducer?.status == 'CME/evaulateexamRequest'} />
+          {Platform.OS === 'ios' ? (
             <PageHeader
               title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
               onBackPress={PrePress}
               nol={"yes"}
             />
-          </View>
-        )}
-        {conn == false ? <IntOff /> : <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
-          <View>
-            <View style={styles.container}>
-              {showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
-                <View>
-                  <View style={styles.headerRow}>
-                    <View style={styles.headerContent}>
-                      <Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text || CMEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
-                      <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999" }}>{"Question"}</Text>
-                      <View style={styles.scoreContainer}>
-                        <Text style={styles.scoreText}>{lengthCheck}</Text>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 24, color: "#999" }}>{"/"}</Text>
-                        <Text style={styles.scoreText}>{`${""}${testData?.testData && testData?.testData?.[0]?.total_questions || 0}`}</Text>
+          ) : (
+            <View>
+              <PageHeader
+                title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
+                onBackPress={PrePress}
+                nol={"yes"}
+              />
+            </View>
+          )}
+          {conn == false ? <IntOff /> : <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
+            <View>
+              <View style={styles.container}>
+                {showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
+                  <View>
+                    <View style={styles.headerRow}>
+                      <View style={styles.headerContent}>
+                        <Text style={styles.subText}>{headerText || CMEReducer?.cmedulicateResponse?.current_activity_text || CMEReducer?.nextactionagainResponse?.current_activity_text || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text}</Text>
+                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#999" }}>{"Question"}</Text>
+                        <View style={styles.scoreContainer}>
+                          <Text style={styles.scoreText}>{lengthCheck}</Text>
+                          <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 24, color: "#999" }}>{"/"}</Text>
+                          <Text style={styles.scoreText}>{`${""}${testData?.testData && testData?.testData?.[0]?.total_questions || 0}`}</Text>
+                        </View>
                       </View>
-                    </View>
-                    {/* <View style={styles.progressContainer}>
+                      {/* <View style={styles.progressContainer}>
                       <ProgressBarCircle
                         key={timeflex}
                         duration={timeflex}
@@ -780,57 +788,57 @@ const onBackPress = () => {
                         fillColor={Colorpath.green}
                       />
                     </View> */}
+                    </View>
                   </View>
-                </View>
-              </ImageBackground>}
+                </ImageBackground>}
 
+              </View>
             </View>
-          </View>
-          {allQuestions && allQuestions?.length > 0 ? (
-            <FlatList
-              data={allQuestions}
-              renderItem={renderGroup}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={showLoader ? <ActivityIndicator size={"small"} color={Colorpath.green} /> :
-                <Text
-                  style={{
-                    alignContent: 'center',
-                    alignItems: 'center',
-                    alignSelf: 'center',
-                    color: Colorpath.grey,
-                    fontWeight: 'bold',
-                    fontFamily: Fonts.InterMedium,
-                    fontSize: normalize(20),
-                    paddingTop: normalize(30),
-                  }}>
-                  No data found
-                </Text>
-              }
-            />
-          ) : showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : (
-            <Text style={{ padding: 20, textAlign: 'center' }}>Loading questions...</Text>
-          )}
-          <View style={styles.buttonContainer}>
-            <Buttons
-              onPress={() => {
-                allquestionHandle();
-                takeCoursepre();
-              }}
-              height={normalize(45)}
-              width={normalize(288)}
-              backgroundColor={isSubmitEnabled ? Colorpath.ButtonColr : Colorpath.grey}
-              borderRadius={normalize(5)}
-              text="Submit"
-              color={Colorpath.white}
-              fontSize={16}
-              fontFamily={Fonts.InterSemiBold}
-              marginTop={normalize(-15)}
-              disabled={!isSubmitEnabled}
-            />
-          </View>
-        </ScrollView>}
-      </SafeAreaView>
-    </>
+            {allQuestions && allQuestions?.length > 0 ? (
+              <FlatList
+                data={allQuestions}
+                renderItem={renderGroup}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={showLoader ? <ActivityIndicator size={"small"} color={Colorpath.green} /> :
+                  <Text
+                    style={{
+                      alignContent: 'center',
+                      alignItems: 'center',
+                      alignSelf: 'center',
+                      color: Colorpath.grey,
+                      fontWeight: 'bold',
+                      fontFamily: Fonts.InterMedium,
+                      fontSize: normalize(20),
+                      paddingTop: normalize(30),
+                    }}>
+                    No data found
+                  </Text>
+                }
+              />
+            ) : showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : (
+              <Text style={{ padding: 20, textAlign: 'center' }}>Loading questions...</Text>
+            )}
+            <View style={styles.buttonContainer}>
+              <Buttons
+                onPress={() => {
+                  allquestionHandle();
+                  takeCoursepre();
+                }}
+                height={normalize(45)}
+                width={normalize(288)}
+                backgroundColor={isSubmitEnabled ? Colorpath.ButtonColr : Colorpath.grey}
+                borderRadius={normalize(5)}
+                text="Submit"
+                color={Colorpath.white}
+                fontSize={16}
+                fontFamily={Fonts.InterSemiBold}
+                marginTop={normalize(-15)}
+                disabled={!isSubmitEnabled}
+              />
+            </View>
+          </ScrollView>}
+        </SafeAreaView>
+      </>
     )
   );
 };
