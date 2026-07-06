@@ -242,12 +242,14 @@ const navigateSmooth = (name, params) => {
       setLogoutPending(false);
       setSubit(false);
       props.onBackdropPress?.();
-      navigationRef.current?.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'GuestUser' }],
-        })
-      );
+      setTimeout(() => {
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'GuestUser' }],
+          })
+        );
+      }, Platform.OS === 'ios' ? 300 : 0);
       return;
     }
 
