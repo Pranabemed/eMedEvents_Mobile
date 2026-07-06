@@ -85,8 +85,8 @@ android {
         applicationId "com.emedevents.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 40
-        versionName "1.2.4"
+        versionCode 41
+        versionName "1.2.5"
     }
     packagingOptions {
        pickFirst 'lib/x86/libc++_shared.so'
