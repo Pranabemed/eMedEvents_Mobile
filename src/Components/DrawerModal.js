@@ -83,6 +83,38 @@ export default function DrawerModal(props) {
   const [currentProfile, setCurrentProfile] = useState(null);
   const [isProfileReady, setIsProfileReady] = useState(false);
   const [storedAuthUser, setStoredAuthUser] = useState(null);
+  const syncDrawerProfileState = useCallback(() => {
+    let mounted = true;
+
+    setIsProfileReady(false);
+    Promise.all([
+      readNonUsaFlowState(),
+      readNonUsaPermanentFlags(),
+      AsyncStorage.getItem(constants.AUTH_USER_DATA),
+      AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+      AsyncStorage.getItem(constants.PROFESSION),
+      AsyncStorage.getItem('activeProfile')
+    ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
+      if (!mounted) return;
+
+      const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
+
+      setNonUsaFlowState(state);
+      setNonUsaPermanentFlags(flags);
+      setStoredAuthUser(auth_user_json);
+      setCurrentProfile(activeProfile);
+      setIsProfileReady(true);
+    }).catch(err => {
+      console.log('Error loading AsyncStorage drawer data', err);
+      if (mounted) {
+        setIsProfileReady(true);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const hasActiveSession =
     AuthReducer?.signupResponse?.user ||
     AuthReducer?.loginResponse?.user ||
@@ -135,37 +167,42 @@ const checkPrimeSkipped = async () => {
     }
   }, [isFocus, props.isVisible]);
   useEffect(() => {
-    let mounted = true;
     if (isFocus) {
-      setIsProfileReady(false);
-      Promise.all([
-        readNonUsaFlowState(),
-        readNonUsaPermanentFlags(),
-        AsyncStorage.getItem(constants.AUTH_USER_DATA),
-        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-        AsyncStorage.getItem(constants.PROFESSION),
-        AsyncStorage.getItem('activeProfile')
-      ]).then(([state, flags, auth_user, board_special, profession_data, activeProfile]) => {
-        if (!mounted) return;
-
-        const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
-
-        setNonUsaFlowState(state);
-        setNonUsaPermanentFlags(flags);
-        setStoredAuthUser(auth_user_json);
-        setCurrentProfile(activeProfile);
-        setIsProfileReady(true);
-      }).catch(err => {
-        console.log('Error loading AsyncStorage drawer data', err);
-        if (mounted) {
-          setIsProfileReady(true);
-        }
-      });
+      const cleanup = syncDrawerProfileState();
+      return () => cleanup?.();
     }
-    return () => {
-      mounted = false;
-    };
-  }, [isFocus]);
+  }, [isFocus, syncDrawerProfileState]);
+  useEffect(() => {
+    if (props.isVisible) {
+      const cleanup = syncDrawerProfileState();
+      return () => cleanup?.();
+    }
+  }, [props.isVisible, syncDrawerProfileState]);
+  useEffect(() => {
+    const authChanged =
+      AuthReducer?.status === 'Auth/logoutSuccess' ||
+      AuthReducer?.status === 'Auth/loginSuccess' ||
+      AuthReducer?.status === 'Auth/signupSuccess' ||
+      AuthReducer?.status === 'Auth/verifymobileSuccess' ||
+      AuthReducer?.status === 'Auth/againloginsiginSuccess';
+
+    if (authChanged) {
+      const cleanup = syncDrawerProfileState();
+      return () => cleanup?.();
+    }
+  }, [
+    AuthReducer?.status,
+    AuthReducer?.loginResponse?.user,
+    AuthReducer?.againloginsiginResponse?.user,
+    AuthReducer?.signupResponse?.user,
+    AuthReducer?.verifymobileResponse?.user,
+    syncDrawerProfileState,
+  ]);
+  useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    const subscription = emitter.addListener('ACTIVE_PROFILE_CHANGED', syncDrawerProfileState);
+    return () => subscription.remove();
+  }, [syncDrawerProfileState]);
     /**
  * Navigate smooth utility.
  * @param {*} name - Input value.

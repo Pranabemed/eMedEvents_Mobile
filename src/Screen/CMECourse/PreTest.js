@@ -65,7 +65,7 @@ const PreTest = (props) => {
     } else {
       props.navigation.reset({
         index: 0,
-        routes: [{ name: 'Main' }],
+        routes: [{ name: 'TabNav', params: { screen: 'Home' } }],
       });
     }
   };

@@ -63,7 +63,14 @@ const PostTestFail = (props) => {
  */
 const PrePress = () => {
         takeCoursepost();
-        props.navigation.goBack();
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+        } else {
+            props.navigation.reset({
+                index: 0,
+                routes: [{ name: 'TabNav', params: { screen: 'Home' } }],
+            });
+        }
     };
     const [testData, setTestData] = useState([]);
     useEffect(() => {
