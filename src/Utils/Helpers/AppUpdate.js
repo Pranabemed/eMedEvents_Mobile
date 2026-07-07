@@ -126,9 +126,11 @@ const isNumericVersionCode = (v) => /^[0-9]+$/.test(String(v ?? ''));
  */
 const fetchLatestIOSVersion = async () => {
   const bundleId = DeviceInfo.getBundleId();
+  const cacheBuster = Date.now();
   try {
     const resById = await fetch(
-      `https://itunes.apple.com/lookup?id=${IOS_APP_STORE_ID}&country=us`,
+      `https://itunes.apple.com/lookup?id=${IOS_APP_STORE_ID}&country=us&_=${cacheBuster}`,
+      { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' } }
     );
     const jsonById = await resById.json();
     const verById = jsonById?.results?.[0]?.version ?? null;
@@ -143,7 +145,8 @@ const fetchLatestIOSVersion = async () => {
   // Fallback: lookup by bundleId (helps when id response is empty/cached unexpectedly)
   try {
     const resByBundle = await fetch(
-      `https://itunes.apple.com/lookup?bundleId=${bundleId}&country=us`,
+      `https://itunes.apple.com/lookup?bundleId=${bundleId}&country=us&_=${cacheBuster}`,
+      { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' } }
     );
     const jsonByBundle = await resByBundle.json();
     const verByBundle = jsonByBundle?.results?.[0]?.version ?? null;
@@ -167,10 +170,11 @@ const fetchLatestIOSVersion = async () => {
  */
 const fetchLatestAndroidVersion = async () => {
   try {
+    const cacheBuster = Date.now();
     const res = await fetch(
       // Use the ?hl=en to force English and avoid locale-specific page differences
-      `${ANDROID_STORE_URL}&hl=en`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } },
+      `${ANDROID_STORE_URL}&hl=en&_=${cacheBuster}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)', 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' } },
     );
     const html = await res.text();
 
