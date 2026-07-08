@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colorpath.ButtonColr,
     fontFamily: Fonts.InterBold,
-    fontSize: 16,
+    fontSize: 18,
     lineHeight: normalize(24),
   },
   closeButton: {

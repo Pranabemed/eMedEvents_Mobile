@@ -185,6 +185,14 @@ const VideoComponent = (props) => {
     const didSetInitialFullscreenRef = useRef(false);
     const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
     const preserveVideoContent = !!props?.route?.params?.preserveVideoContent;
+    const [apiInFlight, setApiInFlight] = useState(!preserveVideoContent);
+
+    useEffect(() => {
+        if (CMEReducer?.status === 'CME/cmeactivitySuccess' || CMEReducer?.status === 'CME/cmeactivityFailure') {
+            setApiInFlight(false);
+        }
+    }, [CMEReducer?.status]);
+
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -1054,7 +1062,9 @@ const VideoComponent = (props) => {
             setThumbnailCues([]);
             setPreviewVideoReady(false);
             setInitialVideoThumbnail(null);
-            setShowLoader(false);
+            if (!apiInFlight) {
+                setShowLoader(false);
+            }
             return;
         }
 
@@ -1074,7 +1084,9 @@ const VideoComponent = (props) => {
         const candidateSource = descriptionUrl || rawVideoId;
 
         if (!candidateSource && !activeDic?.activityData?.[0]?.flipbook) {
-            setShowLoader(false);
+            if (!apiInFlight) {
+                setShowLoader(false);
+            }
         }
 
         // The baseUrl for VTT resolution: prefer a real HTTP URL (from description
@@ -1122,7 +1134,7 @@ const VideoComponent = (props) => {
         });
         setThumbnailVttCandidates(vttCandidates);
         setPreviewVideoReady(false);
-    }, [videoDic, routeVttParam, props?.route?.params?.RoleData]);
+    }, [videoDic, routeVttParam, props?.route?.params?.RoleData, apiInFlight]);
 
     useEffect(() => {
         let isActive = true;

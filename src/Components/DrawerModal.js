@@ -123,7 +123,9 @@ export default function DrawerModal(props) {
     storedAuthUser;
 
   const resolvedUser = hasActiveSession
-    ? DashboardReducer?.mainprofileResponse || hasActiveSession
+    ? (DashboardReducer?.mainprofileResponse && Object.keys(DashboardReducer.mainprofileResponse).length > 0
+        ? DashboardReducer.mainprofileResponse
+        : hasActiveSession)
     : null;
 
   const resolvedDrawerUser = resolvedUser;
@@ -256,7 +258,7 @@ const navigateSmooth = (name, params) => {
     if (AuthReducer.status === 'Auth/logoutFailure') {
       setLogoutPending(false);
     }
-  }, [AuthReducer.status, navigation, props]);
+  }, [AuthReducer.status]);
   useEffect(() => {
     if (props?.handel == "closeit") {
       connectionrequest()
