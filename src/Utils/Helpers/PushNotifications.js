@@ -125,7 +125,10 @@ const forwardNotificationToDeepLink = async remoteMessage => {
     const resolvedUrl = normalizeNotificationUrlForApp(remoteMessage);
     if (resolvedUrl && resolvedUrl !== 'https://emedevents.com') {
       try {
-        await AsyncStorage.setItem('PENDING_NOTIFICATION_URL', resolvedUrl);
+        await Promise.all([
+          AsyncStorage.setItem('PENDING_NOTIFICATION_URL', resolvedUrl),
+          AsyncStorage.setItem('PENDING_DEEP_LINK', resolvedUrl),
+        ]);
         DeviceEventEmitter.emit('DEEP_LINK_URL', { url: resolvedUrl });
       } catch (e) {
         console.log('[PushNotifications] Error saving pending notification url', e);
@@ -359,6 +362,11 @@ const registerBackgroundPushHandler = () => {
   }
 
   messaging().setBackgroundMessageHandler(async remoteMessage => {
+    if (remoteMessage?.notification) {
+      await saveNotification(remoteMessage);
+      return;
+    }
+
     await displayIncomingNotification(remoteMessage, 'Background message');
   });
 };
