@@ -263,12 +263,24 @@ const GuestMarketplaceSectionComponent = ({ width, stats, navigation }) => (
  * Guest requirements panel value.
  * @returns {*}
  */
+/**
+ * Guest requirements panel value.
+ * @returns {*}
+ */
 export const GuestRequirementsPanel = memo(GuestRequirementsPanelComponent);
 /**
  * Guest speciality section value.
  * @returns {*}
  */
+/**
+ * Guest speciality section value.
+ * @returns {*}
+ */
 export const GuestSpecialitySection = memo(GuestSpecialitySectionComponent);
+/**
+ * Guest marketplace section value.
+ * @returns {*}
+ */
 /**
  * Guest marketplace section value.
  * @returns {*}

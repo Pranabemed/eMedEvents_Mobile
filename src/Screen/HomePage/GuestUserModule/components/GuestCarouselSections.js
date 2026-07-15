@@ -128,5 +128,13 @@ const LiveConferenceSectionComponent = ({
   );
 };
 
+/**
+ * Carousel section value.
+ * @returns {*}
+ */
 export const CarouselSection = memo(CarouselSectionComponent);
+/**
+ * Live conference section value.
+ * @returns {*}
+ */
 export const LiveConferenceSection = memo(LiveConferenceSectionComponent);

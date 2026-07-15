@@ -826,7 +826,13 @@ const handleUrl = (event) => {
   }, [AuthReducer?.status, isAuthReady, isNavigationReady, checkAndProcessPendingDeepLinkAfterLogin]);
 
   useEffect(() => {
-    const checkPendingNotification = async () => {
+        /**
+ * Navigation helper that exposes check pending notification behavior.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const checkPendingNotification = async () => {
       try {
         const pendingNotificationUrl = await AsyncStorage.getItem('PENDING_NOTIFICATION_URL');
         if (pendingNotificationUrl) {

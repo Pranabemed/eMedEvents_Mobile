@@ -1,9 +1,18 @@
+/**
+ * Webcast saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for webcast. Exported members: getItem, webcastSearchSaga, webcastDetailsSaga, webcastAllSaga, webcastStateSaga, saveTicketSaga, saveTicketCartSaga, saveTicketAddtoCartSaga, checkoutTicketSaga, saveTicketInpersonSaga, saveRegistSaga, webcastPaymentSaga, StatusPaymentSaga, PaymentCheckSaga, addtoCartWebcastSaga, cartCountWebcastSaga, cartDetailsWebcastSaga, cartdeleteWebcastSaga, couponapplySaga, cancelcouponSaga, cartCheckoutSaga, cartPaymentSaga, TransEmailCheckSaga, walletCheckSaga, FreeCheckSaga, FreeCartSaga, PrimePayemntSaga, PrimeCheckSaga, RegisterIntPrSaga, refIDSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 /**
  * Executes the webcastSearchSaga saga.
@@ -751,6 +760,10 @@ export function* refIDSaga(action) {
     yield put(refIDFailure(error));
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('WebCast/webcastDeatilsRequest', webcastDetailsSaga);
@@ -841,4 +854,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Webcast saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

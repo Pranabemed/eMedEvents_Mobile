@@ -6,6 +6,10 @@
  * Prime no active subscription msg constant.
  * @returns {string}
  */
+/**
+ * Prime no active subscription msg constant.
+ * @returns {string}
+ */
 export const PRIME_NO_ACTIVE_SUBSCRIPTION_MSG = 'No active subscription is there.';
 
 export /**

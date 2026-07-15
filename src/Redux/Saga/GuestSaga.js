@@ -1,3 +1,7 @@
+/**
+ * Guest saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for guest. Exported members: HomelistSaga, AboutusSaga, StateBundleLandingSaga, professionSaveSaga, watchFunction.
+ */
+
 import { takeLatest, put, call } from 'redux-saga/effects';
 import { postApi } from '../../Utils/Helpers/ApiRequest';
 import {
@@ -125,6 +129,10 @@ export function* professionSaveSaga(action) {
   }
 }
 
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Guest/HomelistRequest', HomelistSaga);
@@ -140,4 +148,9 @@ const watchFunction = [
   })(),
 ];
 
+/**
+ * Guest saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

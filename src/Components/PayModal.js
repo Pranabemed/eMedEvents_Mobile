@@ -45,7 +45,12 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
-    const getMergedParams = (extraParams = {}) => {
+        /**
+ * Returns merged params.
+ * @param {Object} extraParams - Input value.
+ * @returns {Object}
+ */
+const getMergedParams = (extraParams = {}) => {
         return {
             ...(route?.params || {}),
             ...extraParams,

@@ -9,12 +9,24 @@ import constants from './constants';
  * Non usa user type constant.
  * @returns {string}
  */
+/**
+ * Non usa user type constant.
+ * @returns {string}
+ */
 export const NON_USA_USER_TYPE = 'non_usa';
 /**
  * Non usa profession update required key constant.
  * @returns {string}
  */
+/**
+ * Non usa profession update required key constant.
+ * @returns {string}
+ */
 export const NON_USA_PROFESSION_UPDATE_REQUIRED_KEY = 'nonUSAProfessionUpdateRequired';
+/**
+ * Non usa state license flow completed key constant.
+ * @returns {string}
+ */
 /**
  * Non usa state license flow completed key constant.
  * @returns {string}

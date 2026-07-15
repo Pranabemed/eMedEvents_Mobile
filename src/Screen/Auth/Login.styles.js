@@ -123,4 +123,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Login.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

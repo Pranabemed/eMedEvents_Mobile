@@ -1,3 +1,7 @@
+/**
+ * Profile saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for profile. Exported members: getItem, profileContactSaga, profilepersonalSaga, profilePicSaga, professionInfoSaga, stateLicListSaga, deleteStateLicSaga, boardListSaga, deleteBoardSaga, empAddProfSaga, searchHospSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -5,6 +9,11 @@ import constants from '../../Utils/Helpers/constants';
 import { boardListDeleteFailure, boardListDeleteSuccess, boardListProfileFailure, boardListProfileSuccess, contactInfoFailure, contactInfoSuccess, EmpAddProfileFailure, EmpAddProfileSuccess, personalInfoFailure, personalInfoSuccess, professionInfoFailure, professionInfoSuccess, profilepicFailure, profilepicSuccess, SearchHospFailure, SearchHospSuccess, stateLicenseDeleteFailure, stateLicenseDeleteSuccess, stateLicenseListFailure, stateLicenseListRequest, stateLicenseListSuccess } from '../Reducers/ProfileReducer';
 
 
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 /**
  * Executes the profileContactSaga saga.
@@ -241,6 +250,10 @@ export function* profilePicSaga(action) {
       yield put(SearchHospFailure(error));
     }
   }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Profile/contactInfoRequest', profileContactSaga);
@@ -274,4 +287,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Profile saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

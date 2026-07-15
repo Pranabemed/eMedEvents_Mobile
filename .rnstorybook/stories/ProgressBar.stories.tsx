@@ -40,8 +40,16 @@ type Story = StoryObj<typeof CircularProgress>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {};
 
+/**
+ * Zero percent object.
+ * @returns {Object}
+ */
 /**
  * Zero percent object.
  * @returns {Object}
@@ -52,6 +60,10 @@ export const ZeroPercent: Story = {
   },
 };
 
+/**
+ * Full percent object.
+ * @returns {Object}
+ */
 /**
  * Full percent object.
  * @returns {Object}

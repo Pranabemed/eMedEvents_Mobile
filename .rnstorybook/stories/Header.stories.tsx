@@ -41,8 +41,16 @@ type Story = StoryObj<typeof Header>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {};
 
+/**
+ * Dark theme object.
+ * @returns {Object}
+ */
 /**
  * Dark theme object.
  * @returns {Object}

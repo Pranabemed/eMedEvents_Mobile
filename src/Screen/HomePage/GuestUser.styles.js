@@ -1,7 +1,16 @@
+/**
+ * Guest user.styles screen module. Renders a React Native screen or a screen-scoped support component.
+ */
+
 import { StyleSheet, Platform } from 'react-native';
 import Fonts from '../../Themes/Fonts';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
+/**
+ * Guest user.styles default export.
+ *
+ * @returns {*}
+ */
 export default StyleSheet.create({
   safeArea: {
     flex: 1,

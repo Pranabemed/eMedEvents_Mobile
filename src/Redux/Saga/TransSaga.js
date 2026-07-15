@@ -1,8 +1,17 @@
+/**
+ * Trans saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for trans. Exported members: getItem, TransPayemntSaga, TransSubscribeSaga, TranswalletsSaga, getwalletsSaga, userSubSaga, HcpSubSaga, subRenewalSaga, subPaymentSaga, searchSpeakerSaga, profileSpeakerSaga, contactSpeakerSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { contactusSpeakerFailure, contactusSpeakerSuccess, HCPSubFailure, HCPSubSuccess, organizerProfileFailure, organizerProfileSuccess, registPaymentFailure, registPaymentSuccess, searchOrganizerFailure, searchOrganizerSuccess, searchSpeakerFailure, searchSpeakerSuccess, speakerProfileFailure, speakerProfileSuccess, subPaymentcardFailure, subPaymentcardSuccess, subRenewalFailure, subRenewalSuccess, subscribeTransFailure, subscribeTransSuccess, userSubFailure, userSubSuccess, walletsgetFailure, walletsgetSuccess, walletsTransFailure, walletsTransSuccess } from '../Reducers/TransReducer';
 
 
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 /**
  * Executes the TransPayemntSaga saga.
@@ -302,6 +311,10 @@ export function* contactSpeakerSaga(action) {
     yield put(contactusSpeakerFailure(error));
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Transaction/registPaymentRequest', TransPayemntSaga);
@@ -338,4 +351,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Trans saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

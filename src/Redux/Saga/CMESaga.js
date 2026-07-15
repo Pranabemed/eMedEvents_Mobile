@@ -1,6 +1,15 @@
+/**
+ * Cmesaga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for cmesaga. Exported members: getItem, cmeCourseSaga, cmeReviewSaga, cmeActivitySaga, cmeNextactionSaga, cmeDupicateSaga, AgainNextactionSaga, activityFulfilSaga, startTestSaga, activityBreakupSaga, startEvaulateSaga, resultEvaulateSaga, certificateExamSaga, CMEPlannerSaga, CMEPlannerAddSaga, CMEPlannerDelSaga, ConfActSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { CMEPlannerDelFailure, CMEPlannerDelSuccess, CMEPlannerEditFailure, CMEPlannerEditSuccess, CMEPlannerFailure, CMEPlannerSuccess, ConfActFailure, ConfActSuccess, activityfulfilmentFailure, activityfulfilmentSuccess, actvityBreakupFailure, actvityBreakupSuccess, certificatewiseexamFailure, certificatewiseexamSuccess, cmeCourseFailure, cmeCourseSuccess, cmeactivityFailure, cmeactivitySuccess, cmedulicateFailure, cmedulicateSuccess, cmenextactionFailure, cmenextactionSuccess, cmereviewFailure, cmereviewSuccess, evaulatecalculateFailure, evaulatecalculateSuccess, evaulateexamFailure, evaulateexamSuccess, nextactionagainFailure, nextactionagainSuccess, startTestFailure, startTestSuccess } from '../Reducers/CMEReducer';
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 
 
@@ -405,6 +414,10 @@ export function* ConfActSaga(action) {
     yield put(ConfActFailure(error));
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('CME/cmeCourseRequest', cmeCourseSaga);
@@ -455,4 +468,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Cmesaga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

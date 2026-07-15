@@ -421,4 +421,8 @@ const modalStyles = StyleSheet.create({
  * Guest home header value.
  * @returns {*}
  */
+/**
+ * Guest home header value.
+ * @returns {*}
+ */
 export const GuestHomeHeader = memo(GuestHomeHeaderComponent);

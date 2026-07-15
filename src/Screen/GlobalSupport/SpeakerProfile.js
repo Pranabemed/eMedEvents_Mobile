@@ -21,6 +21,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import normalize from '../../Utils/Helpers/Dimen';
 import styles, { speakerProfileTagsStyles } from './SpeakerProfile.styles';
 
+/**
+ * Status string constant.
+ * @returns {string}
+ */
 let status = '';
 
 /**
@@ -118,7 +122,11 @@ const SpeakerProfile = props => {
     }
   }, [dispatch, props?.route?.params]);
 
-  const SearchProf = () => {
+    /**
+ * Search prof component.
+ * @returns {void}
+ */
+const SearchProf = () => {
     if (props?.route?.params?.fullUrl?.textHo === 'fs') {
       props.navigation.goBack();
     } else if (props?.route?.params?.fullUrl?.speaks === 'speaker') {
@@ -133,14 +141,23 @@ const SpeakerProfile = props => {
     }
   };
 
-  const toggleExpansion = () => {
+    /**
+ * Toggle expansion utility.
+ * @returns {void}
+ */
+const toggleExpansion = () => {
     if (!expanded) {
       setSpeakerconf(prevContent => prevContent);
     }
     setExpanded(!expanded);
   };
 
-  const handleUrl = onlineName => {
+    /**
+ * Handles url.
+ * @param {*} onlineName - Input value.
+ * @returns {void}
+ */
+const handleUrl = onlineName => {
     const url = onlineName?.detailpage_url;
     if (!url) {
       console.warn('Invalid or missing URL:', onlineName);
@@ -167,7 +184,12 @@ const SpeakerProfile = props => {
     }
   };
 
-  const renderLocationAndDates = item => {
+    /**
+ * Render location and dates utility.
+ * @param {*} item - Input value.
+ * @returns {*}
+ */
+const renderLocationAndDates = item => {
     if (item?.date && item?.location) {
       return (
         <View style={[styles.metadataRow, { marginLeft: normalize(1.5) }]}>
@@ -351,4 +373,9 @@ const SpeakerProfile = props => {
   );
 };
 
+/**
+ * Speaker profile default export.
+ *
+ * @returns {*}
+ */
 export default SpeakerProfile;

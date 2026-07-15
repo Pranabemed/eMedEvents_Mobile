@@ -490,7 +490,13 @@ const toggleModalFailedfree = (tik) => {
 
         let isActive = true;
 
-        const hydrateGuestSignupDraft = async () => {
+                /**
+ * Hydrate guest signup draft utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const hydrateGuestSignupDraft = async () => {
             try {
                 const draft = await loadGuestSignupDraft();
                 if (!isActive) {

@@ -162,4 +162,8 @@ const styles = StyleSheet.create({
  * Guest selection modals value.
  * @returns {*}
  */
+/**
+ * Guest selection modals value.
+ * @returns {*}
+ */
 export const GuestSelectionModals = memo(GuestSelectionModalsComponent);

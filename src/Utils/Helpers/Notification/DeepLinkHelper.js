@@ -1,3 +1,8 @@
+/**
+ * Parse activity url utility helper.
+ * @param {*} activity_url - Input value.
+ * @returns {void}
+ */
 export const parseActivityUrl = (activity_url) => {
   if (!activity_url) return null;
 

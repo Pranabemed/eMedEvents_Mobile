@@ -23,7 +23,12 @@ const CellModalPayemntFailed = ({dataPayemnt, maindata, isVisible, setPaymentfdf
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
-    const getMergedParams = (extraParams = {}) => {
+        /**
+ * Returns merged params.
+ * @param {Object} extraParams - Input value.
+ * @returns {Object}
+ */
+const getMergedParams = (extraParams = {}) => {
         return {
             ...(route?.params || {}),
             ...extraParams,

@@ -27,6 +27,10 @@ import { useSelector } from 'react-redux';
  * App context value.
  * @returns {*}
  */
+/**
+ * App context value.
+ * @returns {*}
+ */
 export const AppContext = createContext();
 /**
  * App provider component.

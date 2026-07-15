@@ -14,6 +14,10 @@ const { width, height, fontScale } = Dimensions.get('window');
  * Sizes object.
  * @returns {Object}
  */
+/**
+ * Sizes object.
+ * @returns {Object}
+ */
 export const Sizes = { width, height, fontScale };
 /**
  * Defines the color palette used across the application.

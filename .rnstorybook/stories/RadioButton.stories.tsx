@@ -61,8 +61,16 @@ type Story = StoryObj<typeof CustomRadioButton>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {};
 
+/**
+ * Selected object.
+ * @returns {Object}
+ */
 /**
  * Selected object.
  * @returns {Object}
@@ -73,6 +81,10 @@ export const Selected: Story = {
   },
 };
 
+/**
+ * Custom label object.
+ * @returns {Object}
+ */
 /**
  * Custom label object.
  * @returns {Object}

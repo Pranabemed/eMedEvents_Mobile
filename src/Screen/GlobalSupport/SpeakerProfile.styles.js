@@ -15,6 +15,10 @@ import Fonts from '../../Themes/Fonts';
  *
  * @type {{ b: Object, p: Object, ul: Object, li: Object }}
  */
+/**
+ * Speaker profile tags styles object.
+ * @returns {Object}
+ */
 export const speakerProfileTagsStyles = {
   b: {
     fontFamily: Fonts.InterMedium,
@@ -273,4 +277,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Speaker profile.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

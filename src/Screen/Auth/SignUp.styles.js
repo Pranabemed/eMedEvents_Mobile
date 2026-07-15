@@ -162,4 +162,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Sign up.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

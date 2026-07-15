@@ -139,7 +139,11 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
               item.venue ||
               item.city;
             const stateWebcastUrl = getBannerUrl(item);
-            const handleRegisterPress = () => {
+                        /**
+ * Handles register press.
+ * @returns {void}
+ */
+const handleRegisterPress = () => {
               if (stateWebcastUrl) {
                 navigation.navigate('Statewebcast', {
                   webCastURL: { webCastURL: stateWebcastUrl, shareUrl: stateWebcastUrl, detailpage_url: stateWebcastUrl, Realback: 'guest' },
@@ -207,8 +211,16 @@ const GuestHeroSectionComponent = ({ topBanners, isHomeLoading, navigation, widt
   );
 };
 
+/**
+ * Guest hero section value.
+ * @returns {*}
+ */
 export const GuestHeroSection = memo(GuestHeroSectionComponent);
 
+/**
+ * Local styles value.
+ * @returns {*}
+ */
 const localStyles = StyleSheet.create({
   heroSlideWrap: {
     alignItems: 'center',

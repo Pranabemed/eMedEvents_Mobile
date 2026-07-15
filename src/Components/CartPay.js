@@ -26,7 +26,12 @@ const CartPay = ({setPaymentcardfree, dataPayemnt, maindata, isVisible,content, 
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
-    const getMergedParams = (extraParams = {}) => {
+        /**
+ * Returns merged params.
+ * @param {Object} extraParams - Input value.
+ * @returns {Object}
+ */
+const getMergedParams = (extraParams = {}) => {
         return {
             ...(route?.params || {}),
             ...extraParams,

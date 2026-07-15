@@ -62,4 +62,8 @@ if (!global.view) {
  * View value.
  * @returns {*}
  */
+/**
+ * View value.
+ * @returns {*}
+ */
 export const view = global.view;

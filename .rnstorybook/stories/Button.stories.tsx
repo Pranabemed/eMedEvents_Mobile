@@ -50,8 +50,16 @@ type Story = StoryObj<typeof Buttons>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {};
 
+/**
+ * Loading object.
+ * @returns {Object}
+ */
 /**
  * Loading object.
  * @returns {Object}
@@ -62,6 +70,10 @@ export const Loading: Story = {
   },
 };
 
+/**
+ * Disabled object.
+ * @returns {Object}
+ */
 /**
  * Disabled object.
  * @returns {Object}
@@ -77,6 +89,10 @@ export const Disabled: Story = {
  * Small object.
  * @returns {Object}
  */
+/**
+ * Small object.
+ * @returns {Object}
+ */
 export const Small: Story = {
   args: {
     height: 30,
@@ -86,6 +102,10 @@ export const Small: Story = {
   },
 };
 
+/**
+ * Large object.
+ * @returns {Object}
+ */
 /**
  * Large object.
  * @returns {Object}

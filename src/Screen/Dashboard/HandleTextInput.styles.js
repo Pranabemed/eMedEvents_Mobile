@@ -9,6 +9,10 @@ import { StyleSheet } from 'react-native';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   searchWrapper: {
     backgroundColor: '#FFFFFF',
@@ -55,4 +59,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Handle text input.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

@@ -126,7 +126,15 @@ const GuestRequirementsShimmerComponent = () => (
  * Guest hero shimmer value.
  * @returns {*}
  */
+/**
+ * Guest hero shimmer value.
+ * @returns {*}
+ */
 export const GuestHeroShimmer = memo(GuestHeroShimmerComponent);
+/**
+ * Guest carousel shimmer value.
+ * @returns {*}
+ */
 /**
  * Guest carousel shimmer value.
  * @returns {*}
@@ -136,7 +144,15 @@ export const GuestCarouselShimmer = memo(GuestCarouselShimmerComponent);
  * Guest chips shimmer value.
  * @returns {*}
  */
+/**
+ * Guest chips shimmer value.
+ * @returns {*}
+ */
 export const GuestChipsShimmer = memo(GuestChipsShimmerComponent);
+/**
+ * Guest requirements shimmer value.
+ * @returns {*}
+ */
 /**
  * Guest requirements shimmer value.
  * @returns {*}

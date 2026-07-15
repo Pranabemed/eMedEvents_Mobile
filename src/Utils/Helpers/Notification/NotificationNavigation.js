@@ -1,3 +1,7 @@
+/**
+ * Notification navigation utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: handleActivityUrlNavigation, handleWebcastNavigation, handleUrlNavigation.
+ */
+
 import store from '../../../Redux/Store';
 import { cmenextactionRequest } from '../../../Redux/Reducers/CMEReducer';
 import { webcastDeatilsRequest } from '../../../Redux/Reducers/WebcastReducer';
@@ -5,6 +9,12 @@ import * as RootNavigation from '../../../Navigator/RootNavigation';
 
 /**
  * Handles navigation dynamically by hooking into the Redux store.
+ */
+/**
+ * Handle activity url navigation utility helper.
+ * @param {*} conference_id - Input value.
+ * @param {*} activity_id - Input value.
+ * @returns {*}
  */
 export const handleActivityUrlNavigation = (conference_id, activity_id) => {
   return new Promise((resolve) => {
@@ -94,6 +104,11 @@ export const handleActivityUrlNavigation = (conference_id, activity_id) => {
 /**
  * Handles Webcast specific navigation.
  */
+/**
+ * Handle webcast navigation utility helper.
+ * @param {*} parsedUrl - Input value.
+ * @returns {*}
+ */
 export const handleWebcastNavigation = (parsedUrl) => {
   return new Promise((resolve) => {
     let unsubscribe;
@@ -125,6 +140,11 @@ export const handleWebcastNavigation = (parsedUrl) => {
 
 /**
  * Handles normal URL routing.
+ */
+/**
+ * Handle url navigation utility helper.
+ * @param {*} parsedUrl - Input value.
+ * @returns {void}
  */
 export const handleUrlNavigation = (parsedUrl) => {
   const { type, route, slug } = parsedUrl;

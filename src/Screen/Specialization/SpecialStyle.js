@@ -10,6 +10,10 @@ import normalize from '../../Utils/Helpers/Dimen';
  * Styles value.
  * @returns {*}
  */
+/**
+ * Styles value.
+ * @returns {*}
+ */
 export const styles = StyleSheet.create({
     container: {
         flex: 1,

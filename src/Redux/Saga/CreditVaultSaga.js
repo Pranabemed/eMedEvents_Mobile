@@ -1,7 +1,16 @@
+/**
+ * Credit vault saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for credit vault. Exported members: getItem, creditvaultSaga, boardvaultSaga, deletevaultSaga, professionvaultSaga, downloadTransSaga, downloadTransNonUsaSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { boardvaultFailure, boardvaultSuccess, creditvaultFailure, creditvaultSuccess, deletevaultFailure, deletevaultSuccess, downloadTranscriptFailure, downloadTranscriptSuccess, downloadTranscriptNonUsaFailure, downloadTranscriptNonUsaSuccess, professionvaultFailure, professionvaultSuccess } from '../Reducers/CreditVaultReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 
 
@@ -176,6 +185,10 @@ export function* downloadTransNonUsaSaga(action) {
     yield put(downloadTranscriptNonUsaFailure(error));
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('CreditVault/creditvaultRequest', creditvaultSaga);
@@ -197,4 +210,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Credit vault saga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

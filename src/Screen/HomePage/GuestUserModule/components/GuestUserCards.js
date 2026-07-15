@@ -377,7 +377,15 @@ const handlePress = () => item?.onPress?.(item?.detailpageUrl);
  * Free conference card value.
  * @returns {*}
  */
+/**
+ * Free conference card value.
+ * @returns {*}
+ */
 export const FreeConferenceCard = memo(FreeConferenceCardComponent);
+/**
+ * Featured conference card value.
+ * @returns {*}
+ */
 /**
  * Featured conference card value.
  * @returns {*}
@@ -387,12 +395,24 @@ export const FeaturedConferenceCard = memo(FeaturedConferenceCardComponent);
  * Conference card value.
  * @returns {*}
  */
+/**
+ * Conference card value.
+ * @returns {*}
+ */
 export const ConferenceCard = memo(ConferenceCardComponent);
 /**
  * Popular conference card value.
  * @returns {*}
  */
+/**
+ * Popular conference card value.
+ * @returns {*}
+ */
 export const PopularConferenceCard = memo(PopularConferenceCardComponent);
+/**
+ * Live conference card value.
+ * @returns {*}
+ */
 /**
  * Live conference card value.
  * @returns {*}

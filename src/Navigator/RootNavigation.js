@@ -14,6 +14,10 @@ import { createNavigationContainerRef } from "@react-navigation/native";
  * Navigation ref value.
  * @returns {*}
  */
+/**
+ * Navigation ref value.
+ * @returns {*}
+ */
 export const navigationRef = createNavigationContainerRef();
 
 /**

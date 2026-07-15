@@ -8,6 +8,10 @@ import { StyleSheet, Dimensions } from 'react-native';
 import normalize from '../Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 
+/**
+ * Screen height value.
+ * @returns {*}
+ */
 const screenHeight = Dimensions.get('screen').height;
 
 /**
@@ -48,4 +52,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * Loader.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

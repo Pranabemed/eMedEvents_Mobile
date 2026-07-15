@@ -262,7 +262,13 @@ export /**
       fetchProfessions();
       let isActive = true;
 
-      const hydrateGuestDraft = async () => {
+            /**
+ * Hydrate guest draft utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const hydrateGuestDraft = async () => {
         try {
           const guestDraft = await loadGuestSignupDraft();
           if (!isActive || !guestDraft) {

@@ -1,13 +1,29 @@
+/**
+ * Dashboardsaga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for dashboardsaga. Exported members: getItem, wholeDatHo, profDatHo, dashboardCacheStore, dashboardSaga, dashMBSaga, dashPersonSaga, stateDashboardSaga, stateCourseSaga, creditTypeSaga, AddCreditVaultSaga, addLicesenseSaga, stateMandatorySaga, stateReportingSaga, boardSpecialitySaga, addboardcertificateSaga, OCRCertificateSaga, countStateBoardSaga, BoardcountSaga, mainProfileSaga, mainSpecialtySaga, changePassSaga, watchFunction.
+ */
+
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { OCRCertificateFailure, OCRCertificateSuccess, addCreditVaultFailure, addCreditVaultSuccess, addCreditsFailure, addCreditsSuccess, boardSpecialityFailure, boardSpecialitySuccess, boardcertificateFailure, boardcertificateSuccess, boardcountFailure, boardcountSuccess, changePasswordFailure, changePasswordSuccess, countFailure, countSuccess, dashMbFailure, dashMbSuccess, dashPerFailure, dashPerSuccess, dashboardFailure, dashboardSuccess, mainprofileFailure, mainprofileSuccess, specailtyFailure, specailtySuccess, stateCourseFailure, stateCourseSuccess, stateDashboardFailure, stateDashboardSuccess, stateLicesenseFailure, stateLicesenseSuccess, stateMandatoryFailure, stateMandatoryRequest, stateMandatorySuccess, stateReportingFailure, stateReportingSuccess } from '../Reducers/DashboardReducer';
+/**
+ * Redux-Saga worker for get item.
+ * @param {*} state - Input value.
+ * @returns {*}
+ */
 let getItem = state => state.AuthReducer;
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 
 ////////Dashboard
+/**
+ * Redux-Saga worker for whole dat ho.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @returns {Promise<*>}
+ */
 const wholeDatHo = async (data) => {
   try {
     if (data == undefined || data == null) {
@@ -21,6 +37,13 @@ const wholeDatHo = async (data) => {
     console.error('Error saving data:', error);
   }
 };
+/**
+ * Redux-Saga worker for prof dat ho.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @returns {Promise<*>}
+ */
 const profDatHo = async (data) => {
   try {
     if (data == undefined || data == null) {
@@ -34,6 +57,13 @@ const profDatHo = async (data) => {
     console.error('Error saving data:', error);
   }
 };
+/**
+ * Redux-Saga worker for dashboard cache store.
+ *
+ * @async
+ * @param {*} data - Input value.
+ * @returns {Promise<*>}
+ */
 const dashboardCacheStore = async (data) => {
   try {
     const safeData = Array.isArray(data) ? data : [];
@@ -552,6 +582,10 @@ export function* changePassSaga(action) {
     // showErrorAlert(error?.response?.data?.message);
   }
 }
+/**
+ * Watch function array.
+ * @returns {Array}
+ */
 const watchFunction = [
   (function* () {
     yield takeLatest('Dashboard/dashboardRequest', dashboardSaga);
@@ -609,4 +643,9 @@ const watchFunction = [
   })()
 ];
 
+/**
+ * Dashboardsaga default export.
+ *
+ * @returns {*}
+ */
 export default watchFunction;

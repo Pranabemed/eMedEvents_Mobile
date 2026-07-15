@@ -9,6 +9,10 @@ import { StyleSheet } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
 
+/**
+ * Styles value.
+ * @returns {*}
+ */
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -33,4 +37,9 @@ const styles = StyleSheet.create({
   },
 });
 
+/**
+ * No int data.styles default export.
+ *
+ * @returns {*}
+ */
 export default styles;

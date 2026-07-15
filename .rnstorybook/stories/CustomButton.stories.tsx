@@ -33,6 +33,10 @@ type Story = StoryObj<typeof meta>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {
   args: {
     text: 'Click Me',
@@ -44,6 +48,10 @@ export const Default: Story = {
   },
 };
 
+/**
+ * Disabled object.
+ * @returns {Object}
+ */
 /**
  * Disabled object.
  * @returns {Object}
@@ -64,6 +72,10 @@ export const Disabled: Story = {
  * Loading object.
  * @returns {Object}
  */
+/**
+ * Loading object.
+ * @returns {Object}
+ */
 export const Loading: Story = {
   args: {
     text: 'Submit',
@@ -76,6 +88,10 @@ export const Loading: Story = {
   },
 };
 
+/**
+ * With icon object.
+ * @returns {Object}
+ */
 /**
  * With icon object.
  * @returns {Object}

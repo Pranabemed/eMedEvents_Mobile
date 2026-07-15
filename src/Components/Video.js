@@ -1041,7 +1041,12 @@ const VideoComponent = (props) => {
     }, []);
 
     useEffect(() => {
-        const hasData = (data) => data && ((data.activityData && data.activityData.length > 0) || (data.video_audio_details && data.video_audio_details.length > 0));
+                /**
+ * Has data utility.
+ * @param {*} data - Input value.
+ * @returns {*}
+ */
+const hasData = (data) => data && ((data.activityData && data.activityData.length > 0) || (data.video_audio_details && data.video_audio_details.length > 0));
 
         const activeDic = hasData(videoDic)
             ? videoDic

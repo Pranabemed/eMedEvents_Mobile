@@ -14,6 +14,11 @@ import constants from './constants';
  * @param {Object|null|undefined} draft - Raw draft payload.
  * @returns {{specialty: string, profession: string, email: string}}
  */
+/**
+ * Normalize guest signup draft utility helper.
+ * @param {*} draft - Input value.
+ * @returns {Object}
+ */
 export const normalizeGuestSignupDraft = draft => ({
   specialty: String(draft?.specialty || '').trim(),
   profession: String(draft?.profession || '').trim(),
@@ -25,6 +30,13 @@ export const normalizeGuestSignupDraft = draft => ({
  *
  * @param {Object} draft - Guest draft payload.
  * @returns {Promise<null|{specialty: string, profession: string, email: string}>}
+ */
+/**
+ * Save guest signup draft utility helper.
+ *
+ * @async
+ * @param {*} draft - Input value.
+ * @returns {Promise<*>}
  */
 export const saveGuestSignupDraft = async draft => {
   const normalizedDraft = normalizeGuestSignupDraft(draft);
@@ -41,6 +53,12 @@ export const saveGuestSignupDraft = async draft => {
  * Loads the stored guest signup draft.
  *
  * @returns {Promise<null|{specialty: string, profession: string, email: string}>}
+ */
+/**
+ * Load guest signup draft utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
  */
 export const loadGuestSignupDraft = async () => {
   try {
@@ -60,6 +78,12 @@ export const loadGuestSignupDraft = async () => {
  * Clears the stored guest signup draft.
  *
  * @returns {Promise<void>}
+ */
+/**
+ * Clear guest signup draft utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
  */
 export const clearGuestSignupDraft = async () => {
   try {

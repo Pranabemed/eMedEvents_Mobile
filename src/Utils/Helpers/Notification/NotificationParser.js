@@ -1,3 +1,8 @@
+/**
+ * Parse notification url utility helper.
+ * @param {*} url - Input value.
+ * @returns {*}
+ */
 export const parseNotificationUrl = (url) => {
   if (!url) {
     return { type: 'unknown', route: null, slug: null, conference_url: null, full_url: url };

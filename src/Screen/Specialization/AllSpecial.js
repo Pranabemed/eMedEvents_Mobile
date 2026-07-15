@@ -115,7 +115,13 @@ const AllSpecial = (props) => {
     const guestProfessionAppliedRef = useRef(false);
     const guestSpecialtyAppliedRef = useRef(false);
     useEffect(() => {
-        const loadPlayerSession = async () => {
+                /**
+ * Load player session utility.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
+const loadPlayerSession = async () => {
             const session = await AsyncStorage.getItem('PLAYERSESSION');
             setPlayerSessionID(session || '');
         };

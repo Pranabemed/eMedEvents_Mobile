@@ -1,3 +1,7 @@
+/**
+ * Notification service utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: handleNotification.
+ */
+
 import { saveNotification } from './NotificationStorage';
 import { parseActivityUrl } from './DeepLinkHelper';
 import { parseNotificationUrl } from './NotificationParser';
@@ -6,6 +10,13 @@ import { handleActivityUrlNavigation, handleUrlNavigation } from './Notification
 /**
  * Main handler for any push notification tap.
  * Ensures data is saved and navigates to the proper screen.
+ */
+/**
+ * Handle notification utility helper.
+ *
+ * @async
+ * @param {*} payload - Input value.
+ * @returns {Promise<*>}
  */
 export const handleNotification = async (payload) => {
   if (!payload) return;

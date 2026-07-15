@@ -14,6 +14,11 @@ import Colorpath from '../Themes/Colorpath';
  * @param {Object} props - Button props used to derive the style values.
  * @returns {ReturnType<typeof StyleSheet.create>} Button style map.
  */
+/**
+ * Create button styles utility.
+ * @param {*} props - Input value.
+ * @returns {*}
+ */
 export const createButtonStyles = props =>
   StyleSheet.create({
     button: {

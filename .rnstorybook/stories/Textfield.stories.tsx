@@ -51,8 +51,16 @@ type Story = StoryObj<typeof TextFieldIn>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {};
 
+/**
+ * Secure entry object.
+ * @returns {Object}
+ */
 /**
  * Secure entry object.
  * @returns {Object}
@@ -69,6 +77,10 @@ export const SecureEntry: Story = {
  * With icons object.
  * @returns {Object}
  */
+/**
+ * With icons object.
+ * @returns {Object}
+ */
 export const WithIcons: Story = {
   args: {
     placeholder: 'Search...',
@@ -76,6 +88,10 @@ export const WithIcons: Story = {
   },
 };
 
+/**
+ * Dark theme object.
+ * @returns {Object}
+ */
 /**
  * Dark theme object.
  * @returns {Object}

@@ -16,6 +16,10 @@ const windowWidth = Dimensions.get('window').width;
  * Styles value.
  * @returns {*}
  */
+/**
+ * Styles value.
+ * @returns {*}
+ */
 export const styles = StyleSheet.create({
     container: {
         paddingHorizontal: normalize(10),

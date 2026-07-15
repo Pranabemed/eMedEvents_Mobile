@@ -27,6 +27,10 @@ type Story = StoryObj<typeof meta>;
  * Default object.
  * @returns {Object}
  */
+/**
+ * Default object.
+ * @returns {Object}
+ */
 export const Default: Story = {
   args: {
     // Add default props here

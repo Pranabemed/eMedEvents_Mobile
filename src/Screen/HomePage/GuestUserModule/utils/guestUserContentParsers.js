@@ -539,7 +539,15 @@ const getHtmlButtonText = item =>
  * Shimmer bg constant.
  * @returns {string}
  */
+/**
+ * Shimmer bg constant.
+ * @returns {string}
+ */
 export const SHIMMER_BG = '#EAF4FB';
+/**
+ * Shimmer hl constant.
+ * @returns {string}
+ */
 /**
  * Shimmer hl constant.
  * @returns {string}

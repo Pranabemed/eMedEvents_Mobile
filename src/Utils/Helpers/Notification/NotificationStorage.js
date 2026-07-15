@@ -1,7 +1,22 @@
+/**
+ * Notification storage utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: NOTIFICATION_HISTORY, saveNotification, getNotifications, removeNotification, clearNotifications.
+ */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/**
+ * Notification history constant.
+ * @returns {string}
+ */
 const NOTIFICATION_HISTORY = 'NOTIFICATION_HISTORY';
 
+/**
+ * Save notification utility helper.
+ *
+ * @async
+ * @param {*} payload - Input value.
+ * @returns {Promise<*>}
+ */
 export const saveNotification = async (payload) => {
   try {
     const existingStr = await AsyncStorage.getItem(NOTIFICATION_HISTORY);
@@ -28,6 +43,12 @@ export const saveNotification = async (payload) => {
   }
 };
 
+/**
+ * Get notifications utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
 export const getNotifications = async () => {
   try {
     const existingStr = await AsyncStorage.getItem(NOTIFICATION_HISTORY);
@@ -38,6 +59,13 @@ export const getNotifications = async () => {
   }
 };
 
+/**
+ * Remove notification utility helper.
+ *
+ * @async
+ * @param {*} notificationId - Input value.
+ * @returns {Promise<*>}
+ */
 export const removeNotification = async (notificationId) => {
   try {
     const existingStr = await AsyncStorage.getItem(NOTIFICATION_HISTORY);
@@ -51,6 +79,12 @@ export const removeNotification = async (notificationId) => {
   }
 };
 
+/**
+ * Clear notifications utility helper.
+ *
+ * @async
+ * @returns {Promise<*>}
+ */
 export const clearNotifications = async () => {
   try {
     await AsyncStorage.removeItem(NOTIFICATION_HISTORY);
