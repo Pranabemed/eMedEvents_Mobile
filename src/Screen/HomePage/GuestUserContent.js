@@ -200,13 +200,30 @@ const GuestUserContent = ({ guest }) => {
             ) : popularConferenceItems.length > 0 ? (
               <CarouselSection
                 title="Most Popular Conferences"
-                action=""
+                action="View all"
                 data={popularConferenceItems}
                 renderItem={renderPopularCard}
                 sliderWidth={width}
                 itemWidth={carouselItemWidth}
                 width={width}
-                onAction={() => ''}
+                onAction={() => {
+                  const params = {
+                    homeListPayload: {
+                      is_mobile: 1,
+                      view: 'all',
+                      pageno: 0,
+                      limit: 9,
+                    },
+                    sectionTitle: 'Most Popular Conferences',
+                  };
+
+                  if (navigation?.push) {
+                    navigation.push('SearchResult', params);
+                    return;
+                  }
+
+                  navigation.navigate('SearchResult', params);
+                }}
               />
             ) : null}
 

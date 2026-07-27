@@ -319,20 +319,7 @@ const getInitials = (firstname, lastname) => {
       setNonUsaFlowState(null);
     }
   }, [isUsaProfile, nonUsaFlowState]);
-  const modalKey = isNonSubscribedNoSubscription ? [
-    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
-    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
-    { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
-    { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
-    // { id: 3, name: "Document Vault",img: Imagepath.Folder},
-    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
-    // { id: 5, name: "CME/CE Planner",img:Imagepath.CalenderCheck},
-    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
-    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
-    // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
-    // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
-    // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
-  ] : currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription ? [
+  const modalKey = currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
@@ -343,26 +330,28 @@ const getInitials = (firstname, lastname) => {
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
+  ] : isNonSubscribedNoSubscription ? [
+    { id: 0, name: "Dashboard", img: Imagepath.FourDot },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
+    { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
+    { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
+    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
+    { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
   ] : allProfTake ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
     { id: 3, name: "Board Review Courses", img: Imagepath.BookBoard },
-    // { id: 3, name: "Document Vault",img: Imagepath.Folder},
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
-    // { id: 5, name: "CME/CE Planner",img:Imagepath.CalenderCheck},
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
-    // { id: 7, name: "Notification Settings",img:Imagepath.Bell },
-    // { id: 8, name: "Help Desk",img:Imagepath.HelpDesk}
-    // {id: 9, name:"For Any Quries",img:Imagepath.Mail}
   ] : !resolvedDrawerUser?.licensures?.[0]?.board_id
     ? [
       { id: 0, name: "Dashboard", img: Imagepath.FourDot },
       { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
       { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
       { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
-
     ]
     : [
       { id: 0, name: "Dashboard", img: Imagepath.FourDot },
@@ -370,9 +359,9 @@ const getInitials = (firstname, lastname) => {
       { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
       { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
       { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
-    ]
+    ];
   const downKey = [
-    { id: 0, name: "For Any Quries" },
+    { id: 0, name: "For Any Queries" },
     { id: 1, name: "support@emedevents.com" },
     { id: 2, name: "Sign Out" }
   ]

@@ -262,13 +262,13 @@ export /**
       fetchProfessions();
       let isActive = true;
 
-            /**
- * Hydrate guest draft utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const hydrateGuestDraft = async () => {
+      /**
+* Hydrate guest draft utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+      const hydrateGuestDraft = async () => {
         try {
           const guestDraft = await loadGuestSignupDraft();
           if (!isActive || !guestDraft) {
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colorpath.ButtonColr,
     fontFamily: Fonts.InterBold,
-    fontSize: 18,
+    fontSize: 20,
     lineHeight: normalize(24),
   },
   closeButton: {
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   description: {
     color: '#52607A',
     fontFamily: Fonts.InterRegular,
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: normalize(22),
     marginBottom: normalize(18),
   },

@@ -124,6 +124,8 @@ const useGuestUserContentData = guest => {
   const popularCourses = useMemo(
     () =>
       firstArray(
+        homeData?.inperson_hybrid,
+        homeData?.inPersonHybrid,
         homeData?.popular_courses,
         homeData?.popularCourses,
         homeData?.popular_course,

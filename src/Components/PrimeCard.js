@@ -71,8 +71,8 @@ const handleSecondaryAction = () => {
       }}
       animationInTiming={800}
       animationOutTiming={1000}
-      onBackdropPress={() => { }}
-      onBackButtonPress={() => { }}
+      onBackdropPress={() => setPrimeadd(false)}
+      onBackButtonPress={() => setPrimeadd(false)}
       useNativeDriver={true}
       useNativeDriverForBackdrop={true}
       coverScreen={true}
@@ -95,6 +95,12 @@ const handleSecondaryAction = () => {
             backgroundColor: '#FFF7EA',
           }}
         >
+          <TouchableOpacity 
+            onPress={() => setPrimeadd(false)} 
+            style={{ position: 'absolute', top: normalize(15), right: normalize(15), zIndex: 10 }}
+          >
+            <ArrowIconsAnt name="close" size={normalize(24)} color="#000000" />
+          </TouchableOpacity>
           <View style={{
             flexDirection: "column",
             justifyContent: "center",

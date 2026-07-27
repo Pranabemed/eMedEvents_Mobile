@@ -856,6 +856,7 @@ const checkPendingNotification = async () => {
       'https://emedevents.com',
       'http://www.emedevents.com',
       'http://emedevents.com',
+      'emedevents://',
     ],
     config: {
       screens: {

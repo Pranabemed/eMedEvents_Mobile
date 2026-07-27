@@ -45,34 +45,33 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-         <intent-filter android:autoVerify="true">
+        <intent-filter android:autoVerify="true">
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data
               android:scheme="http"
               android:host="www.emedevents.com"
-              android:pathPrefix="/online-cme-courses" />
+              android:pathPrefix="/" />
             <data
               android:scheme="https"
               android:host="www.emedevents.com"
-              android:pathPrefix="/online-cme-courses" />
+              android:pathPrefix="/" />
               <data
               android:scheme="http"
-              android:host="www.emedevents.com"
-              android:pathPrefix="/c" />
+              android:host="emedevents.com"
+              android:pathPrefix="/" />
             <data
               android:scheme="https"
-              android:host="www.emedevents.com"
-              android:pathPrefix="/c" />
-               <data
-              android:scheme="http"
-              android:host="www.emedevents.com"
-              android:pathPrefix="/medical-hybrid-events-2026" />
+              android:host="emedevents.com"
+              android:pathPrefix="/" />
+        </intent-filter>
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
             <data
-              android:scheme="https"
-              android:host="www.emedevents.com"
-              android:pathPrefix="/medical-hybrid-events-2026" />
+              android:scheme="emedevents" />
         </intent-filter>
       </activity>
     </application>

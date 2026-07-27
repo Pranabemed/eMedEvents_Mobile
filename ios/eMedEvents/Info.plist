@@ -24,6 +24,17 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.emedevents.newapp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>emedevents</string>
+			</array>
+		</dict>
+	</array>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
 	<key>GMSApiKey</key>

@@ -101,7 +101,24 @@ const normalizeNotificationUrlForApp = remoteMessage => {
     return 'https://emedevents.com';
   }
 
-  if (/^(https?:|emedevents:)/i.test(rawUrl)) {
+  if (/^emedevents:/i.test(rawUrl)) {
+    const stripped = rawUrl
+      .replace(/^emedevents:\/\//i, '')
+      .replace(/^emedevents:/i, '')
+      .replace(/^\/+/, '');
+
+    if (!stripped) {
+      return 'https://www.emedevents.com';
+    }
+
+    if (stripped.startsWith('www.emedevents.com') || stripped.startsWith('emedevents.com')) {
+      return `https://${stripped}`;
+    }
+
+    return `https://www.emedevents.com/${stripped}`;
+  }
+
+  if (/^https?:/i.test(rawUrl)) {
     // Only allow actual eMedEvents domains if it's an HTTP link, to prevent external web redirects
     return isEmedEventsUrl(rawUrl) ? rawUrl : 'https://emedevents.com';
   }
