@@ -218,11 +218,10 @@ const GuestUserContent = ({ guest }) => {
                   };
 
                   if (navigation?.push) {
-                    navigation.push('SearchResult', params);
+                    navigation.push('Globalresult', params);
                     return;
                   }
-
-                  navigation.navigate('SearchResult', params);
+                  navigation.navigate('Globalresult', params);
                 }}
               />
             ) : null}

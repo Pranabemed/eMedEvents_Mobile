@@ -27,6 +27,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
+import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 
 /**
  * Reusable Globalresult component.
@@ -144,6 +145,7 @@ const Globalresult = (props) => {
     const CMEReducer = useSelector(state => state.CMEReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    const GuestReducer = useSelector(state => state.GuestReducer);
     const dispatch = useDispatch();
     const {
         isConnected
@@ -181,6 +183,7 @@ const Globalresult = (props) => {
     const [displayedAggregations, setDisplayedAggregations] = useState(null);
     const hasFocusedOnceRef = useRef(false);
     const requestStatusRef = useRef("");
+    const guestResponseRef = useRef(null);
     const lastTrigRef = useRef();
     const lastFilterRef = useRef();
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
@@ -260,12 +263,19 @@ const Globalresult = (props) => {
     const filteredStateList = stateList.filter(item =>
         String(getStateLabel(item)).toLowerCase().includes(stateSearchText.trim().toLowerCase()),
     );
-    const totalResults = Number(
+    let totalResults = Number(
         CMEReducer?.cmeCourseResponse?.conferences_count ??
+        GuestReducer?.HomelistResponse?.data?.count ??
+        GuestReducer?.HomelistResponse?.data?.total_count ??
+        GuestReducer?.HomelistResponse?.count ??
+        GuestReducer?.HomelistResponse?.total_count ??
         props?.route?.params?.trig?.totalDaa?.count ??
         0,
     );
-    const canLoadMore = totalResults > 0 && storeAlldata.length < totalResults;
+    if (totalResults === 0 && props?.route?.params?.homeListPayload) {
+        totalResults = storeAlldata.length;
+    }
+    const canLoadMore = (totalResults > 0 && storeAlldata.length < totalResults) || (props?.route?.params?.homeListPayload && storeAlldata.length > 0 && storeAlldata.length % limit === 0);
     const routeQueryKey = useMemo(
         () =>
             JSON.stringify({
@@ -276,6 +286,7 @@ const Globalresult = (props) => {
     );
     const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(routeQueryKey);
     const isRouteRefreshing = displayedRouteQueryKey !== routeQueryKey;
+    const displayTitle = props?.route?.params?.sectionTitle || CMEReducer?.cmeCourseResponse?.header_title;
     const resetResultsView = useCallback((options = {}) => {
         const {
             clearSort = false,
@@ -324,6 +335,16 @@ const Globalresult = (props) => {
             }
         }
     }, [props?.route?.params?.filterDatSh, resetResultsView, sortType, fetchHandle]);
+    useEffect(() => {
+        const homeListPayload = props?.route?.params?.homeListPayload;
+        if (homeListPayload) {
+            const currentPayloadStr = JSON.stringify(homeListPayload);
+            if (currentPayloadStr !== lastTrigRef.current) {
+                lastTrigRef.current = currentPayloadStr;
+                resetResultsView({ clearSort: true, loadingState: true });
+            }
+        }
+    }, [props?.route?.params?.homeListPayload, resetResultsView]);
     useEffect(() => {
         if (!isGuestCmeFlow) return;
 
@@ -457,11 +478,11 @@ const Globalresult = (props) => {
         };
     }, [dispatch]);
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             SearchBack()
             return true;
         };
@@ -473,7 +494,31 @@ const onBackPress = () => {
 
         return () => backHandler.remove();
     }, [SearchBack]);
+
+    useEffect(() => {
+        if (props?.route?.params?.homeListPayload) {
+            if (pageNum === 0) {
+                setLoading(true);
+                setHasFetchedResults(false);
+            }
+            connectionrequest()
+                .then(() => {
+                    dispatch(HomelistRequest({
+                        ...props.route.params.homeListPayload,
+                        pageno: pageNum,
+                        limit: limit
+                    }));
+                })
+                .catch((err) => {
+                    showErrorAlert("Please connect to internet", err);
+                    setLoading(false);
+                });
+        }
+    }, [dispatch, props?.route?.params?.homeListPayload, pageNum, limit]);
+    console.log(pageNum, "ewflrl")
     const fetchHandle = useCallback((d, options = {}) => {
+        if (props?.route?.params?.homeListPayload) return;
+
         const requestedPageNum = options?.pageNum ?? pageNum;
         const requestedSortType = options?.sortType ?? d?.type ?? sortType ?? "";
         if (requestedPageNum === 0) {
@@ -635,28 +680,28 @@ const onBackPress = () => {
     }, [fetchHandle, isGuestFlow, props.navigation, props?.route?.params?.trig, resetResultsView, sortType]);
 
     const fetchMore = useCallback(() => {
-        if (!apiReq && !loading && canLoadMore && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
+        if (!apiReq && !loading && canLoadMore && storeAlldata.length > 0) {
             const nextPage = pageNum + 1;
             setPageNum(nextPage);
             fetchHandle(undefined, { pageNum: nextPage });
         }
-    }, [apiReq, canLoadMore, loading, pageNum, CMEReducer?.cmeCourseResponse?.conferences?.length, fetchHandle]);
+    }, [apiReq, canLoadMore, loading, pageNum, storeAlldata.length, fetchHandle]);
 
-        /**
- * Full data refresh utility.
- * @returns {void}
- */
-const fullDataRefresh = () => {
+    /**
+* Full data refresh utility.
+* @returns {void}
+*/
+    const fullDataRefresh = () => {
         resetResultsView({ loadingState: true });
         setRefreshing(true);
         fetchHandle(undefined, { pageNum: 0 });
     };
-        /**
- * Handles url.
- * @param {*} onlineName - Input value.
- * @returns {void}
- */
-const handleUrl = (onlineName) => {
+    /**
+* Handles url.
+* @param {*} onlineName - Input value.
+* @returns {void}
+*/
+    const handleUrl = (onlineName) => {
         const url = onlineName?.detailpage_url;
         if (!url) {
             return;
@@ -674,7 +719,7 @@ const handleUrl = (onlineName) => {
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-        });
+            });
         if (result) {
             const resolvedRealback =
                 props?.route?.params?.trig?.Realback ||
@@ -740,14 +785,102 @@ const handleUrl = (onlineName) => {
                 break;
         }
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
-        /**
- * Search globalitem utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const searchGlobalitem = ({ item, index }) => {
+
+    useEffect(() => {
+        if (!GuestReducer.status) {
+            return;
+        }
+
+        switch (GuestReducer.status) {
+            case 'Guest/HomelistRequest':
+                setApiReq(true);
+                setLoading(true);
+                break;
+            case 'Guest/HomelistSuccess':
+                if (guestResponseRef.current === GuestReducer?.HomelistResponse) {
+                    return;
+                }
+                guestResponseRef.current = GuestReducer?.HomelistResponse;
+                setApiReq(false);
+                setLoading(false);
+                setHasFetchedResults(true);
+                setRefreshing(false);
+                setDisplayedRouteQueryKey(routeQueryKey);
+
+                const root = GuestReducer?.HomelistResponse?.data?.data
+                    ? GuestReducer.HomelistResponse.data.data
+                    : GuestReducer?.HomelistResponse?.data
+                        ? GuestReducer.HomelistResponse.data
+                        : GuestReducer?.HomelistResponse || {};
+
+                const sectionTitle = props?.route?.params?.homeListPayload?.sectionTitle || 'Most Popular Conferences';
+
+                let conferences = [];
+                if (sectionTitle === 'Most Popular Conferences') {
+                    conferences = [
+                        root?.popular_courses,
+                        root?.popularCourses,
+                        root?.inperson_hybrid,
+                        root?.inPersonHybrid,
+                        root?.conferences,
+                        root?.featured_conferences,
+                        root?.featuredConferences,
+                        root?.free_conferences,
+                        root?.freeConferences,
+                        root?.data,
+                        root?.items,
+                        Object.values(root).find(val => Array.isArray(val))
+                    ].find(arr => Array.isArray(arr)) || [];
+                } else {
+                    conferences = Object.values(root).find(val => Array.isArray(val)) || [];
+                }
+
+                if (conferences?.length > 0) {
+                    if (pageNum === 0) {
+                        setStoreAlldata(conferences);
+                        if (props?.route?.params?.homeListPayload) {
+                            // Automatically pre-fetch page 1 immediately after page 0 loads
+                            setPageNum(1);
+                        }
+                    } else {
+                        let modifiedData = [
+                            ...storeAlldata,
+                            ...conferences,
+                        ]?.filter(
+                            (value, index, self) =>
+                                index === self.findIndex(t => String(t?.id) === String(value?.id)),
+                        );
+                        setStoreAlldata(modifiedData);
+                    }
+                } else if (conferences?.length === 0) {
+                    if (pageNum === 0) setStoreAlldata([]);
+                    setApiReq(false);
+                    setLoading(false);
+                }
+                break;
+            case 'Guest/HomelistFailure':
+                if (guestResponseRef.current === GuestReducer?.HomelistResponse) {
+                    return;
+                }
+                guestResponseRef.current = GuestReducer?.HomelistResponse;
+                setPageNum(0);
+                setApiReq(false);
+                setLoading(false);
+                setHasFetchedResults(true);
+                setRefreshing(false);
+                setDisplayedRouteQueryKey(routeQueryKey);
+                break;
+        }
+    }, [GuestReducer.status, GuestReducer?.HomelistResponse, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload?.sectionTitle]);
+
+    /**
+* Search globalitem utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @param {*} props.index - Nested property value.
+* @returns {JSX.Element}
+*/
+    const searchGlobalitem = ({ item, index }) => {
         const buttonLabel = getResultButtonLabel(item);
         const priceLabel = getResultPriceLabel(item);
         const guestCreditLabel = getResultCreditLabel(item);
@@ -755,31 +888,31 @@ const searchGlobalitem = ({ item, index }) => {
         const guestPrimaryLabel = guestCreditLabel;
         const guestSecondaryLabel = guestTypeLabel;
         const hasBottomRow = Boolean(buttonLabel || priceLabel);
-                /**
- * Formats date.
- * @param {*} dateStr - Input value.
- * @returns {*}
- */
-const formatDate = (dateStr) => {
+        /**
+* Formats date.
+* @param {*} dateStr - Input value.
+* @returns {*}
+*/
+        const formatDate = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM  D").replace(' ', '');
         };
         const formattedDate = formatDate(item?.startdate);
-                /**
- * Formats date end.
- * @param {*} dateStr - Input value.
- * @returns {*}
- */
-const formatDateEnd = (dateStr) => {
+        /**
+* Formats date end.
+* @param {*} dateStr - Input value.
+* @returns {*}
+*/
+        const formatDateEnd = (dateStr) => {
             const date = moment(dateStr, "DD MMM'YY");
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
-                /**
- * Render location and dates utility.
- * @returns {*}
- */
-const renderLocationAndDates = () => {
+        /**
+* Render location and dates utility.
+* @returns {*}
+*/
+        const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
                     <View style={{ flexDirection: "row" }}>
@@ -939,12 +1072,12 @@ const renderLocationAndDates = () => {
             </View>
         )
     };
-        /**
- * Handles guest profession select.
- * @param {*} profession - Input value.
- * @returns {void}
- */
-const handleGuestProfessionSelect = profession => {
+    /**
+* Handles guest profession select.
+* @param {*} profession - Input value.
+* @returns {void}
+*/
+    const handleGuestProfessionSelect = profession => {
         setCmeModalVisible(false);
         setAllProfessionData(null);
         setHandledCmeRequestKey('');
@@ -959,12 +1092,12 @@ const handleGuestProfessionSelect = profession => {
             setShouldOpenCmeChecklist(true);
         }
     };
-        /**
- * Handles guest state select.
- * @param {*} stateObj - Input value.
- * @returns {void}
- */
-const handleGuestStateSelect = stateObj => {
+    /**
+* Handles guest state select.
+* @param {*} stateObj - Input value.
+* @returns {void}
+*/
+    const handleGuestStateSelect = stateObj => {
         setCmeModalVisible(false);
         setAllProfessionData(null);
         setHandledCmeRequestKey('');
@@ -979,12 +1112,12 @@ const handleGuestStateSelect = stateObj => {
             setShouldOpenCmeChecklist(true);
         }
     };
-        /**
- * Handles guest browse courses.
- * @param {*} params - Input value.
- * @returns {void}
- */
-const handleGuestBrowseCourses = params => {
+    /**
+* Handles guest browse courses.
+* @param {*} params - Input value.
+* @returns {void}
+*/
+    const handleGuestBrowseCourses = params => {
         setCmeModalVisible(false);
         setSortedFall(false);
         resetResultsView({ clearSort: true, routeKey: '' });
@@ -1051,95 +1184,107 @@ const handleGuestBrowseCourses = params => {
                     </View>
                 )}
                 {!isRouteRefreshing && storeAlldata?.length > 0 && (
-                    <>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setPageNum(0);
-                                setSortedFall(!sortedFall);
-                            }}
-                            style={isGuestFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
-                        >
-                            <View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
-                                <Text style={[
-                                    isGuestFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
-                                    { marginBottom: 0 }
-                                ]}>
-                                    {`Showing (${totalResults || ""}) Results for`}
-                                </Text>
-                                <View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
-                                    <Text style={isGuestFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
-                                    <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                        {isGuestFlow && CMEReducer?.cmeCourseResponse?.header_title ? (
-                            <View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
-                                <Text style={styles.guestSummaryTitle}>
-                                    {CMEReducer?.cmeCourseResponse?.header_title}
-                                </Text>
-                            </View>
+                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                        {displayTitle ? (
+                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                                {displayTitle}
+                            </Text>
                         ) : null}
-                    </>
-                )}
-                {!isRouteRefreshing && !isGuestFlow && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && (
-                    <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
-                            {CMEReducer?.cmeCourseResponse?.header_title}
-                        </Text>
                     </View>
                 )}
                 <View style={{ flex: 1 }}>
-                    <FlatList
-                        style={{ flex: 1 }}
-                        key={`results-${routeQueryKey}-${selectedProfession || 'none'}-${getStateId(selectedState) || 'none'}`}
-                        data={isRouteRefreshing ? [] : storeAlldata}
-                        renderItem={searchGlobalitem}
-                        keyExtractor={(item, index) => String(item?.id ?? item?.detailpage_url ?? index)}
-                        onEndReached={fetchMore}
-                        onEndReachedThreshold={0.3}
-                        contentContainerStyle={isGuestFlow ? styles.guestListContent : { paddingBottom: normalize(200) }}
-                        scrollEventThrottle={16}
-                        ListFooterComponent={
-                            loading ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
-                        }
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={fullDataRefresh}
-                            />
-                        }
-                        ListEmptyComponent={!isRouteRefreshing && hasFetchedResults && !loading &&
-                            <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                                <View
-                                    style={{
-                                        flexDirection: "row",
-                                        // height: normalize(83),
-                                        width: normalize(290),
-                                        borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(10),
-                                        alignItems: "center",
-                                        borderStyle: 'dotted',
-                                        borderWidth: 1,
-                                    }}
-                                >
-                                    <View style={{ flex: 1, justifyContent: "center" }}>
-                                        <Text
+                    {(() => {
+                        const displayData = (() => {
+                            if (!props?.route?.params?.homeListPayload || !sortType) {
+                                return isRouteRefreshing ? [] : storeAlldata;
+                            }
+
+                            let sorted = [...(isRouteRefreshing ? [] : storeAlldata)];
+
+                            const getPrice = (item) => {
+                                const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? item?.displayPrice ?? '';
+                                const p = String(rawPrice).trim().toLowerCase();
+                                if (!p || p === 'free') return 0;
+                                return parseFloat(p.replace(/[^0-9.]/g, '')) || 0;
+                            };
+
+                            const getDate = (item) => {
+                                if (!item?.startdate) return 0;
+                                return moment(item.startdate, "DD MMM'YY").valueOf() || 0;
+                            };
+
+                            const getCme = (item) => {
+                                const cme = item?.credit_counts ?? item?.cme_credits ?? item?.cmepoints ?? 0;
+                                return parseFloat(String(cme).replace(/[^0-9.]/g, '')) || 0;
+                            };
+
+                            sorted.sort((a, b) => {
+                                if (sortType === 'PRICE_ASC') return getPrice(a) - getPrice(b);
+                                if (sortType === 'PRICE_DESC') return getPrice(b) - getPrice(a);
+                                if (sortType === 'STARTDATE_DESC') return getDate(b) - getDate(a);
+                                if (sortType === 'STARTDATE_ASC') return getDate(a) - getDate(b);
+                                if (sortType === 'CMEPOINTS_ASC') return getCme(a) - getCme(b);
+                                if (sortType === 'CMEPOINTS_DESC') return getCme(b) - getCme(a);
+                                return 0;
+                            });
+
+                            return sorted;
+                        })();
+
+                        return (
+                            <FlatList
+                                style={{ flex: 1 }}
+                                key={`results-${routeQueryKey}-${selectedProfession || 'none'}-${getStateId(selectedState) || 'none'}`}
+                                data={displayData}
+                                renderItem={searchGlobalitem}
+                                keyExtractor={(item, index) => String(item?.id ?? item?.detailpage_url ?? index)}
+                                onEndReached={fetchMore}
+                                onEndReachedThreshold={1.5}
+                                contentContainerStyle={isGuestFlow ? styles.guestListContent : { paddingBottom: normalize(200) }}
+                                scrollEventThrottle={16}
+                                ListFooterComponent={
+                                    loading ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                                }
+                                refreshControl={
+                                    <RefreshControl
+                                        refreshing={refreshing}
+                                        onRefresh={fullDataRefresh}
+                                    />
+                                }
+                                ListEmptyComponent={!isRouteRefreshing && hasFetchedResults && !loading &&
+                                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
+                                        <View
                                             style={{
-                                                fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: Colorpath.ButtonColr,
-                                                fontWeight: "bold",
-                                                alignSelf: "center"
+                                                flexDirection: "row",
+                                                // height: normalize(83),
+                                                width: normalize(290),
+                                                borderRadius: normalize(10),
+                                                backgroundColor: "#FFFFFF",
+                                                paddingHorizontal: normalize(10),
+                                                paddingVertical: normalize(10),
+                                                alignItems: "center",
+                                                borderStyle: 'dotted',
+                                                borderWidth: 1,
                                             }}
                                         >
-                                            {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                        </Text>
+                                            <View style={{ flex: 1, justifyContent: "center" }}>
+                                                <Text
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: 16,
+                                                        color: Colorpath.ButtonColr,
+                                                        fontWeight: "bold",
+                                                        alignSelf: "center"
+                                                    }}
+                                                >
+                                                    {"There are no matches available for your search criteria. Please change the criteria and try again."}
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                </View>
-                            </View>
-                        } />
+                                } />
+                        );
+                    })()}
                 </View>
                 <Modal
                     animationIn={'slideInUp'}
@@ -1181,17 +1326,19 @@ const handleGuestBrowseCourses = params => {
                                 keyExtractor={item => item.id.toString()}
                                 data={sortOptions}
                                 renderItem={({ item }) => {
-                                                                        /**
- * Handles press.
- * @param {*} dd - Input value.
- * @returns {void}
- */
-const handlePress = (dd) => {
-                                        fetchHandle(dd, { pageNum: 0, sortType: dd?.type });
-                                        setPageNum(0);
+                                    /**
+* Handles press.
+* @param {*} dd - Input value.
+* @returns {void}
+*/
+                                    const handlePress = (dd) => {
                                         setSortType(dd?.type);
                                         setSortedFall(false);
-                                        setStoreAlldata([]);
+                                        if (!props?.route?.params?.homeListPayload) {
+                                            fetchHandle(dd, { pageNum: 0, sortType: dd?.type });
+                                            setPageNum(0);
+                                            setStoreAlldata([]);
+                                        }
                                     };
 
                                     return (

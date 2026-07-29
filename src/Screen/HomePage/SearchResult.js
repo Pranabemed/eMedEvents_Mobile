@@ -11,6 +11,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Modal from 'react-native-modal';
 import { postApi } from '../../Utils/Helpers/ApiRequest';
 import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
@@ -42,6 +43,7 @@ const normalizeHomeListingItem = (item, index) => {
     const format = item?.format || item?.conference_type_text || item?.type || item?.event_type || item?.eventType || '';
     let cmeLabel = cme && format ? `${cme} | ${format}` : (cme || format || '');
     const dateRange = getDateRange(item) || (item?.startdate && item?.enddate ? `${item.startdate} - ${item.enddate}` : '');
+    const eventType = String(format || item?.event_type || item?.eventType || '').trim();
 
     return {
         id: item?.id ?? item?.conference_id ?? item?.detailpage_url ?? index,
@@ -56,7 +58,28 @@ const normalizeHomeListingItem = (item, index) => {
         buttonText: item?.buttonText || item?.button_text || item?.button || 'Register',
         detailpageUrl: item?.detailpage_url || item?.detailpageUrl || item?.url || item?.banner_url || '',
         cmeLabel: cmeLabel,
+        eventType,
     };
+};
+
+const parseListingDateValue = item => {
+    const candidates = [
+        item?.raw?.startdate,
+        item?.startdate,
+        item?.raw?.enddate,
+        item?.enddate,
+        item?.dateRange,
+    ];
+
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        const parsed = Date.parse(candidate);
+        if (!Number.isNaN(parsed)) {
+            return parsed;
+        }
+    }
+
+    return 0;
 };
 
 const extractHomeListItems = (homeResponse, sectionTitle = '') => {
@@ -128,6 +151,7 @@ const extractHomeListItems = (homeResponse, sectionTitle = '') => {
 const SearchResult = (props) => {
     const sectionTitle = props?.route?.params?.sectionTitle || 'Search Results';
     const homeListPayload = props?.route?.params?.homeListPayload || null;
+    const itemsPerPage = Number(homeListPayload?.limit || 9);
     const resolvedHomeListPayload = useMemo(
         () =>
             homeListPayload || (
@@ -143,10 +167,17 @@ const SearchResult = (props) => {
         [homeListPayload, sectionTitle],
     );
     const homeListPayloadKey = JSON.stringify(resolvedHomeListPayload || {});
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(0);
     const [allApiResults, setAllApiResults] = useState([]);
     const [isLoading, setIsLoading] = useState(Boolean(resolvedHomeListPayload));
     const [hasLoaded, setHasLoaded] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    
+    const [sortType, setSortType] = useState('');
+    const [sortedFall, setSortedFall] = useState(false);
+    const [filterVisible, setFilterVisible] = useState(false);
+    const [isFreeOnly, setIsFreeOnly] = useState(false);
+    const [eventTypeFilter, setEventTypeFilter] = useState('');
 
     const FilterBack = () => {
         props.navigation.goBack();
@@ -162,7 +193,7 @@ const SearchResult = (props) => {
                 return;
             }
 
-            if (page === 1) setIsLoading(true);
+            if (page === 0) setIsLoading(true);
             try {
                 getUserAgentJSON();
                 const ipAddress = getPublicIP();
@@ -174,18 +205,24 @@ const SearchResult = (props) => {
 
                 const currentPayload = {
                     ...resolvedHomeListPayload,
-                    pageno: page - 1,
-                    limit: resolvedHomeListPayload.limit || 9
+                    pageno: page,
+                    limit: itemsPerPage,
                 };
 
                 const response = await postApi('Home/list', currentPayload, header);
                 if (isMounted) {
                     const responseData = response?.status === 200 ? response?.data : response?.data || null;
                     const newItems = extractHomeListItems(responseData, sectionTitle);
-                    setAllApiResults(prev => page === 1 ? newItems : [...prev, ...newItems]);
+                    setHasMore(newItems.length >= itemsPerPage);
+                    setAllApiResults(prev => {
+                        if (page === 0) return newItems;
+                        const existingIds = new Set(prev.map(item => String(item?.id)));
+                        const uniqueNewItems = newItems.filter(item => !existingIds.has(String(item?.id)));
+                        return [...prev, ...uniqueNewItems];
+                    });
                 }
             } catch (error) {
-                if (isMounted && page === 1) {
+                if (isMounted && page === 0) {
                     setAllApiResults([]);
                     showErrorAlert('Unable to load listings');
                 }
@@ -202,17 +239,50 @@ const SearchResult = (props) => {
         return () => {
             isMounted = false;
         };
-    }, [homeListPayloadKey, page]);
+    }, [homeListPayloadKey, page, resolvedHomeListPayload, sectionTitle, itemsPerPage]);
 
     const sourceResults = resolvedHomeListPayload ? allApiResults : dommyResult;
-    const itemsPerPage = resolvedHomeListPayload ? 9 : 2;
-    const paginatedResults = resolvedHomeListPayload ? sourceResults : useMemo(
-        () => sourceResults.slice(0, page * itemsPerPage),
-        [page, sourceResults, itemsPerPage],
+    
+    const filteredAndSortedResults = useMemo(() => {
+        let results = [...sourceResults];
+        
+        if (isFreeOnly) {
+            results = results.filter(item => String(item?.price).toUpperCase() === 'FREE');
+        }
+
+        if (eventTypeFilter) {
+            const needle = eventTypeFilter.toLowerCase();
+            results = results.filter(item => String(item?.eventType || '').toLowerCase().includes(needle));
+        }
+        
+        if (sortType) {
+            results.sort((a, b) => {
+                const getPrice = (item) => {
+                    if (!item?.price) return 0;
+                    if (String(item.price).toUpperCase() === 'FREE') return 0;
+                    return parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0;
+                };
+                
+                if (sortType === 'PRICE_ASC') return getPrice(a) - getPrice(b);
+                if (sortType === 'PRICE_DESC') return getPrice(b) - getPrice(a);
+                if (sortType === 'DATE_DESC') return parseListingDateValue(b) - parseListingDateValue(a);
+                if (sortType === 'DATE_ASC') return parseListingDateValue(a) - parseListingDateValue(b);
+                if (sortType === 'TITLE_ASC') return String(a?.name || '').localeCompare(String(b?.name || ''));
+                if (sortType === 'TITLE_DESC') return String(b?.name || '').localeCompare(String(a?.name || ''));
+                return 0;
+            });
+        }
+        return results;
+    }, [sourceResults, sortType, isFreeOnly, eventTypeFilter]);
+
+    const paginatedResults = useMemo(
+        () => filteredAndSortedResults,
+        [filteredAndSortedResults],
     );
-    const hasMore = resolvedHomeListPayload ? (allApiResults.length >= page * itemsPerPage) : paginatedResults.length < sourceResults.length;
     useEffect(() => {
-        setPage(1);
+        setPage(0);
+        setAllApiResults([]);
+        setHasMore(true);
     }, [homeListPayloadKey]);
 
     /**
@@ -340,6 +410,17 @@ const intenalMedItem = ({ item, index }) => {
                 <View style={{ backgroundColor: '#FFFFFF', marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     <PageHeader title={sectionTitle} onBackPress={FilterBack} />
                 </View>
+                <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                    <View style={{ justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: '#333', marginBottom: 0 }}>
+                            {`Showing (${filteredAndSortedResults.length}) Results for`}
+                        </Text>
+                        <TouchableOpacity onPress={() => setSortedFall(true)} style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: '#333' }}>Sort By</Text>
+                            <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: 'contain', marginLeft: normalize(8) }} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
                 <View style={{ paddingHorizontal: normalize(10), paddingTop: 0 }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
                         {sectionTitle}
@@ -356,7 +437,7 @@ const intenalMedItem = ({ item, index }) => {
                             renderItem={intenalMedItem}
                             keyExtractor={(item, index) => String(item?.id ?? item?.detailpageUrl ?? index)}
                             onEndReached={() => {
-                                if (hasMore) {
+                                if (resolvedHomeListPayload && hasMore && !isLoading) {
                                     setPage(prev => prev + 1);
                                 }
                             }}
@@ -373,7 +454,161 @@ const intenalMedItem = ({ item, index }) => {
                         />
                     )}
                 </View>
-            </SafeAreaView>
+
+                {/* Floating Filter Button */}
+                <View style={{
+                    position: 'absolute',
+                    bottom: 70,
+                    right: 0,
+                    paddingHorizontal: normalize(20),
+                    zIndex: 999
+                }}>
+                    <TouchableOpacity onPress={() => {
+                        setFilterVisible(true);
+                    }} style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: normalize(50),
+                        width: normalize(50),
+                        backgroundColor: Colorpath.ButtonColr,
+                        borderWidth: 0.5,
+                        borderColor: "#AAAAAA",
+                        borderRadius: normalize(50),
+                        paddingHorizontal: normalize(15)
+                    }}>
+                        <Image source={Imagepath.WrongFil} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain" }} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Sort Modal */}
+                <Modal
+                    isVisible={sortedFall}
+                    onBackdropPress={() => setSortedFall(false)}
+                    style={{
+                        width: '100%',
+                        alignSelf: 'center',
+                        margin: 0,
+                    }}
+                >
+                    <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => setSortedFall(false)}
+                    >
+                        <View style={{
+                            borderRadius: normalize(7),
+                            height: normalize(340),
+                            position: 'absolute',
+                            bottom: 0,
+                            width: '100%',
+                            backgroundColor: '#fff',
+                        }}>
+                        <FlatList
+                            contentContainerStyle={{
+                                paddingBottom: normalize(12),
+                                paddingTop: normalize(7),
+                            }}
+                            showsVerticalScrollIndicator={false}
+                            keyExtractor={item => item.id.toString()}
+                            data={[
+                                { name: "Price - Low to High", type: "PRICE_ASC", id: 0 },
+                                { name: "Price - High to Low", type: "PRICE_DESC", id: 1 },
+                                { name: "Date - Newest First", type: "DATE_DESC", id: 2 },
+                                { name: "Date - Oldest First", type: "DATE_ASC", id: 3 },
+                                { name: "Title - A to Z", type: "TITLE_ASC", id: 4 },
+                                { name: "Title - Z to A", type: "TITLE_DESC", id: 5 },
+                            ]}
+                            renderItem={({ item }) => {
+                                const handlePress = (dd) => {
+                                    setSortType(dd?.type);
+                                    setSortedFall(false);
+                                };
+
+                                return (
+                                    <TouchableOpacity
+                                        onPress={() => { handlePress(item) }}
+                                        style={{
+                                            paddingVertical: normalize(15),
+                                            borderBottomWidth: 1,
+                                            borderBottomColor: '#eee'
+                                        }}
+                                    >
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: sortType === item.type ? Colorpath.ButtonColr : '#333' }}>
+                                            {item?.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                        />
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+
+                {/* Filter Modal */}
+                <Modal
+                    isVisible={filterVisible}
+                    onBackdropPress={() => setFilterVisible(false)}
+                    style={{
+                        width: '100%',
+                        alignSelf: 'center',
+                        margin: 0,
+                    }}
+                >
+                    <TouchableOpacity
+                        style={{ flex: 1 }}
+                        onPress={() => setFilterVisible(false)}
+                    >
+                        <View style={{
+                            borderRadius: normalize(7),
+                            height: normalize(340),
+                            position: 'absolute',
+                            bottom: 0,
+                            width: '100%',
+                            backgroundColor: '#fff',
+                        }}>
+                        <FlatList
+                            contentContainerStyle={{
+                                paddingBottom: normalize(12),
+                                paddingTop: normalize(7),
+                            }}
+                            showsVerticalScrollIndicator={false}
+                            keyExtractor={item => item.id}
+                            data={[
+                                { id: 'free_only', label: 'Free Courses Only', value: 'free' },
+                                { id: 'all_type', label: 'All Conference Types', value: '' },
+                                { id: 'webcast', label: 'Webcast', value: 'webcast' },
+                                { id: 'inperson', label: 'In-Person', value: 'in-person' },
+                                { id: 'hybrid', label: 'Hybrid', value: 'hybrid' },
+                            ]}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (item.id === 'free_only') {
+                                            setIsFreeOnly(!isFreeOnly);
+                                        } else {
+                                            setEventTypeFilter(item.value);
+                                        }
+                                        setFilterVisible(false);
+                                    }}
+                                    style={{
+                                        paddingVertical: normalize(15),
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: '#eee',
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between'
+                                    }}
+                                >
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: (item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? Colorpath.ButtonColr : '#333' }}>
+                                        {item.label}
+                                    </Text>
+                                    {(item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? <Text style={{ color: Colorpath.ButtonColr }}>✓</Text> : null}
+                                </TouchableOpacity>
+                            )}
+                        />
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+                </SafeAreaView>
         </>
     );
 };
