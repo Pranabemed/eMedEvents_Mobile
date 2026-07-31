@@ -282,6 +282,11 @@ const normalizeFlag = (value) => {
     const loginResponse = AuthReducer?.againloginsiginResponse || {};
     const user = loginResponse?.user || {};
     const chooseStatecardResponse = AuthReducer?.chooseStatecardResponse || {};
+    const isGuestPrimeUser = useMemo(() => {
+        const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+        const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+        return subscriptionUser === 'non-subscribed' && subscriptions.length === 0;
+    }, [user?.subscription_user, user?.subscriptions]);
 
     // Memoized derived values
     const profFromDashboard = useMemo(() => (
@@ -381,6 +386,15 @@ const handleNavigation = (destination, params = {}) => {
             return;
         }
 
+        if (isGuestPrimeUser) {
+            setNonloader(true);
+            handleNavigation("PrimeCard", {
+                ...props?.route?.params,
+                detectmain: "Prime",
+            });
+            return;
+        }
+
         if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
             return;
         }
@@ -422,6 +436,8 @@ const handleNavigation = (destination, params = {}) => {
         chooseStatecardResponse, // Now watching the entire response object
         nonUsaPermanentFlags,
         tokenObj
+        ,
+        isGuestPrimeUser
     ]);
     useEffect(() => {
         if (DashboardReducer?.status === 'Dashboard/dashboardSuccess') {

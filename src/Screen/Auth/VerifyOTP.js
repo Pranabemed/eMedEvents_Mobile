@@ -12,7 +12,7 @@ import Buttons from '../../Components/Button';
 import CustomModal from '../../Components/Modal';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { resendemailotpRequest, verifyemailRequest } from '../../Redux/Reducers/AuthReducer';
+import { resendemailotpRequest, verifyRequest, verifyemailRequest } from '../../Redux/Reducers/AuthReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -26,6 +26,8 @@ import { writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/
  * @returns {string}
  */
 let status = "";
+const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
+const GUEST_VERIFICATION_COMPLETED_KEY = 'GUEST_VERIFICATION_COMPLETED';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
@@ -314,25 +316,33 @@ const resendEmailOTP = () => {
             case 'Auth/verifyemailSuccess':
                 status = AuthReducer.status;
                 persistEmailVerifiedStatus();
-                if (isNonUsaUser) {
-                    writeNonUsaFlowState({
-                        userType: 'non_usa',
-                        isNonUsa: true,
-                        emailVerified: true,
-                        professionCompleted: true,
-                    });
-                    props.navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: 'TabNav' }],
-                        })
-                    );
-                } else {
-                    (async () => {
+                (async () => {
+                    const token = await AsyncStorage.getItem(constants.TOKEN);
+                    if (token) {
+                        dispatch(verifyRequest({ token, key: {} }));
+                    }
+                    await Promise.all([
+                        AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+                        AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
+                    ]);
+                    if (isNonUsaUser) {
+                        writeNonUsaFlowState({
+                            userType: 'non_usa',
+                            isNonUsa: true,
+                            emailVerified: true,
+                            professionCompleted: true,
+                        });
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: 'TabNav' }],
+                            })
+                        );
+                    } else {
                         await clearNonUsaFlowState();
-                    })().catch(err => console.log('clearNonUsaFlowState error', err));
-                    toggleModal();
-                }
+                        toggleModal();
+                    }
+                })().catch(err => console.log('verifyemailSuccess cleanup error', err));
                 // props.navigation.navigate("VerifyMobileOTP");
                 break;
             case 'Auth/verifyemailFailure':

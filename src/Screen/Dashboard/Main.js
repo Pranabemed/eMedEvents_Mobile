@@ -69,6 +69,11 @@ const SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY = 'SUPPRESS_GUEST_HOME_PROMPTS_ONCE';
  * @returns {string}
  */
 const PRIME_CARD_TEST_COUNTRY_CODE = '';
+/**
+ * Guest verification completed key constant.
+ * @returns {string}
+ */
+const GUEST_VERIFICATION_COMPLETED_KEY = 'GUEST_VERIFICATION_COMPLETED';
 
 /**
  * Normalizes profession handle.
@@ -310,13 +315,13 @@ const Main = (props) => {
   const [hasEnables, setHasEnables] = useState(false);
   const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
   useEffect(() => {
-        /**
- * Load explore trial clicked utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadExploreTrialClicked = async () => {
+    /**
+* Load explore trial clicked utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const loadExploreTrialClicked = async () => {
       try {
         const val = await AsyncStorage.getItem('ExploreTrialClicked');
         setExploreTrialClicked(val === 'true');
@@ -370,20 +375,18 @@ const loadExploreTrialClicked = async () => {
   }, [isFocus]);
 
   const isNonUsaUser = useMemo(() => {
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
-    const isUsaProfile =
-      userObj?.usa_user === true ||
-      userObj?.usa_user === 1 ||
-      userObj?.usa_user === '1' ||
-      userObj?.is_non_usa === false ||
-      userObj?.is_non_usa === 0 ||
-      userObj?.is_non_usa === '0';
-    if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
-      clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
-      setNonUsaFlowState(null);
+    const ipCountry = String(resolvedIpCountryCode || '').trim().toUpperCase();
+    const isUsaLocation = ipCountry === 'US' || ipCountry === 'USA';
+
+    if (isUsaLocation) {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
     }
-    return !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
-  }, [DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.loginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, finalverifyvaultmain, finalProfessionmain, nonUsaFlowState]);
+    return true;
+  }, [resolvedIpCountryCode, nonUsaFlowState]);
   const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
   const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
   const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
@@ -432,6 +435,7 @@ const loadExploreTrialClicked = async () => {
     };
   }, [primeadd, isDrawerVisible]);
   const { detectmain } = props?.route?.params || {}
+  console.log(detectmain,"detectmain");
   const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
   const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
@@ -598,11 +602,11 @@ const loadExploreTrialClicked = async () => {
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
   useEffect(() => {
-        /**
- * Reset state utility.
- * @returns {void}
- */
-const resetState = () => {
+    /**
+* Reset state utility.
+* @returns {void}
+*/
+    const resetState = () => {
       backPressCount.current = 0;
       isSnackbarVisible.current = false;
       if (snackbarTimeout.current) {
@@ -611,11 +615,11 @@ const resetState = () => {
       }
     };
 
-        /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+    /**
+* On back press utility.
+* @returns {boolean}
+*/
+    const onBackPress = () => {
       if (isSnackbarVisible.current) {
         resetState();
         BackHandler.exitApp();
@@ -631,11 +635,11 @@ const onBackPress = () => {
         action: {
           text: 'EXIT',
           textColor: '#D87AF6',
-                    /**
- * On press utility.
- * @returns {void}
- */
-onPress: () => {
+          /**
+* On press utility.
+* @returns {void}
+*/
+          onPress: () => {
             resetState();
             BackHandler.exitApp();
           },
@@ -660,11 +664,11 @@ onPress: () => {
   const shouldRenderNewProfession =
     !isPhysicianFlow && !isNursingFlow && (forceNewProfession || isNonUsaUser);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
-    /**
- * Render main add license card utility.
- * @returns {JSX.Element}
- */
-const renderMainAddLicenseCard = () => (
+  /**
+* Render main add license card utility.
+* @returns {JSX.Element}
+*/
+  const renderMainAddLicenseCard = () => (
     <View style={{
       marginHorizontal: normalize(10),
       marginTop: normalize(4),
@@ -730,11 +734,11 @@ const renderMainAddLicenseCard = () => (
     enableFreeze(false);
   }, []);
   useEffect(() => {
-        /**
- * Token handle vault utility.
- * @returns {void}
- */
-const token_handle_vault = () => {
+    /**
+* Token handle vault utility.
+* @returns {void}
+*/
+    const token_handle_vault = () => {
       (async () => {
         try {
           const [board_special, profession_data, stablePrimeFlagRaw] = await Promise.all([
@@ -760,15 +764,74 @@ const token_handle_vault = () => {
 
     token_handle_vault();
   }, [isFocus]);
+  useEffect(() => {
+    if (AuthReducer?.status !== 'Auth/verifySuccess') return;
+
+    let isMounted = true;
+    const syncVerifiedState = async () => {
+      try {
+        const [verifyRaw, professionRaw, guestCompletedRaw] = await Promise.all([
+          AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+          AsyncStorage.getItem(constants.PROFESSION),
+          AsyncStorage.getItem(GUEST_VERIFICATION_COMPLETED_KEY),
+        ]);
+        if (!isMounted) return;
+
+        const verifyData = parseStoredJson(verifyRaw);
+        const professionData = parseStoredJson(professionRaw);
+        const verifyResponseUser =
+          AuthReducer?.verifyResponse?.user ||
+          AuthReducer?.verifyResponse?.data ||
+          (AuthReducer?.verifyResponse && typeof AuthReducer.verifyResponse === 'object'
+            ? AuthReducer.verifyResponse
+            : null);
+
+        const mergedVerifyData = verifyResponseUser ? { ...(verifyData || {}), ...verifyResponseUser } : verifyData;
+        const mergedProfessionData = professionData
+          ? { ...professionData, ...(mergedVerifyData || {}) }
+          : mergedVerifyData;
+
+        if (mergedVerifyData) {
+          setFinalverifyvaultmain(mergedVerifyData);
+        }
+        if (mergedProfessionData) {
+          setFinalProfessionmain(mergedProfessionData);
+        }
+        setIsAsyncStorageLoaded(true);
+
+        if (guestCompletedRaw === 'true') {
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          setPrimeadd(false);
+          primePromptVisibleRef.current = false;
+          setShowGuestPrimePrompt(false);
+        }
+
+        connectionrequest()
+          .then(() => {
+            dispatch(mainprofileRequest({}));
+          })
+          .catch((err) => console.log('verifySuccess mainprofile refresh error', err));
+      } catch (error) {
+        console.log('syncVerifiedState error', error);
+      }
+    };
+
+    syncVerifiedState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [AuthReducer?.status, AuthReducer?.verifyResponse]);
   console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
   useEffect(() => {
-        /**
- * Load profile utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadProfile = async () => {
+    /**
+* Load profile utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const loadProfile = async () => {
       try {
         const profile = await AsyncStorage.getItem('activeProfile');
         const stablePrimeFlagRaw = await AsyncStorage.getItem(constants.GUEST_PRIME_USER);
@@ -852,13 +915,13 @@ const loadProfile = async () => {
       return;
     }
     let isMounted = true;
-        /**
- * Fetch country utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const fetchCountry = async () => {
+    /**
+* Fetch country utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const fetchCountry = async () => {
       const countryCode = await getCountryFromIP(ipAddress);
       if (isMounted) {
         setResolvedIpCountryCode(countryCode || 'unknown');
@@ -871,13 +934,13 @@ const fetchCountry = async () => {
   }, [ipAddress]);
   useEffect(() => {
     if (!isFocus) return;
-        /**
- * Load forced profession view utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadForcedProfessionView = async () => {
+    /**
+* Load forced profession view utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const loadForcedProfessionView = async () => {
       try {
         const [forceNewProfessionRaw, primeMembershipSkippedRaw] = await Promise.all([
           AsyncStorage.getItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
@@ -897,15 +960,15 @@ const loadForcedProfessionView = async () => {
     };
     loadForcedProfessionView();
   }, [isFocus, hasActivePrimeMembership]);
-    /**
- * Open guest verification alert utility.
- *
- * @async
- * @param {*} user - Input value.
- * @param {boolean} shouldClearPendingKey - Input value.
- * @returns {Promise<*>}
- */
-const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
+  /**
+* Open guest verification alert utility.
+*
+* @async
+* @param {*} user - Input value.
+* @param {boolean} shouldClearPendingKey - Input value.
+* @returns {Promise<*>}
+*/
+  const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
     if (!user) return;
     if (shouldClearPendingKey) {
       try {
@@ -922,13 +985,13 @@ const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) =
       setGuestVerifyModalVisible(true);
     }, 500);
   };
-    /**
- * Request guest verification check utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const requestGuestVerificationCheck = async () => {
+  /**
+* Request guest verification check utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const requestGuestVerificationCheck = async () => {
     const token = await AsyncStorage.getItem(constants.TOKEN);
     if (!token) return;
     setGuestVerifyCheckRequested(true);
@@ -941,26 +1004,26 @@ const requestGuestVerificationCheck = async () => {
         showErrorAlert("Please connect to internet", err);
       });
   };
-    /**
- * Set guest prime verification pending utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const setGuestPrimeVerificationPending = async () => {
+  /**
+* Set guest prime verification pending utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const setGuestPrimeVerificationPending = async () => {
     try {
       await AsyncStorage.setItem(GUEST_PRIME_VERIFICATION_PENDING_KEY, 'true');
     } catch (error) {
       console.log('setGuestPrimeVerificationPending error', error);
     }
   };
-    /**
- * Handles guest prime skip.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleGuestPrimeSkip = async () => {
+  /**
+* Handles guest prime skip.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const handleGuestPrimeSkip = async () => {
     await setGuestPrimeVerificationPending();
     try {
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
@@ -988,13 +1051,13 @@ const handleGuestPrimeSkip = async () => {
     setShowGuestPrimePrompt(false);
     await requestGuestVerificationCheck();
   };
-    /**
- * Handles guest prime explore trial.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleGuestPrimeExploreTrial = async () => {
+  /**
+* Handles guest prime explore trial.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const handleGuestPrimeExploreTrial = async () => {
     await setGuestPrimeVerificationPending();
     await AsyncStorage.removeItem('activeProfile');
     await AsyncStorage.setItem('ExploreTrialClicked', 'true');
@@ -1008,13 +1071,13 @@ const handleGuestPrimeExploreTrial = async () => {
     primePromptVisibleRef.current = false;
     setShowGuestPrimePrompt(false);
   };
-    /**
- * Handles guest prime membership.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleGuestPrimeMembership = async () => {
+  /**
+* Handles guest prime membership.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const handleGuestPrimeMembership = async () => {
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
     await AsyncStorage.removeItem('ExploreTrialClicked');
     await setGuestPrimeVerificationPending();
@@ -1030,13 +1093,13 @@ const handleGuestPrimeMembership = async () => {
   };
   useEffect(() => {
     if (!isFocus) return;
-        /**
- * Load guest verify modal utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadGuestVerifyModal = async () => {
+    /**
+* Load guest verify modal utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const loadGuestVerifyModal = async () => {
       try {
         if (guestVerifyNavigationRef.current) {
           return;
@@ -1049,6 +1112,7 @@ const loadGuestVerifyModal = async () => {
           verifyRaw,
           professionRaw,
           guestPrimeVerifyPendingRaw,
+          guestVerificationCompletedRaw,
           primeMembershipSkippedRaw,
           primeCardFlowCompleteRaw,
           exploreTrialClickedRaw,
@@ -1060,6 +1124,7 @@ const loadGuestVerifyModal = async () => {
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
           AsyncStorage.getItem(constants.PROFESSION),
           AsyncStorage.getItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+          AsyncStorage.getItem(GUEST_VERIFICATION_COMPLETED_KEY),
           AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
           AsyncStorage.getItem('PrimeCardFlowComplete'),
           AsyncStorage.getItem('ExploreTrialClicked'),
@@ -1081,11 +1146,18 @@ const loadGuestVerifyModal = async () => {
         const isVerificationPending = guestPrimeVerifyPendingRaw === 'true';
         const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
         const isExploreTrialClicked = exploreTrialClickedRaw === 'true';
+        const isGuestVerificationCompleted = guestVerificationCompletedRaw === 'true';
         const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
         const hasFreshVerifyResponse =
           Boolean(verifyResponseData && Object.keys(verifyResponseData).length > 0);
 
         if (!resolvedIpCountryCode) {
+          return;
+        }
+
+        if (isGuestVerificationCompleted) {
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
           return;
         }
 
@@ -1106,6 +1178,25 @@ const loadGuestVerifyModal = async () => {
         const professionData = parseStoredJson(professionRaw);
         console.log(professionRaw, "professionRaw======456465456")
         const user = verifyResponseData || verifyData || professionData || DashboardReducer?.mainprofileResponse || authProfessionInfo;
+        const isUsaLocation = resolvedIpCountryCode === 'US' || resolvedIpCountryCode === 'USA';
+        const accountAlreadyVerified = Boolean(
+          user &&
+          !requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
+        );
+        if (accountAlreadyVerified) {
+          await Promise.all([
+            AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
+            AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
+            AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+            AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
+          ]);
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          setGuestVerifyLoading(false);
+          primePromptVisibleRef.current = false;
+          setShowGuestPrimePrompt(false);
+          return;
+        }
         const professionType = String(
           verifyData?.profession_type || professionData?.profession_type ||
           user?.profession_type ||
@@ -1156,10 +1247,7 @@ const loadGuestVerifyModal = async () => {
           professionLabel.includes('PHYSICIAN - DO') ||
           professionLabel.includes('PHYSICIAN - DPM');
 
-        const isEligibleCountry =
-          resolvedIpCountryCode === 'US' ||
-          resolvedIpCountryCode === 'USA' ||
-          isUsaBasedUser(user, resolvedIpCountryCode);
+        const isEligibleCountry = isUsaLocation;
         const isUsa =
           user?.usa_user === true ||
           user?.usa_user === 1 ||
@@ -1176,6 +1264,10 @@ const loadGuestVerifyModal = async () => {
 
         const physicianHandles = isEligibleGuestPhysician;
         console.log(professionRaw, activeUser, isNonSubscribedNoSubscription, "isNonSubscribedNoSubscription", physicianHandles, "physicianHandles", isEligibleCountry, "isEligibleCountry", isUsa, "isUsa", userProfession, "userProfession", professionType, "professionType", professionLabel, "professionLabel", resolvedIpCountryCode, "resolvedIpCountryCode");
+        const shouldRequireVerification = Boolean(
+          user &&
+          requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
+        );
         if (
           isNonSubscribedNoSubscription &&
           physicianHandles &&
@@ -1197,11 +1289,11 @@ const loadGuestVerifyModal = async () => {
           return;
         }
 
-        if (!isAnyGuestFlow && !isSkippedFlowVal) {
+        if (!isAnyGuestFlow && !isSkippedFlowVal && !shouldRequireVerification) {
           return;
         }
 
-        const isNonUsaGuest = isNonUsaUser;
+        const isNonUsaGuest = !isUsaLocation;
         const shouldShowPrimeFirst = Boolean(
           isNonSubscribedNoSubscription &&
           physicianHandles &&
@@ -1227,31 +1319,35 @@ const loadGuestVerifyModal = async () => {
             setGuestVerifyModalVisible(false);
             return;
           }
-          if (requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
-            await openGuestVerificationAlert(user, true);
-          } else {
-            await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
-            await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
-            await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
-            setGuestVerifyModalVisible(false);
-            setGuestVerifyData(null);
+          if (user) {
+            if (requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
+              await openGuestVerificationAlert(user, true);
+            } else {
+              await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
+              await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
+              await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+              await AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true');
+              setGuestVerifyModalVisible(false);
+              setGuestVerifyData(null);
+            }
           }
           return;
         }
 
-        if (hasFreshVerifyResponse && user && requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
-          setGuestVerifyData(user);
-          setTimeout(() => {
-            setGuestVerifyModalVisible(true);
-          }, 500);
-        } else {
-          if (hasFreshVerifyResponse) {
+        if (hasFreshVerifyResponse && user) {
+          if (requiresVerification(user, isNonUsaGuest, AuthReducer?.verifyResponse, verifyData)) {
+            setGuestVerifyData(user);
+            setTimeout(() => {
+              setGuestVerifyModalVisible(true);
+            }, 500);
+          } else {
             await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
             await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
             await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+            await AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true');
+            setGuestVerifyModalVisible(false);
+            setGuestVerifyData(null);
           }
-          setGuestVerifyModalVisible(false);
-          setGuestVerifyData(null);
         }
       } catch (error) {
         console.log('loadGuestVerifyModal error', error);
@@ -1267,8 +1363,15 @@ const loadGuestVerifyModal = async () => {
     return !hasActivePrimeMembership && subscription == false && allProfTake;
   }, [subscription, allProfTake, hasActivePrimeMembership]);
 
-  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || finalProfessionmain?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || AuthReducer?.loginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultmain?.subscription_user == "non-subscribed");
-  const hsdSub = !hasActivePrimeMembership && (finalverifyvaultmain?.subscription_user == "non-subscribed" || isPrimeTrial);
+  const _subUserStates = [
+    finalProfessionmain?.subscription_user,
+    AuthReducer?.loginResponse?.user?.subscription_user,
+    AuthReducer?.againloginsiginResponse?.user?.subscription_user,
+    AuthReducer?.loginsiginResponse?.user?.subscription_user,
+    finalverifyvaultmain?.subscription_user
+  ];
+  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || _subUserStates.includes("free") || _subUserStates.includes("non-subscribed"));
+  const hsdSub = !hasActivePrimeMembership && (_subUserStates.includes("non-subscribed") || isPrimeTrial);
   const { freeTrail, daysleft } = useMemo(() => {
     if (!endDateStringMain) {
       return { freeTrail: takeSub, daysleft: false };
@@ -1304,16 +1407,16 @@ const loadGuestVerifyModal = async () => {
             )} day(s). Subscribe now to continue accessing premium features`
           : '';
   }, [daysleft, freeTrail, hsdSub]);
-    /**
- * Set free trail utility.
- * @returns {void}
- */
-const setFreeTrail = () => { };
-    /**
- * Set daysleft utility.
- * @returns {void}
- */
-const setDaysleft = () => { };
+  /**
+* Set free trail utility.
+* @returns {void}
+*/
+  const setFreeTrail = () => { };
+  /**
+* Set daysleft utility.
+* @returns {void}
+*/
+  const setDaysleft = () => { };
   const isNonUsaIpUser = Boolean(
     resolvedIpCountryCode &&
     resolvedIpCountryCode !== 'US' &&
@@ -1393,13 +1496,13 @@ const setDaysleft = () => { };
       console.log('prime success verify trigger error', error);
     });
   }, [isFocus, isPrimePaymentSuccess]);
-    /**
- * Close guest verify modal utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const closeGuestVerifyModal = async () => {
+  /**
+* Close guest verify modal utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const closeGuestVerifyModal = async () => {
     setGuestVerifyModalVisible(false);
   };
   const guestVerifyEmail =
@@ -1409,26 +1512,24 @@ const closeGuestVerifyModal = async () => {
     finalverifyvaultmain?.email ||
     finalProfessionmain?.email ||
     '';
-    /**
- * Proceed guest verification utility.
- *
- * @async
- * @param {*} verifyPayload - Input value.
- * @returns {Promise<*>}
- */
-const proceedGuestVerification = async verifyPayload => {
+  /**
+* Proceed guest verification utility.
+*
+* @async
+* @param {*} verifyPayload - Input value.
+* @returns {Promise<*>}
+*/
+  const proceedGuestVerification = async verifyPayload => {
     const countryCode =
       verifyPayload?.countryCode ||
       verifyPayload?.callingCode ||
       (verifyPayload?.usa_user ? '+1' : '');
     const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
     const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
-    const isNonUsaUser =
-      isNonUsaAccount(verifyPayload) ||
-      isNonUsaIpUser ||
-      finalProfessionmain?.usa_user === false ||
-      finalProfessionmain?.usa_user === 0 ||
-      finalProfessionmain?.usa_user === '0';
+    const isNonUsaUser = !(
+      String(resolvedIpCountryCode || '').trim().toUpperCase() === 'US' ||
+      String(resolvedIpCountryCode || '').trim().toUpperCase() === 'USA'
+    );
     const phoneValue =
       verifyPayload?.phone ||
       verifyPayload?.mobile ||
@@ -1481,17 +1582,18 @@ const proceedGuestVerification = async verifyPayload => {
       await AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY);
       await AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER');
       await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
+      await AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true');
     } catch (error) {
       console.log('handleGuestVerifyAccount cleanup error', error);
     }
   };
-    /**
- * Handles guest verify account.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleGuestVerifyAccount = async () => {
+  /**
+* Handles guest verify account.
+*
+* @async
+* @returns {Promise<*>}
+*/
+  const handleGuestVerifyAccount = async () => {
     const verifyPayload = guestVerifyData || finalverifyvaultmain || finalProfessionmain || AuthReducer?.verifyResponse || {};
     const token = await AsyncStorage.getItem(constants.TOKEN);
     const hasImmediateGuestContact =

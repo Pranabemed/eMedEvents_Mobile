@@ -170,6 +170,8 @@ const handleUrl = onlineName => {
         props.navigation.navigate('Statewebcast', {
           webCastURL: {
             webCastURL: result,
+            shareUrl: url,
+            detailpage_url: url,
             creditData: props?.route?.params?.fullUrl?.creditData,
             takeUrl: props?.route?.params?.fullUrl?.hitDat ? props?.route?.params?.fullUrl?.fullUrl : '',
             speaks: props?.route?.params?.fullUrl?.speaks === 'speaker' ? 'speaker' : 'organ',

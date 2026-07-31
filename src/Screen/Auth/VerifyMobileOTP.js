@@ -11,11 +11,11 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import Buttons from '../../Components/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { chooseStatecardRequest, licesensRequest, resendmobileotpRequest, verifymobileRequest } from '../../Redux/Reducers/AuthReducer';
+import { chooseStatecardRequest, licesensRequest, resendmobileotpRequest, verifyRequest, verifymobileRequest } from '../../Redux/Reducers/AuthReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import CellModal from '../../Components/CellModal';
 import Modal from 'react-native-modal';
@@ -53,6 +53,11 @@ const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
  */
 const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
 /**
+ * Guest verification completed key constant.
+ * @returns {string}
+ */
+const GUEST_VERIFICATION_COMPLETED_KEY = 'GUEST_VERIFICATION_COMPLETED';
+/**
  * Prime membership skipped key constant.
  * @returns {string}
  */
@@ -62,6 +67,16 @@ const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
  * @returns {string}
  */
 const PRIME_CARD_FLOW_COMPLETE_KEY = 'PrimeCardFlowComplete';
+/**
+ * Validates the primary license record.
+ * @param {*} license - Input value.
+ * @returns {boolean}
+ */
+const hasValidLicenseRecord = (license) => {
+    const licenseNumber = String(license?.license_number || '').trim();
+    const fromDate = String(license?.from_date || '').trim();
+    return Boolean(licenseNumber && fromDate && fromDate !== '0000-00-00');
+};
 /**
  * Verify mobile otp component.
  * @param {*} props - Input value.
@@ -106,6 +121,12 @@ const VerifyMobileOTP = (props) => {
     const isFocus = useIsFocused();
     const [otpmobile, setOtpmobile] = useState(new Array(6).fill(''));
     const inputsmobile = useRef([]);
+    const currentLicenseRecord =
+        DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
+        DashboardReducer?.dashMbResponse?.data?.licensures?.[0] ||
+        AuthReducer?.verifymobileResponse?.user?.licensures?.[0] ||
+        {};
+    const hasCurrentValidLicenseInfo = hasValidLicenseRecord(currentLicenseRecord);
     useEffect(() => {
         if (AuthReducer?.signupResponse?.token) {
             let objToken = { "token": AuthReducer?.signupResponse?.token, "key": {} }
@@ -376,24 +397,47 @@ const clearAllOTPFieldsMobile = () => {
                 setNoload(false);
                 (async () => {
                     await clearNonUsaFlowState();
+                    const token = await AsyncStorage.getItem(constants.TOKEN);
+                    if (token) {
+                        dispatch(verifyRequest({ token, key: {} }));
+                    }
                     const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
                     const guestFlow = guestFlowRaw ? JSON.parse(guestFlowRaw) : null;
                     const verifiedUser = AuthReducer?.verifymobileResponse?.user || {};
-                    const hasLicenseInfo = Boolean(
-                        verifiedUser?.license_state_id && verifiedUser?.license_number
-                    );
+                    const primaryLicense =
+                        DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
+                        verifiedUser?.licensures?.[0] ||
+                        verifiedUser ||
+                        {};
+                    const hasValidLicenseInfo = hasValidLicenseRecord(primaryLicense);
+                    await Promise.all([
+                        AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+                        AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
+                    ]);
 
-                    if (guestFlow) {
+                    if (guestFlow && !hasValidLicenseInfo) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
-                            AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
                             AsyncStorage.removeItem('PLAYERSESSION'),
                         ]);
-                        props.navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'TabNav', params: { initialRoute: 'Home', detectmain: 'newadd' } }],
+                        props.navigation.navigate("CreateStateInfor", {
+                            dataVerify: {
+                                dataVerify: "Nodasta",
+                                allDat: verifiedUser,
+                            }
                         });
+                        return;
+                    }
+
+                    if (guestFlow && hasValidLicenseInfo) {
+                        await Promise.all([
+                            AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
+                            AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
+                            AsyncStorage.removeItem('PLAYERSESSION'),
+                        ]);
+                        setNoload(false);
+                        props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
                         return;
                     }
 
@@ -461,18 +505,31 @@ const clearAllOTPFieldsMobile = () => {
             case 'Dashboard/dashMbSuccess':
                 status1 = DashboardReducer.status;
                 console.log("DashboardReducer999912222", DashboardReducer.dashMbResponse.data?.licensures);
+                const firstLicense =
+                    DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
+                    DashboardReducer?.dashMbResponse?.data?.licensures?.[0] ||
+                    {};
+                const hasValidLicenseInfo = hasValidLicenseRecord(firstLicense);
                 const uniqueStates = DashboardReducer?.dashMbResponse?.data?.licensures?.filter((state, index, self) => {
                     return index === self.findIndex((s) =>
                         s.state_id === state.state_id &&
                         s.board_id === state.board_id
                     );
                 });
-                if (!allProfTake) {
-                    toggleModal();
+                if (hasValidLicenseInfo) {
                     setNoload(false);
+                    setGtprof(false);
+                    setFulldashbaord(uniqueStates || []);
+                    props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
+                    break;
+                } else {
+                    setNoload(false);
+                    if (!allProfTake) {
+                        toggleModal();
+                    }
+                    setFulldashbaord(uniqueStates || []);
+                    break;
                 }
-                setFulldashbaord(uniqueStates);
-                break;
             case 'Dashboard/dashMbFailure':
                 status1 = DashboardReducer.status;
                 break;
@@ -488,8 +545,15 @@ const clearAllOTPFieldsMobile = () => {
                     s.board_id === state.board_id
                 );
             });
-            setFulldashbaord(uniqueStates);
-            if (uniqueStates?.length > 0) {
+            const firstLicense =
+                DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
+                wholeLN?.[0] ||
+                {};
+            const hasValidLicenseInfo = hasValidLicenseRecord(firstLicense);
+            if (hasValidLicenseInfo) {
+                setFulldashbaord(uniqueStates);
+            }
+            if (hasValidLicenseInfo && uniqueStates?.length > 0) {
                 const firstState = uniqueStates[0];
                 setAddit(firstState);
                 setTakedata(firstState);
@@ -770,7 +834,7 @@ const onBackPress = () => {
                                 onClose={toggleModal}
                                 content={"Your cell number has been \n successfully verified"}
                                 navigation={props.navigation}
-                                name={AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor"}
+                                name={(AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 && hasCurrentValidLicenseInfo) ? "ChooseState" : "CreateStateInfor"}
                                 profMerge={profMerge}
                             />
                         </View>

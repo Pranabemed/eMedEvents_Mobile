@@ -502,9 +502,6 @@ const handleStateInforSave = () => {
         } else {
             let obj1 = {}
             connectionrequest()
-                .then(() => {
-                    dispatch(primeTrailRequest(obj1))
-                })
                 .catch((err) => showErrorAlert("Please connect to internet", err))
             let obj = {
                 "license_number": licno,

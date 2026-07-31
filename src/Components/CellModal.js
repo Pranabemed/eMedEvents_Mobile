@@ -52,8 +52,12 @@ const handleDone = async () => {
         pressed.current = true;
 
         const permanentFlags = await readNonUsaPermanentFlags();
-        if (name == "CreateStateInfor" && permanentFlags?.stateLicenseFlowCompleted) {
-            resetToTabHome();
+        if (name == "CreateStateInfor" || name == "ChooseState") {
+            if (name == "CreateStateInfor" && permanentFlags?.stateLicenseFlowCompleted) {
+                resetToTabHome();
+            } else {
+                navigation?.navigate(name);
+            }
             setTimeout(() => {
                 onClose();
             }, 450);

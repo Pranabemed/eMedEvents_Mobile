@@ -561,8 +561,17 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
     const isPhoneNotVerified = loginResponse.phone_verified == "0";
     const isEmailVerified = loginResponse.is_verified == "1";
     const nophone = !loginResponse.phone
-    // hasLicense: true when license_number has a real value
-    const hasLicense = !!(user?.license_number && user.license_number.trim() !== "");
+    const isUsaFlow = !isNonUsaFlow;
+    const primaryLicense =
+      user?.licensures?.[0] ||
+      DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
+      {};
+    const primaryLicenseFromDate = String(primaryLicense?.from_date || '').trim();
+    const hasLicense = !!(
+      String(primaryLicense?.license_number || '').trim() &&
+      primaryLicenseFromDate &&
+      primaryLicenseFromDate !== '0000-00-00'
+    );
     // noLicense: true when license_number is null or "" (API returns "" when not yet added)
     // Get state licenses only if we have valid data
     const stateLicenses = hasStateLicenseData.current
@@ -650,6 +659,14 @@ const proceedNonUsaLogin = async () => {
       handleNavigation("LoginMobile", { validPh: { cellno: loginResponse?.phone, phonecode: phoneCountryCode } });
       return;
     }
+    if (isUsaFlow && isGuestPrimeUser) {
+      setNonloader(true);
+      handleNavigation("PrimeCard", {
+        ...props?.route?.params,
+        detectmain: "Prime",
+      });
+      return;
+    }
     if (allProfTake && (shouldShowPrimeCardForLogin || shouldShowStateLicenseForLogin)) {
       handleNavigation("PrimeCard", {
         ...props?.route?.params,
@@ -700,12 +717,14 @@ const proceedNonUsaLogin = async () => {
     allProfTake,
     loginResponse,
     user?.license_number,
+    user?.licensures,
     chooseStatecardResponse,
     nonUsaPermanentFlags,
     phoneCountryCode,
     tokenObj,
     AuthReducer?.verifyResponse,
-    isGuestPrimeUser
+    isGuestPrimeUser,
+    isNonUsaFlow
   ]);
   useEffect(() => {
     if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 && allProfTake) {

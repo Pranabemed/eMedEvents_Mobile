@@ -650,6 +650,9 @@ const licHandl = (profFromDashboard) => {
     const loginResponse = AuthReducer?.loginResponse || {};
     const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
     const { is_verified, phone_verified, email, phone } = verifyData;
+    const primeSubscriptionUser = String(loginResponse?.user?.subscription_user || '').trim().toLowerCase();
+    const primeSubscriptions = Array.isArray(loginResponse?.user?.subscriptions) ? loginResponse.user.subscriptions : [];
+    const isPrimeCardEligibleUser = primeSubscriptionUser === 'non-subscribed' && primeSubscriptions.length === 0;
 
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
     const profFromDashboard = profInfo.profession && profInfo.profession_type
@@ -780,6 +783,19 @@ const licHandl = (profFromDashboard) => {
             })
           );
         }
+      }
+      return;
+    }
+
+    if (bothVerified && isPrimeCardEligibleUser) {
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        props.navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'PrimeCard', params: { detectmain: 'Prime' } }],
+          })
+        );
       }
       return;
     }

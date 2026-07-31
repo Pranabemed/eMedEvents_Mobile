@@ -196,9 +196,6 @@ const handleAutoInforSave = () => {
         } else {
             let obj2 = {}
             connectionrequest()
-                .then(() => {
-                    dispatch(primeTrailRequest(obj2))
-                })
                 .catch((err) => showErrorAlert("Please connect to internet", err))
             let obj = {
                 "license_number": props?.route?.params?.InvokedData?.license_number,
