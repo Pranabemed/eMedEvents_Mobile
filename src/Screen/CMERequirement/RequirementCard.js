@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  Linking,
   View,
   Text,
   TouchableOpacity,
@@ -111,6 +112,26 @@ const RequirementCard = ({
   }
 
   /**
+   * Normalizes a link into an absolute URL.
+   * @param {*} href - Input value.
+   * @returns {string}
+   */
+  const normalizeAbsoluteUrl = href => {
+    const value = String(href || '').trim();
+    if (!value) return '';
+
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+      return value;
+    }
+
+    if (value.startsWith('/')) {
+      return `https://www.emedevents.com${value}`;
+    }
+
+    return `https://${value}`;
+  };
+
+  /**
    * Description: Handles link taps inside HTML notes.
    * Purpose: Routes topic and specialty links into the shared guest search result flow.
    *
@@ -137,8 +158,11 @@ const RequirementCard = ({
    */
   const handleLinkPress = (event, href) => {
     if (href) {
-      const resultTopic = href.substring(href.lastIndexOf('/') + 1);
-      if (href.includes('/topic/')) {
+      const normalizedHref = normalizeAbsoluteUrl(href);
+      const cleanedHref = normalizedHref.toLowerCase();
+      const resultTopic = normalizedHref.substring(normalizedHref.lastIndexOf('/') + 1);
+
+      if (cleanedHref.includes('/topic/')) {
         navigation.navigate('Globalresult', {
           trig: {
             trig: resultTopic,
@@ -148,7 +172,7 @@ const RequirementCard = ({
             Realback: 'guest',
           },
         });
-      } else if (href.includes('/specialty/')) {
+      } else if (cleanedHref.includes('/specialty/')) {
         navigation.navigate('Globalresult', {
           trig: {
             trig: resultTopic,
@@ -159,15 +183,19 @@ const RequirementCard = ({
           },
         });
       } else {
-        const keyword = href.split('/').pop();
-        navigation.navigate('Globalresult', {
-          trig: {
-            trig: keyword,
-            rqstType: 'topicbasedconferences',
-            mainKey: 'topic',
-            CreditData: '',
-            Realback: 'guest',
-          },
+        const isBlogArticle =
+          cleanedHref.includes('/blogs/medblogpage/') ||
+          cleanedHref.includes('/blog/');
+
+        if (isBlogArticle) {
+          Linking.openURL(normalizedHref).catch(error => {
+            console.log('Failed to open blog URL:', error);
+          });
+          return;
+        }
+
+        Linking.openURL(normalizedHref).catch(error => {
+          console.log('Failed to open external URL:', error);
         });
       }
     }

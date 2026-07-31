@@ -287,6 +287,7 @@ const Globalresult = (props) => {
     const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(routeQueryKey);
     const isRouteRefreshing = displayedRouteQueryKey !== routeQueryKey;
     const displayTitle = props?.route?.params?.sectionTitle || CMEReducer?.cmeCourseResponse?.header_title;
+    const isMostPopularConferences = props?.route?.params?.homeListPayload?.sectionTitle === 'Most Popular Conferences' || props?.route?.params?.sectionTitle === 'Most Popular Conferences';
     const resetResultsView = useCallback((options = {}) => {
         const {
             clearSort = false,
@@ -1184,13 +1185,54 @@ const Globalresult = (props) => {
                     </View>
                 )}
                 {!isRouteRefreshing && storeAlldata?.length > 0 && (
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        {displayTitle ? (
-                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
-                                {displayTitle}
-                            </Text>
-                        ) : null}
-                    </View>
+                    <>
+                        {isMostPopularConferences ? (
+                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                {displayTitle ? (
+                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                                        {displayTitle}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setPageNum(0);
+                                        setSortedFall(!sortedFall);
+                                    }}
+                                    style={isGuestFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
+                                >
+                                    <View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
+                                        <Text style={[
+                                            isGuestFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
+                                            { marginBottom: 0 }
+                                        ]}>
+                                            {`Showing (${totalResults || ""}) Results for`}
+                                        </Text>
+                                        <View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
+                                            <Text style={isGuestFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
+                                            <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                                {isGuestFlow && displayTitle ? (
+                                    <View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
+                                        <Text style={styles.guestSummaryTitle}>
+                                            {displayTitle}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                                {!isGuestFlow && displayTitle ? (
+                                    <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                                            {displayTitle}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                            </>
+                        )}
+                    </>
                 )}
                 <View style={{ flex: 1 }}>
                     {(() => {
@@ -1357,7 +1399,7 @@ const Globalresult = (props) => {
                         </View>
                     </TouchableOpacity>
                 </Modal>
-                {CMEReducer?.cmeCourseResponse?.aggregations && storeAlldata?.length > 0 && <View style={{
+                {!isMostPopularConferences && CMEReducer?.cmeCourseResponse?.aggregations && storeAlldata?.length > 0 && <View style={{
                     position: 'absolute',
                     bottom: 70,
                     right: 0,

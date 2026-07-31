@@ -13,7 +13,6 @@ import SearchIcn from 'react-native-vector-icons/Ionicons';
 import IconSh from 'react-native-vector-icons/Feather';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import Share from 'react-native-share';
-import constants from '../Utils/Helpers/constants';
 
 /**
  * Reusable PageHeader component.
@@ -62,13 +61,12 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
 */
   const handleSearch = () => {
     if (searchPress) {
-      const websiteBaseUrl = constants.BASE_URL == "https://newdev.emedevents.com"
-        ? 'https://www.emedevents.com'
-        : 'https://v2.emedevents.com';
       const normalizedConferenceUrl = String(searchPress || '').trim();
       const endpoint = /^https?:\/\//i.test(normalizedConferenceUrl)
         ? normalizedConferenceUrl
-        : `${websiteBaseUrl}/${normalizedConferenceUrl.replace(/^\/+/, '')}`;
+        : normalizedConferenceUrl.startsWith('/')
+          ? `https://www.emedevents.com${normalizedConferenceUrl}`
+          : `https://www.emedevents.com/${normalizedConferenceUrl.replace(/^\/+/, '')}`;
 
       const options = {
         title: "Share ConferenceURL",

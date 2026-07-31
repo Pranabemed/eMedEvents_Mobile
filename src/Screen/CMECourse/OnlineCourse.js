@@ -81,7 +81,7 @@ const handleUrl = () => {
         const url = onlineName?.detailpage_url;
         const result = url.split('/').pop();
         if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, creditData: crediwhole } })
         }
     }
         /**
@@ -93,7 +93,7 @@ const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: crediwhole } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, creditData: crediwhole } })
         }
     }
         /**
@@ -125,7 +125,7 @@ const fullAction = (dataItem) => {
                 })
             );
         } else if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: crediwhole } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, creditData: crediwhole } })
         }
     }
         /**

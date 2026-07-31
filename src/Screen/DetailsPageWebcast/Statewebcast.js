@@ -115,13 +115,18 @@ const Statewebcast = props => {
         return (
             props?.route?.params?.webCastURL?.shareUrl ||
             props?.route?.params?.webCastURL?.detailpage_url ||
+            WebcastReducer?.webcastDeatilsResponse?.canonical_link ||
+            WebcastReducer?.webcastDeatilsResponse?.data?.canonical_link ||
+            webcastdeatils?.canonical_link ||
             webcastdeatils?.detailpage_url ||
             webcastdeatils?.emed_url ||
+            props?.route?.params?.webCastURL?.shareUrl ||
+            props?.route?.params?.webCastURL?.detailpage_url ||
             props?.route?.params?.newCast ||
             props?.route?.params?.webCastURL?.webCastURL ||
             ""
         );
-    }, [webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
+    }, [WebcastReducer?.webcastDeatilsResponse, webcastdeatils?.canonical_link, webcastdeatils?.detailpage_url, webcastdeatils?.emed_url, props?.route?.params?.webCastURL, props?.route?.params?.newCast]);
     const hasAuthToken = Boolean(String(AuthReducer?.token || AuthReducer?.loginResponse?.token || '').trim());
     const hideGuestCartIcon = Boolean(
         !hasAuthToken ||
@@ -236,7 +241,16 @@ const Statewebcast = props => {
                 throw new Error("Unsupported webcast URL");
             }
 
-            await Linking.openURL(guestFallbackUrl);
+            if (Platform.OS === 'android') {
+                const intentUrl = `intent://${guestFallbackUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+                try {
+                    await Linking.openURL(intentUrl);
+                } catch (e) {
+                    await Linking.openURL(guestFallbackUrl);
+                }
+            } else {
+                await Linking.openURL(guestFallbackUrl);
+            }
         } catch (error) {
             console.log("Guest webcast fallback failed:", error);
             showErrorAlert("Unable to open conference link", error?.message || error);

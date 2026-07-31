@@ -317,12 +317,12 @@ const StackNav = props => {
   }, []);
 
   useEffect(() => {
-        /**
- * Navigation helper that exposes handle app state change behavior.
- * @param {*} nextAppState - Input value.
- * @returns {void}
- */
-const handleAppStateChange = (nextAppState) => {
+    /**
+* Navigation helper that exposes handle app state change behavior.
+* @param {*} nextAppState - Input value.
+* @returns {void}
+*/
+    const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'background') {
         // App was truly minimized
         wasBackgrounded.current = true;
@@ -509,8 +509,8 @@ const handleAppStateChange = (nextAppState) => {
     const isEmedHost = hostname.includes('emedevents.com') || hostname.includes('emedevents.net');
 
     const internalPathPatterns = [
-      '/medical-hybrid-events-2026',
-      '/c',
+      '/medical-hybrid-events-',
+      '/c/',
       '/online-cme-courses',
       '/webcasts/',
       '/webcast/',
@@ -601,7 +601,7 @@ const handleAppStateChange = (nextAppState) => {
         }]
       })
     );
-    AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
+    AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => { });
   }, []);
 
   const openExternalBrowser = useCallback(async (url) => {
@@ -614,7 +614,16 @@ const handleAppStateChange = (nextAppState) => {
 
       console.log('[DeepLink] Triggering browser with:', browserUrl);
 
-      await Linking.openURL(browserUrl);
+      if (Platform.OS === 'android') {
+        const intentUrl = `intent://${browserUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+        try {
+          await Linking.openURL(intentUrl);
+        } catch (e) {
+          await Linking.openURL(browserUrl);
+        }
+      } else {
+        await Linking.openURL(browserUrl);
+      }
 
       setTimeout(() => { isRedirectingToWeb.current = false; }, 4000);
       setTimeout(() => { isExternalNavigationInProgress.current = false; }, 4000);
@@ -666,8 +675,12 @@ const handleAppStateChange = (nextAppState) => {
       return;
     }
 
-    // Restrict /price-page/, /cmepackages and other specific URLs to open in the web browser only
-    if (normalizedUrl.includes('/price-page/') || normalizedUrl.includes('/cmepackages')) {
+    // Restrict browser-only utility pages so the exact URL is opened externally.
+    if (
+      normalizedUrl.includes('/price-page/') ||
+      normalizedUrl.includes('/cmepackages') ||
+      normalizedUrl.includes('/contactus')
+    ) {
       console.log('[DeepLink] Redirecting restricted URL to browser:', resolvedUrl);
       openExternalBrowser(resolvedUrl);
       return;
@@ -712,7 +725,7 @@ const handleAppStateChange = (nextAppState) => {
       // 🔒 Storing the pending deep link for post-login redirection
       console.log('[DeepLink] Screen requires auth and no token. Storing pending deep link:', resolvedUrl);
       await AsyncStorage.setItem('PENDING_DEEP_LINK', resolvedUrl);
-      
+
       // Redirect to Login
       navigateToScreen("Login");
       return;
@@ -730,6 +743,7 @@ const handleAppStateChange = (nextAppState) => {
       navigateToScreen("Statewebcast", {
         webCastURL: {
           webCastURL: slug,
+          shareUrl: resolvedUrl,
           creditData: dashboard,
           refID: refID,
           Realback: token ? undefined : 'guest'
@@ -741,15 +755,15 @@ const handleAppStateChange = (nextAppState) => {
         const parsedUrl = new URL(resolvedUrl);
         const con = parsedUrl.searchParams.get('con') || parsedUrl.searchParams.get('conferenceId') || parsedUrl.searchParams.get('conference_id');
         const act = parsedUrl.searchParams.get('act') || parsedUrl.searchParams.get('activityId') || parsedUrl.searchParams.get('activity_id');
-        
+
         console.log('[DeepLink] User logged in, navigating to PreTest for assessment URL:', resolvedUrl);
         navigateToScreen("PreTest", {
-           activityID: {
-             activityID: act,
-             conference_id: con
-           },
-           conferenceId: con,
-           fromNotification: true
+          activityID: {
+            activityID: act,
+            conference_id: con
+          },
+          conferenceId: con,
+          fromNotification: true
         });
         return;
       }
@@ -761,12 +775,12 @@ const handleAppStateChange = (nextAppState) => {
   }, [isNavigationReady, navigateToScreen, openExternalBrowser, parseDeepLinkDetails]);
 
   useEffect(() => {
-        /**
- * Navigation helper that exposes handle url behavior.
- * @param {*} event - Input value.
- * @returns {void}
- */
-const handleUrl = (event) => {
+    /**
+* Navigation helper that exposes handle url behavior.
+* @param {*} event - Input value.
+* @returns {void}
+*/
+    const handleUrl = (event) => {
       const { url } = event;
       console.log('🌍 URL received:', url);
       handleDeepLink(url);
@@ -778,13 +792,13 @@ const handleUrl = (event) => {
         initialUrlHandled.current = true;
         console.log('Initial URL handled:', url);
         if (isEmedDeepLink(url)) {
-          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
+          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => { });
         } else {
-          AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
+          AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => { });
         }
         handleDeepLink(url);
       } else {
-        AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => {});
+        AsyncStorage.removeItem(DEEPLINK_BOOTSTRAP_KEY).catch(() => { });
       }
     });
 
@@ -810,7 +824,7 @@ const handleUrl = (event) => {
           console.log('[DeepLink] Found pending deep link after login:', pendingUrl);
           await AsyncStorage.removeItem('PENDING_DEEP_LINK');
           lastProcessedUrl.current = null;
-          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => {});
+          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => { });
           handleDeepLink(pendingUrl);
         }
       }
@@ -826,13 +840,13 @@ const handleUrl = (event) => {
   }, [AuthReducer?.status, isAuthReady, isNavigationReady, checkAndProcessPendingDeepLinkAfterLogin]);
 
   useEffect(() => {
-        /**
- * Navigation helper that exposes check pending notification behavior.
- *
- * @async
- * @returns {Promise<*>}
- */
-const checkPendingNotification = async () => {
+    /**
+* Navigation helper that exposes check pending notification behavior.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const checkPendingNotification = async () => {
       try {
         const pendingNotificationUrl = await AsyncStorage.getItem('PENDING_NOTIFICATION_URL');
         if (pendingNotificationUrl) {
@@ -844,7 +858,7 @@ const checkPendingNotification = async () => {
         console.log('[DeepLink] Error checking pending notification URL:', e);
       }
     };
-    
+
     if (isNavigationReady && isAuthReady) {
       checkPendingNotification();
     }
@@ -883,12 +897,12 @@ const checkPendingNotification = async () => {
         linking={linking}
         onStateChange={async (state) => {
           // Recursive function to get the leaf route name
-                    /**
- * Navigation helper that exposes get active route name behavior.
- * @param {*} navigationState - Input value.
- * @returns {*}
- */
-const getActiveRouteName = (navigationState) => {
+          /**
+* Navigation helper that exposes get active route name behavior.
+* @param {*} navigationState - Input value.
+* @returns {*}
+*/
+          const getActiveRouteName = (navigationState) => {
             if (!navigationState) return null;
             const route = navigationState.routes[navigationState.index];
             if (route.state) {

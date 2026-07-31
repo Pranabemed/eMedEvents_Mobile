@@ -2,7 +2,7 @@
  * Statewebcast overview screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastOverview, handleOverviewLink.
  */
 
-import { View, Text, TouchableOpacity } from 'react-native'
+import { Linking, View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
@@ -19,6 +19,26 @@ import HtmlTableRenderer from './HtmlTableRenderer';
 
 const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpansion, expanded, navigation, webcastdeatils, creditData }) => {
         /**
+ * Normalizes a link into an absolute URL.
+ * @param {*} href - Input value.
+ * @returns {string}
+ */
+const normalizeAbsoluteUrl = (href) => {
+        const value = String(href || '').trim();
+        if (!value) return '';
+
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+            return value;
+        }
+
+        if (value.startsWith('/')) {
+            return `https://www.emedevents.com${value}`;
+        }
+
+        return `https://${value}`;
+    };
+
+        /**
  * Handles overview link.
  * @param {*} href - Input value.
  * @returns {void}
@@ -26,12 +46,30 @@ const StatewebcastOverview = ({ width, source, previewText, hasTable, toggleExpa
 const handleOverviewLink = (href) => {
         if (!href || !navigation) return;
 
-        const normalizedHref = String(href).trim();
+        const normalizedHref = normalizeAbsoluteUrl(href);
+        if (!normalizedHref) return;
+
         const cleanedHref = normalizedHref.toLowerCase();
         const urlParts = normalizedHref.split('?')[0].split('#')[0].split('/').filter(Boolean);
         const slug = urlParts[urlParts.length - 1] || normalizedHref;
 
-        const isSpeaker = cleanedHref.includes('speaker');
+        const isSpeaker = cleanedHref.includes('/speaker/') || cleanedHref.includes('speaker-profile');
+        const isOrganizer = cleanedHref.includes('/organizer/') || cleanedHref.includes('/organiser/');
+        const isBlogArticle = cleanedHref.includes('/blogs/medblogpage/') || cleanedHref.includes('/blog/');
+
+        if (isBlogArticle) {
+            Linking.openURL(normalizedHref).catch(error => {
+                console.log('Failed to open blog URL:', error);
+            });
+            return;
+        }
+
+        if (!isSpeaker && !isOrganizer) {
+            Linking.openURL(normalizedHref).catch(error => {
+                console.log('Failed to open external URL:', error);
+            });
+            return;
+        }
 
         navigation.navigate("SpeakerProfile", {
             fullUrl: {

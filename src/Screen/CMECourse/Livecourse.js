@@ -99,7 +99,7 @@ const fullActionlive = (dataItem) => {
                 })
             );
         } else if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, creditData: creditwholelive } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, creditData: creditwholelive } })
         }
     }
         /**
@@ -111,7 +111,7 @@ const titlhandleUrllive = (make) => {
         const urltitle = make?.detailpage_url;
         const resulttitle = urltitle.split('/').pop();
         if (resulttitle) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: creditwholelive } })
+            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, creditData: creditwholelive } })
         }
     }
         /**
