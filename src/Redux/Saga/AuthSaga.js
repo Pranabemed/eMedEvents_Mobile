@@ -1069,9 +1069,11 @@ export function* logoutSaga() {
     yield call(AsyncStorage.removeItem, constants.REFRESH_TOKEN);
     yield call(AsyncStorage.removeItem, 'PLAYERSESSION');
     yield call(AsyncStorage.removeItem, 'PrimeMembershipSkipped');
+    yield call(AsyncStorage.removeItem, 'PrimeMembershipPromptPending');
     yield call(AsyncStorage.removeItem, 'SessionPrimeSkipped');
     yield call(AsyncStorage.removeItem, 'PrimeCardFlowComplete');
     yield call(AsyncStorage.removeItem, 'ExploreTrialClicked');
+    yield call(AsyncStorage.removeItem, 'GUEST_VERIFICATION_COMPLETED');
     yield call(AsyncStorage.removeItem, 'GuestPrimeVerifyPending');
     yield call(AsyncStorage.removeItem, 'CheckMembershipForceNewProfession');
     yield call(AsyncStorage.removeItem, 'activeProfile');

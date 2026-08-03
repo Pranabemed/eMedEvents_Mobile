@@ -650,8 +650,9 @@ const licHandl = (profFromDashboard) => {
     const loginResponse = AuthReducer?.loginResponse || {};
     const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
     const { is_verified, phone_verified, email, phone } = verifyData;
-    const primeSubscriptionUser = String(loginResponse?.user?.subscription_user || '').trim().toLowerCase();
-    const primeSubscriptions = Array.isArray(loginResponse?.user?.subscriptions) ? loginResponse.user.subscriptions : [];
+    const primeProfileSource = DashboardReducer?.mainprofileResponse || professionState || loginResponse?.user || {};
+    const primeSubscriptionUser = String(primeProfileSource?.subscription_user || '').trim().toLowerCase();
+    const primeSubscriptions = Array.isArray(primeProfileSource?.subscriptions) ? primeProfileSource.subscriptions : [];
     const isPrimeCardEligibleUser = primeSubscriptionUser === 'non-subscribed' && primeSubscriptions.length === 0;
 
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
@@ -929,6 +930,7 @@ function navigateToVerification() {
     DashboardReducer?.mainprofileResponse,
     DashboardReducer?.dashboardResponse?.data,
     AuthReducer?.signupResponse,
+    AuthReducer?.loginResponse,
     isFocus,
     loadingDashboard,
     spalsh,

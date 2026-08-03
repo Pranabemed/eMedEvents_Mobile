@@ -22,6 +22,7 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 const PrimeCard = ({
   primeadd,
   setPrimeadd,
+  onDismiss,
   primaryButtonText,
   onPrimaryAction,
   secondaryButtonText,
@@ -33,6 +34,13 @@ const PrimeCard = ({
   const navigate = useNavigation();
   const { height: windowHeight } = useWindowDimensions();
   const cardHeight = Math.min(normalize(500), Math.round(windowHeight * 0.9));
+  const handleDismiss = () => {
+    if (typeof onDismiss === 'function') {
+      onDismiss();
+      return;
+    }
+    setPrimeadd(false);
+  };
     /**
  * Handles primary action.
  * @returns {void}
@@ -71,8 +79,8 @@ const handleSecondaryAction = () => {
       }}
       animationInTiming={800}
       animationOutTiming={1000}
-      onBackdropPress={() => setPrimeadd(false)}
-      onBackButtonPress={() => setPrimeadd(false)}
+      onBackdropPress={handleDismiss}
+      onBackButtonPress={handleDismiss}
       useNativeDriver={true}
       useNativeDriverForBackdrop={true}
       coverScreen={true}
@@ -95,8 +103,8 @@ const handleSecondaryAction = () => {
             backgroundColor: '#FFF7EA',
           }}
         >
-          <TouchableOpacity 
-            onPress={() => setPrimeadd(false)} 
+          <TouchableOpacity
+            onPress={handleDismiss}
             style={{ position: 'absolute', top: normalize(15), right: normalize(15), zIndex: 10 }}
           >
             <ArrowIconsAnt name="close" size={normalize(24)} color="#000000" />

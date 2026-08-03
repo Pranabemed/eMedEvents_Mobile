@@ -55,6 +55,11 @@ const GUEST_PRIME_VERIFICATION_PENDING_KEY = 'GUEST_PRIME_VERIFICATION_PENDING';
  */
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
 /**
+ * Prime membership prompt pending key constant.
+ * @returns {string}
+ */
+const PRIME_MEMBERSHIP_PROMPT_PENDING_KEY = 'PrimeMembershipPromptPending';
+/**
  * Check membership force new profession key constant.
  * @returns {string}
  */
@@ -419,10 +424,7 @@ const Main = (props) => {
     }
 
     if (primeadd && !isDrawerVisible) {
-      setPrimeCardReady(false);
-      primeCardDelayRef.current = setTimeout(() => {
-        setPrimeCardReady(true);
-      }, 5000);
+      setPrimeCardReady(true);
     } else {
       setPrimeCardReady(false);
     }
@@ -435,7 +437,7 @@ const Main = (props) => {
     };
   }, [primeadd, isDrawerVisible]);
   const { detectmain } = props?.route?.params || {}
-  console.log(detectmain,"detectmain");
+  console.log(detectmain, "detectmain");
   const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
   const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
@@ -749,9 +751,12 @@ const Main = (props) => {
           ]);
           const board_special_json = board_special ? JSON.parse(board_special) : null;
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+          const professionSubscriptionUser = String(profession_data_json?.subscription_user || '').trim().toLowerCase();
+          const professionSubscriptions = Array.isArray(profession_data_json?.subscriptions) ? profession_data_json.subscriptions : [];
+          const isPrimeProfileFromProfession = professionSubscriptionUser === 'non-subscribed' && professionSubscriptions.length === 0;
           setFinalverifyvaultmain(board_special_json);
           setFinalProfessionmain(profession_data_json);
-          setIsGuestPrimeUser(stablePrimeFlagRaw === 'true');
+          setIsGuestPrimeUser(stablePrimeFlagRaw === 'true' || isPrimeProfileFromProfession);
           setIsGuestPrimeReady(true);
           setIsAsyncStorageLoaded(true);
         } catch (error) {
@@ -833,11 +838,19 @@ const Main = (props) => {
 */
     const loadProfile = async () => {
       try {
-        const profile = await AsyncStorage.getItem('activeProfile');
-        const stablePrimeFlagRaw = await AsyncStorage.getItem(constants.GUEST_PRIME_USER);
+        const [profile, stablePrimeFlagRaw, professionRaw] = await Promise.all([
+          AsyncStorage.getItem('activeProfile'),
+          AsyncStorage.getItem(constants.GUEST_PRIME_USER),
+          AsyncStorage.getItem(constants.PROFESSION),
+        ]);
         const stablePrimeFlag = stablePrimeFlagRaw === 'true';
-        setIsGuestPrimeUser(stablePrimeFlag);
-        setCurrentProfile(profile || (stablePrimeFlag ? 'PrimeCard' : null));
+        const professionData = parseStoredJson(professionRaw);
+        const professionSubscriptionUser = String(professionData?.subscription_user || '').trim().toLowerCase();
+        const professionSubscriptions = Array.isArray(professionData?.subscriptions) ? professionData.subscriptions : [];
+        const isPrimeProfileFromProfession = professionSubscriptionUser === 'non-subscribed' && professionSubscriptions.length === 0;
+        const isPrimeProfile = stablePrimeFlag || isPrimeProfileFromProfession;
+        setIsGuestPrimeUser(isPrimeProfile);
+        setCurrentProfile(profile || (isPrimeProfile ? 'PrimeCard' : null));
         setIsGuestPrimeReady(true);
       } catch (error) {
         console.log('Error loading activeProfile', error);
@@ -861,7 +874,7 @@ const Main = (props) => {
     if (!isGuestPrimeReady) {
       return;
     }
-    if (currentProfile === 'PrimeCard' || isGuestPrimeUser) {
+    if (currentProfile === 'SkipProfile') {
       return;
     }
     if (primePromptVisibleRef.current || primeadd || showGuestPrimePrompt) {
@@ -1027,6 +1040,7 @@ const Main = (props) => {
     await setGuestPrimeVerificationPending();
     try {
       await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+      await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
       await AsyncStorage.removeItem('ExploreTrialClicked');
       setIsSkippedFlow(true);
@@ -1050,6 +1064,16 @@ const Main = (props) => {
     primePromptVisibleRef.current = false;
     setShowGuestPrimePrompt(false);
     await requestGuestVerificationCheck();
+  };
+  const handlePrimeCardDismiss = async () => {
+    try {
+      await AsyncStorage.setItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY, 'true');
+    } catch (error) {
+      console.log('handlePrimeCardDismiss flag error', error);
+    }
+    primePromptVisibleRef.current = false;
+    setPrimeadd(false);
+    setShowGuestPrimePrompt(false);
   };
   /**
 * Handles guest prime explore trial.
@@ -1079,6 +1103,7 @@ const Main = (props) => {
 */
   const handleGuestPrimeMembership = async () => {
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+    await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
     await AsyncStorage.removeItem('ExploreTrialClicked');
     await setGuestPrimeVerificationPending();
     setPrimeadd(false);
@@ -1119,6 +1144,7 @@ const Main = (props) => {
           suppressGuestPromptsOnceRaw,
           isGuestConvertedUserRaw,
           sessionPrimeSkippedRaw,
+          primeMembershipPromptPendingRaw,
         ] = await Promise.all([
           AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
           AsyncStorage.getItem(constants.VERIFYSTATEDATA),
@@ -1131,6 +1157,7 @@ const Main = (props) => {
           AsyncStorage.getItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY),
           AsyncStorage.getItem('IS_GUEST_CONVERTED_USER'),
           AsyncStorage.getItem('SessionPrimeSkipped'),
+          AsyncStorage.getItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY),
         ]);
         const suppressGuestPromptsOnce = suppressGuestPromptsOnceRaw === 'true';
         const guestFlowData = parseStoredJson(guestFlowRaw);
@@ -1147,17 +1174,12 @@ const Main = (props) => {
         const isPrimeCardFlowComplete = primeCardFlowCompleteRaw === 'true';
         const isExploreTrialClicked = exploreTrialClickedRaw === 'true';
         const isGuestVerificationCompleted = guestVerificationCompletedRaw === 'true';
+        const isPrimeMembershipPromptPending = primeMembershipPromptPendingRaw === 'true';
         const verifyResponseData = AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || null;
         const hasFreshVerifyResponse =
           Boolean(verifyResponseData && Object.keys(verifyResponseData).length > 0);
 
         if (!resolvedIpCountryCode) {
-          return;
-        }
-
-        if (isGuestVerificationCompleted) {
-          setGuestVerifyModalVisible(false);
-          setGuestVerifyData(null);
           return;
         }
 
@@ -1176,27 +1198,9 @@ const Main = (props) => {
 
         const verifyData = parseStoredJson(verifyRaw);
         const professionData = parseStoredJson(professionRaw);
-        console.log(professionRaw, "professionRaw======456465456")
+        console.log(professionRaw, "professionRaw======456465456", professionData?.subscription_user);
         const user = verifyResponseData || verifyData || professionData || DashboardReducer?.mainprofileResponse || authProfessionInfo;
         const isUsaLocation = resolvedIpCountryCode === 'US' || resolvedIpCountryCode === 'USA';
-        const accountAlreadyVerified = Boolean(
-          user &&
-          !requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
-        );
-        if (accountAlreadyVerified) {
-          await Promise.all([
-            AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
-            AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
-            AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
-            AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
-          ]);
-          setGuestVerifyModalVisible(false);
-          setGuestVerifyData(null);
-          setGuestVerifyLoading(false);
-          primePromptVisibleRef.current = false;
-          setShowGuestPrimePrompt(false);
-          return;
-        }
         const professionType = String(
           verifyData?.profession_type || professionData?.profession_type ||
           user?.profession_type ||
@@ -1254,26 +1258,27 @@ const Main = (props) => {
           user?.usa_user === '1';
 
         const loginUser =
-          AuthReducer?.loginResponse?.user || professionRaw;
+        professionData ||
+          AuthReducer?.loginResponse?.user ||
+          AuthReducer?.againloginsiginResponse?.user ||
+          AuthReducer?.loginsiginResponse?.user ||
+          AuthReducer?.signupResponse?.user;
 
-        const activeUser = loginUser?.user ? loginUser.user : loginUser || professionRaw;
+        const activeUser = loginUser?.user ? loginUser.user : loginUser || professionData;
         const isNonSubscribedNoSubscription =
           activeUser?.subscription_user == "non-subscribed" &&
           (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
           (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
 
         const physicianHandles = isEligibleGuestPhysician;
-        console.log(professionRaw, activeUser, isNonSubscribedNoSubscription, "isNonSubscribedNoSubscription", physicianHandles, "physicianHandles", isEligibleCountry, "isEligibleCountry", isUsa, "isUsa", userProfession, "userProfession", professionType, "professionType", professionLabel, "professionLabel", resolvedIpCountryCode, "resolvedIpCountryCode");
-        const shouldRequireVerification = Boolean(
-          user &&
-          requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
-        );
+        console.log(professionRaw ,"ewerktkjerh");
+
         if (
-          isNonSubscribedNoSubscription &&
+          (isNonSubscribedNoSubscription || isPrimeMembershipPromptPending) &&
           physicianHandles &&
-          !isSkippedFlowVal &&
           !isSessionSkippedVal
         ) {
+          await AsyncStorage.setItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY, 'true');
           setGuestVerifyData(user);
           setGuestVerifyModalVisible(false);
           primePromptVisibleRef.current = true;
@@ -1281,6 +1286,30 @@ const Main = (props) => {
           setPrimeadd(true);
           return;
         }
+
+        const accountAlreadyVerified = Boolean(
+          user &&
+          !requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
+        );
+        if (accountAlreadyVerified) {
+          await Promise.all([
+            AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
+            AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
+            AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY),
+            AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
+          ]);
+          setGuestVerifyModalVisible(false);
+          setGuestVerifyData(null);
+          setGuestVerifyLoading(false);
+          primePromptVisibleRef.current = false;
+          setShowGuestPrimePrompt(false);
+          return;
+        }
+
+        const shouldRequireVerification = Boolean(
+          user &&
+          requiresVerification(user, !isUsaLocation, AuthReducer?.verifyResponse, verifyData)
+        );
 
         if (suppressGuestPromptsOnce) {
           await AsyncStorage.removeItem(SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY);
@@ -1297,7 +1326,6 @@ const Main = (props) => {
         const shouldShowPrimeFirst = Boolean(
           isNonSubscribedNoSubscription &&
           physicianHandles &&
-          !isSkippedFlowVal &&
           !isSessionSkippedVal
         );
 
@@ -1305,6 +1333,7 @@ const Main = (props) => {
           !shouldShowPrimeFirst &&
           !isVerificationPending &&
           !hasFreshVerifyResponse &&
+          !isGuestVerificationCompleted &&
           user;
 
         if (shouldCheckVerificationNow) {
@@ -1831,6 +1860,7 @@ const Main = (props) => {
             return (primeadd && primeCardReady && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
+              onDismiss={handlePrimeCardDismiss}
               primaryButtonText={(enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake) && (!isNonUsaUser || isSubscriptionExpiredSync) ? undefined : (shouldShowPrimeCardActions ? (isSkippedFlow ? 'Explore Free Trial 30 Days' : 'Explore Free Trial 30 Days') : undefined)}
               onPrimaryAction={shouldShowPrimeCardActions ? handleGuestPrimeExploreTrial : undefined}
               secondaryButtonText={shouldShowPrimeCardActions ? 'Get Prime Membership' : undefined}

@@ -664,6 +664,7 @@ const clearAllAsyncStorage = async () => {
       const keepKeys = [
         'PRIME_CARD_SKIPPED_ONCE',
         'PrimeMembershipSkipped',
+        'PrimeMembershipPromptPending',
         constants.NON_USA_FLOW_STATE,
         NON_USA_PROFESSION_UPDATE_REQUIRED_KEY,
         NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY,

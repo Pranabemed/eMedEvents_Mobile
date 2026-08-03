@@ -32,6 +32,7 @@ import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
  */
 
 const PRIME_MEMBERSHIP_SKIPPED_KEY = 'PrimeMembershipSkipped';
+const PRIME_MEMBERSHIP_PROMPT_PENDING_KEY = 'PrimeMembershipPromptPending';
 /**
  * Check membership force new profession key constant.
  * @returns {string}
@@ -377,6 +378,7 @@ const handleClk = () => {
 const handlePrimeMembership = () => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
             await AsyncStorage.removeItem('SessionPrimeSkipped');
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
             await clearNonUsaFlowState();
@@ -399,6 +401,7 @@ const handlePrimeMembership = () => {
 const handleSkip = async () => {
         try {
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
             await AsyncStorage.setItem('activeProfile', 'SkipProfile');
