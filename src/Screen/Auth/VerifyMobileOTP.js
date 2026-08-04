@@ -77,6 +77,42 @@ const hasValidLicenseRecord = (license) => {
     const fromDate = String(license?.from_date || '').trim();
     return Boolean(licenseNumber && fromDate && fromDate !== '0000-00-00');
 };
+
+const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr) => {
+    if (!phoneStr) return '';
+    let raw = String(phoneStr).trim();
+    let code = String(phoneCodeStr || '').trim();
+
+    if (raw.startsWith('+')) {
+        const processed = processPhoneNumber(raw);
+        if (processed && processed.isValid) {
+            const isUS = processed.countryCode === '+1' || processed.country === 'US';
+            if (isUS) {
+                const digits = processed.nationalNumber.slice(-10);
+                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
+                if (match) {
+                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+                }
+            }
+            return processed.formattedNumber || raw;
+        }
+    }
+
+    const digitsOnly = raw.replace(/\D/g, '');
+    const isUS = code === '+1' || code === '1' || (!code && (digitsOnly.length === 10 || (digitsOnly.length === 11 && digitsOnly.startsWith('1'))));
+
+    if (isUS) {
+        const last10 = digitsOnly.slice(-10);
+        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+            const prefixCode = code ? (code.startsWith('+') ? code : `+${code}`) : '+1';
+            return `${prefixCode} (${match[1]}) ${match[2]}-${match[3]}`;
+        }
+    }
+
+    const finalCode = code ? (code.startsWith('+') ? code : `+${code}`) : '';
+    return finalCode ? `${finalCode} - ${raw}` : raw;
+};
 /**
  * Verify mobile otp component.
  * @param {*} props - Input value.
@@ -654,10 +690,9 @@ const verifyHandle = () => {
     };
     const isEnabledMobile = countdown > 0;
     const phoneDetect = props?.route?.params?.Newphone?.allNo || props?.route?.params?.Newphone?.phoneCode || AuthReducer?.signupResponse?.user?.phone || props?.route?.params?.Newphone?.allNo || props?.route?.params?.validPh?.validPh || props?.route?.params?.Newphone?.phoneCode || props?.route?.params?.Newphone?.phone || allotpcheckddd || AuthReducer?.verifyResponse?.phone || props?.route?.params?.newPh || props?.route?.params?.mobileNo?.mobileNo;
+    const phoneCodeDetect = props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.Newphone?.phoneCode || '';
     console.log(phoneDetect, "phonedetect=========", AuthReducer)
-    const phoneFinal = phoneDetect?.startsWith('+')
-        ? phoneDetect
-        : `${props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || ''} - ${phoneDetect}`;
+    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect);
     useEffect(() => {
         if (phoneDetect?.startsWith('+')) {
             const finalget = processPhoneNumber(phoneDetect);

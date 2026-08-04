@@ -69,17 +69,63 @@ const isPhysicianProfessionalInformation = (info = {}) => {
     if (profession !== 'physician') return false;
     return ['md', 'do', 'dpm'].includes(professionType);
 };
+
+const getValidDialCode = (callingCode, countryName, geoInfo, countryList) => {
+    let code = callingCode ? String(callingCode).trim() : '';
+    if (code && code !== 'null' && code !== 'undefined' && code !== '+null' && code !== '+undefined' && code !== '+') {
+        return code.startsWith('+') ? code : `+${code}`;
+    }
+    if (geoInfo && geoInfo.dialCode && geoInfo.dialCode !== '+' && geoInfo.dialCode !== '+null' && geoInfo.dialCode !== '+undefined') {
+        return geoInfo.dialCode.startsWith('+') ? geoInfo.dialCode : `+${geoInfo.dialCode}`;
+    }
+    const targetCountry = String(countryName || geoInfo?.country_name || geoInfo?.country || '').trim().toLowerCase();
+    if (Array.isArray(countryList) && countryList.length > 0 && targetCountry) {
+        const found = countryList.find(c =>
+            String(c.name || '').toLowerCase() === targetCountry ||
+            String(c.sortname || '').toLowerCase() === targetCountry
+        );
+        if (found && (found.callingcode || found.calling_code)) {
+            let cCode = String(found.callingcode || found.calling_code).trim();
+            return cCode.startsWith('+') ? cCode : `+${cCode}`;
+        }
+    }
+    if (targetCountry.includes('india') || targetCountry === 'in') {
+        return '+91';
+    }
+    return '+1';
+};
+
+const normalizeContactValue = (value) => {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') {
+        return '';
+    }
+    return text;
+};
+
+const getGeoFallbackAddress = (geoInfo) => {
+    const stateName = normalizeContactValue(geoInfo?.state_name);
+    const cityName = normalizeContactValue(geoInfo?.city_name);
+    const countryName = normalizeContactValue(geoInfo?.country_name);
+
+    return stateName || [cityName, stateName, countryName].filter(Boolean).join(', ') || [cityName, countryName].filter(Boolean).join(', ') || countryName || '';
+};
+
+
 /**
  * Contact profile component.
  * @param {*} props - Input value.
  * @returns {JSX.Element}
  */
 const ContactProfile = (props) => {
-        /**
- * Search back component.
- * @returns {void}
- */
-const SearchBack = () => {
+    /**
+* Search back component.
+* @returns {void}
+*/
+    const SearchBack = () => {
         props.navigation.goBack();
     }
     const [firstname, setFirstname] = useState("");
@@ -169,7 +215,7 @@ const SearchBack = () => {
                 break;
         }
     }
-    console.log(DashboardReducer?.mainprofileResponse?.professional_information,"ertrkjred===")
+    console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
             case 'Profile/contactInfoRequest':
@@ -225,27 +271,51 @@ const SearchBack = () => {
     }, [address, isFieldFocused]);
 
     useEffect(() => {
-                /**
- * Detect country utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const detectCountry = async () => {
+        /**
+* Detect country utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const detectCountry = async () => {
             try {
                 const geoInfo = await getCountryAndDialCode();
                 if (geoInfo) {
                     const ipCountry = String(geoInfo.country || '').trim().toUpperCase();
                     const isNonUsaIp = ipCountry && ipCountry !== 'US' && ipCountry !== 'USA';
-                    console.log(isNonUsaIp, "dgjjfg")
+                    console.log(isNonUsaIp, "dgjjfg");
                     setIsNonUsaFlow(isNonUsaIp);
+
+                    setAddress(prev => {
+                        const cleanPrev = normalizeContactValue(prev);
+                        if (!cleanPrev) {
+                            return getGeoFallbackAddress(geoInfo);
+                        }
+                        return cleanPrev;
+                    });
+
+                    setState(prev => {
+                        const cleanPrev = normalizeContactValue(prev);
+                        if (!cleanPrev) {
+                            return normalizeContactValue(geoInfo?.state_name);
+                        }
+                        return cleanPrev;
+                    });
+
+                    setDialcode(prev => {
+                        const cleanPrev = normalizeContactValue(prev);
+                        if (!cleanPrev || cleanPrev === '+') {
+                            return getValidDialCode(null, null, geoInfo, countryall);
+                        }
+                        return cleanPrev;
+                    });
                 }
             } catch (error) {
                 console.log('Contact geo lookup failed', error);
             }
         };
         detectCountry();
-    }, []);
+    }, [countryall]);
 
     useEffect(() => {
         let mounted = true;
@@ -263,11 +333,11 @@ const detectCountry = async () => {
         };
     }, []);
 
-        /**
- * Returns label style.
- * @returns {Object}
- */
-const getLabelStyle = () => {
+    /**
+* Returns label style.
+* @returns {Object}
+*/
+    const getLabelStyle = () => {
         const isActive = isFieldFocused || !!address;
         return {
             position: 'absolute',
@@ -291,11 +361,11 @@ const getLabelStyle = () => {
         };
     };
 
-        /**
- * Handles focus.
- * @returns {void}
- */
-const handleFocus = () => {
+    /**
+* Handles focus.
+* @returns {void}
+*/
+    const handleFocus = () => {
         Animated.timing(animatedValue, {
             toValue: 1,
             duration: 150,
@@ -305,11 +375,11 @@ const handleFocus = () => {
         setIsFieldFocused(true);
     };
 
-        /**
- * Handles blur.
- * @returns {void}
- */
-const handleBlur = () => {
+    /**
+* Handles blur.
+* @returns {void}
+*/
+    const handleBlur = () => {
         if (!address) {
             Animated.timing(animatedValue, {
                 toValue: 0,
@@ -320,11 +390,11 @@ const handleBlur = () => {
         }
         setIsFieldFocused(false);
     };
-        /**
- * Close profession modal utility.
- * @returns {void}
- */
-const closeProfessionModal = () => {
+    /**
+* Close profession modal utility.
+* @returns {void}
+*/
+    const closeProfessionModal = () => {
         setProfessionModalVisible(false);
         if (pendingPersonal) {
             if (hasExistingPhysicianDashboardProfile) {
@@ -334,11 +404,11 @@ const closeProfessionModal = () => {
             }
         }
     };
-        /**
- * Handles contact take.
- * @returns {void}
- */
-const handleContactTake = () => {
+    /**
+* Handles contact take.
+* @returns {void}
+*/
+    const handleContactTake = () => {
         const cellNoRegex = /^\d{10,15}$/;
         const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
         if (!firstname) {
@@ -394,32 +464,32 @@ const handleContactTake = () => {
                 })
         }
     }
-        /**
- * Handles country.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleCountry = (text) => {
+    /**
+* Handles country.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleCountry = (text) => {
         searchCountryNameFunction(text, countryshow, setCountryall, setSearchcountry, (countryfil, searchcount) => {
             console.log('countryfil Data:', countryfil, 'Search Text:', searchcount);
         })
     }
-        /**
- * Handles pratice.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handlePratice = (text) => {
+    /**
+* Handles pratice.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-        /**
- * Handles city.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleCity = (text) => {
+    /**
+* Handles city.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
@@ -427,12 +497,12 @@ const handleCity = (text) => {
     console.log("details==========", address, country_id, slistpratice, props?.route?.params?.wholedata);
     useEffect(() => {
         if (props?.route?.params?.wholedata) {
-                        /**
- * Formats dob with moment.
- * @param {*} dob - Input value.
- * @returns {void}
- */
-const formatDobWithMoment = (dob) => {
+            /**
+* Formats dob with moment.
+* @param {*} dob - Input value.
+* @returns {void}
+*/
+            const formatDobWithMoment = (dob) => {
                 if (!dob || dob == "0000-00-00" || dob == "null" || dob == "undefined") {
                     return "";
                 }
@@ -449,17 +519,63 @@ const formatDobWithMoment = (dob) => {
             setFirstname(props?.route?.params?.wholedata?.personal_information?.firstname);
             setLastname(props?.route?.params?.wholedata?.personal_information?.lastname);
             setEmailid(props?.route?.params?.wholedata?.personal_information?.email);
-            setAddress(props?.route?.params?.wholedata?.user_address?.address);
-            setCountry(props?.route?.params?.wholedata?.user_address?.country_name);
-            setCountry_id(props?.route?.params?.wholedata?.user_address?.country_id);
-            setDialcode(`+${props?.route?.params?.wholedata?.user_address?.calling_code}`);
-            setCellno(props?.route?.params?.wholedata?.user_address?.contact_no);
-            setState(props?.route?.params?.wholedata?.user_address?.state_name);
-            setState_id(props?.route?.params?.wholedata?.user_address?.state_id);
-            setCity(props?.route?.params?.wholedata?.user_address?.city_name);
-            setCity_id(props?.route?.params?.wholedata?.user_address?.city_id);
-            setZipcode(props?.route?.params?.wholedata?.user_address?.zipcode)
-            setWhatsappno(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
+
+            const userAddr = props?.route?.params?.wholedata?.user_address || {};
+            const rawAddr = normalizeContactValue(userAddr?.address);
+            const rawState = normalizeContactValue(userAddr?.state_name);
+            const rawCountry = normalizeContactValue(userAddr?.country_name);
+            const rawCalling = normalizeContactValue(userAddr?.calling_code);
+
+            setCountry(rawCountry);
+            setCountry_id(userAddr?.country_id || "");
+
+            getCountryAndDialCode().then(geoInfo => {
+                if (!rawAddr) {
+                    setAddress(getGeoFallbackAddress(geoInfo));
+                } else {
+                    setAddress(rawAddr);
+                }
+
+                if (!rawState) {
+                    setState(normalizeContactValue(geoInfo?.state_name));
+                } else {
+                    setState(rawState);
+                }
+
+                const validDial = getValidDialCode(rawCalling, rawCountry, geoInfo, countryall);
+                setDialcode(validDial);
+
+                const isUSA = validDial === '+1' || validDial === '1';
+                const rawCell = normalizeContactValue(userAddr?.contact_no);
+                const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
+
+                setCellno(formatPhoneNumber(rawCell, isUSA));
+                setWhatsappno(formatPhoneNumber(rawWp, isUSA));
+            }).catch(() => {
+                if (!rawAddr) {
+                    setAddress('');
+                } else {
+                    setAddress(rawAddr);
+                }
+                if (rawState) {
+                    setState(rawState);
+                }
+                const validDial = getValidDialCode(rawCalling, rawCountry, null, countryall);
+                setDialcode(validDial);
+
+                const isUSA = validDial === '+1' || validDial === '1';
+                const rawCell = normalizeContactValue(userAddr?.contact_no);
+                const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
+
+                setCellno(formatPhoneNumber(rawCell, isUSA));
+                setWhatsappno(formatPhoneNumber(rawWp, isUSA));
+            });
+
+            setState_id(userAddr?.state_id || "");
+            setCity(normalizeContactValue(userAddr?.city_name));
+            setCity_id(userAddr?.city_id || "");
+            setZipcode(normalizeContactValue(userAddr?.zipcode));
+            setWhatsappno(normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp));
             setDobdate(formatDobWithMoment(props?.route?.params?.wholedata?.personal_information?.dob && props?.route?.params?.wholedata?.personal_information?.dob !== "0000-00-00" ? props?.route?.params?.wholedata?.personal_information?.dob : ""));
             const resolvedUser = {
                 ...(props?.route?.params?.wholedata || {}),
@@ -467,16 +583,16 @@ const formatDobWithMoment = (dob) => {
             };
             setIsNonUsaFlow(nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(resolvedUser, nonUsaFlowState));
         }
-    }, [props?.route?.params?.wholedata, nonUsaFlowState])
-        /**
- * Handles place selected.
- *
- * @async
- * @param {*} data - Input value.
- * @param {*} details - Input value.
- * @returns {Promise<*>}
- */
-const handlePlaceSelected = async (data, details) => {
+    }, [props?.route?.params?.wholedata, nonUsaFlowState, countryall])
+    /**
+* Handles place selected.
+*
+* @async
+* @param {*} data - Input value.
+* @param {*} details - Input value.
+* @returns {Promise<*>}
+*/
+    const handlePlaceSelected = async (data, details) => {
         console.log(details, "details==========");
         if (details) {
             try {
@@ -513,7 +629,7 @@ const handlePlaceSelected = async (data, details) => {
                         setCity(city ? city : 'City not available');
                         setZipcode(postalCode);
                         setAddress(address);
-                        setDialcode(countryData?.callingcode);
+                        setDialcode(getValidDialCode(countryData?.callingcode, countryData?.name, null, countryall));
                     } else {
                         console.error(`Country "${normalizedCountry}" not found in the predefined list.`);
                     }
@@ -526,12 +642,12 @@ const handlePlaceSelected = async (data, details) => {
             }
         }
     };
-        /**
- * Normalizes country name.
- * @param {number} country - Input value.
- * @returns {*}
- */
-const normalizeCountryName = (country) => {
+    /**
+* Normalizes country name.
+* @param {number} country - Input value.
+* @returns {*}
+*/
+    const normalizeCountryName = (country) => {
         // Normalize country names to align with entries in countryall
         const countryMap = {
             "United States": "United States of America",
@@ -539,15 +655,15 @@ const normalizeCountryName = (country) => {
         };
         return countryMap[country] || country;
     };
-        /**
- * Fetch postal code from geocode utility.
- *
- * @async
- * @param {*} latitude - Input value.
- * @param {*} longitude - Input value.
- * @returns {Promise<*>}
- */
-const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
+    /**
+* Fetch postal code from geocode utility.
+*
+* @async
+* @param {*} latitude - Input value.
+* @param {*} longitude - Input value.
+* @returns {Promise<*>}
+*/
+    const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
         try {
             const response = await fetch(
                 `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
@@ -565,56 +681,58 @@ const fetchPostalCodeFromGeocode = async (latitude, longitude) => {
             countryReq();
         }
     }, [props?.route?.params?.wholedata])
-        /**
- * Handles country set.
- * @param {*} didi - Input value.
- * @returns {void}
- */
-const handleCountrySet = (didi) => {
+    /**
+* Handles country set.
+* @param {*} didi - Input value.
+* @returns {void}
+*/
+    const handleCountrySet = (didi) => {
         console.log(cellno, "cellno======", didi)
         PraticingState(didi?.id);
         setCountry(didi?.name);
         stateRequest(didi?.id);
         setCountry_id(didi?.id);
-        setDialcode(didi?.callingcode);
+        setDialcode(getValidDialCode(didi?.callingcode, didi?.name, null, countryall));
         const tempAccount = { country_id: didi?.id, country_name: didi?.name, country_code: didi?.callingcode };
         setIsNonUsaFlow(nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(tempAccount, nonUsaFlowState));
-        if (didi?.callingcode && cellno) {
+        const currentCell = normalizeContactValue(cellno);
+        const currentWhatsapp = normalizeContactValue(whatsappno);
+        if (didi?.callingcode && currentCell) {
             const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
-            const formattedNumber = formatPhoneNumber(cellno, isUSA);
+            const formattedNumber = formatPhoneNumber(currentCell, isUSA);
             setCellno(formattedNumber);
         }
-        if (didi?.callingcode && whatsappno) {
+        if (didi?.callingcode && currentWhatsapp) {
             const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
-            const formattedNumber = formatPhoneNumber(whatsappno, isUSA);
+            const formattedNumber = formatPhoneNumber(currentWhatsapp, isUSA);
             setWhatsappno(formattedNumber);
         }
     };
-        /**
- * Handles stateshows.
- * @param {*} ctid - Input value.
- * @returns {void}
- */
-const handleStateshows = (ctid) => {
+    /**
+* Handles stateshows.
+* @param {*} ctid - Input value.
+* @returns {void}
+*/
+    const handleStateshows = (ctid) => {
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);
         setState_id(ctid?.id);
     }
-        /**
- * Handlecity shows utility.
- * @param {*} ctshows - Input value.
- * @returns {void}
- */
-const handlecityShows = (ctshows) => {
+    /**
+* Handlecity shows utility.
+* @param {*} ctshows - Input value.
+* @returns {void}
+*/
+    const handlecityShows = (ctshows) => {
         setCity(ctshows?.name);
         setCity_id(ctshows?.id)
     }
-        /**
- * Country req utility.
- * @returns {void}
- */
-const countryReq = () => {
+    /**
+* Country req utility.
+* @returns {void}
+*/
+    const countryReq = () => {
         connectionrequest()
             .then(() => {
                 dispatch(countryRequest())
@@ -658,12 +776,12 @@ const countryReq = () => {
             setSelectedCityData(null);
         }
     }, [selectedCityData]);
-        /**
- * Praticing state component.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const PraticingState = (index) => {
+    /**
+* Praticing state component.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index));
@@ -673,12 +791,12 @@ const PraticingState = (index) => {
             });
     };
 
-        /**
- * City req utility.
- * @param {*} itid - Input value.
- * @returns {void}
- */
-const cityReq = (itid) => {
+    /**
+* City req utility.
+* @param {*} itid - Input value.
+* @returns {void}
+*/
+    const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -702,13 +820,13 @@ const cityReq = (itid) => {
             setSearchcity("");
         }
     }, [city])
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @param {boolean} isUSA - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input, isUSA = false) => {
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @param {boolean} isUSA - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input, isUSA = false) => {
         if (isUSA) {
             // USA format: (XXX) XXX-XXXX
             const cleaned = input.replace(/\D/g, '').slice(0, 10);
@@ -918,24 +1036,24 @@ const formatPhoneNumber = (input, isUSA = false) => {
                                                     textInputProps={{
                                                         multiline: false,
                                                         value: address || '',
-                                                                                                                /**
- * On change text helper.
- * @param {*} val - Input value.
- * @returns {void}
- */
-onChangeText: (val) => {
+                                                        /**
+* On change text helper.
+* @param {*} val - Input value.
+* @returns {void}
+*/
+                                                        onChangeText: (val) => {
                                                             setAddress(val);
                                                         },
-                                                                                                                /**
- * On focus utility.
- * @returns {*}
- */
-onFocus: () => handleFocus(),
-                                                                                                                /**
- * On blur utility.
- * @returns {*}
- */
-onBlur: () => handleBlur(),
+                                                        /**
+* On focus utility.
+* @returns {*}
+*/
+                                                        onFocus: () => handleFocus(),
+                                                        /**
+* On blur utility.
+* @returns {*}
+*/
+                                                        onBlur: () => handleBlur(),
                                                         placeholder: '',
                                                         placeholderTextColor: '#999999',
                                                     }}

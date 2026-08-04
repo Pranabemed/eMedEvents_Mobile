@@ -319,15 +319,14 @@ const getInitials = (firstname, lastname) => {
       setNonUsaFlowState(null);
     }
   }, [isUsaProfile, nonUsaFlowState]);
-  const modalKey = currentProfile === 'SkipProfile' && !isNonSubscribedNoSubscription ? [
+  const modalKey = currentProfile === 'SkipProfile' ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
-    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
+    { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
   ] : isNonUsaUser ? [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
-    { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 2, name: "Wallet Transactions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf }
   ] : isNonSubscribedNoSubscription ? [
@@ -819,7 +818,7 @@ onPress: () => {
                     {stableProfileMetaText || 'Guest Profile'}
                   </Text>
                 </View>
-                {(isNonSubscribedNoSubscription || !isNonUsaUser && allProfTake) && (
+                {!isNonUsaUser && (isNonSubscribedNoSubscription || allProfTake) && (
                   <Pressable
                     style={{
                       alignSelf: 'flex-start', // Let content determine width

@@ -79,12 +79,17 @@ const normalizeGeoInfo = (data = {}) => {
       '',
   ).trim();
 
+  const rawCalling = data.country_calling_code || data.calling_code || data.dial_code || data.callingCode;
+  const dynamicDialCode = rawCalling
+    ? (String(rawCalling).startsWith('+') ? String(rawCalling) : `+${rawCalling}`)
+    : getDialCode(countryCode);
+
   return {
     country: countryCode,
     country_name: countryName,
     city_name: cityName,
     state_name: stateName,
-    dialCode: getDialCode(countryCode),
+    dialCode: dynamicDialCode,
   };
 };
 

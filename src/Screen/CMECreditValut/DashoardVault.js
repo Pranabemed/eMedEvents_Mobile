@@ -208,12 +208,12 @@ const DashoardVault = (props) => {
             }
         }
     }, [stateidboard])
-        /**
- * Search topic nameboard utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchTopicNameboard = text => {
+    /**
+* Search topic nameboard utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchTopicNameboard = text => {
         if (text) {
             const listAllData = selectCountrytopicboard?.filter(function (item) {
                 const itemDataTopic = item?.board_data.board_name
@@ -230,12 +230,12 @@ const searchTopicNameboard = text => {
             setSearchtexttopicboard(text);
         }
     };
-        /**
- * Handles boardname.
- * @param {*} did - Input value.
- * @returns {void}
- */
-const handleBoardname = (did) => {
+    /**
+* Handles boardname.
+* @param {*} did - Input value.
+* @returns {void}
+*/
+    const handleBoardname = (did) => {
         setStateidboard(did)
         setBoardnameboard(did?.board_data?.board_name);
         setStatepickboard(false);
@@ -246,29 +246,29 @@ const handleBoardname = (did) => {
 
     /////////state--area///////
 
-        /**
- * Onhandle utility.
- * @returns {void}
- */
-const onhandle = () => {
+    /**
+* Onhandle utility.
+* @returns {void}
+*/
+    const onhandle = () => {
         setCmemodal(false);
     }
-        /**
- * Oncme modalclose utility.
- * @returns {void}
- */
-const oncmeModalclose = () => {
+    /**
+* Oncme modalclose utility.
+* @returns {void}
+*/
+    const oncmeModalclose = () => {
         setCmemodal(false);
     }
     useFocusEffect(
         React.useCallback(() => {
             let obj = {};
 
-                        /**
- * Fetch data utility.
- * @returns {void}
- */
-const fetchData = () => {
+            /**
+* Fetch data utility.
+* @returns {void}
+*/
+            const fetchData = () => {
                 connectionrequest()
                     .then(() => {
                         dispatch(stateMandatoryRequest(obj));
@@ -453,12 +453,12 @@ const fetchData = () => {
     const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-        /**
- * Returns display profession.
- * @param {*} source - Input value.
- * @returns {*}
- */
-const getDisplayProfession = (source) => {
+    /**
+* Returns display profession.
+* @param {*} source - Input value.
+* @returns {*}
+*/
+    const getDisplayProfession = (source) => {
         if (!source) return "";
         const profession = String(source?.professional_information?.profession || source?.profession || '').trim();
         const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
@@ -561,12 +561,12 @@ const getDisplayProfession = (source) => {
         }
 
     }, [creditwise]);
-        /**
- * Search topic name utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchTopicName = text => {
+    /**
+* Search topic name utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchTopicName = text => {
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
                 const itemDataTopic = item?.state_name
@@ -583,12 +583,12 @@ const searchTopicName = text => {
             setSearchtexttopic(text);
         }
     };
-        /**
- * Vault state utility.
- * @param {*} vault - Input value.
- * @returns {void}
- */
-const vaultState = (vault) => {
+    /**
+* Vault state utility.
+* @param {*} vault - Input value.
+* @returns {void}
+*/
+    const vaultState = (vault) => {
         setStateid(vault?.state_id)
         setStatewise(vault?.state_name);
         setCertificatedata(vault);
@@ -626,11 +626,11 @@ const vaultState = (vault) => {
         // setAvoid(true);
         setWidth(true);
     }, [isfocused])
-        /**
- * Down credit utility.
- * @returns {void}
- */
-const downCredit = () => {
+    /**
+* Down credit utility.
+* @returns {void}
+*/
+    const downCredit = () => {
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -641,11 +641,11 @@ const downCredit = () => {
         );
 
     }
-        /**
- * Handles rot.
- * @returns {*}
- */
-const handleRot = () => {
+    /**
+* Handles rot.
+* @returns {*}
+*/
+    const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
             if (state.isConnected) {

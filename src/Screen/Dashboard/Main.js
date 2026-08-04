@@ -529,7 +529,7 @@ const Main = (props) => {
     [bottomBannerSpacing, insets.bottom]
   );
   console.log("isPhysicianFlow", isPhysicianFlow, fulldashbaord);
-  console.log("isNursingFlow", isNursingFlow);
+  console.log("isNursingFlow", isNursingFlow, isSubscriptionExpiredSync);
   const lastLicenseProfRef = useRef(null);
 
   // 🔹 Sync licensure requirements when profession changes
@@ -1258,7 +1258,7 @@ const Main = (props) => {
           user?.usa_user === '1';
 
         const loginUser =
-        professionData ||
+          professionData ||
           AuthReducer?.loginResponse?.user ||
           AuthReducer?.againloginsiginResponse?.user ||
           AuthReducer?.loginsiginResponse?.user ||
@@ -1271,7 +1271,7 @@ const Main = (props) => {
           (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
 
         const physicianHandles = isEligibleGuestPhysician;
-        console.log(professionRaw ,"ewerktkjerh");
+        console.log(professionRaw, "ewerktkjerh");
 
         if (
           (isNonSubscribedNoSubscription || isPrimeMembershipPromptPending) &&
@@ -1749,8 +1749,8 @@ const Main = (props) => {
                         ? (isPhysicianFlow
                           ? ((exploreTrialClicked || props?.route?.params?.exploreTrialClicked || props?.route?.params?.subscriptionDataExists)
                             ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                            : <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
-                          : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                            : <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                          : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
                         : isPhysicianFlow
                           ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                           : isNursingFlow
