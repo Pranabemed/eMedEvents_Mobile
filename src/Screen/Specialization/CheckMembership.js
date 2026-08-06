@@ -171,13 +171,13 @@ const CheckMembership = (props) => {
 
     useEffect(() => {
         let isMounted = true;
-                /**
- * Check eligibility utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const checkEligibility = async () => {
+        /**
+* Check eligibility utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const checkEligibility = async () => {
             try {
                 const skipped = await AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
                 if (skipped === 'true') {
@@ -208,12 +208,12 @@ const checkEligibility = async () => {
                     AsyncStorage.getItem(constants.PROFESSION),
                 ]);
 
-                                /**
- * Parses stored json.
- * @param {*} value - Input value.
- * @returns {void}
- */
-const parseStoredJson = (value) => {
+                /**
+* Parses stored json.
+* @param {*} value - Input value.
+* @returns {void}
+*/
+                const parseStoredJson = (value) => {
                     if (!value) return null;
                     try {
                         return JSON.parse(value);
@@ -309,11 +309,25 @@ const parseStoredJson = (value) => {
 
                 if (isMounted) {
                     setIsEligible(eligible);
+                    if (!eligible) {
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
+                            })
+                        );
+                    }
                 }
             } catch (error) {
                 console.log('CheckMembership eligibility check error', error);
                 if (isMounted) {
                     setIsEligible(false);
+                    props.navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
+                        })
+                    );
                 }
             }
         };
@@ -360,22 +374,22 @@ const parseStoredJson = (value) => {
         { normaltitle: 'Priority Customer Service' },
     ]
     const [linearText, setLinearText] = useState(true);
-        /**
- * Handles clk.
- * @returns {void}
- */
-const handleClk = () => {
+    /**
+* Handles clk.
+* @returns {void}
+*/
+    const handleClk = () => {
         pendingFreeTrialNavigationRef.current = true;
         dispatch(primeTrailRequest({}));
     }
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [props.navigation]);
-        /**
- * Handles prime membership.
- * @returns {void}
- */
-const handlePrimeMembership = () => {
+    /**
+* Handles prime membership.
+* @returns {void}
+*/
+    const handlePrimeMembership = () => {
         (async () => {
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
@@ -392,13 +406,13 @@ const handlePrimeMembership = () => {
             console.log('CheckMembership prime flag error', error);
         });
     };
-        /**
- * Handles skip.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleSkip = async () => {
+    /**
+* Handles skip.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const handleSkip = async () => {
         try {
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
@@ -430,6 +444,10 @@ const handleSkip = async () => {
             })
         );
     }, [AuthReducer?.status, props.navigation, props?.route?.params]);
+
+    if (isEligible === false || isEligible === null) {
+        return null;
+    }
 
     return (
         <>

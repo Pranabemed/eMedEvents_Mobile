@@ -39,7 +39,7 @@ import MainInt from '../Screen/Dashboard/NoIntData';
 import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
 /**
  * Status1 string constant.
  * @returns {string}
@@ -120,7 +120,7 @@ function TabScreen() {
   const isFoucs = useIsFocused();
   const route = useRoute();
   const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
-  console.log(route.params ,detectmain,"route.params =====")
+  console.log(route.params, detectmain, "route.params =====")
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [lastActiveTab, setLastActiveTab] = useState(null);
@@ -134,13 +134,13 @@ function TabScreen() {
   const [wholeProf, setWholeProf] = useState()
   const [primeSkipped, setPrimeSkipped] = useState(false);
   useEffect(() => {
-        /**
- * Navigation helper that exposes check prime skipped behavior.
- *
- * @async
- * @returns {Promise<*>}
- */
-const checkPrimeSkipped = async () => {
+    /**
+* Navigation helper that exposes check prime skipped behavior.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const checkPrimeSkipped = async () => {
       try {
         const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
         setPrimeSkipped(skipped === 'true');
@@ -168,11 +168,11 @@ const checkPrimeSkipped = async () => {
     } : {}),
   };
   useEffect(() => {
-        /**
- * Navigation helper that exposes hydrate dashboard state behavior.
- * @returns {void}
- */
-const hydrateDashboardState = () => {
+    /**
+* Navigation helper that exposes hydrate dashboard state behavior.
+* @returns {void}
+*/
+    const hydrateDashboardState = () => {
       AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
         if (loginHandleProccess) {
           hydratedStateIdRef.current = null; // ensure state dashboard fetch re-hydrates for new account
@@ -229,11 +229,11 @@ const hydrateDashboardState = () => {
   }, [refreshLicensesAt, dispatch]);
 
   useEffect(() => {
-        /**
- * Navigation helper that exposes token error behavior.
- * @returns {void}
- */
-const token_error = () => {
+    /**
+* Navigation helper that exposes token error behavior.
+* @returns {void}
+*/
+    const token_error = () => {
       AsyncStorage.getItem(constants.PRODATA).then((profdatset) => {
         if (profdatset) {
           const parsedData = JSON.parse(profdatset);
@@ -279,12 +279,12 @@ const token_error = () => {
       licHandl(latestProfessionLabel);
     }
   }, [DashboardReducer?.status, DashboardReducer?.dashPerResponse?.data?.licensures, DashboardReducer?.mainprofileResponse?.professional_information, AuthReducer?.signupResponse?.user, ProfileReducer?.latestProfessionInfo, wholeProf]);
-    /**
- * Navigation helper that exposes state dashboard data behavior.
- * @param {*} id - Input value.
- * @returns {void}
- */
-const stateDashboardData = (id) => {
+  /**
+* Navigation helper that exposes state dashboard data behavior.
+* @param {*} id - Input value.
+* @returns {void}
+*/
+  const stateDashboardData = (id) => {
     let obj = {
       "state_id": id
     }
@@ -294,12 +294,12 @@ const stateDashboardData = (id) => {
       })
       .catch(err => { showErrorAlert("Please connect to internet", err) })
   }
-    /**
- * Navigation helper that exposes state report behavior.
- * @param {*} did - Input value.
- * @returns {void}
- */
-const stateReport = (did) => {
+  /**
+* Navigation helper that exposes state report behavior.
+* @param {*} did - Input value.
+* @returns {void}
+*/
+  const stateReport = (did) => {
     let obj = {
       "state_id": did
     }
@@ -311,12 +311,12 @@ const stateReport = (did) => {
         showErrorAlert("Please connect to internet", err)
       })
   }
-    /**
- * Navigation helper that exposes lic handl behavior.
- * @param {*} professionLabel - Input value.
- * @returns {void}
- */
-const licHandl = (professionLabel) => {
+  /**
+* Navigation helper that exposes lic handl behavior.
+* @param {*} professionLabel - Input value.
+* @returns {void}
+*/
+  const licHandl = (professionLabel) => {
     if (!professionLabel) return;
     if (professionLabel.toLowerCase().includes('undefined')) return;
     if (lastLicensureProfessionRef.current === professionLabel) return;
@@ -339,13 +339,13 @@ const licHandl = (professionLabel) => {
       : '';
   const allProfTake = validHandles.has(profFromDashboard);
   useEffect(() => {
-        /**
- * Navigation helper that exposes load last active tab behavior.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadLastActiveTab = async () => {
+    /**
+* Navigation helper that exposes load last active tab behavior.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const loadLastActiveTab = async () => {
       try {
         const lastTab = await AsyncStorage.getItem('lastActiveTab');
         if (lastTab) {
@@ -357,14 +357,14 @@ const loadLastActiveTab = async () => {
     };
     loadLastActiveTab();
   }, []);
-    /**
- * Navigation helper that exposes handle tab press behavior.
- *
- * @async
- * @param {*} tabName - Input value.
- * @returns {Promise<*>}
- */
-const handleTabPress = async (tabName) => {
+  /**
+* Navigation helper that exposes handle tab press behavior.
+*
+* @async
+* @param {*} tabName - Input value.
+* @returns {Promise<*>}
+*/
+  const handleTabPress = async (tabName) => {
     if (tabName == "Volts") return;
     try {
       await AsyncStorage.setItem('lastActiveTab', tabName);
@@ -394,11 +394,11 @@ const handleTabPress = async (tabName) => {
     return () => unsubscribe();
   }, [isFoucs]);
   useEffect(() => {
-        /**
- * Navigation helper that exposes token handle vault behavior.
- * @returns {void}
- */
-const token_handle_vault = () => {
+    /**
+* Navigation helper that exposes token handle vault behavior.
+* @returns {void}
+*/
+    const token_handle_vault = () => {
       (async () => {
         try {
           const [board_special, profession_data] = await Promise.all([
@@ -461,32 +461,50 @@ const token_handle_vault = () => {
       return false;
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessiontab]);
-  const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
+  const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab || DashboardReducer?.mainprofileResponse;
+
+  const countryName = String(
+    userObj?.user_address?.country_name ||
+    userObj?.user_address?.country ||
+    userObj?.country_name ||
+    userObj?.country ||
+    ''
+  ).trim().toUpperCase();
+
+  const isUsaCountry = countryName === 'UNITED STATES' || countryName === 'US' || countryName === 'USA' || isUsaCountryCode(countryName);
+
   const isUsaProfile =
+    isUsaCountry ||
     userObj?.usa_user === true ||
     userObj?.usa_user === 1 ||
     userObj?.usa_user === '1' ||
     userObj?.is_non_usa === false ||
     userObj?.is_non_usa === 0 ||
     userObj?.is_non_usa === '0';
-  const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
-  const creditVaultComponent = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true
+
+  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const stateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+  const hasUsaData = (stateData && Object.keys(stateData).some(key => key !== '-1')) || (Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0);
+
+  const isNonUsaUser = !isUsaProfile && !hasUsaData && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+
+  const creditVaultComponent = (nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || hasUsaData || isUsaProfile)
     ? DashoardVault
     : (isNonUsaUser ? CertficateHandle : DashoardVault);
-    /**
- * Navigation helper that exposes toggle drawer modal behavior.
- * @returns {void}
- */
-const toggleDrawerModal = () => {
+  /**
+* Navigation helper that exposes toggle drawer modal behavior.
+* @returns {void}
+*/
+  const toggleDrawerModal = () => {
     if (visible || isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
     setVisible(true);
   };
-    /**
- * Navigation helper that exposes close drawer modal behavior.
- * @returns {void}
- */
-const closeDrawerModal = () => {
+  /**
+* Navigation helper that exposes close drawer modal behavior.
+* @returns {void}
+*/
+  const closeDrawerModal = () => {
     setVisible(false);
   };
   useEffect(() => {
@@ -523,12 +541,12 @@ const closeDrawerModal = () => {
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-                /**
- * Navigation helper that exposes tab press behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-tabPress: (e) => {
+        /**
+* Navigation helper that exposes tab press behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -541,12 +559,12 @@ tabPress: (e) => {
           }
           handleTabPress(route.name);
         },
-                /**
- * Navigation helper that exposes focus behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-focus: (e) => {
+        /**
+* Navigation helper that exposes focus behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -568,13 +586,13 @@ focus: (e) => {
             component={item.component}
             initialParams={{ detectmain: "newadd" }}
             options={{
-                            /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => {
+              /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+              tabBarIcon: ({ focused }) => {
                 if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                   return (
                     <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -636,13 +654,13 @@ tabBarIcon: ({ focused }) => {
         name="Volts"
         component={Menu}
         options={{
-                    /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => (
+          /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+          tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}
@@ -704,12 +722,12 @@ tabBarIcon: ({ focused }) => (
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-                /**
- * Navigation helper that exposes tab press behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-tabPress: (e) => {
+        /**
+* Navigation helper that exposes tab press behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -722,12 +740,12 @@ tabPress: (e) => {
           }
           handleTabPress(route.name);
         },
-                /**
- * Navigation helper that exposes focus behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-focus: (e) => {
+        /**
+* Navigation helper that exposes focus behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -748,13 +766,13 @@ focus: (e) => {
           component={item.component}
           initialParams={{ detectmain: "newadd" }}
           options={{
-                        /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => {
+            /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+            tabBarIcon: ({ focused }) => {
               if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -819,13 +837,13 @@ tabBarIcon: ({ focused }) => {
         name="Volts"
         component={Menu}
         options={{
-                    /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => (
+          /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+          tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}
@@ -887,12 +905,12 @@ tabBarIcon: ({ focused }) => (
         tabBarStyle: sharedTabBarStyle,
       }}
       screenListeners={({ route }) => ({
-                /**
- * Navigation helper that exposes tab press behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-tabPress: (e) => {
+        /**
+* Navigation helper that exposes tab press behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        tabPress: (e) => {
           if (route.name == "Volts") {
             e.preventDefault();
             toggleDrawerModal();
@@ -905,12 +923,12 @@ tabPress: (e) => {
           }
           handleTabPress(route.name);
         },
-                /**
- * Navigation helper that exposes focus behavior.
- * @param {*} e - Input value.
- * @returns {void}
- */
-focus: (e) => {
+        /**
+* Navigation helper that exposes focus behavior.
+* @param {*} e - Input value.
+* @returns {void}
+*/
+        focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
             e.preventDefault();
             setTabmodal(true);
@@ -931,13 +949,13 @@ focus: (e) => {
           component={item.component}
           initialParams={{ detectmain: "newadd" }}
           options={{
-                        /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => {
+            /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+            tabBarIcon: ({ focused }) => {
               if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
                 return (
                   <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -1002,13 +1020,13 @@ tabBarIcon: ({ focused }) => {
         name="Volts"
         component={Menu}
         options={{
-                    /**
- * Navigation helper that exposes tab bar icon behavior.
- * @param {Object} props - Input object.
- * @param {*} props.focused - Nested property value.
- * @returns {JSX.Element}
- */
-tabBarIcon: ({ focused }) => (
+          /**
+* Navigation helper that exposes tab bar icon behavior.
+* @param {Object} props - Input object.
+* @param {*} props.focused - Nested property value.
+* @returns {JSX.Element}
+*/
+          tabBarIcon: ({ focused }) => (
             <>
               <Image
                 source={Imagepath.Menubar}

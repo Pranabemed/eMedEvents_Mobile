@@ -24,7 +24,8 @@ import TextFieldIn from '../../Components/Textfield';
 import Loader from '../../Utils/Helpers/Loader';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, CommonActions } from '@react-navigation/native';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import DropdownInputs from '../../Components/DropDownSec';
 import CityComponent from './CityComponent';
 import CustomizedYear from './CustomizedYear';
@@ -52,6 +53,26 @@ let status = "";
  * @returns {string}
  */
 let status1 = "";
+
+const isCheckMembershipEligible = async (dashboardReducer, authReducer) => {
+    try {
+        const geoInfo = await getCountryAndDialCode();
+        const ipCountry = String(geoInfo?.country || '').trim().toUpperCase();
+        const isUsaIp = ipCountry === 'US' || ipCountry === 'USA';
+
+        const dashboardProf = dashboardReducer?.mainprofileResponse?.professional_information;
+        const authUser = authReducer?.loginResponse?.user || authReducer?.signupResponse?.user || authReducer?.againloginsiginResponse?.user || {};
+
+        const profession = String(dashboardProf?.profession || authUser?.profession || '').trim().toLowerCase();
+        const professionType = String(dashboardProf?.profession_type || authUser?.profession_type || '').trim().toUpperCase();
+
+        const isPhysicianMDDODPM = profession === 'physician' && ['MD', 'DO', 'DPM'].includes(professionType);
+
+        return isUsaIp && isPhysicianMDDODPM;
+    } catch (e) {
+        return false;
+    }
+};
 /**
  * Create state infor component.
  * @param {*} props - Input value.
@@ -604,7 +625,19 @@ const saveFlagsAndRequestDashboard = async () => {
                 setNoloadnew(false);
                 dispatch(mainprofileRequest({}))
                 setFulldashbaord(uniqueStates);
-                props.navigation.navigate("CheckMembership");
+                (async () => {
+                    const eligible = await isCheckMembershipEligible(DashboardReducer, AuthReducer);
+                    if (eligible) {
+                        props.navigation.navigate("CheckMembership");
+                    } else {
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
+                            })
+                        );
+                    }
+                })();
                 break;
             case 'Dashboard/dashMbFailure':
                 status1 = DashboardReducer.status;

@@ -26,8 +26,9 @@ import { dashMbRequest, mainprofileRequest, stateDashboardRequest, stateReportin
 import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 
 /**
  * Reusable VerifyMobileOTP component.
@@ -78,16 +79,40 @@ const hasValidLicenseRecord = (license) => {
     return Boolean(licenseNumber && fromDate && fromDate !== '0000-00-00');
 };
 
-const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr) => {
+const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
     if (!phoneStr) return '';
     let raw = String(phoneStr).trim();
     let code = String(phoneCodeStr || '').trim();
 
+    const digitsOnly = raw.replace(/\D/g, '');
+
+    const isCodeUS =
+        code === '+1' ||
+        code === '1' ||
+        code.toUpperCase() === 'US' ||
+        code.toUpperCase() === 'USA' ||
+        code.startsWith('+1') ||
+        code.startsWith('1');
+
+    const isRawUS =
+        raw.startsWith('+1') ||
+        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
+        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
+
+    const isUS = isUsaIp || isCodeUS || isRawUS;
+
+    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
+        const last10 = digitsOnly.slice(-10);
+        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+        }
+    }
+
     if (raw.startsWith('+')) {
         const processed = processPhoneNumber(raw);
         if (processed && processed.isValid) {
-            const isUS = processed.countryCode === '+1' || processed.country === 'US';
-            if (isUS) {
+            if (processed.countryCode === '+1' || processed.country === 'US') {
                 const digits = processed.nationalNumber.slice(-10);
                 const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
                 if (match) {
@@ -98,20 +123,10 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr) => {
         }
     }
 
-    const digitsOnly = raw.replace(/\D/g, '');
-    const isUS = code === '+1' || code === '1' || (!code && (digitsOnly.length === 10 || (digitsOnly.length === 11 && digitsOnly.startsWith('1'))));
-
-    if (isUS) {
-        const last10 = digitsOnly.slice(-10);
-        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
-        if (match) {
-            const prefixCode = code ? (code.startsWith('+') ? code : `+${code}`) : '+1';
-            return `${prefixCode} (${match[1]}) ${match[2]}-${match[3]}`;
-        }
+    if (code && !code.startsWith('+') && !isNaN(code)) {
+        code = `+${code}`;
     }
-
-    const finalCode = code ? (code.startsWith('+') ? code : `+${code}`) : '';
-    return finalCode ? `${finalCode} - ${raw}` : raw;
+    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
 };
 /**
  * Verify mobile otp component.
@@ -136,6 +151,23 @@ const VerifyMobileOTP = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+
+    const [isUsaIp, setIsUsaIp] = useState(false);
+
+    useEffect(() => {
+        if (!isFocus) return;
+
+        let isActive = true;
+        getCountryAndDialCode().then(info => {
+            if (!isActive) return;
+            const country = String(info?.country || info?.country_code || info?.countryCode || '').toUpperCase();
+            setIsUsaIp(isUsaCountryCode(country));
+        }).catch(err => console.log('VerifyMobileOTP IP lookup error:', err));
+
+        return () => {
+            isActive = false;
+        };
+    }, [isFocus]);
     const stableGuestPrimeUser = useMemo(() => {
         const user =
             AuthReducer?.signupResponse?.user ||
@@ -180,11 +212,11 @@ const VerifyMobileOTP = (props) => {
         }
     }, [AuthReducer?.signupResponse])
     useEffect(() => {
-                /**
- * Token error otp utility.
- * @returns {void}
- */
-const token_error_otp = () => {
+        /**
+* Token error otp utility.
+* @returns {void}
+*/
+        const token_error_otp = () => {
             setTimeout(async () => {
                 const loginHandleProccess = await AsyncStorage.getItem(constants.TOKEN);
                 let objToken = { "token": loginHandleProccess, "key": {} }
@@ -206,13 +238,13 @@ const token_error_otp = () => {
         }
     }, [isFocus, stableGuestPrimeUser]);
     console.log(DashboardReducer?.mainprofileResponse, "mainprofile---------", props?.route?.params)
-        /**
- * Handles change.
- * @param {*} text - Input value.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const handleChange = (text, index) => {
+    /**
+* Handles change.
+* @param {*} text - Input value.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const handleChange = (text, index) => {
         if (text?.length > 1) {
             setOtpmobile(prevOtp => {
                 const newOtp = [...prevOtp];
@@ -243,14 +275,14 @@ const handleChange = (text, index) => {
         }
     };
 
-        /**
- * Handles key press.
- * @param {Object} props - Input object.
- * @param {*} props.nativeEvent - Nested property value.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const handleKeyPress = ({ nativeEvent }, index) => {
+    /**
+* Handles key press.
+* @param {Object} props - Input object.
+* @param {*} props.nativeEvent - Nested property value.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpmobile[index] === '') {
                 if (index > 0) inputsmobile.current[index - 1].focus();
@@ -262,11 +294,11 @@ const handleKeyPress = ({ nativeEvent }, index) => {
         }
     };
     useEffect(() => {
-                /**
- * Token handle utility.
- * @returns {void}
- */
-const token_handle = () => {
+        /**
+* Token handle utility.
+* @returns {void}
+*/
+        const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle = await AsyncStorage.getItem(constants.PHONE);
                 setAllotpcheckddd(loginHandle)
@@ -364,19 +396,19 @@ const token_handle = () => {
         startNewTimer(300);
     }, [startNewTimer]);
     const [isModalVisible, setModalVisible] = useState(false);
-        /**
- * Toggle modal utility.
- * @returns {void}
- */
-const toggleModal = () => {
+    /**
+* Toggle modal utility.
+* @returns {void}
+*/
+    const toggleModal = () => {
         setModalVisible(!isModalVisible);
     };
     const autoResendHandledRef = useRef(false);
-        /**
- * Verify handlevalid utility.
- * @returns {void}
- */
-const verifyHandlevalid = () => {
+    /**
+* Verify handlevalid utility.
+* @returns {void}
+*/
+    const verifyHandlevalid = () => {
         let obj = {
             "verify_type": "phone"
         }
@@ -388,11 +420,11 @@ const verifyHandlevalid = () => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-        /**
- * Resend mobile otp utility.
- * @returns {void}
- */
-const resendMobileOTP = () => {
+    /**
+* Resend mobile otp utility.
+* @returns {void}
+*/
+    const resendMobileOTP = () => {
         let obj = {
             "verify_type": "phone"
         }
@@ -404,11 +436,11 @@ const resendMobileOTP = () => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-        /**
- * Clear all otpfields mobile utility.
- * @returns {void}
- */
-const clearAllOTPFieldsMobile = () => {
+    /**
+* Clear all otpfields mobile utility.
+* @returns {void}
+*/
+    const clearAllOTPFieldsMobile = () => {
         setOtpmobile(new Array(6).fill(''));
         if (inputsmobile.current[0]) {
             inputsmobile.current[0].focus();
@@ -609,12 +641,12 @@ const clearAllOTPFieldsMobile = () => {
             }
         }
     }, [DashboardReducer.status]);
-        /**
- * State dashboard data utility.
- * @param {*} id - Input value.
- * @returns {void}
- */
-const stateDashboardData = (id) => {
+    /**
+* State dashboard data utility.
+* @param {*} id - Input value.
+* @returns {void}
+*/
+    const stateDashboardData = (id) => {
         let obj = {
             "state_id": id
         }
@@ -624,12 +656,12 @@ const stateDashboardData = (id) => {
             })
             .catch(err => { showErrorAlert("Please connect to internet", err) })
     }
-        /**
- * State report utility.
- * @param {*} did - Input value.
- * @returns {void}
- */
-const stateReport = (did) => {
+    /**
+* State report utility.
+* @param {*} did - Input value.
+* @returns {void}
+*/
+    const stateReport = (did) => {
         let obj = {
             "state_id": did
         }
@@ -641,12 +673,12 @@ const stateReport = (did) => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-        /**
- * Lic handl utility.
- * @param {*} profFromDashboard - Input value.
- * @returns {void}
- */
-const licHandl = (profFromDashboard) => {
+    /**
+* Lic handl utility.
+* @param {*} profFromDashboard - Input value.
+* @returns {void}
+*/
+    const licHandl = (profFromDashboard) => {
         let obj = profFromDashboard;
         console.log(obj, "obj--------")
         connectionrequest()
@@ -664,11 +696,11 @@ const licHandl = (profFromDashboard) => {
         setRenewal(renewalLink);
     }, [renewalLink]);
     console.log("manually otp1222", props?.route?.params, AuthReducer);
-        /**
- * Verify handle utility.
- * @returns {void}
- */
-const verifyHandle = () => {
+    /**
+* Verify handle utility.
+* @returns {void}
+*/
+    const verifyHandle = () => {
         console.log(props?.route?.params?.Newphone?.Verifycell, "manually otp1222", props?.route?.params);
         const enteredOTP = otpmobile && otpmobile.join('');
         console.log(enteredOTP, typeof enteredOTP, "manually otp");
@@ -689,10 +721,25 @@ const verifyHandle = () => {
         }
     };
     const isEnabledMobile = countdown > 0;
-    const phoneDetect = props?.route?.params?.Newphone?.allNo || props?.route?.params?.Newphone?.phoneCode || AuthReducer?.signupResponse?.user?.phone || props?.route?.params?.Newphone?.allNo || props?.route?.params?.validPh?.validPh || props?.route?.params?.Newphone?.phoneCode || props?.route?.params?.Newphone?.phone || allotpcheckddd || AuthReducer?.verifyResponse?.phone || props?.route?.params?.newPh || props?.route?.params?.mobileNo?.mobileNo;
+    const phoneDetect =
+        props?.route?.params?.Newphone?.phone ||
+        props?.route?.params?.Newphone?.allNo ||
+        props?.route?.params?.validPh?.validPh ||
+        (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
+        AuthReducer?.loginResponse?.user?.phone ||
+        AuthReducer?.againloginsiginResponse?.user?.phone ||
+        AuthReducer?.signupResponse?.user?.phone ||
+        AuthReducer?.verifymobileResponse?.user?.phone ||
+        AuthReducer?.verifyResponse?.phone ||
+        props?.route?.params?.newPh ||
+        props?.route?.params?.mobileNo?.mobileNo ||
+        props?.route?.params?.Newphone?.phoneCode ||
+        allotpcheckddd;
+
     const phoneCodeDetect = props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.Newphone?.phoneCode || '';
     console.log(phoneDetect, "phonedetect=========", AuthReducer)
-    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect);
+    const isUsaPhoneCode = isUsaCountryCode(phoneCodeDetect) || String(phoneCodeDetect || '').trim().toUpperCase().startsWith('+1');
+    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect, isUsaIp || isUsaPhoneCode);
     useEffect(() => {
         if (phoneDetect?.startsWith('+')) {
             const finalget = processPhoneNumber(phoneDetect);
@@ -701,11 +748,11 @@ const verifyHandle = () => {
         }
     }, [phoneDetect])
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(

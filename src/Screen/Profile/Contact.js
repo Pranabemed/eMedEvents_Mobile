@@ -106,12 +106,73 @@ const normalizeContactValue = (value) => {
     return text;
 };
 
-const getGeoFallbackAddress = (geoInfo) => {
+const getGeoFallbackAddress = (geoInfo, countryList) => {
     const stateName = normalizeContactValue(geoInfo?.state_name);
     const cityName = normalizeContactValue(geoInfo?.city_name);
-    const countryName = normalizeContactValue(geoInfo?.country_name);
+    const rawCountry = normalizeContactValue(geoInfo?.country_name || geoInfo?.country);
+    const countryName = getFullCountryName(rawCountry, countryList);
 
-    return stateName || [cityName, stateName, countryName].filter(Boolean).join(', ') || [cityName, countryName].filter(Boolean).join(', ') || countryName || '';
+    if (countryName && stateName) {
+        return `${countryName}, ${stateName}`;
+    }
+    if (countryName && cityName) {
+        return `${countryName}, ${cityName}`;
+    }
+    return stateName || countryName || cityName || '';
+};
+
+const getFullCountryName = (val, countryList) => {
+    if (!val) return '';
+    const str = String(val).trim();
+    if (!str || str.toLowerCase() === 'null' || str.toLowerCase() === 'undefined') return '';
+
+    if (Array.isArray(countryList) && countryList.length > 0) {
+        const found = countryList.find(c =>
+            String(c.sortname || '').trim().toLowerCase() === str.toLowerCase() ||
+            String(c.name || '').trim().toLowerCase() === str.toLowerCase() ||
+            String(c.iso3 || '').trim().toLowerCase() === str.toLowerCase()
+        );
+        if (found && found.name) {
+            return found.name;
+        }
+    }
+
+    if (str.length === 2) {
+        try {
+            if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+                const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+                const name = displayNames.of(str.toUpperCase());
+                if (name && name !== str.toUpperCase()) {
+                    return name;
+                }
+            }
+        } catch (e) { }
+    }
+
+    const upper = str.toUpperCase();
+    const commonMap = {
+        'IN': 'India',
+        'IND': 'India',
+        'US': 'United States',
+        'USA': 'United States',
+        'GB': 'United Kingdom',
+        'UK': 'United Kingdom',
+        'CA': 'Canada',
+        'CAN': 'Canada',
+        'AU': 'Australia',
+        'AUS': 'Australia',
+        'SG': 'Singapore',
+        'SGP': 'Singapore',
+        'AE': 'United Arab Emirates',
+        'UAE': 'United Arab Emirates',
+        'DE': 'Germany',
+        'FR': 'France'
+    };
+    if (commonMap[upper]) {
+        return commonMap[upper];
+    }
+
+    return str;
 };
 
 
@@ -185,8 +246,10 @@ const ContactProfile = (props) => {
                 break;
             case 'Auth/countrySuccess':
                 status = AuthReducer.status;
-                setCountryshow(AuthReducer?.countryResponse?.countries);
-                setCountryall(AuthReducer?.countryResponse?.countries);
+                const fetchedCountries = AuthReducer?.countryResponse?.countries;
+                setCountryshow(fetchedCountries);
+                setCountryall(fetchedCountries);
+                setCountry(prev => getFullCountryName(prev, fetchedCountries));
                 break;
             case 'Auth/countryFailure':
                 status = AuthReducer.status;
@@ -289,7 +352,7 @@ const ContactProfile = (props) => {
                     setAddress(prev => {
                         const cleanPrev = normalizeContactValue(prev);
                         if (!cleanPrev) {
-                            return getGeoFallbackAddress(geoInfo);
+                            return getGeoFallbackAddress(geoInfo, countryall);
                         }
                         return cleanPrev;
                     });
@@ -300,6 +363,14 @@ const ContactProfile = (props) => {
                             return normalizeContactValue(geoInfo?.state_name);
                         }
                         return cleanPrev;
+                    });
+
+                    setCountry(prev => {
+                        const cleanPrev = normalizeContactValue(prev);
+                        if (!cleanPrev) {
+                            return getFullCountryName(geoInfo?.country_name || geoInfo?.country, countryall);
+                        }
+                        return getFullCountryName(cleanPrev, countryall);
                     });
 
                     setDialcode(prev => {
@@ -523,7 +594,7 @@ const ContactProfile = (props) => {
             const userAddr = props?.route?.params?.wholedata?.user_address || {};
             const rawAddr = normalizeContactValue(userAddr?.address);
             const rawState = normalizeContactValue(userAddr?.state_name);
-            const rawCountry = normalizeContactValue(userAddr?.country_name);
+            const rawCountry = getFullCountryName(normalizeContactValue(userAddr?.country_name), countryall);
             const rawCalling = normalizeContactValue(userAddr?.calling_code);
 
             setCountry(rawCountry);
@@ -531,7 +602,7 @@ const ContactProfile = (props) => {
 
             getCountryAndDialCode().then(geoInfo => {
                 if (!rawAddr) {
-                    setAddress(getGeoFallbackAddress(geoInfo));
+                    setAddress(getGeoFallbackAddress(geoInfo, countryall));
                 } else {
                     setAddress(rawAddr);
                 }
@@ -540,6 +611,19 @@ const ContactProfile = (props) => {
                     setState(normalizeContactValue(geoInfo?.state_name));
                 } else {
                     setState(rawState);
+                }
+
+                if (!rawCountry) {
+                    const fallbackCountry = getFullCountryName(geoInfo?.country_name || geoInfo?.country, countryall);
+                    setCountry(fallbackCountry);
+                    if (Array.isArray(countryall) && countryall.length > 0 && fallbackCountry) {
+                        const matched = countryall.find(c => String(c.name || '').toLowerCase() === fallbackCountry.toLowerCase());
+                        if (matched) {
+                            setCountry_id(matched.id);
+                        }
+                    }
+                } else {
+                    setCountry(rawCountry);
                 }
 
                 const validDial = getValidDialCode(rawCalling, rawCountry, geoInfo, countryall);

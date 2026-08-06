@@ -90,7 +90,7 @@ const CertficateHandle = (props) => {
         return [[]];
     };
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
-    const [isNonUsaLoading, setIsNonUsaLoading] = useState(false);
+    const [isNonUsaLoading, setIsNonUsaLoading] = useState(true);
     const [primeSkipped, setPrimeSkipped] = useState(false);
     useEffect(() => {
         /**
@@ -748,6 +748,8 @@ const CertficateHandle = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    const isInitialNonUsaLoading = isNonUsaLoading || nonUsaFlowState === null || DashboardReducer?.status === 'Dashboard/stateMandatoryRequest';
+
     if (isNonUsaUser) {
         return (
             <SafeAreaView style={styles.container}>
@@ -763,10 +765,10 @@ const CertficateHandle = (props) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <Loader visible={isNonUsaLoading || DashboardReducer?.status == 'Dashboard/stateMandatoryRequest' || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptNonUsaRequest'} />
+                    <Loader visible={isInitialNonUsaLoading || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptNonUsaRequest'} />
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={{ flex: 1 }}>
-                            {!isNonUsaLoading && (
+                            {!isInitialNonUsaLoading && (
                                 hasNonUsaCertificateRows ? (
                                     <View style={{ marginTop: normalize(10) }}>
                                         <View style={styles.yearContainer}>

@@ -15,7 +15,7 @@ import Statevault from './Statevault'
 import Boardvault from './Boardvault'
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { stateCourseRequest, stateMandatoryRequest, stateReportingRequest, mainprofileRequest, dashMbRequest } from '../../Redux/Reducers/DashboardReducer';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Statevaultcomponet from './Statevaultcomponet';
@@ -35,7 +35,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionActive } from '../../Utils/Helpers/primeSubscription';
 import CertficateHandle from './FileCheck';
 
@@ -137,10 +137,12 @@ const DashoardVault = (props) => {
                 .then(() => {
                     dispatch(boardvaultRequest({}));
                     dispatch(mainprofileRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(stateMandatoryRequest({}));
                     dispatch(PrimeCheckRequest({}));
                 })
                 .catch((err) => {
-                    showErrorAlert("Please connect to internet", err);
+                    showErrorAlert("Please connect to internet1", err);
                 });
         }
     }, [isFocus]);
@@ -274,7 +276,7 @@ const DashoardVault = (props) => {
                         dispatch(stateMandatoryRequest(obj));
                     })
                     .catch((err) => {
-                        showErrorAlert("Please connect to internet", err);
+                        showErrorAlert("Please connect to internet2", err);
                     });
             };
 
@@ -320,35 +322,62 @@ const DashoardVault = (props) => {
         }
     }, [CreditVaultReducer.status, CreditVaultReducer?.professionvaultResponse]);
     useEffect(() => {
-        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+        const rawStateData =
+            DashboardReducer?.stateMandatoryResponse?.state_data ||
+            DashboardReducer?.stateMandatorySuccess?.state_data;
 
-        if (stateData) {
-            const stateDataArray = Object.keys(stateData).map(key => ({
-                ...stateData[key],
-                state_id: key,
-            }));
-            // Update state with the new data
-            setSelectCountrytopic(stateDataArray);
-            setClisttopic(stateDataArray);
+        if (rawStateData && typeof rawStateData === 'object') {
+            const stateDataArray = Object.keys(rawStateData)
+                .filter(key => key !== '-1')
+                .map(key => ({
+                    ...rawStateData[key],
+                    state_id: key,
+                }));
 
             if (stateDataArray.length > 0) {
+                setSelectCountrytopic(stateDataArray);
+                setClisttopic(stateDataArray);
+
                 const defaultState = stateDataArray[0];
                 setCertificatedata(defaultState);
                 setStatewise(defaultState?.state_name || "");
                 setStateid(defaultState?.state_id || "");
-            } else {
-                setCertificatedata(null);
-                setStatewise("");
-                setStateid("");
+                return;
             }
-        } else {
+        }
+
+        const licensures =
+            DashboardReducer?.dashMbResponse?.data?.licensures ||
+            DashboardReducer?.dashboardResponse?.data?.licensures;
+
+        if (Array.isArray(licensures) && licensures.length > 0) {
+            const uniqueStates = licensures.filter((state, index, self) =>
+                index === self.findIndex(s => s.state_id === state.state_id && s.board_id === state.board_id)
+            );
+            setSelectCountrytopic(uniqueStates);
+            setClisttopic(uniqueStates);
+
+            const defaultState = uniqueStates[0];
+            setCertificatedata(defaultState);
+            setStatewise(defaultState?.state_name || defaultState?.board_data?.board_name || "");
+            setStateid(defaultState?.state_id || "");
+            return;
+        }
+
+        if (!rawStateData && (!licensures || licensures.length === 0)) {
             setSelectCountrytopic([]);
             setClisttopic([]);
             setCertificatedata(null);
             setStatewise("");
             setStateid("");
         }
-    }, [JSON.stringify(DashboardReducer?.stateMandatoryResponse?.state_data)]);
+    }, [
+        JSON.stringify(DashboardReducer?.stateMandatoryResponse?.state_data),
+        JSON.stringify(DashboardReducer?.stateMandatorySuccess?.state_data),
+        JSON.stringify(DashboardReducer?.dashMbResponse?.data?.licensures),
+        JSON.stringify(DashboardReducer?.dashboardResponse?.data?.licensures),
+        DashboardReducer?.status,
+    ]);
 
 
     const [finalverifyvault, setFinalverifyvault] = useState(null);
@@ -434,7 +463,18 @@ const DashoardVault = (props) => {
     ), [exploreTrialClicked, WebcastReducer?.PrimeCheckResponse, WebcastReducer?.PrimePaymentResponse]);
     const shouldHideCertificateAction = isNonSubscribedNoSubscription && !isPrimeTrialOrActive;
     const userObj = resolvedUser || finalverifyvault || finalProfession;
+    const countryName = String(
+        userObj?.user_address?.country_name ||
+        userObj?.user_address?.country ||
+        userObj?.country_name ||
+        userObj?.country ||
+        ''
+    ).trim().toUpperCase();
+
+    const isUsaCountry = countryName === 'UNITED STATES' || countryName === 'US' || countryName === 'USA' || isUsaCountryCode(countryName);
+
     const isUsaProfile =
+        isUsaCountry ||
         userObj?.usa_user === true ||
         userObj?.usa_user === 1 ||
         userObj?.usa_user === '1' ||
@@ -442,16 +482,6 @@ const DashoardVault = (props) => {
         userObj?.is_non_usa === 0 ||
         userObj?.is_non_usa === '0';
 
-    const isNonUsaUser = !isUsaProfile && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
-
-    useEffect(() => {
-        if (isUsaProfile && nonUsaFlowState?.isNonUsa) {
-            clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
-            setNonUsaFlowState(null);
-        }
-    }, [isUsaProfile, nonUsaFlowState]);
-    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
-    const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     /**
 * Returns display profession.
@@ -464,6 +494,26 @@ const DashoardVault = (props) => {
         const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
+    const isPhysicianProf = validHandles.has(getDisplayProfession(userObj));
+
+    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
+    const stateDataVault = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+    const hasUsaLicenseData =
+        (Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0) ||
+        (stateDataVault && Object.keys(stateDataVault).some(key => key !== '-1')) ||
+        (Array.isArray(selectCountrytopic) && selectCountrytopic.length > 0) ||
+        Boolean(AuthReducer?.staticdataResponse?.state) ||
+        Boolean(creditwise?.license_number || licesense);
+
+    const isNonUsaUser = !isUsaProfile && !hasUsaLicenseData && !(isPhysicianProf && hasUsaLicenseData) && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+
+    useEffect(() => {
+        if ((isUsaProfile || hasUsaLicenseData) && nonUsaFlowState?.isNonUsa) {
+            clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+            setNonUsaFlowState(null);
+        }
+    }, [isUsaProfile, hasUsaLicenseData, nonUsaFlowState]);
+    const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
     const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj));
     const shouldShowAddLicenseCard =
         !isNonUsaUser &&
@@ -740,7 +790,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : (isNonUsaUser && !hasNonUsaCertificates) ? (
+                        ) : (isNonUsaUser && !hasNonUsaCertificates && !hasUsaLicenseData) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -763,7 +813,7 @@ const DashoardVault = (props) => {
                                 </View>
                             </View>
                         ) : isNonUsaUser ? (
-                            <CertficateHandle navigation={navigation} route={{ params: { isNonUsaUser: true } }} />
+                            <CertficateHandle navigation={navigation} route={{ params: { isNonUsaUser: isNonUsaUser } }} />
                         ) : (
                             <>
                                 <View style={{ marginTop: normalize(10) }}>
@@ -801,8 +851,8 @@ const DashoardVault = (props) => {
                                                 fontWeight: "500"
                                             }}>
                                                 State License{
-                                                    AuthReducer?.staticdataResponse?.state ? ` (${AuthReducer.staticdataResponse.state})` :
-                                                        selectCountrytopic ? ` (${selectCountrytopic?.length})` :
+                                                    selectCountrytopic && selectCountrytopic.length > 0 ? ` (${selectCountrytopic.length})` :
+                                                        AuthReducer?.staticdataResponse?.state ? ` (${AuthReducer.staticdataResponse.state})` :
                                                             ''
                                                 }
                                             </Text>

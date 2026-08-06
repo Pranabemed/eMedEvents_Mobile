@@ -36,6 +36,8 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 
 /**
  * Reusable SplashMobile component.
@@ -58,6 +60,56 @@ import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscriptio
  */
 let _splashMobileOTPSentForPhone = null;
 // ─────────────────────────────────────────────────────────────────────────────
+
+const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
+    if (!phoneStr) return '';
+    let raw = String(phoneStr).trim();
+    let code = String(phoneCodeStr || '').trim();
+
+    const digitsOnly = raw.replace(/\D/g, '');
+
+    const isCodeUS =
+        code === '+1' ||
+        code === '1' ||
+        code.toUpperCase() === 'US' ||
+        code.toUpperCase() === 'USA' ||
+        code.startsWith('+1') ||
+        code.startsWith('1');
+
+    const isRawUS =
+        raw.startsWith('+1') ||
+        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
+        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
+
+    const isUS = isUsaIp || isCodeUS || isRawUS;
+
+    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
+        const last10 = digitsOnly.slice(-10);
+        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+        }
+    }
+
+    if (raw.startsWith('+')) {
+        const processed = processPhoneNumber(raw);
+        if (processed && processed.isValid) {
+            if (processed.countryCode === '+1' || processed.country === 'US') {
+                const digits = processed.nationalNumber.slice(-10);
+                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
+                if (match) {
+                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+                }
+            }
+            return processed.formattedNumber || raw;
+        }
+    }
+
+    if (code && !code.startsWith('+') && !isNaN(code)) {
+        code = `+${code}`;
+    }
+    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
+};
 
 /**
  * Splash mobile component.
@@ -105,6 +157,18 @@ const SplashMobile = (props) => {
     const [noload, setNoload] = useState(false);
     const [otpmobile, setOtpmobile] = useState(new Array(6).fill(''));
     const [isModalVisible, setModalVisible] = useState(false);
+    const [isUsaIp, setIsUsaIp] = useState(false);
+
+    useEffect(() => {
+        if (!isFocus) return;
+        let isActive = true;
+        getCountryAndDialCode().then(info => {
+            if (!isActive) return;
+            const country = String(info?.country || info?.country_code || info?.countryCode || '').toUpperCase();
+            setIsUsaIp(isUsaCountryCode(country));
+        }).catch(err => console.log('SplashMobile IP lookup error:', err));
+        return () => { isActive = false; };
+    }, [isFocus]);
 
     // ─── Refs ──────────────────────────────────────────────────────────────────
     const inputsmobile = useRef([]);
@@ -490,14 +554,19 @@ const licHandl = (prof) => {
     const isEnabledMobile = countdown > 0;
 
     const phoneDetect =
+        props?.route?.params?.Newphone?.phone ||
         props?.route?.params?.Newphone?.allNo ||
         props?.route?.params?.validPh?.validPh ||
-        props?.route?.params?.Newphone?.phoneCode ||
-        props?.route?.params?.Newphone?.phone ||
+        (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
+        AuthReducer?.loginResponse?.user?.phone ||
+        AuthReducer?.againloginsiginResponse?.user?.phone ||
+        AuthReducer?.signupResponse?.user?.phone ||
+        AuthReducer?.verifymobileResponse?.user?.phone ||
         AuthReducer?.verifyResponse?.phone ||
         props?.route?.params?.newPh ||
         props?.route?.params?.mobileNo?.mobileNo ||
         DashboardReducer?.mainprofileResponse?.user_address?.contact_no ||
+        props?.route?.params?.Newphone?.phoneCode ||
         allotpcheckddd;
 
     const phoneCode =
@@ -506,11 +575,8 @@ const licHandl = (prof) => {
         props?.route?.params?.Newphone?.allNo ||
         '';
 
-    let phoneFinal = phoneDetect?.startsWith('+')
-        ? phoneDetect
-        : `${phoneCode}${phoneDetect || ''}`;
-    if (phoneFinal && !phoneFinal.startsWith('+')) phoneFinal = '+' + phoneFinal;
-    phoneFinal = phoneFinal.replace(/^(\+\d+)\1+/, '$1').replace(/[ -]+/g, '');
+    const isUsaPhoneCode = isUsaCountryCode(phoneCode) || String(phoneCode || '').trim().toUpperCase().startsWith('+1');
+    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCode, isUsaIp || isUsaPhoneCode);
 
     useEffect(() => {
         if (phoneDetect?.startsWith('+')) {

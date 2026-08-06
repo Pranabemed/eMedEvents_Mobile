@@ -19,10 +19,9 @@ import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 import { CommonActions } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
-import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
-import { AppContext } from '../GlobalSupport/AppContext';
-import { readNonUsaPermanentFlags } from '../../Utils/Helpers/nonUsaFlow';
+import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { readNonUsaPermanentFlags, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 /**
  * Status1 string constant.
  * @returns {string}
@@ -33,6 +32,56 @@ let status1 = "";
  * @returns {string}
  */
 let status = "";
+
+const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
+    if (!phoneStr) return '';
+    let raw = String(phoneStr).trim();
+    let code = String(phoneCodeStr || '').trim();
+
+    const digitsOnly = raw.replace(/\D/g, '');
+
+    const isCodeUS =
+        code === '+1' ||
+        code === '1' ||
+        code.toUpperCase() === 'US' ||
+        code.toUpperCase() === 'USA' ||
+        code.startsWith('+1') ||
+        code.startsWith('1');
+
+    const isRawUS =
+        raw.startsWith('+1') ||
+        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
+        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
+
+    const isUS = isUsaIp || isCodeUS || isRawUS;
+
+    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
+        const last10 = digitsOnly.slice(-10);
+        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+        }
+    }
+
+    if (raw.startsWith('+')) {
+        const processed = processPhoneNumber(raw);
+        if (processed && processed.isValid) {
+            if (processed.countryCode === '+1' || processed.country === 'US') {
+                const digits = processed.nationalNumber.slice(-10);
+                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
+                if (match) {
+                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+                }
+            }
+            return processed.formattedNumber || raw;
+        }
+    }
+
+    if (code && !code.startsWith('+') && !isNaN(code)) {
+        code = `+${code}`;
+    }
+    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
+};
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
@@ -48,8 +97,22 @@ const MobileLoginOTP = (props) => {
         setGtprof
     } = useContext(AppContext);
     const dispatch = useDispatch();
+    const isFocus = useIsFocused();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+
+    const [isUsaIp, setIsUsaIp] = useState(false);
+
+    useEffect(() => {
+        if (!isFocus) return;
+        let isActive = true;
+        getCountryAndDialCode().then(info => {
+            if (!isActive) return;
+            const country = String(info?.country || info?.country_code || info?.countryCode || '').toUpperCase();
+            setIsUsaIp(isUsaCountryCode(country));
+        }).catch(err => console.log('MobileLogin IP lookup error:', err));
+        return () => { isActive = false; };
+    }, [isFocus]);
     console.log(AuthReducer?.loginsiginResponse?.phone_otp, "props?.route?.params?.verifyemail?.phone", props?.route?.params)
     const [resendtrue, setResendtrue] = useState(false);
     const [countdown, setCountdown] = useState(300);
@@ -548,6 +611,22 @@ const onBackPress = () => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    const phoneDetect =
+        props?.route?.params?.mobileNo?.mobileNo ||
+        props?.route?.params?.Newphone?.phone ||
+        props?.route?.params?.Newphone?.allNo ||
+        props?.route?.params?.validPh?.validPh ||
+        (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
+        AuthReducer?.loginResponse?.user?.phone ||
+        AuthReducer?.againloginsiginResponse?.user?.phone ||
+        AuthReducer?.signupResponse?.user?.phone ||
+        AuthReducer?.verifymobileResponse?.user?.phone ||
+        AuthReducer?.verifyResponse?.phone;
+
+    const phoneCodeDetect = props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.validPh?.phonecode || props?.route?.params?.Newphone?.phoneCode || '';
+    const isUsaPhoneCode = isUsaCountryCode(phoneCodeDetect) || String(phoneCodeDetect || '').trim().toUpperCase().startsWith('+1');
+    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect, isUsaIp || isUsaPhoneCode);
+
     return (
         <>
             <MyStatusBar
@@ -561,12 +640,6 @@ const onBackPress = () => {
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                     <Loader
                         visible={AuthReducer?.status == 'Auth/againloginsiginRequest' || nonloadermb || nonloader} />
-                    {/* <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), marginRight: normalize(10), justifyContent: "center", alignContent: "center" }}>
-                        <Image
-                            source={Imagepath.eMedfulllogo}
-                            style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }}
-                        />
-                    </View> */}
                     <View style={styles.headerContainer}>
                         <Text style={styles.headerText}>{"Verify Cell Number"}</Text>
                         <View style={{ flexDirection: "column", marginTop: normalize(15) }}>
@@ -579,7 +652,7 @@ const onBackPress = () => {
                             <View style={{ flexDirection: "row", gap: 5 }}>
                                 <View>
                                     <Text style={[styles.subHeaderText, { fontWeight: "bold" }]}>
-                                        {`${props?.route?.params?.mobileNo?.phoneCode} - ${props?.route?.params?.mobileNo?.mobileNo ? props?.route?.params?.mobileNo?.mobileNo : props?.route?.params?.mobileNo?.mobileNo}`}
+                                        {phoneFinal}
                                     </Text>
                                 </View>
                                 <TouchableOpacity disabled={countdown == 0 ? false : true} onPress={() => {

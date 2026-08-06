@@ -88,23 +88,23 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
     // Get the current item without scrolling
-        /**
- * Returns current item.
- * @returns {*}
- */
-const getCurrentItem = () => {
+    /**
+* Returns current item.
+* @returns {*}
+*/
+    const getCurrentItem = () => {
         if (!fulldashbaord?.length) return null;
         return fulldashbaord[currentIndex]; // <-- Uses state-tracked index
     };
     const isFocus = useIsFocused();
     useEffect(() => {
-                /**
- * Token handle utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const tokenHandle = async () => {
+        /**
+* Token handle utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const tokenHandle = async () => {
             try {
                 if (!isFocus) return;
                 const loginHandle = await AsyncStorage.getItem(constants.TOKEN);
@@ -130,11 +130,11 @@ const tokenHandle = async () => {
             dashboardFetchInFlightRef.current = false;
         }
     }, [DashboardReducer.status]);
-        /**
- * Dash boar data utility.
- * @returns {void}
- */
-const dashBoarData = () => {
+    /**
+* Dash boar data utility.
+* @returns {void}
+*/
+    const dashBoarData = () => {
         if (dashboardFetchInFlightRef.current) return;
         dashboardFetchInFlightRef.current = true;
         connectionrequest()
@@ -147,17 +147,17 @@ const dashBoarData = () => {
             })
 
     }
+    /**
+* Rest of profession utility.
+* @returns {void}
+*/
+    const restOfProfession = () => {
         /**
- * Rest of profession utility.
- * @returns {void}
- */
-const restOfProfession = () => {
-                /**
- * Returns first truthy profession.
- * @param {Array} sources - Input values.
- * @returns {*}
- */
-const getFirstTruthyProfession = (...sources) =>
+* Returns first truthy profession.
+* @param {Array} sources - Input values.
+* @returns {*}
+*/
+        const getFirstTruthyProfession = (...sources) =>
             sources.find(val => val) || '';
 
         const handleProf = String(
@@ -204,13 +204,13 @@ const getFirstTruthyProfession = (...sources) =>
                 setLoading(false);
             });
     }
-        /**
- * State take utility.
- * @param {*} toklen - Input value.
- * @param {*} anoth - Input value.
- * @returns {void}
- */
-const stateTake = (toklen, anoth) => {
+    /**
+* State take utility.
+* @param {*} toklen - Input value.
+* @param {*} anoth - Input value.
+* @returns {void}
+*/
+    const stateTake = (toklen, anoth) => {
         let obj = {
             "state": toklen ? toklen?.length : 0,
             "board": anoth ? anoth?.length : 0
@@ -335,11 +335,11 @@ const stateTake = (toklen, anoth) => {
 
         return () => unsubscribe();
     }, []);
-        /**
- * Handles rot.
- * @returns {*}
- */
-const handleRot = () => {
+    /**
+* Handles rot.
+* @returns {*}
+*/
+    const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
             if (state.isConnected) {
@@ -348,12 +348,12 @@ const handleRot = () => {
         });
         return () => unsubscribe();
     }
-        /**
- * Clean number utility.
- * @param {*} value - Input value.
- * @returns {number}
- */
-const cleanNumber = (value) => {
+    /**
+* Clean number utility.
+* @param {*} value - Input value.
+* @returns {number}
+*/
+    const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -403,7 +403,7 @@ const cleanNumber = (value) => {
         <>
 
             <View>
-                {hasResolvedDashboard && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                {hasResolvedDashboard && hasLicensureCards && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hello, ${firstData || ''}`}</Text>
                 </View>}
                 {hasLicensureCards ?
