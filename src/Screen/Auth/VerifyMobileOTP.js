@@ -509,7 +509,7 @@ const VerifyMobileOTP = (props) => {
                         return;
                     }
 
-                    if (allProfTake) {
+                    if (allProfTake || isUsaIp) {
                         toggleModal();
                         dispatch(chooseStatecardRequest({}))
                     } else {

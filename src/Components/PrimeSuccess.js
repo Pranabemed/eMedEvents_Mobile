@@ -10,6 +10,7 @@ import Fonts from '../Themes/Fonts';
 import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Reusable PrimeSuccess component.
@@ -120,12 +121,24 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
                 </View>
 
                 <TouchableOpacity onPress={() => {
+                    (async () => {
+                        try {
+                            await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+                            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+                            await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+                            await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+                            await AsyncStorage.removeItem('SessionPrimeSkipped');
+                            require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    })();
                     nav.dispatch(CommonActions.reset({
                         index: 0, routes: [
-                            { name: "TabNav", params: { initialRoute: "Home" } }
+                            { name: "PrimeCard", params: { exploreTrialClicked: true, subscriptionDataExists: true } }
                         ]
                     }));
-                    setPrimesc(false)
+                    setPrimesc(false);
                 }} style={styles.button}>
                     <Text style={styles.buttonText}>{"Go To Dashboard"}</Text>
                 </TouchableOpacity>

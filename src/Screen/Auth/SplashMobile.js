@@ -353,7 +353,7 @@ const restore = async () => {
             // Reset guard so a future phone-flow re-triggers correctly
             _splashMobileOTPSentForPhone = null;
 
-            if (allProfTake) {
+            if (allProfTake || isUsaIp) {
                 setModalVisible(true);
                 dispatch(chooseStatecardRequest({}));
             } else {

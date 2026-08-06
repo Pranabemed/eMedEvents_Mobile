@@ -1102,9 +1102,13 @@ const Main = (props) => {
 * @returns {Promise<*>}
 */
   const handleGuestPrimeMembership = async () => {
+    await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+    await AsyncStorage.setItem('ExploreTrialClicked', 'true');
     await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+    await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+    await AsyncStorage.removeItem('SessionPrimeSkipped');
     await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
-    await AsyncStorage.removeItem('ExploreTrialClicked');
+    require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
     await setGuestPrimeVerificationPending();
     setPrimeadd(false);
     primePromptVisibleRef.current = false;
@@ -1274,6 +1278,7 @@ const Main = (props) => {
         console.log(professionRaw, "ewerktkjerh");
 
         if (
+          !isPrimeCardFlowComplete &&
           (isNonSubscribedNoSubscription || isPrimeMembershipPromptPending) &&
           physicianHandles &&
           !isSessionSkippedVal

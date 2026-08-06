@@ -323,15 +323,11 @@ const fetchCountry = async () => {
                             />
                             <Buttons
                                 onPress={() => {
-                                    if (codegt) {
-                                        props.navigation.navigate("SignUp", {
-                                            phoneCd: {
-                                                phoneCd: codegt,
-                                            }
-                                        });
-                                    } else {
-                                        props.navigation.navigate("Login");
-                                    }
+                                    props.navigation.navigate("SignUp", {
+                                        phoneCd: {
+                                            phoneCd: codegt || '',
+                                        }
+                                    });
                                 }}
                                 height={normalize(42)}
                                 width={isCompactWidth ? '100%' : '48%'}

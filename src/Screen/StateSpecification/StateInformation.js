@@ -288,7 +288,7 @@ const handleAutoInforSave = () => {
                 (async () => {
                     const eligible = await isCheckMembershipEligible(DashboardReducer, AuthReducer);
                     if (eligible) {
-                        props.navigation.navigate("CheckMembership");
+                        props.navigation.navigate("CheckMembership", { isEligible: true });
                     } else {
                         props.navigation.dispatch(
                             CommonActions.reset({

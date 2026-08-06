@@ -461,7 +461,7 @@ const handleNavigation = (destination, params = {}) => {
         if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
             return;
         }
-        if (allProfTake) {
+        if (allProfTake || isUsaIp) {
             if (hasLicense) {
                 setNonloader(true);
                 dispatch(dashboardRequest(tokenObj));

@@ -76,7 +76,19 @@ const PrimePayment = (props) => {
  * @returns {void}
  */
 const paymentPress = () => {
-        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
+        (async () => {
+            try {
+                await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+                await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+                await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+                await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+                await AsyncStorage.removeItem('SessionPrimeSkipped');
+                require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
+            } catch (e) {
+                console.log(e);
+            }
+        })();
+        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimeCard", params: { exploreTrialClicked: true } }] }))
     }
     useEffect(() => {
         if (maskedEx && maskedEx.includes('/')) {

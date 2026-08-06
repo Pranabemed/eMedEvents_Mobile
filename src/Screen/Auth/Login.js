@@ -990,10 +990,8 @@ const onBackPress = () => {
               <TouchableOpacity onPress={() => {
                 if (isNonUsaFlow) {
                   props.navigation.navigate('SignUp', { phoneCd: { phoneCd: '' }, isNonUsaUser: true });
-                } else if (phoneCountryCode) {
-                  props.navigation.navigate('SignUp', { phoneCd: { phoneCd: phoneCountryCode } });
                 } else {
-                  setInputBlocked(true);
+                  props.navigation.navigate('SignUp', { phoneCd: { phoneCd: phoneCountryCode || '' } });
                 }
               }}>
                 <Text style={styles.footerLinkText}>

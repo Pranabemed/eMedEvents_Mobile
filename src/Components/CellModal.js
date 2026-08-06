@@ -11,6 +11,7 @@ import Colorpath from '../Themes/Colorpath';
 import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 import { readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
+import { useSelector } from 'react-redux';
 
 /**
  * Reusable CellModal component.
@@ -47,7 +48,7 @@ const resetToTabHome = () => {
  * @async
  * @returns {Promise<*>}
  */
-const handleDone = async () => {
+    const handleDone = async () => {
         if (pressed.current) return;
         pressed.current = true;
 

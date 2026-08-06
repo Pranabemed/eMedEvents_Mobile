@@ -516,11 +516,11 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                 }}
                                     style={{
                                         flexDirection: "row",
-                                        height: normalize(95),
+                                        height: normalize(105),
                                         width: normalize(300),
                                         borderRadius: normalize(10),
                                         backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
+                                        paddingHorizontal: normalize(12),
                                         alignItems: "center",
                                         borderWidth: 0.5,
                                         borderColor: "#DADADA"

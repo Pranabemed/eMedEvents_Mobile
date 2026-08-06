@@ -116,9 +116,9 @@ const CertficateHandle = (props) => {
     const isNonUsaUser = forcedNonUsaRoute || ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData);
     const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
         if (resolvedIsNonUsaUser) {
-            setIsNonUsaLoading(true);
             connectionrequest()
                 .then(() => {
+                    setIsNonUsaLoading(true);
                     dispatch(stateMandatoryRequest({}));
                 })
                 .catch((err) => {
@@ -452,11 +452,10 @@ const CertficateHandle = (props) => {
         }
         if (DashboardReducer?.status === 'Dashboard/stateMandatoryRequest') {
             setIsNonUsaLoading(true);
-        }
-        if (DashboardReducer?.status === 'Dashboard/stateMandatorySuccess' || DashboardReducer?.status === 'Dashboard/stateMandatoryFailure') {
+        } else {
             setIsNonUsaLoading(false);
         }
-    }, [DashboardReducer?.status, isNonUsaUser]);
+    }, [DashboardReducer?.status, DashboardReducer?.stateMandatoryResponse, DashboardReducer?.stateMandatorySuccess, isNonUsaUser]);
     useEffect(() => {
         const doubleArrayCertificates = wrapDataInDoubleArray();
         const fulFinal = doubleArrayCertificates[0];
@@ -748,7 +747,7 @@ const CertficateHandle = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
-    const isInitialNonUsaLoading = isNonUsaLoading || nonUsaFlowState === null || DashboardReducer?.status === 'Dashboard/stateMandatoryRequest';
+    const isInitialNonUsaLoading = isNonUsaLoading && DashboardReducer?.status === 'Dashboard/stateMandatoryRequest';
 
     if (isNonUsaUser) {
         return (

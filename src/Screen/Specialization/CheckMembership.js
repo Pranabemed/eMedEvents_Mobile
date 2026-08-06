@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import constants from '../../Utils/Helpers/constants';
 import { clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import Loader from '../../Utils/Helpers/Loader';
 
 /**
  * Reusable normalizeProfessionHandle component.
@@ -166,7 +167,7 @@ const CheckMembership = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const isGuestUserFlow = props?.route?.params?.fromGuestUser === true;
-    const [isEligible, setIsEligible] = useState(null);
+    const [isEligible, setIsEligible] = useState(props?.route?.params?.isEligible === true ? true : null);
     const pendingFreeTrialNavigationRef = useRef(false);
 
     useEffect(() => {
@@ -378,10 +379,17 @@ const CheckMembership = (props) => {
 * Handles clk.
 * @returns {void}
 */
-    const handleClk = () => {
+    const handleClk = async () => {
         pendingFreeTrialNavigationRef.current = true;
+        try {
+            await AsyncStorage.setItem('GuestPrimeVerificationPending', 'true');
+            await AsyncStorage.removeItem('activeProfile');
+            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+        } catch (error) {
+            console.log('handleClk flag error', error);
+        }
         dispatch(primeTrailRequest({}));
-    }
+    };
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, [props.navigation]);
@@ -391,10 +399,13 @@ const CheckMembership = (props) => {
 */
     const handlePrimeMembership = () => {
         (async () => {
-            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
-            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
-            await AsyncStorage.removeItem('SessionPrimeSkipped');
+            await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+            await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+            await AsyncStorage.removeItem('SessionPrimeSkipped');
+            await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
+            require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
             await clearNonUsaFlowState();
             props.navigation.dispatch(
                 CommonActions.reset({
@@ -414,6 +425,7 @@ const CheckMembership = (props) => {
 */
     const handleSkip = async () => {
         try {
+            await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
             await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
             await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
@@ -437,6 +449,20 @@ const CheckMembership = (props) => {
         if (!pendingFreeTrialNavigationRef.current) return;
         if (AuthReducer?.status !== 'Auth/primeTrailSuccess') return;
         pendingFreeTrialNavigationRef.current = false;
+        (async () => {
+            try {
+                await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+                await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+                await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+                await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+                await AsyncStorage.removeItem('SessionPrimeSkipped');
+                await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
+                require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
+                await clearNonUsaFlowState();
+            } catch (e) {
+                console.log(e);
+            }
+        })();
         props.navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -445,7 +471,16 @@ const CheckMembership = (props) => {
         );
     }, [AuthReducer?.status, props.navigation, props?.route?.params]);
 
-    if (isEligible === false || isEligible === null) {
+    if (isEligible === null) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white, justifyContent: 'center', alignItems: 'center' }}>
+                <MyStatusBar barStyle={'dark-content'} backgroundColor={Colorpath.white} />
+                <Loader visible={true} />
+            </SafeAreaView>
+        );
+    }
+
+    if (isEligible === false) {
         return null;
     }
 
