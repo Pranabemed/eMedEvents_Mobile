@@ -56,19 +56,16 @@ let status1 = "";
 
 const isCheckMembershipEligible = async (dashboardReducer, authReducer) => {
     try {
-        const geoInfo = await getCountryAndDialCode();
-        const ipCountry = String(geoInfo?.country || '').trim().toUpperCase();
-        const isUsaIp = ipCountry === 'US' || ipCountry === 'USA';
-
         const dashboardProf = dashboardReducer?.mainprofileResponse?.professional_information;
-        const authUser = authReducer?.loginResponse?.user || authReducer?.signupResponse?.user || authReducer?.againloginsiginResponse?.user || {};
+        const authUser = authReducer?.loginResponse?.user || authReducer?.signupResponse?.user || authReducer?.againloginsiginResponse?.user || authReducer?.verifymobileResponse?.user || {};
+        const profileUser = dashboardReducer?.mainprofileResponse || {};
 
-        const profession = String(dashboardProf?.profession || authUser?.profession || '').trim().toLowerCase();
-        const professionType = String(dashboardProf?.profession_type || authUser?.profession_type || '').trim().toUpperCase();
+        const profession = String(dashboardProf?.profession || authUser?.profession || profileUser?.profession || '').trim().toLowerCase();
+        const professionType = String(dashboardProf?.profession_type || authUser?.profession_type || profileUser?.profession_type || '').trim().toUpperCase();
 
-        const isPhysicianMDDODPM = profession === 'physician' && ['MD', 'DO', 'DPM'].includes(professionType);
+        const isPhysicianMDDODPM = (profession.includes('physician') || ['MD', 'DO', 'DPM'].includes(professionType)) && ['MD', 'DO', 'DPM'].includes(professionType);
 
-        return isUsaIp && isPhysicianMDDODPM;
+        return Boolean(isPhysicianMDDODPM);
     } catch (e) {
         return false;
     }
@@ -91,11 +88,11 @@ const CreateStateInfor = (props) => {
     const [thoun, setThoun] = useState("")
     const isFocus = useIsFocused();
     useEffect(() => {
-                /**
- * Token handle utility.
- * @returns {void}
- */
-const token_handle = () => {
+        /**
+* Token handle utility.
+* @returns {void}
+*/
+        const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle_verify = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
                 console.log(loginHandle_verify, "statelicesene=================");
@@ -147,6 +144,19 @@ const token_handle = () => {
         AuthReducer?.verifymobileResponse
     ]);
     useEffect(() => {
+        const primaryLic = DashboardReducer?.mainprofileResponse?.licensures?.[0] || AuthReducer?.verifymobileResponse?.user || finalverify || {};
+        const licNum = String(primaryLic?.license_number || '').trim();
+        const fromDt = String(primaryLic?.from_date || primaryLic?.renewal_date || '').trim();
+        if (licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00') {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav" }],
+                })
+            );
+        }
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifymobileResponse, finalverify, props.navigation]);
+    useEffect(() => {
         if (!licenseStateId) return;
         connectionrequest()
             .then(() => {
@@ -157,12 +167,12 @@ const token_handle = () => {
             });
     }, [licenseStateId, isFocus]);
     const userLocation = AuthReducer?.verifymobileResponse?.user?.user_location || finalverify?.user_location || finalverify?.user?.user_location || props?.route?.params?.dataVerify?.user_location || props?.route?.params?.dataVerify?.allDat?.user_location || props?.route?.params?.dataVerify?.allDat?.user?.user_location;
-        /**
- * Remove last word utility.
- * @param {*} text - Input value.
- * @returns {*}
- */
-const removeLastWord = (text) => {
+    /**
+* Remove last word utility.
+* @param {*} text - Input value.
+* @returns {*}
+*/
+    const removeLastWord = (text) => {
         const words = text.split(',')[0].trim();
         return words;
     };
@@ -205,11 +215,11 @@ const removeLastWord = (text) => {
             Praticing_State();
         }
     }, [isFocus, shouldCallPracticeState]);
-        /**
- * Praticing state component.
- * @returns {void}
- */
-const Praticing_State = () => {
+    /**
+* Praticing state component.
+* @returns {void}
+*/
+    const Praticing_State = () => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(1));
@@ -219,12 +229,12 @@ const Praticing_State = () => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
-        /**
- * Search city handle utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchCityHandle = text => {
+    /**
+* Search city handle utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchCityHandle = text => {
         console.log(text, 'text12333');
         if (text) {
             const praticeState = cityallfetched?.filter(function (item) {
@@ -244,12 +254,12 @@ const searchCityHandle = text => {
             setCitysave(text);
         }
     };
-        /**
- * Split formatted date helper.
- * @param {*} dateString - Input value.
- * @returns {Object}
- */
-function splitFormattedDate(dateString) {
+    /**
+* Split formatted date helper.
+* @param {*} dateString - Input value.
+* @returns {Object}
+*/
+    function splitFormattedDate(dateString) {
         if (!dateString || isNaN(Date.parse(dateString))) {
             return {
                 dayMonth: 'Date',
@@ -284,24 +294,24 @@ function splitFormattedDate(dateString) {
         }
     }, [AuthReducer?.verifymobileResponse?.user?.renewal_date, finalverify?.renewal_date, finalverify?.user?.renewal_date, formattedDate?.dayMonth, props?.route?.params?.dataVerify?.allDat]);
 
-        /**
- * Wrap data in double array utility.
- * @returns {Array}
- */
-const wrapDataInDoubleArray = () => {
+    /**
+* Wrap data in double array utility.
+* @returns {Array}
+*/
+    const wrapDataInDoubleArray = () => {
         const certificates = takestate;
         if (certificates) {
             return [certificates];
         }
         return [];
     };
-        /**
- * Fetch id by name utility.
- * @param {*} data - Input value.
- * @param {*} name - Input value.
- * @returns {*}
- */
-const fetchIdByName = (data, name) => {
+    /**
+* Fetch id by name utility.
+* @param {*} data - Input value.
+* @param {*} name - Input value.
+* @returns {*}
+*/
+    const fetchIdByName = (data, name) => {
         console.log(data, name, "name-------")
         const foundItem = data.find(item => item.name.toLowerCase() === name.toLowerCase());
         return foundItem ? foundItem.id : null;
@@ -318,12 +328,12 @@ const fetchIdByName = (data, name) => {
             console.log(takeAll, "takeAll-----", stateId, states);
         }
     }, [takestate]);
-        /**
- * City take utility.
- * @param {*} handletake - Input value.
- * @returns {void}
- */
-const cityTake = (handletake) => {
+    /**
+* City take utility.
+* @param {*} handletake - Input value.
+* @returns {void}
+*/
+    const cityTake = (handletake) => {
         const handleID = DashboardReducer?.mainprofileResponse?.user_address?.state_id || handletake;
         connectionrequest()
             .then(() => {
@@ -344,12 +354,12 @@ const cityTake = (handletake) => {
             })
     }, [cityReq, DashboardReducer?.mainprofileResponse?.user_address?.state_id])
     console.log(finalShowDate, "finaldatae");
-        /**
- * Handles city name.
- * @param {*} did - Input value.
- * @returns {void}
- */
-const handleCityName = (did) => {
+    /**
+* Handles city name.
+* @param {*} did - Input value.
+* @returns {void}
+*/
+    const handleCityName = (did) => {
         setCity(did?.name);
         setCityId(did.id)
         setCitypicker(false);
@@ -484,22 +494,22 @@ const handleCityName = (did) => {
             }),
         ]).start();
     }, [zipcode]);
-        /**
- * Handles yearcust.
- * @param {*} don - Input value.
- * @returns {void}
- */
-const handleYearcust = (don) => {
+    /**
+* Handles yearcust.
+* @param {*} don - Input value.
+* @returns {void}
+*/
+    const handleYearcust = (don) => {
         setCdate(don);
         setCitypickeryear(false);
     }
     const cellNoRegexwpdd = /^\d{10}$/;
     const isValidWhatsappNodd = npino?.length > 0 && !cellNoRegexwpdd.test(npino);
-        /**
- * Handles state infor save.
- * @returns {void}
- */
-const handleStateInforSave = () => {
+    /**
+* Handles state infor save.
+* @returns {void}
+*/
+    const handleStateInforSave = () => {
         const renewalDate =
             AuthReducer?.verifymobileResponse?.user?.renewal_date ||
             finalverify?.renewal_date ||
@@ -577,13 +587,13 @@ const handleStateInforSave = () => {
                 status = AuthReducer.status;
                 setGtprof(true);
                 setNoloadnew(true);
-                                /**
- * Save flags and request dashboard utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const saveFlagsAndRequestDashboard = async () => {
+                /**
+* Save flags and request dashboard utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+                const saveFlagsAndRequestDashboard = async () => {
                     try {
                         const flags = await readNonUsaPermanentFlags();
                         if (flags?.professionUpdateRequired) {
@@ -645,11 +655,11 @@ const saveFlagsAndRequestDashboard = async () => {
         }
     }
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(

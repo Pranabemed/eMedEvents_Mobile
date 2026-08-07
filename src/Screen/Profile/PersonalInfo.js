@@ -167,23 +167,23 @@ const PersonalInfo = (props) => {
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
     const hasExistingPhysicianDashboardProfile = isPhysicianProfessionalInformation(dashboardProfessionalInformation);
 
-        /**
- * Search back component.
- * @returns {void}
- */
-const SearchBack = () => {
+    /**
+* Search back component.
+* @returns {void}
+*/
+    const SearchBack = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
         if (props?.route?.params?.personal) {
             const profession = props?.route?.params?.personal?.professional_information?.profession;
             const profession_type = props?.route?.params?.personal?.professional_information?.profession_type;
-                        /**
- * Clean utility.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const clean = (value) => {
+            /**
+* Clean utility.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+            const clean = (value) => {
                 if (value == null) return '';
                 return String(value).trim();
             };
@@ -202,12 +202,12 @@ const clean = (value) => {
         }
     }, [props?.route?.params?.personal])
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
-        /**
- * Specaillized utility.
- * @param {*} data - Input value.
- * @returns {void}
- */
-const specaillized = (data) => {
+    /**
+* Specaillized utility.
+* @param {*} data - Input value.
+* @returns {void}
+*/
+    const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -233,13 +233,13 @@ const specaillized = (data) => {
             });
     }, [props?.route?.params?.personal, isNonUsaUser, isNonUsaUpdateFlow]);
     useEffect(() => {
-                /**
- * Load state cards utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadStateCards = async () => {
+        /**
+* Load state cards utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const loadStateCards = async () => {
             const token = AuthReducer?.token || await AsyncStorage.getItem(constants.TOKEN);
             dispatch(chooseStatecardRequest(token ? { token, key: {} } : {}));
         };
@@ -291,40 +291,34 @@ const loadStateCards = async () => {
                 break;
             case 'Profile/professionInfoSuccess':
                 status1 = ProfileReducer.status;
-                if (ProfileReducer?.professionInfoResponse?.msg == "Professional inforamtion updated successfully.") {
+                const isProfessionSuccess = Boolean(
+                    ProfileReducer?.professionInfoResponse?.status ||
+                    ProfileReducer?.professionInfoResponse?.msg?.toLowerCase()?.includes('professional') ||
+                    ProfileReducer?.professionInfoResponse?.msg?.toLowerCase()?.includes('updated') ||
+                    ProfileReducer?.professionInfoResponse?.user
+                );
+                if (isProfessionSuccess) {
                     const latestProfessionInfo = ProfileReducer?.latestProfessionInfo || {};
                     const latestProfessionLabel = buildProfessionLabel(
                         latestProfessionInfo?.profession,
                         latestProfessionInfo?.profession_type
                     );
-                    const stateLicensures = AuthReducer?.chooseStatecardResponse?.state_licensures;
-                    const hasStateLicensures = Array.isArray(stateLicensures) && stateLicensures.length > 0;
-                    showErrorAlert("Professional information updated successfully.")
+                    showErrorAlert("Professional information updated successfully.");
                     dispatch(mainprofileRequest({}));
-                    dispatch(dashPerRequest({}))
+                    dispatch(dashPerRequest({}));
                     if (latestProfessionLabel) {
                         dispatch(licesensRequest(latestProfessionLabel));
                     }
-                    // if (
-                    //     hasExistingPhysicianDashboardProfile ||
-                    //     isPhysicianProfessionalInformation(latestProfessionInfo)
-                    // ) {
-                    //     props.navigation.goBack();
-                    //     return;
-                    // }
-                    if (isNonUsaUser && isNonUsaUpdateFlow && !hasCompletedStateLicenseFlow && !hasStateLicensures) {
-                        markNonUsaStateLicenseFlowCompleted();
-                        props.navigation.navigate("CreateStateInfor", {
-                            dataVerify: {
-                                dataVerify: "Nodasta",
-                                allDat: ProfileReducer?.personalInfoResponse?.user ||
-                                    ProfileReducer?.contactInfoResponse?.user ||
-                                    userObj,
-                            }
-                        });
-                        return;
-                    }
-                    props.navigation.goBack();
+                    markNonUsaStateLicenseFlowCompleted();
+                    props.navigation.navigate("CreateStateInfor", {
+                        dataVerify: {
+                            dataVerify: "Nodasta",
+                            allDat: ProfileReducer?.personalInfoResponse?.user ||
+                                ProfileReducer?.contactInfoResponse?.user ||
+                                ProfileReducer?.professionInfoResponse?.user ||
+                                userObj,
+                        }
+                    });
                 }
                 console.log(ProfileReducer?.professionInfoResponse, "log-----------");
                 break;
@@ -334,12 +328,12 @@ const loadStateCards = async () => {
 
         }
     }
-        /**
- * Search country name utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchCountryName = text => {
+    /**
+* Search country name utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchCountryName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -359,34 +353,34 @@ const searchCountryName = text => {
             setSearchtext(text);
         }
     };
-        /**
- * Handles profession.
- * @param {*} did - Input value.
- * @returns {void}
- */
-const handleProfession = (did) => {
+    /**
+* Handles profession.
+* @param {*} did - Input value.
+* @returns {void}
+*/
+    const handleProfession = (did) => {
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
         setFormData("");
     }
-        /**
- * Handles search.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleSearch = (text) => {
+    /**
+* Handles search.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-        /**
- * Handles speciality select.
- * @param {*} selectedItems - Input value.
- * @param {*} formData - Input value.
- * @returns {void}
- */
-const handleSpecialitySelect = (selectedItems, formData) => {
+    /**
+* Handles speciality select.
+* @param {*} selectedItems - Input value.
+* @param {*} formData - Input value.
+* @returns {void}
+*/
+    const handleSpecialitySelect = (selectedItems, formData) => {
         // Create a copy of the formData to avoid direct mutation
         const updatedForm = [...formData];
         // Extract selected names and IDs
@@ -405,13 +399,13 @@ const handleSpecialitySelect = (selectedItems, formData) => {
         setSelectedSpecialities([]);
     };
 
-        /**
- * Handles speciality change.
- * @param {*} selectedSpecialities - Input value.
- * @param {*} selectedIds - Input value.
- * @returns {void}
- */
-const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
+    /**
+* Handles speciality change.
+* @param {*} selectedSpecialities - Input value.
+* @param {*} selectedIds - Input value.
+* @returns {void}
+*/
+    const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
@@ -424,12 +418,12 @@ const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
         };
         setFormData(updatedFormData); // Update state
     };
-        /**
- * Remove speciality utility.
- * @param {*} specialityId - Input value.
- * @returns {void}
- */
-const removeSpeciality = (specialityId) => {
+    /**
+* Remove speciality utility.
+* @param {*} specialityId - Input value.
+* @returns {void}
+*/
+    const removeSpeciality = (specialityId) => {
         // Ensure speciality_ids and speciality are arrays
         const currentSpecialityIds = formData?.speciality_ids || [];
         const currentSpecialities = formData?.speciality?.split(', ') || [];
@@ -467,11 +461,11 @@ const removeSpeciality = (specialityId) => {
     }, [speciality, speciality_id, memoizedSetFormData]);
     const makeDid = formData && formData?.speciality_ids?.length;
     console.log(makeDid, "makeDid============");
-        /**
- * Make update prof utility.
- * @returns {void}
- */
-const makeUpdateProf = () => {
+    /**
+* Make update prof utility.
+* @returns {void}
+*/
+    const makeUpdateProf = () => {
         if (!country) {
             showErrorAlert("Please choose profession ")
         } else if (!makeDid) {
@@ -504,9 +498,9 @@ const makeUpdateProf = () => {
         }
     }
     const videoRef = useRef(null);
-useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -702,7 +696,7 @@ useLayoutEffect(() => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                                                onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }, {
@@ -710,7 +704,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                                                onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }])
@@ -726,7 +720,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                                                onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }, {
@@ -734,7 +728,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                                                onPress: () => {
                                                     console.log("Hello");
                                                 }, style: "default"
                                             }])
@@ -749,7 +743,7 @@ onPress: () => {
                                         if (idToRemove) {
                                             removeSpeciality(idToRemove);
                                         }
-                                    }} 
+                                    }}
                                 />
                                 <View style={{ paddingVertical: normalize(7) }}>
                                     <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000" }}>{"*Drug Enforcement Administration (DEA) Registered ?"}</Text>

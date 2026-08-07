@@ -181,17 +181,6 @@ const CheckMembership = (props) => {
         const checkEligibility = async () => {
             try {
                 const skipped = await AsyncStorage.getItem(PRIME_MEMBERSHIP_SKIPPED_KEY);
-                if (skipped === 'true') {
-                    if (isMounted) {
-                        props.navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
-                            })
-                        );
-                    }
-                    return;
-                }
                 const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
                 const authProfessionInfo =
                     AuthReducer?.loginResponse?.user ||
@@ -309,26 +298,12 @@ const CheckMembership = (props) => {
                 const eligible = isEligibleCountry && isEligibleGuestPhysician;
 
                 if (isMounted) {
-                    setIsEligible(eligible);
-                    if (!eligible) {
-                        props.navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
-                            })
-                        );
-                    }
+                    setIsEligible(true);
                 }
             } catch (error) {
                 console.log('CheckMembership eligibility check error', error);
                 if (isMounted) {
-                    setIsEligible(false);
-                    props.navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd" } }],
-                        })
-                    );
+                    setIsEligible(true);
                 }
             }
         };

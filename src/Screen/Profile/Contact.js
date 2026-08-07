@@ -37,6 +37,7 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
 
 /**
  * Reusable isPhysicianProfessionalInformation component.
@@ -279,6 +280,37 @@ const ContactProfile = (props) => {
         }
     }
     console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
+    useEffect(() => {
+        if (ProfileReducer.status === 'Profile/contactInfoSuccess') {
+            setLoading(false);
+            const isSuccess = Boolean(
+                ProfileReducer?.contactInfoResponse?.status ||
+                ProfileReducer?.contactInfoResponse?.msg?.toLowerCase()?.includes('contact') ||
+                ProfileReducer?.contactInfoResponse?.msg?.toLowerCase()?.includes('updated') ||
+                ProfileReducer?.contactInfoResponse?.user
+            );
+            if (isSuccess) {
+                (async () => {
+                    try {
+                        const { clearNonUsaFlowState } = require('../../Utils/Helpers/nonUsaFlow');
+                        await clearNonUsaFlowState();
+                        require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', '');
+                    } catch (e) {
+                        console.log(e);
+                    }
+                })();
+                dispatch(mainprofileRequest({}));
+                const nextPersonal = DashboardReducer?.mainprofileResponse || ProfileReducer?.personalInfoResponse?.user ||
+                    ProfileReducer?.contactInfoResponse?.user ||
+                    props?.route?.params?.wholedata ||
+                    {};
+                setPendingPersonal(nextPersonal);
+                markNonUsaProfessionUpdateRequired();
+                setProfessionModalVisible(true);
+            }
+        }
+    }, [ProfileReducer.status, ProfileReducer.contactInfoResponse]);
+
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
             case 'Profile/contactInfoRequest':
@@ -288,30 +320,6 @@ const ContactProfile = (props) => {
             case 'Profile/contactInfoSuccess':
                 status1 = ProfileReducer.status;
                 setLoading(false);
-                if (ProfileReducer?.contactInfoResponse?.msg == "Contact inforamtion updated successfully.") {
-                    const nextPersonal = DashboardReducer?.mainprofileResponse || ProfileReducer?.personalInfoResponse?.user ||
-                        ProfileReducer?.contactInfoResponse?.user ||
-                        props?.route?.params?.wholedata ||
-                        {};
-                    console.log(nextPersonal, "log-----------", nonUsaPermanentFlags);
-                    if (
-                        hasExistingPhysicianDashboardProfile ||
-                        isPhysicianProfessionalInformation(nextPersonal?.professional_information)
-                    ) {
-                        props.navigation.goBack();
-                    } else {
-                        const shouldPromptNonUsaProfessionUpdate =
-                            isNonUsaFlow ||
-                            !isUsaCountryCode(dialcode)
-                            ;
-                        console.log(shouldPromptNonUsaProfessionUpdate, "shouldPromptNonUsaProfessionUpdate", isNonUsaFlow)
-                        if (shouldPromptNonUsaProfessionUpdate) {
-                            markNonUsaProfessionUpdateRequired();
-                            setPendingPersonal(nextPersonal);
-                            setProfessionModalVisible(true);
-                        }
-                    }
-                }
                 break;
             case 'Profile/contactInfoFailure':
                 status1 = ProfileReducer.status;
@@ -349,13 +357,7 @@ const ContactProfile = (props) => {
                     console.log(isNonUsaIp, "dgjjfg");
                     setIsNonUsaFlow(isNonUsaIp);
 
-                    setAddress(prev => {
-                        const cleanPrev = normalizeContactValue(prev);
-                        if (!cleanPrev) {
-                            return getGeoFallbackAddress(geoInfo, countryall);
-                        }
-                        return cleanPrev;
-                    });
+                    setAddress(prev => normalizeContactValue(prev) || '');
 
                     setState(prev => {
                         const cleanPrev = normalizeContactValue(prev);
@@ -468,11 +470,9 @@ const ContactProfile = (props) => {
     const closeProfessionModal = () => {
         setProfessionModalVisible(false);
         if (pendingPersonal) {
-            if (hasExistingPhysicianDashboardProfile) {
-                props.navigation.goBack();
-            } else {
-                props.navigation.navigate("PersonalInfo", { personal: pendingPersonal });
-            }
+            props.navigation.navigate("PersonalInfo", { personal: pendingPersonal, forceProfessionChange: true });
+        } else {
+            props.navigation.navigate("PersonalInfo", { forceProfessionChange: true });
         }
     };
     /**
@@ -601,11 +601,7 @@ const ContactProfile = (props) => {
             setCountry_id(userAddr?.country_id || "");
 
             getCountryAndDialCode().then(geoInfo => {
-                if (!rawAddr) {
-                    setAddress(getGeoFallbackAddress(geoInfo, countryall));
-                } else {
-                    setAddress(rawAddr);
-                }
+                setAddress(rawAddr || '');
 
                 if (!rawState) {
                     setState(normalizeContactValue(geoInfo?.state_name));
@@ -761,10 +757,25 @@ const ContactProfile = (props) => {
         }
     };
     useEffect(() => {
-        if (props?.route?.params?.wholedata) {
-            countryReq();
+        countryReq();
+    }, []);
+
+    useEffect(() => {
+        if (Array.isArray(countryall) && countryall.length > 0) {
+            const currentCountryName = country || DashboardReducer?.mainprofileResponse?.user_address?.country_name || AuthReducer?.verifymobileResponse?.user?.country_name || '';
+            if (currentCountryName) {
+                const matchedCountry = countryall.find(c =>
+                    String(c.name || '').trim().toLowerCase() === String(currentCountryName || '').trim().toLowerCase()
+                );
+                if (matchedCountry) {
+                    if (!country_id || country_id !== matchedCountry.id) {
+                        setCountry_id(matchedCountry.id);
+                        setCountry(matchedCountry.name);
+                    }
+                }
+            }
         }
-    }, [props?.route?.params?.wholedata])
+    }, [countryall, country, DashboardReducer?.mainprofileResponse, AuthReducer?.verifymobileResponse]);
     /**
 * Handles country set.
 * @param {*} didi - Input value.
@@ -830,57 +841,26 @@ const ContactProfile = (props) => {
     const [newState, setNewState] = useState("");
     const [newCity, setNewCity] = useState("");
 
-    useEffect(() => {
-        if (slistpratice && newState) {
-            const stateData = slistpratice.find(s => s.name === newState);
-            if (stateData) {
-                setSelectedStateData({ ...stateData });
-            }
-        }
-    }, [slistpratice, newState]);
-
-    useEffect(() => {
-        if (selectedStateData) {
-            handleStateshows(selectedStateData);
-            setSelectedStateData(null);
-        }
-    }, [selectedStateData]);
-
-    useEffect(() => {
-        if (cityAll && newCity) {
-            const CityData = cityAll.find(s => s.name === newCity);
-            if (CityData) {
-                setSelectedCityData({ ...CityData });
-            }
-        }
-    }, [cityAll, newCity]);
-    useEffect(() => {
-        if (selectedCityData) {
-            handlecityShows(selectedCityData);
-            setSelectedCityData(null);
-        }
-    }, [selectedCityData]);
-    /**
-* Praticing state component.
-* @param {number} index - Input value.
-* @returns {void}
-*/
     const PraticingState = (index) => {
+        let targetCountryId = index || country_id;
+        if (!targetCountryId && Array.isArray(countryall) && countryall.length > 0 && country) {
+            const matched = countryall.find(c => String(c.name || '').toLowerCase() === String(country).toLowerCase());
+            if (matched) {
+                targetCountryId = matched.id;
+            }
+        }
+        if (!targetCountryId) return;
         connectionrequest()
             .then(() => {
-                dispatch(stateRequest(index));
+                dispatch(stateRequest(targetCountryId));
             })
             .catch(err => {
                 showErrorAlert('Please connect to Internet', err);
             });
     };
 
-    /**
-* City req utility.
-* @param {*} itid - Input value.
-* @returns {void}
-*/
     const cityReq = (itid) => {
+        if (!itid) return;
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -889,6 +869,27 @@ const ContactProfile = (props) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
+
+    useEffect(() => {
+        if (country_id) {
+            PraticingState(country_id);
+        }
+    }, [country_id]);
+
+    useEffect(() => {
+        if (Array.isArray(slistpratice) && slistpratice.length > 0 && state) {
+            const matchedState = slistpratice.find(s =>
+                String(s.name || '').trim().toLowerCase() === String(state || '').trim().toLowerCase() ||
+                String(s.id || '') === String(state_id || '')
+            );
+            if (matchedState) {
+                if (state_id !== matchedState.id) {
+                    setState_id(matchedState.id);
+                }
+                cityReq(matchedState.id);
+            }
+        }
+    }, [slistpratice, state, state_id]);
     useEffect(() => {
         if (country) {
             setSearchcountry("");
@@ -1075,6 +1076,7 @@ const ContactProfile = (props) => {
                                             marginBottom: 16,
                                             width: '100%',
                                             position: 'relative',
+                                            zIndex: 999,
                                         }}>
                                             <View style={{
                                                 borderBottomWidth: 0.5,
@@ -1083,6 +1085,7 @@ const ContactProfile = (props) => {
                                                 alignItems: 'center',
                                                 paddingTop: normalize(20),
                                                 position: 'relative',
+                                                zIndex: 999,
                                             }}>
                                                 <Animated.Text
                                                     pointerEvents="none"
@@ -1096,11 +1099,15 @@ const ContactProfile = (props) => {
                                                         handlePlaceSelected(data, details);
                                                     }}
                                                     fetchDetails={true}
+                                                    enablePoweredByContainer={false}
+                                                    minLength={1}
+                                                    nearbyPlacesAPI="GooglePlacesSearch"
+                                                    debounce={200}
                                                     styles={{
                                                         textInput: {
                                                             paddingHorizontal: 2,
                                                             paddingVertical: 0,
-                                                            backgroundColor: Colorpath.Pagebg,
+                                                            backgroundColor: 'transparent',
                                                             height: normalize(40),
                                                             fontSize: 14,
                                                             fontFamily: Fonts.InterRegular,
@@ -1108,9 +1115,36 @@ const ContactProfile = (props) => {
                                                         },
                                                         container: {
                                                             flex: 1,
+                                                            zIndex: 999,
                                                         },
                                                         listView: {
-                                                            backgroundColor: '#fff',
+                                                            backgroundColor: '#ffffff',
+                                                            position: 'absolute',
+                                                            top: normalize(42),
+                                                            left: 0,
+                                                            right: 0,
+                                                            zIndex: 9999,
+                                                            elevation: 10,
+                                                            borderRadius: 6,
+                                                            borderWidth: 1,
+                                                            borderColor: '#dddddd',
+                                                            shadowColor: '#000',
+                                                            shadowOffset: { width: 0, height: 2 },
+                                                            shadowOpacity: 0.25,
+                                                            shadowRadius: 3.84,
+                                                        },
+                                                        row: {
+                                                            padding: 10,
+                                                            minHeight: 44,
+                                                            flexDirection: 'row',
+                                                        },
+                                                        separator: {
+                                                            height: 0.5,
+                                                            backgroundColor: '#c8c7cc',
+                                                        },
+                                                        description: {
+                                                            fontSize: 14,
+                                                            color: '#000000',
                                                         },
                                                     }}
                                                     query={{
@@ -1119,29 +1153,15 @@ const ContactProfile = (props) => {
                                                     }}
                                                     textInputProps={{
                                                         multiline: false,
-                                                        value: address || '',
-                                                        /**
-* On change text helper.
-* @param {*} val - Input value.
-* @returns {void}
-*/
+                                                        value: address,
                                                         onChangeText: (val) => {
                                                             setAddress(val);
                                                         },
-                                                        /**
-* On focus utility.
-* @returns {*}
-*/
                                                         onFocus: () => handleFocus(),
-                                                        /**
-* On blur utility.
-* @returns {*}
-*/
                                                         onBlur: () => handleBlur(),
                                                         placeholder: '',
                                                         placeholderTextColor: '#999999',
                                                     }}
-                                                    debounce={300}
                                                 />
                                             </View>
                                         </View>

@@ -43,7 +43,7 @@ import NetInfo from '@react-native-community/netinfo';
 import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 
 /**
@@ -139,12 +139,28 @@ export default function DrawerModal(props) {
     ? loginUser.user
     : loginUser;
 
+  const isPrimeSubscribed =
+    activeUser?.subscription_user === 'subscribed' ||
+    activeUser?.is_prime === 1 ||
+    activeUser?.is_prime === '1' ||
+    activeUser?.is_prime === true ||
+    activeUser?.is_prime_user === 1 ||
+    activeUser?.is_prime_user === '1' ||
+    activeUser?.is_prime_user === true;
+
+  const isPrimeTrialActive =
+    (currentProfile === 'PrimeCard') &&
+    (AuthReducer?.status === 'Auth/primeTrailSuccess' || AuthReducer?.primeTrailResponse?.status === true || AuthReducer?.primeTrailResponse?.msg === 'Trail Activated Successfully');
+
+  const isPrimePaymentActive =
+    WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' ||
+    WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
+
+  const isPrimeUserActive = Boolean(isPrimeSubscribed || isPrimeTrialActive || isPrimePaymentActive);
+
   const isNonSubscribedNoSubscription =
-    activeUser?.subscription_user == "non-subscribed" &&
-    (!activeUser?.subscription ||
-      activeUser?.subscription?.length === 0) &&
-    (!activeUser?.subscriptions ||
-      activeUser?.subscriptions?.length === 0);
+    !isPrimeUserActive &&
+    (activeUser?.subscription_user == "non-subscribed" || !isPrimeSubscribed);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
@@ -303,7 +319,33 @@ const getInitials = (firstname, lastname) => {
     return firstInitial + lastInitial;
   };
   const userObj = resolvedUser || null;
+  const userCountryName = String(
+    userObj?.country_name ||
+    userObj?.countryName ||
+    userObj?.country ||
+    userObj?.user_location ||
+    userObj?.nationality ||
+    userObj?.contact_information?.country_name ||
+    userObj?.personal_information?.country_name ||
+    ''
+  ).trim().toUpperCase();
+
+  const userCountryId = String(
+    userObj?.country_id ||
+    userObj?.countryId ||
+    userObj?.contact_information?.country_id ||
+    ''
+  );
+
+  const isUsaCountry =
+    userCountryName === 'UNITED STATES' ||
+    userCountryName === 'US' ||
+    userCountryName === 'USA' ||
+    ['1', '233'].includes(userCountryId) ||
+    isUsaCountryCode(userCountryName);
+
   const isUsaProfile =
+    isUsaCountry ||
     userObj?.usa_user === true ||
     userObj?.usa_user === 1 ||
     userObj?.usa_user === '1' ||
@@ -875,9 +917,9 @@ onPress: () => {
                           fontWeight: "500"
                         }}
                       >
-                        {isNonSubscribedNoSubscription || primeit || (primeits && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date)
-                          ? "Become a Prime Member"
-                          : "Prime Member"}
+                        {isPrimeUserActive
+                          ? "Prime Member"
+                          : "Become a Prime Member"}
                       </Text>
                     </View>
                   </Pressable>

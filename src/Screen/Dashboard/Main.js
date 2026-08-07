@@ -1193,9 +1193,10 @@ const Main = (props) => {
 
 
 
-        if (isExploreTrialClicked) {
+        if (isGuestVerificationCompleted || isExploreTrialClicked) {
           setGuestVerifyModalVisible(false);
           setGuestVerifyData(null);
+          setGuestVerifyLoading(false);
           return;
         }
 
@@ -1602,6 +1603,10 @@ const Main = (props) => {
     }
 
     if (!isNonUsaUser && !isPhoneVerified) {
+      if (!phoneValue || String(phoneValue).trim() === '' || String(phoneValue).trim() === 'null') {
+        props.navigation.navigate('AddMobile');
+        return;
+      }
       props.navigation.navigate('VerifyMobileOTP', {
         validPh: {
           validPh: phoneValue,

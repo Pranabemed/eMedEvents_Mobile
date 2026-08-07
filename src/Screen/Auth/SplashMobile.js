@@ -749,7 +749,7 @@ const licHandl = (prof) => {
                                 onClose={toggleModal}
                                 content={'Your cell number has been \n successfully verified'}
                                 navigation={props.navigation}
-                                name={AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? 'ChooseState' : 'CreateStateInfor'}
+                                name={(DashboardReducer?.mainprofileResponse?.licensures?.[0]?.license_number || AuthReducer?.verifymobileResponse?.user?.license_number) ? "TabNav" : (AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor")}
                                 profMerge={profMerge}
                             />
                         </View>

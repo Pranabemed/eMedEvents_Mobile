@@ -22,6 +22,8 @@ import { useSelector } from 'react-redux';
  */
 const CellModal = ({ isVisible, onClose, content, navigation, name, key, profMerge }) => {
     console.log(profMerge, "profiletake=====", key,name)
+    const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
     const pressed = useRef(false);
     useEffect(() => {
         if (isVisible) {
@@ -52,61 +54,75 @@ const resetToTabHome = () => {
         if (pressed.current) return;
         pressed.current = true;
 
-        const permanentFlags = await readNonUsaPermanentFlags();
-        if (name == "CreateStateInfor" || name == "ChooseState") {
-            if (name == "CreateStateInfor" && permanentFlags?.stateLicenseFlowCompleted) {
-                resetToTabHome();
-            } else {
-                navigation?.navigate(name);
-            }
-            setTimeout(() => {
-                onClose();
-            }, 450);
-            return;
+        try {
+            await AsyncStorage.setItem('GUEST_VERIFICATION_COMPLETED', 'true');
+            await AsyncStorage.removeItem('GUEST_PRIME_VERIFICATION_PENDING');
+        } catch (e) {
+            console.log(e);
         }
 
-        if (profMerge == "freetrail") {
-            navigation.navigate("TabNav");
-        } else if (profMerge == "duplicate") {
-            resetToTabHome();
-        } else if (name == "TabNav" && key == "stateno") {
-            navigation.navigate("TabNav");
-        } else if (name == "text") {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        {
-                            name: "BoardProfile",
-                            params: {
-                                board: "nodata",
-                            }
-                        }
-                    ]
-                })
-            );
-        } else if (name == "Contact") {
-            navigation.navigate("TabNav", { initialRoute: "Contact" });
-        } else if (name == "TabNav") {
-            navigation.navigate("TabNav", { detectmain: "main" });
-        } else if (name == "goBack") {
-            navigation.goBack();
-        } else if (name == "DashoardVault") {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: "TabNav", params: { initialRoute: "Contact", detectmain: "main" } }],
-                })
-            );
-        } else if (name == "CertficateHandle") {
-            navigation.navigate("CertficateHandle", { isNonUsaUser: true });
-        } else {
-            navigation?.navigate(name);
-        }
-
-        setTimeout(() => {
+        try {
             onClose();
-        }, 450);
+        } catch (e) {
+            console.log(e);
+        }
+
+        try {
+            const permanentFlags = await readNonUsaPermanentFlags();
+            const primaryLic = DashboardReducer?.mainprofileResponse?.licensures?.[0] || AuthReducer?.verifymobileResponse?.user || {};
+            const licNum = String(primaryLic?.license_number || '').trim();
+            const fromDt = String(primaryLic?.from_date || primaryLic?.renewal_date || '').trim();
+            const hasExistingLicenseData = Boolean(licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00');
+
+            if (name == "CreateStateInfor" || name == "ChooseState" || name == "TabNav") {
+                if (hasExistingLicenseData || permanentFlags?.stateLicenseFlowCompleted) {
+                    resetToTabHome();
+                } else {
+                    navigation?.navigate(name);
+                }
+                return;
+            }
+
+            if (profMerge == "freetrail") {
+                navigation.navigate("TabNav");
+            } else if (profMerge == "duplicate") {
+                resetToTabHome();
+            } else if (name == "TabNav") {
+                resetToTabHome();
+            } else if (name == "text") {
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: "BoardProfile",
+                                params: {
+                                    board: "nodata",
+                                }
+                            }
+                        ]
+                    })
+                );
+            } else if (name == "Contact") {
+                navigation.navigate("TabNav", { initialRoute: "Contact" });
+            } else if (name == "goBack") {
+                navigation.goBack();
+            } else if (name == "DashoardVault") {
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "TabNav", params: { initialRoute: "Contact", detectmain: "main" } }],
+                    })
+                );
+            } else if (name == "CertficateHandle") {
+                navigation.navigate("CertficateHandle", { isNonUsaUser: true });
+            } else {
+                navigation?.navigate(name || "TabNav");
+            }
+        } catch (error) {
+            console.log("handleDone error:", error);
+            resetToTabHome();
+        }
     };
 
     return (
