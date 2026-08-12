@@ -72,6 +72,10 @@ import {
   primeTrailSuccess,
   primeTrailFailure,
   refreshTokenFailure,
+  directloginSuccess,
+  directloginFailure,
+  dircetloginSuccess,
+  dircetloginFailure,
 } from '../Reducers/AuthReducer';
 import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import axios from 'axios';
@@ -89,8 +93,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { doRefreshToken } from '../../Utils/Helpers/TokenRefresh';
 import { fetchAndStoreBasicAuthToken } from '../../Utils/Helpers/BasicAuth';
-import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, stateDashboardSuccess } from '../Reducers/DashboardReducer';
-import { PrimeCheckSuccess } from '../Reducers/WebcastReducer';
+import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, mainprofileRequest, dashboardRequest, dashPerRequest, stateDashboardSuccess } from '../Reducers/DashboardReducer';
+import { PrimeCheckSuccess, PrimeCheckRequest } from '../Reducers/WebcastReducer';
+import { DeviceEventEmitter } from 'react-native';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import {
   isNonUsaAccount,
@@ -167,12 +172,14 @@ export function* allreducerFalse(action) {
     if (action) {
       yield put(allreducerSuccess(null));
       yield put(tokenSuccess(null));
-      yield put(signupSuccess({}));
-      yield put(loginSuccess({}));
-      yield put(loginsiginSuccess({}));
-      yield put(mainprofileSuccess({}))
-      yield put(PrimeCheckSuccess({}))
-      yield put(againloginsiginSuccess(null))
+      yield put(signupSuccess(null));
+      yield put(loginSuccess(null));
+      yield put(loginsiginSuccess(null));
+      yield put(dircetloginSuccess(null));
+      yield put(directloginSuccess(null));
+      yield put(mainprofileSuccess(null));
+      yield put(PrimeCheckSuccess(null));
+      yield put(againloginsiginSuccess(null));
     }
   } catch (error) {
     yield put(allreducerFailure(error));
@@ -617,6 +624,62 @@ export function* login_Saga(action) {
     yield put(loginFailure(error));
     // showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
+  }
+}
+
+function* directlogin_Saga(action) {
+  let ipAddress = yield call(getPublicIP);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    IPADDRESS: ipAddress ? ipAddress : ""
+  };
+  try {
+    let response = yield call(postApi, 'user/directLogin', action.payload, header);
+    console.log('[AuthSaga] user/directLogin response:', response?.data);
+    if (response?.data?.success == true || response?.data?.status == true || response?.data?.token) {
+      const updatedUser = response?.data?.user;
+      if (updatedUser) {
+        const userData = JSON.stringify(updatedUser);
+        yield call(AsyncStorage.setItem, constants.PROFESSION, userData);
+        yield call(AsyncStorage.setItem, constants.AUTH_USER_DATA, JSON.stringify(response?.data));
+        yield call(AsyncStorage.setItem, constants.VERIFYSTATEDATA, userData);
+      }
+      yield call(AsyncStorage.removeItem, 'activeProfile');
+      yield call(AsyncStorage.removeItem, 'PrimeCardFlowComplete');
+      yield call(AsyncStorage.removeItem, 'PRIME_MEMBERSHIP_SKIPPED');
+      yield call(AsyncStorage.removeItem, 'PRIME_MEMBERSHIP_PROMPT_PENDING');
+      yield call(AsyncStorage.removeItem, 'SessionPrimeSkipped');
+      DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', null);
+
+      if (response?.data?.token) {
+        yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);
+        yield put(tokenSuccess(response?.data?.token));
+      }
+      if (response?.data?.refresh_token) {
+        yield call(AsyncStorage.setItem, constants.REFRESH_TOKEN, response?.data?.refresh_token);
+      }
+      if (response?.data?.accreditation_user === true || response?.data?.accreditation_user === 'true') {
+        yield call(AsyncStorage.setItem, 'ACCREDITATION_USER', 'true');
+        yield call(AsyncStorage.setItem, 'BYPASS_LICENSE_EXPIRY', 'true');
+      }
+      if (response?.data?.redirect_url || response?.data?.user?.redirect_url) {
+        yield call(AsyncStorage.setItem, 'PENDING_DIRECT_LOGIN_REDIRECT', response?.data?.redirect_url || response?.data?.user?.redirect_url);
+      }
+      yield put(loginSuccess(response?.data));
+      yield put(mainprofileRequest({}));
+      yield put(dashboardRequest({}));
+      yield put(dashPerRequest({}));
+      yield put(PrimeCheckRequest({}));
+      yield put(directloginSuccess(response?.data));
+      yield put(dircetloginSuccess(response?.data));
+    } else {
+      yield put(directloginSuccess(response?.data));
+      yield put(dircetloginSuccess(response?.data));
+    }
+  } catch (error) {
+    yield put(directloginFailure(error));
+    yield put(dircetloginFailure(error));
   }
 }
 //Profession 
@@ -1086,6 +1149,9 @@ export function* logoutSaga() {
     yield put(dashPerSuccess(null));
     yield put(mainprofileSuccess(null));
     yield put(stateDashboardSuccess(null));
+    yield put(directloginSuccess(null));
+    yield put(dircetloginSuccess(null));
+    yield put(loginSuccess(null));
     yield put(logoutSuccess('logout'));
     showErrorAlert('Logged out Successfully');
   } catch (error) {
@@ -1424,6 +1490,12 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('Auth/refreshTokenRequest', refreshTokenSaga);
+  })(),
+  (function* () {
+    yield takeLatest('Auth/directloginRequest', directlogin_Saga);
+  })(),
+  (function* () {
+    yield takeLatest('Auth/dircetloginRequest', directlogin_Saga);
   })()
 ];
 

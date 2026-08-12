@@ -48,6 +48,11 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     } = useContext(AppContext);
     const windowWidth = Dimensions.get('window').width;
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isAccreditationUser =
+        AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.accreditation_user === true ||
+        AuthReducer?.dircetloginResponse?.user?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.user?.accreditation_user === true;
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
     const dispatch = useDispatch();
@@ -443,7 +448,7 @@ const handleOpenRenewalLink = (renewallink) => {
                 if (isFocus) {
                     interactionPromise = InteractionManager.runAfterInteractions(() => {
                         timeoutId = setTimeout(() => {
-                            setDashMod(true);
+                            if (!isAccreditationUser) setDashMod(true);
                         }, Platform.OS === 'ios' ? 800 : 300);
                     });
                 }
@@ -513,7 +518,7 @@ const handleOpenRenewalLink = (renewallink) => {
                     </View>
                 </View>}
                 <Modal
-                    isVisible={dashMod && isItemExpired && isActiveCard}
+                    isVisible={!isAccreditationUser && dashMod && isItemExpired && isActiveCard}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                     backdropTransitionOutTiming={0}

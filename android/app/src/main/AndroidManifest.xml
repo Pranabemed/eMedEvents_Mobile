@@ -73,6 +73,38 @@
               android:scheme="https"
               android:host="www.emedevents.com"
               android:pathPrefix="/medical-hybrid-events-" />
+            <data
+              android:scheme="http"
+              android:host="www.emedevents.com"
+              android:pathPrefix="/directLogin" />
+            <data
+              android:scheme="https"
+              android:host="www.emedevents.com"
+              android:pathPrefix="/directLogin" />
+            <data
+              android:scheme="http"
+              android:host="www.emedevents.com"
+              android:pathPrefix="/directlogin" />
+            <data
+              android:scheme="https"
+              android:host="www.emedevents.com"
+              android:pathPrefix="/directlogin" />
+            <data
+              android:scheme="http"
+              android:host="emedevents.com"
+              android:pathPrefix="/directLogin" />
+            <data
+              android:scheme="https"
+              android:host="emedevents.com"
+              android:pathPrefix="/directLogin" />
+            <data
+              android:scheme="http"
+              android:host="emedevents.com"
+              android:pathPrefix="/directlogin" />
+            <data
+              android:scheme="https"
+              android:host="emedevents.com"
+              android:pathPrefix="/directlogin" />
         </intent-filter>
       </activity>
     </application>

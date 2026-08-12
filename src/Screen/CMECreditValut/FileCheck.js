@@ -112,8 +112,9 @@ const CertficateHandle = (props) => {
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
-    const forcedNonUsaRoute = props?.route?.params?.isNonUsaUser === true;
-    const isNonUsaUser = forcedNonUsaRoute || ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData);
+    const hasNonUsaParam = props?.route?.params?.isNonUsaUser === true || props?.route?.params?.boardID?.state_id === '-1' || Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
+    const hasBoardOrState = Boolean((props?.route?.params?.boardID && props?.route?.params?.boardID?.state_id !== '-1') || props?.route?.params?.boardCert);
+    const isNonUsaUser = hasNonUsaParam || (!hasBoardOrState && ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData));
     const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
         if (resolvedIsNonUsaUser) {
             connectionrequest()
@@ -157,7 +158,7 @@ const CertficateHandle = (props) => {
                     const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
                     const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
                     const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
-                    const resolvedIsNonUsaUser = (props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp);
+                    const resolvedIsNonUsaUser = !hasBoardOrState && ((props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp));
                     fetchCreditVaultData(resolvedIsNonUsaUser);
                 }
             });
@@ -165,7 +166,7 @@ const CertficateHandle = (props) => {
                 mounted = false;
             };
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [fetchCreditVaultData, props?.route?.params?.isNonUsaUser])
+        }, [fetchCreditVaultData, props?.route?.params?.isNonUsaUser, hasBoardOrState])
     );
     /**
 * Certificatpress utility.
@@ -410,13 +411,21 @@ const CertficateHandle = (props) => {
             })
     }
     const nonUsaCertificateRows = useMemo(() => {
-        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
-        if (!stateData) {
-            return [];
+        const routeCertificates =
+            props?.route?.params?.boardID?.certificates ||
+            props?.route?.params?.boardCert?.certificates ||
+            props?.route?.params?.boardCert?.certificate;
+
+        const allCertificates = [];
+
+        if (Array.isArray(routeCertificates) && routeCertificates.length > 0) {
+            allCertificates.push(...routeCertificates);
+        } else if (routeCertificates && typeof routeCertificates === 'object') {
+            allCertificates.push(...Object.values(routeCertificates).flatMap((val) => (Array.isArray(val) ? val : [val])).filter(Boolean));
         }
 
-        if (primeSkipped) {
-            const allCertificates = [];
+        const stateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+        if (stateData && typeof stateData === 'object') {
             Object.keys(stateData).forEach((key) => {
                 const certs = stateData[key]?.certificates;
                 if (certs) {
@@ -427,23 +436,25 @@ const CertficateHandle = (props) => {
                     }
                 }
             });
-            if (allCertificates.length > 0) {
-                return allCertificates;
-            }
         }
 
-        const certificates = stateData?.['-1']?.certificates;
-        if (!certificates) {
-            return [];
-        }
-        if (Array.isArray(certificates)) {
-            return certificates;
-        }
-        if (typeof certificates === 'object') {
-            return Object.values(certificates).flatMap((value) => (Array.isArray(value) ? value : [value])).filter(Boolean);
-        }
-        return [];
-    }, [DashboardReducer?.stateMandatoryResponse?.state_data, DashboardReducer?.stateMandatorySuccess?.state_data, primeSkipped]);
+        const uniqueCerts = allCertificates.filter((item, index, self) =>
+            index === self.findIndex((c) => (
+                (c?.id && item?.id && c?.id === item?.id) ||
+                (c?._id && item?._id && c?._id === item?._id) ||
+                (c?.certificate && item?.certificate && c?.certificate === item?.certificate) ||
+                (c?.activity_name && item?.activity_name && c?.activity_name === item?.activity_name)
+            ))
+        );
+
+        return uniqueCerts;
+    }, [
+        DashboardReducer?.stateMandatoryResponse?.state_data,
+        DashboardReducer?.stateMandatorySuccess?.state_data,
+        props?.route?.params?.boardID,
+        props?.route?.params?.boardCert,
+        primeSkipped
+    ]);
     const hasNonUsaCertificateRows = nonUsaCertificateRows.length > 0;
     useEffect(() => {
         if (!isNonUsaUser) {
@@ -460,7 +471,7 @@ const CertficateHandle = (props) => {
         const doubleArrayCertificates = wrapDataInDoubleArray();
         const fulFinal = doubleArrayCertificates[0];
         setDataFull(fulFinal);
-    }, [props?.route?.params?.boardCert]);
+    }, [props?.route?.params?.boardCert, nonUsaCertificateRows, DashboardReducer?.stateMandatoryResponse, DashboardReducer?.stateMandatorySuccess, props?.route?.params?.isNonUsaUser]);
     /**
 * Categorize data dynamically utility.
 * @param {*} data - Input value.
@@ -468,25 +479,54 @@ const CertficateHandle = (props) => {
 */
     const categorizeDataDynamically = (data) => {
         const result = {};
-        Object.keys(data).forEach((yearRange) => {
-            if (!result[yearRange]) {
-                result[yearRange] = {
+        if (!data) return result;
+
+        const processItem = (item) => {
+            if (!item || typeof item !== 'object') return;
+            const dateStr = item?.program_date || item?.created_date || item?.expiry_date || '';
+            const itemYear = dateStr ? new Date(String(dateStr).replace(' ', 'T')).getFullYear() : new Date().getFullYear();
+            const yearVal = isNaN(itemYear) ? new Date().getFullYear() : itemYear;
+            const yearRangeKey = `${yearVal}-${yearVal + 1}`;
+
+            if (!result[yearRangeKey]) {
+                result[yearRangeKey] = {
                     state_mandatory: [],
                     speciality: [],
-                    date_range: ""
+                    date_range: `${yearVal}-${yearVal + 1}`
                 };
             }
-            const yearData = data[yearRange];
-            if (yearData.state_mandatory) {
-                result[yearRange].state_mandatory.push(...yearData.state_mandatory);
-            }
-            if (yearData.speciality) {
-                result[yearRange].speciality.push(...yearData.speciality);
-            }
-            if (yearData.date_range) {
-                result[yearRange].date_range = yearData.date_range;
-            }
 
+            if (String(item.mandated_course) === "1") {
+                result[yearRangeKey].state_mandatory.push(item);
+            } else {
+                result[yearRangeKey].speciality.push(item);
+            }
+        };
+
+        if (Array.isArray(data)) {
+            data.forEach(processItem);
+            return result;
+        }
+
+        Object.keys(data).forEach((key) => {
+            const yearData = data[key];
+            if (yearData && (Array.isArray(yearData.state_mandatory) || Array.isArray(yearData.speciality))) {
+                if (!result[key]) {
+                    result[key] = {
+                        state_mandatory: [],
+                        speciality: [],
+                        date_range: yearData.date_range || key
+                    };
+                }
+                if (yearData.state_mandatory) {
+                    result[key].state_mandatory.push(...yearData.state_mandatory);
+                }
+                if (yearData.speciality) {
+                    result[key].speciality.push(...yearData.speciality);
+                }
+            } else if (yearData && typeof yearData === 'object') {
+                processItem(yearData);
+            }
         });
 
         return result;
@@ -494,19 +534,24 @@ const CertficateHandle = (props) => {
 
     useEffect(() => {
         const stateId = props?.route?.params?.boardID?.state_id;
-        const isDataFetched = certificatefecthed && certificatefecthed.state_data && stateId;
-        if (isDataFetched) {
-            const stateData = certificatefecthed.state_data[stateId]?.certificates;
+        const sourceData = certificatefecthed?.state_data || DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+
+        if (sourceData && typeof sourceData === 'object') {
+            const targetStateId = (stateId && sourceData[stateId])
+                ? stateId
+                : (sourceData['-1'] ? '-1' : Object.keys(sourceData).find(key => key !== '-1') || Object.keys(sourceData)[0]);
+
+            const stateData = sourceData[targetStateId]?.certificates || sourceData['-1']?.certificates;
+
             if (stateData) {
-                const takeData = { ...stateData };
-                const dynamicYearData = categorizeDataDynamically(takeData);
-                if (dynamicYearData !== stateget) {
-                    setStategetdt(dynamicYearData)
+                const dynamicYearData = categorizeDataDynamically(stateData);
+                if (JSON.stringify(dynamicYearData) !== JSON.stringify(stateget)) {
+                    setStategetdt(dynamicYearData);
                     setStateget(dynamicYearData);
                 }
             }
         }
-    }, [props?.route?.params?.boardID?.state_id, certificatefecthed]);
+    }, [props?.route?.params?.boardID?.state_id, certificatefecthed, DashboardReducer?.stateMandatoryResponse?.state_data, DashboardReducer?.stateMandatorySuccess?.state_data]);
 
 
     const [stateget, setStateget] = useState("");
@@ -768,55 +813,90 @@ const CertficateHandle = (props) => {
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <View style={{ flex: 1 }}>
                             {!isInitialNonUsaLoading && (
-                                hasNonUsaCertificateRows ? (
-                                    <View style={{ marginTop: normalize(10) }}>
-                                        <View style={styles.yearContainer}>
-                                            <View style={styles.headerContainer}>
-                                                <TouchableOpacity
-                                                    onPress={downloadTrans}
-                                                    style={{
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                        gap: normalize(5)
-                                                    }}
-                                                >
-                                                    <DownloadIcn name="download" size={20} color={Colorpath.ButtonColr} />
-                                                    <Text style={styles.yearText}>{"All Transcripts"}</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => {
-                                                        props.navigation.navigate("AddCredits", { isNonUsaUser: true });
-                                                    }}
-                                                    style={{
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        height: normalize(35),
-                                                        width: normalize(130),
-                                                        backgroundColor: Colorpath.ButtonColr,
-                                                        borderRadius: normalize(5),
-                                                        gap: normalize(5),
-                                                        paddingHorizontal: normalize(10)
-                                                    }}
-                                                >
-                                                    <Search name="plus" color={Colorpath.white} size={18} />
-                                                    <Text style={{
-                                                        color: Colorpath.white,
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 14,
-                                                        fontWeight: "bold"
-                                                    }}>
-                                                        {"Add Credits"}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
+                                <View style={{ marginTop: normalize(10) }}>
+                                    {stateget && Object.keys(stateget).length > 0 ? (
+                                        Object.keys(stateget)
+                                            .sort((a, b) => parseInt(b) - parseInt(a))
+                                            .map((year, index) => {
+                                                const dateRange = stateget[year]?.date_range;
+                                                return (
+                                                    <View key={year} style={styles.yearContainer}>
+                                                        <View style={styles.headerContainer}>
+                                                            <View style={{ flexDirection: "row" }}>
+                                                                <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
+                                                                <TouchableOpacity style={styles.yearButton}>
+                                                                    <Text style={styles.yearText}>
+                                                                        {index == 0
+                                                                            ? (() => {
+                                                                                const renewalVal =
+                                                                                    DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']?.renewal_date ||
+                                                                                    props?.route?.params?.boardID?.renewal_date ||
+                                                                                    '';
+                                                                                return renewalVal ? `${renewalVal}(${year})` : year;
+                                                                            })()
+                                                                            : year}
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            </View>
+                                                            <TouchableOpacity onPress={() => { stateTranscript(index, dateRange) }} style={styles.button}>
+                                                                <DownloadIcn name="download" size={25} color={Colorpath.ButtonColr} />
+                                                                <Text style={styles.buttonText}>{"All Transcripts"}</Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+
+                                                        {stateget[year]?.state_mandatory?.length > 0 && (
+                                                            <View style={{ flexDirection: "column" }}>
+                                                                <TouchableOpacity
+                                                                    onPress={() => toggleShowMore(year, 'state_mandatory')}
+                                                                    style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                                        {"State Mandatory Course Certificates"}
+                                                                    </Text>
+                                                                    <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                                </TouchableOpacity>
+                                                                <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
+                                                            </View>
+                                                        )}
+
+                                                        {showMore[year]?.state_mandatory && stateget[year]?.state_mandatory?.length > 0 && (
+                                                            <FlatList
+                                                                data={stateget[year]?.state_mandatory || []}
+                                                                renderItem={({ item }) => renderCertificateCard(item, 'state_mandatory')}
+                                                                keyExtractor={(item, idx) => String(item?.id ?? item?._id ?? idx)}
+                                                            />
+                                                        )}
+
+                                                        {stateget[year]?.speciality?.length > 0 && (
+                                                            <View style={{ flexDirection: "column" }}>
+                                                                <TouchableOpacity
+                                                                    onPress={() => toggleShowMore(year, 'speciality')}
+                                                                    style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                                        {"Specialty Course Certificates"}
+                                                                    </Text>
+                                                                    <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                                </TouchableOpacity>
+                                                                <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
+                                                            </View>
+                                                        )}
+
+                                                        {showMore[year]?.speciality && stateget[year]?.speciality?.length > 0 && (
+                                                            <FlatList
+                                                                data={stateget[year]?.speciality || []}
+                                                                renderItem={({ item }) => renderCertificateCard(item, 'speciality')}
+                                                                keyExtractor={(item, idx) => String(item?.id ?? item?._id ?? idx)}
+                                                            />
+                                                        )}
+                                                    </View>
+                                                );
+                                            })
+                                    ) : (
                                         <FlatList
                                             data={nonUsaCertificateRows}
                                             renderItem={({ item }) => renderCertificateCard(item, 'certificate')}
                                             keyExtractor={(item, index) => String(item?.id ?? item?._id ?? index)}
                                             ListEmptyComponent={
-                                                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                                                <View style={{ justifyContent: "center", alignItems: "center", marginVertical: normalize(20) }}>
                                                     <ImageBackground source={Imagepath.DottedImg} style={{ height: normalize(65), width: normalize(300), resizeMode: "contain", justifyContent: 'center' }}>
                                                         <View style={{ alignItems: 'center' }}>
                                                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#AAAAAA" }}>
@@ -827,30 +907,8 @@ const CertficateHandle = (props) => {
                                                 </View>
                                             }
                                         />
-                                    </View>
-                                ) : (
-                                    <View style={styles.nonUsaContainer}>
-                                        <View style={styles.nonUsaCard}>
-                                            <View style={styles.nonUsaBanner}>
-                                                <Text style={styles.nonUsaBannerText}>Credit Vault</Text>
-                                            </View>
-                                            <View style={styles.nonUsaBody}>
-                                                <Text style={styles.nonUsaDescription}>
-                                                    You can view credits and certificates of all the activities you fulfilled at eMedEvents.{"\n\n"}
-                                                    You can also add credits and certificates of activities you attended elsewhere.
-                                                </Text>
-                                                <TouchableOpacity
-                                                    style={styles.nonUsaButton}
-                                                    onPress={() => {
-                                                        props.navigation.navigate("AddCredits", { isNonUsaUser: true });
-                                                    }}
-                                                >
-                                                    <Text style={styles.nonUsaButtonText}>Add Credits</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    </View>
-                                )
+                                    )}
+                                </View>
                             )}
                         </View>
                     </ScrollView>
@@ -991,8 +1049,17 @@ const CertficateHandle = (props) => {
                                                         <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
                                                         <TouchableOpacity style={styles.yearButton}>
                                                             <Text style={styles.yearText}>
-                                                                {index == 0
-                                                                    ? `${certificatefecthed?.state_data[props?.route?.params?.boardID?.state_id ? props?.route?.params?.boardID?.state_id : props?.route?.params?.boardID?.state_id].renewal_date}(${year})`
+                                                                 {index == 0
+                                                                    ? (() => {
+                                                                        const targetStateId = props?.route?.params?.boardID?.state_id;
+                                                                        const renewalVal =
+                                                                            (targetStateId && certificatefecthed?.state_data?.[targetStateId]?.renewal_date) ||
+                                                                            (targetStateId && DashboardReducer?.stateMandatoryResponse?.state_data?.[targetStateId]?.renewal_date) ||
+                                                                            DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']?.renewal_date ||
+                                                                            props?.route?.params?.boardID?.renewal_date ||
+                                                                            '';
+                                                                        return renewalVal ? `${renewalVal}(${year})` : year;
+                                                                    })()
                                                                     : year}
                                                             </Text>
                                                         </TouchableOpacity>

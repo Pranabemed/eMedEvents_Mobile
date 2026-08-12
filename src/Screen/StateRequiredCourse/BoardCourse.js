@@ -71,17 +71,22 @@ const BoardCourseSlide = (props) => {
     const [stateid, setStateid] = useState("");
     const [handle, setHandle] = useState(null);
     const [servetextbr, setServetextbr] = useState(false);
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
+    const normalizeProfessionHandle = (value) =>
+        String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+    const validHandles = new Set(["physicianmd", "physiciando", "physiciandpm"]);
     const authHigh = AuthReducer?.loginResponse?.user?.profession != null &&
         AuthReducer?.loginResponse?.user?.profession_type != null
-        ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_typ}`
+        ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
         : null;
     const profFromDashboard =
         DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
             DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : null;
-    const allProfTake = validHandles.has(authHigh) || validHandles.has(profFromDashboard);
+    const allProfTake = validHandles.has(normalizeProfessionHandle(authHigh)) || validHandles.has(normalizeProfessionHandle(profFromDashboard));
     console.log(finalData?.length, "handle=======", finalData)
         /**
  * Open filter modal utility.

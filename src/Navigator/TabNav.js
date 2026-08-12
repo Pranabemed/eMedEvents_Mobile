@@ -482,15 +482,18 @@ function TabScreen() {
     userObj?.is_non_usa === 0 ||
     userObj?.is_non_usa === '0';
 
-  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
+  const hasLicensures = Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0;
   const stateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
-  const hasUsaData = (stateData && Object.keys(stateData).some(key => key !== '-1')) || (Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0);
+  const hasNonUsaStateData = Boolean(stateData?.['-1']);
+  const hasUsaData = (stateData && Object.keys(stateData).some(key => key !== '-1')) || hasLicensures;
 
-  const isNonUsaUser = !isUsaProfile && !hasUsaData && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
+  const isNonUsaZeroLicenseUser = (!hasLicensures && hasNonUsaStateData) || route?.params?.isNonUsaUser === true || route?.params?.params?.isNonUsaUser === true;
+  const isNonUsaUser = isNonUsaZeroLicenseUser || (!isUsaProfile && !hasUsaData && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)));
 
-  const creditVaultComponent = (nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || hasUsaData || isUsaProfile)
-    ? DashoardVault
-    : (isNonUsaUser ? CertficateHandle : DashoardVault);
+  const creditVaultComponent = isNonUsaZeroLicenseUser
+    ? CertficateHandle
+    : DashoardVault;
   /**
 * Navigation helper that exposes toggle drawer modal behavior.
 * @returns {void}
@@ -764,7 +767,7 @@ function TabScreen() {
           key={index}
           name={item.name}
           component={item.component}
-          initialParams={{ detectmain: "newadd" }}
+          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd" }}
           options={{
             /**
 * Navigation helper that exposes tab bar icon behavior.
@@ -947,7 +950,7 @@ function TabScreen() {
           key={index}
           name={item.name}
           component={item.component}
-          initialParams={{ detectmain: "newadd" }}
+          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd" }}
           options={{
             /**
 * Navigation helper that exposes tab bar icon behavior.

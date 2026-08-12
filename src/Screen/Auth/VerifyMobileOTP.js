@@ -916,7 +916,7 @@ const VerifyMobileOTP = (props) => {
                                 onClose={toggleModal}
                                 content={"Your cell number has been \n successfully verified"}
                                 navigation={props.navigation}
-                                name={(hasValidLicenseRecord(DashboardReducer?.mainprofileResponse?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user)) ? "TabNav" : (AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor")}
+                                name={(hasValidLicenseRecord(DashboardReducer?.mainprofileResponse?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user) || !allProfTake) ? "TabNav" : (AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor")}
                                 profMerge={profMerge}
                             />
                         </View>

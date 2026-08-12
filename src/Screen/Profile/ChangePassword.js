@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, KeyboardAvoidingView, ScrollView } from 'react-native'
-import React, {useLayoutEffect, useState } from 'react'
+import React, { useLayoutEffect, useState } from 'react'
 import PageHeader from '../../Components/PageHeader';
 import Loader from '../../Utils/Helpers/Loader';
 import Colorpath from '../../Themes/Colorpath';
@@ -53,13 +53,13 @@ const ChangePassword = (props) => {
     const final = !(oldPasswordExists && isPasswordValid && cnfrmPasswordValid && passwordsMatch && !dontMatch);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const dispatch = useDispatch();
-        /**
- * Clear all async storage utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const clearAllAsyncStorage = async () => {
+    /**
+* Clear all async storage utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const clearAllAsyncStorage = async () => {
         try {
             const keepKeys = [
                 'PRIME_CARD_SKIPPED_ONCE',
@@ -83,11 +83,11 @@ const clearAllAsyncStorage = async () => {
             console.error('Error clearing AsyncStorage:', e);
         }
     };
-        /**
- * Passback component.
- * @returns {void}
- */
-const Passback = () => {
+    /**
+* Passback component.
+* @returns {void}
+*/
+    const Passback = () => {
         clearAllAsyncStorage()
             .then(() => dispatch(logoutRequest()))
             .then(() => dispatch(allreducerRequest({ "obj": "" })))
@@ -101,11 +101,11 @@ const Passback = () => {
             })
             .catch(err => console.log("Logout flow error:", err));
     }
-        /**
- * Final hit utility.
- * @returns {void}
- */
-const finalHit = () => {
+    /**
+* Final hit utility.
+* @returns {void}
+*/
+    const finalHit = () => {
         let obj = {
             "current_password": oldpass,
             "new_password": cnfmpass
@@ -135,16 +135,16 @@ const finalHit = () => {
                 break;
         }
     }
-        /**
- * Back to utility.
- * @returns {void}
- */
-const backTo = () => {
+    /**
+* Back to utility.
+* @returns {void}
+*/
+    const backTo = () => {
         props?.navigation.goBack();
     }
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar

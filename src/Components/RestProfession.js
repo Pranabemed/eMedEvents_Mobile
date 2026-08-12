@@ -499,124 +499,71 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     )}
                     {/* Browse Courses button – hidden while shimmer is showing */}
                     {!loading && (
-                        enables ? (
-                            <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
-                                <TouchableOpacity onPress={() => {
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [
-                                                {
-                                                    name: "Globalresult",
-                                                    params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
-                                                }
-                                            ]
-                                        })
-                                    );
+                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
+                            <TouchableOpacity onPress={() => {
+                                navigation.dispatch(
+                                    CommonActions.reset({
+                                        index: 0,
+                                        routes: [
+                                            {
+                                                name: "Globalresult",
+                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
+                                            }
+                                        ]
+                                    })
+                                );
+                            }}
+                                style={{
+                                    flexDirection: "row",
+                                    height: normalize(105),
+                                    width: normalize(300),
+                                    borderRadius: normalize(10),
+                                    backgroundColor: "#FFFFFF",
+                                    paddingHorizontal: normalize(12),
+                                    alignItems: "center",
+                                    borderWidth: 0.5,
+                                    borderColor: "#DADADA"
                                 }}
-                                    style={{
-                                        flexDirection: "row",
-                                        height: normalize(105),
-                                        width: normalize(300),
-                                        borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(12),
-                                        alignItems: "center",
-                                        borderWidth: 0.5,
-                                        borderColor: "#DADADA"
-                                    }}
-                                >
-                                    <View style={{ flex: 1, justifyContent: "center" }}>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterMedium,
-                                                fontSize: 14,
-                                                color: "#000000",
-                                                fontWeight: "bold",
-                                            }}
-                                        >
-                                            {"Recommendations are based on your profession, primary area of practice and state requirements."}
-                                        </Text>
-                                        <View style={{ marginTop: normalize(10) }}>
-                                            <Buttons
-                                                onPress={() => {
-                                                    navigation.dispatch(
-                                                        CommonActions.reset({
-                                                            index: 0,
-                                                            routes: [
-                                                                {
-                                                                    name: "Globalresult",
-                                                                    params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
-                                                                }
-                                                            ]
-                                                        })
-                                                    );
-                                                }}
-                                                height={normalize(40)}
-                                                width={normalize(270)}
-                                                backgroundColor={Colorpath.ButtonColr}
-                                                borderRadius={normalize(5)}
-                                                text="Browse Courses"
-                                                color={Colorpath.white}
-                                                fontSize={16}
-                                                fontFamily={Fonts.InterSemiBold}
-                                            />
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View>
-                                <TouchableOpacity onPress={() => {
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [
-                                                {
-                                                    name: "Globalresult",
-                                                    params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
-                                                }
-                                            ]
-                                        })
-                                    );
-                                }}
-                                    style={{
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        height: normalize(95),
-                                        width: normalize(300),
-                                        borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        borderWidth: 0.5,
-                                        borderColor: "#DADADA"
-                                    }}
-                                >
-                                    <Buttons
-                                        onPress={() => {
-                                            navigation.dispatch(
-                                                CommonActions.reset({
-                                                    index: 0,
-                                                    routes: [
-                                                        {
-                                                            name: "Globalresult",
-                                                            params: { trig: { trig: handleProf, rqstType: "professionconferences", mainKey: "conference_profession", creditAll: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
-                                                        }
-                                                    ]
-                                                })
-                                            );
+                            >
+                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                    <Text
+                                        style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 14,
+                                            color: "#000000",
+                                            fontWeight: "bold",
                                         }}
-                                        height={normalize(40)}
-                                        width={normalize(270)}
-                                        backgroundColor={Colorpath.ButtonColr}
-                                        borderRadius={normalize(5)}
-                                        text="Browse Courses"
-                                        color={Colorpath.white}
-                                        fontSize={16}
-                                        fontFamily={Fonts.InterSemiBold}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        )
+                                    >
+                                        {"Recommendations are based on your profession, primary area of practice and state requirements."}
+                                    </Text>
+                                    <View style={{ marginTop: normalize(10) }}>
+                                        <Buttons
+                                            onPress={() => {
+                                                navigation.dispatch(
+                                                    CommonActions.reset({
+                                                        index: 0,
+                                                        routes: [
+                                                            {
+                                                                name: "Globalresult",
+                                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
+                                                            }
+                                                        ]
+                                                    })
+                                                );
+                                            }}
+                                            height={normalize(40)}
+                                            width={normalize(270)}
+                                            backgroundColor={Colorpath.ButtonColr}
+                                            borderRadius={normalize(5)}
+                                            text="Browse Courses"
+                                            color={Colorpath.white}
+                                            fontSize={16}
+                                            fontFamily={Fonts.InterSemiBold}
+                                        />
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     )}
                     {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && (
                         <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>

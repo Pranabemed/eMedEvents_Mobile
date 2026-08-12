@@ -28,7 +28,7 @@ import { tokenRequest } from '../../Redux/Reducers/AuthReducer.js';
 import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow.js';
+import { isNonUsaAccount, readNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow.js';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 /**
@@ -62,13 +62,13 @@ const ProfileMain = (props) => {
     const [primeSkipped, setPrimeSkipped] = useState(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     useEffect(() => {
-                /**
- * Check prime skipped utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const checkPrimeSkipped = async () => {
+        /**
+* Check prime skipped utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const checkPrimeSkipped = async () => {
             try {
                 const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
                 setPrimeSkipped(skipped === 'true');
@@ -89,40 +89,50 @@ const checkPrimeSkipped = async () => {
             mounted = false;
         };
     }, [isFoucs]);
-        /**
- * Read utility.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const read = (value) => (value == null ? "" : String(value).trim());
-        /**
- * Returns display name.
- * @param {*} source - Input value.
- * @returns {Object}
- */
-const getDisplayName = (source) => {
+    /**
+* Read utility.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+    const read = (value) => (value == null ? "" : String(value).trim());
+    /**
+* Normalize profession handle utility.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+    const normalizeProfessionHandle = (value) =>
+        String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+    /**
+* Returns display name.
+* @param {*} source - Input value.
+* @returns {Object}
+*/
+    const getDisplayName = (source) => {
         if (!source) return { firstname: "", lastname: "" };
         const firstname = read(source?.personal_information?.firstname || source?.firstname);
         const lastname = read(source?.personal_information?.lastname || source?.lastname);
         return { firstname, lastname };
     };
-        /**
- * Returns display profession.
- * @param {*} source - Input value.
- * @returns {*}
- */
-const getDisplayProfession = (source) => {
+    /**
+* Returns display profession.
+* @param {*} source - Input value.
+* @returns {*}
+*/
+    const getDisplayProfession = (source) => {
         if (!source) return "";
         const profession = read(source?.professional_information?.profession || source?.profession);
         const professionType = read(source?.professional_information?.profession_type || source?.profession_type);
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     useEffect(() => {
-                /**
- * Token error utility.
- * @returns {void}
- */
-const token_error = () => {
+        /**
+* Token error utility.
+* @returns {void}
+*/
+        const token_error = () => {
             AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
                 if (loginHandleProccess) {
                     let objToken = { "token": loginHandleProccess, "key": {} }
@@ -151,11 +161,11 @@ const token_error = () => {
 
         return () => unsubscribe();
     }, [isFoucs]);
-        /**
- * Profile back utility.
- * @returns {void}
- */
-const profileBack = () => {
+    /**
+* Profile back utility.
+* @returns {void}
+*/
+    const profileBack = () => {
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
             return;
@@ -170,8 +180,17 @@ const profileBack = () => {
         );
     }
     useEffect(() => {
+        const hasMainProfile =
+            DashboardReducer?.mainprofileResponse &&
+            typeof DashboardReducer.mainprofileResponse === 'object' &&
+            Object.keys(DashboardReducer.mainprofileResponse).length > 0;
+
         const fallbackProfile =
-            DashboardReducer?.mainprofileResponse ||
+            (hasMainProfile ? DashboardReducer.mainprofileResponse : null) ||
+            AuthReducer?.dircetloginResponse?.user ||
+            AuthReducer?.dircetloginResponse ||
+            AuthReducer?.directloginResponse?.user ||
+            AuthReducer?.directloginResponse ||
             AuthReducer?.loginResponse?.user ||
             AuthReducer?.againloginsiginResponse?.user ||
             AuthReducer?.verifymobileResponse?.user ||
@@ -183,53 +202,152 @@ const profileBack = () => {
         }
     }, [
         DashboardReducer?.mainprofileResponse,
+        AuthReducer?.dircetloginResponse,
+        AuthReducer?.directloginResponse,
         AuthReducer?.loginResponse?.user,
         AuthReducer?.againloginsiginResponse?.user,
         AuthReducer?.verifymobileResponse?.user,
         finalverifyvaultprof,
         finalProfessionprof
     ]);
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const otherRestrict = new Set(["Nursing - APRN", "Nursing - CNA", "Nursing - LPN", "Nursing - RN", "Dentist - DDS", "Dentist - RDA", "Dentist - RDH"]);
-    const profFromDashboard = getDisplayProfession(allHandle);
-    const allProfTake = validHandles.has(profFromDashboard);
-    const allNoDetData = otherRestrict.has(profFromDashboard);
-    const isNonUsaUser = isNonUsaAccount(allHandle, null);
-    const profileData = isNonUsaUser && !allProfTake ? [
-        { id: 0, name: "Contact Information", Img: Imagepath.Profile },
-        { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
-        { id: 5, name: "Change Password", Img: Imagepath.PassChange }
-    ] : allProfTake ? [
+    const isAccreditationUser =
+        AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.accreditation_user === true ||
+        AuthReducer?.dircetloginResponse?.user?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.user?.accreditation_user === true;
+
+    const effectiveAllHandle =
+        allHandle ||
+        DashboardReducer?.mainprofileResponse ||
+        AuthReducer?.dircetloginResponse?.user ||
+        AuthReducer?.dircetloginResponse ||
+        AuthReducer?.directloginResponse?.user ||
+        AuthReducer?.directloginResponse ||
+        AuthReducer?.loginResponse?.user ||
+        AuthReducer?.againloginsiginResponse?.user ||
+        AuthReducer?.verifymobileResponse?.user ||
+        finalverifyvaultprof ||
+        finalProfessionprof;
+
+    const rawProfName = read(
+        effectiveAllHandle?.professional_information?.profession ||
+        effectiveAllHandle?.profession ||
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
+        DashboardReducer?.mainprofileResponse?.profession ||
+        AuthReducer?.dircetloginResponse?.user?.professional_information?.profession ||
+        AuthReducer?.dircetloginResponse?.user?.profession ||
+        AuthReducer?.dircetloginResponse?.profession
+    );
+    const rawProfType = read(
+        effectiveAllHandle?.professional_information?.profession_type ||
+        effectiveAllHandle?.profession_type ||
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+        DashboardReducer?.mainprofileResponse?.profession_type ||
+        AuthReducer?.dircetloginResponse?.user?.professional_information?.profession_type ||
+        AuthReducer?.dircetloginResponse?.user?.profession_type ||
+        AuthReducer?.dircetloginResponse?.profession_type
+    );
+
+    const pName = normalizeProfessionHandle(rawProfName);
+    const pType = normalizeProfessionHandle(rawProfType);
+    const profCombined = normalizeProfessionHandle(getDisplayProfession(effectiveAllHandle) || `${rawProfName} - ${rawProfType}`);
+
+    const validHandles = new Set(["physicianmd", "physiciando", "physiciandpm", "physician-md", "physician-do", "physician-dpm"]);
+    const isPhysicianProfMDDODPM =
+        validHandles.has(profCombined) ||
+        validHandles.has(pName) ||
+        pName.includes('physician') ||
+        ['md', 'do', 'dpm'].includes(pType) ||
+        ['physicianmd', 'physiciando', 'physiciandpm'].includes(pName + pType);
+
+    const mainProfileUserAddr = DashboardReducer?.mainprofileResponse?.user_address;
+    const mainAddrCountryName = String(mainProfileUserAddr?.country_name || '').trim().toUpperCase();
+    const mainAddrCountryCode = String(mainProfileUserAddr?.country_code || '').trim().toUpperCase();
+    const mainAddrCountryId = String(mainProfileUserAddr?.country_id || '').trim();
+
+    const hasMainAddr = Boolean(mainAddrCountryName || mainAddrCountryCode || mainAddrCountryId);
+
+    const isMainAddrUsa = hasMainAddr && (
+        mainAddrCountryCode === 'US' ||
+        mainAddrCountryCode === 'USA' ||
+        mainAddrCountryName === 'UNITED STATES' ||
+        mainAddrCountryName === 'USA' ||
+        ['1', '233'].includes(mainAddrCountryId)
+    );
+
+    const fallbackAddrCountryName = String(
+        effectiveAllHandle?.user_address?.country_name ||
+        effectiveAllHandle?.user_address?.country_code ||
+        effectiveAllHandle?.country_name ||
+        effectiveAllHandle?.countryName ||
+        effectiveAllHandle?.country ||
+        effectiveAllHandle?.contact_information?.country_name ||
+        effectiveAllHandle?.personal_information?.country_name ||
+        ''
+    ).trim().toUpperCase();
+
+    const fallbackAddrCountryId = String(
+        effectiveAllHandle?.user_address?.country_id ||
+        effectiveAllHandle?.country_id ||
+        effectiveAllHandle?.countryId ||
+        effectiveAllHandle?.contact_information?.country_id ||
+        ''
+    ).trim();
+
+    const hasFallbackAddr = Boolean(fallbackAddrCountryName || fallbackAddrCountryId);
+
+    const isFallbackAddrUsa = hasFallbackAddr && (
+        fallbackAddrCountryName === 'UNITED STATES' ||
+        fallbackAddrCountryName === 'US' ||
+        fallbackAddrCountryName === 'USA' ||
+        ['1', '233'].includes(fallbackAddrCountryId)
+    );
+
+    const ipCountry = String(nonUsaFlowState?.ipCountryCode || '').trim().toUpperCase();
+    const isUsaIpAddress = isMainAddrUsa || isFallbackAddrUsa || isUsaCountryCode(ipCountry) || nonUsaFlowState?.isNonUsa === false;
+
+    const directLoginUser =
+        AuthReducer?.dircetloginResponse?.user ||
+        AuthReducer?.dircetloginResponse ||
+        AuthReducer?.directloginResponse?.user ||
+        AuthReducer?.directloginResponse;
+
+    const isNonSubscribedUser =
+        directLoginUser?.subscription_user === "non-subscribed" ||
+        !directLoginUser?.subscriptions ||
+        directLoginUser?.subscriptions === 0 ||
+        (Array.isArray(directLoginUser?.subscriptions) && directLoginUser?.subscriptions.length === 0);
+
+    const hasLicensuresData =
+        (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer?.mainprofileResponse?.licensures?.length > 0) ||
+        (Array.isArray(DashboardReducer?.dashPerResponse?.data?.licensures) && DashboardReducer?.dashPerResponse?.data?.licensures?.length > 0) ||
+        (Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures) && DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0);
+
+    const isPhysicianUser = isPhysicianProfMDDODPM && (!isAccreditationUser || hasLicensuresData);
+    const allProfTake = isPhysicianUser;
+    const isNonUsaUser = !isPhysicianUser;
+    const showPrimeCardButton = isPhysicianUser && isUsaIpAddress;
+    console.log(showPrimeCardButton, "showPrimeCardButton====", isNonSubscribedUser)
+    const profileData = allProfTake ? [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },
         { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
         { id: 2, name: "State Licenses", Img: Imagepath.StateImg },
         { id: 3, name: "Certification Boards", Img: Imagepath.BoardImg },
         { id: 5, name: "Change Password", Img: Imagepath.PassChange }
-        // { id: 4, name: "Employment Information", Img: Imagepath.EmpImg }
-    ] : allNoDetData ?
-        [
-            { id: 0, name: "Contact Information", Img: Imagepath.Profile },
-            { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
-            { id: 2, name: "State Licenses", Img: Imagepath.StateImg },
-            { id: 5, name: "Change Password", Img: Imagepath.PassChange }
-
-        ]
-        : [
-            { id: 0, name: "Contact Information", Img: Imagepath.Profile },
-            { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
-            { id: 5, name: "Change Password", Img: Imagepath.PassChange }
-
-            // { id: 4, name: "Employment Information", Img: Imagepath.EmpImg }
-        ]
+    ] : [
+        { id: 0, name: "Contact Information", Img: Imagepath.Profile },
+        { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
+        { id: 5, name: "Change Password", Img: Imagepath.PassChange }
+    ];
     const [text, setText] = useState('');
 
     useEffect(() => {
-        if (allHandle?.specialities) {
-            const myObject = allHandle?.specialities
+        if (effectiveAllHandle?.specialities) {
+            const myObject = effectiveAllHandle?.specialities
             const valuesArray = Object.values(myObject);
             setText(valuesArray.join(', '));
         }
-    }, [allHandle]);
+    }, [effectiveAllHandle]);
     useEffect(() => {
         if (allProfTake) {
             setGtprof(true);
@@ -250,11 +368,11 @@ const profileBack = () => {
 
     }, [DashboardReducer?.dashPerResponse])
     useEffect(() => {
-                /**
- * Token handle vault utility.
- * @returns {void}
- */
-const token_handle_vault = () => {
+        /**
+* Token handle vault utility.
+* @returns {void}
+*/
+        const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -283,8 +401,8 @@ const token_handle_vault = () => {
             .catch((err) => showErrorAlert("Please connect to internet", err))
     }, [isFoucs])
     useEffect(() => {
-        setAllProf(getDisplayProfession(allHandle));
-    }, [allHandle])
+        setAllProf(getDisplayProfession(effectiveAllHandle));
+    }, [effectiveAllHandle])
     const isPrimeTrial = useMemo(() => {
         return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
     }, [WebcastReducer?.PrimeCheckResponse]);
@@ -324,14 +442,14 @@ const token_handle_vault = () => {
             setPrimeitprofs(true);
         }
     }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaultprof, finalProfessionprof, takeSub, endDateStringProfile]);
-        /**
- * Profile item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const profileItem = ({ item, index }) => {
+    /**
+* Profile item utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @param {*} props.index - Nested property value.
+* @returns {JSX.Element}
+*/
+    const profileItem = ({ item, index }) => {
         return (
             <View style={{ margin: 15 }}>
                 <TouchableOpacity onPress={() => {
@@ -429,11 +547,11 @@ const profileItem = ({ item, index }) => {
 
         )
     }
-        /**
- * Handles rot.
- * @returns {*}
- */
-const handleRot = () => {
+    /**
+* Handles rot.
+* @returns {*}
+*/
+    const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);
@@ -448,7 +566,7 @@ const handleRot = () => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
-    const displayName = getDisplayName(allHandle);
+    const displayName = getDisplayName(effectiveAllHandle);
     return (
         <>
             <MyStatusBar
@@ -537,7 +655,7 @@ const handleRot = () => {
                         {allProfTake && <View style={{ paddingVertical: normalize(5), justifyContent: 'center', alignItems: "center" }}>
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#6a82ce", textAlign: "center", fontWeight: "5s00" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
                         </View>}
-                        {!isNonUsaUser && allProfTake && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
+                        {showPrimeCardButton && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
                             <View
                                 style={{
                                     height: normalize(40),
@@ -579,7 +697,7 @@ const handleRot = () => {
                                         }}
                                     />
                                 </View>
-                                {!isNonUsaUser && <Text
+                                <Text
                                     style={{
                                         fontFamily: Fonts.InterBold,
                                         fontSize: 16,
@@ -588,7 +706,7 @@ const handleRot = () => {
                                     }}
                                 >
                                     {primeitprof ? "Become a Prime Member" : primeitprofs && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ? "Become a Prime Member" : "Prime Member"}
-                                </Text>}
+                                </Text>
                             </View>
                         </TouchableOpacity>}
                     </View>
@@ -602,7 +720,7 @@ const handleRot = () => {
                 </ScrollView>
             </SafeAreaView>}
 
-            {subitprof && <PrimeCard primeadd={subitprof} setPrimeadd={setSubitprof} />}
+            {subitprof && showPrimeCardButton && <PrimeCard primeadd={subitprof} setPrimeadd={setSubitprof} />}
         </>
     )
 }

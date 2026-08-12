@@ -71,6 +71,11 @@ const DashoardVault = (props) => {
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isAccreditationUser =
+        AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.accreditation_user === true ||
+        AuthReducer?.dircetloginResponse?.user?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.user?.accreditation_user === true;
     const [statewise, setStatewise] = useState("");
     const [clisttopic, setClisttopic] = useState('');
     const [selectCountrytopic, setSelectCountrytopic] = useState([]);
@@ -440,17 +445,22 @@ const DashoardVault = (props) => {
     }, []);
 
     const hasActiveSession =
+        AuthReducer?.dircetloginResponse?.user ||
+        AuthReducer?.dircetloginResponse ||
+        AuthReducer?.directloginResponse?.user ||
+        AuthReducer?.directloginResponse ||
         AuthReducer?.signupResponse?.user ||
         AuthReducer?.loginResponse?.user ||
         AuthReducer?.againloginsiginResponse?.user ||
         AuthReducer?.verifymobileResponse?.user ||
+        DashboardReducer?.mainprofileResponse ||
         storedAuthUser;
 
     const resolvedUser = hasActiveSession
         ? (DashboardReducer?.mainprofileResponse || hasActiveSession)
         : null;
 
-    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || resolvedUser;
+    const loginUser = storedAuthUser || AuthReducer?.loginResponse?.user || AuthReducer?.dircetloginResponse?.user || AuthReducer?.dircetloginResponse || resolvedUser;
     const activeUser = loginUser?.user ? loginUser.user : loginUser;
     const isNonSubscribedNoSubscription =
         activeUser?.subscription_user == "non-subscribed" &&
@@ -462,7 +472,7 @@ const DashoardVault = (props) => {
         Boolean(WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.')
     ), [exploreTrialClicked, WebcastReducer?.PrimeCheckResponse, WebcastReducer?.PrimePaymentResponse]);
     const shouldHideCertificateAction = isNonSubscribedNoSubscription && !isPrimeTrialOrActive;
-    const userObj = resolvedUser || finalverifyvault || finalProfession;
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.dircetloginResponse?.user || AuthReducer?.dircetloginResponse || AuthReducer?.directloginResponse?.user || AuthReducer?.directloginResponse || resolvedUser || finalverifyvault || finalProfession;
     const countryName = String(
         userObj?.user_address?.country_name ||
         userObj?.user_address?.country ||
@@ -489,14 +499,25 @@ const DashoardVault = (props) => {
 * @returns {*}
 */
     const getDisplayProfession = (source) => {
-        if (!source) return "";
-        const profession = String(source?.professional_information?.profession || source?.profession || '').trim();
-        const professionType = String(source?.professional_information?.profession_type || source?.profession_type || '').trim();
+        const src = source || DashboardReducer?.mainprofileResponse || AuthReducer?.dircetloginResponse?.user || AuthReducer?.dircetloginResponse || AuthReducer?.loginResponse?.user;
+        if (!src) return "";
+        const profession = String(
+            src?.professional_information?.profession ||
+            src?.profession ||
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
+            ""
+        ).trim();
+        const professionType = String(
+            src?.professional_information?.profession_type ||
+            src?.profession_type ||
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+            ""
+        ).trim();
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     const isPhysicianProf = validHandles.has(getDisplayProfession(userObj));
 
-    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
+    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.mainprofileResponse?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
     const stateDataVault = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
     const hasUsaLicenseData =
         (Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0) ||
@@ -517,6 +538,7 @@ const DashoardVault = (props) => {
     const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj));
     const shouldShowAddLicenseCard =
         !isNonUsaUser &&
+        isPhysicianProf &&
         !fulldashbaord?.length &&
         (currentProfile === 'SkipProfile' || !allProfTake || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true);
     const nonUsaStateData = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
@@ -550,19 +572,27 @@ const DashoardVault = (props) => {
         }
     }, [stateid]);
     useEffect(() => {
+        if (isAccreditationUser) {
+            setModalShow(false);
+        }
+    }, [isAccreditationUser]);
+    useEffect(() => {
+        if (isAccreditationUser) {
+            setModalShow(false);
+        }
         if (creditwise) {
             if (creditwise?.board_data?.expiry_date) {
                 const parsedExpiry = parseExpiryDate(creditwise?.board_data?.expiry_date);
                 const today = moment().startOf('day');
                 if (!parsedExpiry.isValid()) {
-                    setModalShow(true);
+                    if (!isAccreditationUser) setModalShow(true);
                     setExpireDatecredit(true);
                     setCountdownMessagecredit('');
                 } else {
                     const targetDate = parsedExpiry.clone().startOf('day');
                     const isExpired = today.isAfter(targetDate, 'day');
                     if (isExpired) {
-                        setModalShow(true);
+                        if (!isAccreditationUser) setModalShow(true);
                         setExpireDatecredit(true);
                         setCountdownMessagecredit('');
                     } else {
@@ -768,7 +798,7 @@ const DashoardVault = (props) => {
                                 )}
                             </View>
                         )}
-                        <Loader visible={!isAsyncStorageLoaded || (!isNonUsaUser && creditwise == null) || (isNonUsaUser && loadingStatewise)} />
+                        <Loader visible={!isAsyncStorageLoaded || loadingCreditwise || (isNonUsaUser && loadingStatewise)} />
                         {shouldShowAddLicenseCard ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
@@ -790,7 +820,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : (isNonUsaUser && !hasNonUsaCertificates && !hasUsaLicenseData) ? (
+                        ) : (!isPhysicianProf || (isNonUsaUser && !hasNonUsaCertificates && !hasUsaLicenseData)) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>

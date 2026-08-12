@@ -48,6 +48,8 @@ import { createSlice } from '@reduxjs/toolkit';
  * @property {Record<string, unknown>} allreducerResponse
  * @property {Record<string, unknown>} primeTrailResponse
  * @property {Record<string, unknown>} refreshTokenResponse
+ * @property {Record<string, unknown>} directloginResponse
+ * @property {Record<string, unknown>} dircetloginResponse
  * @property {string|null} refreshToken
  * @property {string|null} headerError
  * @property {string|undefined} emailexistType
@@ -97,6 +99,8 @@ const initialState = {
   allreducerResponse: {},
   primeTrailResponse: {},
   refreshTokenResponse: {},
+  directloginResponse: {},
+  dircetloginResponse: {},
   refreshToken: null,
   headerError: null
 };
@@ -313,6 +317,34 @@ headerFailure(state, action) {
  */
 loginRequest(state, action) {
       state.status = action.type;
+    },
+    directloginRequest(state, action) {
+      state.directloginResponse = null;
+      state.dircetloginResponse = null;
+      state.status = action.type;
+    },
+    dircetloginRequest(state, action) {
+      state.directloginResponse = null;
+      state.dircetloginResponse = null;
+      state.status = action.type;
+    },
+    directloginSuccess(state, action) {
+      state.directloginResponse = action.payload;
+      state.dircetloginResponse = action.payload;
+      state.status = action.type;
+    },
+    dircetloginSuccess(state, action) {
+      state.directloginResponse = action.payload;
+      state.dircetloginResponse = action.payload;
+      state.status = action.type;
+    },
+    directloginFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+    dircetloginFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
     },
         /**
  * Reducer logic for login success state.
@@ -873,6 +905,13 @@ logoutRequest(state, action) {
  */
 logoutSuccess(state, action) {
       state.logoutResponse = action.payload;
+      state.dircetloginResponse = null;
+      state.directloginResponse = null;
+      state.loginResponse = null;
+      state.againloginsiginResponse = null;
+      state.verifymobileResponse = null;
+      state.signupResponse = null;
+      state.tokenResponse = null;
       state.status = action.type;
     },
         /**
@@ -1195,6 +1234,12 @@ export const {
   refreshTokenRequest,
   refreshTokenSuccess,
   refreshTokenFailure,
+  directloginRequest,
+  directloginSuccess,
+  directloginFailure,
+  dircetloginRequest,
+  dircetloginSuccess,
+  dircetloginFailure,
 } = AuthSlice.actions;
 /**
  * Auth reducer default export.

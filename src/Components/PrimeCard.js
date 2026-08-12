@@ -41,11 +41,11 @@ const PrimeCard = ({
     }
     setPrimeadd(false);
   };
-    /**
- * Handles primary action.
- * @returns {void}
- */
-const handlePrimaryAction = () => {
+  /**
+* Handles primary action.
+* @returns {void}
+*/
+  const handlePrimaryAction = () => {
     if (typeof onPrimaryAction === 'function') {
       onPrimaryAction();
       return;
@@ -53,11 +53,11 @@ const handlePrimaryAction = () => {
     setPrimeadd(false);
     navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimePayment" }] }))
   };
-    /**
- * Handles secondary action.
- * @returns {void}
- */
-const handleSecondaryAction = () => {
+  /**
+* Handles secondary action.
+* @returns {void}
+*/
+  const handleSecondaryAction = () => {
     if (typeof onSecondaryAction === 'function') {
       onSecondaryAction();
       return;

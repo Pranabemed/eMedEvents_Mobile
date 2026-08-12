@@ -144,10 +144,20 @@ const CreateStateInfor = (props) => {
         AuthReducer?.verifymobileResponse
     ]);
     useEffect(() => {
+        const validHandles = new Set(['Physician - MD', 'Physician - DO', 'Physician - DPM']);
+        const pi = DashboardReducer?.mainprofileResponse?.professional_information;
+        const authUser = AuthReducer?.loginResponse?.user || AuthReducer?.signupResponse?.user || AuthReducer?.againloginsiginResponse?.user || {};
+        const userProf = pi?.profession && pi?.profession_type
+            ? `${pi.profession} - ${pi.profession_type}`
+            : (authUser?.profession || '');
+
+        const isPhysicianUser = userProf ? validHandles.has(userProf) : true;
+
         const primaryLic = DashboardReducer?.mainprofileResponse?.licensures?.[0] || AuthReducer?.verifymobileResponse?.user || finalverify || {};
         const licNum = String(primaryLic?.license_number || '').trim();
         const fromDt = String(primaryLic?.from_date || primaryLic?.renewal_date || '').trim();
-        if (licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00') {
+
+        if (!isPhysicianUser || (licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00')) {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -155,7 +165,7 @@ const CreateStateInfor = (props) => {
                 })
             );
         }
-    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifymobileResponse, finalverify, props.navigation]);
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer, finalverify, props.navigation]);
     useEffect(() => {
         if (!licenseStateId) return;
         connectionrequest()

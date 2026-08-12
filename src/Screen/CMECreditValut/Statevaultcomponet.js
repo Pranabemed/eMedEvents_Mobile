@@ -30,6 +30,12 @@ import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsa
  * @returns {JSX.Element}
  */
 const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch, hideCertificateAction }) => {
+    const AuthReducer = useSelector(state => state.AuthReducer);
+    const isAccreditationUser =
+        AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.accreditation_user === true ||
+        AuthReducer?.dircetloginResponse?.user?.accreditation_user === true ||
+        AuthReducer?.directloginResponse?.user?.accreditation_user === true;
     const [loads, setLoads] = useState(false);
     const [currentProfile, setCurrentProfile] = useState('');
     useEffect(() => {
@@ -58,7 +64,6 @@ const checkProfile = async () => {
             setNonUsaFlowState(state);
         });
     }, []);
-    const AuthReducer = useSelector(state => state.AuthReducer);
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const stateData = DashboardReducer?.stateMandatoryResponse?.state_data;
     const hasUsaData = stateData && Object.keys(stateData).some(key => key !== '-1');
@@ -522,8 +527,8 @@ const cleanNumber = (value) => {
                 </View>
             </>
         </>
-        {expireDatecredit ? <Modal
-            isVisible={modalshow}
+        {(!isAccreditationUser && expireDatecredit) ? <Modal
+            isVisible={modalshow && !isAccreditationUser}
             animationIn="zoomIn"
             animationOut="zoomOut"
             backdropTransitionOutTiming={0}

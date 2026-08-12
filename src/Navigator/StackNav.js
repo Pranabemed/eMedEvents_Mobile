@@ -58,6 +58,7 @@ import HeaderSearch from '../Screen/DetailsPageWebcast/HeaderSearch';
 import ExploreCastCourse from '../Screen/DetailsPageWebcast/ExploreCastCourse';
 import FiltersTopic from '../Screen/DetailsPageWebcast/FiltersTopic';
 import AllDownlaodCatlog from '../Components/AllDownloadCatlog';
+import { handleActivityUrlNavigation } from '../Utils/Helpers/Notification/NotificationNavigation';
 import ProfileMain from '../Screen/Profile/ProfileMain';
 import AddToCart from '../Screen/DetailsPageWebcast/AddToCart';
 import InPersonStatewebcast from '../Screen/InPersonWebcast/InPersonStatewebcast';
@@ -128,6 +129,10 @@ import SplashMobile from '../Screen/Auth/SplashMobile';
  */
 const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
 import LoginChangeMail from '../Screen/Auth/LoginChangeMail';
+import { useDispatch, useSelector } from 'react-redux';
+import { dircetloginRequest, directloginRequest } from '../Redux/Reducers/AuthReducer';
+import { actvityBreakupRequest, cmenextactionRequest } from '../Redux/Reducers/CMEReducer';
+import { dashMbRequest, dashboardRequest, stateMandatoryRequest } from '../Redux/Reducers/DashboardReducer';
 import SplashMobileChange from '../Screen/Auth/SplashMobileChange';
 import LoginMobile from '../Screen/Auth/LoginMobile';
 import LoginMobileChange from '../Screen/Auth/LoginMobileChange';
@@ -135,7 +140,7 @@ import AddMobile from '../Screen/Auth/AddMobile';
 import AddMobileLogin from '../Screen/Auth/AddMobileLogin';
 import { setCurrentScreen, trackEvent, trackScreen } from '../Utils/Helpers/Analytics';
 import { navigationRef, getCurrentRoute } from "./RootNavigation";
-import { useSelector } from 'react-redux';
+
 /**
  * Deeplink bootstrap key constant.
  * @returns {string}
@@ -159,7 +164,9 @@ const isEmedDeepLink = (url) => {
  * @returns {JSX.Element}
  */
 const StackNav = props => {
-  const [conn, setConn] = useState(null)
+  const [conn, setConn] = useState(null);
+  const CMEReducer = useSelector(state => state.CMEReducer);
+  const DashboardReducer = useSelector(state => state.DashboardReducer);
   const Stack = createStackNavigator();
   const mytheme = {
     ...DarkTheme,
@@ -167,6 +174,130 @@ const StackNav = props => {
       ...DarkTheme.colors,
     },
   }
+
+  useEffect(() => {
+    if (CMEReducer?.status === 'CME/actvityBreakupSuccess' && CMEReducer?.actvityBreakupResponse) {
+      const response = CMEReducer.actvityBreakupResponse;
+      const currentText = String(response?.current_activity_text || response?.next_activity_text || '').trim();
+      const currentApi = String(response?.current_activity_api || response?.next_activity_api || '').trim().toLowerCase();
+
+      console.log('[StackNav] actvityBreakupResponse received:', { currentText, currentApi, response });
+
+      if (
+        currentText.toLowerCase() === 'certificate' ||
+        currentText.toLowerCase().includes('certificate') ||
+        currentApi.includes('certificate') ||
+        currentApi.includes('downloadcertificate') ||
+        response?.completed === 1
+      ) {
+        const rawStateData = DashboardReducer?.stateMandatoryResponse?.state_data;
+        let certificatedata = null;
+        if (rawStateData && typeof rawStateData === 'object') {
+          const stateKeys = Object.keys(rawStateData).filter(key => key !== '-1');
+          if (stateKeys.length > 0) {
+            certificatedata = {
+              ...rawStateData[stateKeys[0]],
+              state_id: stateKeys[0],
+            };
+          }
+        }
+
+        if (!certificatedata) {
+          certificatedata = {
+            state_id: response?.state_id || response?.conferenceId || response?.conference_id,
+            certificates: Array.isArray(response?.certificates)
+              ? response.certificates
+              : response?.certificate
+              ? [response.certificate]
+              : [],
+            ...response,
+          };
+        }
+
+        const licensures =
+          DashboardReducer?.dashMbResponse?.data?.licensures ||
+          DashboardReducer?.dashboardResponse?.data?.licensures;
+
+        const hasLicensures = Array.isArray(licensures) && licensures.length > 0;
+        const hasNonUsaStateData = Boolean(rawStateData?.['-1']);
+
+        if (!hasLicensures || hasNonUsaStateData) {
+          console.log('[StackNav] User has NO licensures or state_data.[-1] -> navigating to TabNav with Contact (FileCheck)');
+          navigationRef.current?.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'TabNav',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Contact',
+                        params: {
+                          boardID: certificatedata,
+                          isNonUsaUser: true,
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+            })
+          );
+        } else {
+          console.log('[StackNav] User has licensures -> navigating to TabNav with Contact (CVault)');
+          navigationRef.current?.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'TabNav',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Contact',
+                        params: {
+                          boardID: certificatedata,
+                          isNonUsaUser: false,
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+            })
+          );
+        }
+      } else if (
+        currentText === 'Survey & Feedback' ||
+        currentText.toLowerCase().includes('survey') ||
+        currentText.toLowerCase().includes('assessment') ||
+        currentText.toLowerCase().includes('feedback')
+      ) {
+        console.log('[StackNav] current_activity_text is Survey & Feedback -> navigating to PreTest');
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              { name: 'TabNav' },
+              {
+                name: 'PreTest',
+                params: {
+                  activityID: {
+                    activityID: response?.current_activity_id || response?.activity_id,
+                    conference_id: response?.conferenceId || response?.conference_id,
+                  },
+                  conferenceId: response?.conferenceId || response?.conference_id,
+                  fromNotification: true,
+                  accreditation_user: true
+                }
+              }
+            ],
+          })
+        );
+      }
+    }
+  }, [CMEReducer?.status, CMEReducer?.actvityBreakupResponse]);
 
   useEffect(() => {
     NetInfo.fetch().then(state => {
@@ -363,6 +494,7 @@ const StackNav = props => {
   const lastProcessedUrl = useRef(null);
   const lastProcessedTime = useRef(0);
   const AuthReducer = useSelector(state => state.AuthReducer);
+  const dispatch = useDispatch();
 
   const safeDecode = useCallback((value) => {
     try {
@@ -383,6 +515,19 @@ const StackNav = props => {
     }
 
     return `https://${trimmedValue}`;
+  }, []);
+
+  const normalizeDirectLoginRedirectUrl = useCallback((value) => {
+    if (typeof value !== 'string') return '';
+
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return '';
+
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmedValue)) {
+      return trimmedValue;
+    }
+
+    return `https://www.emedevents.com/${trimmedValue.replace(/^\/+/, '')}`;
   }, []);
 
   const extractNestedTargetUrl = useCallback((rawUrl) => {
@@ -470,6 +615,9 @@ const StackNav = props => {
 
     // Step 2: Clean tracking garbage
     resolvedUrl = cleanTrackingParams(resolvedUrl);
+    if (resolvedUrl && !resolvedUrl.startsWith('http://') && !resolvedUrl.startsWith('https://')) {
+      resolvedUrl = resolvedUrl.startsWith('/') ? `https://www.emedevents.com${resolvedUrl}` : `https://www.emedevents.com/${resolvedUrl}`;
+    }
     const normalizedUrl = resolvedUrl.toLowerCase();
 
     console.log('[DeepLink] Resolved URL after decoding:', resolvedUrl);
@@ -518,7 +666,9 @@ const StackNav = props => {
       'mandatory-topic',
       '/conference/',
       '/conferences/',
-      '/activity-fulfillment/assessment'
+      '/activity-fulfillment/assessment',
+      '/directlogin',
+      '/directLogin'
     ];
 
     const hasInternalPattern = internalPathPatterns.some(pattern =>
@@ -584,6 +734,13 @@ const StackNav = props => {
       if (nextAppState === 'active') {
         console.log('App returned to foreground - re-syncing auth...');
         loadAuthData();
+        Linking.getInitialURL().then((url) => {
+          if (url && (url.includes('directLogin') || url.includes('directlogin'))) {
+            console.log('[AppState] Foreground/Active directLogin URL detected:', url);
+            lastProcessedUrl.current = null;
+            handleDeepLink(url);
+          }
+        });
       }
     });
 
@@ -640,7 +797,9 @@ const StackNav = props => {
 
     // Prevent duplicate navigation / processing within 2 seconds for the same URL
     const now = Date.now();
-    if (lastProcessedUrl.current === trimmedUrl && (now - lastProcessedTime.current) < 2000) {
+    const isDirectLoginUrl = trimmedUrl.includes('directLogin') || trimmedUrl.includes('directlogin');
+    const isAssessmentUrl = trimmedUrl.includes('assessment') || trimmedUrl.includes('activity-fulfillment');
+    if (!isDirectLoginUrl && !isAssessmentUrl && lastProcessedUrl.current === trimmedUrl && (now - lastProcessedTime.current) < 2000) {
       console.log('[DeepLink] Ignoring duplicate URL trigger:', trimmedUrl);
       return;
     }
@@ -648,6 +807,34 @@ const StackNav = props => {
     lastProcessedTime.current = now;
 
     console.log('🌍 Incoming URL:', trimmedUrl);
+
+    if (trimmedUrl.includes('directLogin') || trimmedUrl.includes('directlogin')) {
+      let rawToken = '';
+      if (trimmedUrl.includes('/directLogin/')) {
+        rawToken = trimmedUrl.split('/directLogin/')[1];
+      } else if (trimmedUrl.includes('/directlogin/')) {
+        rawToken = trimmedUrl.split('/directlogin/')[1];
+      } else if (trimmedUrl.includes('directLogin/')) {
+        rawToken = trimmedUrl.split('directLogin/')[1];
+      } else if (trimmedUrl.includes('directlogin/')) {
+        rawToken = trimmedUrl.split('directlogin/')[1];
+      } else if (trimmedUrl.includes('token=')) {
+        rawToken = trimmedUrl.split('token=')[1];
+      }
+      if (rawToken && rawToken.includes('?')) {
+        rawToken = rawToken.split('?')[0];
+      }
+      if (rawToken && rawToken.includes('#')) {
+        rawToken = rawToken.split('#')[0];
+      }
+      rawToken = rawToken ? rawToken.trim() : '';
+
+      console.log('[DeepLink] DirectLogin URL detected! Extracted token:', rawToken);
+      if (rawToken) {
+        dispatch(directloginRequest({ token: rawToken }));
+        return;
+      }
+    }
 
     const {
       resolvedUrl,
@@ -686,10 +873,19 @@ const StackNav = props => {
       return;
     }
 
-    const [token, dashboard] = await Promise.all([
+    const [storedToken, dashboard] = await Promise.all([
       AsyncStorage.getItem(constants.TOKEN),
       AsyncStorage.getItem(constants.WHOLEDATA),
     ]);
+
+    const token = storedToken ||
+      AuthReducer?.dircetloginResponse?.token ||
+      AuthReducer?.directloginResponse?.token ||
+      AuthReducer?.tokenResponse ||
+      AuthReducer?.loginResponse?.token ||
+      AuthReducer?.againloginsiginResponse?.token ||
+      AuthReducer?.signupResponse?.token ||
+      AuthReducer?.verifymobileResponse?.token;
 
     // Parse host to check if it is eMedEvents
     let isEmedHost = false;
@@ -751,20 +947,50 @@ const StackNav = props => {
       });
     } else {
       // If user is logged in and it's a protected internal link, map to appropriate authenticated screen
-      if (pathname.includes('/activity-fulfillment/assessment')) {
-        const parsedUrl = new URL(resolvedUrl);
-        const con = parsedUrl.searchParams.get('con') || parsedUrl.searchParams.get('conferenceId') || parsedUrl.searchParams.get('conference_id');
-        const act = parsedUrl.searchParams.get('act') || parsedUrl.searchParams.get('activityId') || parsedUrl.searchParams.get('activity_id');
+      if (pathname.includes('/activity-fulfillment/assessment') || pathname.includes('assessment') || normalizedUrl.includes('activity-fulfillment')) {
+        let con = '';
+        let act = '';
+        let type = '';
 
-        console.log('[DeepLink] User logged in, navigating to PreTest for assessment URL:', resolvedUrl);
-        navigateToScreen("PreTest", {
-          activityID: {
-            activityID: act,
-            conference_id: con
-          },
-          conferenceId: con,
-          fromNotification: true
-        });
+        try {
+          const parsedUrl = new URL(resolvedUrl);
+          con = parsedUrl.searchParams.get('con') || parsedUrl.searchParams.get('conferenceId') || parsedUrl.searchParams.get('conference_id') || '';
+          act = parsedUrl.searchParams.get('act') || parsedUrl.searchParams.get('activityId') || parsedUrl.searchParams.get('activity_id') || '';
+          type = parsedUrl.searchParams.get('type') || '';
+        } catch (e) {
+          const queryString = resolvedUrl.includes('?') ? resolvedUrl.split('?')[1] : resolvedUrl;
+          const searchParams = new URLSearchParams(queryString);
+          con = searchParams.get('con') || searchParams.get('conferenceId') || searchParams.get('conference_id') || '';
+          act = searchParams.get('act') || searchParams.get('activityId') || searchParams.get('activity_id') || '';
+          type = searchParams.get('type') || '';
+        }
+        console.log(con, act, "fsdjfgdjksfjkjkl")
+        if (con && act) {
+          dispatch(cmenextactionRequest({ conference_id: con, activity_id: act }));
+        }
+
+        console.log('[DeepLink] User logged in, navigating directly to PreTest for assessment URL:', resolvedUrl, { con, act, type });
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              { name: 'TabNav' },
+              {
+                name: 'PreTest',
+                params: {
+                  activityID: {
+                    activityID: act,
+                    conference_id: con,
+                    type: type
+                  },
+                  conferenceId: con,
+                  fromNotification: true,
+                  accreditation_user: true
+                }
+              }
+            ],
+          })
+        );
         return;
       }
 
@@ -782,7 +1008,8 @@ const StackNav = props => {
 */
     const handleUrl = (event) => {
       const { url } = event;
-      console.log('🌍 URL received:', url);
+      console.log('🌍 Active state URL received:', url);
+      lastProcessedUrl.current = null;
       handleDeepLink(url);
     };
 
@@ -807,6 +1034,98 @@ const StackNav = props => {
   }, [handleDeepLink, isNavigationReady]); // 🔥 Run when navigation is ready
 
   useEffect(() => {
+    if (
+      AuthReducer?.status === 'Auth/dircetloginSuccess' ||
+      AuthReducer?.status === 'Auth/directloginSuccess'
+    ) {
+      (async () => {
+        const response = AuthReducer?.dircetloginResponse || AuthReducer?.directloginResponse || {};
+        console.log('[StackNav] directLogin response received:', response);
+
+        if (response?.token) {
+          AsyncStorage.setItem(constants.TOKEN, response.token).catch(() => { });
+          dispatch(dashMbRequest({}));
+          dispatch(dashboardRequest({}));
+          dispatch(stateMandatoryRequest({}));
+        }
+
+        if (response?.accreditation_user === true || response?.accreditation_user === 'true') {
+          AsyncStorage.setItem('ACCREDITATION_USER', 'true').catch(() => { });
+          AsyncStorage.setItem('BYPASS_LICENSE_EXPIRY', 'true').catch(() => { });
+        }
+
+        const pendingRedirect = await AsyncStorage.getItem('PENDING_DIRECT_LOGIN_REDIRECT');
+        const redirectUrl = normalizeDirectLoginRedirectUrl(response?.user?.redirect_url || response?.redirectUrl || pendingRedirect || '');
+        if (redirectUrl) {
+          await AsyncStorage.removeItem('PENDING_DIRECT_LOGIN_REDIRECT').catch(() => { });
+
+          let con = '';
+          let act = '';
+          let type = '';
+
+          try {
+            const parsedUrl = new URL(redirectUrl);
+            con = parsedUrl.searchParams.get('con') || parsedUrl.searchParams.get('conferenceId') || parsedUrl.searchParams.get('conference_id') || '';
+            act = parsedUrl.searchParams.get('act') || parsedUrl.searchParams.get('activityId') || parsedUrl.searchParams.get('activity_id') || '';
+            type = parsedUrl.searchParams.get('type') || '';
+          } catch (e) {
+            const queryString = redirectUrl.includes('?') ? redirectUrl.split('?')[1] : redirectUrl;
+            const searchParams = new URLSearchParams(queryString);
+            con = searchParams.get('con') || searchParams.get('conferenceId') || searchParams.get('conference_id') || '';
+            act = searchParams.get('act') || searchParams.get('activityId') || searchParams.get('activity_id') || '';
+            type = searchParams.get('type') || '';
+          }
+
+          console.log('[DirectLogin useEffect] extracted parameters:', { con, act, type, redirectUrl });
+
+          if (con) {
+            const confIdVal = Number(con) || con;
+            console.log('[DirectLogin useEffect] Calling actvityBreakupRequest with payload:', { conference_id: confIdVal });
+            dispatch(actvityBreakupRequest({ conference_id: confIdVal }));
+          }
+
+          if (redirectUrl.includes('assessment') || redirectUrl.includes('activity-fulfillment')) {
+            console.log('[DirectLogin useEffect] Resetting navigation stack for assessment URL:', { con, act, type });
+            navigationRef.current?.dispatch(
+              CommonActions.reset({
+                index: 1,
+                routes: [
+                  { name: 'TabNav' },
+                  {
+                    name: 'PreTest',
+                    params: {
+                      activityID: {
+                        activityID: act,
+                        conference_id: con,
+                        type: type
+                      },
+                      conferenceId: con,
+                      fromNotification: true,
+                      accreditation_user: response?.accreditation_user ?? true
+                    }
+                  }
+                ],
+              })
+            );
+            return;
+          }
+
+          lastProcessedUrl.current = null;
+          handleDeepLink(redirectUrl);
+          return;
+        }
+
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'TabNav' }],
+          })
+        );
+      })();
+    }
+  }, [AuthReducer?.status, AuthReducer?.dircetloginResponse, AuthReducer?.directloginResponse, dispatch, handleDeepLink, normalizeDirectLoginRedirectUrl]);
+
+  useEffect(() => {
     if (isAuthReady && isNavigationReady && pendingDeepLink) {
       console.log('Context ready, processing pending deep link:', pendingDeepLink);
       lastProcessedUrl.current = null;
@@ -819,6 +1138,16 @@ const StackNav = props => {
     try {
       const token = await AsyncStorage.getItem(constants.TOKEN);
       if (token) {
+        const pendingRedirect = await AsyncStorage.getItem('PENDING_DIRECT_LOGIN_REDIRECT');
+        if (pendingRedirect) {
+          console.log('[DeepLink] Found pending direct login redirect on reload:', pendingRedirect);
+          await AsyncStorage.removeItem('PENDING_DIRECT_LOGIN_REDIRECT');
+          AsyncStorage.setItem(DEEPLINK_BOOTSTRAP_KEY, 'true').catch(() => { });
+          lastProcessedUrl.current = null;
+          await handleDeepLink(normalizeDirectLoginRedirectUrl(pendingRedirect));
+          return;
+        }
+
         const pendingUrl = await AsyncStorage.getItem('PENDING_DEEP_LINK');
         if (pendingUrl) {
           console.log('[DeepLink] Found pending deep link after login:', pendingUrl);
@@ -831,7 +1160,7 @@ const StackNav = props => {
     } catch (e) {
       console.log('[DeepLink] Error checking pending link after login:', e);
     }
-  }, [handleDeepLink]);
+  }, [handleDeepLink, normalizeDirectLoginRedirectUrl]);
 
   useEffect(() => {
     if (isAuthReady && isNavigationReady) {

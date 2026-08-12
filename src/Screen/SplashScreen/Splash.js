@@ -279,6 +279,10 @@ const handleNavigation = async () => {
         setIsGuestConvertedUser(isGuestConvertedUserRaw === 'true');
 
         if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && !hasNavigatedRef.current) {
+          if (deepLinkBootstrapRaw || isEmedDeepLink(initialUrl) || (initialUrl && (initialUrl.includes('directLogin') || initialUrl.includes('directlogin')))) {
+            console.log('[Splash] Direct login or deep link detected, skipping Onboard reset');
+            return;
+          }
           hasNavigatedRef.current = true;
           props.navigation.dispatch(
             CommonActions.reset({
@@ -836,6 +840,17 @@ const licHandl = (profFromDashboard) => {
           }]
         })
       );
+      return;
+    }
+
+    if (
+      deepLinkBootstrapActive ||
+      AuthReducer?.status === 'Auth/dircetloginSuccess' ||
+      AuthReducer?.status === 'Auth/directloginSuccess' ||
+      AuthReducer?.dircetloginResponse?.token ||
+      AuthReducer?.directloginResponse?.token
+    ) {
+      console.log('[Splash] Deep link / DirectLogin active, bypassing Splash TabNav reset');
       return;
     }
 

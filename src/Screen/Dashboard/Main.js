@@ -31,8 +31,8 @@ import { enableFreeze } from "react-native-screens";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 /**
@@ -138,18 +138,30 @@ const buildProfessionLabel = (profession, professionType) => {
  */
 const getCountryFromIP = async (ip) => {
   try {
+    const geo = await getCountryAndDialCode();
+    if (geo && geo.country) {
+      return String(geo.country).trim().toUpperCase();
+    }
+  } catch (e) {
+    console.log('Main guest geo lookup failed:', e);
+  }
+  try {
     const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
     const res = await fetch(url);
     const text = await res.text();
-    if (text.startsWith('<')) {
-      throw new Error('HTML response');
+    if (!text.startsWith('<')) {
+      const data = JSON.parse(text);
+      if (data?.country) return String(data.country).trim().toUpperCase();
     }
-    const data = JSON.parse(text);
-    return String(data?.country || 'unknown').trim().toUpperCase();
   } catch (e) {
-    console.log('Main guest geo lookup failed:', e);
-    return 'unknown';
+    console.log('Main guest geo lookup fallback failed:', e);
   }
+  try {
+    const res = await fetch('https://freeipapi.com/api/json');
+    const data = await res.json();
+    if (data?.countryCode) return String(data.countryCode).trim().toUpperCase();
+  } catch (e) { }
+  return 'unknown';
 };
 
 /**
@@ -379,19 +391,6 @@ const Main = (props) => {
     };
   }, [isFocus]);
 
-  const isNonUsaUser = useMemo(() => {
-    const ipCountry = String(resolvedIpCountryCode || '').trim().toUpperCase();
-    const isUsaLocation = ipCountry === 'US' || ipCountry === 'USA';
-
-    if (isUsaLocation) {
-      if (nonUsaFlowState?.isNonUsa) {
-        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
-        setNonUsaFlowState(null);
-      }
-      return false;
-    }
-    return true;
-  }, [resolvedIpCountryCode, nonUsaFlowState]);
   const [showGuestPrimePrompt, setShowGuestPrimePrompt] = useState(false);
   const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState(PRIME_CARD_TEST_COUNTRY_CODE);
   const [guestVerifyCheckRequested, setGuestVerifyCheckRequested] = useState(false);
@@ -403,6 +402,79 @@ const Main = (props) => {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const primePromptVisibleRef = useRef(false);
   const primeCardDelayRef = useRef(null);
+
+  const mainProfileUserAddr = DashboardReducer?.mainprofileResponse?.user_address;
+  const directUserAddr = AuthReducer?.dircetloginResponse?.user?.user_address || AuthReducer?.dircetloginResponse?.user_address || AuthReducer?.directloginResponse?.user?.user_address || AuthReducer?.directloginResponse?.user_address;
+
+  const isAddressUsa = (
+    mainProfileUserAddr?.country_code === 'US' ||
+    mainProfileUserAddr?.country_code === 'USA' ||
+    mainProfileUserAddr?.country_name === 'UNITED STATES' ||
+    mainProfileUserAddr?.country_name === 'USA' ||
+    directUserAddr?.country_code === 'US' ||
+    directUserAddr?.country_code === 'USA' ||
+    directUserAddr?.country_name === 'UNITED STATES' ||
+    directUserAddr?.country_name === 'USA'
+  );
+
+  const isNonUsaUser = useMemo(() => {
+    const userObj =
+      DashboardReducer?.mainprofileResponse ||
+      AuthReducer?.dircetloginResponse?.user ||
+      AuthReducer?.dircetloginResponse ||
+      AuthReducer?.directloginResponse?.user ||
+      AuthReducer?.directloginResponse ||
+      AuthReducer?.loginResponse?.user;
+
+    const userCountryName = String(
+      userObj?.user_address?.country_name ||
+      userObj?.user_address?.country ||
+      userObj?.country_name ||
+      userObj?.country ||
+      ''
+    ).trim().toUpperCase();
+
+    const userCountryCode = String(
+      userObj?.user_address?.country_code ||
+      userObj?.country_code ||
+      ''
+    ).trim().toUpperCase();
+
+    const userCountryId = String(
+      userObj?.user_address?.country_id ||
+      userObj?.country_id ||
+      ''
+    ).trim();
+
+    const ipCountry = String(resolvedIpCountryCode || nonUsaFlowState?.ipCountryCode || '').trim().toUpperCase();
+
+    // 1. Check if IP Country is India or Non-USA
+    if (ipCountry === 'IN' || ipCountry === 'INDIA' || (ipCountry !== '' && !isUsaCountryCode(ipCountry))) {
+      return true;
+    }
+
+    // 2. Check if User Profile Country is India or non-USA ID (not 1 and not 233)
+    if (userCountryName === 'INDIA' || userCountryName === 'IN' || userCountryCode === 'IN' || (userCountryId && userCountryId !== '1' && userCountryId !== '233' && userCountryId !== '0')) {
+      return true;
+    }
+
+    // 3. Check explicit non-USA user flags
+    if (userObj?.is_non_usa === true || userObj?.is_non_usa === 1 || userObj?.is_non_usa === '1' || nonUsaFlowState?.isNonUsa === true) {
+      return true;
+    }
+
+    // 4. Check if USA location is positively confirmed
+    const isUsaLocation = isUsaCountryCode(ipCountry) || isUsaCountryCode(userCountryName) || isUsaCountryCode(userCountryCode) || userCountryId === '1' || userCountryId === '233' || userObj?.usa_user === true || userObj?.usa_user === 1 || userObj?.usa_user === '1' || (ipCountry === '' && isAddressUsa && nonUsaFlowState?.isNonUsa !== true);
+
+    if (isUsaLocation) {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
+    }
+    return true;
+  }, [resolvedIpCountryCode, nonUsaFlowState, isAddressUsa, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
@@ -662,9 +734,13 @@ const Main = (props) => {
   }, []);
   const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
-  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || (!isPhysicianFlow && !isNursingFlow));
+  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || isPhysicianFlow || (!isPhysicianFlow && !isNursingFlow));
+  const dashboardLicensesMain = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const hasNoLicensuresMain = !Array.isArray(dashboardLicensesMain) || dashboardLicensesMain.length === 0;
+  const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
+
   const shouldRenderNewProfession =
-    !isPhysicianFlow && !isNursingFlow && (forceNewProfession || isNonUsaUser);
+    (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || (hasNoLicensuresMain && hasNonUsaStateDataMain);
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   /**
 * Render main add license card utility.
@@ -973,6 +1049,27 @@ const Main = (props) => {
     };
     loadForcedProfessionView();
   }, [isFocus, hasActivePrimeMembership]);
+
+  useEffect(() => {
+    if (!isFocus || primeCardSessionSkipped) return;
+    const directLoginUser =
+      AuthReducer?.dircetloginResponse?.user ||
+      AuthReducer?.dircetloginResponse ||
+      AuthReducer?.directloginResponse?.user ||
+      AuthReducer?.directloginResponse ||
+      DashboardReducer?.mainprofileResponse ||
+      AuthReducer?.loginResponse?.user;
+
+    const isNonSubscribedUser =
+      directLoginUser?.subscription_user === "non-subscribed" ||
+      !directLoginUser?.subscriptions ||
+      directLoginUser?.subscriptions === 0 ||
+      (Array.isArray(directLoginUser?.subscriptions) && directLoginUser?.subscriptions.length === 0);
+
+    if (!isNonUsaUser && (isPhysicianFlow || allProfTake || hasAllProfTake) && isNonSubscribedUser && !hasActivePrimeMembership) {
+      setPrimeadd(true);
+    }
+  }, [isFocus, primeCardSessionSkipped, isNonUsaUser, isPhysicianFlow, allProfTake, hasAllProfTake, hasActivePrimeMembership, AuthReducer?.dircetloginResponse, DashboardReducer?.mainprofileResponse]);
   /**
 * Open guest verification alert utility.
 *
@@ -1037,37 +1134,20 @@ const Main = (props) => {
 * @returns {Promise<*>}
 */
   const handleGuestPrimeSkip = async () => {
-    await setGuestPrimeVerificationPending();
     try {
-      await AsyncStorage.setItem(PRIME_MEMBERSHIP_SKIPPED_KEY, 'true');
-      await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
-      await AsyncStorage.removeItem('ExploreTrialClicked');
-      setIsSkippedFlow(true);
-      setForceNewProfession(true);
-      await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
       setPrimeCardSessionSkipped(true);
-      setExploreTrialClicked(false);
-      await AsyncStorage.setItem('activeProfile', 'SkipProfile');
-      setCurrentProfile('SkipProfile');
-      require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'SkipProfile');
-      props.navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'TabNav' }],
-        })
-      );
     } catch (error) {
       console.log('handleGuestPrimeSkip flag error', error);
     }
     setPrimeadd(false);
     primePromptVisibleRef.current = false;
     setShowGuestPrimePrompt(false);
-    await requestGuestVerificationCheck();
   };
   const handlePrimeCardDismiss = async () => {
     try {
-      await AsyncStorage.setItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY, 'true');
+      await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
+      setPrimeCardSessionSkipped(true);
     } catch (error) {
       console.log('handlePrimeCardDismiss flag error', error);
     }
@@ -1130,6 +1210,21 @@ const Main = (props) => {
 */
     const loadGuestVerifyModal = async () => {
       try {
+        const [accreditationUserRaw, bypassLicenseExpiryRaw] = await Promise.all([
+          AsyncStorage.getItem('ACCREDITATION_USER'),
+          AsyncStorage.getItem('BYPASS_LICENSE_EXPIRY'),
+        ]);
+        if (
+          accreditationUserRaw === 'true' ||
+          bypassLicenseExpiryRaw === 'true' ||
+          AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+          AuthReducer?.directloginResponse?.accreditation_user === true
+        ) {
+          setShowGuestPrimePrompt(false);
+          primePromptVisibleRef.current = false;
+          setGuestVerifyModalVisible(false);
+        }
+
         if (guestVerifyNavigationRef.current) {
           return;
         }
@@ -1264,6 +1359,10 @@ const Main = (props) => {
 
         const loginUser =
           professionData ||
+          AuthReducer?.dircetloginResponse?.user ||
+          AuthReducer?.dircetloginResponse ||
+          AuthReducer?.directloginResponse?.user ||
+          AuthReducer?.directloginResponse ||
           AuthReducer?.loginResponse?.user ||
           AuthReducer?.againloginsiginResponse?.user ||
           AuthReducer?.loginsiginResponse?.user ||
@@ -1271,14 +1370,17 @@ const Main = (props) => {
 
         const activeUser = loginUser?.user ? loginUser.user : loginUser || professionData;
         const isNonSubscribedNoSubscription =
-          activeUser?.subscription_user == "non-subscribed" &&
-          (!activeUser?.subscription || activeUser?.subscription?.length === 0) &&
-          (!activeUser?.subscriptions || activeUser?.subscriptions?.length === 0);
+          (activeUser?.subscription_user === "non-subscribed" ||
+            !activeUser?.subscriptions ||
+            activeUser?.subscriptions === 0 ||
+            (Array.isArray(activeUser?.subscriptions) && activeUser?.subscriptions.length === 0)) &&
+          (!activeUser?.subscription || activeUser?.subscription?.length === 0 || activeUser?.subscription === 0);
 
         const physicianHandles = isEligibleGuestPhysician;
-        console.log(professionRaw, "ewerktkjerh");
+        console.log(professionRaw, "ewerktkjerh", activeUser, isNonSubscribedNoSubscription);
 
         if (
+          !isNonUsaUser &&
           !isPrimeCardFlowComplete &&
           (isNonSubscribedNoSubscription || isPrimeMembershipPromptPending) &&
           physicianHandles &&
@@ -1389,7 +1491,7 @@ const Main = (props) => {
       }
     };
     loadGuestVerifyModal();
-  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse]);
+  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
   const isPrimePaymentSuccess =
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
@@ -1867,7 +1969,7 @@ const Main = (props) => {
               isSubscriptionExpiredSync ||
               currentProfile == 'PrimeCard' ||
               exploreTrialClicked;
-            return (primeadd && primeCardReady && !isDrawerVisible) && <PrimeCard
+            return (!isNonUsaUser && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}
@@ -1882,7 +1984,7 @@ const Main = (props) => {
           })()}
 
           <Modal
-            isVisible={guestVerifyModalVisible && !isDrawerVisible}
+            isVisible={guestVerifyModalVisible && !isDrawerVisible && !primeadd}
             onBackdropPress={() => { }}
             onBackButtonPress={() => { }}
             animationIn="slideInUp"

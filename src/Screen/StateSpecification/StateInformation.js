@@ -89,11 +89,30 @@ const StateInformation = (props) => {
     const [noloadnew, setNoloadnew] = useState(false);
     const isFocus = useIsFocused();
     useEffect(() => {
-                /**
- * Token handle utility.
- * @returns {void}
- */
-const token_handle = () => {
+        const validHandles = new Set(['Physician - MD', 'Physician - DO', 'Physician - DPM']);
+        const pi = DashboardReducer?.mainprofileResponse?.professional_information;
+        const authUser = AuthReducer?.loginResponse?.user || AuthReducer?.signupResponse?.user || AuthReducer?.againloginsiginResponse?.user || {};
+        const userProf = pi?.profession && pi?.profession_type
+            ? `${pi.profession} - ${pi.profession_type}`
+            : (authUser?.profession || '');
+
+        const isPhysicianUser = userProf ? validHandles.has(userProf) : true;
+        if (!isPhysicianUser) {
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "TabNav" }],
+                })
+            );
+        }
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer, props.navigation]);
+
+    useEffect(() => {
+        /**
+         * Token handle utility.
+         * @returns {void}
+         */
+        const token_handle = () => {
             setTimeout(async () => {
                 const loginHandle_verifyfd = await AsyncStorage.getItem(constants.VERIFYSTATEDATA);
                 console.log(loginHandle_verifyfd, "statelicesene=================");
