@@ -403,6 +403,16 @@ const Main = (props) => {
   const primePromptVisibleRef = useRef(false);
   const primeCardDelayRef = useRef(null);
 
+  const isAccreditationUser =
+    AuthReducer?.dircetloginResponse?.accreditation_user === true ||
+    AuthReducer?.directloginResponse?.accreditation_user === true ||
+    AuthReducer?.dircetloginResponse?.accreditation_user === 'true' ||
+    AuthReducer?.directloginResponse?.accreditation_user === 'true' ||
+    AuthReducer?.dircetloginResponse?.user?.accreditation_user === true ||
+    AuthReducer?.directloginResponse?.user?.accreditation_user === true ||
+    AuthReducer?.dircetloginResponse?.user?.accreditation_user === 'true' ||
+    AuthReducer?.directloginResponse?.user?.accreditation_user === 'true';
+
   const mainProfileUserAddr = DashboardReducer?.mainprofileResponse?.user_address;
   const directUserAddr = AuthReducer?.dircetloginResponse?.user?.user_address || AuthReducer?.dircetloginResponse?.user_address || AuthReducer?.directloginResponse?.user?.user_address || AuthReducer?.directloginResponse?.user_address;
 
@@ -1079,7 +1089,7 @@ const Main = (props) => {
 * @returns {Promise<*>}
 */
   const openGuestVerificationAlert = async (user, shouldClearPendingKey = false) => {
-    if (!user) return;
+    if (!user || isAccreditationUser) return;
     if (shouldClearPendingKey) {
       try {
         await AsyncStorage.removeItem(GUEST_PRIME_VERIFICATION_PENDING_KEY);
@@ -1217,12 +1227,13 @@ const Main = (props) => {
         if (
           accreditationUserRaw === 'true' ||
           bypassLicenseExpiryRaw === 'true' ||
-          AuthReducer?.dircetloginResponse?.accreditation_user === true ||
-          AuthReducer?.directloginResponse?.accreditation_user === true
+          isAccreditationUser
         ) {
           setShowGuestPrimePrompt(false);
           primePromptVisibleRef.current = false;
           setGuestVerifyModalVisible(false);
+          setPrimeadd(false);
+          return;
         }
 
         if (guestVerifyNavigationRef.current) {
@@ -1969,7 +1980,7 @@ const Main = (props) => {
               isSubscriptionExpiredSync ||
               currentProfile == 'PrimeCard' ||
               exploreTrialClicked;
-            return (!isNonUsaUser && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+            return (!isAccreditationUser && !isNonUsaUser && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}
@@ -1984,7 +1995,7 @@ const Main = (props) => {
           })()}
 
           <Modal
-            isVisible={guestVerifyModalVisible && !isDrawerVisible && !primeadd}
+            isVisible={!isAccreditationUser && guestVerifyModalVisible && !isDrawerVisible && !primeadd}
             onBackdropPress={() => { }}
             onBackButtonPress={() => { }}
             animationIn="slideInUp"
