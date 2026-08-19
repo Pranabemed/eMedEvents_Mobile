@@ -1146,6 +1146,11 @@ const Main = (props) => {
   const handleGuestPrimeSkip = async () => {
     try {
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
+      await AsyncStorage.setItem('PrimeMembershipSkipped', 'true');
+      await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+      await AsyncStorage.removeItem('ExploreTrialClicked');
+      setCurrentProfile('SkipProfile');
+      setExploreTrialClicked(false);
       setPrimeCardSessionSkipped(true);
     } catch (error) {
       console.log('handleGuestPrimeSkip flag error', error);
@@ -1157,6 +1162,11 @@ const Main = (props) => {
   const handlePrimeCardDismiss = async () => {
     try {
       await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
+      await AsyncStorage.setItem('PrimeMembershipSkipped', 'true');
+      await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+      await AsyncStorage.removeItem('ExploreTrialClicked');
+      setCurrentProfile('SkipProfile');
+      setExploreTrialClicked(false);
       setPrimeCardSessionSkipped(true);
     } catch (error) {
       console.log('handlePrimeCardDismiss flag error', error);
@@ -1544,12 +1554,12 @@ const Main = (props) => {
   }, [endDateStringMain, takeSub]);
   const primeTrialMessage = useMemo(() => {
     return freeTrail && hsdSub
-      ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+      ? ''
       : freeTrail && daysleft == 30
-        ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+        ? ''
         : daysleft
           ? Math.abs(daysleft) > 29
-            ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+            ? ''
             : `Your free trial of premium subscription will end in ${Math.abs(
               daysleft,
             )} day(s). Subscribe now to continue accessing premium features`
@@ -1974,8 +1984,23 @@ const Main = (props) => {
           </View>
             : null}
           {(() => {
+            const userForSubCheck =
+              AuthReducer?.dircetloginResponse?.user ||
+              AuthReducer?.dircetloginResponse ||
+              AuthReducer?.directloginResponse?.user ||
+              AuthReducer?.directloginResponse ||
+              DashboardReducer?.mainprofileResponse ||
+              AuthReducer?.loginResponse?.user;
+
+            const isNonSubscribedUserCalc =
+              userForSubCheck?.subscription_user === "non-subscribed" ||
+              !userForSubCheck?.subscriptions ||
+              userForSubCheck?.subscriptions === 0 ||
+              (Array.isArray(userForSubCheck?.subscriptions) && userForSubCheck?.subscriptions.length === 0);
+
             const shouldShowPrimeCardActions = isGuestPrimeUser ||
               showGuestPrimePrompt ||
+              isNonSubscribedUserCalc ||
               props?.route?.name == 'PrimeCard' ||
               isSubscriptionExpiredSync ||
               currentProfile == 'PrimeCard' ||

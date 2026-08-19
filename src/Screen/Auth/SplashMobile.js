@@ -556,8 +556,13 @@ const licHandl = (prof) => {
     const phoneDetect =
         props?.route?.params?.Newphone?.phone ||
         props?.route?.params?.Newphone?.allNo ||
+        (typeof props?.route?.params?.Newphone === 'string' ? props?.route?.params?.Newphone : '') ||
+        AuthReducer?.changephoneResponse?.phone ||
+        AuthReducer?.changephoneResponse?.mobile ||
+        AuthReducer?.changephoneResponse?.phone_number ||
         props?.route?.params?.validPh?.validPh ||
         (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
+        props?.route?.params?.validPh?.cellno ||
         AuthReducer?.loginResponse?.user?.phone ||
         AuthReducer?.againloginsiginResponse?.user?.phone ||
         AuthReducer?.signupResponse?.user?.phone ||
@@ -570,6 +575,7 @@ const licHandl = (prof) => {
         allotpcheckddd;
 
     const phoneCode =
+        props?.route?.params?.Newphone?.phoneCode ||
         props?.route?.params?.validPh?.phonecode ||
         props?.route?.params?.mobileNo?.phoneCode ||
         props?.route?.params?.Newphone?.allNo ||

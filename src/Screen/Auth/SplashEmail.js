@@ -363,6 +363,10 @@ const toggleModal = () => setModalVisible(v => !v);
         allotpcheck;
 
     const phoneTake =
+        props?.route?.params?.Newphone?.phone ||
+        props?.route?.params?.Newphone?.allNo ||
+        AuthReducer?.changephoneResponse?.phone ||
+        AuthReducer?.changephoneResponse?.mobile ||
         props?.route?.params?.user?.phoneData ||
         props?.route?.params?.mobileNo?.phone ||
         props?.route?.params?.verifyemail?.verifyemail?.phone ||

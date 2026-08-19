@@ -71,11 +71,11 @@ const PrimePayment = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-        /**
- * Payment press utility.
- * @returns {void}
- */
-const paymentPress = () => {
+    /**
+* Payment press utility.
+* @returns {void}
+*/
+    const paymentPress = () => {
         (async () => {
             try {
                 await AsyncStorage.setItem('activeProfile', 'PrimeCard');
@@ -88,7 +88,7 @@ const paymentPress = () => {
                 console.log(e);
             }
         })();
-        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimeCard", params: { exploreTrialClicked: true } }] }))
+        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { exploreTrialClicked: true } }] }))
     }
     useEffect(() => {
         if (maskedEx && maskedEx.includes('/')) {
@@ -105,13 +105,13 @@ const paymentPress = () => {
             console.log(apiFormattedDate);
         }
     }, [maskedEx])
-        /**
- * Primepayment handle utility.
- * @returns {void}
- *
- * @remarks Does not return a value.
- */
-function primepaymentHandle() {
+    /**
+* Primepayment handle utility.
+* @returns {void}
+*
+* @remarks Does not return a value.
+*/
+    function primepaymentHandle() {
         const errors = {
             nameEmpty: 'Enter the cardholder name.',
             nameInvalid: 'Enter a valid cardholder name ',
@@ -220,11 +220,11 @@ function primepaymentHandle() {
         }
     }
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             paymentPress();
             return true;
         };
@@ -242,7 +242,7 @@ const onBackPress = () => {
                 barStyle={"light-content"}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff /> :  <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === "ios" ? (
                     <PageHeader
                         title="Prime Payment"

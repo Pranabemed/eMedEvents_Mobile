@@ -352,7 +352,7 @@ const resendEmailOTP = () => {
     }
     const isEnabled = countdown > 0;
     const email = props?.route?.params?.verifyemail?.verifyemail?.email || props?.route?.params?.NewEmail?.email || props?.route?.params?.newMail || props?.route?.params?.mobileNo || props?.route?.params?.user?.emailid || AuthReducer?.verifyResponse?.email || allotpcheck;
-    const phoneTake = props?.route?.params?.user?.phoneData || props?.route?.params?.mobileNo?.phone || props?.route?.params?.verifyemail?.verifyemail?.phone || props?.route?.params?.NewEmail?.phoneNo || props?.route?.params?.NewEmail?.phone || props?.route?.params?.NewEmail?.returnDat?.phone || props?.route?.params?.NewEmail?.returnDat?.phoneNo;
+    const phoneTake = props?.route?.params?.Newphone?.phone || props?.route?.params?.Newphone?.allNo || AuthReducer?.changephoneResponse?.phone || AuthReducer?.changephoneResponse?.mobile || props?.route?.params?.user?.phoneData || props?.route?.params?.mobileNo?.phone || props?.route?.params?.verifyemail?.verifyemail?.phone || props?.route?.params?.NewEmail?.phoneNo || props?.route?.params?.NewEmail?.phone || props?.route?.params?.NewEmail?.returnDat?.phone || props?.route?.params?.NewEmail?.returnDat?.phoneNo;
     const countryCode = props?.route?.params?.verifyemail?.verifyemail?.countryCode || props?.route?.params?.NewEmail?.returnDat?.countryCode
     console.log(phoneTake, "phoneTake",props?.route?.params)
         /**
