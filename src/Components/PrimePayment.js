@@ -79,7 +79,7 @@ const PrimePayment = (props) => {
         (async () => {
             try {
                 await AsyncStorage.setItem('activeProfile', 'PrimeCard');
-                await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+                await AsyncStorage.removeItem('ExploreTrialClicked');
                 await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
                 await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
                 await AsyncStorage.removeItem('SessionPrimeSkipped');
@@ -88,7 +88,7 @@ const PrimePayment = (props) => {
                 console.log(e);
             }
         })();
-        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { exploreTrialClicked: true } }] }))
+        navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
     }
     useEffect(() => {
         if (maskedEx && maskedEx.includes('/')) {

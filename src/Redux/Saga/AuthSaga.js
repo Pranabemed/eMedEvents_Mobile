@@ -438,6 +438,10 @@ const storeVerifyStateData = async (data) => {
     }
     const jsonData = JSON.stringify(finalUpdate);
     await AsyncStorage.setItem(constants.VERIFYSTATEDATA, jsonData);
+    const phoneToStore = data?.phone || data?.mobile || data?.phone_number || data?.cellno || finalUpdate?.phone || finalUpdate?.mobile;
+    if (phoneToStore) {
+      await AsyncStorage.setItem(constants.PHONE, phoneToStore);
+    }
     console.log('VERIFYSTATEDATA successfully saved.');
   } catch (error) {
     console.error('Error saving data:', error);
@@ -550,6 +554,11 @@ export function* chnageMobilenoSaga(action) {
   try {
     let response = yield call(postApi, 'user/modifyEmailorPhone', action.payload, header);
     if (response?.data?.success == true) {
+      const newPhone = action.payload?.phone || response?.data?.phone || response?.data?.user?.phone;
+      if (newPhone) {
+        yield call(AsyncStorage.setItem, constants.PHONE, newPhone);
+        yield call(storeVerifyStateData, { phone: newPhone });
+      }
       yield put(changephoneSuccess(response?.data));
       // yield call(AsyncStorage.setItem, constants.PHONEOTP, response?.data?.phone_otp);
       showErrorAlert(response.data.msg);

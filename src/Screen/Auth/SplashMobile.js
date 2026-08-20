@@ -192,11 +192,11 @@ const SplashMobile = (props) => {
 
     // ─── Fetch phone from AsyncStorage ────────────────────────────────────────
     useEffect(() => {
-                /**
- * Fetch utility.
- * @returns {void}
- */
-const fetch = () => {
+        /**
+* Fetch utility.
+* @returns {void}
+*/
+        const fetch = () => {
             setTimeout(async () => {
                 const ph = await AsyncStorage.getItem(constants.PHONE);
                 setAllotpcheckddd(ph || '');
@@ -272,13 +272,13 @@ const fetch = () => {
 
     // Restore persisted timer on mount (handles back-navigation scenario)
     useEffect(() => {
-                /**
- * Restore utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const restore = async () => {
+        /**
+* Restore utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const restore = async () => {
             const storedStart = await AsyncStorage.getItem('otpStartTime');
             const storedDuration = await AsyncStorage.getItem('otpInitialDuration');
             if (storedStart && storedDuration) {
@@ -411,13 +411,13 @@ const restore = async () => {
     }, [DashboardReducer.status]);
 
     // ─── OTP input handlers ───────────────────────────────────────────────────
-        /**
- * Handles change.
- * @param {*} text - Input value.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const handleChange = (text, index) => {
+    /**
+* Handles change.
+* @param {*} text - Input value.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const handleChange = (text, index) => {
         if (text?.length > 1) {
             const pasted = text.replace(/[^0-9]/g, '');
             const newOtp = [...otpmobile];
@@ -436,14 +436,14 @@ const handleChange = (text, index) => {
         if (text && index < 5) inputsmobile.current[index + 1]?.focus();
     };
 
-        /**
- * Handles key press.
- * @param {Object} props - Input object.
- * @param {*} props.nativeEvent - Nested property value.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const handleKeyPress = ({ nativeEvent }, index) => {
+    /**
+* Handles key press.
+* @param {Object} props - Input object.
+* @param {*} props.nativeEvent - Nested property value.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const handleKeyPress = ({ nativeEvent }, index) => {
         if (nativeEvent.key === 'Backspace') {
             if (otpmobile[index] === '') {
                 if (index > 0) inputsmobile.current[index - 1]?.focus();
@@ -455,36 +455,36 @@ const handleKeyPress = ({ nativeEvent }, index) => {
         }
     };
 
-        /**
- * Clear all otpfields mobile utility.
- * @returns {void}
- */
-const clearAllOTPFieldsMobile = () => {
+    /**
+* Clear all otpfields mobile utility.
+* @returns {void}
+*/
+    const clearAllOTPFieldsMobile = () => {
         setOtpmobile(new Array(6).fill(''));
         inputsmobile.current[0]?.focus();
     };
 
     // ─── Verify OTP ───────────────────────────────────────────────────────────
-        /**
- * Verify handlevalid utility.
- * @returns {void}
- */
-const verifyHandlevalid = () => {
+    /**
+* Verify handlevalid utility.
+* @returns {void}
+*/
+    const verifyHandlevalid = () => {
         const obj = { verify_type: 'phone' };
         connectionrequest()
             .then(() => dispatch(verifymobileRequest(obj)))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-        /**
- * Verify handle utility.
- * @returns {void}
- */
-const verifyHandle = () => {
+    /**
+* Verify handle utility.
+* @returns {void}
+*/
+    const verifyHandle = () => {
         const enteredOTP = otpmobile.join('').trim();
-        let serverOTP = 
-            AuthReducer?.resendmobileotpResponse?.phone_otp || 
-            props?.route?.params?.Newphone?.Verifycell || 
+        let serverOTP =
+            AuthReducer?.resendmobileotpResponse?.phone_otp ||
+            props?.route?.params?.Newphone?.Verifycell ||
             AuthReducer?.resendemailotpResponse?.phone_otp;
 
         const cleanServerOTP = serverOTP ? serverOTP.toString().trim() : "";
@@ -497,41 +497,41 @@ const verifyHandle = () => {
         }
     };
 
-        /**
- * Toggle modal utility.
- * @returns {*}
- */
-const toggleModal = () => setModalVisible(v => !v);
+    /**
+* Toggle modal utility.
+* @returns {*}
+*/
+    const toggleModal = () => setModalVisible(v => !v);
 
     // ─── Helper API dispatchers ───────────────────────────────────────────────
-        /**
- * State dashboard data utility.
- * @param {*} id - Input value.
- * @returns {void}
- */
-const stateDashboardData = (id) => {
+    /**
+* State dashboard data utility.
+* @param {*} id - Input value.
+* @returns {void}
+*/
+    const stateDashboardData = (id) => {
         connectionrequest()
             .then(() => dispatch(stateDashboardRequest({ state_id: id })))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-        /**
- * State report utility.
- * @param {*} id - Input value.
- * @returns {void}
- */
-const stateReport = (id) => {
+    /**
+* State report utility.
+* @param {*} id - Input value.
+* @returns {void}
+*/
+    const stateReport = (id) => {
         connectionrequest()
             .then(() => dispatch(stateReportingRequest({ state_id: id })))
             .catch(err => showErrorAlert('Please connect to internet', err));
     };
 
-        /**
- * Lic handl utility.
- * @param {*} prof - Input value.
- * @returns {void}
- */
-const licHandl = (prof) => {
+    /**
+* Lic handl utility.
+* @param {*} prof - Input value.
+* @returns {void}
+*/
+    const licHandl = (prof) => {
         connectionrequest()
             .then(() => dispatch(licesensRequest(prof)))
             .catch(err => showErrorAlert('Please connect to Internet', err));
@@ -560,6 +560,7 @@ const licHandl = (prof) => {
         AuthReducer?.changephoneResponse?.phone ||
         AuthReducer?.changephoneResponse?.mobile ||
         AuthReducer?.changephoneResponse?.phone_number ||
+        allotpcheckddd ||
         props?.route?.params?.validPh?.validPh ||
         (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
         props?.route?.params?.validPh?.cellno ||
@@ -571,8 +572,7 @@ const licHandl = (prof) => {
         props?.route?.params?.newPh ||
         props?.route?.params?.mobileNo?.mobileNo ||
         DashboardReducer?.mainprofileResponse?.user_address?.contact_no ||
-        props?.route?.params?.Newphone?.phoneCode ||
-        allotpcheckddd;
+        props?.route?.params?.Newphone?.phoneCode;
 
     const phoneCode =
         props?.route?.params?.Newphone?.phoneCode ||

@@ -18,6 +18,8 @@ import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 
 /**
  * Reusable SplashMobileChange component.
@@ -34,21 +36,33 @@ let status = "";
  */
 const SplashMobileChange = (props) => {
     const [phone, setPhone] = useState("");
-      const [mobileHd, setMobileHd] = useState("");
+    const [mobileHd, setMobileHd] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-        /**
- * Handles mobil nochange.
- * @returns {void}
- */
-const handleMobilNOchange = () => {
+    /**
+* Handles mobil nochange.
+* @returns {void}
+*/
+    const resolveCountryCode = (paramObj) => {
+        if (!paramObj) return '+1';
+        let code = paramObj?.phonoCd?.countryCode || paramObj?.phonoCd || paramObj?.PhoneCdO || paramObj?.phonecode || paramObj?.phoneCode;
+        if (typeof code === 'object' && code !== null) {
+            code = code.countryCode || code.dialCode || code.phonecode || '+1';
+        }
+        let str = String(code || '').trim();
+        if (!str || str === 'undefined' || str === '[object Object]') return '+1';
+        if (!str.startsWith('+') && /^\d+$/.test(str)) return `+${str}`;
+        return str;
+    };
+
+    const handleMobilNOchange = () => {
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
         } else if (!mobilePattern.test(phone)) {
             showErrorAlert("Cell no should be 10 - 15 digit ");
         } else {
-            const getPhCd = props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.phonecode || props?.route?.params?.Newphone?.PhoneCdO
+            const getPhCd = resolveCountryCode(props?.route?.params?.Newphone);
             let obj = {
                 "verify_type": "phone",
                 "phone": `${getPhCd}${phone}`,
@@ -84,51 +98,67 @@ const handleMobilNOchange = () => {
     }, [phone]);
     const mobileRegex = /^\d{10,15}$/;
     const isButtonEnabled = mobileRegex.test(phone);
-    if (status == '' || AuthReducer.status != status) {
-        switch (AuthReducer.status) {
-            case 'Auth/changephoneRequest':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/changephoneSuccess':
-                status = AuthReducer.status;
-                const getPhCdSent = props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.phonecode || props?.route?.params?.Newphone?.PhoneCdO
-                props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: `${getPhCdSent}${phone}` } });
-                break;
-            case 'Auth/changephoneFailure':
-                status = AuthReducer.status;
-                break;
-        }
-    }
-        /**
- * Final back utility.
- * @returns {void}
- */
-const finalBack = () => {
-        const getPhCdSent = props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.Newphone?.phonecode || props?.route?.params?.Newphone?.phonecode || props?.route?.params?.Newphone?.PhoneCdO;
-        const wholeNo = props?.route?.params?.Newphone?.phonoCd?.nationalNumber || props?.route?.params?.Newphone?.Newphone?.validPh || props?.route?.params?.Newphone?.Newphone;
-        props.navigation.navigate("SplashMobile", { Newphone: { phoneCode:`${getPhCdSent}${wholeNo}`, allNo: `${getPhCdSent}${wholeNo}`, "phone": phone ? phone : props?.route?.params?.Newphone?.validPh, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: `${getPhCdSent}${phone}` } })
-    }
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input) => {
-    const cleaned = input.replace(/\D/g, '').slice(0, 10);
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    const prevStatusRef = useRef(AuthReducer?.status || '');
+    useEffect(() => {
+        const prev = prevStatusRef.current;
+        prevStatusRef.current = AuthReducer.status;
 
-    if (match) {
-      let formatted = '';
-      if (match[1]) formatted = `(${match[1]}`;
-      if (match[2]) formatted += `) ${match[2]}`;
-      if (match[3]) formatted += `-${match[3]}`;
-      return formatted;
+        if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
+            const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
+            if (phone) {
+                AsyncStorage.setItem(constants.PHONE, phone).catch(() => { });
+            }
+            props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
+        }
+    }, [AuthReducer.status, phone]);
+    const resolvePhoneNumber = (phoneState, routeParams) => {
+        if (phoneState && phoneState.trim().length > 0) return phoneState.trim().replace(/\D/g, '');
+        const np = routeParams?.Newphone;
+        let ph = '';
+        if (typeof np === 'string') {
+            ph = np;
+        } else if (typeof np === 'object' && np !== null) {
+            ph = np.phone || np.allNo || np.validPh || np.Newphone?.validPh || np.Newphone || np.cellno || '';
+            if (typeof ph === 'object' && ph !== null) {
+                ph = ph.validPh || ph.phone || ph.allNo || ph.cellno || '';
+            }
+        }
+        if (!ph || typeof ph !== 'string') {
+            const vp = routeParams?.validPh;
+            if (typeof vp === 'string') ph = vp;
+            else if (typeof vp === 'object' && vp !== null) ph = vp.validPh || vp.phone || vp.cellno || '';
+        }
+        return String(ph || '').replace(/\D/g, '');
+    };
+
+
+
+    const finalBack = () => {
+        const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
+        const origPhone = resolvePhoneNumber(phone, props?.route?.params);
+        props.navigation.navigate("SplashMobile", { Newphone: { phoneCode: getPhCdSent, allNo: origPhone, "phone": origPhone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp } })
     }
-    return input;
-  };
-  useLayoutEffect(() => {
-          props.navigation.setOptions({ gestureEnabled: false });
-      }, []);
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input) => {
+        const cleaned = input.replace(/\D/g, '').slice(0, 10);
+        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+
+        if (match) {
+            let formatted = '';
+            if (match[1]) formatted = `(${match[1]}`;
+            if (match[2]) formatted += `) ${match[2]}`;
+            if (match[3]) formatted += `-${match[3]}`;
+            return formatted;
+        }
+        return input;
+    };
+    useLayoutEffect(() => {
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -184,7 +214,7 @@ const formatPhoneNumber = (input) => {
                                 <TextInput
                                     editable={false}
                                     maxLength={5}
-                                    value={`${props?.route?.params?.Newphone?.phonoCd?.countryCode || props?.route?.params?.Newphone?.PhoneCdO} -`}
+                                    value={`${resolveCountryCode(props?.route?.params?.Newphone)} -`}
                                     style={{ height: normalize(40), width: normalize(48), paddingVertical: 0, fontSize: 14, color: "#000000", fontFamily: Fonts.InterMedium }}
                                     keyboardType="default"
                                 />

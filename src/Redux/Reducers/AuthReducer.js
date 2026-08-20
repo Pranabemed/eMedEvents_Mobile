@@ -731,6 +731,13 @@ changephoneRequest(state, action) {
  */
 changephoneSuccess(state, action) {
       state.changephoneResponse = action.payload;
+      const newPh = action.payload?.phone || action.payload?.mobile || action.payload?.phone_number;
+      if (newPh) {
+        if (state.loginResponse?.user) state.loginResponse.user.phone = newPh;
+        if (state.verifymobileResponse?.user) state.verifymobileResponse.user.phone = newPh;
+        if (state.againloginsiginResponse?.user) state.againloginsiginResponse.user.phone = newPh;
+        if (state.signupResponse?.user) state.signupResponse.user.phone = newPh;
+      }
       state.status = action.type;
     },
         /**

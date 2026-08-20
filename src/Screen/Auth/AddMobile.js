@@ -88,21 +88,19 @@ const handleMobilNOchange = () => {
     }, [phone]);
     const mobileRegex = /^\d{10,15}$/;
     const isButtonEnabled = mobileRegex.test(phone);
-    if (status == '' || AuthReducer.status != status) {
-        switch (AuthReducer.status) {
-            case 'Auth/changephoneRequest':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/changephoneSuccess':
-                status = AuthReducer.status;
-                const getPhCdSent = addCountry;
-                props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: `${getPhCdSent}${phone}` } });
-                break;
-            case 'Auth/changephoneFailure':
-                status = AuthReducer.status;
-                break;
+    const prevStatusRef = useRef(AuthReducer?.status || '');
+    useEffect(() => {
+        const prev = prevStatusRef.current;
+        prevStatusRef.current = AuthReducer.status;
+
+        if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
+            const getPhCdSent = addCountry;
+            if (phone) {
+                AsyncStorage.setItem(constants.PHONE, phone).catch(() => {});
+            }
+            props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
-    }
+    }, [AuthReducer.status, phone, addCountry]);
         /**
  * Formats phone number.
  * @param {*} input - Input value.

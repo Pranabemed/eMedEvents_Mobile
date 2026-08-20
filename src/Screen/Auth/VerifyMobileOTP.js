@@ -724,8 +724,14 @@ const VerifyMobileOTP = (props) => {
     const phoneDetect =
         props?.route?.params?.Newphone?.phone ||
         props?.route?.params?.Newphone?.allNo ||
+        (typeof props?.route?.params?.Newphone === 'string' ? props?.route?.params?.Newphone : '') ||
+        AuthReducer?.changephoneResponse?.phone ||
+        AuthReducer?.changephoneResponse?.mobile ||
+        AuthReducer?.changephoneResponse?.phone_number ||
+        allotpcheckddd ||
         props?.route?.params?.validPh?.validPh ||
         (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
+        props?.route?.params?.validPh?.cellno ||
         AuthReducer?.loginResponse?.user?.phone ||
         AuthReducer?.againloginsiginResponse?.user?.phone ||
         AuthReducer?.signupResponse?.user?.phone ||
@@ -733,10 +739,9 @@ const VerifyMobileOTP = (props) => {
         AuthReducer?.verifyResponse?.phone ||
         props?.route?.params?.newPh ||
         props?.route?.params?.mobileNo?.mobileNo ||
-        props?.route?.params?.Newphone?.phoneCode ||
-        allotpcheckddd;
+        props?.route?.params?.Newphone?.phoneCode;
 
-    const phoneCodeDetect = props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.Newphone?.phoneCode || '';
+    const phoneCodeDetect = props?.route?.params?.Newphone?.phoneCode || props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || '';
     console.log(phoneDetect, "phonedetect=========", AuthReducer)
     const isUsaPhoneCode = isUsaCountryCode(phoneCodeDetect) || String(phoneCodeDetect || '').trim().toUpperCase().startsWith('+1');
     const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect, isUsaIp || isUsaPhoneCode);

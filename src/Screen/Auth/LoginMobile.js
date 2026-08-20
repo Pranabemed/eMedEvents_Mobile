@@ -561,6 +561,7 @@ const licHandl = (prof) => {
         AuthReducer?.changephoneResponse?.phone ||
         AuthReducer?.changephoneResponse?.mobile ||
         AuthReducer?.changephoneResponse?.phone_number ||
+        allotpcheckddd ||
         props?.route?.params?.validPh?.validPh ||
         (typeof props?.route?.params?.validPh === 'string' ? props?.route?.params?.validPh : '') ||
         props?.route?.params?.validPh?.cellno ||
@@ -572,8 +573,7 @@ const licHandl = (prof) => {
         props?.route?.params?.newPh ||
         props?.route?.params?.mobileNo?.mobileNo ||
         DashboardReducer?.mainprofileResponse?.user_address?.contact_no ||
-        props?.route?.params?.Newphone?.phoneCode ||
-        allotpcheckddd;
+        props?.route?.params?.Newphone?.phoneCode;
 
     const phoneCode =
         props?.route?.params?.Newphone?.phoneCode ||
