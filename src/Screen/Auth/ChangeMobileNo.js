@@ -17,12 +17,9 @@ import { changephoneRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 
 /**
  * Reusable ChangeMobileNo component.

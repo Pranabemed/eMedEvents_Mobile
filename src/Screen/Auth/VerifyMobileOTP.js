@@ -315,52 +315,12 @@ const VerifyMobileOTP = (props) => {
     const startTimeRef = useRef(0);
     const initialDurationRef = useRef(0);
     const timerRef = useRef(null);
-    useEffect(() => {
-        const storedStartTime = AsyncStorage.getItem('otpStartTime');
-        const storedDuration = AsyncStorage.getItem('otpInitialDuration');
-
-        if (storedStartTime && storedDuration) {
-            const parsedStartTime = parseInt(storedStartTime, 10);
-            const parsedDuration = parseInt(storedDuration, 10);
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - parsedStartTime) / 1000);
-            const remaining = Math.max(parsedDuration - elapsedSeconds, 0);
-
-            if (remaining > 0) {
-                startTimeRef.current = parsedStartTime;
-                initialDurationRef.current = parsedDuration;
-                setCountdown(remaining);
-                startTimer();
-            } else {
-                AsyncStorage.removeItem('otpStartTime');
-                AsyncStorage.removeItem('otpInitialDuration');
-            }
-        }
-
-        return () => clearInterval(timerRef.current);
-    }, []);
-
-    useEffect(() => {
-        startTimer();
-        return () => clearInterval(timerRef.current);
-    }, []);
-    console.log("newphone------", props?.route?.params)
-
 
     const startTimer = useCallback(() => {
         clearInterval(timerRef.current);
-        if (!startTimeRef.current) {
-            startTimeRef.current = Date.now();
-            initialDurationRef.current = countdown;
-            AsyncStorage.setItem('otpStartTime', startTimeRef.current.toString());
-            AsyncStorage.setItem('otpInitialDuration', initialDurationRef.current.toString());
-        }
-
         timerRef.current = setInterval(() => {
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - startTimeRef.current) / 1000);
-            const remaining = initialDurationRef.current - elapsedSeconds;
-
+            const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+            const remaining = initialDurationRef.current - elapsed;
             if (remaining <= 0) {
                 clearInterval(timerRef.current);
                 setCountdown(0);
@@ -371,24 +331,45 @@ const VerifyMobileOTP = (props) => {
                 setCountdown(remaining);
             }
         }, 1000);
-    }, [countdown]);
+    }, []);
 
     const startNewTimer = useCallback((duration) => {
         clearInterval(timerRef.current);
         AsyncStorage.removeItem('otpStartTime');
         AsyncStorage.removeItem('otpInitialDuration');
-        startTimeRef.current = 0;
-        timerRef.current = null;
+        startTimeRef.current = Date.now();
+        initialDurationRef.current = duration;
         setCountdown(duration);
-    }, []);
-
-    useEffect(() => {
-        if (countdown > 0 && !timerRef.current) {
+        if (duration > 0) {
+            AsyncStorage.setItem('otpStartTime', startTimeRef.current.toString());
+            AsyncStorage.setItem('otpInitialDuration', initialDurationRef.current.toString());
             startTimer();
         }
-    }, [countdown, startTimer]);
+    }, [startTimer]);
 
     useEffect(() => {
+        const restore = async () => {
+            const storedStart = await AsyncStorage.getItem('otpStartTime');
+            const storedDuration = await AsyncStorage.getItem('otpInitialDuration');
+            if (storedStart && storedDuration) {
+                const parsedStart = parseInt(storedStart, 10);
+                const parsedDuration = parseInt(storedDuration, 10);
+                const elapsed = Math.floor((Date.now() - parsedStart) / 1000);
+                const remaining = Math.max(parsedDuration - elapsed, 0);
+                if (remaining > 0) {
+                    startTimeRef.current = parsedStart;
+                    initialDurationRef.current = parsedDuration;
+                    setCountdown(remaining);
+                    startTimer();
+                } else {
+                    AsyncStorage.removeItem('otpStartTime');
+                    AsyncStorage.removeItem('otpInitialDuration');
+                }
+            } else {
+                startNewTimer(300);
+            }
+        };
+        restore();
         return () => clearInterval(timerRef.current);
     }, []);
 
@@ -814,12 +795,6 @@ const VerifyMobileOTP = (props) => {
                 <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                     <Loader
                         visible={AuthReducer?.status == 'Auth/verifymobileRequest' || noload || AuthReducer?.status == 'Auth/resendmobileotpRequest'} />
-                    {/* <View style={Platform.OS === 'ios' ? { top: normalize(10), justifyContent: "center", alignItems: "center" } : { top: normalize(40), marginRight: normalize(10), justifyContent: "center", alignContent: "center" }}>
-                        <Image
-                            source={Imagepath.eMedfulllogo}
-                            style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }}
-                        />
-                    </View> */}
                     <View style={styles.headerContainer}>
                         <Text style={[styles.headerText]}>{"Verify Cell Number"}</Text>
 
@@ -858,6 +833,7 @@ const VerifyMobileOTP = (props) => {
                                     placeholderTextColor={Colorpath.locText}
                                     ref={(ref) => (inputsmobile.current[index] = ref)}
                                     value={digit}
+                                    editable={true}
                                     onChangeText={(text) => {
                                         const filteredText = text.replace(/[^0-9]/g, '');
                                         handleChange(filteredText, index);

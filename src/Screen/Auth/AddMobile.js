@@ -19,6 +19,8 @@ import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 
 /**
  * Reusable AddMobile component.
@@ -39,11 +41,11 @@ const AddMobile = (props) => {
     const [addCountry, setAddCountry] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-        /**
- * Handles mobil nochange.
- * @returns {void}
- */
-const handleMobilNOchange = () => {
+    /**
+* Handles mobil nochange.
+* @returns {void}
+*/
+    const handleMobilNOchange = () => {
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
@@ -96,17 +98,17 @@ const handleMobilNOchange = () => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = addCountry;
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, phone).catch(() => {});
+                AsyncStorage.setItem(constants.PHONE, phone).catch(() => { });
             }
             props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
     }, [AuthReducer.status, phone, addCountry]);
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input) => {
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input) => {
         const cleaned = input.replace(/\D/g, '').slice(0, 10);
         const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -119,12 +121,12 @@ const formatPhoneNumber = (input) => {
         }
         return input;
     };
-        /**
- * Formats indian phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatIndianPhoneNumber = (input) => {
+    /**
+* Formats indian phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -144,14 +146,14 @@ const formatIndianPhoneNumber = (input) => {
         CA: '+1',
         SG: '+65',
     };
-        /**
- * Returns country from ip.
- *
- * @async
- * @param {*} ip - Input value.
- * @returns {Promise<*>}
- */
-const getCountryFromIP = async (ip) => {
+    /**
+* Returns country from ip.
+*
+* @async
+* @param {*} ip - Input value.
+* @returns {Promise<*>}
+*/
+    const getCountryFromIP = async (ip) => {
         try {
             const res = await fetch(`https://ipinfo.io/${ip}/json`);
             const text = await res.text();
@@ -168,13 +170,13 @@ const getCountryFromIP = async (ip) => {
     const ipAddress = getPublicIP(); // global value
     useEffect(() => {
         if (!ipAddress) return; // ⛔ wait until IP exists
-                /**
- * Fetch country utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const fetchCountry = async () => {
+        /**
+* Fetch country utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const fetchCountry = async () => {
             const countryCode = await getCountryFromIP(ipAddress);
             if (countryCode) {
                 const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
@@ -184,11 +186,11 @@ const fetchCountry = async () => {
         fetchCountry();
     }, [ipAddress]);
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(

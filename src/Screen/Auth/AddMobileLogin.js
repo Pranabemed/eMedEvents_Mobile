@@ -17,13 +17,10 @@ import { changephoneRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import constants from '../../Utils/Helpers/constants';
 
 /**
  * Reusable AddMobileLogin component.
@@ -39,23 +36,23 @@ const AddMobileLogin = (props) => {
     const [addCount, setAddCount] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-        /**
- * Handles mobil nochange.
- * @returns {void}
- */
-const handleMobilNOchange = () => {
+    /**
+* Handles mobil nochange.
+* @returns {void}
+*/
+    const handleMobilNOchange = () => {
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
         } else if (!mobilePattern.test(phone)) {
             showErrorAlert("Cell no should be 10 - 15 digit ");
         } else {
-            const getPhCd = addCount ;
+            const getPhCd = addCount;
             let obj = addCount == "+91" ? {
                 "verify_type": "phone",
                 "phone": `${getPhCd}${phone}`,
-            }:{
-                 "verify_type": "phone",
+            } : {
+                "verify_type": "phone",
                 "phone": `${getPhCd}${mobileHd}`
             }
             connectionrequest()
@@ -96,18 +93,18 @@ const handleMobilNOchange = () => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = addCount;
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, phone).catch(() => {});
+                AsyncStorage.setItem(constants.PHONE, phone).catch(() => { });
             }
             props.navigation.navigate("LoginMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
     }, [AuthReducer.status, phone, addCount]);
 
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input) => {
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input) => {
         const cleaned = input.replace(/\D/g, '').slice(0, 10);
         const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
 
@@ -120,12 +117,12 @@ const formatPhoneNumber = (input) => {
         }
         return input;
     };
-        /**
- * Formats indian phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatIndianPhoneNumber = (input) => {
+    /**
+* Formats indian phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -145,14 +142,14 @@ const formatIndianPhoneNumber = (input) => {
         CA: '+1',
         SG: '+65',
     };
-        /**
- * Returns country from ip.
- *
- * @async
- * @param {*} ip - Input value.
- * @returns {Promise<*>}
- */
-const getCountryFromIP = async (ip) => {
+    /**
+* Returns country from ip.
+*
+* @async
+* @param {*} ip - Input value.
+* @returns {Promise<*>}
+*/
+    const getCountryFromIP = async (ip) => {
         try {
             const res = await fetch(`https://ipinfo.io/${ip}/json`);
             const text = await res.text();
@@ -169,13 +166,13 @@ const getCountryFromIP = async (ip) => {
     const ipAddress = getPublicIP(); // global value
     useEffect(() => {
         if (!ipAddress) return; // ⛔ wait until IP exists
-                /**
- * Fetch country utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const fetchCountry = async () => {
+        /**
+* Fetch country utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const fetchCountry = async () => {
             const countryCode = await getCountryFromIP(ipAddress);
             if (countryCode) {
                 const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
@@ -185,11 +182,11 @@ const fetchCountry = async () => {
         fetchCountry();
     }, [ipAddress]);
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             return true;
         };
         const backHandler = BackHandler.addEventListener(
@@ -260,17 +257,17 @@ const onBackPress = () => {
                                     editable
                                     maxLength={15}
                                     onChangeText={text => {
-                                           if (addCount == "+91") {
-                                                const formatted = formatIndianPhoneNumber(text);
-                                                setMobileHd(formatted);
-                                                const rawDigits = formatted.replace(/\D/g, '');
-                                                setPhone(rawDigits);
-                                            } else if (addCount == "+1") {
-                                                const formatted = formatPhoneNumber(text);
-                                                setMobileHd(formatted);
-                                                const rawDigits = formatted.replace(/\D/g, '');
-                                                setPhone(rawDigits);
-                                            }
+                                        if (addCount == "+91") {
+                                            const formatted = formatIndianPhoneNumber(text);
+                                            setMobileHd(formatted);
+                                            const rawDigits = formatted.replace(/\D/g, '');
+                                            setPhone(rawDigits);
+                                        } else if (addCount == "+1") {
+                                            const formatted = formatPhoneNumber(text);
+                                            setMobileHd(formatted);
+                                            const rawDigits = formatted.replace(/\D/g, '');
+                                            setPhone(rawDigits);
+                                        }
                                     }}
                                     value={mobileHd}
                                     style={{ height: normalize(40), width: normalize(228), paddingVertical: 0, fontSize: 14, color: "#000000", fontFamily: Fonts.InterMedium }}
