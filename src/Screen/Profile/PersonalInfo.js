@@ -17,6 +17,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo'
 import { licesensRequest, professionRequest, specializationRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { useDispatch, useSelector } from 'react-redux'
+import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { searchStateNameFunction } from '../DetailsPageWebcast/SearchStatename'
@@ -27,7 +28,7 @@ import { professionInfoRequest } from '../../Redux/Reducers/ProfileReducer'
 import { chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer'
 import Loader from '../../Utils/Helpers/Loader'
 import Video from 'react-native-video'
-import { dashPerRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
+import { dashboardRequest, dashMbRequest, dashPerRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
 import { AppContext } from '../GlobalSupport/AppContext'
 import InputField from '../../Components/CellInput'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
@@ -175,32 +176,39 @@ const PersonalInfo = (props) => {
         props.navigation.goBack();
     }
     useEffect(() => {
-        if (props?.route?.params?.personal) {
-            const profession = props?.route?.params?.personal?.professional_information?.profession;
-            const profession_type = props?.route?.params?.personal?.professional_information?.profession_type;
-            /**
+        const source =
+            props?.route?.params?.personal ||
+            DashboardReducer?.mainprofileResponse ||
+            AuthReducer?.loginResponse?.user ||
+            AuthReducer?.againloginsiginResponse?.user ||
+            AuthReducer?.verifymobileResponse?.user ||
+            null;
+
+        if (!source) return;
+
+        const profession = source?.professional_information?.profession || source?.profession;
+        const profession_type = source?.professional_information?.profession_type || source?.profession_type;
+        /**
 * Clean utility.
 * @param {*} value - Input value.
 * @returns {*}
 */
-            const clean = (value) => {
-                if (value == null) return '';
-                return String(value).trim();
-            };
-            const cleanedProfession = clean(profession);
-            const cleanedProfessionType = clean(profession_type);
-            const combinedValue =
-                cleanedProfession && cleanedProfessionType
-                    ? `${cleanedProfession} - ${cleanedProfessionType}`
-                    : cleanedProfession || cleanedProfessionType;
+        const clean = (value) => {
+            if (value == null) return '';
+            return String(value).trim();
+        };
+        const cleanedProfession = clean(profession);
+        const cleanedProfessionType = clean(profession_type);
+        const combinedValue =
+            cleanedProfession && cleanedProfessionType
+                ? `${cleanedProfession} - ${cleanedProfessionType}`
+                : cleanedProfession || cleanedProfessionType;
 
-            setCountry(combinedValue || '');
-            // setCountry(`${props?.route?.params?.personal?.professional_information?.profession} - ${props?.route?.params?.personal?.professional_information?.profession_type}`);
-            setSelectedOption(props?.route?.params?.personal?.professional_information?.dea_registered);
-            const npiNumber = props?.route?.params?.personal?.professional_information?.npi_number;
-            setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
-        }
-    }, [props?.route?.params?.personal])
+        setCountry(combinedValue || '');
+        setSelectedOption(source?.professional_information?.dea_registered);
+        const npiNumber = source?.professional_information?.npi_number;
+        setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
+    }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user])
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
     /**
 * Specaillized utility.
@@ -298,6 +306,19 @@ const PersonalInfo = (props) => {
                     ProfileReducer?.professionInfoResponse?.user
                 );
                 if (isProfessionSuccess) {
+                    const updatedUser = ProfileReducer?.professionInfoResponse?.user || ProfileReducer?.personalInfoResponse?.user;
+                    if (updatedUser) {
+                        (async () => {
+                            try {
+                                const storedProf = await AsyncStorage.getItem(constants.PROFESSION);
+                                const parsedProf = storedProf ? JSON.parse(storedProf) : {};
+                                const merged = { ...parsedProf, ...updatedUser };
+                                await AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(merged));
+                            } catch (e) {
+                                console.log('Error updating PROFESSION storage:', e);
+                            }
+                        })();
+                    }
                     const latestProfessionInfo = ProfileReducer?.latestProfessionInfo || {};
                     const latestProfessionLabel = buildProfessionLabel(
                         latestProfessionInfo?.profession,
@@ -306,21 +327,62 @@ const PersonalInfo = (props) => {
                     showErrorAlert("Professional information updated successfully.");
                     dispatch(mainprofileRequest({}));
                     dispatch(dashPerRequest({}));
-                    if (latestProfessionLabel) {
-                        dispatch(licesensRequest(latestProfessionLabel));
+                    dispatch(dashMbRequest({}));
+                    dispatch(dashboardRequest({}));
+                    const activeLicensesList =
+                        DashboardReducer?.mainprofileResponse?.licensures ||
+                        DashboardReducer?.dashPerResponse?.data?.licensures ||
+                        DashboardReducer?.dashboardResponse?.data?.licensures ||
+                        userObj?.licensures;
+                    const hasActiveLicenses = Boolean(Array.isArray(activeLicensesList) && activeLicensesList.length > 0);
+                    const hasLicensureStatesAvailable = Boolean(
+                        Array.isArray(AuthReducer?.licesensResponse?.licensure_states) &&
+                        AuthReducer?.licesensResponse?.licensure_states.length > 0
+                    );
+
+                    console.log(ProfileReducer?.professionInfoResponse, "log-----------",!hasActiveLicenses , hasLicensureStatesAvailable);
+                    if (!hasActiveLicenses && hasLicensureStatesAvailable) {
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{
+                                    name: "CreateStateInfor",
+                                    params: {
+                                        dataVerify: {
+                                            dataVerify: "Nodasta",
+                                            allDat: ProfileReducer?.personalInfoResponse?.user ||
+                                                ProfileReducer?.contactInfoResponse?.user ||
+                                                ProfileReducer?.professionInfoResponse?.user ||
+                                                userObj,
+                                        },
+                                        allowStateInfoFlow: true,
+                                    }
+                                }],
+                            })
+                        );
+                    } else if (!hasActiveLicenses) {
+                        props.navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{
+                                    name: "CreateStateInfor",
+                                    params: {
+                                        dataVerify: {
+                                            dataVerify: "Nodasta",
+                                            allDat: ProfileReducer?.personalInfoResponse?.user ||
+                                                ProfileReducer?.contactInfoResponse?.user ||
+                                                ProfileReducer?.professionInfoResponse?.user ||
+                                                userObj,
+                                        },
+                                        allowStateInfoFlow: true,
+                                    }
+                                }],
+                            })
+                        );
+                    } else {
+                        props.navigation.goBack();
                     }
-                    markNonUsaStateLicenseFlowCompleted();
-                    props.navigation.navigate("CreateStateInfor", {
-                        dataVerify: {
-                            dataVerify: "Nodasta",
-                            allDat: ProfileReducer?.personalInfoResponse?.user ||
-                                ProfileReducer?.contactInfoResponse?.user ||
-                                ProfileReducer?.professionInfoResponse?.user ||
-                                userObj,
-                        }
-                    });
                 }
-                console.log(ProfileReducer?.professionInfoResponse, "log-----------");
                 break;
             case 'Profile/professionInfoFailure':
                 status1 = ProfileReducer.status;
@@ -361,9 +423,12 @@ const PersonalInfo = (props) => {
     const handleProfession = (did) => {
         setCountry(did);
         setcountrypicker(false);
-        specaillized(did?.split(' - ')[0])
+        specaillized(did?.split(' - ')[0]);
         setFormData("");
-    }
+        if (did) {
+            dispatch(licesensRequest(did));
+        }
+    };
     /**
 * Handles search.
 * @param {*} text - Input value.
@@ -397,6 +462,15 @@ const PersonalInfo = (props) => {
         setstatepicker(false);
         setSearchState("");
         setSelectedSpecialities([]);
+    };
+
+    const handleSpecialitySubmit = () => {
+        setstatepicker(false);
+        setSearchState("");
+        setSelectedSpecialities([]);
+        if (country) {
+            dispatch(licesensRequest(country));
+        }
     };
 
     /**
@@ -534,6 +608,7 @@ const PersonalInfo = (props) => {
                     previousSpec={previousSpec}
                     setSpeids={setSpeids}
                     speids={speids}
+                    onSubmit={handleSpecialitySubmit}
                 /> : <>
                     <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                         {Platform.OS === "ios" ? (

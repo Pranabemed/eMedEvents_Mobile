@@ -144,20 +144,24 @@ const CreateStateInfor = (props) => {
         AuthReducer?.verifymobileResponse
     ]);
     useEffect(() => {
-        const validHandles = new Set(['Physician - MD', 'Physician - DO', 'Physician - DPM']);
+        const normalizeHandle = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '').replace(/-/g, '');
+        const validHandles = new Set(['physicianmd', 'physiciando', 'physiciandpm']);
         const pi = DashboardReducer?.mainprofileResponse?.professional_information;
         const authUser = AuthReducer?.loginResponse?.user || AuthReducer?.signupResponse?.user || AuthReducer?.againloginsiginResponse?.user || {};
+        const routeAllowStateInfoFlow = props?.route?.params?.allowStateInfoFlow === true;
         const userProf = pi?.profession && pi?.profession_type
             ? `${pi.profession} - ${pi.profession_type}`
-            : (authUser?.profession || '');
+            : (authUser?.profession && authUser?.profession_type
+                ? `${authUser.profession} - ${authUser.profession_type}`
+                : (authUser?.profession || ''));
 
-        const isPhysicianUser = userProf ? validHandles.has(userProf) : true;
+        const isPhysicianUser = userProf ? validHandles.has(normalizeHandle(userProf)) : true;
 
         const primaryLic = DashboardReducer?.mainprofileResponse?.licensures?.[0] || AuthReducer?.verifymobileResponse?.user || finalverify || {};
         const licNum = String(primaryLic?.license_number || '').trim();
         const fromDt = String(primaryLic?.from_date || primaryLic?.renewal_date || '').trim();
 
-        if (!isPhysicianUser || (licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00')) {
+        if (!routeAllowStateInfoFlow && (!isPhysicianUser || (licNum && (fromDt || primaryLic?.to_date) && fromDt !== '0000-00-00'))) {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,

@@ -1307,7 +1307,18 @@ export function* userPrimeCheck(action) {
     let response = yield call(postApi, 'User/saveUserPrimeTrial', action.payload, header);
     if (response?.data?.success == true) {
       yield put(primeTrailSuccess(response?.data));
-      // showErrorAlert(response.data.message);
+      try {
+        const storedProfession = yield call(AsyncStorage.getItem, constants.PROFESSION);
+        if (storedProfession) {
+          const parsed = JSON.parse(storedProfession);
+          parsed.subscription_user = 'free';
+          if (!parsed.subscriptions) parsed.subscriptions = [];
+          yield call(AsyncStorage.setItem, constants.PROFESSION, JSON.stringify(parsed));
+        }
+        yield call(AsyncStorage.setItem, constants.GUEST_PRIME_USER, 'false');
+      } catch (e) {
+        console.log('Error updating PROFESSION storage on primeTrailSuccess', e);
+      }
     } else {
       yield put(primeTrailFailure(response.data));
       // showErrorAlert(response.data);

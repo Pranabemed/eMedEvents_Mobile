@@ -517,14 +517,14 @@ const DashoardVault = (props) => {
     };
     const isPhysicianProf = validHandles.has(getDisplayProfession(userObj));
 
-    const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.mainprofileResponse?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
+    const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || DashboardReducer?.mainprofileResponse?.licensures || [];
     const stateDataVault = DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
     const hasUsaLicenseData =
         (Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0) ||
         (stateDataVault && Object.keys(stateDataVault).some(key => key !== '-1')) ||
         (Array.isArray(selectCountrytopic) && selectCountrytopic.length > 0) ||
         Boolean(AuthReducer?.staticdataResponse?.state) ||
-        Boolean(creditwise?.license_number || licesense);
+        Boolean(creditwise?.license_number || licesense || DashboardReducer?.mainprofileResponse?.license_number);
 
     const isNonUsaUser = !isUsaProfile && !hasUsaLicenseData && !(isPhysicianProf && hasUsaLicenseData) && (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState));
 
@@ -535,7 +535,7 @@ const DashoardVault = (props) => {
         }
     }, [isUsaProfile, hasUsaLicenseData, nonUsaFlowState]);
     const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(creditwise?.license_number || licesense);
-    const allProfTake = isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj));
+    const allProfTake = (isProfileReady && currentProfile !== 'SkipProfile' && validHandles.has(getDisplayProfession(userObj))) || hasUsaLicenseData;
     const shouldShowAddLicenseCard =
         !isNonUsaUser &&
         isPhysicianProf &&
@@ -820,7 +820,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </View>
                             </View>
-                        ) : (!isPhysicianProf || (isNonUsaUser && !hasNonUsaCertificates && !hasUsaLicenseData)) ? (
+                        ) : (!hasUsaLicenseData && !isPhysicianProf && (!isNonUsaUser || !hasNonUsaCertificates)) ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>

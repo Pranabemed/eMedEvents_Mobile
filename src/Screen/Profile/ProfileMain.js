@@ -124,7 +124,7 @@ const ProfileMain = (props) => {
     const getDisplayProfession = (source) => {
         if (!source) return "";
         const profession = read(source?.professional_information?.profession || source?.profession);
-        const professionType = read(source?.professional_information?.profession_type || source?.profession_type);
+        const professionType = read(source?.professional_information?.profession_type || source?.profession_type || source?.professional_information?.designation || source?.designation);
         return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
     };
     useEffect(() => {
@@ -217,8 +217,8 @@ const ProfileMain = (props) => {
         AuthReducer?.directloginResponse?.user?.accreditation_user === true;
 
     const effectiveAllHandle =
-        allHandle ||
         DashboardReducer?.mainprofileResponse ||
+        allHandle ||
         AuthReducer?.dircetloginResponse?.user ||
         AuthReducer?.dircetloginResponse ||
         AuthReducer?.directloginResponse?.user ||
@@ -226,8 +226,8 @@ const ProfileMain = (props) => {
         AuthReducer?.loginResponse?.user ||
         AuthReducer?.againloginsiginResponse?.user ||
         AuthReducer?.verifymobileResponse?.user ||
-        finalverifyvaultprof ||
-        finalProfessionprof;
+        finalProfessionprof ||
+        finalverifyvaultprof;
 
     const rawProfName = read(
         effectiveAllHandle?.professional_information?.profession ||
@@ -318,25 +318,20 @@ const ProfileMain = (props) => {
         directLoginUser?.subscriptions === 0 ||
         (Array.isArray(directLoginUser?.subscriptions) && directLoginUser?.subscriptions.length === 0);
 
-    const hasLicensuresData =
-        (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer?.mainprofileResponse?.licensures?.length > 0) ||
-        (Array.isArray(DashboardReducer?.dashPerResponse?.data?.licensures) && DashboardReducer?.dashPerResponse?.data?.licensures?.length > 0) ||
-        (Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures) && DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0);
+    const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
+    const hasLicensuresData = dashboardLicenses.length > 0;
+    const hasLicensureStates = Array.isArray(AuthReducer?.licesensResponse?.licensure_states) && AuthReducer?.licesensResponse?.licensure_states.length > 0;
 
     const isPhysicianUser = isPhysicianProfMDDODPM && (!isAccreditationUser || hasLicensuresData);
-    const allProfTake = isPhysicianUser;
+    const allProfTake = dashboardLicenses.length > 0 || (hasLicensureStates && isPhysicianProfMDDODPM);
     const isNonUsaUser = !isPhysicianUser;
     const showPrimeCardButton = isPhysicianUser && isUsaIpAddress;
     console.log(showPrimeCardButton, "showPrimeCardButton====", isNonSubscribedUser)
-    const profileData = allProfTake ? [
+    const profileData = [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },
         { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
-        { id: 2, name: "State Licenses", Img: Imagepath.StateImg },
+        ...(allProfTake ? [{ id: 2, name: "State Licenses", Img: Imagepath.StateImg }] : []),
         { id: 3, name: "Certification Boards", Img: Imagepath.BoardImg },
-        { id: 5, name: "Change Password", Img: Imagepath.PassChange }
-    ] : [
-        { id: 0, name: "Contact Information", Img: Imagepath.Profile },
-        { id: 1, name: "Professional Information", Img: Imagepath.ProfImg },
         { id: 5, name: "Change Password", Img: Imagepath.PassChange }
     ];
     const [text, setText] = useState('');
@@ -401,13 +396,36 @@ const ProfileMain = (props) => {
             .catch((err) => showErrorAlert("Please connect to internet", err))
     }, [isFoucs])
     useEffect(() => {
-        setAllProf(getDisplayProfession(effectiveAllHandle));
-    }, [effectiveAllHandle])
+        const computedProf =
+            getDisplayProfession(DashboardReducer?.mainprofileResponse) ||
+            getDisplayProfession(finalProfessionprof) ||
+            getDisplayProfession(finalverifyvaultprof) ||
+            getDisplayProfession(AuthReducer?.againloginsiginResponse?.user) ||
+            getDisplayProfession(AuthReducer?.loginResponse?.user) ||
+            getDisplayProfession(AuthReducer?.verifymobileResponse?.user) ||
+            getDisplayProfession(AuthReducer?.directloginResponse?.user) ||
+            getDisplayProfession(AuthReducer?.dircetloginResponse?.user) ||
+            getDisplayProfession(allHandle) ||
+            (rawProfName && rawProfType ? `${rawProfName} - ${rawProfType}` : (rawProfName || rawProfType || ""));
+        setAllProf(computedProf);
+    }, [
+        DashboardReducer?.mainprofileResponse,
+        finalProfessionprof,
+        finalverifyvaultprof,
+        AuthReducer?.againloginsiginResponse?.user,
+        AuthReducer?.loginResponse?.user,
+        AuthReducer?.verifymobileResponse?.user,
+        AuthReducer?.directloginResponse?.user,
+        AuthReducer?.dircetloginResponse?.user,
+        allHandle,
+        rawProfName,
+        rawProfType
+    ]);
     const isPrimeTrial = useMemo(() => {
         return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
     }, [WebcastReducer?.PrimeCheckResponse]);
     const takeSub = isPrimeTrial || finalProfessionprof?.subscription_user == "free" || AuthReducer?.loginResponse?.user?.subscription_user == "free" || AuthReducer?.againloginsiginResponse?.user?.subscription_user == "free" || finalverifyvaultprof?.subscription_user == "non-subscribed";
-    console.log(takeSub, "yakegfjghjf-------", allProfTake, "sfgdjkghf=====");
+    console.log(takeSub, "yakegfjghjf-------", allProfTake, "sfgdjkghf=====", allProf);
     const endDateStringProfile =
         WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
         AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfessionprof?.subscriptions?.[0]?.end_date;
@@ -618,19 +636,18 @@ const ProfileMain = (props) => {
                         {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
                             <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF", fontWeight: "bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
                             <View style={{
-                                width: "60%",
+                                width: "90%",
                                 justifyContent: "center",
                                 alignItems: "center"
                             }}>
                                 <Text
-                                    numberOfLines={1}
                                     style={{
                                         fontFamily: Fonts.InterSemiBold,
                                         fontSize: 14,
                                         color: "#FFFFFF",
                                         textAlign: "center",
                                         lineHeight: 20,
-                                        fontWeight: "bold"
+                                        fontWeight: "bold",
                                     }}
                                 >
                                     {allProf}

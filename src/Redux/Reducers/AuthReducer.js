@@ -1095,6 +1095,19 @@ primeTrailRequest(state, action) {
 primeTrailSuccess(state, action) {
       state.primeTrailResponse = action.payload;
       state.status = action.type;
+      const updatedUser = action.payload?.user || action.payload?.data?.user;
+      if (updatedUser) {
+        if (state.loginResponse?.user) state.loginResponse.user = { ...state.loginResponse.user, ...updatedUser };
+        if (state.signupResponse?.user) state.signupResponse.user = { ...state.signupResponse.user, ...updatedUser };
+        if (state.verifymobileResponse?.user) state.verifymobileResponse.user = { ...state.verifymobileResponse.user, ...updatedUser };
+        if (state.againloginsiginResponse?.user) state.againloginsiginResponse.user = { ...state.againloginsiginResponse.user, ...updatedUser };
+      } else {
+        const patch = { subscription_user: 'free', subscriptions: [{ status: 'active', type: 'trial' }] };
+        if (state.loginResponse?.user) state.loginResponse.user = { ...state.loginResponse.user, ...patch };
+        if (state.signupResponse?.user) state.signupResponse.user = { ...state.signupResponse.user, ...patch };
+        if (state.verifymobileResponse?.user) state.verifymobileResponse.user = { ...state.verifymobileResponse.user, ...patch };
+        if (state.againloginsiginResponse?.user) state.againloginsiginResponse.user = { ...state.againloginsiginResponse.user, ...patch };
+      }
     },
         /**
  * Reducer logic for prime trail failure state.

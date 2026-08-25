@@ -571,9 +571,16 @@ const Main = (props) => {
         ],
         supportedProfessionHandles
       );
-  const allProfTake = resolvedProfessionHandle ? physicianHandles.has(resolvedProfessionHandle) : false;
+
+  const cleanCurrentProf = String(dashboardProfession || authProfessionInfo?.profession || finalProfessionmain?.profession || '').toLowerCase();
+  const cleanCurrentType = String(dashboardProfessionType || authProfessionInfo?.profession_type || finalProfessionmain?.profession_type || '').toLowerCase();
+
+  const isPhysicianHandleMatch = physicianHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('physician') || ['md', 'do', 'dpm'].includes(cleanCurrentType);
+  const isNursingHandleMatch = nursingHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('nursing') || ['rn', 'aprn', 'cna', 'lpn'].includes(cleanCurrentType);
+
+  const allProfTake = isPhysicianHandleMatch;
   const isPhysicianFlow = allProfTake;
-  const isNursingFlow = nursingHandles.has(resolvedProfessionHandle);
+  const isNursingFlow = isNursingHandleMatch && !isPhysicianFlow;
 
   useEffect(() => {
     if (allProfTake) {
@@ -586,8 +593,8 @@ const Main = (props) => {
       setHasEnables(true);
     }
   }, [enables]);
-  const shouldHoldSkeleton = !isAsyncStorageLoaded || ((isPhysicianFlow || isNursingFlow) && !isDashboardProfessionReady);
-  const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+  const shouldHoldSkeleton = !isAsyncStorageLoaded;
+  const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
     DashboardReducer?.mainprofileResponse?.licensures?.length ||
     DashboardReducer?.mainprofileResponse?.license_number ||
@@ -619,11 +626,13 @@ const Main = (props) => {
     if (!isFocus) return;
 
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || {};
-    const profession = String(profInfo.profession || '').trim();
-    const profType = String(profInfo.profession_type || '').trim();
+    const professionRaw = String(profInfo.profession || '').trim();
+    const profTypeRaw = String(profInfo.profession_type || profInfo.designation || '').trim();
 
-    if (!profession || !profType) return;
-    const professionLabel = `${profession} - ${profType}`;
+    if (!professionRaw) return;
+    const cleanProf = professionRaw.split(' - ')[0].trim();
+    const cleanType = profTypeRaw || (professionRaw.split(' - ')[1] || '').trim();
+    const professionLabel = cleanProf && cleanType ? `${cleanProf} - ${cleanType}` : professionRaw;
 
     if (lastLicenseProfRef.current !== professionLabel) {
       console.log('[Main.js/LicensureSync] Change detected:', { old: lastLicenseProfRef.current, new: professionLabel });
@@ -634,8 +643,6 @@ const Main = (props) => {
           dispatch(licesensRequest(professionLabel));
         })
         .catch(err => console.log('Licensure refresh failed', err));
-    } else {
-      console.log('[Main.js/LicensureSync] No change, skipping.');
     }
   }, [isFocus, DashboardReducer?.mainprofileResponse?.professional_information]);
 
@@ -655,10 +662,6 @@ const Main = (props) => {
     if (!isFocus) return;
     connectionrequest()
       .then(() => {
-        // 🔹 Only show shimmer if we don't have data yet (prevents flicker on tab switch)
-        if (!DashboardReducer?.dashboardResponse?.data) {
-          setShowLoader(false);
-        }
         dispatch(PrimeCheckRequest({}));
         dispatch(mainprofileRequest({}));
         dispatch(dashPerRequest({}));
@@ -670,18 +673,12 @@ const Main = (props) => {
   // Keep the main page on skeleton until dashboard profession info is ready.
   useEffect(() => {
     if (!isFocus) return;
-    if (shouldHoldSkeleton) {
+    if (!isAsyncStorageLoaded) {
       setShowLoader(false);
       return;
     }
-    if (!isPhysicianFlow && !isNursingFlow) {
-      setShowLoader(true);
-      return;
-    }
-    if (DashboardReducer?.dashboardResponse?.data) {
-      setShowLoader(true);
-    }
-  }, [isFocus, shouldHoldSkeleton, isPhysicianFlow, isNursingFlow, DashboardReducer?.dashboardResponse?.data]);
+    setShowLoader(true);
+  }, [isFocus, isAsyncStorageLoaded, DashboardReducer?.status]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -838,11 +835,12 @@ const Main = (props) => {
           const board_special_json = board_special ? JSON.parse(board_special) : null;
           const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
           const professionSubscriptionUser = String(profession_data_json?.subscription_user || '').trim().toLowerCase();
+          console.log(professionSubscriptionUser, 'professionData======112');
           const professionSubscriptions = Array.isArray(profession_data_json?.subscriptions) ? profession_data_json.subscriptions : [];
           const isPrimeProfileFromProfession = professionSubscriptionUser === 'non-subscribed' && professionSubscriptions.length === 0;
           setFinalverifyvaultmain(board_special_json);
           setFinalProfessionmain(profession_data_json);
-          setIsGuestPrimeUser(stablePrimeFlagRaw === 'true' || isPrimeProfileFromProfession);
+          setIsGuestPrimeUser(isPrimeProfileFromProfession);
           setIsGuestPrimeReady(true);
           setIsAsyncStorageLoaded(true);
         } catch (error) {
@@ -934,9 +932,16 @@ const Main = (props) => {
         const professionSubscriptionUser = String(professionData?.subscription_user || '').trim().toLowerCase();
         const professionSubscriptions = Array.isArray(professionData?.subscriptions) ? professionData.subscriptions : [];
         const isPrimeProfileFromProfession = professionSubscriptionUser === 'non-subscribed' && professionSubscriptions.length === 0;
-        const isPrimeProfile = stablePrimeFlag || isPrimeProfileFromProfession;
+        const isPrimeProfile = isPrimeProfileFromProfession;
         setIsGuestPrimeUser(isPrimeProfile);
-        setCurrentProfile(profile || (isPrimeProfile ? 'PrimeCard' : null));
+        if (!isPrimeProfile) {
+          if (profile === 'PrimeCard') {
+            await AsyncStorage.removeItem('activeProfile');
+          }
+          setCurrentProfile(profile === 'PrimeCard' ? null : profile);
+        } else {
+          setCurrentProfile(profile || 'PrimeCard');
+        }
         setIsGuestPrimeReady(true);
       } catch (error) {
         console.log('Error loading activeProfile', error);
@@ -1068,18 +1073,24 @@ const Main = (props) => {
       AuthReducer?.directloginResponse?.user ||
       AuthReducer?.directloginResponse ||
       DashboardReducer?.mainprofileResponse ||
-      AuthReducer?.loginResponse?.user;
+      AuthReducer?.loginResponse?.user ||
+      finalProfessionmain;
 
-    const isNonSubscribedUser =
-      directLoginUser?.subscription_user === "non-subscribed" ||
-      !directLoginUser?.subscriptions ||
-      directLoginUser?.subscriptions === 0 ||
-      (Array.isArray(directLoginUser?.subscriptions) && directLoginUser?.subscriptions.length === 0);
+    const subUser = String(directLoginUser?.subscription_user || '').trim().toLowerCase();
+    const subList = Array.isArray(directLoginUser?.subscriptions) ? directLoginUser.subscriptions : [];
+    const isNonSubscribedUser = (subUser === "non-subscribed" || subUser === "" || !directLoginUser?.subscription_user) && subList.length === 0;
 
-    if (!isNonUsaUser && (isPhysicianFlow || allProfTake || hasAllProfTake) && isNonSubscribedUser && !hasActivePrimeMembership) {
+    const isHasActiveFreeTrial =
+      exploreTrialClicked ||
+      AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+      (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0) ||
+      subUser === "free" ||
+      subUser === "subscribed";
+
+    if (!isNonUsaUser && (isPhysicianFlow || allProfTake || hasAllProfTake) && isNonSubscribedUser && !hasActivePrimeMembership && !isHasActiveFreeTrial) {
       setPrimeadd(true);
     }
-  }, [isFocus, primeCardSessionSkipped, isNonUsaUser, isPhysicianFlow, allProfTake, hasAllProfTake, hasActivePrimeMembership, AuthReducer?.dircetloginResponse, DashboardReducer?.mainprofileResponse]);
+  }, [isFocus, primeCardSessionSkipped, isNonUsaUser, isPhysicianFlow, allProfTake, hasAllProfTake, hasActivePrimeMembership, exploreTrialClicked, AuthReducer?.status, AuthReducer?.primeTrailResponse, AuthReducer?.dircetloginResponse, DashboardReducer?.mainprofileResponse, finalProfessionmain]);
   /**
 * Open guest verification alert utility.
 *
@@ -1391,7 +1402,15 @@ const Main = (props) => {
           AuthReducer?.signupResponse?.user;
 
         const activeUser = loginUser?.user ? loginUser.user : loginUser || professionData;
+        const hasActivePrimeTrial =
+          isExploreTrialClicked ||
+          AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+          (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0) ||
+          activeUser?.subscription_user === "free" ||
+          activeUser?.subscription_user === "subscribed";
+
         const isNonSubscribedNoSubscription =
+          !hasActivePrimeTrial &&
           (activeUser?.subscription_user === "non-subscribed" ||
             !activeUser?.subscriptions ||
             activeUser?.subscriptions === 0 ||
@@ -1404,6 +1423,8 @@ const Main = (props) => {
         if (
           !isNonUsaUser &&
           !isPrimeCardFlowComplete &&
+          !isExploreTrialClicked &&
+          !hasActivePrimeTrial &&
           (isNonSubscribedNoSubscription || isPrimeMembershipPromptPending) &&
           physicianHandles &&
           !isSessionSkippedVal
@@ -1555,12 +1576,12 @@ const Main = (props) => {
   }, [endDateStringMain, takeSub]);
   const primeTrialMessage = useMemo(() => {
     return freeTrail && hsdSub
-      ? ''
+      ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
       : freeTrail && daysleft == 30
-        ? ''
+        ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
         : daysleft
           ? Math.abs(daysleft) > 29
-            ? ''
+            ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
             : `Your free trial of premium subscription will end in ${Math.abs(
               daysleft,
             )} day(s). Subscribe now to continue accessing premium features`
@@ -1880,7 +1901,9 @@ const Main = (props) => {
                     {currentProfile === 'SkipProfile'
                       ? (isPhysicianFlow
                         ? <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : <NewProfession profileType="SkipProfile" finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                        : isNursingFlow
+                          ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          : <NewProfession profileType="SkipProfile" finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
                       : shouldRenderNewProfession
                         ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                         : props?.route?.name === 'PrimeCard' || isGuestPrimeUser
@@ -1888,7 +1911,9 @@ const Main = (props) => {
                             ? ((exploreTrialClicked && currentProfile !== 'SkipProfile')
                               ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                               : <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
-                            : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                            : isNursingFlow
+                              ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                              : <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
                           : isPhysicianFlow
                             ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                             : isNursingFlow
@@ -2010,7 +2035,19 @@ const Main = (props) => {
               isSubscriptionExpiredSync ||
               currentProfile == 'PrimeCard' ||
               exploreTrialClicked;
-            return (!isAccreditationUser && !isNonUsaUser && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+
+            const hasActivePrimeTrialRender =
+              exploreTrialClicked ||
+              AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+              (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0) ||
+              userForSubCheck?.subscription_user === "free" ||
+              userForSubCheck?.subscription_user === "subscribed";
+
+            const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
+            const subListCheck = Array.isArray(userForSubCheck?.subscriptions) ? userForSubCheck.subscriptions : (Array.isArray(finalProfessionmain?.subscriptions) ? finalProfessionmain.subscriptions : []);
+            const isStrictlyNonSubscribed = (subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && subListCheck.length === 0;
+
+            return (!isAccreditationUser && !isNonUsaUser && isStrictlyNonSubscribed && !hasActivePrimeTrialRender && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}

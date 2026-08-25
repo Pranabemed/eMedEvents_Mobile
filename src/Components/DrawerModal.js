@@ -165,9 +165,15 @@ export default function DrawerModal(props) {
 
   const isPrimeUserActive = Boolean(isPrimeSubscribed || isPrimeTrialActive || isPrimePaymentActive);
 
+  const resolvedSubscriptionUser =
+    activeUser?.subscription_user ||
+    finalProfession?.subscription_user ||
+    finalverifyvault?.subscription_user ||
+    AuthReducer?.againloginsiginResponse?.user?.subscription_user;
+
   const isNonSubscribedNoSubscription =
     !isPrimeUserActive &&
-    (activeUser?.subscription_user == "non-subscribed" || !isPrimeSubscribed);
+    (resolvedSubscriptionUser == "non-subscribed" || !isPrimeSubscribed);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);

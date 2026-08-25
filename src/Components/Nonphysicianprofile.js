@@ -28,6 +28,12 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
     const windowWidth = Dimensions.get('window').width;
     const windowHeight = Dimensions.get('window').height;
     const carouselReffind = useRef(null);
+    const profName = String(
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
+        DashboardReducer?.mainprofileResponse?.profession ||
+        ''
+    ).toLowerCase();
+    const isNursingProf = profName.includes('nursing') || profName.includes('rn') || profName.includes('lpn') || profName.includes('cna') || profName.includes('aprn');
     const finalData = DashboardReducer?.dashboardResponse?.data?.my_recommendations?.length > 0 && stateHit?.length == 0 && specHit?.length == 0;
     return (
         <View style={{ paddingVertical: normalize(15) }}>
@@ -80,7 +86,7 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
                     contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                 />
             </View> : null}
-            {specHit?.length > 0 ? <View style={{ marginTop: normalize(10) }}>
+            {!isNursingProf && specHit?.length > 0 ? <View style={{ marginTop: normalize(10) }}>
                 <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "SpecialityCourseSlide", params: { back: "tabnav" } }] }))} style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingHorizontal: normalize(13), marginTop: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000" }}>{"Specialty Courses"}</Text>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: Colorpath.ButtonColr }}>{"View All"}</Text>

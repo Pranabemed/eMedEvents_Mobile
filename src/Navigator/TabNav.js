@@ -376,7 +376,16 @@ function TabScreen() {
   useLayoutEffect(() => {
     if (initialRoute) {
       setTabtooltip("did");
-      navigation.navigate(initialRoute);
+      try {
+        const validRoutes = ["Home", "Profiles", "Contact", "Volts"];
+        if (validRoutes.includes(initialRoute)) {
+          navigation.navigate(initialRoute);
+        } else {
+          navigation.navigate("Home");
+        }
+      } catch (err) {
+        console.log("TabNav initialRoute navigation error:", err);
+      }
     }
   }, [initialRoute, navigation]);
   useEffect(() => {

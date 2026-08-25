@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 
-const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepicker, previousSpec, handleSpecialityChange, selectedSpecialities, setSelectedSpecialities, handleSpecialitySelect, formData, setstatepicker, setSearchState, searchState, searchStateName, slist }) => {
+const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepicker, previousSpec, handleSpecialityChange, selectedSpecialities, setSelectedSpecialities, handleSpecialitySelect, formData, setstatepicker, setSearchState, searchState, searchStateName, slist, onSubmit }) => {
     console.log(selectedSpecialities, "selectedSpecialitieqwwww12233s--------", formData, previousSpec)
     const [checked, setChecked] = useState(false);
     const [showLoader,setShowLoader] = useState(false);
@@ -256,6 +256,9 @@ onPress: () => {
                     }}>
                         <Buttons
                             onPress={() => {
+                                if (onSubmit) {
+                                    onSubmit();
+                                }
                                 setstatepicker(!statepicker);
                                 setSearchState("");
                             }}
