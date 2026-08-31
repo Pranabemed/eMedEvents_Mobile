@@ -25,135 +25,135 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const SearchScreen = (props) => {
     const [search, setSearch] = useState(false);
     const [searchtxt, setSearchtxt] = useState("");
-        /**
- * Filter back component.
- * @returns {void}
- */
-const FilterBack = () => {
+    /**
+* Filter back component.
+* @returns {void}
+*/
+    const FilterBack = () => {
         props.navigation.goBack();
     };
     console.log(search, "search000000");
     const specialityData = [{ id: 0, name: "Internal Medicine" }, { id: 1, name: "Family Medicine" }, { id: 2, name: "Obstetrics and Gynecology" }, { id: 3, name: "Oncology" }, { id: 4, name: "Radiology" }, { id: 5, name: "Psychiatry" }];
     const ProfessionData = [{ id: 0, name: "Physician" }, { id: 1, name: "Physician Assistant" }, { id: 2, name: "Nursing" }, { id: 3, name: "Dentist" }, { id: 4, name: "Pharmacist" }, { id: 5, name: "Respiratory Therapist" }];
-        /**
- * Render section utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @returns {void}
- */
-const renderSection = ({ item }) => {
-        console.log(item,"dfsknfjkndfg1395888")
+    /**
+* Render section utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @returns {void}
+*/
+    const renderSection = ({ item }) => {
+        console.log(item, "dfsknfjkndfg1395888")
         if (item.type === 'Popular') {
             return (
                 <View>
                     <View style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10)
-                }}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 20,
-                            color: "#000000"
-                        }}>
-                            {"Popular Specialties"}
-                        </Text>
-                    </View>
-                    <View>
-                        <Buttons
-                            onPress={() => { props.navigation.navigate("Login") }}
-                            height={normalize(30)}
-                            width={normalize(100)}
-                            borderRadius={normalize(5)}
-                            text="Browse All"
-                            color={Colorpath.ButtonColr}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                        />
-                    </View>
-                </View>
-                {item.data.map((datas,index)=>(<TouchableOpacity onPress={() => { console.log("herhgfgjedg") }} style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(13), paddingHorizontal: normalize(10) }}>
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            width: normalize(290),
-                            alignItems: "center",
-                        }}
-                    >
-                        <View style={{ marginRight: normalize(13) }}>
-                            <Image source={Imagepath.WrongArrw} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#99999" }} />
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingHorizontal: normalize(10),
+                        paddingVertical: normalize(10)
+                    }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 20,
+                                color: "#000000"
+                            }}>
+                                {"Popular Specialties"}
+                            </Text>
                         </View>
-                        <Text
+                        <View>
+                            <Buttons
+                                onPress={() => { props.navigation.navigate("Login") }}
+                                height={normalize(30)}
+                                width={normalize(100)}
+                                borderRadius={normalize(5)}
+                                text="Browse All"
+                                color={Colorpath.ButtonColr}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                            />
+                        </View>
+                    </View>
+                    {item.data.map((datas, index) => (<TouchableOpacity onPress={() => { console.log("herhgfgjedg") }} style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(13), paddingHorizontal: normalize(10) }}>
+                        <View
                             style={{
-                                fontFamily: Fonts.InterRegular,
-                                fontSize: 16,
-                                color: "#333333"
+                                flexDirection: "row",
+                                width: normalize(290),
+                                alignItems: "center",
                             }}
                         >
-                            {datas?.name}
-                        </Text>
-                    </View>
-                </TouchableOpacity>))}
-            </View>
+                            <View style={{ marginRight: normalize(13) }}>
+                                <Image source={Imagepath.WrongArrw} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#99999" }} />
+                            </View>
+                            <Text
+                                style={{
+                                    fontFamily: Fonts.InterRegular,
+                                    fontSize: 16,
+                                    color: "#333333"
+                                }}
+                            >
+                                {datas?.name}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>))}
+                </View>
             );
         } else if (item.type === 'professions') {
             return (
                 <View>
-                <View style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingHorizontal: normalize(10),
-                paddingVertical: normalize(10)
-            }}>
-                <View style={{ flex: 1 }}>
-                    <Text style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 20,
-                        color: "#000000"
+                    <View style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingHorizontal: normalize(10),
+                        paddingVertical: normalize(10)
                     }}>
-                        {"Top Professions"}
-                    </Text>
-                </View>
-                <View>
-                    <Buttons
-                        onPress={() => { props.navigation.navigate("Login") }}
-                        height={normalize(30)}
-                        width={normalize(100)}
-                        borderRadius={normalize(5)}
-                        text="Browse All"
-                        color={Colorpath.ButtonColr}
-                        fontSize={16}
-                        fontFamily={Fonts.InterSemiBold}
-                    />
-                </View>
-            </View>
-            {item.data.map((datavb,index)=>(<TouchableOpacity onPress={() => { console.log("herhgfgjedg") }} style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(13), paddingHorizontal: normalize(10) }}>
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            width: normalize(290),
-                            alignItems: "center",
-                        }}
-                    >
-                        <View style={{ marginRight: normalize(13) }}>
-                            <Image source={Imagepath.WrongArrw} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#99999" }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 20,
+                                color: "#000000"
+                            }}>
+                                {"Top Professions"}
+                            </Text>
                         </View>
-                        <Text
+                        <View>
+                            <Buttons
+                                onPress={() => { props.navigation.navigate("Login") }}
+                                height={normalize(30)}
+                                width={normalize(100)}
+                                borderRadius={normalize(5)}
+                                text="Browse All"
+                                color={Colorpath.ButtonColr}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                            />
+                        </View>
+                    </View>
+                    {item.data.map((datavb, index) => (<TouchableOpacity onPress={() => { console.log("herhgfgjedg") }} style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(13), paddingHorizontal: normalize(10) }}>
+                        <View
                             style={{
-                                fontFamily: Fonts.InterRegular,
-                                fontSize: 16,
-                                color: "#333333"
+                                flexDirection: "row",
+                                width: normalize(290),
+                                alignItems: "center",
                             }}
                         >
-                            {datavb?.name}
-                        </Text>
-                    </View>
-                </TouchableOpacity>))}
-        </View>
+                            <View style={{ marginRight: normalize(13) }}>
+                                <Image source={Imagepath.WrongArrw} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#99999" }} />
+                            </View>
+                            <Text
+                                style={{
+                                    fontFamily: Fonts.InterRegular,
+                                    fontSize: 16,
+                                    color: "#333333"
+                                }}
+                            >
+                                {datavb?.name}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>))}
+                </View>
             );
         }
     };
@@ -188,7 +188,7 @@ const renderSection = ({ item }) => {
                     </View> : <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                         <PageHeader search={true} setSearch={setSearch} title="Search" onBackPress={FilterBack} />
                     </View>}
-                    <View style={{flex:1}}>
+                    <View style={{ flex: 1 }}>
                         <FlatList
                             data={mergedData}
                             renderItem={renderSection}

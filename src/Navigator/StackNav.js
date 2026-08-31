@@ -769,6 +769,16 @@ const StackNav = props => {
       isRedirectingToWeb.current = true;
       isExternalNavigationInProgress.current = true;
 
+      if (navigationRef.current?.isReady()) {
+        const currentRoute = navigationRef.current.getCurrentRoute();
+        if (!currentRoute || currentRoute.name === 'Splash') {
+          const storedToken = await AsyncStorage.getItem(constants.TOKEN);
+          const targetScreen = storedToken ? "TabNav" : "GuestUser";
+          console.log(`[DeepLink] Opening external browser from Splash screen - switching route to ${targetScreen}`);
+          navigateToScreen(targetScreen);
+        }
+      }
+
       console.log('[DeepLink] Triggering browser with:', browserUrl);
 
       if (Platform.OS === 'android') {
@@ -783,13 +793,13 @@ const StackNav = props => {
       }
 
       setTimeout(() => { isRedirectingToWeb.current = false; }, 4000);
-      setTimeout(() => { isExternalNavigationInProgress.current = false; }, 4000);
+      // isExternalNavigationInProgress remains true until app returns to active state in handleAppStateChange
     } catch (err) {
       console.log('Browser open failed', err);
       isRedirectingToWeb.current = false;
       isExternalNavigationInProgress.current = false;
     }
-  }, [normalizeUrlCandidate]);
+  }, [navigateToScreen, normalizeUrlCandidate]);
 
   const handleDeepLink = useCallback(async (url) => {
     if (!url) return;
@@ -899,9 +909,9 @@ const StackNav = props => {
       }
     }
 
-    // If it's not an eMedEvents link, open in external browser
-    if (!isEmedHost) {
-      console.log('[DeepLink] External link redirected to browser:', resolvedUrl);
+    // If it's not an eMedEvents link or not an internal app link, open in external browser
+    if (!isEmedHost || !isInternalLink) {
+      console.log('[DeepLink] External or non-internal link redirected to browser:', resolvedUrl);
       openExternalBrowser(resolvedUrl);
       return;
     }
@@ -923,7 +933,7 @@ const StackNav = props => {
       await AsyncStorage.setItem('PENDING_DEEP_LINK', resolvedUrl);
 
       // Redirect to Login
-      navigateToScreen("Login");
+      navigateToScreen("GuestUser");
       return;
     }
 

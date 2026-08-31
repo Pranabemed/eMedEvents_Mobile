@@ -281,6 +281,12 @@ const handleNavigation = async () => {
         if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && !hasNavigatedRef.current) {
           if (deepLinkBootstrapRaw || isEmedDeepLink(initialUrl) || (initialUrl && (initialUrl.includes('directLogin') || initialUrl.includes('directlogin')))) {
             console.log('[Splash] Direct login or deep link detected, skipping Onboard reset');
+            setTimeout(() => {
+              if (!hasNavigatedRef.current) {
+                console.log('[Splash] Safety fallback navigating away from Splash');
+                resetToSafeEntry();
+              }
+            }, 1200);
             return;
           }
           hasNavigatedRef.current = true;
@@ -373,6 +379,20 @@ const token_error = () => {
           if (deepLinkBootstrapActive || isEmedDeepLink(initialUrl)) {
             console.log('[Splash] Deep link launch detected, bypassing token_error reset');
             setBootstrapChecked(true);
+            setTimeout(async () => {
+              if (!hasNavigatedRef.current) {
+                const storedToken = await AsyncStorage.getItem(constants.TOKEN);
+                const targetScreen = storedToken ? "TabNav" : "GuestUser";
+                console.log(`[Splash] Fallback navigating away from Splash to ${targetScreen}`);
+                hasNavigatedRef.current = true;
+                props.navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: targetScreen }],
+                  })
+                );
+              }
+            }, 1200);
             return;
           }
 

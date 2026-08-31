@@ -315,11 +315,11 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
         });
         return () => unsubscribe();
     }, [isConnected]);
-        /**
- * Handles rot.
- * @returns {*}
- */
-const handleRot = () => {
+    /**
+* Handles rot.
+* @returns {*}
+*/
+    const handleRot = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setIsConnected(state.isConnected);

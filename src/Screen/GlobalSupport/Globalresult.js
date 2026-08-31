@@ -703,12 +703,35 @@ const Globalresult = (props) => {
 * @returns {void}
 */
     const handleUrl = (onlineName) => {
-        const url = onlineName?.detailpage_url;
-        if (!url) {
+        let rawUrl =
+            onlineName?.detailpage_url ||
+            onlineName?.emed_url ||
+            onlineName?.url ||
+            onlineName?.share_url ||
+            onlineName?.canonical_link ||
+            onlineName?.link ||
+            onlineName?.webcast_url ||
+            onlineName?.detail_url ||
+            '';
+
+        if (!rawUrl && onlineName?.slug) {
+            rawUrl = `https://www.emedevents.com/${onlineName.slug}`;
+        }
+
+        if (!rawUrl) {
             return;
         }
-        const result = url.split('/').pop();
-        console.log(result, "webcast url=======", onlineName);
+
+        let fullUrl = String(rawUrl).trim();
+        if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+            fullUrl = fullUrl.startsWith('/')
+                ? `https://www.emedevents.com${fullUrl}`
+                : `https://www.emedevents.com/${fullUrl}`;
+        }
+
+        const result = fullUrl.split('/').filter(Boolean).pop();
+        console.log(result, "webcast url=======", onlineName, "fullUrl:", fullUrl);
+
         let obj = {
             "conference_id": onlineName?.id,
             "action_type": "view",
@@ -721,6 +744,7 @@ const Globalresult = (props) => {
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
             });
+
         if (result) {
             const resolvedRealback =
                 props?.route?.params?.trig?.Realback ||
@@ -731,7 +755,9 @@ const Globalresult = (props) => {
             props.navigation.navigate("Statewebcast", {
                 webCastURL: {
                     webCastURL: result,
-                    shareUrl: url,
+                    shareUrl: fullUrl,
+                    detailpage_url: fullUrl,
+                    emed_url: fullUrl,
                     creditData: props?.route?.params?.trig?.creditData || props?.route?.params?.trig?.creditAll || props?.route?.params?.filterDatSh?.returnTake?.trig?.creditAll,
                     Realback: resolvedRealback
                 }

@@ -215,20 +215,20 @@ const GuestSpecialitySearch = props => {
     }
   }, [WebcastReducer?.webcastsearchResponse]);
 
-    /**
- * Go back utility.
- * @returns {void}
- */
-const goBack = () => {
+  /**
+* Go back utility.
+* @returns {void}
+*/
+  const goBack = () => {
     props.navigation.goBack();
   };
 
-    /**
- * Open speciality result utility.
- * @param {*} item - Input value.
- * @returns {void}
- */
-const openSpecialityResult = item => {
+  /**
+* Open speciality result utility.
+* @param {*} item - Input value.
+* @returns {void}
+*/
+  const openSpecialityResult = item => {
     const slug = getSlug(item);
     if (!slug) return;
 
@@ -244,12 +244,12 @@ const openSpecialityResult = item => {
     });
   };
 
-    /**
- * Handles url.
- * @param {*} data - Input value.
- * @returns {void}
- */
-const handleUrl = data => {
+  /**
+* Handles url.
+* @param {*} data - Input value.
+* @returns {void}
+*/
+  const handleUrl = data => {
     const detailUrl = data?.detailpage_url || data?.url || data?.emed_url || '';
     const result = detailUrl.split('/')?.pop();
     if (!result) return;
@@ -280,12 +280,12 @@ const handleUrl = data => {
     });
   };
 
-    /**
- * Search content utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchContent = text => {
+  /**
+* Search content utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+  const searchContent = text => {
     setSearchText(text);
     setIsLoading(true);
 
@@ -308,19 +308,19 @@ const searchContent = text => {
       });
   };
 
-    /**
- * Navigate to browse utility.
- * @returns {void}
- */
-const navigateToBrowse = () => {
+  /**
+* Navigate to browse utility.
+* @returns {void}
+*/
+  const navigateToBrowse = () => {
     props.navigation.navigate('BrowseScreen', { creditData: taskData });
   };
 
-    /**
- * Render default content utility.
- * @returns {JSX.Element}
- */
-const renderDefaultContent = () => {
+  /**
+* Render default content utility.
+* @returns {JSX.Element}
+*/
+  const renderDefaultContent = () => {
     if (browseLoading && topSpecialties.length === 0) {
       return (
         <View style={styles.loaderWrap}>
