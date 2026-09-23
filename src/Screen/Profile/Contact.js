@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Contact screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, isPhysicianProfessionalInformation, ContactProfile, SearchBack, detectCountry, getLabelStyle, handleFocus, handleBlur, closeProfessionModal, handleContactTake, handleCountry, handlePratice, handleCity, formatDobWithMoment, handlePlaceSelected, normalizeCountryName, fetchPostalCodeFromGeocode, handleCountrySet, handleStateshows, handlecityShows, countryReq, PraticingState, cityReq, formatPhoneNumber, styles.
  */
@@ -470,9 +471,9 @@ const ContactProfile = (props) => {
     const closeProfessionModal = () => {
         setProfessionModalVisible(false);
         if (pendingPersonal) {
-            props.navigation.navigate("PersonalInfo", { personal: pendingPersonal, forceProfessionChange: true });
+            props.navigation.navigate("PersonalInfo", { personal: pendingPersonal, applicableCountry: { country, country_id }, forceProfessionChange: true });
         } else {
-            props.navigation.navigate("PersonalInfo", { forceProfessionChange: true });
+            props.navigation.navigate("PersonalInfo", { applicableCountry: { country, country_id }, forceProfessionChange: true });
         }
     };
     /**
@@ -500,9 +501,9 @@ const ContactProfile = (props) => {
             showErrorAlert("Enter your ZIP code.")
         } else if (!cellno) {
             showErrorAlert("Enter your cell number. ")
-        } else if (!cellNoRegex.test(filteredTextcell)) {
+        } else if ((isUsCallingCode(dialcode) ? !isValidUsPhone(cellno) : !cellNoRegex.test(filteredTextcell))) {
             showErrorAlert("Invalid cell number. It must be 10-15 digits.")
-        } else if (isValidWhatsappNo) {
+        } else if (isValidWhatsappNo || (isUsCallingCode(dialcode) && whatsappno && !isValidUsPhone(whatsappno))) {
             showErrorAlert("Invalid whatsapp number. It must be 10-15 digits.");
         } else {
             let obj = {
@@ -515,10 +516,10 @@ const ContactProfile = (props) => {
                 "state_id": state_id,
                 "city_id": city_id,
                 "postal_code": zipcode,
-                "contact_number": cellno,
+                "contact_number": isUsCallingCode(dialcode) ? requireUsPhone(cellno) : cellno,
                 "alternate_email": "",
                 "skype": "",
-                "whatapp_number": whatsappno
+                "whatapp_number": isUsCallingCode(dialcode) && whatsappno ? requireUsPhone(whatsappno) : whatsappno
             }
             let userObj = {
                 "first_name": firstname,
@@ -911,25 +912,7 @@ const ContactProfile = (props) => {
 * @param {boolean} isUSA - Input value.
 * @returns {*}
 */
-    const formatPhoneNumber = (input, isUSA = false) => {
-        if (isUSA) {
-            // USA format: (XXX) XXX-XXXX
-            const cleaned = input.replace(/\D/g, '').slice(0, 10);
-            const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-            if (match) {
-                let formatted = '';
-                if (match[1]) formatted = `(${match[1]}`;
-                if (match[2]) formatted += `) ${match[2]}`;
-                if (match[3]) formatted += `-${match[3]}`;
-                return formatted;
-            }
-        } else {
-            // International format: remove non-digits but allow up to 15 digits
-            return input.replace(/[^0-9]/g, '').slice(0, 15);
-        }
-        return input;
-    };
+    const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);

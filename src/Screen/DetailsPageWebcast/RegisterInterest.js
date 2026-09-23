@@ -1,3 +1,8 @@
+import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
+import { resolveInterestCountry, interestLicenseFields, hasRequiredInterestLicense } from '../../Utils/Helpers/InterestCheckoutCountry';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Register interest screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, status, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY, RegisterInterest, intBack, PraticingState, handleProfession, licData, specaillized, searchCountryName, handlePratice, handleSearch, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, handleStateshows, toggleHand, handleFromDateConfirm, clean, formatPhoneNumberno, formatIndianPhoneNumber, formatPhoneNumber, interSubmit, buildConferencePayload.
  */
@@ -39,7 +44,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { useIsFocused } from '@react-navigation/native';
-import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
+import useCheckoutPersonalization from '../../Utils/Hooks/useCheckoutPersonalization';
 
 /**
  * Reusable RegisterInterest component.
@@ -130,7 +135,7 @@ const intBack = () => {
     const [licdate, setLicdate] = useState("");
     const [cellnumber, setCellnumber] = useState("");
     const [mobileNo, setMobileNo] = useState("");
-    const [countryId, setCountryId] = useState("1");
+    const [detectedCountry, setDetectedCountry] = useState({});
     const [statepickerst, setStatepickerst] = useState(false);
     const [state, setState] = useState("");
     const [pratice, setPratice] = useState(false);
@@ -143,7 +148,6 @@ const intBack = () => {
     const [fetchdata, setFetchdata] = useState(null);
     const [proftree, setProftree] = useState(false);
     const [zerocm, setZerocm] = useState(false);
-    const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
@@ -156,53 +160,72 @@ const intBack = () => {
     const isGuestInterestCheckout = ['guest', 'guestuser'].includes(
         String(guestOrigin || '').toLowerCase()
     );
+    const applicableCountry = resolveInterestCountry(
+        DashboardReducer?.mainprofileResponse,
+        AuthReducer?.loginResponse?.user,
+        AuthReducer?.againloginsiginResponse?.user,
+        AuthReducer?.verifymobileResponse?.user,
+        isGuestInterestCheckout ? detectedCountry : null,
+    );
+    const applicableCountryKey = countryIdentity(applicableCountry);
+    const isUsUser = isUsCountry(applicableCountry);
+    const countryId = applicableCountry.country_id || (isUsUser ? '1' : '');
+
     useEffect(() => {
-        if (!isFocus || !isGuestInterestCheckout) {
-            setGuestSignupDraft(null);
-            return;
-        }
-
-        let isActive = true;
-
-                /**
- * Hydrate guest signup draft utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const hydrateGuestSignupDraft = async () => {
-            try {
-                const draft = await loadGuestSignupDraft();
-                if (!isActive) {
-                    return;
-                }
-                setGuestSignupDraft(draft);
-            } catch (error) {
-                console.log('[RegisterInterest] guest draft load error', error);
-            }
-        };
-
-        hydrateGuestSignupDraft();
-
-        return () => {
-            isActive = false;
-        };
+        if (!isFocus || !isGuestInterestCheckout) return;
+        let active = true;
+        getCountryAndDialCode().then(info => {
+            if (active) setDetectedCountry(info || {});
+        }).catch(() => {});
+        return () => { active = false; };
     }, [isFocus, isGuestInterestCheckout]);
+
+    const markPersonalizationEdited = useCheckoutPersonalization({
+        focused: isFocus,
+        profile: DashboardReducer?.mainprofileResponse,
+        options: slist,
+        onApply: patch => {
+            if (patch.email) setEmailad(patch.email);
+            if (patch.profession) {
+                setCountry(patch.profession);
+                specaillized(patch.profession.split(' - ')[0]);
+            }
+            if (patch.specialty) {
+                setSpeciality(patch.specialty.name);
+                setSpeciality_id(patch.specialty.ids);
+                setPreviousSpec(patch.specialty.ids.map((id, index) => ({id, name: patch.specialty.name.split(', ')[index] || patch.specialty.name})));
+                setFormData({speciality: patch.specialty.name, speciality_ids: patch.specialty.ids});
+            }
+        },
+    });
     useEffect(() => {
         if (DashboardReducer?.dashboardResponse?.data?.licensures) {
             setFetchdata(DashboardReducer?.dashboardResponse?.data?.licensures);
         }
     }, [DashboardReducer?.dashboardResponse?.data?.licensures]);
     useEffect(() => {
-        setCountryId("1");
+        if (!isUsUser) {
+            setState('');
+            setState_id('');
+            setLicnumber('');
+            setLicdate('');
+            setRdate('');
+            setStatepickerst(false);
+            setOpendatelic(false);
+            setSelectStatepratice([]);
+            setSlistpratice([]);
+            setProftree(false);
+            return;
+        }
         PraticingState(countryId);
-    }, [props?.route?.params?.checkoutSpan])
+    }, [applicableCountryKey, countryId, isFocus]);
         /**
  * Praticing state component.
  * @param {number} index - Input value.
  * @returns {void}
  */
 const PraticingState = (index) => {
+        if (!isUsUser || !index) return;
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index));
@@ -217,6 +240,7 @@ const PraticingState = (index) => {
  * @returns {void}
  */
 const handleProfession = (did) => {
+        markPersonalizationEdited('profession');
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
@@ -233,10 +257,11 @@ const handleProfession = (did) => {
  * @returns {void}
  */
 const licData = (hill) => {
+        if (!isUsUser) return;
         const obj = hill;
         connectionrequest()
             .then(() => {
-                dispatch(licesensRequest(obj));
+                if (isUsUser) dispatch(licesensRequest(obj));
             })
             .catch(err => {
                 console.log(err);
@@ -253,7 +278,7 @@ const specaillized = (data) => {
         connectionrequest()
             .then(() => {
                 dispatch(specializationRequest(obj));
-                dispatch(licesensRequest(obj));
+                if (isUsUser) dispatch(licesensRequest(obj));
             })
             .catch(err => {
                 console.log(err);
@@ -261,16 +286,26 @@ const specaillized = (data) => {
             });
     }
     useEffect(() => {
+        if (!isFocus) return;
         connectionrequest()
             .then(() => {
-                dispatch(mainprofileRequest({}))
-                dispatch(professionRequest());
+                dispatch(mainprofileRequest({}));
             })
             .catch(err => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [props?.route?.params?.checkoutSpan]);
+    }, [props?.route?.params?.checkoutSpan, isFocus]);
+    useEffect(() => {
+        if (!isFocus) return;
+        let active = true;
+        setClist([]);
+        setSelectCountry([]);
+        connectionrequest().then(() => {
+            if (active) dispatch(professionRequest(professionCountryParams(applicableCountry)));
+        }).catch(err => showErrorAlert('Please connect to Internet', err));
+        return () => { active = false; };
+    }, [applicableCountryKey, isFocus]);
         /**
  * Search country name utility.
  * @param {*} text - Input value.
@@ -323,6 +358,7 @@ const handleSearch = (text) => {
  * @returns {void}
  */
 const handleSpecialitySelect = (selectedItems, formData) => {
+        markPersonalizationEdited('specialty');
         const updatedForm = [...formData];
         const selectedSpecialitiesNames = selectedItems.map(item => item?.name).join(', ');
         const selectedSpecialityIds = selectedItems.map(item => item?.id);
@@ -343,6 +379,7 @@ const handleSpecialitySelect = (selectedItems, formData) => {
  * @returns {void}
  */
 const handleSpecialityChange = (selectedSpecialities, selectedIds) => {
+        markPersonalizationEdited('specialty');
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
@@ -369,20 +406,6 @@ const removeSpeciality = (specialityId) => {
         handleSpecialityChange(updatedSpecialityNames, updatedSpecialityIds);
     };
 
-    useEffect(() => {
-        if (DashboardReducer?.mainprofileResponse?.specialities) {
-            const specialties = Object.entries(DashboardReducer?.mainprofileResponse?.specialities).map(([id, name]) => ({
-                id: String(id),
-                name: String(name),
-            }));
-            console.log(specialties, "specialties00000001222");
-            const namesString = specialties.map(specialty => specialty.name).join(', ');
-            const ids = specialties.map(specialty => specialty.id);
-            setSpeciality(namesString);
-            setSpeciality_id(ids);
-            setPreviousSpec(specialties);
-        }
-    }, [props?.route?.params?.checkoutSpan, DashboardReducer?.mainprofileResponse?.specialities]);
     console.log(speciality, "initialFormData----------", speciality_id, formData, props?.route?.params);
     const memoizedSetFormData = useCallback((data) => setFormData(data), [setFormData]);
     useEffect(() => {
@@ -452,12 +475,12 @@ const toggleHand = () => {
             await AsyncStorage.setItem(
                 GUEST_REGISTRATION_FLOW_KEY,
                 JSON.stringify({
-                    license_state_id: user?.license_state_id || state_id || '',
-                    license_number: user?.license_number || licnumber || '',
+                    license_state_id: isUsUser ? (user?.license_state_id || state_id || '') : '',
+                    license_number: isUsUser ? (user?.license_number || licnumber || '') : '',
                 })
             );
         }
-    }, [AuthReducer?.loginResponse?.token, AuthReducer?.token, dispatch, state_id, licnumber]);
+    }, [AuthReducer?.loginResponse?.token, AuthReducer?.token, dispatch, state_id, licnumber, isUsUser]);
 
     const customNavigation = useMemo(() => {
         return {
@@ -493,8 +516,8 @@ dispatch: (action) => {
                     !fetchdata?.some((dash) => dash.state_id === state.id)
                 );
                 console.log(filteredStates, "filteredStates>>>>>>>>>>>", AuthReducer?.licesensResponse?.licensure_states)
-                setSelectStatepratice(filteredStates);
-                setSlistpratice(filteredStates);
+                setSelectStatepratice(isUsUser ? filteredStates : []);
+                setSlistpratice(isUsUser ? filteredStates : []);
                 break;
             case 'Auth/licesensFailure':
                 status = AuthReducer.status;
@@ -504,8 +527,8 @@ dispatch: (action) => {
                 break;
             case 'Auth/stateSuccess':
                 status = AuthReducer.status;
-                setSelectStatepratice(AuthReducer?.stateResponse?.states);
-                setSlistpratice(AuthReducer?.stateResponse?.states);
+                setSelectStatepratice(isUsUser ? AuthReducer?.stateResponse?.states : []);
+                setSlistpratice(isUsUser ? AuthReducer?.stateResponse?.states : []);
                 break;
             case 'Auth/stateFailure':
                 status = AuthReducer.status;
@@ -554,7 +577,7 @@ const handleFromDateConfirm = (val) => {
     useEffect(() => {
         if (DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.phone) {
             const allDatashow = DashboardReducer?.mainprofileResponse?.user_address;
-            const licAll = DashboardReducer.mainprofileResponse.licensures?.[0]
+            const licAll = isUsUser ? DashboardReducer?.mainprofileResponse?.licensures?.[0] : null
             setState(licAll?.state_name);
             setState_id(licAll?.state_id);
             setLicnumber(licAll?.license_number);
@@ -572,7 +595,8 @@ const handleFromDateConfirm = (val) => {
             let callingCodeToUse = allDatashow?.calling_code;
             if (!phoneNumberToUse && AuthReducer?.verifyResponse?.phone) {
                 const authPhone = AuthReducer?.verifyResponse?.phone;
-                const match = authPhone.match(/^\+(d{1,3})(\d+)$/);
+                const parsedPhone = processPhoneNumber(String(authPhone));
+                const match = parsedPhone?.isValid ? [authPhone, parsedPhone.countryCode.replace('+', ''), parsedPhone.nationalNumber] : null;
                 if (match) {
                     callingCodeToUse = match[1];
                     phoneNumberToUse = match[2];
@@ -581,6 +605,7 @@ const handleFromDateConfirm = (val) => {
                 }
             }
 
+            if (!callingCodeToUse && (String(allDatashow?.country_id) === '1' || /^\+1|^\(/.test(String(phoneNumberToUse || '')))) callingCodeToUse = '1';
             let formattedCellNo = phoneNumberToUse;
             if (callingCodeToUse == "1" || callingCodeToUse == 1) {
                 formattedCellNo = formatPhoneNumberno(phoneNumberToUse);
@@ -589,107 +614,11 @@ const handleFromDateConfirm = (val) => {
             }
             setFirstname(DashboardReducer?.mainprofileResponse?.personal_information?.firstname);
             setLastname(DashboardReducer?.mainprofileResponse?.personal_information?.lastname);
-            setEmailad(DashboardReducer?.mainprofileResponse?.personal_information?.email);
-            const profession = DashboardReducer?.mainprofileResponse?.professional_information?.profession;
-            const profession_type = DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
-                        /**
- * Clean utility.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const clean = (value) => {
-                if (value == null) return '';
-                return String(value).trim();
-            };
-            const cleanedProfession = clean(profession);
-            const cleanedProfessionType = clean(profession_type);
-            const combinedValue =
-                cleanedProfession && cleanedProfessionType
-                    ? `${cleanedProfession} - ${cleanedProfessionType}`
-                    : cleanedProfession || cleanedProfessionType;
 
-            setCountry(combinedValue || '');
-            setCellnumber(formattedCellNo || phoneNumberToUse)
+            setCellnumber(formatUsPhone(formattedCellNo || phoneNumberToUse))
         }
-    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone])
-    useEffect(() => {
-        if (!isGuestInterestCheckout || !guestSignupDraft?.email || emailad) {
-            return;
-        }
-
-        setEmailad(guestSignupDraft.email);
-    }, [emailad, guestSignupDraft?.email, isGuestInterestCheckout]);
-    useEffect(() => {
-        if (!isGuestInterestCheckout || !guestSignupDraft?.profession || country) {
-            return;
-        }
-
-        const professionValue = String(guestSignupDraft.profession || '').trim();
-        setCountry(professionValue);
-
-        const professionKey = professionValue.split(' - ')[0].trim();
-        if (professionKey) {
-            specaillized(professionKey);
-        }
-    }, [country, guestSignupDraft?.profession, isGuestInterestCheckout]);
-    useEffect(() => {
-        if (!isGuestInterestCheckout || speciality_id?.length > 0 || !guestSignupDraft?.specialty) {
-            return;
-        }
-
-        const targetSpecialty = String(guestSignupDraft.specialty || '').trim().toLowerCase();
-        const availableSpecialities = Array.isArray(slist)
-            ? slist
-            : Array.isArray(selectState)
-                ? selectState
-                : [];
-        const matchedSpeciality = availableSpecialities.find(item => {
-            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
-            return candidate === targetSpecialty;
-        });
-
-        if (matchedSpeciality) {
-            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
-            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
-            if (!speciality) {
-                setSpeciality(matchedName || guestSignupDraft.specialty);
-            }
-            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
-                setSpeciality_id(matchedId ? [matchedId] : []);
-            }
-            return;
-        }
-
-        if (!speciality) {
-            setSpeciality(guestSignupDraft.specialty);
-        }
-    }, [guestSignupDraft?.specialty, isGuestInterestCheckout, selectState, slist, speciality, speciality_id]);
-        /**
- * Formats phone numberno.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumberno = (input) => {
-        // Handle null/undefined/empty cases
-        if (!input) return "";
-
-        // Convert to string in case input is a number
-        const strInput = String(input);
-
-        // Remove all non-digit characters and limit to 10 digits
-        const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
-        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-        if (match) {
-            let formatted = '';
-            if (match[1]) formatted = `(${match[1]}`;
-            if (match[2]) formatted += `) ${match[2]}`;
-            if (match[3]) formatted += `-${match[3]}`;
-            return formatted;
-        }
-
-        return strInput; // Return original input if formatting fails
-    };
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isUsUser])
+const formatPhoneNumberno = (input) => formatUsPhone(input);
 
         /**
  * Formats indian phone number.
@@ -713,19 +642,7 @@ const formatIndianPhoneNumber = (input) => {
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => {
-        const cleaned = input.replace(/\D/g, '').slice(0, 10);
-        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-        if (match) {
-            let formatted = '';
-            if (match[1]) formatted = `(${match[1]}`;
-            if (match[2]) formatted += `) ${match[2]}`;
-            if (match[3]) formatted += `-${match[3]}`;
-            return formatted;
-        }
-        return input;
-    };
+const formatPhoneNumber = (input) => formatUsPhone(input);
     console.log(selectStatepratice?.length, "selectStatepratice--------", proftree, cellnumber?.length);
     const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const isValidEmail = emailad?.length > 0 && !validateEmail.test(emailad);
@@ -738,11 +655,15 @@ const formatPhoneNumber = (input) => {
  */
 const interSubmit = () => {
         setIsSubmitted(true);
+        if (!isValidUsPhone(cellnumber)) {
+            showErrorAlert('Enter a complete 10-digit USA cell number.');
+            return;
+        }
         if (!country) {
             showErrorAlert("Please choose your profession ")
         } else if (formData?.speciality_ids?.length == 0) {
             showErrorAlert("Please choose your speciality(s)")
-        } else if (proftree && !state) {
+        } else if (isUsUser && proftree && !state) {
             showErrorAlert("Please choose your medical license state")
         } else if (!zerocm) {
             // Some inline text fields are empty/invalid.
@@ -758,14 +679,14 @@ const buildConferencePayload = () => {
                     lastname: lastname || "",
                     email: emailad || "",
                     profession: country || "",
-                    license_state_id: state_id || "",
+                    ...interestLicenseFields(applicableCountry, state_id),
                     dob: "",
                     speciality: formData?.speciality_ids || [],
                     country_id: countryId || "",
-                    state_id: state_id || "",
+                    state_id: DashboardReducer?.mainprofileResponse?.user_address?.state_id || "",
                     city_id: "",
                     zipcode: "",
-                    phone: cellnumber || "",
+                    phone: requireUsPhone(cellnumber),
                     job_title: ""
                 };
                 Object.keys(attendeeData).forEach(key => {
@@ -793,10 +714,8 @@ const buildConferencePayload = () => {
             lastname &&
             !isValidEmail &&
             country &&
-            (!proftree || state) &&
+            hasRequiredInterestLicense(applicableCountry, proftree, state, licnumber, licdate) &&
             formData?.speciality?.length > 0 &&
-            licnumber &&
-            licdate &&
             !isValidcell
         );
     }, [
@@ -804,7 +723,8 @@ const buildConferencePayload = () => {
         lastname,
         isValidEmail,
         country,
-        ...(proftree ? [state] : []),
+        state,
+        applicableCountryKey,
         formData?.speciality,
         licnumber,
         licdate,
@@ -881,7 +801,7 @@ const buildConferencePayload = () => {
                     previousSpec={previousSpec}
                     setSpeids={setSpeids}
                     speids={speids}
-                /> : statepickerst ? (
+                /> : (isUsUser && statepickerst) ? (
                     <CheckStateShowCont
                         pratice={pratice}
                         setSearchState={setSearchpratice}
@@ -1105,6 +1025,7 @@ const buildConferencePayload = () => {
                                         label='Email ID*'
                                         value={emailad}
                                         onChangeText={(val) => {
+                                            markPersonalizationEdited('email');
                                             setEmailad(val);
                                             setTouched(prev => ({ ...prev, emailad: true }));
                                         }}
@@ -1157,7 +1078,7 @@ const buildConferencePayload = () => {
                                     />
                                 </View>
                             </View>
-                            {proftree && <View style={{
+                            {isUsUser && proftree && <View style={{
                                 flexDirection: 'row',
                                 flex: 1
                             }}>
@@ -1203,6 +1124,7 @@ const buildConferencePayload = () => {
                                     }
                                 }}
                             />
+                            {isUsUser && <>
                             <View style={{
                                 flexDirection: 'row',
                                 flex: 1
@@ -1279,6 +1201,7 @@ const buildConferencePayload = () => {
                                     </Text>
                                 </View>
                             )}
+                            </>}
                             <View style={{
                                 flexDirection: 'row',
                                 flex: 1
@@ -1343,14 +1266,14 @@ const buildConferencePayload = () => {
                     </ScrollView>
                 </KeyboardAvoidingView>}
                 {/* <DateTimePickerModal
-                    isVisible={opendatelic}
+                    isVisible={isUsUser && opendatelic}
                     mode="date"
                     date={licdate ? new Date(licdate) : new Date()}
                     onConfirm={handleFromDateConfirm}
                     onCancel={() => setOpendatelic(false)}
                 /> */}
                 <DateTimePickerModal
-                    isVisible={opendatelic}
+                    isVisible={isUsUser && opendatelic}
                     mode="date"
                     minimumDate={rdate ? new Date(rdate) : new Date()}
                     date={licdate ? new Date(licdate) : new Date(rdate || new Date())}

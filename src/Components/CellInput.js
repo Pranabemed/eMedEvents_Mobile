@@ -13,6 +13,7 @@ import {
     Easing,
     Platform
 } from 'react-native';
+import { formatUsPhone, isUsCallingCode } from '../Utils/Helpers/UsPhone';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
 import EyeIcon from 'react-native-vector-icons/Entypo';
@@ -55,6 +56,7 @@ const InputField = forwardRef((
         placeholder,
         placeholderTextColor = '#949494',
         maxlength,
+        maxLength,
         editable = true,
         multiline,
         containerStyle,
@@ -92,6 +94,10 @@ const InputField = forwardRef((
     const [secureTextEntry, setSecureTextEntry] = useState(!!isPassword);
     const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
 
+    const isPhoneInput = keyboardType === 'phone-pad' || (showCountryCode && keyboardType === 'number-pad');
+    const isUsPhone = isPhoneInput && isUsCallingCode(countryCode);
+    const displayValue = isUsPhone ? formatUsPhone(value) : value;
+    const changeText = text => onChangeText?.(isUsPhone ? formatUsPhone(text) : text);
     const isActive = isFocused || !!value;
 
     useEffect(() => {
@@ -209,11 +215,11 @@ const floatingLabelNode = (text) => (
                                 : staticStyles.input,
                             addnewtyle,
                         ]}
-                        value={value}
-                        onChangeText={onChangeText}
+                        value={displayValue}
+                        onChangeText={changeText}
                         placeholder=""
                         placeholderTextColor="transparent"
-                        maxLength={maxlength}
+                        maxLength={isPhoneInput ? undefined : (maxLength ?? maxlength)}
                         editable={editable}
                         secureTextEntry={secureTrue ? secureTrue : secureTextEntry}
                         keyboardType={keyboardType}
@@ -244,11 +250,11 @@ const floatingLabelNode = (text) => (
                 },
                 onlyfor && { width: normalize(270) },
             ]}
-            value={icondisable && bgv ? notext : value}
-            onChangeText={onChangeText}
+            value={icondisable && bgv ? notext : displayValue}
+            onChangeText={changeText}
             placeholder=""
             placeholderTextColor="transparent"
-            maxLength={maxlength}
+            maxLength={isPhoneInput ? undefined : (maxLength ?? maxlength)}
             editable={editable}
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}

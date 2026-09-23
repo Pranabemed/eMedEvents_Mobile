@@ -21,6 +21,7 @@ import constants from './constants';
  */
 export const normalizeGuestSignupDraft = draft => ({
   specialty: String(draft?.specialty || '').trim(),
+  specialtyId: String(draft?.specialtyId ?? draft?.specialty_id ?? '').trim(),
   profession: String(draft?.profession || '').trim(),
   email: String(draft?.email || '').trim(),
 });
@@ -29,7 +30,7 @@ export const normalizeGuestSignupDraft = draft => ({
  * Saves guest signup draft locally.
  *
  * @param {Object} draft - Guest draft payload.
- * @returns {Promise<null|{specialty: string, profession: string, email: string}>}
+ * @returns {Promise<null|{specialty: string, specialtyId: string, profession: string, email: string}>}
  */
 /**
  * Save guest signup draft utility helper.
@@ -40,7 +41,7 @@ export const normalizeGuestSignupDraft = draft => ({
  */
 export const saveGuestSignupDraft = async draft => {
   const normalizedDraft = normalizeGuestSignupDraft(draft);
-  if (!normalizedDraft.specialty && !normalizedDraft.profession && !normalizedDraft.email) {
+  if (!normalizedDraft.specialty && !normalizedDraft.profession && !normalizedDraft.email && !normalizedDraft.specialtyId) {
     await AsyncStorage.removeItem(constants.GUEST_SIGNUP_DRAFT);
     return null;
   }

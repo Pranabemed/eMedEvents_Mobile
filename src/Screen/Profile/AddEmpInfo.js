@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Add emp info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, CustomRadioButton, AddEmpInfo, SearchBack, handleInputChange, PraticingState, handleFromDateConfirm, handleToDateConfirm, AddEmpTake, handleStateshows, handlecityShows, handlehospShows, cityReq, handlePratice, handleCity, handleHosp, formatPhoneNumber, styles.
  */
@@ -148,7 +149,7 @@ const handleInputChange = (text) => {
             setAddress(props?.route?.params?.editDats?.address)
             setPosition(props?.route?.params?.editDats?.position_description);
             setEmpstatusname(props?.route?.params?.editDats?.emp_status);
-            setPhoneno(props?.route?.params?.editDats?.contact_no);
+            setPhoneno(formatUsPhone(props?.route?.params?.editDats?.contact_no));
             setFromdate(props?.route?.params?.editDats?.from_date);
             setTodate(props?.route?.params?.editDats?.to_date);
             setAmount(props?.route?.params?.editDats?.allowance_limit);
@@ -312,7 +313,7 @@ const AddEmpTake = () => {
             showErrorAlert("Please enter address");
         } else if (!phoneno) {
             showErrorAlert("Please enter phone no");
-        } else if (!cellNoRegex.test(filteredTextcell)) {
+        } else if (!isValidUsPhone(phoneno)) {
             showErrorAlert("Invalid cell number. It must be 10-15 digits.");
         } else if (!fromdate) {
             showErrorAlert("Please choose from date");
@@ -326,7 +327,7 @@ const AddEmpTake = () => {
                 "country_id": countryId,
                 "state_id": state_id,
                 "city_id": city_id,
-                "contact_number": phoneno,
+                "contact_number": requireUsPhone(phoneno),
                 "organization_name": hospname,
                 "calling_code": countryId,
                 "from_date": fromdate,
@@ -348,7 +349,7 @@ const AddEmpTake = () => {
                     "country_id": countryId,
                     "state_id": state_id,
                     "city_id": city_id,
-                    "contact_number": phoneno,
+                    "contact_number": requireUsPhone(phoneno),
                     "organization_name": hospname,
                     "calling_code": countryId,
                     "from_date": fromdate,
@@ -460,25 +461,7 @@ const handleHosp = (text) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => {
-        if (isUSA) {
-            // USA format: (XXX) XXX-XXXX
-            const cleaned = input.replace(/\D/g, '').slice(0, 10);
-            const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-            if (match) {
-                let formatted = '';
-                if (match[1]) formatted = `(${match[1]}`;
-                if (match[2]) formatted += `) ${match[2]}`;
-                if (match[3]) formatted += `-${match[3]}`;
-                return formatted;
-            }
-        } else {
-            // International format: remove non-digits but allow up to 15 digits
-            return input.replace(/[^0-9]/g, '').slice(0, 15);
-        }
-        return input;
-    };
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
      const cellNoRegexwpcell = /^\d{10,15}$/;
     const filteredTextcell = phoneno && phoneno?.length > 0 && phoneno.replace(/[^\d]/g, '');
     const isValidcell = filteredTextcell?.length > 0 && !cellNoRegexwpcell.test(filteredTextcell);
@@ -814,7 +797,7 @@ const formatPhoneNumber = (input, isUSA = false) => {
                                                 placeholderTextColor="#AAAAAA"
                                                 fontSize={16}
                                                 fontFamily={Fonts.InterRegular}
-                                                maxLength={15}
+                                                maxLength={undefined}
                                                 leftname={"+1"}
                                                 lefttext={true}
                                                 leftfontset={Fonts.InterRegular}
@@ -1151,7 +1134,7 @@ const formatPhoneNumber = (input, isUSA = false) => {
                                                 placeholderTextColor="#AAAAAA"
                                                 fontSize={16}
                                                 fontFamily={Fonts.InterRegular}
-                                                maxLength={15}
+                                                maxLength={undefined}
                                                 leftname={"+1"}
                                                 lefttext={true}
                                                 leftfontset={Fonts.InterRegular}

@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Change mobile no screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ChangeMobileNo, handleMobilNOchange, finalBack, formatPhoneNumber, styles.
  */
@@ -51,6 +52,11 @@ const ChangeMobileNo = (props) => {
     };
 
     const handleMobilNOchange = () => {
+        const selectedPhoneCode = resolveCountryCode(props?.route?.params?.Newphone);
+        if (isUsCallingCode(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
+            showErrorAlert('Enter a complete 10-digit USA cell number.');
+            return;
+        }
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
@@ -60,7 +66,7 @@ const ChangeMobileNo = (props) => {
             const getPhCd = resolveCountryCode(props?.route?.params?.Newphone);
             let obj = {
                 "verify_type": "phone",
-                "phone": `${getPhCd}${phone}`,
+                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
             }
             connectionrequest()
                 .then(() => {
@@ -101,7 +107,7 @@ const ChangeMobileNo = (props) => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, phone).catch(() => {});
+                AsyncStorage.setItem(constants.PHONE, isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => {});
             }
             props.navigation.navigate("VerifyMobileOTP", { Newphone: { "phone": phone ? phone : props?.route?.params?.Newphone?.validPh, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
@@ -131,26 +137,14 @@ const ChangeMobileNo = (props) => {
     const finalBack = () => {
         const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
         const origPhone = resolvePhoneNumber(phone, props?.route?.params);
-        props.navigation.navigate("VerifyMobileOTP", { Newphone: { phoneCode: getPhCdSent, allNo: origPhone, "phone": origPhone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp } })
+        props.navigation.navigate("VerifyMobileOTP", { Newphone: { phoneCode: getPhCdSent, allNo: origPhone, "phone": isUsCallingCode(getPhCdSent) ? formatUsPhone(origPhone) : origPhone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp } })
     }
         /**
  * Formats phone number.
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => {
-    const cleaned = input.replace(/\D/g, '').slice(0, 10);
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-    if (match) {
-      let formatted = '';
-      if (match[1]) formatted = `(${match[1]}`;
-      if (match[2]) formatted += `) ${match[2]}`;
-      if (match[3]) formatted += `-${match[3]}`;
-      return formatted;
-    }
-    return input;
-  };
+const formatPhoneNumber = (input) => formatUsPhone(input);
   useLayoutEffect(() => {
           props.navigation.setOptions({ gestureEnabled: false });
       }, []);
@@ -215,7 +209,7 @@ const formatPhoneNumber = (input) => {
                                 />
                                 <TextInput
                                     editable
-                                    maxLength={15}
+                                    maxLength={undefined}
                                     onChangeText={text => {
                                         const formatted = formatPhoneNumber(text);
                                         setMobileHd(formatted);

@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * All special screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, professionalTypes, nonUsaProfessionalTypes, AllSpecial, onBackPress, handlePress, searchCountryName, searchStateName, searchStateNamePratice, specaillized, handleStateSelect, handleProfession, handlePratcing, professionValueForNonUsa, formatPhoneNumber, signupHandle, licData.
  */
@@ -231,22 +232,32 @@ const hydrateGuestSignupDraft = async () => {
         }
 
         const draftSpecialty = String(guestSignupDraft?.specialty || '').trim();
+        const draftSpecialtyId = String(guestSignupDraft?.specialtyId || '').trim();
         if (draftSpecialty && !state) {
             setState(draftSpecialty);
         }
-    }, [guestSignupDraft, state]);
+        if (draftSpecialtyId && !specialid) {
+            setSpecailid(draftSpecialtyId);
+        }
+    }, [guestSignupDraft, specialid, state]);
 
     useEffect(() => {
         if (!guestSignupDraft || guestSpecialtyAppliedRef.current) {
             return;
         }
 
-        if (specialid) {
-            guestSpecialtyAppliedRef.current = true;
-            return;
+        const draftSpecialty = String(guestSignupDraft?.specialty || '').trim().toLowerCase();
+        const draftSpecialtyId = String(guestSignupDraft?.specialtyId || '').trim();
+
+        if (draftSpecialtyId && Array.isArray(slist) && slist.length > 0) {
+            const matchedById = slist.find(option => String(option?.id ?? option?.speciality_id ?? option?.specialty_id ?? '') === draftSpecialtyId);
+            if (matchedById) {
+                guestSpecialtyAppliedRef.current = true;
+                handleStateSelect(matchedById);
+                return;
+            }
         }
 
-        const draftSpecialty = String(guestSignupDraft?.specialty || '').trim().toLowerCase();
         if (!draftSpecialty || !Array.isArray(slist) || slist.length === 0) {
             return;
         }
@@ -265,6 +276,9 @@ const hydrateGuestSignupDraft = async () => {
 
         if (!state) {
           setState(String(guestSignupDraft?.specialty || '').trim());
+        }
+        if (draftSpecialtyId && !specialid) {
+          setSpecailid(draftSpecialtyId);
         }
     }, [guestSignupDraft, handleStateSelect, specialid, slist, state]);
 
@@ -532,19 +546,7 @@ const professionValueForNonUsa = () => (
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => {
-    const cleaned = input.replace(/\D/g, '').slice(0, 10);
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-    if (match) {
-      let formatted = '';
-      if (match[1]) formatted = `(${match[1]}`;
-      if (match[2]) formatted += `) ${match[2]}`;
-      if (match[3]) formatted += `-${match[3]}`;
-      return formatted;
-    }
-    return input;
-  };
+const formatPhoneNumber = (input) => formatUsPhone(input);
     console.log("statepicker====", statepicker, country)
         /**
  * Signup handle utility.
@@ -584,12 +586,16 @@ const signupHandle = () => {
             }
         }
         {
-            let finalFormattedPhone = "";
-            if (!isNonUsaUser && props?.route?.params?.Alldata?.countryCode == "+1" && props?.route?.params?.Alldata?.phone) {
-                const finalCont = formatPhoneNumber(props?.route?.params?.Alldata?.phone);
-                finalFormattedPhone = finalCont || "";
-                console.log(finalFormattedPhone,"finalFormattedPhone++++++++")
+            let formattedUsaPhone = "";
+            if (!isNonUsaUser) {
+                const sourcePhone = props?.route?.params?.Alldata?.phone;
+                if (!isValidUsPhone(sourcePhone)) {
+                    showErrorAlert('Enter a complete 10-digit USA cell number.');
+                    return;
+                }
+                formattedUsaPhone = requireUsPhone(sourcePhone);
             }
+
             let obj = isNonUsaUser ? {
                 "first_name": props?.route?.params?.Alldata?.first_name,
                 "last_name": props?.route?.params?.Alldata?.last_name,
@@ -606,12 +612,12 @@ const signupHandle = () => {
                 "playerSessionID": playerSessionID,
                 "deviceToken": fcm,
                 "deviceType": Platform.OS
-            } : finalFormattedPhone ? {
+            } : formattedUsaPhone ? {
                 "first_name": props?.route?.params?.Alldata?.first_name,
                 "last_name": props?.route?.params?.Alldata?.last_name,
                 "email": props?.route?.params?.Alldata?.email,
                 "password": props?.route?.params?.Alldata?.password,
-                "phone": `+1${finalFormattedPhone}`,
+                "phone": formattedUsaPhone,
                 "role": 4,
                 "state_id": specialidpratice,
                 "profession": selectedId === 12 ? country : label,

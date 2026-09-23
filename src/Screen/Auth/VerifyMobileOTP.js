@@ -1,3 +1,4 @@
+import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Verify mobile otp screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, VerifyMobileOTP, token_error_otp, handleChange, handleKeyPress, token_handle, toggleModal, verifyHandlevalid, resendMobileOTP, clearAllOTPFieldsMobile, stateDashboardData, stateReport, licHandl, verifyHandle, onBackPress, styles.
  */
@@ -91,8 +92,8 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
         code === '1' ||
         code.toUpperCase() === 'US' ||
         code.toUpperCase() === 'USA' ||
-        code.startsWith('+1') ||
-        code.startsWith('1');
+        code === '+1' ||
+        code === '1';
 
     const isRawUS =
         raw.startsWith('+1') ||
@@ -101,24 +102,12 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
 
     const isUS = isUsaIp || isCodeUS || isRawUS;
 
-    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
-        const last10 = digitsOnly.slice(-10);
-        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
-        if (match) {
-            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-        }
-    }
+    if (isUS) return formatUsPhone(raw);
 
     if (raw.startsWith('+')) {
         const processed = processPhoneNumber(raw);
         if (processed && processed.isValid) {
-            if (processed.countryCode === '+1' || processed.country === 'US') {
-                const digits = processed.nationalNumber.slice(-10);
-                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
-                if (match) {
-                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-                }
-            }
+            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
             return processed.formattedNumber || raw;
         }
     }

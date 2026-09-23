@@ -38,6 +38,7 @@
  */
 
 import axios from 'axios';
+import { normalizePhonePayload, normalizePhoneState } from './UsPhone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from './constants';
 import TokenManager from './TokenManager';
@@ -287,6 +288,16 @@ const axiosInstance = axios.create();
 // ─────────────────────────────────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
   async (config) => {
+    // Serialize complete USA phones in the web format: +1 (XXX) XXX-XXXX.
+    // Reject incomplete values before any network request. Retries may
+    // contain Axios-serialized JSON; preserve other body types (e.g. FormData).
+    if (typeof config.data === 'string') {
+      let body;
+      try { body = JSON.parse(config.data); } catch (_) { /* Non-JSON body. */ }
+      if (body && typeof body === 'object') config.data = JSON.stringify(normalizePhonePayload(body));
+    } else {
+      config.data = normalizePhonePayload(config.data);
+    }
     try {
       if (!config.headers) config.headers = {};
       const skipBasicAuth = config.skipBasicAuth || config.headers.skipBasicAuth;
@@ -357,6 +368,7 @@ const RECOVERY_ENDPOINTS = new Set([
 
 axiosInstance.interceptors.response.use(
   async (response) => {
+    response.data = normalizePhoneState(response.data);
     try {
       const fullUrl = response?.config?.url || '';
       // Strip base URL and query parameters to get the relative path

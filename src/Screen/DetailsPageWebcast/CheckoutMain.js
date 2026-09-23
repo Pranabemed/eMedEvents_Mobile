@@ -26,6 +26,7 @@ import { FormatDateZone } from '../../Utils/Helpers/Timezone';
  * @returns {JSX.Element}
  */
 const CheckoutMain = ({
+    markPersonalizationEdited,
     savefull,
     setSavefull,
     setNotadded,
@@ -663,6 +664,7 @@ function formatPrice(price) {
                 </Text>
             </View> : null}
             <CheckoutInputbox
+                markPersonalizationEdited={markPersonalizationEdited}
                 handleInputChanged={handleInputChange}
                 isEmailTouched={isEmailTouched}
                 setIsEmailTouched={setIsEmailTouched}

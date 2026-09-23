@@ -1,3 +1,4 @@
+import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Forgot mpin screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ForgotMPIN, fogotHandle, backEraFt, onBackPress, formatPhoneNumber, formatIndianPhoneNumber, handleInputChange, styles.
  */
@@ -143,19 +144,7 @@ const onBackPress = () => {
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => {
-        const cleaned = input.replace(/\D/g, '').slice(0, 10);
-        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-        if (match) {
-            let formatted = '';
-            if (match[1]) formatted = `(${match[1]}`;
-            if (match[2]) formatted += `) ${match[2]}`;
-            if (match[3]) formatted += `-${match[3]}`;
-            return formatted;
-        }
-        return input;
-    };
+const formatPhoneNumber = (input) => formatUsPhone(input);
         /**
  * Formats indian phone number.
  * @param {*} input - Input value.

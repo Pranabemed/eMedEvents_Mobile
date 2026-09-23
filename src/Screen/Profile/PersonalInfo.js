@@ -1,3 +1,5 @@
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
 /**
  * Personal info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: buildProfessionLabel, isPhysicianProfessionalInformation, CustomRadioButton, status, status1, status2, PersonalInfo, SearchBack, clean, specaillized, loadStateCards, searchCountryName, handleProfession, handleSearch, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, makeUpdateProf, styles.
  */
@@ -162,7 +164,16 @@ const PersonalInfo = (props) => {
     }, []);
 
     const userObj = props?.route?.params?.personal || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
-    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const [detectedCountry, setDetectedCountry] = useState({});
+    useEffect(() => {
+        let active = true;
+        getCountryAndDialCode().then(info => { if (active) setDetectedCountry(info || {}); }).catch(() => {});
+        return () => { active = false; };
+    }, []);
+    const storedCountry = props?.route?.params?.applicableCountry || userObj?.user_address || userObj || {};
+    const applicableCountry = countryIdentity(storedCountry) ? storedCountry : detectedCountry;
+    const applicableCountryKey = countryIdentity(applicableCountry);
+    const isNonUsaUser = !isUsCountry(applicableCountry);
     const isNonUsaUpdateFlow = nonUsaPermanentFlags?.professionUpdateRequired === true;
     const hasCompletedStateLicenseFlow = nonUsaPermanentFlags?.stateLicenseFlowCompleted === true;
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
@@ -204,7 +215,7 @@ const PersonalInfo = (props) => {
                 ? `${cleanedProfession} - ${cleanedProfessionType}`
                 : cleanedProfession || cleanedProfessionType;
 
-        setCountry(combinedValue || '');
+        if (!props?.route?.params?.forceProfessionChange) setCountry(combinedValue || '');
         setSelectedOption(source?.professional_information?.dea_registered);
         const npiNumber = source?.professional_information?.npi_number;
         setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
@@ -227,19 +238,28 @@ const PersonalInfo = (props) => {
             });
     }
     useEffect(() => {
+        let active = true;
+        setClist([]);
+        setSelectCountry([]);
+        if (props?.route?.params?.forceProfessionChange) {
+            setFormData({speciality: '', speciality_ids: []});
+            setCountry('');
+            setSpeciality('');
+            setSpeciality_id([]);
+            setSelectedSpecialities([]);
+            setSlist([]);
+            setSelectState([]);
+        }
         connectionrequest()
             .then(() => {
-                if (isNonUsaUpdateFlow || !isNonUsaUser) {
-                    dispatch(professionRequest());
-                } else {
-                    dispatch(professionRequest({ other_country: 1 }));
-                }
+                if (active) dispatch(professionRequest(professionCountryParams(applicableCountry)));
             })
             .catch(err => {
                 console.log(err);
                 showErrorAlert('Please connect to Internet');
             });
-    }, [props?.route?.params?.personal, isNonUsaUser, isNonUsaUpdateFlow]);
+        return () => { active = false; };
+    }, [applicableCountryKey, props?.route?.params?.forceProfessionChange]);
     useEffect(() => {
         /**
 * Load state cards utility.
@@ -507,7 +527,7 @@ const PersonalInfo = (props) => {
     };
 
     useEffect(() => {
-        if (props?.route?.params?.personal?.specialities) {
+        if (!props?.route?.params?.forceProfessionChange && props?.route?.params?.personal?.specialities) {
             const specialties = Object.entries(props?.route?.params?.personal?.specialities).map(([id, name]) => ({
                 id: String(id),
                 name: String(name),

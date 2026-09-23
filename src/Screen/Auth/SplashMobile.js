@@ -1,3 +1,4 @@
+import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Splash mobile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: _splashMobileOTPSentForPhone, SplashMobile, fetch, restore, handleChange, handleKeyPress, clearAllOTPFieldsMobile, verifyHandlevalid, verifyHandle, toggleModal, stateDashboardData, stateReport, licHandl, styles.
  */
@@ -73,8 +74,8 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
         code === '1' ||
         code.toUpperCase() === 'US' ||
         code.toUpperCase() === 'USA' ||
-        code.startsWith('+1') ||
-        code.startsWith('1');
+        code === '+1' ||
+        code === '1';
 
     const isRawUS =
         raw.startsWith('+1') ||
@@ -83,24 +84,12 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
 
     const isUS = isUsaIp || isCodeUS || isRawUS;
 
-    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
-        const last10 = digitsOnly.slice(-10);
-        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
-        if (match) {
-            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-        }
-    }
+    if (isUS) return formatUsPhone(raw);
 
     if (raw.startsWith('+')) {
         const processed = processPhoneNumber(raw);
         if (processed && processed.isValid) {
-            if (processed.countryCode === '+1' || processed.country === 'US') {
-                const digits = processed.nationalNumber.slice(-10);
-                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
-                if (match) {
-                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-                }
-            }
+            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
             return processed.formattedNumber || raw;
         }
     }

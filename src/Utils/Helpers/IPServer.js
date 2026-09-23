@@ -57,6 +57,7 @@ const getCountryName = countryCode => {
  * @returns {Object}
  */
 const normalizeGeoInfo = (data = {}) => {
+  PUBLIC_IP = data.ip || data.ipAddress || PUBLIC_IP;
   const countryCode = String(
     data.country_code ||
       data.countryCode ||
@@ -189,7 +190,7 @@ export /**
  * @returns {Promise<*>}
  */
 const getCountryAndDialCode = async () => {
-  if (CACHED_COUNTRY_INFO) {
+  if (CACHED_COUNTRY_INFO?.country && PUBLIC_IP) {
     return CACHED_COUNTRY_INFO;
   }
   CACHED_COUNTRY_INFO = await fetchCountryAndDialCode(PUBLIC_IP);

@@ -1,3 +1,5 @@
+import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
+import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, GUEST_REGISTRATION_FLOW_KEY, Checkout, cleanNumber, getRouteTransactionFee, buildPaymentPrice, persistGuestRegistrationSession, checkoutClear, handleSearch, handleCountry, handlePratice, handlePraticeLic, handleCity, toggleModalPaymentfree, toggleModalFailedfree, resetGuestCheckoutFields, searchCountryNameProfession, handleProfession, onBackPress, loadGuestRegistrationFlow, token_handle_vault, defaultCountryToGeo, clean, specaillized, countryReq, PraticingState, LicStateTakeDo, cityReq, handleFree, statusCheck, allTicketsFree, formatPhoneNumberno, formatIndianPhoneNumber, showModal, isUSASelected, getRequiredFieldsForAttendee, handleInputChange, validateEmail, validateCellNo, validateSingleAttendee, emailCheck, sendEmailCheckRequests, mergeCustomFieldsWithLabels, handleInputChangeeamilad, proceedPayment, convertToISODate, allTicketsFreeac, cartPayment, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, formatPhoneNumber, handleCountrySet, handleStateshows, handleLicStateshows, handleLicDate, handleDobDate, handlecityShows, applyCoupon, styles.
  */
@@ -60,7 +62,7 @@ let status1 = "";
  */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
+import useCheckoutPersonalization from '../../Utils/Hooks/useCheckoutPersonalization';
 
 /**
  * Reusable Checkout component.
@@ -158,7 +160,6 @@ const Checkout = (props) => {
     const [savefull, setSavefull] = useState(null);
     const [customFields, setCustomFields] = useState(Array.from({ length: formData?.length }, () => ({})));  // Store custom fields for each attendee
     const [customFieldsLabels, setCustomFieldsLabels] = useState(Array.from({ length: formData?.length }, () => ({})));
-    const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     console.log(countrypickerprof, "countrypickerprof", clist, props?.route?.params?.inPersonTicket?.totalTicketPrice)
     // const isInitialLoad = useRef(false); 
     console.log(ticketSave, props?.route?.params, "1cheochg", props?.route?.params?.inPersonTicket?.inpersonSpanrole?.conferenceTypeId == "2", formData, "checkoutSpan=============");
@@ -482,90 +483,6 @@ const toggleModalFailedfree = (tik) => {
             }
             : null;
     const checkoutCompletionRoute = 'TabNav';
-    useEffect(() => {
-        if (!isfocus || !isGuestCheckout) {
-            setGuestSignupDraft(null);
-            return;
-        }
-
-        let isActive = true;
-
-                /**
- * Hydrate guest signup draft utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const hydrateGuestSignupDraft = async () => {
-            try {
-                const draft = await loadGuestSignupDraft();
-                if (!isActive) {
-                    return;
-                }
-                setGuestSignupDraft(draft);
-            } catch (error) {
-                console.log('[Checkout] guest draft load error', error);
-            }
-        };
-
-        hydrateGuestSignupDraft();
-
-        return () => {
-            isActive = false;
-        };
-    }, [isGuestCheckout, isfocus]);
-    useEffect(() => {
-        if (!isGuestCheckout || !guestSignupDraft?.email || emailad) {
-            return;
-        }
-
-        setEmailad(guestSignupDraft.email);
-    }, [emailad, guestSignupDraft?.email, isGuestCheckout]);
-    useEffect(() => {
-        if (!isGuestCheckout || !guestSignupDraft?.profession || professionad) {
-            return;
-        }
-
-        const professionValue = String(guestSignupDraft.profession || '').trim();
-        setProfessionad(professionValue);
-
-        const professionKey = professionValue.split(' - ')[0].trim();
-        if (professionKey) {
-            specaillized(professionKey);
-        }
-    }, [guestSignupDraft?.profession, isGuestCheckout, professionad]);
-    useEffect(() => {
-        if (!isGuestCheckout || speciality_id?.length > 0 || !guestSignupDraft?.specialty) {
-            return;
-        }
-
-        const targetSpecialty = String(guestSignupDraft.specialty || '').trim().toLowerCase();
-        const availableSpecialities = Array.isArray(slist)
-            ? slist
-            : Array.isArray(selectState)
-                ? selectState
-                : [];
-        const matchedSpeciality = availableSpecialities.find(item => {
-            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
-            return candidate === targetSpecialty;
-        });
-
-        if (matchedSpeciality) {
-            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
-            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
-            if (!speciality) {
-                setSpeciality(matchedName || guestSignupDraft.specialty);
-            }
-            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
-                setSpeciality_id(matchedId ? [matchedId] : []);
-            }
-            return;
-        }
-
-        if (!speciality) {
-            setSpeciality(guestSignupDraft.specialty);
-        }
-    }, [guestSignupDraft?.specialty, isGuestCheckout, selectState, slist, speciality, speciality_id]);
     /**
  * Reset guest checkout fields utility.
  * @returns {void}
@@ -626,6 +543,10 @@ const searchCountryNameProfession = text => {
  * @returns {void}
  */
 const handleProfession = (did, ixd) => {
+        if (Number(ixd) === 0) {
+            markPersonalizationEdited('profession');
+            setProfessionad(did);
+        }
         console.log(did, "he;;;;======")
         specaillized(did?.split(' - ')[0])
         setFormData((prevFormData) => {
@@ -720,6 +641,32 @@ const token_handle_vault = () => {
             resetGuestCheckoutFields();
         }
     }, [isGuestCheckout, guestRegistrationFlowActive]);
+    const markPersonalizationEdited = useCheckoutPersonalization({
+        focused: isfocus,
+        profile: allProfession,
+        options: slist,
+        onApply: patch => {
+            const fields = {};
+            if (patch.email) { setEmailad(patch.email); fields.emailad = patch.email; }
+            if (patch.profession) {
+                setProfessionad(patch.profession);
+                fields.professionad = patch.profession;
+                specaillized(patch.profession.split(' - ')[0]);
+            }
+            if (patch.specialty) {
+                setSpeciality(patch.specialty.name);
+                setSpeciality_id(patch.specialty.ids);
+                setPreviousSpec(patch.specialty.ids.map((id, index) => ({id, name: patch.specialty.name.split(', ')[index] || patch.specialty.name})));
+                fields.speciality = patch.specialty.name;
+                fields.speciality_ids = patch.specialty.ids;
+            }
+            setFormData(previous => {
+                if (!previous[0]) return previous;
+                return previous.map((attendee, index) => index === 0 ? {...attendee, ...fields} : attendee);
+            });
+        },
+    });
+
 
     useEffect(() => {
         if (!isGuestCheckout || !Array.isArray(countryall) || countryall.length === 0) return;
@@ -763,11 +710,6 @@ const defaultCountryToGeo = () => {
         }
     }, [allProfession])
     useEffect(() => {
-        if (allProfession?.personal_information?.email || allProfession?.email) {
-            setEmailad(allProfession?.personal_information?.email || allProfession?.email);
-        }
-    }, [allProfession])
-    useEffect(() => {
         if ((allProfession?.personal_information?.dob && allProfession.personal_information.dob !== "0000-00-00") ||
             (allProfession?.dob && allProfession.dob !== "0000-00-00")) {
             setDateofbirth(allProfession?.personal_information?.dob || allProfession?.dob);
@@ -775,55 +717,6 @@ const defaultCountryToGeo = () => {
             setDateofbirth("");
         }
     }, [allProfession]);
-    useEffect(() => {
-        if (allProfession?.professional_information?.profession || allProfession?.profession) {
-            const profession = allProfession?.professional_information?.profession || allProfession?.profession;
-            const profession_type = allProfession?.professional_information?.profession_type || allProfession?.profession_type
-                        /**
- * Clean utility.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const clean = (value) => {
-                if (value == null) return '';
-                return String(value).trim();
-            };
-            const cleanedProfession = clean(profession);
-            const cleanedProfessionType = clean(profession_type);
-            const combinedValue =
-                cleanedProfession && cleanedProfessionType
-                    ? `${cleanedProfession} - ${cleanedProfessionType}`
-                    : cleanedProfession || cleanedProfessionType;
-
-            specaillized(allProfession?.professional_information?.profession || allProfession?.profession);
-            // setProfessionad(`${allProfession?.professional_information?.profession || allProfession?.profession} - ${allProfession?.professional_information?.profession_type || allProfession?.profession_type}`)
-            setProfessionad(combinedValue || '');
-        }
-    }, [allProfession])
-    useEffect(() => {
-        if (allProfession?.specialities) {
-            // Extracting specialties from allProfession
-            const specialties = Object.entries(allProfession.specialities).map(([id, name]) => ({
-                id: String(id),
-                name: String(name),
-            }));
-
-            console.log(specialties, "specialties00000001222");
-
-            // Creating a string of names for display
-            const namesString = specialties.map(specialty => specialty.name).join(', ');
-
-            // Mapping IDs to strings
-            const ids = specialties.map(specialty => String(specialty.id));
-
-            // Updating the state with specialties, names, IDs, and previousSpec
-            setSpeciality(namesString);
-            setSpeciality_id(ids);
-            setPreviousSpec(specialties); // Store the full specialties for reference
-        }
-    }, [allProfession, setSpeciality, setSpeciality_id, setPreviousSpec]);
-
-
     console.log(previousSpec, "previousSpec=======12223", formData, ticketSave?.discounts)
 
         /**
@@ -1220,7 +1113,8 @@ const allTicketsFree = (ticketsArray) =>
                 const authPhone = AuthReducer?.verifyResponse?.phone.trim();
 
                 // Extract country code and number from +<code><number> pattern
-                const match = authPhone.match(/^\+(\d{1,2})(\d+)$/);
+                const parsedPhone = processPhoneNumber(String(authPhone));
+                const match = parsedPhone?.isValid ? [authPhone, parsedPhone.countryCode.replace('+', ''), parsedPhone.nationalNumber] : null;
                 console.log(match,"match========")
                 if (match) {
                     callingCodeToUse = match[1];
@@ -1232,6 +1126,7 @@ const allTicketsFree = (ticketsArray) =>
             }
 
             // ✅ Format number based on calling code
+            if (!callingCodeToUse && (String(allDatashow?.country_id) === '1' || /^\+1|^\(/.test(String(phoneNumberToUse || '')))) callingCodeToUse = '1';
             let formattedCellNo = phoneNumberToUse;
             if (callingCodeToUse == "1" || callingCodeToUse == 1) {
                 formattedCellNo = formatPhoneNumberno(phoneNumberToUse);
@@ -1263,27 +1158,7 @@ const allTicketsFree = (ticketsArray) =>
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumberno = (input) => {
-        // Handle null/undefined/empty cases
-        if (!input) return "";
-
-        // Convert to string in case input is a number
-        const strInput = String(input);
-
-        // Remove all non-digit characters and limit to 10 digits
-        const cleaned = strInput.replace(/\D/g, '').slice(0, 10);
-        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-        if (match) {
-            let formatted = '';
-            if (match[1]) formatted = `(${match[1]}`;
-            if (match[2]) formatted += `) ${match[2]}`;
-            if (match[3]) formatted += `-${match[3]}`;
-            return formatted;
-        }
-
-        return strInput; // Return original input if formatting fails
-    };
+const formatPhoneNumberno = (input) => formatUsPhone(input);
 
         /**
  * Formats indian phone number.
@@ -1395,44 +1270,30 @@ const showModal = () => {
  * @param {Object} attendee - Input value.
  * @returns {*}
  */
-const isUSASelected = (attendee = {}) => {
-        const countryName = String(attendee?.country || '').trim().toLowerCase();
-        const countryIdentifier = String(attendee?.country_id || '').trim();
-        const phoneDialCode = String(attendee?.dialcode || '').trim();
-
-        return (
-            countryName === 'usa' ||
-            countryName === 'united states' ||
-            countryName === 'united states of america' ||
-            countryIdentifier === '1' ||
-            phoneDialCode === '+1' ||
-            phoneDialCode === '1'
-        );
-    };
-
-    const attendeeCountry = formData?.[0]?.country;
-    const attendeeCountryId = formData?.[0]?.country_id;
-    const attendeeDialcode = formData?.[0]?.dialcode;
-
-    const hasSelectedCountry = Boolean(attendeeCountry || attendeeCountryId || attendeeDialcode);
-    const tempAttendee = {
-        country: attendeeCountry,
-        country_id: attendeeCountryId,
-        dialcode: attendeeDialcode
-    };
-    const isNonUsaUser = hasSelectedCountry
-        ? !isUSASelected(tempAttendee)
-        : (nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(allProfession || {}) || (detectedCountry && detectedCountry !== 'US'));
+const isUSASelected = isUsCountry;
+    const professionCountry = formData?.[profindex === '' ? 0 : profindex] || {};
+    const applicableProfessionCountry = countryIdentity(professionCountry)
+        ? professionCountry
+        : (countryIdentity({country, country_id}) ? {country, country_id} : {country: detectedCountry});
+    const professionCountryKey = countryIdentity(applicableProfessionCountry);
+    const isNonUsaUser = !isUsCountry(applicableProfessionCountry);
 
     useEffect(() => {
+        let active = true;
+        setSelectCountry([]);
+        setClist([]);
+        setSlist([]);
+        setSelectState([]);
+        setSelectedSpecialities([]);
         connectionrequest()
             .then(() => {
-                dispatch(professionRequest(isNonUsaUser ? { other_country: 1 } : {}));
+                if (active) dispatch(professionRequest(professionCountryParams(applicableProfessionCountry)));
             })
             .catch(err => {
-                showErrorAlert('Please connect to Internet', err);
+                if (active) showErrorAlert('Please connect to Internet', err);
             });
-    }, [isfocus, dispatch, isNonUsaUser]);
+        return () => { active = false; };
+    }, [isfocus, dispatch, professionCountryKey]);
 
         /**
  * Returns required fields for attendee.
@@ -1465,6 +1326,14 @@ const getRequiredFieldsForAttendee = (attendee = {}) => {
 const handleInputChange = (index, field, value) => {
         const updatedFormData = [...formData];
         updatedFormData[index][field] = value;
+        if (field === 'country' || field === 'country_id' || field === 'dialcode') {
+            if (!isUSASelected(updatedFormData[index])) {
+                updatedFormData[index].medicallics = '';
+                updatedFormData[index].license_state_id = null;
+                updatedFormData[index].license_number = '';
+                updatedFormData[index].license_expiry_date = '';
+            }
+        }
         setFormData(updatedFormData);
 
         if (field === 'emailad') {
@@ -1493,7 +1362,8 @@ const validateEmail = (email) => {
  * @param {*} cellno - Input value.
  * @returns {*}
  */
-const validateCellNo = (cellno) => {
+const validateCellNo = (cellno, attendee = {}) => {
+        if (isUSASelected(attendee)) return isValidUsPhone(cellno);
         const cleaned = cellno.replace(/\D/g, '');
         return /^\d{10,15}$/.test(cleaned);
     };
@@ -1506,6 +1376,16 @@ const validateCellNo = (cellno) => {
     }));
     const [isEmailTouched, setIsEmailTouched] = useState(formData.map(() => false));
     const [isCellNoTouched, setIsCellNoTouched] = useState(formData.map(() => false));
+
+    // Find duplicate emails across attendees
+    const emailCounts = {};
+    formData.forEach((attendee) => {
+        const email = (attendee?.emailad || '').trim().toLowerCase();
+        if (email && validateEmail(email)) {
+            emailCounts[email] = (emailCounts[email] || 0) + 1;
+        }
+    });
+
     // Validate each attendee
     const attendeesFilledStatus = formData.map((attendee, index) => {
         let isAttendeeValid = true;
@@ -1524,16 +1404,20 @@ const validateCellNo = (cellno) => {
         }
 
         // Validate specific fields: emailad
+        const currentEmail = (attendee.emailad || '').trim().toLowerCase();
         const emailValid = validateEmail(attendee.emailad || '');
         if (!emailValid) {
             isAttendeeValid = false;
             errorFlags[index].emailad = "Invalid email address.";
+        } else if (formData.length > 1 && emailCounts[currentEmail] > 1) {
+            isAttendeeValid = false;
+            errorFlags[index].emailad = "Duplicate attendee email detected. Please enter a unique email address for each attendee.";
         } else {
             errorFlags[index].emailad = null;
         }
 
         // Validate specific fields: cellno
-        const cellNoValid = validateCellNo(attendee.cellno || '');
+        const cellNoValid = validateCellNo(attendee.cellno || '', attendee);
         if (!cellNoValid) {
             isAttendeeValid = false;
             errorFlags[index].cellno = "Invalid cell number. It must be 10-15 digits.";
@@ -1582,7 +1466,7 @@ const validateSingleAttendee = (attendee) => {
         }
 
         // Validate specific fields: cellno
-        const cellNoValid = validateCellNo(attendee.cellno || '');
+        const cellNoValid = validateCellNo(attendee.cellno || '', attendee);
         if (!cellNoValid) {
             isAttendeeValid = false;
             errorFlags.cellno = "Cell number must be 10–15 digits.";
@@ -1741,6 +1625,10 @@ const handleInputChangeeamilad = (index, key, value) => {
  * @returns {void}
  */
 const proceedPayment = () => {
+        setIsEmailTouched(formData.map(() => true));
+        if (!fullAccess || formData.some(attendee => !validateCellNo(attendee.cellno || '', attendee))) {
+            return;
+        }
         // Flattening attendees based on their quantity
         const attendees = (Array.isArray(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets)
             ? props.route.params.inPersonTicket.inPersonTicket.tickets
@@ -1784,12 +1672,13 @@ function convertToISODate(dateString) {
                 state_id: data?.state_id || null, // Use state_id from formData
                 city_id: data?.city_id || null, // Use city_id from formData
                 zipcode: data?.zipcode || '', // Use zipcode from formData
-                phone: data?.cellno || '', // Use cell phone number from formData,
+                phone: isUSASelected(data) ? requireUsPhone(data?.cellno) : data?.cellno || '', // Use cell phone number from formData,
                 dob: data?.dateofbirth || '',
                 ...(isGuestCheckout && playerSessionID ? { playerSessionID } : {})
             };
 
-            if (!isNonUsaUser) {
+            const isAttendeeUSA = isUSASelected(data);
+            if (isAttendeeUSA) {
                 attendeeItem.license_state_id = data?.license_state_id || null;
                 attendeeItem.license_number = data?.license_number || null;
                 attendeeItem.license_expiry_date = data?.license_expiry_date ? convertToISODate(data?.license_expiry_date) : "";
@@ -1810,7 +1699,7 @@ function convertToISODate(dateString) {
             state_id: formData[0]?.state_id || null,
             city_id: formData[0]?.city_id || null,
             zipcode: formData[0]?.zipcode || '',
-            phone: formData[0]?.cellno || ''
+            phone: isUSASelected(formData[0]) ? requireUsPhone(formData[0]?.cellno) : formData[0]?.cellno || ''
         };
         const customFieldCheked = props?.route?.params?.checkoutSpan?.inPersonTicket?.custom_fields || props?.route?.params?.inPersonTicket?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
         const jsonString = JSON.stringify(mergedData);
@@ -1856,6 +1745,10 @@ const allTicketsFreeac = (ticketsArray) =>
  * @returns {void}
  */
 const cartPayment = () => {
+        if (isUsCallingCode(dialcode) && !isValidUsPhone(cellno)) {
+            showErrorAlert('Enter a complete 10-digit USA cell number.');
+            return;
+        }
         let objcart = {
             "payment_id": fullPaymentId?.length > 0 && fullPaymentId?.map(item => item?.payment_id),
             "billing": {
@@ -1867,7 +1760,7 @@ const cartPayment = () => {
                 "state_id": props?.route?.params?.checkoutSpan?.user_billing_address?.state_id || state_id,
                 "city_id": props?.route?.params?.checkoutSpan?.user_billing_address?.city_id || city_id,
                 "zipcode": zipcode,
-                "phone": cellno
+                "phone": isUsCallingCode(dialcode) ? requireUsPhone(cellno) : cellno
             }
         }
         connectionrequest()
@@ -1889,6 +1782,7 @@ const cartPayment = () => {
  * @returns {void}
  */
 const handleSpecialitySelect = (selectedItems, formData) => {
+        if (activeIndex === 0) markPersonalizationEdited('specialty');
         if (activeIndex !== null) {
             const updatedForm = [...formData];
 
@@ -1929,6 +1823,11 @@ const handleSpecialitySelect = (selectedItems, formData) => {
  * @returns {void}
  */
 const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
+        if (Number(index) === 0) {
+            markPersonalizationEdited('specialty');
+            setSpeciality(selectedSpecialities.join(', '));
+            setSpeciality_id(selectedIds);
+        }
         const updatedFormData = [...formData];
 
         // Initialize formData for the current index if not present
@@ -1976,25 +1875,7 @@ const removeSpeciality = (index, specialityId) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => {
-        if (isUSA) {
-            // USA format: (XXX) XXX-XXXX
-            const cleaned = input.replace(/\D/g, '').slice(0, 10);
-            const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-            if (match) {
-                let formatted = '';
-                if (match[1]) formatted = `(${match[1]}`;
-                if (match[2]) formatted += `) ${match[2]}`;
-                if (match[3]) formatted += `-${match[3]}`;
-                return formatted;
-            }
-        } else {
-            // International format: remove non-digits but allow up to 15 digits
-            return input.replace(/[^0-9]/g, '').slice(0, 15);
-        }
-        return input;
-    };
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
         /**
  * Handles country set.
  * @param {*} didi - Input value.
@@ -2002,6 +1883,9 @@ const formatPhoneNumber = (input, isUSA = false) => {
  * @returns {void}
  */
 const handleCountrySet = (didi, index) => {
+        const previousCountry = countryIdentity(formData[index]);
+        const countryChanged = Boolean(previousCountry) && previousCountry !== countryIdentity(didi);
+        if (Number(index) === 0 && countryChanged) markPersonalizationEdited('profession');
         if (!props?.route?.params?.checkoutSpan) {
             Snackbar.show({
                 text: `Since you have updated the country for ${index == 0 ? "primary registrant" : `attendee ${index + 1}`}, kindly update your profession and specialty.`,
@@ -2043,6 +1927,11 @@ const handleCountrySet = (didi, index) => {
                 dialcode: didi?.callingcode,
                 country: didi?.name,
                 country_id: didi?.id,
+                ...(countryChanged ? {
+                    countryProfessionReset: true,
+                    professionad: '', speciality: '', speciality_ids: [], speciality_id: [],
+                    medicallics: '', license_state_id: null, license_number: '', license_expiry_date: '',
+                } : {}),
                 state: null,
                 state_id: null,
                 city: null,
@@ -2220,6 +2109,7 @@ const applyCoupon = () => {
                     )}
                     <Loader visible={loaderVisible} />
                     <CheckoutMain
+                        markPersonalizationEdited={markPersonalizationEdited}
                         savefull={savefull}
                         setSavefull={setSavefull}
                         setNotadded={setNotadded}

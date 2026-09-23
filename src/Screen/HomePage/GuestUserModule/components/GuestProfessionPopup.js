@@ -26,6 +26,7 @@ import normalize from '../../../../Utils/Helpers/Dimen';
 import { getApi } from '../../../../Utils/Helpers/ApiRequest';
 import getUserAgentJSON from '../../../../Utils/Helpers/UserAgent';
 import Buttons from '../../../../Components/Button';
+import { getPublicIP, getCountryAndDialCode } from '../../../../Utils/Helpers/IPServer';
 import { professionSaveRequest } from '../../../../Redux/Reducers/GuestReducer';
 import { clearGuestSignupDraft, loadGuestSignupDraft, saveGuestSignupDraft } from '../../../../Utils/Helpers/GuestSignupDraft';
 
@@ -143,6 +144,7 @@ export /**
 
     const [profession, setProfession] = useState('');
     const [specialty, setSpecialty] = useState('');
+    const [specialtyId, setSpecialtyId] = useState('');
     const [professionOptions, setProfessionOptions] = useState([]);
     const [specialtyOptions, setSpecialtyOptions] = useState([]);
     const [professionLoading, setProfessionLoading] = useState(false);
@@ -159,18 +161,19 @@ export /**
     });
 
     const persistGuestDraft = useCallback(
-      async (nextProfession = profession, nextSpecialty = specialty, nextEmail = email) => {
+      async (nextProfession = profession, nextSpecialty = specialty, nextEmail = email, nextSpecialtyId = specialtyId) => {
         try {
           await saveGuestSignupDraft({
             profession: nextProfession,
             specialty: nextSpecialty,
+            specialtyId: nextSpecialtyId,
             email: nextEmail,
           });
         } catch (error) {
           console.warn('[GuestProfessionPopup] Unable to persist guest draft:', error);
         }
       },
-      [email, profession, specialty],
+      [email, profession, specialty, specialtyId],
     );
 
     const closeAndPersist = useCallback(async () => {
@@ -206,9 +209,20 @@ export /**
       setProfessionLoading(true);
       try {
         getUserAgentJSON();
-        const endpoint = isUsaUser === false
-          ? 'master/professionCredentials?other_country=1'
-          : 'master/professionCredentials';
+        let detectedCountry = '';
+        try {
+          const geoInfo = await getCountryAndDialCode();
+          detectedCountry = String(geoInfo?.country || geoInfo?.country_name || '').trim().toUpperCase();
+        } catch (err) {
+          console.warn('[GuestProfessionPopup] IP location check failed:', err);
+        }
+
+        const isExplicitUsa = detectedCountry === 'US' || detectedCountry === 'USA' || detectedCountry === 'UNITED STATES' || detectedCountry === 'UNITED STATES OF AMERICA';
+        const isStrictUsa = isUsaUser === true ? isExplicitUsa : (isUsaUser === false ? false : isExplicitUsa);
+
+        const endpoint = isStrictUsa
+          ? 'master/professionCredentials'
+          : 'master/professionCredentials?other_country=1';
         const response = await getApi(endpoint);
         const normalized = normalizeProfessionResponse(response?.data);
         setProfessionOptions(normalized);
@@ -277,6 +291,7 @@ export /**
 
           setProfession(guestDraft.profession || '');
           setSpecialty(guestDraft.specialty || '');
+          setSpecialtyId(guestDraft.specialtyId || '');
           setEmail(guestDraft.email || '');
 
           if (guestDraft.profession) {
@@ -342,6 +357,7 @@ export /**
         const selectedProfession = item?.label || '';
         setProfession(selectedProfession);
         setSpecialty('');
+        setSpecialtyId('');
         setSpecialtyOptions([]);
         setProfessionOpen(false);
         setSpecialtyOpen(false);
@@ -350,7 +366,7 @@ export /**
           profession: '',
           specialty: '',
         }));
-        persistGuestDraft(selectedProfession, '', email);
+        persistGuestDraft(selectedProfession, '', email, '');
         fetchSpecialties(selectedProfession);
       },
       [email, fetchSpecialties, persistGuestDraft],
@@ -358,13 +374,15 @@ export /**
 
     const handleSpecialtySelect = useCallback(item => {
       const selectedSpecialty = item?.label || '';
+      const selectedId = String(item?.id ?? item?.raw?.id ?? item?.raw?.speciality_id ?? item?.raw?.specialty_id ?? '');
       setSpecialty(selectedSpecialty);
+      setSpecialtyId(selectedId);
       setSpecialtyOpen(false);
       setErrors(prev => ({
         ...prev,
         specialty: '',
       }));
-      persistGuestDraft(profession, selectedSpecialty, email);
+      persistGuestDraft(profession, selectedSpecialty, email, selectedId);
     }, [email, persistGuestDraft, profession]);
 
     const handleSubmit = useCallback(async () => {
@@ -386,6 +404,7 @@ export /**
         await saveGuestSignupDraft({
           profession,
           specialty,
+          specialtyId,
           email: trimmedEmail,
         });
       } catch (error) {
@@ -395,6 +414,7 @@ export /**
       let dynamicCity = guestData?.city_name || '';
       let dynamicState = guestData?.state_name || '';
       let dynamicCountryName = guestData?.country_name || '';
+      let dynamicIp = guestData?.ip || getPublicIP() || '';
 
       try {
         if (!dynamicCity || dynamicCountryName === 'IN' || dynamicCountryName === guestData?.country) {
@@ -403,9 +423,24 @@ export /**
           dynamicCity = geoData?.city || dynamicCity;
           dynamicState = geoData?.region || dynamicState;
           dynamicCountryName = geoData?.country || dynamicCountryName;
+          if (!dynamicIp) {
+            dynamicIp = geoData?.ip || '';
+          }
         }
       } catch (error) {
         console.log('Error fetching dynamic geo data:', error);
+      }
+
+      if (!dynamicCountryName || !dynamicState || !dynamicCity || !dynamicIp) {
+        try {
+          const geoInfo = await getCountryAndDialCode();
+          dynamicCountryName = dynamicCountryName || geoInfo?.country_name || geoInfo?.country || '';
+          dynamicState = dynamicState || geoInfo?.state_name || '';
+          dynamicCity = dynamicCity || geoInfo?.city_name || '';
+          dynamicIp = dynamicIp || getPublicIP() || '';
+        } catch (e) {
+          console.log('Error fetching IPServer geo info:', e);
+        }
       }
 
       const payload = {
@@ -413,7 +448,7 @@ export /**
         speciality: specialty,
         email,
         playerSessionID: guestData?.playerSessionID || '',
-        ip: guestData?.ip || '',
+        ip: dynamicIp,
         city: dynamicCity,
         state_name: dynamicState,
         region: dynamicState,
@@ -436,6 +471,7 @@ export /**
       profession,
       specialty,
       trimmedEmail,
+      specialtyId,
     ]);
 
     const handleSkip = useCallback(async () => {

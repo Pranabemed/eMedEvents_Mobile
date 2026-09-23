@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, usPhoneDigits } from './UsPhone';
 /**
  * Usa phone utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: processPhoneNumberUSA.
  */
@@ -9,7 +10,10 @@ export /**
  * @returns {void}
  */
 const processPhoneNumberUSA = (number) => {
-  console.log("phoneNumber-------", number);
+  if (isValidUsPhone(number)) {
+    return { isValid: true, countryCode: '+1', nationalNumber: usPhoneDigits(number),
+      country: 'US', formattedNumber: formatUsPhone(number), rawInput: number };
+  }
   try {
     let phoneNumber = parsePhoneNumberFromString(number);
     if (!phoneNumber || !phoneNumber.isValid()) {
@@ -24,10 +28,7 @@ const processPhoneNumberUSA = (number) => {
     let formattedNumber;
     if (country == 'US') {
       if (nationalNumber.length >= 10) {
-        const areaCode = nationalNumber.substring(0, 3);
-        const centralOfficeCode = nationalNumber.substring(3, 6);
-        const lineNumber = nationalNumber.substring(6, 10);
-        formattedNumber = `+${countryCode}(${areaCode}) ${centralOfficeCode}-${lineNumber}`;
+        formattedNumber = formatUsPhone(nationalNumber);
       } else {
         formattedNumber = phoneNumber.formatInternational();
       }

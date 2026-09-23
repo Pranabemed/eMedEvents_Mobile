@@ -81,6 +81,8 @@ import { postApi, getApi } from '../../Utils/Helpers/ApiRequest';
 import axios from 'axios';
 import { getBasicAuthorizationHeader } from '../../Utils/Helpers/BasicAuth';
 import getUserAgentJSON from '../../Utils/Helpers/UserAgent';
+import { getPublicIP } from '../../Utils/Helpers/IPServer';
+import { resolveSignupLocation } from '../../Utils/Helpers/SignupLocation';
 /**
  * Selects the auth slice from the root Redux state.
  *
@@ -96,7 +98,6 @@ import { fetchAndStoreBasicAuthToken } from '../../Utils/Helpers/BasicAuth';
 import { dashboardSuccess, dashMbSuccess, dashPerSuccess, mainprofileSuccess, mainprofileRequest, dashboardRequest, dashPerRequest, stateDashboardSuccess } from '../Reducers/DashboardReducer';
 import { PrimeCheckSuccess, PrimeCheckRequest } from '../Reducers/WebcastReducer';
 import { DeviceEventEmitter } from 'react-native';
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import {
   isNonUsaAccount,
   writeNonUsaFlowState,
@@ -196,7 +197,8 @@ export function* allreducerFalse(action) {
  * @returns {Generator}
  */
 export function* signupSaga(action) {
-  const ipAddress = getPublicIP();
+  const signupPayload = yield call(resolveSignupLocation, action.payload);
+  const ipAddress = signupPayload.ip;
   // let items = yield select(getItem);
   let header = {
     Accept: 'application/json',
@@ -205,7 +207,7 @@ export function* signupSaga(action) {
     // authorization: items.token,
   };
   try {
-    let response = yield call(postApi, 'user/signup', action.payload, header);
+    let response = yield call(postApi, 'user/signup', signupPayload, header);
     if (response?.data?.success == true) {
       yield put(tokenSuccess(response?.data?.token));
       yield put(signupSuccess(response?.data));

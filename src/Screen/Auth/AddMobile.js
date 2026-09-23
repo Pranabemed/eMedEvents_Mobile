@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Add mobile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddMobile, handleMobilNOchange, formatPhoneNumber, formatIndianPhoneNumber, getCountryFromIP, fetchCountry, onBackPress, styles.
  */
@@ -46,6 +47,11 @@ const AddMobile = (props) => {
 * @returns {void}
 */
     const handleMobilNOchange = () => {
+        const selectedPhoneCode = addCountry;
+        if (isUsCallingCode(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
+            showErrorAlert('Enter a complete 10-digit USA cell number.');
+            return;
+        }
         const mobilePattern = /^\d{10,15}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
@@ -55,10 +61,10 @@ const AddMobile = (props) => {
             const getPhCd = addCountry;
             let obj = addCountry == "+91" ? {
                 "verify_type": "phone",
-                "phone": `${getPhCd}${phone}`,
+                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
             } : {
                 "verify_type": "phone",
-                "phone": `${getPhCd}${mobileHd}`
+                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${mobileHd}`
             }
             connectionrequest()
                 .then(() => {
@@ -98,9 +104,9 @@ const AddMobile = (props) => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = addCountry;
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, phone).catch(() => { });
+                AsyncStorage.setItem(constants.PHONE, isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => { });
             }
-            props.navigation.navigate("SplashMobile", { Newphone: { "phone": phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
+            props.navigation.navigate("SplashMobile", { Newphone: { "phone": isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
     }, [AuthReducer.status, phone, addCountry]);
     /**
@@ -108,19 +114,7 @@ const AddMobile = (props) => {
 * @param {*} input - Input value.
 * @returns {*}
 */
-    const formatPhoneNumber = (input) => {
-        const cleaned = input.replace(/\D/g, '').slice(0, 10);
-        const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-        if (match) {
-            let formatted = '';
-            if (match[1]) formatted = `(${match[1]}`;
-            if (match[2]) formatted += `) ${match[2]}`;
-            if (match[3]) formatted += `-${match[3]}`;
-            return formatted;
-        }
-        return input;
-    };
+    const formatPhoneNumber = (input) => formatUsPhone(input);
     /**
 * Formats indian phone number.
 * @param {*} input - Input value.
@@ -263,7 +257,7 @@ const AddMobile = (props) => {
                                 />
                                 <TextInput
                                     editable
-                                    maxLength={15}
+                                    maxLength={undefined}
                                     onChangeText={text => {
                                         if (addCountry == "+91") {
                                             const formatted = formatIndianPhoneNumber(text);

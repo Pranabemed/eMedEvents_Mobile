@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, usPhoneDigits } from './UsPhone';
 /**
  * Phone normalize utility module. Collects reusable helper functions and constants for shared application behavior. Exported members: processPhoneNumber.
  */
@@ -10,11 +11,15 @@ export /**
  */
 const processPhoneNumber = (number) => {
   try {
+    if (isValidUsPhone(number)) {
+      return { isValid: true, countryCode: '+1', nationalNumber: usPhoneDigits(number),
+        country: 'US', formattedNumber: formatUsPhone(number), rawInput: number };
+    }
     const phoneNumber = parsePhoneNumber(number);
     const countryCode = phoneNumber.countryCallingCode;
     const nationalNumber = phoneNumber.nationalNumber;
     const country = phoneNumber.country; 
-    const formattedNumber = phoneNumber.formatInternational();
+    const formattedNumber = countryCode === '1' ? formatUsPhone(nationalNumber) : phoneNumber.formatInternational();
     return {
       isValid: true,
       countryCode: `+${countryCode}`,

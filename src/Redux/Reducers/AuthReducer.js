@@ -373,6 +373,8 @@ loginFailure(state, action) {
  * @returns {void}
  */
 professionRequest(state, action) {
+      state.professionResponse = null;
+      state.specializationResponse = null;
       state.status = action.type;
     },
         /**

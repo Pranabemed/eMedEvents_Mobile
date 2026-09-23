@@ -1,3 +1,7 @@
+import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
+import { AppContext } from '../GlobalSupport/AppContext';
+import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Mobile login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, status, MobileLoginOTP, restoreTimerState, VeirfyUserByMobile, verifyHandle, resendMobileOTP, normalizeFlag, handleNavigation, handleChange, clearAllOTPFieldsPhone, handleKeyPress, loginBaack, onBackPress, styles.
  */
@@ -16,7 +20,7 @@ import { againloginsiginRequest, chooseStatecardRequest } from '../../Redux/Redu
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
@@ -45,8 +49,8 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
         code === '1' ||
         code.toUpperCase() === 'US' ||
         code.toUpperCase() === 'USA' ||
-        code.startsWith('+1') ||
-        code.startsWith('1');
+        code === '+1' ||
+        code === '1';
 
     const isRawUS =
         raw.startsWith('+1') ||
@@ -55,24 +59,12 @@ const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
 
     const isUS = isUsaIp || isCodeUS || isRawUS;
 
-    if (isUS && (digitsOnly.length === 10 || digitsOnly.length === 11)) {
-        const last10 = digitsOnly.slice(-10);
-        const match = last10.match(/^(\d{3})(\d{3})(\d{4})$/);
-        if (match) {
-            return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-        }
-    }
+    if (isUS) return formatUsPhone(raw);
 
     if (raw.startsWith('+')) {
         const processed = processPhoneNumber(raw);
         if (processed && processed.isValid) {
-            if (processed.countryCode === '+1' || processed.country === 'US') {
-                const digits = processed.nationalNumber.slice(-10);
-                const match = digits.match(/^(\d{3})(\d{3})(\d{4})$/);
-                if (match) {
-                    return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
-                }
-            }
+            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
             return processed.formattedNumber || raw;
         }
     }

@@ -1,3 +1,5 @@
+import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
+import { formatUsPhone, isUsCallingCode } from '../../Utils/Helpers/UsPhone';
 /**
  * Checkout inputbox screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, CheckoutInputbox, openDatePicker, closeDatePicker, handleDateSelect, handleInputChange, fetchSpecialities, countryPick, DatePick, DobPick, statePick, cityPick, professionTrack, medicalState, shouldShowMedicalLicenseState, normalizeCountryName, btnClick_galeryUpload, syncAnimatedValue, ensureAnimatedValue, getLabelStyle, handleFocus, handleBlur, handlePlaceSelected, fetchPostalCodeFromGeocode, toggleExpand, handleCheckboxChange, formatPhoneNumber, renderForms, billingForms.
  */
@@ -26,7 +28,6 @@ import CustomInputTouchableZ from './Newmultiple';
 import CustomInputTouchableY from './Multiple';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
-import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
 /**
  * Google api key constant.
  * @returns {string}
@@ -51,6 +52,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   setAllmsg,
   allmsg,
   handleCountrySet,
+  markPersonalizationEdited,
   handlecityShows,
   handleStateshows,
   cityAll,
@@ -107,6 +109,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   const {
     isConnected
   } = useContext(AppContext);
+  const editedPhoneIndexes = useRef(new Set());
   useEffect(() => {
     if (totalQuantity) {
       countryReq();
@@ -126,7 +129,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
         city: index === 0 ? city || '' : '',
         city_id: index === 0 ? (city_id ? city_id : []) || '' : '',
         zipcode: index === 0 ? zipcode || '' : '',
-        cellno: index === 0 ? cellno || '' : '',
+        cellno: index === 0 ? (isUsCallingCode(dialcode) ? formatUsPhone(cellno) : cellno || '') : '',
         searchpratice: '',
         medicallics: index === 0 ? medicallics || '' : '',
         license_number: index === 0 ? license_number || '' : '',
@@ -135,9 +138,26 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
         dialcode: index === 0 ? dialcode || '' : '',
         dateofbirth: index === 0 ? dateofbirth || '' : ''
       }));
-      setFormData(initialFormData);
+      // Retain entered attendee data when profile/specialty effects rerun.
+      setFormData(previous => initialFormData.map((initial, index) => {
+        const existing = previous[index];
+        if (!existing) return initial;
+        const merged = { ...initial };
+        Object.entries(existing).forEach(([key, value]) => {
+          if (value !== '' && value != null && (!Array.isArray(value) || value.length)) merged[key] = value;
+        });
+        if (existing.countryProfessionReset) {
+          ['professionad', 'speciality', 'speciality_ids', 'medicallics', 'license_state_id', 'license_number', 'license_expiry_date'].forEach(key => {
+            merged[key] = existing[key];
+          });
+        }
+        // An explicitly cleared phone must not be repopulated by a late profile response.
+        if (editedPhoneIndexes.current.has(index)) merged.cellno = existing.cellno;
+        if (isUsCallingCode(merged.dialcode)) merged.cellno = formatUsPhone(merged.cellno);
+        return merged;
+      }));
     }
-  }, [totalQuantity, firstname, lastname, emailad, professionad, speciality, speciality_id, npino, address, medicallics, license_number, license_expiry_date, setFormData]);
+  }, [totalQuantity, firstname, lastname, emailad, professionad, speciality, speciality_id, npino, address, medicallics, license_number, license_expiry_date, cellno, dialcode, setFormData]);
   console.log(selectedSpecialities, "selectedSpecialities=----------", formData, country_id, errorFlags);
   const [newState, setNewState] = useState("");
   const [newIndex, setNewIndex] = useState("");
@@ -215,71 +235,6 @@ const handleDateSelect = (date, index, fieldName) => {
   console.log(customHandle, "customHandle--------------")
   const [conn, setConn] = useState("")
   useEffect(() => {
-    if (!isGuestCheckout) {
-      return;
-    }
-
-    let isActive = true;
-
-        /**
- * Hydrate guest draft utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const hydrateGuestDraft = async () => {
-      try {
-        const guestDraft = await loadGuestSignupDraft();
-        if (!isActive || !guestDraft) {
-          return;
-        }
-
-        if (!emailad && guestDraft.email) {
-          setEmailad(guestDraft.email);
-        }
-
-        if (!professionad && guestDraft.profession) {
-          const professionValue = String(guestDraft.profession || '').trim();
-          setProfessionad(professionValue);
-          const professionKey = professionValue.split(' - ')[0].trim();
-          if (professionKey) {
-            specaillized(professionKey);
-          }
-        }
-
-        if ((!speciality || !speciality_id?.length) && guestDraft.specialty) {
-          const targetSpecialty = String(guestDraft.specialty || '').trim().toLowerCase();
-          const availableSpecialities = Array.isArray(slist) ? slist : [];
-          const matchedSpeciality = availableSpecialities.find(item => {
-            const candidate = String(item?.name ?? item?.label ?? item?.speciality_name ?? item?.specialty_name ?? '').trim().toLowerCase();
-            return candidate === targetSpecialty;
-          });
-
-          if (matchedSpeciality) {
-            const matchedName = String(matchedSpeciality?.name ?? matchedSpeciality?.label ?? '').trim();
-            const matchedId = String(matchedSpeciality?.id ?? matchedSpeciality?.speciality_id ?? '');
-            if (!speciality) {
-              setSpeciality(matchedName || guestDraft.specialty);
-            }
-            if (!Array.isArray(speciality_id) || speciality_id.length === 0) {
-              setSpeciality_id(matchedId ? [matchedId] : []);
-            }
-          } else if (!speciality) {
-            setSpeciality(guestDraft.specialty);
-          }
-        }
-      } catch (error) {
-        console.log('[CheckoutInputbox] guest draft load error', error);
-      }
-    };
-
-    hydrateGuestDraft();
-
-    return () => {
-      isActive = false;
-    };
-  }, [emailad, isGuestCheckout, professionad, setEmailad, setProfessionad, setSpeciality, setSpeciality_id, speciality, speciality_id, slist, specaillized]);
-  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       console.log('Connection State:', state.isConnected);
       setConn(state.isConnected);
@@ -294,6 +249,11 @@ const hydrateGuestDraft = async () => {
  * @returns {void}
  */
 const handleInputChange = (index, key, value) => {
+    if (index === 0 && key === 'emailad') {
+      markPersonalizationEdited?.('email');
+      setEmailad(value);
+    }
+    if (key === 'cellno') editedPhoneIndexes.current.add(index);
     ensureAnimatedValue(index);
     const shouldBeUp = !!value;
     if (!isFieldFocused[index]) {
@@ -423,18 +383,7 @@ const medicalState = (index) => {
  * @returns {*}
  */
 const shouldShowMedicalLicenseState = (index) => {
-    const countryName = String(formData?.[index]?.country || country || '').trim().toLowerCase();
-    const countryIdentifier = String(formData?.[index]?.country_id || country_id || '').trim();
-    const phoneDialCode = String(formData?.[index]?.dialcode || dialcode || '').trim();
-
-    return (
-      countryName === 'usa' ||
-      countryName === 'united states' ||
-      countryName === 'united states of america' ||
-      countryIdentifier === '1' ||
-      phoneDialCode === '+1' ||
-      phoneDialCode === '1'
-    );
+    return isUsCountry(formData?.[index] || {});
   };
     /**
  * Normalizes country name.
@@ -902,25 +851,7 @@ const handleCheckboxChange = (index, fieldName, value) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => {
-    if (isUSA) {
-      // USA format: (XXX) XXX-XXXX
-      const cleaned = input.replace(/\D/g, '').slice(0, 10);
-      const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-      if (match) {
-        let formatted = '';
-        if (match[1]) formatted = `(${match[1]}`;
-        if (match[2]) formatted += `) ${match[2]}`;
-        if (match[3]) formatted += `-${match[3]}`;
-        return formatted;
-      }
-    } else {
-      // International format: remove non-digits but allow up to 15 digits
-      return input.replace(/[^0-9]/g, '').slice(0, 15);
-    }
-    return input;
-  };
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
   console.log(ticketSave, "ticketime-----")
 
   const custom_fieldsTake = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields

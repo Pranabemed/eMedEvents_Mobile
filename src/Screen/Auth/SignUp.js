@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Sign up screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SignUp, detectCountry, CreateAccount, handleInput, setMobileNo, setEmailExist, formatPhoneNumber, formatIndianPhoneNumber, backSingUp, onBackPress, styles.
  */
@@ -123,7 +124,7 @@ const CreateAccount = () => {
       showErrorAlert("Please enter your last name.");
     } else if (!isNonUsaFlow && !cellno) {
       showErrorAlert("Please enter your cell number.");
-    } else if (!isNonUsaFlow && !mobilePattern.test(cellno)) {
+    } else if (!isNonUsaFlow && !isValidUsPhone(cellno)) {
       showErrorAlert("Cell number must be 10 digits ");
     } else if (!email) {
       showErrorAlert("Please enter your email address.");
@@ -157,7 +158,7 @@ const CreateAccount = () => {
         Alldata: {
           "first_name": fname.trim(),
           "last_name": lname.trim(),
-          "phone": isNonUsaFlow ? "" : cellno.trim(),
+          "phone": isNonUsaFlow ? "" : requireUsPhone(cellno),
           "email": email.trim(),
           "password": password.trim(),
           "countryCode": signupCountryCode,
@@ -185,7 +186,7 @@ const handleInput = (val) => {
  * @returns {void}
  */
 const setMobileNo = (text) => {
-    setCellno(text);
+    setCellno(formatUsPhone(text));
     setGettrue(true);
     const mobilePattern = /^\d{10}$/;
     if (mobilePattern.test(text)) {
@@ -229,19 +230,7 @@ const setEmailExist = React.useCallback((text) => {
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => {
-    const cleaned = input.replace(/\D/g, '').slice(0, 10);
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-    if (match) {
-      let formatted = '';
-      if (match[1]) formatted = `(${match[1]}`;
-      if (match[2]) formatted += `) ${match[2]}`;
-      if (match[3]) formatted += `-${match[3]}`;
-      return formatted;
-    }
-    return input;
-  };
+const formatPhoneNumber = (input) => formatUsPhone(input);
     /**
  * Formats indian phone number.
  * @param {*} input - Input value.
@@ -360,7 +349,7 @@ const onBackPress = () => {
   }, []);
   console.log(cellno?.length > 0 && cellno !== 10, "=========poooo")
   const cellNoRegexwpdd = /^\d{10}$/;
-  const isValidWhatsappNodd = cellno?.length > 0 && !cellNoRegexwpdd.test(cellno);
+  const isValidWhatsappNodd = cellno?.length > 0 && !isValidUsPhone(cellno);
   const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
   const isValidEmail = email?.length > 0 && !validateEmail.test(email);
   const passwordregex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;

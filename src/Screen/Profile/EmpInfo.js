@@ -1,3 +1,4 @@
+import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Emp info screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, EmpInfo, SearchBack, stateTakeItemEmp, formatUSPhoneNumber, loadMoreData, renderFooter.
  */
@@ -96,19 +97,7 @@ const stateTakeItemEmp = ({ item, index }) => {
  * @param {*} input - Input value.
  * @returns {void}
  */
-function formatUSPhoneNumber(input) {
-            // Remove all non-digit characters
-            const digits = input.replace(/\D/g, '');
-
-            // Format based on the number of digits
-            if (digits.length <= 3) {
-                return `(${digits}`;
-            } else if (digits.length <= 6) {
-                return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-            } else {
-                return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
-            }
-        }
+function formatUSPhoneNumber(input) { return formatUsPhone(input); }
         return (
             <View>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>

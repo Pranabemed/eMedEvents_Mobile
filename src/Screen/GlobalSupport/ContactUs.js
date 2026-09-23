@@ -1,3 +1,4 @@
+import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Contact us screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, status, status1, ContactUs, contactUsPage, countryReq, specaillized, PraticingState, handleSearch, handleCountry, handlePratice, handleCity, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, cityReq, normalizeCountryName, getCurrentLocation, getComponent, handleCountrySet, handleStateshows, handlecityShows, onBackPress, submitContact, formatPhoneNumber.
  */
@@ -677,6 +678,10 @@ const onBackPress = () => {
  * @returns {void}
  */
 const submitContact = () => {
+        if (isUsCallingCode(phoneCountryCode) && !isValidUsPhone(mobileHd)) {
+            showErrorAlert('Enter a complete 10-digit USA cell number.');
+            return;
+        }
         let obj = {
             "speaker_id": props?.route?.params?.makeIt?.speaker_id,
             "specialties": formData && formData?.speciality,
@@ -691,7 +696,7 @@ const submitContact = () => {
             "name": contact_name,
             "email": email_cont,
             "country_code": `${countryCode}(${phoneCountryCode})`,
-            "contact_number": mob_cont,
+            "contact_number": isUsCallingCode(phoneCountryCode) ? requireUsPhone(mobileHd) : mob_cont,
             "message": speaker_cont
         }
         connectionrequest()
@@ -727,25 +732,7 @@ const submitContact = () => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => {
-        if (isUSA) {
-            // USA format: (XXX) XXX-XXXX
-            const cleaned = input.replace(/\D/g, '').slice(0, 10);
-            const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-
-            if (match) {
-                let formatted = '';
-                if (match[1]) formatted = `(${match[1]}`;
-                if (match[2]) formatted += `) ${match[2]}`;
-                if (match[3]) formatted += `-${match[3]}`;
-                return formatted;
-            }
-        } else {
-            // International format: remove non-digits but allow up to 15 digits
-            return input.replace(/[^0-9]/g, '').slice(0, 15);
-        }
-        return input;
-    };
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);
