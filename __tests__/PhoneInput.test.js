@@ -46,3 +46,30 @@ test('native maxLength cannot cut a masked phone to six digits', () => {
   expect(value).toBe('(415) 555-2671');
   expect(screen.getByTestId('cell').props.value).toBe('(415) 555-2671');
 });
+
+test('US input caps paste, ignores an eleventh digit, and backspaces to empty', () => {
+  let value = '';
+  const changed = text => { value = text; };
+  const field = () => <InputField testID="cell" keyboardType="phone-pad" countryCode="+1" value={value} onChangeText={changed} />;
+  const screen = render(field());
+  fireEvent.changeText(screen.getByTestId('cell'), '12345678901234');
+  screen.rerender(field());
+  expect(value).toBe('(123) 456-7890');
+  fireEvent.changeText(screen.getByTestId('cell'), value + '1');
+  screen.rerender(field());
+  expect(value).toBe('(123) 456-7890');
+  for (let i = 0; i < 10; i++) {
+    fireEvent.changeText(screen.getByTestId('cell'), value.slice(0, -1));
+    screen.rerender(field());
+  }
+  expect(value).toBe('');
+});
+
+test('explicit Canadian country retains its input and limit despite sharing +1', () => {
+  const changed = jest.fn();
+  const screen = render(<InputField testID="cell" keyboardType="phone-pad" countryCode="+1" phoneCountry={{country_code: 'CA'}} value="4165551234" maxLength={15} onChangeText={changed} />);
+  expect(screen.getByTestId('cell').props.value).toBe('4165551234');
+  expect(screen.getByTestId('cell').props.maxLength).toBe(15);
+  fireEvent.changeText(screen.getByTestId('cell'), '41655512345');
+  expect(changed).toHaveBeenCalledWith('41655512345');
+});

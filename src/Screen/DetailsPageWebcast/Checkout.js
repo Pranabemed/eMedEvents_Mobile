@@ -1,5 +1,5 @@
 import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
-import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, GUEST_REGISTRATION_FLOW_KEY, Checkout, cleanNumber, getRouteTransactionFee, buildPaymentPrice, persistGuestRegistrationSession, checkoutClear, handleSearch, handleCountry, handlePratice, handlePraticeLic, handleCity, toggleModalPaymentfree, toggleModalFailedfree, resetGuestCheckoutFields, searchCountryNameProfession, handleProfession, onBackPress, loadGuestRegistrationFlow, token_handle_vault, defaultCountryToGeo, clean, specaillized, countryReq, PraticingState, LicStateTakeDo, cityReq, handleFree, statusCheck, allTicketsFree, formatPhoneNumberno, formatIndianPhoneNumber, showModal, isUSASelected, getRequiredFieldsForAttendee, handleInputChange, validateEmail, validateCellNo, validateSingleAttendee, emailCheck, sendEmailCheckRequests, mergeCustomFieldsWithLabels, handleInputChangeeamilad, proceedPayment, convertToISODate, allTicketsFreeac, cartPayment, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, formatPhoneNumber, handleCountrySet, handleStateshows, handleLicStateshows, handleLicDate, handleDobDate, handlecityShows, applyCoupon, styles.
  */
@@ -1126,9 +1126,11 @@ const allTicketsFree = (ticketsArray) =>
             }
 
             // ✅ Format number based on calling code
-            if (!callingCodeToUse && (String(allDatashow?.country_id) === '1' || /^\+1|^\(/.test(String(phoneNumberToUse || '')))) callingCodeToUse = '1';
+            if (!callingCodeToUse) {
+                callingCodeToUse = (getCountryDialCode(allDatashow, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.signupResponse?.user) || '').replace('+', '');
+            }
             let formattedCellNo = phoneNumberToUse;
-            if (callingCodeToUse == "1" || callingCodeToUse == 1) {
+            if (isUsCountry(allDatashow)) {
                 formattedCellNo = formatPhoneNumberno(phoneNumberToUse);
             } else if (callingCodeToUse == "91" || callingCodeToUse == 91) {
                 formattedCellNo = formatIndianPhoneNumber(phoneNumberToUse);
@@ -1365,7 +1367,7 @@ const validateEmail = (email) => {
 const validateCellNo = (cellno, attendee = {}) => {
         if (isUSASelected(attendee)) return isValidUsPhone(cellno);
         const cleaned = cellno.replace(/\D/g, '');
-        return /^\d{10,15}$/.test(cleaned);
+        return /^\d{10}$/.test(cleaned);
     };
 
     // Create an error tracking object for each attendee
@@ -1745,7 +1747,7 @@ const allTicketsFreeac = (ticketsArray) =>
  * @returns {void}
  */
 const cartPayment = () => {
-        if (isUsCallingCode(dialcode) && !isValidUsPhone(cellno)) {
+        if (isUsCountry({country, country_id}) && !isValidUsPhone(cellno)) {
             showErrorAlert('Enter a complete 10-digit USA cell number.');
             return;
         }
@@ -1760,7 +1762,7 @@ const cartPayment = () => {
                 "state_id": props?.route?.params?.checkoutSpan?.user_billing_address?.state_id || state_id,
                 "city_id": props?.route?.params?.checkoutSpan?.user_billing_address?.city_id || city_id,
                 "zipcode": zipcode,
-                "phone": isUsCallingCode(dialcode) ? requireUsPhone(cellno) : cellno
+                "phone": isUsCountry({country, country_id}) ? requireUsPhone(cellno) : cellno
             }
         }
         connectionrequest()
@@ -1875,7 +1877,7 @@ const removeSpeciality = (index, specialityId) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
         /**
  * Handles country set.
  * @param {*} didi - Input value.
@@ -1899,32 +1901,14 @@ const handleCountrySet = (didi, index) => {
         setCountry(didi?.name);
         stateRequest(didi?.id);
         setCountry_id(didi?.id);
-        if (didi?.callingcode && formData[index]?.cellno) {
-            const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
-            const formattedNumber = formatPhoneNumber(formData[index]?.cellno, isUSA);
-            setFormData((prevFormData) => {
-                const updatedFormData = [...prevFormData];
-                updatedFormData[index] = {
-                    ...updatedFormData[index],
-                    dialcode: didi?.callingcode,
-                    country: didi?.name,
-                    country_id: didi?.id,
-                    state: null,
-                    state_id: null,
-                    city: null,
-                    city_id: null,
-                    cellno: formattedNumber
-                };
-
-                return updatedFormData;
-            });
-
-        }
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
+            const isUSA = isUsCountry(didi);
+            const currentCell = updatedFormData[index]?.cellno;
+            const formattedNumber = currentCell ? formatPhoneNumber(currentCell, isUSA) : currentCell;
             updatedFormData[index] = {
                 ...updatedFormData[index],
-                dialcode: didi?.callingcode,
+                dialcode: didi?.callingcode || updatedFormData[index]?.dialcode,
                 country: didi?.name,
                 country_id: didi?.id,
                 ...(countryChanged ? {
@@ -1935,7 +1919,8 @@ const handleCountrySet = (didi, index) => {
                 state: null,
                 state_id: null,
                 city: null,
-                city_id: null
+                city_id: null,
+                ...(formattedNumber !== undefined ? { cellno: formattedNumber } : {})
             };
 
             return updatedFormData;

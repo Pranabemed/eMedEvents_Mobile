@@ -18,7 +18,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
-import { mainprofileRequest, dashPerRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer';
+import { mainprofileRequest, dashPerRequest, dashboardRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
 import { licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -583,9 +583,7 @@ const Main = (props) => {
   const isNursingFlow = isNursingHandleMatch && !isPhysicianFlow;
 
   useEffect(() => {
-    if (allProfTake) {
-      setHasAllProfTake(true);
-    }
+    setHasAllProfTake(Boolean(allProfTake));
   }, [allProfTake]);
 
   useEffect(() => {
@@ -593,7 +591,20 @@ const Main = (props) => {
       setHasEnables(true);
     }
   }, [enables]);
-  const shouldHoldSkeleton = !isAsyncStorageLoaded;
+  const hasLoadedProfile = Boolean(
+    DashboardReducer?.mainprofileResponse?.user_id ||
+    DashboardReducer?.mainprofileResponse?.id ||
+    DashboardReducer?.mainprofileResponse?.email ||
+    AuthReducer?.dircetloginResponse?.user?.email ||
+    AuthReducer?.dircetloginResponse?.email ||
+    AuthReducer?.directloginResponse?.user?.email ||
+    AuthReducer?.directloginResponse?.email ||
+    AuthReducer?.loginResponse?.user?.email ||
+    finalverifyvaultmain?.email ||
+    finalProfessionmain?.email ||
+    nonUsaFlowState?.isNonUsa
+  );
+  const shouldHoldSkeleton = !isAsyncStorageLoaded && !hasLoadedProfile;
   const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
     DashboardReducer?.mainprofileResponse?.licensures?.length ||
@@ -666,19 +677,16 @@ const Main = (props) => {
         dispatch(mainprofileRequest({}));
         dispatch(dashPerRequest({}));
         dispatch(dashboardRequest({}));
+        dispatch(stateMandatoryRequest({}));
       })
       .catch((err) => showErrorAlert("Please connect to internet", err));
   }, [detectmain, isFocus]);
 
-  // Keep the main page on skeleton until dashboard profession info is ready.
+  // Keep the main page on skeleton until dashboard profession info or profile data is ready.
   useEffect(() => {
     if (!isFocus) return;
-    if (!isAsyncStorageLoaded) {
-      setShowLoader(false);
-      return;
-    }
     setShowLoader(true);
-  }, [isFocus, isAsyncStorageLoaded, DashboardReducer?.status]);
+  }, [isFocus, isAsyncStorageLoaded, DashboardReducer?.mainprofileResponse, DashboardReducer?.status]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -747,7 +755,7 @@ const Main = (props) => {
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
 
   const shouldRenderNewProfession =
-    (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || (hasNoLicensuresMain && hasNonUsaStateDataMain);
+    (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || (hasNoLicensuresMain && (hasNonUsaStateDataMain || isNonUsaUser));
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   /**
 * Render main add license card utility.
@@ -852,7 +860,7 @@ const Main = (props) => {
     };
 
     token_handle_vault();
-  }, [isFocus]);
+  }, [isFocus, DashboardReducer?.mainprofileResponse]);
   useEffect(() => {
     if (AuthReducer?.status !== 'Auth/verifySuccess') return;
 
@@ -951,7 +959,7 @@ const Main = (props) => {
     if (isFocus) {
       loadProfile();
     }
-  }, [isFocus]);
+  }, [isFocus, DashboardReducer?.mainprofileResponse]);
   useEffect(() => {
     const hasDashboardData = !!DashboardReducer?.dashboardResponse?.data;
     const user = DashboardReducer?.dashboardResponse?.data?.user_information || DashboardReducer?.mainprofileResponse?.user || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaultmain || finalProfessionmain;
@@ -1946,7 +1954,7 @@ const Main = (props) => {
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : freeTrail && !isNonUsaUser && exploreTrialClicked ? <View
+          </View> : freeTrail && !isNonUsaUser && exploreTrialClicked && (allProfTake || isPhysicianFlow) ? <View
             style={{
               position: 'absolute',
               bottom: 0,
@@ -2044,10 +2052,9 @@ const Main = (props) => {
               userForSubCheck?.subscription_user === "subscribed";
 
             const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
-            const subListCheck = Array.isArray(userForSubCheck?.subscriptions) ? userForSubCheck.subscriptions : (Array.isArray(finalProfessionmain?.subscriptions) ? finalProfessionmain.subscriptions : []);
-            const isStrictlyNonSubscribed = (subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && subListCheck.length === 0;
+            const isEligibleToRenderPrimeCard = (subUserCheck === "free" || subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && (subUserCheck !== "subscribed");
 
-            return (!isAccreditationUser && !isNonUsaUser && isStrictlyNonSubscribed && !hasActivePrimeTrialRender && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+            return (!isAccreditationUser && !isNonUsaUser && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}

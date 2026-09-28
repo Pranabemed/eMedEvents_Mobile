@@ -3,7 +3,7 @@ import {countryIdentity, isUsCountry} from './ApplicableCountry';
 // Only explicit country fields qualify: a user's `id` and phone code are not country IDs.
 export const resolveInterestCountry = (...sources) => {
   for (const source of sources) {
-    for (const value of [source?.user_address, source]) {
+    for (const value of [source?.user_address, source?.user, source]) {
       if (!value) continue;
       const country = {
         country: value.country_name || value.country,

@@ -1,4 +1,6 @@
-import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
+import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Contact screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, isPhysicianProfessionalInformation, ContactProfile, SearchBack, detectCountry, getLabelStyle, handleFocus, handleBlur, closeProfessionModal, handleContactTake, handleCountry, handlePratice, handleCity, formatDobWithMoment, handlePlaceSelected, normalizeCountryName, fetchPostalCodeFromGeocode, handleCountrySet, handleStateshows, handlecityShows, countryReq, PraticingState, cityReq, formatPhoneNumber, styles.
  */
@@ -73,28 +75,10 @@ const isPhysicianProfessionalInformation = (info = {}) => {
 };
 
 const getValidDialCode = (callingCode, countryName, geoInfo, countryList) => {
-    let code = callingCode ? String(callingCode).trim() : '';
-    if (code && code !== 'null' && code !== 'undefined' && code !== '+null' && code !== '+undefined' && code !== '+') {
-        return code.startsWith('+') ? code : `+${code}`;
-    }
-    if (geoInfo && geoInfo.dialCode && geoInfo.dialCode !== '+' && geoInfo.dialCode !== '+null' && geoInfo.dialCode !== '+undefined') {
-        return geoInfo.dialCode.startsWith('+') ? geoInfo.dialCode : `+${geoInfo.dialCode}`;
-    }
-    const targetCountry = String(countryName || geoInfo?.country_name || geoInfo?.country || '').trim().toLowerCase();
-    if (Array.isArray(countryList) && countryList.length > 0 && targetCountry) {
-        const found = countryList.find(c =>
-            String(c.name || '').toLowerCase() === targetCountry ||
-            String(c.sortname || '').toLowerCase() === targetCountry
-        );
-        if (found && (found.callingcode || found.calling_code)) {
-            let cCode = String(found.callingcode || found.calling_code).trim();
-            return cCode.startsWith('+') ? cCode : `+${cCode}`;
-        }
-    }
-    if (targetCountry.includes('india') || targetCountry === 'in') {
-        return '+91';
-    }
-    return '+1';
+    const target = String(countryName || '').trim().toLowerCase();
+    const selected = Array.isArray(countryList) ? countryList.find(item => [item?.name, item?.sortname]
+        .some(value => value && String(value).toLowerCase() === target)) : null;
+    return getCountryDialCode({callingCode}, selected, {country: countryName}, geoInfo);
 };
 
 const normalizeContactValue = (value) => {
@@ -235,10 +219,10 @@ const ContactProfile = (props) => {
     const dispatch = useDispatch();
     const dashboardProfessionalInformation = DashboardReducer?.mainprofileResponse?.professional_information;
     const hasExistingPhysicianDashboardProfile = isPhysicianProfessionalInformation(dashboardProfessionalInformation);
-    const cellNoRegexwp = /^\d{10,15}$/;
+    const cellNoRegexwp = /^\d{10}$/;
     const filteredText = whatsappno && whatsappno?.length > 0 && whatsappno.replace(/[^\d]/g, '');
     const isValidWhatsappNo = filteredText?.length > 0 && !cellNoRegexwp.test(filteredText);
-    const cellNoRegexwpcell = /^\d{10,15}$/;
+    const cellNoRegexwpcell = /^\d{10}$/;
     const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
     const isValidcell = filteredTextcell?.length > 0 && !cellNoRegexwpcell.test(filteredTextcell);
     if (status == '' || AuthReducer.status != status) {
@@ -281,6 +265,7 @@ const ContactProfile = (props) => {
         }
     }
     console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
+    const initialCountryRef = useRef(null);
     useEffect(() => {
         if (ProfileReducer.status === 'Profile/contactInfoSuccess') {
             setLoading(false);
@@ -306,11 +291,19 @@ const ContactProfile = (props) => {
                     props?.route?.params?.wholedata ||
                     {};
                 setPendingPersonal(nextPersonal);
-                markNonUsaProfessionUpdateRequired();
-                setProfessionModalVisible(true);
+
+                const wasUSA = isUsCountry({ country: initialCountryRef.current || '' });
+                const isNowUSA = isUsCountry({ country, country_id });
+                const movedToUSA = !wasUSA && isNowUSA;
+
+                if (movedToUSA) {
+                    markNonUsaProfessionUpdateRequired();
+                    setProfessionModalVisible(true);
+                }
+                initialCountryRef.current = country;
             }
         }
-    }, [ProfileReducer.status, ProfileReducer.contactInfoResponse]);
+    }, [ProfileReducer.status, ProfileReducer.contactInfoResponse, country, country_id]);
 
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
@@ -481,7 +474,7 @@ const ContactProfile = (props) => {
 * @returns {void}
 */
     const handleContactTake = () => {
-        const cellNoRegex = /^\d{10,15}$/;
+        const cellNoRegex = /^\d{10}$/;
         const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
         if (!firstname) {
             showErrorAlert("Enter your first name")
@@ -501,9 +494,9 @@ const ContactProfile = (props) => {
             showErrorAlert("Enter your ZIP code.")
         } else if (!cellno) {
             showErrorAlert("Enter your cell number. ")
-        } else if ((isUsCallingCode(dialcode) ? !isValidUsPhone(cellno) : !cellNoRegex.test(filteredTextcell))) {
+        } else if ((isUsCountry({country}) ? !isValidUsPhone(cellno) : !cellNoRegex.test(filteredTextcell))) {
             showErrorAlert("Invalid cell number. It must be 10-15 digits.")
-        } else if (isValidWhatsappNo || (isUsCallingCode(dialcode) && whatsappno && !isValidUsPhone(whatsappno))) {
+        } else if (isValidWhatsappNo || (isUsCountry({country}) && whatsappno && !isValidUsPhone(whatsappno))) {
             showErrorAlert("Invalid whatsapp number. It must be 10-15 digits.");
         } else {
             let obj = {
@@ -516,10 +509,10 @@ const ContactProfile = (props) => {
                 "state_id": state_id,
                 "city_id": city_id,
                 "postal_code": zipcode,
-                "contact_number": isUsCallingCode(dialcode) ? requireUsPhone(cellno) : cellno,
+                "contact_number": isUsCountry({country}) ? requireUsPhone(cellno) : cellno,
                 "alternate_email": "",
                 "skype": "",
-                "whatapp_number": isUsCallingCode(dialcode) && whatsappno ? requireUsPhone(whatsappno) : whatsappno
+                "whatapp_number": isUsCountry({country}) && whatsappno ? requireUsPhone(whatsappno) : whatsappno
             }
             let userObj = {
                 "first_name": firstname,
@@ -600,6 +593,9 @@ const ContactProfile = (props) => {
 
             setCountry(rawCountry);
             setCountry_id(userAddr?.country_id || "");
+            if (rawCountry) {
+                initialCountryRef.current = rawCountry;
+            }
 
             getCountryAndDialCode().then(geoInfo => {
                 setAddress(rawAddr || '');
@@ -626,7 +622,7 @@ const ContactProfile = (props) => {
                 const validDial = getValidDialCode(rawCalling, rawCountry, geoInfo, countryall);
                 setDialcode(validDial);
 
-                const isUSA = validDial === '+1' || validDial === '1';
+                const isUSA = isUsCountry({country: rawCountry});
                 const rawCell = normalizeContactValue(userAddr?.contact_no);
                 const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
 
@@ -644,7 +640,7 @@ const ContactProfile = (props) => {
                 const validDial = getValidDialCode(rawCalling, rawCountry, null, countryall);
                 setDialcode(validDial);
 
-                const isUSA = validDial === '+1' || validDial === '1';
+                const isUSA = isUsCountry({country: rawCountry});
                 const rawCell = normalizeContactValue(userAddr?.contact_no);
                 const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
 
@@ -697,9 +693,9 @@ const ContactProfile = (props) => {
                 if (address) {
                     setAddress(address);
                 }
-                if (countryall) {
+                if (Array.isArray(countryall) && countryall.length > 0) {
                     const normalizedCountry = normalizeCountryName(country);
-                    const countryData = countryall.find(c => c.name.toLowerCase() == normalizedCountry.toLowerCase());
+                    const countryData = countryall.find(c => String(c.name || '').toLowerCase() == String(normalizedCountry || '').toLowerCase());
                     console.log(countryData, "countryData==========", state, city, address);
                     if (countryData) {
                         handleCountrySet(countryData);
@@ -794,12 +790,12 @@ const ContactProfile = (props) => {
         const currentCell = normalizeContactValue(cellno);
         const currentWhatsapp = normalizeContactValue(whatsappno);
         if (didi?.callingcode && currentCell) {
-            const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
+            const isUSA = isUsCountry(didi);
             const formattedNumber = formatPhoneNumber(currentCell, isUSA);
             setCellno(formattedNumber);
         }
         if (didi?.callingcode && currentWhatsapp) {
-            const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
+            const isUSA = isUsCountry(didi);
             const formattedNumber = formatPhoneNumber(currentWhatsapp, isUSA);
             setWhatsappno(formattedNumber);
         }
@@ -912,7 +908,7 @@ const ContactProfile = (props) => {
 * @param {boolean} isUSA - Input value.
 * @returns {*}
 */
-    const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
+    const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
@@ -1263,8 +1259,7 @@ const ContactProfile = (props) => {
                                                     label="Cell Number*"
                                                     value={cellno}
                                                     onChangeText={(val) => {
-                                                        const isUSA = dialcode == '+1' ||
-                                                            dialcode == '1';
+                                                        const isUSA = isUsCountry({country});
                                                         const formattedVal = formatPhoneNumber(val, isUSA);
                                                         setCellno(formattedVal);
                                                     }}
@@ -1273,6 +1268,7 @@ const ContactProfile = (props) => {
                                                     keyboardType="numeric"
                                                     showCountryCode={true}
                                                     countryCode={dialcode}
+                                                    phoneCountry={{country}}
                                                     maxlength={14}
                                                 />
                                             </View>
@@ -1301,8 +1297,7 @@ const ContactProfile = (props) => {
                                                     label="WhatsApp Number"
                                                     value={whatsappno}
                                                     onChangeText={(val) => {
-                                                        const isUSA = dialcode == '+1' ||
-                                                            dialcode == '1';
+                                                        const isUSA = isUsCountry({country});
                                                         const formattedValwp = formatPhoneNumber(val, isUSA);
                                                         setWhatsappno(formattedValwp);
                                                     }}
@@ -1311,6 +1306,7 @@ const ContactProfile = (props) => {
                                                     keyboardType="numeric"
                                                     showCountryCode={true}
                                                     countryCode={dialcode}
+                                                    phoneCountry={{country}}
                                                     maxlength={14}
                                                 />
                                             </View>

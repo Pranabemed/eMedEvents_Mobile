@@ -1,3 +1,4 @@
+import { countryIdentity } from './ApplicableCountry';
 /** USA display formatting is separate from the international API representation. */
 export const US_PHONE_PATTERN = /^\(\d{3}\) \d{3}-\d{4}$/;
 
@@ -6,27 +7,40 @@ export const usPhoneDigits = value => {
   // Do not silently accept extensions, letters, or another country's prefix.
   if (!/^[\d\s()+.-]*$/.test(text)) return null;
   let digits = text.replace(/\D/g, '');
-  if (text.startsWith('+1') || (digits.length === 11 && digits.startsWith('1'))) digits = digits.slice(1);
+  if (text.startsWith('+1') || (/^\d{11}$/.test(text) && digits.startsWith('1'))) digits = digits.slice(1);
   if (text.startsWith('+') && !text.startsWith('+1')) return null;
   return digits;
 };
 
-export const formatUsPhone = value => {
-  const digits = usPhoneDigits(value);
-  // Preserve invalid/overlong input so validation can reject it; never truncate.
-  if (digits === null || digits.length > 10) return String(value ?? '');
-  if (!digits) return '';
-  if (digits.length <= 3) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+export const sanitizeMobileNumber = value => {
+  return String(value ?? '').replace(/\D/g, '').slice(0, 10);
 };
 
-export const isValidUsPhone = value => US_PHONE_PATTERN.test(formatUsPhone(value));
+// Input normalization is deliberately separate from strict submission validation.
+export const sanitizeUsPhoneDigits = value => {
+  const text = String(value ?? '').trim();
+  let digits = text.replace(/\D/g, '');
+  if (/^\+\s*1/.test(text) || (/^\d{11}$/.test(text) && digits.startsWith('1'))) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+};
+
+export const formatUsPhone = value => {
+  const digits = sanitizeUsPhoneDigits(value);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+};
+
+export const isValidUsPhone = value => {
+  const digits = usPhoneDigits(value);
+  return digits !== null && digits.length === 10;
+};
 export const isUsCallingCode = value => /^(?:\+?1|US|USA|United States(?: of America)?)$/i.test(String(value ?? '').trim());
 export const requireUsPhone = value => {
-  const formatted = formatUsPhone(value);
-  if (!US_PHONE_PATTERN.test(formatted)) throw new Error('Enter a complete 10-digit USA cell number.');
-  return formatted;
+  if (!isValidUsPhone(value)) throw new Error('Enter a complete 10-digit USA cell number.');
+  return formatUsPhone(value);
 };
 
 // Match the web API contract: +1 followed by the complete formatted US number.
@@ -48,20 +62,28 @@ const transformPhoneFields = (payload, inheritedUs = false, validate = true) => 
   const country = payload.country_code ?? payload.countryCode ?? payload.country_name ?? payload.country;
   const callingCode = payload.calling_code ?? payload.callingCode ?? payload.dialcode ?? payload.phoneCode;
   const explicitCountry = callingCode ?? country;
-  const us = payload.signup_usa === true || String(payload.country_id) === '1' ||
-    (explicitCountry != null ? isUsCallingCode(explicitCountry) || /\(\+?1\)$/.test(String(explicitCountry)) : inheritedUs);
-  return Object.fromEntries(Object.entries(payload).map(([key, value]) => {
+  const identity = countryIdentity({country: payload.country_name || payload.country,
+    country_code: payload.country_code, country_id: payload.country_id});
+  const us = identity ? identity === 'us' : payload.signup_usa === false ? false :
+    payload.signup_usa === true ||
+    (explicitCountry != null ? isUsCallingCode(explicitCountry) || /^US(?:A)?\(\+?1\)$/i.test(String(explicitCountry)) : inheritedUs);
+  let normalizedUsPhone = false;
+  const result = Object.fromEntries(Object.entries(payload).map(([key, value]) => {
     if (PHONE_FIELDS.has(key) && value !== '' && value != null && ['string', 'number'].includes(typeof value)) {
       const text = String(value).trim();
-      const recognizableUs = explicitCountry == null && (/^\+1(?:\D|\d)/.test(text) || /^\(\d{0,3}(?:\)|$)/.test(text));
+      const recognizableUs = payload.signup_usa !== false && !identity && explicitCountry == null && (/^\+1(?:\D|\d)/.test(text) || /^\(\d{0,3}(?:\)|$)/.test(text));
       const useUsFormat = us || recognizableUs;
       if (useUsFormat && (validate || isValidUsPhone(value))) {
+        normalizedUsPhone = true;
         return [key, validate ? serializeUsPhone(value) : formatUsPhone(value)];
       }
       return [key, String(value)];
     }
     return [key, transformPhoneFields(value, us, validate)];
   }));
+  // Keep the prefix as metadata when response normalization removes it from display text.
+  if (!validate && normalizedUsPhone && !callingCode) result.callingCode = '+1';
+  return result;
 };
 
 export const normalizePhonePayload = payload => transformPhoneFields(payload);

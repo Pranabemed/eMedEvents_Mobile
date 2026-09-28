@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
  * Base url constant.
  * @returns {*}
  */
-const BASE_URL = __DEV__
+const BASE_URL = !__DEV__
   ? 'https://v2api.emedevents.com'   // Staging
   : 'https://newdev.emedevents.com'; // Production
 /**

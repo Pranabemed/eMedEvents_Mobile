@@ -1,4 +1,5 @@
-import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { getCountryDialCode, isUsPhoneContext } from '../../Utils/Helpers/PhoneCountry';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Splash mobile change screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, SplashMobileChange, handleMobilNOchange, finalBack, formatPhoneNumber, styles.
  */
@@ -40,38 +41,38 @@ const SplashMobileChange = (props) => {
     const [mobileHd, setMobileHd] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isUsNumber = code => isUsPhoneContext(code, props?.route?.params,
+        AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse);
     /**
 * Handles mobil nochange.
 * @returns {void}
 */
-    const resolveCountryCode = (paramObj) => {
-        if (!paramObj) return '+1';
-        let code = paramObj?.phonoCd?.countryCode || paramObj?.phonoCd || paramObj?.PhoneCdO || paramObj?.phonecode || paramObj?.phoneCode;
-        if (typeof code === 'object' && code !== null) {
-            code = code.countryCode || code.dialCode || code.phonecode || '+1';
-        }
-        let str = String(code || '').trim();
-        if (!str || str === 'undefined' || str === '[object Object]') return '+1';
-        if (!str.startsWith('+') && /^\d+$/.test(str)) return `+${str}`;
-        return str;
-    };
+    const resolveCountryCode = paramObj => getCountryDialCode(
+        paramObj, AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse,
+    );
 
     const handleMobilNOchange = () => {
         const selectedPhoneCode = resolveCountryCode(props?.route?.params?.Newphone);
-        if (isUsCallingCode(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
+        if (!selectedPhoneCode) {
+            showErrorAlert('Please select your country in your profile.');
+            return;
+        }
+        if (isUsNumber(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
             showErrorAlert('Enter a complete 10-digit USA cell number.');
             return;
         }
-        const mobilePattern = /^\d{10,15}$/;
+        const mobilePattern = /^\d{10}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
         } else if (!mobilePattern.test(phone)) {
-            showErrorAlert("Cell no should be 10 - 15 digit ");
+            showErrorAlert("Cell no should be 10 digits");
         } else {
             const getPhCd = resolveCountryCode(props?.route?.params?.Newphone);
             let obj = {
                 "verify_type": "phone",
-                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
+                "phone": isUsNumber(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
             }
             connectionrequest()
                 .then(() => {
@@ -102,7 +103,7 @@ const SplashMobileChange = (props) => {
             }),
         ]).start();
     }, [phone]);
-    const mobileRegex = /^\d{10,15}$/;
+    const mobileRegex = /^\d{10}$/;
     const isButtonEnabled = mobileRegex.test(phone);
     const prevStatusRef = useRef(AuthReducer?.status || '');
     useEffect(() => {
@@ -112,9 +113,9 @@ const SplashMobileChange = (props) => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => { });
+                AsyncStorage.setItem(constants.PHONE, isUsNumber(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => { });
             }
-            props.navigation.navigate("SplashMobile", { Newphone: { "phone": isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
+            props.navigation.navigate("SplashMobile", { Newphone: { "phone": isUsNumber(getPhCdSent) ? formatUsPhone(phone) : phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
     }, [AuthReducer.status, phone]);
     const resolvePhoneNumber = (phoneState, routeParams) => {
@@ -142,7 +143,7 @@ const SplashMobileChange = (props) => {
     const finalBack = () => {
         const getPhCdSent = resolveCountryCode(props?.route?.params?.Newphone);
         const origPhone = resolvePhoneNumber(phone, props?.route?.params);
-        props.navigation.navigate("SplashMobile", { Newphone: { phoneCode: getPhCdSent, allNo: origPhone, "phone": isUsCallingCode(getPhCdSent) ? formatUsPhone(origPhone) : origPhone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp } })
+        props.navigation.navigate("SplashMobile", { Newphone: { phoneCode: getPhCdSent, allNo: origPhone, "phone": isUsNumber(getPhCdSent) ? formatUsPhone(origPhone) : origPhone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp } })
     }
     /**
 * Formats phone number.
@@ -214,11 +215,12 @@ const SplashMobileChange = (props) => {
                                 />
                                 <TextInput
                                     editable
-                                    maxLength={undefined}
+                                    maxLength={isUsNumber(resolveCountryCode(props?.route?.params?.Newphone)) ? 14 : 10}
                                     onChangeText={text => {
-                                        const formatted = formatPhoneNumber(text);
+                                        const formatted = isUsNumber(resolveCountryCode(props?.route?.params?.Newphone))
+                                            ? formatPhoneNumber(text) : text.replace(/\D/g, '').slice(0, 10);
                                         setMobileHd(formatted);
-                                        const rawDigits = formatted.replace(/\D/g, '');
+                                        const rawDigits = formatted.replace(/\D/g, '').slice(0, 10);
                                         setPhone(rawDigits);
                                     }}
                                     value={mobileHd}

@@ -1,3 +1,4 @@
+import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
 import { formatUsPhone, isUsCallingCode } from '../../Utils/Helpers/UsPhone';
 /**
@@ -851,7 +852,7 @@ const handleCheckboxChange = (index, fieldName, value) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
   console.log(ticketSave, "ticketime-----")
 
   const custom_fieldsTake = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields
@@ -1570,8 +1571,7 @@ onBlur: () => handleBlur(index),
                   label="Cell Number*"
                   value={formData[index]?.cellno || ''}
                   onChangeText={(val) => {
-                    const isUSA = formData[index]?.dialcode == '+1' ||
-                      formData[index]?.dialcode == '1';
+                    const isUSA = isUsCountry(formData[index]);
                     const formattedVal = formatPhoneNumber(val, isUSA);
                     handleInputChange(index, 'cellno', formattedVal);
                     handleInputChanged(index, 'cellno', formattedVal);
@@ -1580,9 +1580,10 @@ onBlur: () => handleBlur(index),
                   placeholderTextColor="#949494"
                   keyboardType="phone-pad"
                   showCountryCode={true}
-                  countryCode={formData[index]?.dialcode ? (formData[index]?.dialcode.startsWith('+') ? formData[index]?.dialcode : `+${formData[index]?.dialcode}`) : ''}
+                  countryCode={getCountryDialCode(formData[index])}
+                  phoneCountry={formData[index]}
                   maxlength={formData[index]?.dialcode == '+1' ||
-                    formData[index]?.dialcode == '1' ? 14 : 15}
+                    formData[index]?.dialcode == '1' ? 14 : 10}
                 />
               </View>
             </View>
@@ -1864,8 +1865,7 @@ onBlur: () => handleBlur(index),
                   label="Cell Number*"
                   value={formData[index]?.cellno || ''}
                   onChangeText={(val) => {
-                    const isUSA = formData[index]?.dialcode == '+1' ||
-                      formData[index]?.dialcode == '1';
+                    const isUSA = isUsCountry(formData[index]);
                     const formattedVal = formatPhoneNumber(val, isUSA);
                     handleInputChange(index, 'cellno', formattedVal);
                     handleInputChanged(index, 'cellno', formattedVal);
@@ -1874,9 +1874,10 @@ onBlur: () => handleBlur(index),
                   placeholderTextColor="#949494"
                   keyboardType="phone-pad"
                   showCountryCode={true}
-                  countryCode={formData[index]?.dialcode ? (formData[index]?.dialcode.startsWith('+') ? formData[index]?.dialcode : `+${formData[index]?.dialcode}`) : ''}
+                  countryCode={getCountryDialCode(formData[index])}
+                  phoneCountry={formData[index]}
                   maxlength={formData[index]?.dialcode == '+1' ||
-                    formData[index]?.dialcode == '1' ? 14 : 15}
+                    formData[index]?.dialcode == '1' ? 14 : 10}
                 />
               </View>
             </View>

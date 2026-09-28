@@ -29,6 +29,7 @@ import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow.js';
+import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry.js';
 import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 /**
@@ -322,9 +323,12 @@ const ProfileMain = (props) => {
     const hasLicensuresData = dashboardLicenses.length > 0;
     const hasLicensureStates = Array.isArray(AuthReducer?.licesensResponse?.licensure_states) && AuthReducer?.licesensResponse?.licensure_states.length > 0;
 
+    const userCountryObj = mainProfileUserAddr || effectiveAllHandle?.user_address || effectiveAllHandle || {};
+    const isProfileCountryUsa = isUsCountry(userCountryObj);
+
     const isPhysicianUser = isPhysicianProfMDDODPM && (!isAccreditationUser || hasLicensuresData);
-    const allProfTake = dashboardLicenses.length > 0 || (hasLicensureStates && isPhysicianProfMDDODPM);
-    const isNonUsaUser = !isPhysicianUser;
+    const allProfTake = isProfileCountryUsa && (dashboardLicenses.length > 0 || (hasLicensureStates && isPhysicianProfMDDODPM));
+    const isNonUsaUser = !isPhysicianUser || !isProfileCountryUsa;
     const showPrimeCardButton = isPhysicianUser && isUsaIpAddress;
     console.log(showPrimeCardButton, "showPrimeCardButton====", isNonSubscribedUser)
     const profileData = [

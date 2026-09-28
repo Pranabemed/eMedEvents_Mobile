@@ -1,3 +1,4 @@
+import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, normalizeProfessionHandle, Login, handleInputChange, formatPhoneNumber, formatIndianPhoneNumber, handleLogin, verifyHandle, isTrueFlag, isFalseFlag, handleNavigation, proceedNonUsaLogin, backEra, goToGuestPage, onBackPress, styles.
@@ -201,10 +202,14 @@ const formatIndianPhoneNumber = (input) => {
       
       let geoInfo = null;
       try {
-        geoInfo = await getCountryAndDialCode();
+        geoInfo = await getCountryAndDialCode({forceRefresh: true});
       } catch (err) {
         console.log('[Login] IP lookup failed:', err);
       }
+
+      if (!mounted) return;
+      const resolvedDialCode = getCountryDialCode(props?.route?.params?.phone, state, geoInfo);
+      if (resolvedDialCode) setPhoneCountryCode(resolvedDialCode);
 
       if (isNonUsa) {
         setIsNonUsaFlow(true);
@@ -887,26 +892,24 @@ const onBackPress = () => {
                       label="Email / Cell Number"
                       value={mobileHd}
                       onChangeText={(val) => {
-                        if (phoneCountryCode == "+91") {
-                          const formatted = formatIndianPhoneNumber(val);
+                        const digits = val.replace(/\D/g, '').slice(0, 10);
+                        if (phoneCountryCode == "+1") {
+                          const formatted = formatPhoneNumber(digits);
                           setMobileHd(formatted);
-                          const rawDigits = formatted.replace(/\D/g, '');
-                          handleInputChange(rawDigits);
-                          setEmail(rawDigits);
-                        } else if (phoneCountryCode == "+1") {
-                          const formatted = formatPhoneNumber(val);
-                          setMobileHd(formatted);
-                          const rawDigits = formatted.replace(/\D/g, '');
-                          handleInputChange(rawDigits);
-                          setEmail(rawDigits);
+                          handleInputChange(digits);
+                          setEmail(digits);
+                        } else {
+                          setMobileHd(digits);
+                          handleInputChange(digits);
+                          setEmail(digits);
                         }
                       }}
                       placeholder=""
                       placeholderTextColor="#949494"
                       keyboardType="number-pad"
                       showCountryCode={true}
-                      countryCode={phoneCountryCode || "+91"}
-                      maxlength={14}
+                      countryCode={phoneCountryCode || "+1"}
+                      maxlength={phoneCountryCode == "+1" ? 14 : 10}
                     /> : <InputField
                       label={isNonUsaFlow ? "Email Address" : "Email / Cell Number"}
                       value={email}

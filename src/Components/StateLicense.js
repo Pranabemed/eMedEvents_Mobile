@@ -1042,7 +1042,7 @@ const renderAddLicenseCard = () => (
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />
                         <Cmemodal setCmemodal={setCmemodal} isModal={cmemodal} onCmeFalse={cmeModalFalse} />
                         {!isSkipProfile && <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />}
-                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <HomeShimmer />)}
+                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : isNonUsaUser ? <RestProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} addit={addit} takestate={takestate} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} DashboardReducer={DashboardReducer} CMEReducer={CMEReducer} profileType={profileType} /> : <HomeShimmer />)}
             </View>
         </>
     );

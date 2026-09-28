@@ -1,4 +1,4 @@
-import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
+import { getCountryDialCode, formatPhoneWithCountry } from '../../Utils/Helpers/PhoneCountry';
 /**
  * Login mobile screen module. Renders a React Native screen or a screen-scoped support component. Exported members: _mobileOTPSentForPhone, LoginMobile, fetch, restore, handleChange, handleKeyPress, clearAllOTPFieldsMobile, verifyHandlevalid, verifyHandle, toggleModal, stateDashboardData, stateReport, licHandl, styles.
  */
@@ -62,43 +62,7 @@ import { isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 let _mobileOTPSentForPhone = null;
 // ─────────────────────────────────────────────────────────────────────────────
 
-const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
-    if (!phoneStr) return '';
-    let raw = String(phoneStr).trim();
-    let code = String(phoneCodeStr || '').trim();
 
-    const digitsOnly = raw.replace(/\D/g, '');
-
-    const isCodeUS =
-        code === '+1' ||
-        code === '1' ||
-        code.toUpperCase() === 'US' ||
-        code.toUpperCase() === 'USA' ||
-        code === '+1' ||
-        code === '1';
-
-    const isRawUS =
-        raw.startsWith('+1') ||
-        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
-        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
-
-    const isUS = isUsaIp || isCodeUS || isRawUS;
-
-    if (isUS) return formatUsPhone(raw);
-
-    if (raw.startsWith('+')) {
-        const processed = processPhoneNumber(raw);
-        if (processed && processed.isValid) {
-            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
-            return processed.formattedNumber || raw;
-        }
-    }
-
-    if (code && !code.startsWith('+') && !isNaN(code)) {
-        code = `+${code}`;
-    }
-    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
-};
 
 /**
  * Login mobile component.
@@ -564,15 +528,16 @@ const licHandl = (prof) => {
         DashboardReducer?.mainprofileResponse?.user_address?.contact_no ||
         props?.route?.params?.Newphone?.phoneCode;
 
-    const phoneCode =
-        props?.route?.params?.Newphone?.phoneCode ||
-        props?.route?.params?.validPh?.phonecode ||
-        props?.route?.params?.mobileNo?.phoneCode ||
-        props?.route?.params?.Newphone?.allNo ||
-        '';
 
-    const isUsaPhoneCode = isUsaCountryCode(phoneCode) || String(phoneCode || '').trim().toUpperCase().startsWith('+1');
-    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCode, isUsaIp || isUsaPhoneCode);
+    const resolvedPhoneCode = getCountryDialCode(
+        props?.route?.params, AuthReducer?.signupResponse,
+        AuthReducer?.verifyResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse,
+        DashboardReducer?.mainprofileResponse, { phone: phoneDetect },
+    );
+    const phoneFinal = formatPhoneWithCountry(phoneDetect, resolvedPhoneCode,
+        props?.route?.params, AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, DashboardReducer?.mainprofileResponse);
 
     useEffect(() => {
         if (phoneDetect?.startsWith('+')) {
@@ -660,7 +625,7 @@ const licHandl = (prof) => {
                                                     props?.route?.params?.mobileNo?.mobileNo ||
                                                     props?.route?.params?.validPh?.cellno,
                                                 phonoCd: finalCode,
-                                                PhoneCdO: props?.route?.params?.validPh?.phonecode ||
+                                                PhoneCdO: resolvedPhoneCode || props?.route?.params?.validPh?.phonecode ||
                                                     props?.route?.params?.mobileNo?.phoneCode ||
                                                     props?.route?.params?.Newphone?.phoneCode,
                                             },

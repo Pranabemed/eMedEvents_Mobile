@@ -1,4 +1,6 @@
-import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { getCountryDialCode, isUsPhoneContext } from '../../Utils/Helpers/PhoneCountry';
+import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Add mobile login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddMobileLogin, handleMobilNOchange, formatPhoneNumber, formatIndianPhoneNumber, getCountryFromIP, fetchCountry, onBackPress, styles.
  */
@@ -19,7 +21,6 @@ import Loader from '../../Utils/Helpers/Loader';
 import TextFieldIn from '../../Components/Textfield';
 import Imagepath from '../../Themes/Imagepath';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 
@@ -37,29 +38,36 @@ const AddMobileLogin = (props) => {
     const [addCount, setAddCount] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
+    const isUsNumber = code => isUsPhoneContext(code, props?.route?.params,
+        AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse);
     /**
 * Handles mobil nochange.
 * @returns {void}
 */
     const handleMobilNOchange = () => {
         const selectedPhoneCode = addCount;
-        if (isUsCallingCode(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
+        if (!selectedPhoneCode) {
+            showErrorAlert('Please select your country in your profile.');
+            return;
+        }
+        if (isUsNumber(selectedPhoneCode) && !isValidUsPhone(mobileHd)) {
             showErrorAlert('Enter a complete 10-digit USA cell number.');
             return;
         }
-        const mobilePattern = /^\d{10,15}$/;
+        const mobilePattern = /^\d{10}$/;
         if (!phone) {
             showErrorAlert("Cell no is required !")
         } else if (!mobilePattern.test(phone)) {
-            showErrorAlert("Cell no should be 10 - 15 digit ");
+            showErrorAlert("Cell no should be 10 digits");
         } else {
             const getPhCd = addCount;
             let obj = addCount == "+91" ? {
                 "verify_type": "phone",
-                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
+                "phone": isUsNumber(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${phone}`,
             } : {
                 "verify_type": "phone",
-                "phone": isUsCallingCode(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${mobileHd}`
+                "phone": isUsNumber(getPhCd) ? requireUsPhone(mobileHd) : `${getPhCd}${mobileHd}`
             }
             connectionrequest()
                 .then(() => {
@@ -89,8 +97,8 @@ const AddMobileLogin = (props) => {
             }),
         ]).start();
     }, [phone]);
-    const mobileRegex = /^\d{10,15}$/;
-    const isButtonEnabled = mobileRegex.test(phone);
+    const mobileRegex = /^\d{10}$/;
+    const isButtonEnabled = !!addCount && (isUsNumber(addCount) ? isValidUsPhone(mobileHd) : mobileRegex.test(phone));
     const prevStatusRef = useRef(AuthReducer?.status || '');
     useEffect(() => {
         const prev = prevStatusRef.current;
@@ -99,9 +107,9 @@ const AddMobileLogin = (props) => {
         if (prev === 'Auth/changephoneRequest' && AuthReducer.status === 'Auth/changephoneSuccess') {
             const getPhCdSent = addCount;
             if (phone) {
-                AsyncStorage.setItem(constants.PHONE, isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => { });
+                AsyncStorage.setItem(constants.PHONE, isUsNumber(getPhCdSent) ? formatUsPhone(phone) : phone).catch(() => { });
             }
-            props.navigation.navigate("LoginMobile", { Newphone: { "phone": isUsCallingCode(getPhCdSent) ? formatUsPhone(phone) : phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
+            props.navigation.navigate("LoginMobile", { Newphone: { "phone": isUsNumber(getPhCdSent) ? formatUsPhone(phone) : phone, "Verifycell": AuthReducer?.changephoneResponse?.phone_otp, phoneCode: getPhCdSent } });
         }
     }, [AuthReducer.status, phone, addCount]);
 
@@ -128,53 +136,17 @@ const AddMobileLogin = (props) => {
 
         return strInput;
     };
-    const COUNTRY_DIAL_CODES = {
-        IN: '+91',
-        US: '+1',
-        GB: '+44',
-        AU: '+61',
-        CA: '+1',
-        SG: '+65',
-    };
-    /**
-* Returns country from ip.
-*
-* @async
-* @param {*} ip - Input value.
-* @returns {Promise<*>}
-*/
-    const getCountryFromIP = async (ip) => {
-        try {
-            const res = await fetch(`https://ipinfo.io/${ip}/json`);
-            const text = await res.text();
-            if (text.startsWith('<')) {
-                throw new Error('HTML response');
-            }
-            const data = JSON.parse(text);
-            return data?.country || null; // "IN"
-        } catch (e) {
-            console.log('Geo lookup failed:', e);
-            return null;
-        }
-    };
-    const ipAddress = getPublicIP(); // global value
+    const savedDialCode = getCountryDialCode(props?.route?.params,
+        AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse);
     useEffect(() => {
-        if (!ipAddress) return; // ⛔ wait until IP exists
-        /**
-* Fetch country utility.
-*
-* @async
-* @returns {Promise<*>}
-*/
-        const fetchCountry = async () => {
-            const countryCode = await getCountryFromIP(ipAddress);
-            if (countryCode) {
-                const dialCode = COUNTRY_DIAL_CODES[countryCode] || '';
-                setAddCount(dialCode); // ✅ push dial code instead of country code
-            }
-        };
-        fetchCountry();
-    }, [ipAddress]);
+        let active = true;
+        setAddCount(savedDialCode);
+        if (!savedDialCode) getCountryAndDialCode().then(info => {
+            if (active) setAddCount(getCountryDialCode(info));
+        }).catch(() => {});
+        return () => { active = false; };
+    }, [savedDialCode]);
     useEffect(() => {
         /**
 * On back press utility.
@@ -249,18 +221,17 @@ const AddMobileLogin = (props) => {
                                 />
                                 <TextInput
                                     editable
-                                    maxLength={undefined}
+                                    maxLength={isUsNumber(addCount) ? 14 : 10}
                                     onChangeText={text => {
-                                        if (addCount == "+91") {
-                                            const formatted = formatIndianPhoneNumber(text);
-                                            setMobileHd(formatted);
-                                            const rawDigits = formatted.replace(/\D/g, '');
-                                            setPhone(rawDigits);
-                                        } else if (addCount == "+1") {
+                                        if (isUsNumber(addCount)) {
                                             const formatted = formatPhoneNumber(text);
                                             setMobileHd(formatted);
-                                            const rawDigits = formatted.replace(/\D/g, '');
+                                            const rawDigits = formatted.replace(/\D/g, '').slice(0, 10);
                                             setPhone(rawDigits);
+                                        } else {
+                                            const digits = text.replace(/\D/g, '').slice(0, 10);
+                                            setMobileHd(digits);
+                                            setPhone(digits);
                                         }
                                     }}
                                     value={mobileHd}

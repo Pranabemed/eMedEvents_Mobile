@@ -1,3 +1,4 @@
+import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
 import { resolveInterestCountry, interestLicenseFields, hasRequiredInterestLicense } from '../../Utils/Helpers/InterestCheckoutCountry';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
@@ -170,15 +171,23 @@ const intBack = () => {
     const applicableCountryKey = countryIdentity(applicableCountry);
     const isUsUser = isUsCountry(applicableCountry);
     const countryId = applicableCountry.country_id || (isUsUser ? '1' : '');
+    // The phone field follows the current connection; profession/license policy
+    // continues to use the saved profile country above.
+    const phoneCountry = countryIdentity(detectedCountry) ? detectedCountry : applicableCountry;
+    const isUsPhoneCountry = isUsCountry(phoneCountry);
+    console.log(isUsPhoneCountry, "c========", isUsUser, "isUsUser", applicableCountry, "applicableCountry", detectedCountry, "detectedCountry");
+    const phoneDialCode = getCountryDialCode(detectedCountry, applicableCountry,
+        DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse);
 
     useEffect(() => {
-        if (!isFocus || !isGuestInterestCheckout) return;
+        if (!isFocus) return;
         let active = true;
-        getCountryAndDialCode().then(info => {
+        getCountryAndDialCode({forceRefresh: true}).then(info => {
             if (active) setDetectedCountry(info || {});
         }).catch(() => {});
         return () => { active = false; };
-    }, [isFocus, isGuestInterestCheckout]);
+    }, [isFocus]);
 
     const markPersonalizationEdited = useCheckoutPersonalization({
         focused: isFocus,
@@ -605,9 +614,11 @@ const handleFromDateConfirm = (val) => {
                 }
             }
 
-            if (!callingCodeToUse && (String(allDatashow?.country_id) === '1' || /^\+1|^\(/.test(String(phoneNumberToUse || '')))) callingCodeToUse = '1';
+            if (!callingCodeToUse) {
+                callingCodeToUse = (getCountryDialCode(applicableCountry, allDatashow, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.signupResponse?.user) || '').replace('+', '');
+            }
             let formattedCellNo = phoneNumberToUse;
-            if (callingCodeToUse == "1" || callingCodeToUse == 1) {
+            if (isUsUser) {
                 formattedCellNo = formatPhoneNumberno(phoneNumberToUse);
             } else if (callingCodeToUse == "91" || callingCodeToUse == 91) {
                 formattedCellNo = formatIndianPhoneNumber(phoneNumberToUse);
@@ -615,7 +626,7 @@ const handleFromDateConfirm = (val) => {
             setFirstname(DashboardReducer?.mainprofileResponse?.personal_information?.firstname);
             setLastname(DashboardReducer?.mainprofileResponse?.personal_information?.lastname);
 
-            setCellnumber(formatUsPhone(formattedCellNo || phoneNumberToUse))
+            setCellnumber(isUsUser ? formatUsPhone(phoneNumberToUse) : String(phoneNumberToUse || ''))
         }
     }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isUsUser])
 const formatPhoneNumberno = (input) => formatUsPhone(input);
@@ -642,7 +653,7 @@ const formatIndianPhoneNumber = (input) => {
  * @param {*} input - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input) => formatUsPhone(input);
+const formatPhoneNumber = input => isUsPhoneCountry ? formatUsPhone(input) : String(input ?? '').replace(/\D/g, '').slice(0, 10);
     console.log(selectStatepratice?.length, "selectStatepratice--------", proftree, cellnumber?.length);
     const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const isValidEmail = emailad?.length > 0 && !validateEmail.test(emailad);
@@ -655,8 +666,8 @@ const formatPhoneNumber = (input) => formatUsPhone(input);
  */
 const interSubmit = () => {
         setIsSubmitted(true);
-        if (!isValidUsPhone(cellnumber)) {
-            showErrorAlert('Enter a complete 10-digit USA cell number.');
+        if (isUsPhoneCountry ? !isValidUsPhone(cellnumber) : !/^\d{10}$/.test(cellnumber.replace(/\D/g, ''))) {
+            showErrorAlert(isUsPhoneCountry ? 'Enter a complete 10-digit USA cell number.' : 'Please enter a valid Cell number');
             return;
         }
         if (!country) {
@@ -686,7 +697,7 @@ const buildConferencePayload = () => {
                     state_id: DashboardReducer?.mainprofileResponse?.user_address?.state_id || "",
                     city_id: "",
                     zipcode: "",
-                    phone: requireUsPhone(cellnumber),
+                    phone: isUsUser ? requireUsPhone(cellnumber) : cellnumber.replace(/\D/g, ''),
                     job_title: ""
                 };
                 Object.keys(attendeeData).forEach(key => {
@@ -1223,8 +1234,9 @@ const buildConferencePayload = () => {
                                         placeholderTextColor="#949494"
                                         keyboardType="phone-pad"
                                         showCountryCode={true}
-                                        countryCode={"+1"}
-                                        maxlength={14}
+                                        countryCode={phoneDialCode}
+                                        phoneCountry={phoneCountry}
+                                        maxlength={isUsPhoneCountry ? undefined : 15}
                                     />
                                 </View>
                             </View>

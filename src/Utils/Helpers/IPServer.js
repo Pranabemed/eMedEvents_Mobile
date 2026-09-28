@@ -8,11 +8,12 @@ let PUBLIC_IP = null;
  * @returns {*}
  */
 let CACHED_COUNTRY_INFO = null;
+let countryLookupPromise = null;
+let countryLookupTime = 0;
+const COUNTRY_CACHE_MS = 15000;
 
-/**
- * Country dial codes constant.
- * @returns {Object}
- */
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js';
+
 const COUNTRY_DIAL_CODES = {
   IN: '+91',
   US: '+1',
@@ -22,33 +23,83 @@ const COUNTRY_DIAL_CODES = {
   SG: '+65',
 };
 
+const countryAliasMap = {
+  UK: 'GB',
+  'UNITED KINGDOM': 'GB',
+  'GREAT BRITAIN': 'GB',
+  ENGLAND: 'GB',
+  USA: 'US',
+  'UNITED STATES': 'US',
+  'UNITED STATES OF AMERICA': 'US',
+  IND: 'IN',
+  INDIA: 'IN',
+  CAN: 'CA',
+  CANADA: 'CA',
+  AUS: 'AU',
+  AUSTRALIA: 'AU',
+  UAE: 'AE',
+  'UNITED ARAB EMIRATES': 'AE',
+};
+
 /**
  * Get dial code utility helper.
- * @param {number} country - Input value.
- * @returns {*}
+ * @param {string} country - Input value.
+ * @returns {string}
  */
 const getDialCode = (country) => {
-  if (!country) return '+1';
-  const upper = country.trim().toUpperCase();
-  return COUNTRY_DIAL_CODES[upper] || '+1';
+  if (!country) return '';
+  const upper = String(country).trim().toUpperCase();
+  const iso = countryAliasMap[upper] || upper;
+  try {
+    return `+${getCountryCallingCode(iso)}`;
+  } catch (_) {
+    if (iso.length > 2) {
+      try {
+        const names = new Intl.DisplayNames(['en'], { type: 'region' });
+        const matched = getCountries().find(c => {
+          try { return names.of(c)?.toUpperCase() === iso; } catch (_) { return false; }
+        });
+        if (matched) return `+${getCountryCallingCode(matched)}`;
+      } catch (_) {}
+    }
+    return COUNTRY_DIAL_CODES[iso] || '';
+  }
+};
+
+const COUNTRY_NAME_MAP = {
+  NL: 'Netherlands',
+  GB: 'United Kingdom',
+  UK: 'United Kingdom',
+  IN: 'India',
+  US: 'United States',
+  CA: 'Canada',
+  AU: 'Australia',
+  DE: 'Germany',
+  FR: 'France',
+  ES: 'Spain',
+  IT: 'Italy',
+  SG: 'Singapore',
+  AE: 'United Arab Emirates',
 };
 
 /**
  * Get country name utility helper.
- * @param {number} countryCode - Input value.
- * @returns {*}
+ * @param {string} countryCode - Input value.
+ * @returns {string}
  */
 const getCountryName = countryCode => {
   if (!countryCode) return '';
+  const code = String(countryCode).trim().toUpperCase();
+  if (COUNTRY_NAME_MAP[code]) return COUNTRY_NAME_MAP[code];
   try {
     if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
       const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
-      return displayNames.of(countryCode.toUpperCase()) || countryCode.toUpperCase();
+      return displayNames.of(code) || code;
     }
   } catch (e) {
     console.log('[IPServer] Country name resolution failed:', e.message);
   }
-  return countryCode.toUpperCase();
+  return code;
 };
 
 /**
@@ -58,18 +109,22 @@ const getCountryName = countryCode => {
  */
 const normalizeGeoInfo = (data = {}) => {
   PUBLIC_IP = data.ip || data.ipAddress || PUBLIC_IP;
-  const countryCode = String(
+  const rawCountryCode = String(
     data.country_code ||
       data.countryCode ||
       data.country ||
       '',
   ).trim().toUpperCase();
-  const countryName = String(
+  const countryCode = countryAliasMap[rawCountryCode] || rawCountryCode;
+  const rawCountryName = String(
     data.country_name ||
       data.countryName ||
       data.country_name_en ||
-      getCountryName(countryCode),
+      '',
   ).trim();
+  const countryName = (rawCountryName && rawCountryName !== countryCode)
+    ? rawCountryName
+    : getCountryName(countryCode);
   const cityName = String(data.city || data.city_name || data.cityName || '').trim();
   const stateName = String(
     data.region ||
@@ -170,6 +225,7 @@ const initPublicIP = async () => {
 
     // Pre-fetch and cache country info
     CACHED_COUNTRY_INFO = await fetchCountryAndDialCode(PUBLIC_IP);
+    countryLookupTime = Date.now();
   } catch (e) {
     console.log('[IPServer] IP init failed:', e);
     PUBLIC_IP = null;
@@ -189,10 +245,22 @@ export /**
  * @async
  * @returns {Promise<*>}
  */
-const getCountryAndDialCode = async () => {
-  if (CACHED_COUNTRY_INFO?.country && PUBLIC_IP) {
+const getCountryAndDialCode = async ({ forceRefresh = false } = {}) => {
+  if (!forceRefresh && CACHED_COUNTRY_INFO?.dialCode && Date.now() - countryLookupTime < COUNTRY_CACHE_MS) {
     return CACHED_COUNTRY_INFO;
   }
-  CACHED_COUNTRY_INFO = await fetchCountryAndDialCode(PUBLIC_IP);
-  return CACHED_COUNTRY_INFO;
+  if (!countryLookupPromise) {
+    // Query the current connection, not the IP saved before a VPN change.
+    countryLookupPromise = fetchCountryAndDialCode().then(info => {
+      if (info?.country && info?.dialCode) {
+        CACHED_COUNTRY_INFO = info;
+        countryLookupTime = Date.now();
+      }
+      return CACHED_COUNTRY_INFO || info;
+    }).finally(() => { countryLookupPromise = null; });
+  }
+  return countryLookupPromise;
 };
+
+// Synchronous fallback for screens that have already requested geolocation.
+export const getCachedCountryInfo = () => CACHED_COUNTRY_INFO;

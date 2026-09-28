@@ -1,7 +1,7 @@
+import { getCountryDialCode, formatPhoneWithCountry } from '../../Utils/Helpers/PhoneCountry';
 import { processPhoneNumberUSA } from '../../Utils/Helpers/UsaPhone';
 import { AppContext } from '../GlobalSupport/AppContext';
 import { dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
-import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Mobile login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, status, MobileLoginOTP, restoreTimerState, VeirfyUserByMobile, verifyHandle, resendMobileOTP, normalizeFlag, handleNavigation, handleChange, clearAllOTPFieldsPhone, handleKeyPress, loginBaack, onBackPress, styles.
  */
@@ -37,43 +37,7 @@ let status1 = "";
  */
 let status = "";
 
-const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
-    if (!phoneStr) return '';
-    let raw = String(phoneStr).trim();
-    let code = String(phoneCodeStr || '').trim();
 
-    const digitsOnly = raw.replace(/\D/g, '');
-
-    const isCodeUS =
-        code === '+1' ||
-        code === '1' ||
-        code.toUpperCase() === 'US' ||
-        code.toUpperCase() === 'USA' ||
-        code === '+1' ||
-        code === '1';
-
-    const isRawUS =
-        raw.startsWith('+1') ||
-        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
-        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
-
-    const isUS = isUsaIp || isCodeUS || isRawUS;
-
-    if (isUS) return formatUsPhone(raw);
-
-    if (raw.startsWith('+')) {
-        const processed = processPhoneNumber(raw);
-        if (processed && processed.isValid) {
-            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
-            return processed.formattedNumber || raw;
-        }
-    }
-
-    if (code && !code.startsWith('+') && !isNaN(code)) {
-        code = `+${code}`;
-    }
-    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
-};
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
@@ -615,9 +579,15 @@ const onBackPress = () => {
         AuthReducer?.verifymobileResponse?.user?.phone ||
         AuthReducer?.verifyResponse?.phone;
 
-    const phoneCodeDetect = props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.validPh?.phonecode || props?.route?.params?.Newphone?.phoneCode || '';
-    const isUsaPhoneCode = isUsaCountryCode(phoneCodeDetect) || String(phoneCodeDetect || '').trim().toUpperCase().startsWith('+1');
-    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect, isUsaIp || isUsaPhoneCode);
+    const resolvedPhoneCode = getCountryDialCode(
+        props?.route?.params, AuthReducer?.signupResponse,
+        AuthReducer?.verifyResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse,
+        DashboardReducer?.mainprofileResponse, { phone: phoneDetect },
+    );
+    const phoneFinal = formatPhoneWithCountry(phoneDetect, resolvedPhoneCode,
+        props?.route?.params, AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, DashboardReducer?.mainprofileResponse);
 
     return (
         <>

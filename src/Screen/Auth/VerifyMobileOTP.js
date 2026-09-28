@@ -1,4 +1,4 @@
-import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
+import { getCountryDialCode, formatPhoneWithCountry } from '../../Utils/Helpers/PhoneCountry';
 /**
  * Verify mobile otp screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GUEST_REGISTRATION_FLOW_KEY, GUEST_PRIME_VERIFICATION_PENDING_KEY, PRIME_MEMBERSHIP_SKIPPED_KEY, PRIME_CARD_FLOW_COMPLETE_KEY, VerifyMobileOTP, token_error_otp, handleChange, handleKeyPress, token_handle, toggleModal, verifyHandlevalid, resendMobileOTP, clearAllOTPFieldsMobile, stateDashboardData, stateReport, licHandl, verifyHandle, onBackPress, styles.
  */
@@ -80,43 +80,7 @@ const hasValidLicenseRecord = (license) => {
     return Boolean(licenseNumber && fromDate && fromDate !== '0000-00-00');
 };
 
-const formatDisplayPhoneNumber = (phoneStr, phoneCodeStr, isUsaIp = false) => {
-    if (!phoneStr) return '';
-    let raw = String(phoneStr).trim();
-    let code = String(phoneCodeStr || '').trim();
 
-    const digitsOnly = raw.replace(/\D/g, '');
-
-    const isCodeUS =
-        code === '+1' ||
-        code === '1' ||
-        code.toUpperCase() === 'US' ||
-        code.toUpperCase() === 'USA' ||
-        code === '+1' ||
-        code === '1';
-
-    const isRawUS =
-        raw.startsWith('+1') ||
-        (digitsOnly.length === 11 && digitsOnly.startsWith('1')) ||
-        (digitsOnly.length === 10 && (isCodeUS || isUsaIp || !code || code === '+1' || code === '1'));
-
-    const isUS = isUsaIp || isCodeUS || isRawUS;
-
-    if (isUS) return formatUsPhone(raw);
-
-    if (raw.startsWith('+')) {
-        const processed = processPhoneNumber(raw);
-        if (processed && processed.isValid) {
-            if (processed.country === 'US') return formatUsPhone(processed.nationalNumber);
-            return processed.formattedNumber || raw;
-        }
-    }
-
-    if (code && !code.startsWith('+') && !isNaN(code)) {
-        code = `+${code}`;
-    }
-    return code && !raw.startsWith(code) ? `${code} ${raw}` : raw;
-};
 /**
  * Verify mobile otp component.
  * @param {*} props - Input value.
@@ -711,10 +675,16 @@ const VerifyMobileOTP = (props) => {
         props?.route?.params?.mobileNo?.mobileNo ||
         props?.route?.params?.Newphone?.phoneCode;
 
-    const phoneCodeDetect = props?.route?.params?.Newphone?.phoneCode || props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || '';
     console.log(phoneDetect, "phonedetect=========", AuthReducer)
-    const isUsaPhoneCode = isUsaCountryCode(phoneCodeDetect) || String(phoneCodeDetect || '').trim().toUpperCase().startsWith('+1');
-    const phoneFinal = formatDisplayPhoneNumber(phoneDetect, phoneCodeDetect, isUsaIp || isUsaPhoneCode);
+    const resolvedPhoneCode = getCountryDialCode(
+        props?.route?.params, AuthReducer?.signupResponse,
+        AuthReducer?.verifyResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.verifymobileResponse,
+        DashboardReducer?.mainprofileResponse, { phone: phoneDetect },
+    );
+    const phoneFinal = formatPhoneWithCountry(phoneDetect, resolvedPhoneCode,
+        props?.route?.params, AuthReducer?.signupResponse, AuthReducer?.loginResponse,
+        AuthReducer?.againloginsiginResponse, DashboardReducer?.mainprofileResponse);
     useEffect(() => {
         if (phoneDetect?.startsWith('+')) {
             const finalget = processPhoneNumber(phoneDetect);
@@ -801,7 +771,7 @@ const VerifyMobileOTP = (props) => {
                                     </Text>
                                 </View>
                                 <TouchableOpacity disabled={countdown == 0 ? false : true} onPress={() => {
-                                    props.navigation.navigate("ChangeMobileNo", { Newphone: { Newphone: phoneDetect || props?.route?.params?.validPh || finalCode?.nationalNumber || props?.route?.params?.newPh || props?.route?.params?.mobileNo?.mobileNo, phonoCd: finalCode, PhoneCdO: props?.route?.params?.validPh?.phonecode || props?.route?.params?.mobileNo?.phoneCode || props?.route?.params?.Newphone?.phoneCode } });
+                                    props.navigation.navigate("ChangeMobileNo", { Newphone: { Newphone: phoneDetect || props?.route?.params?.validPh || finalCode?.nationalNumber || props?.route?.params?.newPh || props?.route?.params?.mobileNo?.mobileNo, phonoCd: finalCode, PhoneCdO: resolvedPhoneCode } });
                                     clearAllOTPFieldsMobile();
                                     startNewTimer(0);
                                 }} >

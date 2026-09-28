@@ -299,7 +299,7 @@ const handleToDateConfirm = (val) => {
  * @returns {void}
  */
 const AddEmpTake = () => {
-        const cellNoRegex = /^\d{10,15}$/;
+        const cellNoRegex = /^\d{10}$/;
          const filteredTextcell = phoneno && phoneno?.length > 0 && phoneno.replace(/[^\d]/g, '');
         if (!state) {
             showErrorAlert("Please choose state ");
@@ -314,7 +314,7 @@ const AddEmpTake = () => {
         } else if (!phoneno) {
             showErrorAlert("Please enter phone no");
         } else if (!isValidUsPhone(phoneno)) {
-            showErrorAlert("Invalid cell number. It must be 10-15 digits.");
+            showErrorAlert("Invalid cell number. It must be 10 digits.");
         } else if (!fromdate) {
             showErrorAlert("Please choose from date");
         } else if (!todate && !socheck) {
@@ -461,8 +461,8 @@ const handleHosp = (text) => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
-     const cellNoRegexwpcell = /^\d{10,15}$/;
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
+     const cellNoRegexwpcell = /^\d{10}$/;
     const filteredTextcell = phoneno && phoneno?.length > 0 && phoneno.replace(/[^\d]/g, '');
     const isValidcell = filteredTextcell?.length > 0 && !cellNoRegexwpcell.test(filteredTextcell);
     return (

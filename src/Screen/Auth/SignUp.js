@@ -47,7 +47,7 @@ const SignUp = (props) => {
   const [mobileHd, setMobileHd] = useState("");
   const [signupCountryCode, setSignupCountryCode] = useState(props?.route?.params?.phoneCd?.phoneCd || '');
   const [isNonUsaFlow, setIsNonUsaFlow] = useState(
-    props?.route?.params?.phoneCd?.phoneCd 
+    props?.route?.params?.phoneCd?.phoneCd
       ? String(props?.route?.params?.phoneCd?.phoneCd).trim() !== "+1"
       : true
   );
@@ -59,13 +59,13 @@ const SignUp = (props) => {
     emailRef.current = email;
   }, [email]);
   useEffect(() => {
-        /**
- * Detect country utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const detectCountry = async () => {
+    /**
+* Detect country utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const detectCountry = async () => {
       try {
         const geoInfo = await getCountryAndDialCode();
         if (geoInfo) {
@@ -110,11 +110,11 @@ const detectCountry = async () => {
       };
     }, [setEmailExist])
   );
-    /**
- * Create account component.
- * @returns {void}
- */
-const CreateAccount = () => {
+  /**
+* Create account component.
+* @returns {void}
+*/
+  const CreateAccount = () => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;;
     const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobilePattern = /^\d{10}$/;
@@ -167,12 +167,12 @@ const CreateAccount = () => {
       })
     }
   }
-    /**
- * Handles input.
- * @param {*} val - Input value.
- * @returns {void}
- */
-const handleInput = (val) => {
+  /**
+* Handles input.
+* @param {*} val - Input value.
+* @returns {void}
+*/
+  const handleInput = (val) => {
     setPassword(val);
     const regexPass = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (regexPass.test(val)) {
@@ -180,12 +180,12 @@ const handleInput = (val) => {
     }
   };
 
-    /**
- * Set mobile no utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const setMobileNo = (text) => {
+  /**
+* Set mobile no utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+  const setMobileNo = (text) => {
     setCellno(formatUsPhone(text));
     setGettrue(true);
     const mobilePattern = /^\d{10}$/;
@@ -202,12 +202,12 @@ const setMobileNo = (text) => {
       console.log("Invalid cell no");
     }
   }
-    /**
- * Set email exist utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const setEmailExist = React.useCallback((text) => {
+  /**
+* Set email exist utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+  const setEmailExist = React.useCallback((text) => {
     setEmail(text);
     setGettrue(false);
     const emailPattern = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
@@ -225,18 +225,18 @@ const setEmailExist = React.useCallback((text) => {
       console.log("Invalid email format");
     }
   }, [dispatch]);
-    /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input) => formatUsPhone(input);
-    /**
- * Formats indian phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatIndianPhoneNumber = (input) => {
+  /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+  const formatPhoneNumber = (input) => formatUsPhone(input);
+  /**
+* Formats indian phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+  const formatIndianPhoneNumber = (input) => {
     if (!input) return "";
 
     const strInput = String(input);
@@ -271,7 +271,7 @@ const formatIndianPhoneNumber = (input) => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+              onPress: () => {
                 setMobileHd("");
                 setCellno("");
                 dispatch(clearEmailexistState());
@@ -283,7 +283,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+              onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
                 props.navigation.navigate("Login", { "phone": { phone: cellno, countryCode: signupCountryCode, "pranab": "ff" }, isNonUsaUser: isNonUsaFlow })
@@ -297,7 +297,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+              onPress: () => {
                 setEmail("");
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
@@ -308,7 +308,7 @@ onPress: () => {
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+              onPress: () => {
                 dispatch(clearEmailexistState());
                 lastHandledStatusRef.current = "";
                 props.navigation.navigate("Login", { "email": email, isNonUsaUser: isNonUsaFlow })
@@ -321,11 +321,11 @@ onPress: () => {
       lastHandledStatusRef.current = "";
     }
   }, [AuthReducer.status, AuthReducer.emailexistResponse, AuthReducer.emailexistType, cellno, email]);
-    /**
- * Back sing up utility.
- * @returns {void}
- */
-const backSingUp = () => {
+  /**
+* Back sing up utility.
+* @returns {void}
+*/
+  const backSingUp = () => {
     if (props.navigation.canGoBack()) {
       props.navigation.goBack();
     } else {
@@ -333,11 +333,11 @@ const backSingUp = () => {
     }
   }
   useEffect(() => {
-        /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+    /**
+* On back press utility.
+* @returns {boolean}
+*/
+    const onBackPress = () => {
       backSingUp();
       return true;
     };
@@ -430,16 +430,14 @@ const onBackPress = () => {
                         label="Cell Number*"
                         value={mobileHd}
                         onChangeText={(text) => {
+                          const digits = text.replace(/\D/g, '').slice(0, 10);
                           if (signupCountryCode == "+1") {
-                            const formatted = formatPhoneNumber(text);
+                            const formatted = formatPhoneNumber(digits);
                             setMobileHd(formatted);
-                            const rawDigits = formatted.replace(/\D/g, '');
-                            setMobileNo(rawDigits);
-                          } else if (signupCountryCode == "+91") {
-                            const formatted = formatIndianPhoneNumber(text);
-                            setMobileHd(formatted);
-                            const rawDigits = formatted.replace(/\D/g, '');
-                            setMobileNo(rawDigits);
+                            setMobileNo(digits);
+                          } else {
+                            setMobileHd(digits);
+                            setMobileNo(digits);
                           }
                         }}
                         placeholder=""
@@ -447,7 +445,7 @@ const onBackPress = () => {
                         keyboardType="phone-pad"
                         showCountryCode={true}
                         countryCode={signupCountryCode}
-                        maxlength={14}
+                        maxlength={signupCountryCode == "+1" ? 14 : 10}
                       />
                     </View>
                   </View>

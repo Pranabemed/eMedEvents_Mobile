@@ -280,26 +280,24 @@ const handleInputChange = (val) => {
                                         label="Email / Cell Number"
                                         value={mobilhd}
                                         onChangeText={(val) => {
-                                            if (cellCountry == "+91") {
-                                                const formatted = formatIndianPhoneNumber(val);
+                                            const digits = val.replace(/\D/g, '').slice(0, 10);
+                                            if (cellCountry == "+1") {
+                                                const formatted = formatPhoneNumber(digits);
                                                 setMobilhd(formatted);
-                                                const rawDigits = formatted.replace(/\D/g, '');
-                                                handleInputChange(rawDigits);
-                                                setEmail(rawDigits);
-                                            } else if (cellCountry == "+1") {
-                                                const formatted = formatPhoneNumber(val);
-                                                setMobilhd(formatted);
-                                                const rawDigits = formatted.replace(/\D/g, '');
-                                                handleInputChange(rawDigits);
-                                                setEmail(rawDigits);
+                                                handleInputChange(digits);
+                                                setEmail(digits);
+                                            } else {
+                                                setMobilhd(digits);
+                                                handleInputChange(digits);
+                                                setEmail(digits);
                                             }
                                         }}
                                         placeholder=""
                                         placeholderTextColor="#949494"
                                         keyboardType="number-pad"
                                         showCountryCode={true}
-                                        countryCode={cellCountry || "+91"}
-                                        maxlength={14}
+                                        countryCode={cellCountry || "+1"}
+                                        maxlength={cellCountry == "+1" ? 14 : 10}
                                         labelStyle={{ top: 10 }}
                                     /> : <InputField
                                         label={isNonUsaUser ? "Email Address" : "Email / Cell Number"}

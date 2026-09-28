@@ -18,7 +18,7 @@ test('typing, deleting and pasting preserve all digits', () => {
   expect(value).toBe(canonical);
   expect(formatUsPhone(value.slice(0, -1))).toBe('(577) 900-123');
   expect(formatUsPhone('+1 (577) 900-1234')).toBe(canonical);
-  expect(formatUsPhone('577900123456')).toBe('577900123456');
+  expect(formatUsPhone('577900123456')).toBe(canonical);
 });
 
 test('signup, checkout, billing and profile payloads retain the same value', () => {
@@ -65,4 +65,26 @@ test.each(['phone', 'mobile', 'mobileNumber', 'cellNumber', 'contact_number', 'c
 test('legacy numeric phone values are stringified; non-US leading zeros are retained', () => {
   expect(normalizePhonePayload({mobile: 4155552671}).mobile).toBe('4155552671');
   expect(normalizePhonePayload({country_code: 'GB', mobile: '02079460018'}).mobile).toBe('02079460018');
+});
+
+test.each([
+  ['1', '1'], ['12', '12'], ['123', '123'], ['1234', '(123) 4'],
+  ['12345', '(123) 45'], ['123456', '(123) 456'],
+  ['1234567', '(123) 456-7'], ['12345678', '(123) 456-78'],
+  ['123456789', '(123) 456-789'], ['1234567890', '(123) 456-7890'],
+  ['12345678901234', '(123) 456-7890'], ['abc123!456@7890', '(123) 456-7890'],
+])('typing/paste %s produces %s', (input, expected) => {
+  expect(formatUsPhone(input)).toBe(expected);
+});
+
+test('an eleventh digit cannot shift a national number starting with 1', () => {
+  expect(formatUsPhone('(123) 456-78901')).toBe('(123) 456-7890');
+  expect(isValidUsPhone('(123) 456-78901')).toBe(false);
+});
+
+test('explicit non-US countries override shared calling codes and inherited US metadata', () => {
+  const canada = {country_code: 'CA', callingCode: '+1', phone: '4165551234'};
+  expect(normalizePhonePayload(canada)).toEqual(canada);
+  expect(normalizePhonePayload({country_id: 1, attendee: [canada]}).attendee[0]).toEqual(canada);
+  expect(normalizePhonePayload({id: 99, countryCode: '+1', phone: '5779001234'}).phone).toBe('+1 (577) 900-1234');
 });

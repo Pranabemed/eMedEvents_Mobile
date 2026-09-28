@@ -1,4 +1,5 @@
-import { formatUsPhone, isValidUsPhone, isUsCallingCode, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
+import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
  * Contact us screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, status, status1, ContactUs, contactUsPage, countryReq, specaillized, PraticingState, handleSearch, handleCountry, handlePratice, handleCity, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, cityReq, normalizeCountryName, getCurrentLocation, getComponent, handleCountrySet, handleStateshows, handlecityShows, onBackPress, submitContact, formatPhoneNumber.
  */
@@ -581,7 +582,7 @@ const handleCountrySet = (didi) => {
         stateRequest(didi?.id);
         setCountry_id(didi?.id);
         if (didi?.callingcode && mobileHd) {
-            const isUSA = didi?.callingcode == '+1' || didi?.callingcode == '1';
+            const isUSA = isUsCountry(didi);
             const formattedNumber = formatPhoneNumber(mobileHd, isUSA);
             setMobileHd(formattedNumber);
         }
@@ -678,7 +679,7 @@ const onBackPress = () => {
  * @returns {void}
  */
 const submitContact = () => {
-        if (isUsCallingCode(phoneCountryCode) && !isValidUsPhone(mobileHd)) {
+        if (isUsCountry({country_code: countryCode}) && !isValidUsPhone(mobileHd)) {
             showErrorAlert('Enter a complete 10-digit USA cell number.');
             return;
         }
@@ -696,7 +697,7 @@ const submitContact = () => {
             "name": contact_name,
             "email": email_cont,
             "country_code": `${countryCode}(${phoneCountryCode})`,
-            "contact_number": isUsCallingCode(phoneCountryCode) ? requireUsPhone(mobileHd) : mob_cont,
+            "contact_number": isUsCountry({country_code: countryCode}) ? requireUsPhone(mobileHd) : mob_cont,
             "message": speaker_cont
         }
         connectionrequest()
@@ -732,7 +733,7 @@ const submitContact = () => {
  * @param {boolean} isUSA - Input value.
  * @returns {*}
  */
-const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 15);
+const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);
@@ -1100,8 +1101,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                     label="Cell Number*"
                                                     value={mobileHd}
                                                     onChangeText={(val) => {
-                                                        const isUSA = phoneCountryCode == '+1' ||
-                                                            phoneCountryCode == '1';
+                                                        const isUSA = isUsCountry({country_code: countryCode});
                                                         const formattedVal = formatPhoneNumber(val, isUSA);
                                                         setMobileHd(formattedVal);
                                                         const rawDigits = formattedVal.replace(/\D/g, '');
@@ -1112,6 +1112,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                     keyboardType="phone-pad"
                                                     showCountryCode={true}
                                                     countryCode={phoneCountryCode}
+                                                    phoneCountry={{country_code: countryCode}}
                                                     maxlength={14}
                                                 />
                                             </View>

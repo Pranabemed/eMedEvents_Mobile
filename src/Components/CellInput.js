@@ -1,3 +1,6 @@
+import { countryIdentity, isUsCountry } from '../Utils/Helpers/ApplicableCountry';
+import { getCountryDialCode } from '../Utils/Helpers/PhoneCountry';
+import { getCountryAndDialCode } from '../Utils/Helpers/IPServer';
 /**
  * Cell input reusable component module. Provides a React Native UI building block used across screens. Exported members: InputField, toggleSecureEntry, floatingLabelNode, staticStyles.
  */
@@ -66,6 +69,7 @@ const InputField = forwardRef((
         isPassword,
         keyboardType,
         countryCode,
+        phoneCountry,
         showCountryCode,
         onCountryCodePress,
         underlineColor = '#000000',
@@ -94,10 +98,31 @@ const InputField = forwardRef((
     const [secureTextEntry, setSecureTextEntry] = useState(!!isPassword);
     const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
 
-    const isPhoneInput = keyboardType === 'phone-pad' || (showCountryCode && keyboardType === 'number-pad');
-    const isUsPhone = isPhoneInput && isUsCallingCode(countryCode);
-    const displayValue = isUsPhone ? formatUsPhone(value) : value;
-    const changeText = text => onChangeText?.(isUsPhone ? formatUsPhone(text) : text);
+    const isPhoneInput = keyboardType === 'phone-pad' || keyboardType === 'number-pad' || (showCountryCode && keyboardType === 'number-pad');
+    const [fallbackCountry, setFallbackCountry] = useState(null);
+    useEffect(() => {
+        if (!showCountryCode || countryCode) return;
+        let active = true;
+        getCountryAndDialCode().then(info => {
+            if (active) setFallbackCountry(info);
+        }).catch(() => {});
+        return () => { active = false; };
+    }, [showCountryCode, countryCode]);
+    const resolvedCountryCode = (showCountryCode || countryCode)
+        ? getCountryDialCode(countryCode, phoneCountry, fallbackCountry) : '';
+    const isUsPhone = isPhoneInput && (countryIdentity(phoneCountry)
+        ? isUsCountry(phoneCountry) : isUsCallingCode(resolvedCountryCode));
+    const rawDigits = String(value ?? '').replace(/\D/g, '').slice(0, 10);
+    const displayValue = isUsPhone ? formatUsPhone(value) : (isPhoneInput && (maxLength === 10 || maxlength === 10) ? rawDigits : value);
+    const changeText = text => {
+        if (isUsPhone) {
+            onChangeText?.(formatUsPhone(text));
+        } else if (isPhoneInput && (maxLength === 10 || maxlength === 10)) {
+            onChangeText?.(String(text ?? '').replace(/\D/g, '').slice(0, 10));
+        } else {
+            onChangeText?.(text);
+        }
+    };
     const isActive = isFocused || !!value;
 
     useEffect(() => {
@@ -107,7 +132,7 @@ const InputField = forwardRef((
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,   // required – we animate layout props
         }).start();
-    }, [isFocused, value]);
+    }, [animated, isActive]);
 
         /**
  * Toggle secure entry utility.
@@ -132,7 +157,7 @@ const toggleSecureEntry = () => setSecureTextEntry(prev => !prev);
     const labelLeft = animated.interpolate({
         inputRange: [0, 1],
         outputRange: [
-            showCountryCode && countryCode ? normalize(50) : 0,
+            showCountryCode && resolvedCountryCode ? normalize(50) : 0,
             0,
         ],
     });
@@ -168,7 +193,7 @@ const floatingLabelNode = (text) => (
     );
 
     // ── Country-code prefix ───────────────────────────────────────────────────
-    const countryCodeNode = countryCode ? (
+    const countryCodeNode = resolvedCountryCode ? (
         <TouchableOpacity
             style={staticStyles.countryCodeContainer}
             onPress={onCountryCodePress}
@@ -176,7 +201,7 @@ const floatingLabelNode = (text) => (
             hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
         >
             <Text style={staticStyles.countryCodeText}>
-                {countryCode} {'-'}
+                {resolvedCountryCode} {'-'}
             </Text>
         </TouchableOpacity>
     ) : null;
@@ -219,7 +244,7 @@ const floatingLabelNode = (text) => (
                         onChangeText={changeText}
                         placeholder=""
                         placeholderTextColor="transparent"
-                        maxLength={isPhoneInput ? undefined : (maxLength ?? maxlength)}
+                        maxLength={isPhoneInput ? (isUsPhone ? undefined : (maxLength ?? maxlength)) : (maxLength ?? maxlength)}
                         editable={editable}
                         secureTextEntry={secureTrue ? secureTrue : secureTextEntry}
                         keyboardType={keyboardType}
@@ -254,7 +279,7 @@ const floatingLabelNode = (text) => (
             onChangeText={changeText}
             placeholder=""
             placeholderTextColor="transparent"
-            maxLength={isPhoneInput ? undefined : (maxLength ?? maxlength)}
+            maxLength={isPhoneInput ? (isUsPhone ? undefined : (maxLength ?? maxlength)) : (maxLength ?? maxlength)}
             editable={editable}
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}

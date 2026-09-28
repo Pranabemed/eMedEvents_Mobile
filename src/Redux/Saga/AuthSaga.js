@@ -1,3 +1,4 @@
+import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 /**
  * Auth saga Redux-Saga module.
  *
@@ -209,6 +210,15 @@ export function* signupSaga(action) {
   try {
     let response = yield call(postApi, 'user/signup', signupPayload, header);
     if (response?.data?.success == true) {
+      // Retain signup country metadata when the response omits it.
+      const signupUser = response.data.user || response.data;
+      const callingCode = getCountryDialCode(signupUser, signupPayload);
+      const userWithCountry = { ...signupUser,
+        country_id: signupUser.country_id || signupPayload.country_id,
+        ...(callingCode ? { callingCode } : {}),
+      };
+      response = { ...response, data: response.data.user
+        ? { ...response.data, user: userWithCountry } : userWithCountry };
       yield put(tokenSuccess(response?.data?.token));
       yield put(signupSuccess(response?.data));
       yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.token);

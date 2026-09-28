@@ -251,7 +251,7 @@ const proceedNonUsaLogin = async () => {
                     props.navigation.dispatch(
                         CommonActions.reset({
                             index: 0,
-                            routes: [{ name: 'TabNav' }],
+                            routes: [{ name: 'TabNav', params: { isNonUsaUser: true } }],
                         })
                     );
                 };
