@@ -896,14 +896,26 @@ const CertficateHandle = (props) => {
                                             renderItem={({ item }) => renderCertificateCard(item, 'certificate')}
                                             keyExtractor={(item, index) => String(item?.id ?? item?._id ?? index)}
                                             ListEmptyComponent={
-                                                <View style={{ justifyContent: "center", alignItems: "center", marginVertical: normalize(20) }}>
-                                                    <ImageBackground source={Imagepath.DottedImg} style={{ height: normalize(65), width: normalize(300), resizeMode: "contain", justifyContent: 'center' }}>
-                                                        <View style={{ alignItems: 'center' }}>
-                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#AAAAAA" }}>
-                                                                {"No data found"}
-                                                            </Text>
+                                                <View style={styles.nonUsaContainer}>
+                                                    <View style={styles.nonUsaCard}>
+                                                        <View style={styles.nonUsaBanner}>
+                                                            <Text style={styles.nonUsaBannerText}>Credit Vault</Text>
                                                         </View>
-                                                    </ImageBackground>
+                                                        <View style={styles.nonUsaBody}>
+                                                            <Text style={styles.nonUsaDescription}>
+                                                                You can view credits and certificates of all the activities you fulfilled at eMedEvents.{"\n\n"}
+                                                                You can also add credits and certificates of activities you attended elsewhere.
+                                                            </Text>
+                                                            <TouchableOpacity
+                                                                style={styles.nonUsaButton}
+                                                                onPress={() => {
+                                                                    props.navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                                                }}
+                                                            >
+                                                                <Text style={styles.nonUsaButtonText}>Add Credits</Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    </View>
                                                 </View>
                                             }
                                         />
@@ -1388,8 +1400,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: normalize(20),
-        backgroundColor: Colorpath.Pagebg,
-        marginTop: normalize(100),
+        paddingVertical: normalize(40),
+        minHeight: normalize(400),
     },
     nonUsaCard: {
         width: '100%',

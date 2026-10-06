@@ -1231,7 +1231,6 @@ export default StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 14,
     width: '100%',
-    minHeight: normalize(395),
     alignItems: 'center',
     alignSelf: 'center',
     overflow: 'hidden',

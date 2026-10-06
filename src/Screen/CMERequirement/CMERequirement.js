@@ -16,7 +16,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -583,37 +582,6 @@ const CMERequirement = props => {
   };
 
   /**
-   * Description: Opens an informational alert for the screen.
-   * Purpose: Explains how the profession/state selector affects requirement results.
-   *
-   * Params:
-   * @param {void} none
-   *
-   * Returns:
-   * @returns {void}
-   *
-   * Flow:
-   * 1. Open native alert.
-   * 2. Show instructional message.
-   * 3. Wait for user dismissal.
-   *
-   * API Used:
-   * None
-   *
-   * Redux Actions:
-   * None
-   *
-   * Error Handling:
-   * Uses native alert API without custom error handling.
-   */
-  const handleMenuPress = () => {
-    Alert.alert(
-      'CME Requirements',
-      'Choose a profession and state to review the latest licensure requirements and related courses.',
-    );
-  };
-
-  /**
    * Description: Resolves a display-safe state name from multiple possible payload shapes.
    * Purpose: Avoids repeated state-name fallback logic across the screen.
    *
@@ -765,9 +733,7 @@ const CMERequirement = props => {
             {pageTitle}
           </Text>
 
-          <TouchableOpacity onPress={handleMenuPress} style={styles.headerSideButton}>
-            <Icon name="info-outline" size={normalize(20)} color="#64748B" />
-          </TouchableOpacity>
+          <View style={styles.headerSideButton} />
         </View>
 
         {loading ? (

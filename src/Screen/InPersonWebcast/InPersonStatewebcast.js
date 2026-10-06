@@ -2,7 +2,7 @@
  * In person statewebcast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status1, InPersonStatewebcast, cutomPrice, inPersonSaveTicket, handleIncrement, handleDecrement, formatNumberWithCommas, cleanTicketName, stateDataFilter, backPressIn, onBackPress, styles.
  */
 
-import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler } from 'react-native'
+import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler, ActivityIndicator } from 'react-native'
 import React, { useEffect, useLayoutEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -16,8 +16,8 @@ import Imagepath from '../../Themes/Imagepath'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { saveTicketInpersonRequest } from '../../Redux/Reducers/WebcastReducer'
 import { useDispatch, useSelector } from 'react-redux'
-import connectionrequest from '../../Utils/Helpers/NetInfo'
-import Loader from '../../Utils/Helpers/Loader'
+import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useIsFocused } from '@react-navigation/native';
 
@@ -55,6 +55,9 @@ function cutomPrice(price) {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     console.log(WebcastReducer, "WebcastReducer")
     const isFocused = useIsFocused();
+    const network = useNetInfo();
+    const isOffline = network.isConnected === false || network.isInternetReachable === false;
+    const isSavingTickets = WebcastReducer?.status === 'WebCast/saveTicketInpersonRequest';
     const [isfilterVisible, setIssfilterVisible] = useState(false);
     const [finalamount, setFinalamount] = useState("");
     const [inpersonticket, setInpersonticket] = useState(null)
@@ -114,8 +117,11 @@ const inPersonSaveTicket = async () => {
                 console.log('[inPersonSaveTicket] Error reading RefID:', e);
             }
 
-            connectionrequest()
-                .then(() => {
+            NetInfo.fetch()
+                .then(state => {
+                    if (state.isConnected !== true || state.isInternetReachable === false) {
+                        throw new Error('Please connect to internet');
+                    }
                     dispatch(saveTicketInpersonRequest(obj));
                 })
                 .catch((err) => {
@@ -440,8 +446,8 @@ const stateDataFilter = ({ item, index }) => {
  * @returns {void}
  */
 const backPressIn = () => {
-        props.navigation.goBack();
         setIssfilterVisible(false);
+        props.navigation.goBack();
     }
     useEffect(() => {
                 /**
@@ -467,7 +473,6 @@ const onBackPress = () => {
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.white }}>
-                <Loader visible={WebcastReducer?.status == 'WebCast/saveTicketInpersonRequest'} />
                 <Modal
                     animationIn={'slideInUp'}
                     animationOut={'slideOutDown'}
@@ -477,18 +482,24 @@ const onBackPress = () => {
                     style={{ width: '100%', alignSelf: 'center', margin: 0, justifyContent: 'flex-end' }}
                     animationInTiming={800}
                     animationOutTiming={1000}
-                    onBackdropPress={() => {
-                        props.navigation.goBack();
-                        setIssfilterVisible(false);
-                    }}
+                    onBackdropPress={backPressIn}
+                    onBackButtonPress={backPressIn}
+                    onSwipeComplete={backPressIn}
+                    swipeDirection="down"
+                    propagateSwipe
                 >
                     <View style={{
                         backgroundColor: Colorpath.white, borderTopRightRadius: normalize(20),
                         borderTopLeftRadius: normalize(20), bottom: 0, height: normalize(470)
                     }}>
-                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
+                        <TouchableOpacity
+                            onPress={backPressIn}
+                            accessibilityRole="button"
+                            accessibilityLabel="Close ticket selection"
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
                             <View style={styles.modalIndicator} />
-                        </View>
+                        </TouchableOpacity>
                         <View>
                             {/* <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}> */}
                             <View style={styles.container}>
@@ -535,7 +546,6 @@ const onBackPress = () => {
                                     </View>
                                     <Buttons
                                         onPress={() => {
-                                            setIssfilterVisible(false);
                                             inPersonSaveTicket();
                                         }}
                                         height={normalize(48)}
@@ -546,11 +556,22 @@ const onBackPress = () => {
                                         color={Colorpath.white}
                                         fontSize={16}
                                         fontFamily={Fonts.InterSemiBold}
-                                        disabled={clickHistory?.some(arr => arr.length > 0) ? false : true}
+                                        disabled={isSavingTickets || !clickHistory?.some(arr => arr.length > 0)}
                                     />
                                 </View>
                             </View>
                         </View>
+                        {isSavingTickets && !isOffline && (
+                            <TouchableOpacity
+                                onPress={backPressIn}
+                                activeOpacity={1}
+                                accessibilityRole="button"
+                                accessibilityLabel="Close ticket selection"
+                                style={[StyleSheet.absoluteFillObject, { backgroundColor: Colorpath.Pagebg, alignItems: 'center', justifyContent: 'center' }]}>
+                                <ActivityIndicator size="large" color={Colorpath.ButtonColr} />
+                            </TouchableOpacity>
+                        )}
+                        {isOffline && <IntOff />}
                     </View>
                 </Modal>
             </SafeAreaView>

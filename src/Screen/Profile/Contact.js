@@ -41,6 +41,7 @@ import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, 
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
+import { useFocusEffect } from '@react-navigation/native';
 
 /**
  * Reusable isPhysicianProfessionalInformation component.
@@ -78,7 +79,7 @@ const getValidDialCode = (callingCode, countryName, geoInfo, countryList) => {
     const target = String(countryName || '').trim().toLowerCase();
     const selected = Array.isArray(countryList) ? countryList.find(item => [item?.name, item?.sortname]
         .some(value => value && String(value).toLowerCase() === target)) : null;
-    return getCountryDialCode({callingCode}, selected, {country: countryName}, geoInfo);
+    return getCountryDialCode({ callingCode }, selected, { country: countryName }, geoInfo);
 };
 
 const normalizeContactValue = (value) => {
@@ -266,16 +267,35 @@ const ContactProfile = (props) => {
     }
     console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
     const initialCountryRef = useRef(null);
+    const lastHandledContactStatusRef = useRef("");
+
+    useFocusEffect(
+        React.useCallback(() => {
+            lastHandledContactStatusRef.current = "";
+            return () => {
+                lastHandledContactStatusRef.current = "";
+            };
+        }, [])
+    );
+
     useEffect(() => {
-        if (ProfileReducer.status === 'Profile/contactInfoSuccess') {
+        if (
+            (ProfileReducer.status === 'Profile/contactInfoSuccess' || ProfileReducer.status === 'Profile/personalInfoSuccess') &&
+            lastHandledContactStatusRef.current !== ProfileReducer.status
+        ) {
+            lastHandledContactStatusRef.current = ProfileReducer.status;
             setLoading(false);
+            const res = ProfileReducer?.contactInfoResponse;
             const isSuccess = Boolean(
-                ProfileReducer?.contactInfoResponse?.status ||
-                ProfileReducer?.contactInfoResponse?.msg?.toLowerCase()?.includes('contact') ||
-                ProfileReducer?.contactInfoResponse?.msg?.toLowerCase()?.includes('updated') ||
-                ProfileReducer?.contactInfoResponse?.user
+                res?.status ||
+                res?.msg?.toLowerCase()?.includes('contact') ||
+                res?.msg?.toLowerCase()?.includes('updated') ||
+                res?.user ||
+                res?.message?.toLowerCase()?.includes('success')
             );
             if (isSuccess) {
+                const successMsg = res?.msg || res?.message || "Contact information updated successfully!";
+                showErrorAlert(successMsg);
                 (async () => {
                     try {
                         const { clearNonUsaFlowState } = require('../../Utils/Helpers/nonUsaFlow');
@@ -299,11 +319,22 @@ const ContactProfile = (props) => {
                 if (movedToUSA) {
                     markNonUsaProfessionUpdateRequired();
                     setProfessionModalVisible(true);
+                } else {
+                    props.navigation.navigate("TabNav", { screen: "Profiles" });
                 }
                 initialCountryRef.current = country;
+            } else if (res && res.status === false) {
+                showErrorAlert(res?.msg || res?.message || "Failed to update contact information.");
             }
+        } else if (
+            (ProfileReducer.status === 'Profile/contactInfoFailure' || ProfileReducer.status === 'Profile/personalInfoFailure') &&
+            lastHandledContactStatusRef.current !== ProfileReducer.status
+        ) {
+            lastHandledContactStatusRef.current = ProfileReducer.status;
+            setLoading(false);
+            showErrorAlert(ProfileReducer?.error || "Failed to update contact information. Please try again.");
         }
-    }, [ProfileReducer.status, ProfileReducer.contactInfoResponse, country, country_id]);
+    }, [ProfileReducer.status, ProfileReducer.contactInfoResponse, ProfileReducer.personalInfoResponse, country, country_id]);
 
     if (status1 == '' || ProfileReducer.status != status1) {
         switch (ProfileReducer.status) {
@@ -494,9 +525,9 @@ const ContactProfile = (props) => {
             showErrorAlert("Enter your ZIP code.")
         } else if (!cellno) {
             showErrorAlert("Enter your cell number. ")
-        } else if ((isUsCountry({country}) ? !isValidUsPhone(cellno) : !cellNoRegex.test(filteredTextcell))) {
+        } else if ((isUsCountry({ country }) ? !isValidUsPhone(cellno) : !cellNoRegex.test(filteredTextcell))) {
             showErrorAlert("Invalid cell number. It must be 10-15 digits.")
-        } else if (isValidWhatsappNo || (isUsCountry({country}) && whatsappno && !isValidUsPhone(whatsappno))) {
+        } else if (isValidWhatsappNo || (isUsCountry({ country }) && whatsappno && !isValidUsPhone(whatsappno))) {
             showErrorAlert("Invalid whatsapp number. It must be 10-15 digits.");
         } else {
             let obj = {
@@ -509,10 +540,10 @@ const ContactProfile = (props) => {
                 "state_id": state_id,
                 "city_id": city_id,
                 "postal_code": zipcode,
-                "contact_number": isUsCountry({country}) ? requireUsPhone(cellno) : cellno,
+                "contact_number": isUsCountry({ country }) ? requireUsPhone(cellno) : cellno,
                 "alternate_email": "",
                 "skype": "",
-                "whatapp_number": isUsCountry({country}) && whatsappno ? requireUsPhone(whatsappno) : whatsappno
+                "whatapp_number": isUsCountry({ country }) && whatsappno ? requireUsPhone(whatsappno) : whatsappno
             }
             let userObj = {
                 "first_name": firstname,
@@ -622,7 +653,7 @@ const ContactProfile = (props) => {
                 const validDial = getValidDialCode(rawCalling, rawCountry, geoInfo, countryall);
                 setDialcode(validDial);
 
-                const isUSA = isUsCountry({country: rawCountry});
+                const isUSA = isUsCountry({ country: rawCountry });
                 const rawCell = normalizeContactValue(userAddr?.contact_no);
                 const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
 
@@ -640,7 +671,7 @@ const ContactProfile = (props) => {
                 const validDial = getValidDialCode(rawCalling, rawCountry, null, countryall);
                 setDialcode(validDial);
 
-                const isUSA = isUsCountry({country: rawCountry});
+                const isUSA = isUsCountry({ country: rawCountry });
                 const rawCell = normalizeContactValue(userAddr?.contact_no);
                 const rawWp = normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp);
 
@@ -964,8 +995,16 @@ const ContactProfile = (props) => {
                                 )}
                             </View>
                             <Loader visible={loading} />
-                            <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }} behavior={Platform.OS === 'ios' ? 'height' : undefined}>
-                                <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                            <KeyboardAvoidingView
+                                style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}
+                                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                                keyboardVerticalOffset={Platform.OS === 'ios' ? normalize(64) : 0}
+                            >
+                                <ScrollView
+                                    keyboardShouldPersistTaps="handled"
+                                    showsVerticalScrollIndicator={true}
+                                    contentContainerStyle={{ paddingBottom: normalize(120), flexGrow: 1 }}
+                                >
                                     <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                                         <View style={{
                                             flexDirection: 'row',
@@ -1259,7 +1298,7 @@ const ContactProfile = (props) => {
                                                     label="Cell Number*"
                                                     value={cellno}
                                                     onChangeText={(val) => {
-                                                        const isUSA = isUsCountry({country});
+                                                        const isUSA = isUsCountry({ country });
                                                         const formattedVal = formatPhoneNumber(val, isUSA);
                                                         setCellno(formattedVal);
                                                     }}
@@ -1268,7 +1307,7 @@ const ContactProfile = (props) => {
                                                     keyboardType="numeric"
                                                     showCountryCode={true}
                                                     countryCode={dialcode}
-                                                    phoneCountry={{country}}
+                                                    phoneCountry={{ country }}
                                                     maxlength={14}
                                                 />
                                             </View>
@@ -1297,7 +1336,7 @@ const ContactProfile = (props) => {
                                                     label="WhatsApp Number"
                                                     value={whatsappno}
                                                     onChangeText={(val) => {
-                                                        const isUSA = isUsCountry({country});
+                                                        const isUSA = isUsCountry({ country });
                                                         const formattedValwp = formatPhoneNumber(val, isUSA);
                                                         setWhatsappno(formattedValwp);
                                                     }}
@@ -1306,7 +1345,7 @@ const ContactProfile = (props) => {
                                                     keyboardType="numeric"
                                                     showCountryCode={true}
                                                     countryCode={dialcode}
-                                                    phoneCountry={{country}}
+                                                    phoneCountry={{ country }}
                                                     maxlength={14}
                                                 />
                                             </View>

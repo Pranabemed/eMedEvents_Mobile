@@ -17,7 +17,8 @@ import constants from '../../Utils/Helpers/constants';
 import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
-import connectionrequest from '../../Utils/Helpers/NetInfo';
+import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { cancelcouponRequest, cartCheckoutRequest, couponWebcastRequest, FreeTransRequest, saveRegistRequest, StatusPaymentRequest, TransemailcheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import Loader from '../../Utils/Helpers/Loader';
@@ -166,6 +167,15 @@ const Checkout = (props) => {
     const isInitialLoad = useRef(true);
 
     const [loaderVisible, setLoaderVisible] = useState(false);
+    const network = useNetInfo();
+    const isOffline = network.isConnected === false || network.isInternetReachable === false;
+    const connectionrequest = async () => {
+        const state = await NetInfo.fetch();
+        if (state.isConnected !== true || state.isInternetReachable === false) {
+            throw new Error('Please connect to Internet');
+        }
+        return true;
+    };
 
     useEffect(() => {
         if (!isfocus) {
@@ -2092,7 +2102,7 @@ const applyCoupon = () => {
                             </View>
                         )
                     )}
-                    <Loader visible={loaderVisible} />
+                    <Loader visible={loaderVisible && !isOffline} />
                     <CheckoutMain
                         markPersonalizationEdited={markPersonalizationEdited}
                         savefull={savefull}
@@ -2237,6 +2247,7 @@ const applyCoupon = () => {
                     {cityPicker && <CheckThreeCity handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} activeIndex={activeIndexct} />}
 
                 </KeyboardAvoidingView>
+                {isOffline && <IntOff />}
                 {allmsg ? <Modal
                     isVisible={isVisibletext}
                     onBackdropPress={() => {

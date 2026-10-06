@@ -1277,7 +1277,7 @@ const StackNav = props => {
           screenOptions={{
             headerShown: false,
             animationEnabled: true,
-            gestureEnabled: true,
+            gestureEnabled: false,
             cardStyleInterpolator:
               Platform.OS === 'ios'
                 ? CardStyleInterpolators.forHorizontalIOS
@@ -1291,7 +1291,6 @@ const StackNav = props => {
               <Stack.Screen
                 name={name}
                 component={component}
-                options={name === 'Onboard' ? { gestureEnabled: false } : undefined}
               />
             )
           })}

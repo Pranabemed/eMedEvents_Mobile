@@ -118,9 +118,9 @@ const SignUp = (props) => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@.#$!%*?&])[A-Za-z\d@.#$!%*?&]{8,15}$/;;
     const validate = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobilePattern = /^\d{10}$/;
-    if (!fname || fname?.length < 3) {
+    if (!fname || fname.trim().length < 3) {
       showErrorAlert("Please enter your first name.");
-    } else if (!lname || lname?.length < 3) {
+    } else if (!lname || lname.trim().length < 3) {
       showErrorAlert("Please enter your last name.");
     } else if (!isNonUsaFlow && !cellno) {
       showErrorAlert("Please enter your cell number.");
@@ -366,7 +366,7 @@ const SignUp = (props) => {
       <SafeAreaView style={styles.screen}>
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={styles.scrollContent}>
             <View style={[styles.logoContainer, Platform.OS === 'ios' ? styles.logoContainerIos : styles.logoContainerAndroid]}>
@@ -395,7 +395,7 @@ const SignUp = (props) => {
                     />
                   </View>
                 </View>
-                {fname && fname?.length < 3 && (
+                {fname && fname.trim().length < 3 && (
                   <View style={styles.validationContainer}>
                     <Text style={styles.validationText}>
                       {"Please enter your first name."}
@@ -416,7 +416,7 @@ const SignUp = (props) => {
                     />
                   </View>
                 </View>
-                {lname && lname?.length < 3 && (
+                {lname && lname.trim().length < 3 && (
                   <View style={styles.validationContainer}>
                     <Text style={styles.validationText}>
                       {"Please enter your last name."}
@@ -430,10 +430,9 @@ const SignUp = (props) => {
                         label="Cell Number*"
                         value={mobileHd}
                         onChangeText={(text) => {
-                          const digits = text.replace(/\D/g, '').slice(0, 10);
-                          if (signupCountryCode == "+1") {
-                            const formatted = formatPhoneNumber(digits);
-                            setMobileHd(formatted);
+                          const digits = String(text ?? '').replace(/\D/g, '').slice(0, 10);
+                          if (signupCountryCode == "+1" || signupCountryCode == "1") {
+                            setMobileHd(formatUsPhone(digits));
                             setMobileNo(digits);
                           } else {
                             setMobileHd(digits);
@@ -445,7 +444,6 @@ const SignUp = (props) => {
                         keyboardType="phone-pad"
                         showCountryCode={true}
                         countryCode={signupCountryCode}
-                        maxlength={signupCountryCode == "+1" ? 14 : 10}
                       />
                     </View>
                   </View>

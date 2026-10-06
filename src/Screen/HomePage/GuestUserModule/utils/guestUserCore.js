@@ -185,7 +185,7 @@ export /**
  * @returns {*}
  */
 const formatGuestNumericText = value =>
-  String(value ?? '').replace(/-?\d+(?:\.\d+)?/g, match => formatGuestNumber(match));
+  String(value ?? '').replace(/-?\d+(?:,\d{3})*(?:\.\d+)?/g, match => formatGuestNumber(match));
 
 /**
  * Description: Resolves a specialty label from string or object inputs.

@@ -5,7 +5,7 @@ import { formatUsPhone, isUsCallingCode } from '../../Utils/Helpers/UsPhone';
  * Checkout inputbox screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, CheckoutInputbox, openDatePicker, closeDatePicker, handleDateSelect, handleInputChange, fetchSpecialities, countryPick, DatePick, DobPick, statePick, cityPick, professionTrack, medicalState, shouldShowMedicalLicenseState, normalizeCountryName, btnClick_galeryUpload, syncAnimatedValue, ensureAnimatedValue, getLabelStyle, handleFocus, handleBlur, handlePlaceSelected, fetchPostalCodeFromGeocode, toggleExpand, handleCheckboxChange, formatPhoneNumber, renderForms, billingForms.
  */
 
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, Image, View, Text, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Button, TextInput, Alert, StyleSheet, Pressable, Animated, Easing } from 'react-native';
 import TextFieldIn from '../../Components/Textfield';
 import CustomTextField from '../../Components/CustomTextfiled';
@@ -27,14 +27,11 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import AddressField from '../../Components/AutoData';
 import CustomInputTouchableZ from './Newmultiple';
 import CustomInputTouchableY from './Multiple';
-import { AppContext } from '../GlobalSupport/AppContext';
-import IntOff from '../../Utils/Helpers/IntOff';
 /**
  * Google api key constant.
  * @returns {string}
  */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
-import NetInfo from '@react-native-community/netinfo';
 import moment from 'moment';
 
 /**
@@ -107,9 +104,6 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   iseMededDo,
   setActiveIndexct, city_id, state_id, country_id, countrypicker, spanroute, ticketSave, speciality_id, setSpeciality, setSpeciality_id, activeIndex, removeSpeciality, selectedSpecialities, setSelectedSpecialities, slist, searchStateName, searchState, setSearchState, statepicker, handleSpecialitySelect, formData, setFormData, setActiveIndex, totalQuantity, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
   console.log(speciality, "totalQuantity122", slist, totalQuantity, spanroute)
-  const {
-    isConnected
-  } = useContext(AppContext);
   const editedPhoneIndexes = useRef(new Set());
   useEffect(() => {
     if (totalQuantity) {
@@ -234,14 +228,6 @@ const handleDateSelect = (date, index, fieldName) => {
   }, [allmsg]);
   const customHandle = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
   console.log(customHandle, "customHandle--------------")
-  const [conn, setConn] = useState("")
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
-      setConn(state.isConnected);
-    });
-    return () => unsubscribe();
-  }, [isConnected]);
     /**
  * Handles input change.
  * @param {number} index - Input value.
@@ -1890,13 +1876,13 @@ onBlur: () => handleBlur(index),
     ));
   };
   return (<>
-    {conn == false ? <IntOff /> : <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled">
       {spanroute?.cartData ? <View style={{ paddingBottom: normalize(10) }}>
         {billingForms()}
       </View> : <View style={{ paddingBottom: normalize(10) }}>
         {renderForms()}
       </View>}
-    </ScrollView>}
+    </ScrollView>
   </>
 
   );

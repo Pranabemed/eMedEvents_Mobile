@@ -27,6 +27,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
+import { mergeConferencePage } from '../../Utils/Helpers/conferencePagination';
 import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 
 /**
@@ -163,6 +164,9 @@ const Globalresult = (props) => {
     const [loading, setLoading] = useState(false);
     const [hasFetchedResults, setHasFetchedResults] = useState(false);
     const [pageNum, setPageNum] = useState(0);
+    const [homeHasMore, setHomeHasMore] = useState(true);
+    const [homeRefreshKey, setHomeRefreshKey] = useState(0);
+    const homeRequestInFlight = useRef(false);
     const [limit, setLimit] = useState(9);
     const [refreshing, setRefreshing] = useState(false);
     const [sortedFall, setSortedFall] = useState(false);
@@ -275,7 +279,9 @@ const Globalresult = (props) => {
     if (totalResults === 0 && props?.route?.params?.homeListPayload) {
         totalResults = storeAlldata.length;
     }
-    const canLoadMore = (totalResults > 0 && storeAlldata.length < totalResults) || (props?.route?.params?.homeListPayload && storeAlldata.length > 0 && storeAlldata.length % limit === 0);
+    const canLoadMore = props?.route?.params?.homeListPayload
+        ? homeHasMore
+        : totalResults > 0 && storeAlldata.length < totalResults;
     const routeQueryKey = useMemo(
         () =>
             JSON.stringify({
@@ -296,6 +302,10 @@ const Globalresult = (props) => {
         } = options;
 
         setStoreAlldata([]);
+        setHomeHasMore(true);
+        if (props?.route?.params?.homeListPayload) {
+            setHomeRefreshKey(key => key + 1);
+        }
         setPageNum(0);
         setHasFetchedResults(false);
         setDisplayedHeaderTitle('');
@@ -313,7 +323,7 @@ const Globalresult = (props) => {
             setDisplayedRouteQueryKey(routeKey);
         }
         dispatch(clearCmeCourseData());
-    }, [dispatch]);
+    }, [dispatch, props?.route?.params?.homeListPayload]);
     useEffect(() => {
         const currentTrig = props?.route?.params?.trig;
         if (currentTrig) {
@@ -498,6 +508,9 @@ const Globalresult = (props) => {
 
     useEffect(() => {
         if (props?.route?.params?.homeListPayload) {
+            homeRequestInFlight.current = true;
+            setApiReq(true);
+            setLoading(true);
             if (pageNum === 0) {
                 setLoading(true);
                 setHasFetchedResults(false);
@@ -512,10 +525,15 @@ const Globalresult = (props) => {
                 })
                 .catch((err) => {
                     showErrorAlert("Please connect to internet", err);
+                    homeRequestInFlight.current = false;
+                    setApiReq(false);
+                    setHomeHasMore(false);
+                    setRefreshing(false);
+                    setHasFetchedResults(true);
                     setLoading(false);
                 });
         }
-    }, [dispatch, props?.route?.params?.homeListPayload, pageNum, limit]);
+    }, [dispatch, props?.route?.params?.homeListPayload, pageNum, limit, homeRefreshKey]);
     console.log(pageNum, "ewflrl")
     const fetchHandle = useCallback((d, options = {}) => {
         if (props?.route?.params?.homeListPayload) return;
@@ -682,17 +700,25 @@ const Globalresult = (props) => {
 
     const fetchMore = useCallback(() => {
         if (!apiReq && !loading && canLoadMore && storeAlldata.length > 0) {
+            if (props?.route?.params?.homeListPayload) {
+                if (homeRequestInFlight.current) return;
+                homeRequestInFlight.current = true;
+                setLoading(true);
+            }
             const nextPage = pageNum + 1;
             setPageNum(nextPage);
             fetchHandle(undefined, { pageNum: nextPage });
         }
-    }, [apiReq, canLoadMore, loading, pageNum, storeAlldata.length, fetchHandle]);
+    }, [apiReq, canLoadMore, loading, pageNum, storeAlldata.length, fetchHandle, props?.route?.params?.homeListPayload]);
 
     /**
 * Full data refresh utility.
 * @returns {void}
 */
     const fullDataRefresh = () => {
+        if (props?.route?.params?.homeListPayload) {
+            if (homeRequestInFlight.current) return;
+        }
         resetResultsView({ loadingState: true });
         setRefreshing(true);
         fetchHandle(undefined, { pageNum: 0 });
@@ -766,7 +792,7 @@ const Globalresult = (props) => {
     }
 
     useEffect(() => {
-        if (!CMEReducer.status || requestStatusRef.current === CMEReducer.status) {
+        if (props?.route?.params?.homeListPayload || !CMEReducer.status || requestStatusRef.current === CMEReducer.status) {
             return;
         }
 
@@ -814,12 +840,14 @@ const Globalresult = (props) => {
     }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
 
     useEffect(() => {
-        if (!GuestReducer.status) {
+        if (!props?.route?.params?.homeListPayload || !GuestReducer.status) {
             return;
         }
 
         switch (GuestReducer.status) {
             case 'Guest/HomelistRequest':
+                guestResponseRef.current = null;
+                homeRequestInFlight.current = true;
                 setApiReq(true);
                 setLoading(true);
                 break;
@@ -828,6 +856,7 @@ const Globalresult = (props) => {
                     return;
                 }
                 guestResponseRef.current = GuestReducer?.HomelistResponse;
+                homeRequestInFlight.current = false;
                 setApiReq(false);
                 setLoading(false);
                 setHasFetchedResults(true);
@@ -862,35 +891,13 @@ const Globalresult = (props) => {
                     conferences = Object.values(root).find(val => Array.isArray(val)) || [];
                 }
 
-                if (conferences?.length > 0) {
-                    if (pageNum === 0) {
-                        setStoreAlldata(conferences);
-                        if (props?.route?.params?.homeListPayload) {
-                            // Automatically pre-fetch page 1 immediately after page 0 loads
-                            setPageNum(1);
-                        }
-                    } else {
-                        let modifiedData = [
-                            ...storeAlldata,
-                            ...conferences,
-                        ]?.filter(
-                            (value, index, self) =>
-                                index === self.findIndex(t => String(t?.id) === String(value?.id)),
-                        );
-                        setStoreAlldata(modifiedData);
-                    }
-                } else if (conferences?.length === 0) {
-                    if (pageNum === 0) setStoreAlldata([]);
-                    setApiReq(false);
-                    setLoading(false);
-                }
+                const pageResult = mergeConferencePage(storeAlldata, conferences, pageNum, limit);
+                setStoreAlldata(pageResult.items);
+                setHomeHasMore(pageResult.hasMore);
                 break;
             case 'Guest/HomelistFailure':
-                if (guestResponseRef.current === GuestReducer?.HomelistResponse) {
-                    return;
-                }
-                guestResponseRef.current = GuestReducer?.HomelistResponse;
-                setPageNum(0);
+                homeRequestInFlight.current = false;
+                setHomeHasMore(false);
                 setApiReq(false);
                 setLoading(false);
                 setHasFetchedResults(true);
@@ -1307,7 +1314,7 @@ const Globalresult = (props) => {
                                 renderItem={searchGlobalitem}
                                 keyExtractor={(item, index) => String(item?.id ?? item?.detailpage_url ?? index)}
                                 onEndReached={fetchMore}
-                                onEndReachedThreshold={1.5}
+                                onEndReachedThreshold={props?.route?.params?.homeListPayload ? 0.2 : 1.5}
                                 contentContainerStyle={isGuestFlow ? styles.guestListContent : { paddingBottom: normalize(200) }}
                                 scrollEventThrottle={16}
                                 ListFooterComponent={

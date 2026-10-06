@@ -4,7 +4,7 @@ import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpe
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler, Platform } from 'react-native';
+import { InteractionManager, View, Text, TouchableOpacity, FlatList, ScrollView, Animated, Easing, Image, Pressable, BackHandler, Platform } from 'react-native';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Fonts from '../../Themes/Fonts';
@@ -82,6 +82,7 @@ const AllSpecial = (props) => {
     const [selectCountry, setSelectCountry] = useState([]);
     const [searchtext, setSearchtext] = useState(false);
     const [country, setCountry] = useState('');
+    const showSpecialty = isNonUsaUser || (selectedId != null && (selectedId !== 12 || Boolean(country.trim())));
     const [countrypicker, setcountrypicker] = useState(false);
     const [slist, setSlist] = useState('');
     const [selectState, setSelectState] = useState([]);
@@ -130,14 +131,22 @@ const loadPlayerSession = async () => {
         loadPlayerSession();
     }, []);
     useEffect(() => {
-        generateDeviceToken()
-            .then((res) => {
-                setFcm(res);
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to Internet", err);
-            });
-    }, [isfocused, fcm]);
+        if (!isfocused) return;
+        let active = true;
+        const task = InteractionManager.runAfterInteractions(() => {
+            generateDeviceToken()
+                .then(token => {
+                    if (active) setFcm(token);
+                })
+                .catch(err => {
+                    if (active) showErrorAlert("Unable to enable notifications", err);
+                });
+        });
+        return () => {
+            active = false;
+            task.cancel();
+        };
+    }, [isfocused]);
     useEffect(() => {
         let isActive = true;
         /**
@@ -314,8 +323,20 @@ const handlePress = useCallback((all) => {
         setLabel(professionName);
         setSelectedProfessionalGroup(professionName);
         setOtherProfessionValue('');
-        specaillized(professionName?.split(' - ')?.[0]);
-    }, []);
+        if (!isNonUsaUser) {
+            setCountry('');
+            setState('');
+            setSpecailid('');
+            setSearchState('');
+            setstatepicker(false);
+            setStatelist([]);
+            setSelectState([]);
+            setSlist([]);
+        }
+        if (isNonUsaUser || all?.id !== 12) {
+            specaillized(professionName?.split(' - ')?.[0]);
+        }
+    }, [isNonUsaUser]);
 
     useEffect(() => {
         const targetScaleprof = state ? 1 : 0.8;
@@ -509,6 +530,15 @@ const handleStateSelect = useCallback((item) => {
  */
 const handleProfession = (did) => {
         console.log("Hello=======did", did);
+        if (!isNonUsaUser) {
+            setState('');
+            setSpecailid('');
+            setSearchState('');
+            setstatepicker(false);
+            setStatelist([]);
+            setSelectState([]);
+            setSlist([]);
+        }
         licData(did);
         setLabel(did);
         setCountry(did);
@@ -519,7 +549,9 @@ const handleProfession = (did) => {
             setOtherProfessionValue('');
         }
         setcountrypicker(false);
-        specaillized(did?.split(' - ')[0])
+        if (isNonUsaUser || did?.trim()) {
+            specaillized(did?.split(' - ')[0]);
+        }
     }
         /**
  * Handles pratcing.
@@ -574,10 +606,10 @@ const signupHandle = () => {
             if (!selectedId && !country) {
                 showErrorAlert("Select Your Profession")
                 return;
-            } else if (!country && selectedId === 12) {
+            } else if (!country.trim() && selectedId === 12) {
                 showErrorAlert("Select Your Profession")
                 return;
-            } else if (!state) {
+            } else if (!showSpecialty || !state || !specialtyId) {
                 showErrorAlert("Choose Your Specialty")
                 return;
             } else if (!statepratice && statelistpratice?.length > 0) {
@@ -665,9 +697,9 @@ const signupHandle = () => {
     }, [state])
     useEffect(() => {
         if (!searchState && AuthReducer?.specializationResponse?.specialities) {
-            setSlist(AuthReducer?.specializationResponse?.specialities)
+            setSlist(isNonUsaUser ? AuthReducer?.specializationResponse?.specialities : selectState)
         }
-    }, [searchState])
+    }, [searchState, isNonUsaUser, selectState])
     useEffect(() => {
         if (country) {
             setSearchtext("");
@@ -952,7 +984,7 @@ const licData = (hill) => {
                                     />
                                 </View>
                             </View>) : null}
-                            <View style={{
+                            {showSpecialty && <View style={{
                                 flexDirection: 'row',
                                 flex: 1
                             }}>
@@ -976,7 +1008,7 @@ const licData = (hill) => {
                                             }}
                                         /> */}
                                     <InputField
-                                        icondisable={statelist?.length > 0 ? false : true}
+                                        icondisable={isNonUsaUser && !(statelist?.length > 0)}
                                         label={state ? "Speciality*" : "Speciality*"}
                                         value={state}
                                         placeholder=""
@@ -993,7 +1025,7 @@ const licData = (hill) => {
                                         spaceneeded={true}
                                     />
                                 </View>
-                            </View>
+                            </View>}
 
                             {!isNonUsaUser && statelistpratice?.length > 0 && <View style={{
                                 flexDirection: 'row',

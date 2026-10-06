@@ -86,8 +86,8 @@ const extractHomeListItems = (homeResponse, sectionTitle = '') => {
     const root = homeResponse?.data?.data
         ? homeResponse.data.data
         : homeResponse?.data
-        ? homeResponse.data
-        : homeResponse || {};
+            ? homeResponse.data
+            : homeResponse || {};
 
     let candidates = [];
     if (sectionTitle === 'Most Popular Conferences') {
@@ -172,7 +172,7 @@ const SearchResult = (props) => {
     const [isLoading, setIsLoading] = useState(Boolean(resolvedHomeListPayload));
     const [hasLoaded, setHasLoaded] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    
+
     const [sortType, setSortType] = useState('');
     const [sortedFall, setSortedFall] = useState(false);
     const [filterVisible, setFilterVisible] = useState(false);
@@ -242,10 +242,10 @@ const SearchResult = (props) => {
     }, [homeListPayloadKey, page, resolvedHomeListPayload, sectionTitle, itemsPerPage]);
 
     const sourceResults = resolvedHomeListPayload ? allApiResults : dommyResult;
-    
+
     const filteredAndSortedResults = useMemo(() => {
         let results = [...sourceResults];
-        
+
         if (isFreeOnly) {
             results = results.filter(item => String(item?.price).toUpperCase() === 'FREE');
         }
@@ -254,7 +254,7 @@ const SearchResult = (props) => {
             const needle = eventTypeFilter.toLowerCase();
             results = results.filter(item => String(item?.eventType || '').toLowerCase().includes(needle));
         }
-        
+
         if (sortType) {
             results.sort((a, b) => {
                 const getPrice = (item) => {
@@ -262,7 +262,7 @@ const SearchResult = (props) => {
                     if (String(item.price).toUpperCase() === 'FREE') return 0;
                     return parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0;
                 };
-                
+
                 if (sortType === 'PRICE_ASC') return getPrice(a) - getPrice(b);
                 if (sortType === 'PRICE_DESC') return getPrice(b) - getPrice(a);
                 if (sortType === 'DATE_DESC') return parseListingDateValue(b) - parseListingDateValue(a);
@@ -292,7 +292,7 @@ const SearchResult = (props) => {
  * @param {*} props.index - Nested property value.
  * @returns {JSX.Element}
  */
-const intenalMedItem = ({ item, index }) => {
+    const intenalMedItem = ({ item, index }) => {
         const handlePress = () => {
             const url = item?.detailpageUrl;
             if (!url) return;
@@ -503,43 +503,43 @@ const intenalMedItem = ({ item, index }) => {
                             width: '100%',
                             backgroundColor: '#fff',
                         }}>
-                        <FlatList
-                            contentContainerStyle={{
-                                paddingBottom: normalize(12),
-                                paddingTop: normalize(7),
-                            }}
-                            showsVerticalScrollIndicator={false}
-                            keyExtractor={item => item.id.toString()}
-                            data={[
-                                { name: "Price - Low to High", type: "PRICE_ASC", id: 0 },
-                                { name: "Price - High to Low", type: "PRICE_DESC", id: 1 },
-                                { name: "Date - Newest First", type: "DATE_DESC", id: 2 },
-                                { name: "Date - Oldest First", type: "DATE_ASC", id: 3 },
-                                { name: "Title - A to Z", type: "TITLE_ASC", id: 4 },
-                                { name: "Title - Z to A", type: "TITLE_DESC", id: 5 },
-                            ]}
-                            renderItem={({ item }) => {
-                                const handlePress = (dd) => {
-                                    setSortType(dd?.type);
-                                    setSortedFall(false);
-                                };
+                            <FlatList
+                                contentContainerStyle={{
+                                    paddingBottom: normalize(12),
+                                    paddingTop: normalize(7),
+                                }}
+                                showsVerticalScrollIndicator={false}
+                                keyExtractor={item => item.id.toString()}
+                                data={[
+                                    { name: "Price - Low to High", type: "PRICE_ASC", id: 0 },
+                                    { name: "Price - High to Low", type: "PRICE_DESC", id: 1 },
+                                    { name: "Date - Newest First", type: "DATE_DESC", id: 2 },
+                                    { name: "Date - Oldest First", type: "DATE_ASC", id: 3 },
+                                    { name: "Title - A to Z", type: "TITLE_ASC", id: 4 },
+                                    { name: "Title - Z to A", type: "TITLE_DESC", id: 5 },
+                                ]}
+                                renderItem={({ item }) => {
+                                    const handlePress = (dd) => {
+                                        setSortType(dd?.type);
+                                        setSortedFall(false);
+                                    };
 
-                                return (
-                                    <TouchableOpacity
-                                        onPress={() => { handlePress(item) }}
-                                        style={{
-                                            paddingVertical: normalize(15),
-                                            borderBottomWidth: 1,
-                                            borderBottomColor: '#eee'
-                                        }}
-                                    >
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: sortType === item.type ? Colorpath.ButtonColr : '#333' }}>
-                                            {item?.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            }}
-                        />
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => { handlePress(item) }}
+                                            style={{
+                                                paddingVertical: normalize(15),
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: '#eee'
+                                            }}
+                                        >
+                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: sortType === item.type ? Colorpath.ButtonColr : '#333' }}>
+                                                {item?.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                            />
                         </View>
                     </TouchableOpacity>
                 </Modal>
@@ -566,49 +566,49 @@ const intenalMedItem = ({ item, index }) => {
                             width: '100%',
                             backgroundColor: '#fff',
                         }}>
-                        <FlatList
-                            contentContainerStyle={{
-                                paddingBottom: normalize(12),
-                                paddingTop: normalize(7),
-                            }}
-                            showsVerticalScrollIndicator={false}
-                            keyExtractor={item => item.id}
-                            data={[
-                                { id: 'free_only', label: 'Free Courses Only', value: 'free' },
-                                { id: 'all_type', label: 'All Conference Types', value: '' },
-                                { id: 'webcast', label: 'Webcast', value: 'webcast' },
-                                { id: 'inperson', label: 'In-Person', value: 'in-person' },
-                                { id: 'hybrid', label: 'Hybrid', value: 'hybrid' },
-                            ]}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if (item.id === 'free_only') {
-                                            setIsFreeOnly(!isFreeOnly);
-                                        } else {
-                                            setEventTypeFilter(item.value);
-                                        }
-                                        setFilterVisible(false);
-                                    }}
-                                    style={{
-                                        paddingVertical: normalize(15),
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#eee',
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between'
-                                    }}
-                                >
-                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: (item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? Colorpath.ButtonColr : '#333' }}>
-                                        {item.label}
-                                    </Text>
-                                    {(item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? <Text style={{ color: Colorpath.ButtonColr }}>✓</Text> : null}
-                                </TouchableOpacity>
-                            )}
-                        />
+                            <FlatList
+                                contentContainerStyle={{
+                                    paddingBottom: normalize(12),
+                                    paddingTop: normalize(7),
+                                }}
+                                showsVerticalScrollIndicator={false}
+                                keyExtractor={item => item.id}
+                                data={[
+                                    { id: 'free_only', label: 'Free Courses Only', value: 'free' },
+                                    { id: 'all_type', label: 'All Conference Types', value: '' },
+                                    { id: 'webcast', label: 'Webcast', value: 'webcast' },
+                                    { id: 'inperson', label: 'In-Person', value: 'in-person' },
+                                    { id: 'hybrid', label: 'Hybrid', value: 'hybrid' },
+                                ]}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (item.id === 'free_only') {
+                                                setIsFreeOnly(!isFreeOnly);
+                                            } else {
+                                                setEventTypeFilter(item.value);
+                                            }
+                                            setFilterVisible(false);
+                                        }}
+                                        style={{
+                                            paddingVertical: normalize(15),
+                                            borderBottomWidth: 1,
+                                            borderBottomColor: '#eee',
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between'
+                                        }}
+                                    >
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: (item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? Colorpath.ButtonColr : '#333' }}>
+                                            {item.label}
+                                        </Text>
+                                        {(item.id === 'free_only' ? isFreeOnly : eventTypeFilter === item.value) ? <Text style={{ color: Colorpath.ButtonColr }}>✓</Text> : null}
+                                    </TouchableOpacity>
+                                )}
+                            />
                         </View>
                     </TouchableOpacity>
                 </Modal>
-                </SafeAreaView>
+            </SafeAreaView>
         </>
     );
 };

@@ -321,7 +321,7 @@ const GuestSpecialitySearch = props => {
 * @returns {JSX.Element}
 */
   const renderDefaultContent = () => {
-    if (browseLoading && topSpecialties.length === 0) {
+    if (browseLoading) {
       return (
         <View style={styles.loaderWrap}>
           <ActivityIndicator size="small" color={Colorpath.ButtonColr} />

@@ -4,7 +4,7 @@ import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
  * Login screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, normalizeProfessionHandle, Login, handleInputChange, formatPhoneNumber, formatIndianPhoneNumber, handleLogin, verifyHandle, isTrueFlag, isFalseFlag, handleNavigation, proceedNonUsaLogin, backEra, goToGuestPage, onBackPress, styles.
  */
 
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
+import { InteractionManager, View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, TextInput, Alert, Image, BackHandler, PermissionsAndroid, Linking, Keyboard } from 'react-native';
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -850,14 +850,22 @@ const onBackPress = () => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
   useEffect(() => {
-    generateDeviceToken()
-      .then((res) => {
-        setFcm(res)
-      })
-      .catch((err) => {
-        showErrorAlert("Please connect to Interne11t", err)
-      })
-  }, [isFocus, fcm])
+      if (!isFocus) return;
+      let active = true;
+      const task = InteractionManager.runAfterInteractions(() => {
+          generateDeviceToken()
+              .then(token => {
+                  if (active) setFcm(token);
+              })
+              .catch(err => {
+                  if (active) showErrorAlert("Unable to enable notifications", err);
+              });
+      });
+      return () => {
+          active = false;
+          task.cancel();
+      };
+  }, [isFocus]);
   return (
     <>
       <MyStatusBar

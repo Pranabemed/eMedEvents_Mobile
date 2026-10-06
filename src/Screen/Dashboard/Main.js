@@ -33,7 +33,7 @@ import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
-import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { hasUsaPrimeProfile, isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable normalizeProfessionHandle component.
@@ -485,6 +485,14 @@ const Main = (props) => {
     }
     return true;
   }, [resolvedIpCountryCode, nonUsaFlowState, isAddressUsa, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
+  const hasUsaPrimeAccount = hasUsaPrimeProfile(
+    DashboardReducer?.mainprofileResponse,
+    AuthReducer?.dircetloginResponse,
+    AuthReducer?.directloginResponse,
+    AuthReducer?.loginResponse,
+    AuthReducer?.againloginsiginResponse,
+    finalProfessionmain,
+  );
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
@@ -1950,7 +1958,7 @@ const Main = (props) => {
             alignItems: 'center',
             paddingBottom: 0,
           }}>
-            <TouchableOpacity onPress={() => setPrimeadd(true)} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25), marginBottom: normalize(-2) }}>
+            <TouchableOpacity onPress={handleGuestPrimeMembership} style={{ flexDirection: "row", gap: normalize(10), justifyContent: "center", alignItems: "center", height: normalize(54), width: normalize(340), backgroundColor: "#FFEDCA", borderTopLeftRadius: normalize(25), borderTopRightRadius: normalize(25), marginBottom: normalize(-2) }}>
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
@@ -2054,7 +2062,7 @@ const Main = (props) => {
             const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
             const isEligibleToRenderPrimeCard = (subUserCheck === "free" || subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && (subUserCheck !== "subscribed");
 
-            return (!isAccreditationUser && !isNonUsaUser && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+            return (!isAccreditationUser && (!isNonUsaUser || hasUsaPrimeAccount) && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}

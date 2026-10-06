@@ -1320,6 +1320,12 @@ export function* userPrimeCheck(action) {
     if (response?.data?.success == true) {
       yield put(primeTrailSuccess(response?.data));
       try {
+        yield put({ type: 'Dashboard/mainprofileRequest', payload: {} });
+        yield put({ type: 'WebCast/PrimeCheckRequest', payload: {} });
+      } catch (e) {
+        console.log('Error dispatching profile/prime check after trial activation', e);
+      }
+      try {
         const storedProfession = yield call(AsyncStorage.getItem, constants.PROFESSION);
         if (storedProfession) {
           const parsed = JSON.parse(storedProfession);

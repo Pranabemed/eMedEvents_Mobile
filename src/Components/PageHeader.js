@@ -43,6 +43,10 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
     return () => clearInterval(interval);
   }, [placeholders]);
   const isPaymentOrCheckout = cleanTitle === 'payment' ||
+    cleanTitle === 'terms of service' ||
+    cleanTitle === 'privacy policy' ||
+    cleanTitle === 'browse' ||
+    cleanTitle === 'filter results' ||
     cleanTitle === 'checkout' ||
     cleanTitle.includes('payment') ||
     cleanTitle.includes('checkout') ||

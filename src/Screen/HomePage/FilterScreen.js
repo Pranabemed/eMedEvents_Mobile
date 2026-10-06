@@ -109,7 +109,7 @@ const renderBrowseSearchInput = () => {
     };
     const [combinedData, setCombinedData] = useState([]);
     const [selectedItm, setSelectedItm] = useState([]);
-    const [resetOn, setResetOn] = useState(false);
+    const [resetOn, setResetOn] = useState(0);
     const [finalds, setFinalds] = useState(false);
     const [cmetype, setCmetype] = useState(null);
     const MIN_DEFAULT = filtertake?.get_cme_points_from_stat;
@@ -635,8 +635,7 @@ const renderItem = ({ item, index }) => {
             console.log(hasData, "hasData-----", item, hitDat);
             return (
                 <View>
-                    <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row" }}>
-                        <Text style={styles.professionHeader}>{item?.type == "conf_types" ? "Course Format" : item?.type == "organizers_types" ? "Organizers" : item?.type == "speakers_types" ? "Speakers" : item?.type == "profession_types" ? "Choose Profession" : item?.type == "get_cme_points_to_stat" ? 'No. of credits' : item?.type == "get_price_to_stat" ? "Price range" : item?.type == "cme_type_flags" ? "Course Type" : item?.type == "date_types" ? "Dates" : item?.type == "location_types" ? "Location" : item?.type == "mandate_states" ? 'State-required Courses' : item?.type == 'credit_types' ? 'Credit type' : item?.type == 'topic_types' ? "Topics" : item?.type == 'count_specilaities' ? "Choose Specailities" : item?.type}</Text>
+                    <View style={{ justifyContent: "flex-end", flexDirection: "row" }}>
                         <TouchableOpacity onPress={() => {
                             setFinalds(true);
                             againHand();
@@ -843,6 +842,7 @@ const renderContent = () => {
             case 'get_cme_points_to_stat':
                 return (
                     <CreditPrice
+                        key={`credits-${resetOn}`}
                         minValue={minValue}
                         maxValue={maxValue}
                         setMinValue={setMinValue}
@@ -850,7 +850,6 @@ const renderContent = () => {
                         text={"No. of credits"}
                         sliderWidth={190}
                         min={MIN_DEFAULT}
-                        resetEnable={resetOn}
                         max={filtertake?.get_cme_points_to_stat}
                         currentMin={slider2Min}
                         currentMax={slider2Max}
@@ -899,6 +898,7 @@ const renderContent = () => {
             case 'get_price_to_stat':
                 return (
                     <PriceSlider
+                        key={`price-${resetOn}`}
                         selectedFilter={selectedFilter}
                         setSelectedFilter={setSelectedFilter}
                         selectedItm={selectedItm}
@@ -910,7 +910,6 @@ const renderContent = () => {
                         currentMax={slider1Max}
                         setCurrentMin={setSlider1Min}
                         setCurrentMax={setSlider1Max}
-                        resetEnable={resetOn}
                         trigmin={props?.route?.params?.wholeDats?.PriceDrop?.maxgetp || props?.route?.params?.wholeDats?.PriceDrop?.mingetp}
                         againHand={againHand}
                         max={filtertake?.get_price_to_stat || Max_Price}
@@ -1136,7 +1135,12 @@ const renderContent = () => {
  * @returns {void}
  */
 onPress: () => {
-                                setResetOn(!resetOn);
+                                setResetOn(previous => previous + 1);
+                                setSearch('');
+                                setSlider1Min(MIN_PMin);
+                                setSlider1Max(Max_Price);
+                                setSlider2Min(MIN_DEFAULT);
+                                setSlider2Max(Min_DPrice);
                                 setSelectedItems([]);
                                 setSelectedItm([]);
                                 setCmetype([]);
@@ -1146,20 +1150,33 @@ onPress: () => {
                                 setMaxValuep("");
 
                                 const originRoute = props?.route?.params?.wholeDats?.mainKeyAll || {};
-                                const clearedParams = {
-                                    ...originRoute,
-                                    filterDatSh: {
-                                        filterDatSh: [],
-                                        returnTake: originRoute,
-                                        selectedIt: [],
-                                        minVal: "",
-                                        maxVal: "",
-                                        minValP: "",
-                                        maxValp: "",
-                                        selectedItem: selectedFilter,
-                                    },
+                                const clearedFilter = {
+                                    filterDatSh: [],
+                                    returnTake: originRoute,
+                                    selectedIt: [],
+                                    minVal: "",
+                                    maxVal: "",
+                                    minValP: "",
+                                    maxValp: "",
+                                    selectedItem: selectedFilter,
                                 };
-                                navigateToResults(clearedParams);
+                                const resultsRoute = props.navigation.getState().routes
+                                    .find(route => route.name === 'Globalresult');
+                                if (resultsRoute) {
+                                    props.navigation.dispatch({
+                                        ...CommonActions.setParams({ filterDatSh: clearedFilter }),
+                                        source: resultsRoute.key,
+                                    });
+                                }
+
+                                props.navigation.setParams({
+                                    wholeDats: {
+                                        ...props?.route?.params?.wholeDats,
+                                        mainKeyAll: { ...originRoute, filterDatSh: clearedFilter },
+                                        ClearText: [],
+                                        PriceDrop: {},
+                                    },
+                                });
                             }, style: "cancel"
                         }, {
                             text: "No",                             /**

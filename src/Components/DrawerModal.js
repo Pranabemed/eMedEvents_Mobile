@@ -44,7 +44,7 @@ import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
-import { isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
+import { hasUsaPrimeProfile, isPrimePhysicianProfile, isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable DrawerModal component.
@@ -83,6 +83,8 @@ export default function DrawerModal(props) {
   const [currentProfile, setCurrentProfile] = useState(null);
   const [isProfileReady, setIsProfileReady] = useState(false);
   const [storedAuthUser, setStoredAuthUser] = useState(null);
+  const [finalProfession, setFinalProfession] = useState(null);
+  const [finalverifyvault, setFinalverifyvault] = useState(null);
   const normalizeProfessionHandle = (value) =>
     String(value || '')
       .toLowerCase()
@@ -138,8 +140,12 @@ export default function DrawerModal(props) {
   const resolvedDrawerUser = resolvedUser;
 
   const loginUser =
-    storedAuthUser ||
+    AuthReducer?.dircetloginResponse?.user ||
+    AuthReducer?.directloginResponse?.user ||
     AuthReducer?.loginResponse?.user ||
+    AuthReducer?.againloginsiginResponse?.user ||
+    AuthReducer?.verifymobileResponse?.user ||
+    storedAuthUser ||
     resolvedUser;
 
   const activeUser = loginUser?.user
@@ -156,8 +162,10 @@ export default function DrawerModal(props) {
     activeUser?.is_prime_user === true;
 
   const isPrimeTrialActive =
-    (currentProfile === 'PrimeCard') &&
-    (AuthReducer?.status === 'Auth/primeTrailSuccess' || AuthReducer?.primeTrailResponse?.status === true || AuthReducer?.primeTrailResponse?.msg === 'Trail Activated Successfully');
+    AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+    AuthReducer?.primeTrailResponse?.status === true ||
+    AuthReducer?.primeTrailResponse?.msg === 'Trail Activated Successfully' ||
+    AuthReducer?.primeTrailResponse?.success === true;
 
   const isPrimePaymentActive =
     WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' ||
@@ -440,7 +448,20 @@ export default function DrawerModal(props) {
     isUsaCountryCode(nonUsaFlowState?.ipCountryCode)
   );
 
-  const isUsaPhysicianMDDODPM = isPhysicianUser && isUsaIpAddress;
+  const primeProfileSources = [
+    DashboardReducer?.mainprofileResponse,
+    AuthReducer?.dircetloginResponse,
+    AuthReducer?.directloginResponse,
+    AuthReducer?.loginResponse,
+    AuthReducer?.againloginsiginResponse,
+    AuthReducer?.verifymobileResponse,
+    storedAuthUser,
+    finalProfession,
+  ];
+  const isPrimePhysician = isPrimePhysicianProfile(...primeProfileSources) &&
+    (!isAccreditationUser || hasDrawerLicensures);
+  const isUsaPhysicianMDDODPM = isPrimePhysician &&
+    (hasUsaPrimeProfile(...primeProfileSources) || isUsaIpAddress);
 
   const isNonUsaUser = isProfileReady && currentProfile !== 'SkipProfile' && !isPhysicianUser;
 
@@ -478,8 +499,6 @@ export default function DrawerModal(props) {
     { id: 2, name: "Sign Out" }
   ]
   const [expandedId, setExpandedId] = useState(0);
-  const [finalverifyvault, setFinalverifyvault] = useState(null);
-  const [finalProfession, setFinalProfession] = useState(null);
   const [alphaimg, setAlphaimg] = useState("");
   /**
 * Handles toggle.
@@ -933,7 +952,7 @@ export default function DrawerModal(props) {
                     {stableProfileMetaText || 'Guest Profile'}
                   </Text>
                 </View>
-                {!isNonUsaUser && isUsaPhysicianMDDODPM && (isNonSubscribedNoSubscription || allProfTake || isPrimeUserActive) && (
+                {isUsaPhysicianMDDODPM && (isNonSubscribedNoSubscription || allProfTake || isPrimeUserActive) && (
                   <Pressable
                     style={{
                       alignSelf: 'flex-start', // Let content determine width

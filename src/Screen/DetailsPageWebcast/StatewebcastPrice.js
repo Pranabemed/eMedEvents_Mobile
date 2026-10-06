@@ -393,7 +393,7 @@ const renderCmeCredits = () => {
                     ) : null}
                 </View>
             </Modal> */}
-            {webcastdeatils?.buttonType &&
+            {/* {webcastdeatils?.buttonType &&
                 webcastdeatils?.buttonType?.toLowerCase() === "register" &&
                 webcastdeatils?.registered_allow === 1 && webcastdeatils?.conference_active != 0 && !webcastdeatils?.bundle_conf_taken_msg ? (
                 <View
@@ -433,8 +433,8 @@ const renderCmeCredits = () => {
                         //   marginTop={normalize(30)}
                         />
                     </View>
-                )}
-
+                )} */}
+              {/* {{QA Raised that issue that's why disabled both price & register button .}} */}
 
         </View>
     )

@@ -113,16 +113,18 @@ const InputField = forwardRef((
     const isUsPhone = isPhoneInput && (countryIdentity(phoneCountry)
         ? isUsCountry(phoneCountry) : isUsCallingCode(resolvedCountryCode));
     const rawDigits = String(value ?? '').replace(/\D/g, '').slice(0, 10);
-    const displayValue = isUsPhone ? formatUsPhone(value) : (isPhoneInput && (maxLength === 10 || maxlength === 10) ? rawDigits : value);
+    const displayValue = isUsPhone ? formatUsPhone(value) : (isPhoneInput && (maxLength || maxlength) ? rawDigits : value);
     const changeText = text => {
+        const digits = String(text ?? '').replace(/\D/g, '').slice(0, 10);
         if (isUsPhone) {
-            onChangeText?.(formatUsPhone(text));
-        } else if (isPhoneInput && (maxLength === 10 || maxlength === 10)) {
-            onChangeText?.(String(text ?? '').replace(/\D/g, '').slice(0, 10));
+            onChangeText?.(formatUsPhone(digits));
+        } else if (isPhoneInput) {
+            onChangeText?.(digits);
         } else {
             onChangeText?.(text);
         }
     };
+    const activeMaxLength = isUsPhone ? 14 : (maxLength ?? maxlength);
     const isActive = isFocused || !!value;
 
     useEffect(() => {
@@ -244,7 +246,7 @@ const floatingLabelNode = (text) => (
                         onChangeText={changeText}
                         placeholder=""
                         placeholderTextColor="transparent"
-                        maxLength={isPhoneInput ? (isUsPhone ? undefined : (maxLength ?? maxlength)) : (maxLength ?? maxlength)}
+                        maxLength={activeMaxLength}
                         editable={editable}
                         secureTextEntry={secureTrue ? secureTrue : secureTextEntry}
                         keyboardType={keyboardType}
@@ -279,7 +281,7 @@ const floatingLabelNode = (text) => (
             onChangeText={changeText}
             placeholder=""
             placeholderTextColor="transparent"
-            maxLength={isPhoneInput ? (isUsPhone ? undefined : (maxLength ?? maxlength)) : (maxLength ?? maxlength)}
+            maxLength={activeMaxLength}
             editable={editable}
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}
