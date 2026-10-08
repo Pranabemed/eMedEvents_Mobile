@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
+import DropdownIcon from 'react-native-vector-icons/MaterialIcons';
+import { dropdownStyles } from './DropDownHeader';
 
 /**
  * Reusable CustomInputTouchable component.
@@ -24,6 +26,8 @@ import Fonts from '../Themes/Fonts';
  */
 
 const CustomInputTouchable = ({
+    standardized = false,
+    children,
     label,
     value,
     placeholder,
@@ -43,13 +47,14 @@ const CustomInputTouchable = ({
     const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
 
     useEffect(() => {
+        if (standardized) return;
         Animated.timing(animated, {
             toValue: isFocused || value ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,
         }).start();
-    }, [isFocused, value]);
+    }, [animated, isFocused, value, standardized]);
     console.log(newFont, "newFont======")
     const labelAnimatedStyle = {
         position: 'absolute',
@@ -68,6 +73,27 @@ const CustomInputTouchable = ({
         color: "#999999",
     };
 
+
+    if (standardized) {
+        return (
+            <View style={[dropdownStyles.fieldGroup, containerStyle]}>
+                <Text style={dropdownStyles.fieldLabel}>{label}</Text>
+                <View style={[dropdownStyles.field, disabled && dropdownStyles.fieldDisabled, wrapperStyle]}>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={label}
+                        accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled}
+                        onPress={onPress} style={dropdownStyles.fieldValueTouch}>
+                        {children || <Text style={[dropdownStyles.optionText, !value && dropdownStyles.placeholder]} numberOfLines={2}>
+                            {value || placeholder || 'Select an option'}
+                        </Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open ${label || 'options'}`}
+                        disabled={disabled} onPress={onIconpres || onPress} style={dropdownStyles.close}>
+                        <DropdownIcon name="keyboard-arrow-down" size={22} color="#667085" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.inputGroup, containerStyle]}>

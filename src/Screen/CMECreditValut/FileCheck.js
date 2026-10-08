@@ -291,7 +291,10 @@ const CertficateHandle = (props) => {
             });
             const base64 = base64Data.split(',')[1];
             await RNFS.writeFile(filePath, base64, 'base64');
-            Alert.alert('Download successful', 'ZIP file has been downloaded to: ' + filePath);
+            Alert.alert(
+                'Download successful',
+                `Your file name: ${data?.archive_file}\nPlease check your device.`
+            );
             await openZipFile(filePath);
         } catch (error) {
             console.error('Download error:', error);

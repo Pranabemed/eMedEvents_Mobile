@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../../../Components/DropDownHeader';
 /**
  * File Name: GuestSelectionModals.js
  * Module: Guest User
@@ -42,15 +43,15 @@ const GuestSelectionModalsComponent = ({
         onPress={() => setProfModalVisible(false)}
       >
         <View style={styles.profContent}>
-          <Text style={styles.modalTitle}>Select Profession</Text>
+          <DropDownHeader standardized title="Select Profession" onClosePress={() => setProfModalVisible(false)} />
           {['Physician', 'Nursing', 'Dentist', 'Pharmacist'].map(prof => (
-            <TouchableOpacity
+            <DropdownOption
               key={prof}
               onPress={() => handleProfessionSelect(prof)}
-              style={styles.profItem}
+
             >
-              <Text style={styles.profItemText}>{prof}</Text>
-            </TouchableOpacity>
+              <Text style={dropdownStyles.optionText}>{prof}</Text>
+            </DropdownOption>
           ))}
         </View>
       </TouchableOpacity>
@@ -62,27 +63,27 @@ const GuestSelectionModalsComponent = ({
         onPress={() => setStateModalVisible(false)}
       >
         <Pressable style={styles.stateSheet}>
-          <Text style={styles.modalTitle}>Select State</Text>
-          <TextInput
+          <DropDownHeader standardized title="Select State" onClosePress={() => setStateModalVisible(false)} />
+          <DropdownSearch
             value={stateSearchText}
             onChangeText={setStateSearchText}
             placeholder="Search state"
             placeholderTextColor="#9CA3AF"
-            style={styles.stateInput}
+
           />
-          <FlatList
+          <DropdownList
             data={filteredStateList}
             keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? item?.name ?? index)}
             ListEmptyComponent={
               <Text style={styles.emptyText}>No states found</Text>
             }
             renderItem={({ item }) => (
-              <TouchableOpacity
+              <DropdownOption
                 onPress={() => handleStateItemPress(item)}
-                style={styles.stateItem}
+
               >
-                <Text style={styles.profItemText}>{getStateName(item)}</Text>
-              </TouchableOpacity>
+                <Text style={dropdownStyles.optionText}>{getStateName(item)}</Text>
+              </DropdownOption>
             )}
           />
         </Pressable>

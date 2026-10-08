@@ -108,7 +108,7 @@ const InputField = forwardRef((
         }).catch(() => {});
         return () => { active = false; };
     }, [showCountryCode, countryCode]);
-    const resolvedCountryCode = (showCountryCode || countryCode)
+    const resolvedCountryCode = showCountryCode
         ? getCountryDialCode(countryCode, phoneCountry, fallbackCountry) : '';
     const isUsPhone = isPhoneInput && (countryIdentity(phoneCountry)
         ? isUsCountry(phoneCountry) : isUsCallingCode(resolvedCountryCode));

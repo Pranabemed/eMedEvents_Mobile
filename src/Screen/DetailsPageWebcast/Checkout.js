@@ -820,6 +820,46 @@ const cityReq = (itid) => {
     //     setWeekname(updatedWeekname);
     //     console.log(updatedWeekname, "updatedWeekname====")
     // };
+    // Read each result independently; concurrent lookups share AuthReducer.status.
+    useEffect(() => {
+        const options = AuthReducer?.professionResponse?.profession_credentials;
+        if (!Array.isArray(options)) return;
+        setSelectCountry(options);
+        setClist(options);
+    }, [AuthReducer?.professionResponse?.profession_credentials]);
+    useEffect(() => {
+        const options = AuthReducer?.specializationResponse?.specialities;
+        if (!Array.isArray(options)) return;
+        setSelectState(options);
+        setSlist(options);
+    }, [AuthReducer?.specializationResponse?.specialities]);
+    useEffect(() => {
+        const options = AuthReducer?.countryResponse?.countries;
+        if (!Array.isArray(options)) return;
+        setCountryshow(options);
+        setCountryall(options);
+    }, [AuthReducer?.countryResponse?.countries]);
+    useEffect(() => {
+        const options = AuthReducer?.stateResponse?.states;
+        if (!Array.isArray(options)) return;
+        setStatelistpratice(options);
+        setSelectStatepratice(options);
+        setSlistpratice(options);
+    }, [AuthReducer?.stateResponse?.states]);
+    useEffect(() => {
+        const options = AuthReducer?.checkstateResponse?.states;
+        if (!Array.isArray(options)) return;
+        setStatelistpraticelic(options);
+        setSelectStatepraticelic(options);
+        setSlistpraticelic(options);
+    }, [AuthReducer?.checkstateResponse?.states]);
+    useEffect(() => {
+        const options = AuthReducer?.cityResponse?.cities;
+        if (!Array.isArray(options)) return;
+        setCityAll(options);
+        setCityshow(options);
+    }, [AuthReducer?.cityResponse?.cities]);
+
     if (status == '' || AuthReducer.status != status) {
         switch (AuthReducer.status) {
             case 'Auth/professionRequest':
@@ -827,8 +867,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/professionSuccess':
                 status = AuthReducer.status;
-                setSelectCountry(AuthReducer?.professionResponse?.profession_credentials);
-                setClist(AuthReducer?.professionResponse?.profession_credentials);
                 break;
             case 'Auth/professionFailure':
                 status = AuthReducer.status;
@@ -838,8 +876,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/specializationSuccess':
                 status = AuthReducer.status;
-                setSelectState(AuthReducer?.specializationResponse?.specialities);
-                setSlist(AuthReducer?.specializationResponse?.specialities);
                 break;
             case 'Auth/specializationFailure':
                 status = AuthReducer.status;
@@ -849,8 +885,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/countrySuccess':
                 status = AuthReducer.status;
-                setCountryshow(AuthReducer?.countryResponse?.countries);
-                setCountryall(AuthReducer?.countryResponse?.countries);
                 break;
             case 'Auth/countryFailure':
                 status = AuthReducer.status;
@@ -860,9 +894,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/stateSuccess':
                 status = AuthReducer.status;
-                setStatelistpratice(AuthReducer?.stateResponse?.states);
-                setSelectStatepratice(AuthReducer?.stateResponse?.states);
-                setSlistpratice(AuthReducer?.stateResponse?.states);
                 break;
             case 'Auth/stateFailure':
                 status = AuthReducer.status;
@@ -872,9 +903,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/checkstateSuccess':
                 status = AuthReducer.status;
-                setStatelistpraticelic(AuthReducer?.checkstateResponse?.states);
-                setSelectStatepraticelic(AuthReducer?.checkstateResponse?.states);
-                setSlistpraticelic(AuthReducer?.checkstateResponse?.states);
                 break;
             case 'Auth/checkstateFailure':
                 status = AuthReducer.status;
@@ -884,8 +912,6 @@ const cityReq = (itid) => {
                 break;
             case 'Auth/citySuccess':
                 status = AuthReducer.status;
-                setCityAll(AuthReducer?.cityResponse?.cities);
-                setCityshow(AuthReducer?.cityResponse?.cities);
                 break;
             case 'Auth/cityFailure':
                 status = AuthReducer.status;
@@ -2103,6 +2129,7 @@ const applyCoupon = () => {
                         )
                     )}
                     <Loader visible={loaderVisible && !isOffline} />
+                    <View style={{ flex: 1, display: allPickersAreFalse ? 'flex' : 'none' }}>
                     <CheckoutMain
                         markPersonalizationEdited={markPersonalizationEdited}
                         savefull={savefull}
@@ -2211,6 +2238,7 @@ const applyCoupon = () => {
                         dateofbirth={dateofbirth}
                         iseMededDo={iseMededDo}
                         firstname={firstname} setFirstname={setFirstname} lastname={lastname} setLastname={setLastname} emailad={emailad} setEmailad={setEmailad} professionad={professionad} setProfessionad={setProfessionad} setstatepicker={setstatepicker} allProfession={allProfession} specaillized={specaillized} npino={npino} setNpino={setNpino} address={address} setAddress={setAddress} setCountrypicker={setCountrypicker} countryReq={countryReq} country={country} PraticingState={PraticingState} setPratice={setPratice} state={state} setCityPicker={setCityPicker} cityReq={cityReq} city={city} zipcode={zipcode} setZipcode={setZipcode} cellno={cellno} setCellno={setCellno} />
+                    </View>
                     {countrypickerprof && <ProfessionInPerson
                         setcountrypicker={setcountrypickerprof}
                         searchtext={searchtext}
@@ -2241,10 +2269,10 @@ const applyCoupon = () => {
                         speciality={speciality}
                         previousSpec={previousSpec}
                     />}
-                    {countrypicker && <ChecktwoCountry countrypicker={countrypicker} setSearchcountry={setSearchcountry} activeIndex={activeIndexc} searchcountry={searchcountry} handleCountrySet={handleCountrySet} setCountrypicker={setCountrypicker} searchCountryName={handleCountry} countryall={countryall} />}
-                    {pratice && <CheckStateShow pratice={pratice} setSearchState={setSearchpratice} activeIndex={activeIndexs} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />}
+                    {countrypicker && <ChecktwoCountry standardized countrypicker={countrypicker} setSearchcountry={setSearchcountry} activeIndex={activeIndexc} searchcountry={searchcountry} handleCountrySet={handleCountrySet} setCountrypicker={setCountrypicker} searchCountryName={handleCountry} countryall={countryall} />}
+                    {pratice && <CheckStateShow standardized pratice={pratice} setSearchState={setSearchpratice} activeIndex={activeIndexs} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />}
                     {licstatepratice && <LicStateTakeShow licstatepratice={licstatepratice} setSearchpraticelic={setSearchpraticelic} activeIndexslic={activeIndexslic} searchpraticelic={searchpraticelic} handleLicStateshows={handleLicStateshows} setLicstatepratice={setLicstatepratice} handlePraticeLicTake={handlePraticeLic} slistpraticelic={slistpraticelic} />}
-                    {cityPicker && <CheckThreeCity handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} activeIndex={activeIndexct} />}
+                    {cityPicker && <CheckThreeCity standardized handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} activeIndex={activeIndexct} />}
 
                 </KeyboardAvoidingView>
                 {isOffline && <IntOff />}

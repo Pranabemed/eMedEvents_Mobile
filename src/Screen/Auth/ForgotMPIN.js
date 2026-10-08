@@ -4,7 +4,7 @@ import { formatUsPhone } from '../../Utils/Helpers/UsPhone';
  */
 
 import { View, Text, Platform, KeyboardAvoidingView, ScrollView, TouchableOpacity, Animated, TextInput, Easing, Image, BackHandler } from 'react-native';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -14,16 +14,13 @@ import Header from '../../Components/Header';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { forgotRequest } from '../../Redux/Reducers/AuthReducer';
+import { forgotRequest, clearForgotState } from '../../Redux/Reducers/AuthReducer';
 import TextFieldIn from '../../Components/Textfield';
 import Loader from '../../Utils/Helpers/Loader';
 import Imagepath from '../../Themes/Imagepath';
 import InputField from '../../Components/CellInput';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
+import Feather from 'react-native-vector-icons/Feather';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
@@ -35,38 +32,61 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const ForgotMPIN = (props) => {
     const isNonUsaUser = Boolean(props?.route?.params?.isNonUsaUser);
-    const [mobilhd, setMobilhd] = useState("");
     const [cellCountry, setCellCountry] = useState("");
     const [mobile, setMobile] = useState("");
     const [showPassword, setShowPassword] = useState("");
     const [email, setEmail] = useState("");
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
-        /**
- * Fogot handle utility.
- * @returns {void}
- */
-const fogotHandle = () => {
+    const pendingRequestRef = useRef(false);
+    const redirectTimerRef = useRef(null);
+    const activeVisitRef = useRef(null);
+
+    useFocusEffect(useCallback(() => {
+        activeVisitRef.current = {};
+        pendingRequestRef.current = false;
+        dispatch(clearForgotState());
+        return () => {
+            activeVisitRef.current = null;
+            pendingRequestRef.current = false;
+            clearTimeout(redirectTimerRef.current);
+            redirectTimerRef.current = null;
+        };
+    }, [dispatch]));
+
+    /**
+     * Fogot handle utility.
+     * @returns {void}
+     */
+    const fogotHandle = () => {
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const mobileRegex = /^\d{10}$/;
-        const cleVal = email && email.trim().replace(/\D/g, '');
-        if (!email) {
+        const trimmedVal = email ? email.trim() : '';
+        const cleVal = trimmedVal.replace(/\D/g, '');
+        if (!trimmedVal) {
             showErrorAlert(isNonUsaUser ? "Please enter your email address!" : "Please enter your email or cell number!");
-        } else if (isNonUsaUser && !emailRegex.test(email)) {
+        } else if (isNonUsaUser && !emailRegex.test(trimmedVal)) {
             showErrorAlert("Please enter a valid email address!");
-        } else if (!isNonUsaUser && !emailRegex.test(email) && !mobileRegex.test(cleVal)) {
+        } else if (!isNonUsaUser && !emailRegex.test(trimmedVal) && !(mobile && mobileRegex.test(cleVal))) {
             showErrorAlert("Please enter a valid email address or 10 digit cell number!");
         } else {
-            const phoneCode = props?.route?.params?.phoneCode;
-            const phoneValue = phoneCode == '+91' ? cleVal : email;
-            let obj = (showPassword || isNonUsaUser) ? { "email": email } : {
-                "phone": `${props?.route?.params?.phoneCode}${phoneValue}`
+            const phoneCode = props?.route?.params?.phoneCode || "+1";
+            const phoneValue = phoneCode == '+1' ? formatPhoneNumber(cleVal) : cleVal;
+            let obj = (showPassword || isNonUsaUser) ? { "email": trimmedVal } : {
+                "phone": `${phoneCode}${phoneValue}`
             }
+            if (pendingRequestRef.current || !activeVisitRef.current) return;
+            const activeVisit = activeVisitRef.current;
+            pendingRequestRef.current = true;
+            clearTimeout(redirectTimerRef.current);
             connectionrequest()
                 .then(() => {
+                    if (activeVisitRef.current !== activeVisit) return;
                     dispatch(forgotRequest(obj));
                 })
                 .catch(err => {
+                    if (activeVisitRef.current !== activeVisit) return;
+                    pendingRequestRef.current = false;
                     showErrorAlert("Please connect to internet", err)
                 })
         }
@@ -77,7 +97,7 @@ const fogotHandle = () => {
     const cleanValue = trimmedValue.replace(/\D/g, '');
     const isButtonEnabled = isNonUsaUser
         ? emailRegex.test(trimmedValue)
-        : (emailRegex.test(trimmedValue) || mobileRegex.test(cleanValue));
+        : (emailRegex.test(trimmedValue) || (mobile && mobileRegex.test(cleanValue)));
     const animatedValuephone = useRef(new Animated.Value(1)).current;
     const scaleValuephone = useRef(new Animated.Value(0)).current;
     useEffect(() => {
@@ -97,24 +117,22 @@ const fogotHandle = () => {
             }),
         ]).start();
     }, [email]);
-    if (status == '' || AuthReducer.status != status) {
-        switch (AuthReducer.status) {
-            case 'Auth/forgotRequest':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/forgotSuccess':
-                status = AuthReducer.status;
-                props.navigation.navigate("EnterOTP", { forgotPh: { forgotPh: email, phoneCode: !showPassword ? props?.route?.params?.phoneCode : "email" } });
-                break;
-            case 'Auth/forgotFailure':
-                status = AuthReducer.status;
+    useEffect(() => {
+        if (activeVisitRef.current && pendingRequestRef.current) {
+            if (AuthReducer.status === 'Auth/forgotSuccess') {
+                pendingRequestRef.current = false;
+                props.navigation.navigate("EnterOTP", { forgotPh: { forgotPh: email, phoneCode: !showPassword ? (props?.route?.params?.phoneCode || "+1") : "email" } });
+            } else if (AuthReducer.status === 'Auth/forgotFailure') {
+                pendingRequestRef.current = false;
                 showErrorAlert(`Your ${showPassword || isNonUsaUser ? "email" : "cell number"} is not registered with us. Please use your email and password to log in if you already have an account.`);
-                setTimeout(() => {
+                redirectTimerRef.current = setTimeout(() => {
+                    redirectTimerRef.current = null;
+                    if (!activeVisitRef.current) return;
                     props.navigation.navigate("SignUp", { phoneCd: { phoneCd: props?.route?.params?.phoneCode } });
                 }, 1000);
-                break;
+            }
         }
-    }
+    }, [AuthReducer.status, email, isNonUsaUser, props.navigation, props?.route?.params?.phoneCode, showPassword]);
         /**
  * Back era ft utility.
  * @returns {void}
@@ -168,74 +186,35 @@ const formatIndianPhoneNumber = (input) => {
     useEffect(() => {
         setCellCountry(props?.route?.params?.phoneCode || "+1");
     }, [props?.route?.params?.phoneCode])
-    useEffect(() => {
-        if (mobilhd && cellCountry == "+1") {
-            const formatted = formatPhoneNumber(mobilhd);
-            setMobilhd(formatted);
-            setEmail(mobilhd);
-            setCellCountry(cellCountry)
-            setShowPassword(false);
-            setMobile(true);
-        } else if (mobilhd && cellCountry == "+91") {
-            const formatted = formatIndianPhoneNumber(mobilhd);
-            setMobilhd(formatted);
-            setEmail(mobilhd);
-            setCellCountry(cellCountry)
-            setShowPassword(false);
-            setMobile(true);
-        }
-    }, [mobilhd, cellCountry])
         /**
  * Handles input change.
  * @param {*} val - Input value.
  * @returns {void}
  */
 const handleInputChange = (val) => {
-        const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
-        const mobileRegex = /^\d{10}$/;
-        setEmail(val);
-        if (isNonUsaUser) {
-            setMobile(false);
-            setShowPassword(true);
-            return;
-        }
-        if (mobile && val.length > 0) {
-            setEmail(val);
-        }
-        if (val.trim() === '') {
-            setMobile(false);
-            setShowPassword(false);
-            return;
-        }
-        if (emailRegex.test(val)) {
-            setShowPassword(true);
-        } else if (mobileRegex.test(val)) {
-            setShowPassword(false);
-        } else if (/^\d+$/.test(val)) {
+        const digits = val.replace(/\D/g, '');
+        const isPhoneNumber = !isNonUsaUser && digits.length > 0 && !/[a-zA-Z]/.test(val);
+        if (isPhoneNumber) {
+            const cappedDigits = digits.slice(0, 10);
+            const formatted = (cellCountry || "+1") === "+1" ? formatUsPhone(cappedDigits) : cappedDigits;
+            setEmail(formatted);
             setMobile(true);
             setShowPassword(false);
-        } else if (/^[a-zA-Z]/.test(val)) {
-            setShowPassword(false);
         } else {
-            setShowPassword(false);
+            setEmail(val);
             setMobile(false);
+            setShowPassword(true);
         }
     };
     const validateEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
-    const isValidEmail = !mobile && email?.length > 0 && !mobile && !validateEmail.test(email);
+    const isValidEmail = !mobile && email?.length > 0 && !validateEmail.test(email.trim());
     const mobileReg = /^\d{10}$/;
     const cleanMobile = email && email.replace(/\D/g, '');
-    const isMobile = mobile && cleanMobile?.length > 0 && mobile && !mobileReg.test(cleanMobile);
-    const phoneInputRef = useRef(null);
-    useEffect(() => {
-        if (mobile && phoneInputRef.current) {
-            phoneInputRef.current.focus();
-        }
-    }, [mobile])
+    const isMobile = mobile && cleanMobile?.length > 0 && !mobileReg.test(cleanMobile);
     return (
         <>
             <MyStatusBar
-                barStyle={'light-content'}
+                barStyle={'dark-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
@@ -243,112 +222,71 @@ const handleInputChange = (val) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingBottom: normalize(60) }}>
+                    <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                         <Loader
                             visible={AuthReducer?.status == 'Auth/forgotRequest'} />
-                        <View>
-                            <Header
-                                onPress={() => props.navigation.goBack()}
-                                tintColor={Colorpath.black}
-                            />
-                            {/* <View style={{ top: normalize(18), marginRight: normalize(10), justifyContent: "center", alignContent: "center" }}>
-                                <Image
-                                    source={Imagepath.eMedfulllogo}
-                                    style={{ alignSelf: "center", height: normalize(40), width: normalize(212), resizeMode: "contain" }}
-                                />
-                            </View> */}
-                            <View style={{ width: normalize(40) }} />
-                        </View>
-                        <View style={styles.headerContainer}>
-                            <Text style={styles.headerText}>{"Forgot Password"}</Text>
-                            <Text style={styles.subHeaderText}>
-                                {"Enter your registered email or cell number"}
-                            </Text>
-                        </View>
-
-                        <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(10) }}>
-                            <View style={{
-                                flexDirection: 'row',
-                                flex: 1
-                            }}>
-                                <View style={{
-                                    flex: 1,
-                                    paddingRight: normalize(0)
-                                }}>
-                                    {mobile ? <InputField
-                                        ref={phoneInputRef}
-                                        label="Email / Cell Number"
-                                        value={mobilhd}
-                                        onChangeText={(val) => {
-                                            const digits = val.replace(/\D/g, '').slice(0, 10);
-                                            if (cellCountry == "+1") {
-                                                const formatted = formatPhoneNumber(digits);
-                                                setMobilhd(formatted);
-                                                handleInputChange(digits);
-                                                setEmail(digits);
-                                            } else {
-                                                setMobilhd(digits);
-                                                handleInputChange(digits);
-                                                setEmail(digits);
-                                            }
-                                        }}
-                                        placeholder=""
-                                        placeholderTextColor="#949494"
-                                        keyboardType="number-pad"
-                                        showCountryCode={true}
-                                        countryCode={cellCountry || "+1"}
-                                        maxlength={cellCountry == "+1" ? 14 : 10}
-                                        labelStyle={{ top: 10 }}
-                                    /> : <InputField
-                                        label={isNonUsaUser ? "Email Address" : "Email / Cell Number"}
-                                        value={email}
-                                        onChangeText={handleInputChange}
-                                        placeholder=""
-                                        placeholderTextColor="#949494"
-                                        keyboardType="default"
-                                        showCountryCode={false}
-                                        maxlength={100}
-                                    />}
-                                    {isValidEmail && (
-                                        <View style={{ bottom: normalize(10) }}>
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterRegular,
-                                                    fontSize: 12,
-                                                    color: 'red',
-                                                }}>
-                                                {"Please enter a valid email address (e.g., abc@gmail.com)"}
-                                            </Text>
-                                        </View>
-                                    )}
-                                    {isMobile && (
-                                        <View style={{ bottom: normalize(10) }}>
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterRegular,
-                                                    fontSize: 12,
-                                                    color: 'red',
-                                                }}>
-                                                {"Please enter a valid cell number"}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </View>
-                        </View>
-                        <Buttons
-                            onPress={fogotHandle}
-                            height={normalize(45)}
-                            width={normalize(280)}
-                            backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#CCC"}
-                            borderRadius={normalize(9)}
-                            text="Submit"
-                            color={Colorpath.white}
-                            fontSize={18}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(10)}
-                            disabled={!isButtonEnabled}
+                        <Header
+                            onPress={() => props.navigation.goBack()}
+                            tintColor={Colorpath.black}
                         />
+                        <View style={styles.content}>
+                            <View style={styles.iconContainer}>
+                                <Feather name="lock" size={30} color={Colorpath.ButtonColr} />
+                            </View>
+                            <Text style={styles.headerText}>Forgot Password?</Text>
+                            <Text style={styles.subHeaderText}>
+                                {isNonUsaUser
+                                    ? "Enter your registered email address to receive a verification code."
+                                    : "Enter your registered email address or cell number to receive a verification code."}
+                            </Text>
+                            <View style={styles.form}>
+                                <InputField
+                                    label={isNonUsaUser ? "Email Address" : "Email / Cell Number"}
+                                    value={email}
+                                    onChangeText={handleInputChange}
+                                    placeholder=""
+                                    placeholderTextColor="#949494"
+                                    keyboardType={mobile ? "phone-pad" : "default"}
+                                    showCountryCode={Boolean(mobile && email && email.length > 0)}
+                                    countryCode={mobile && email?.length > 0 ? (cellCountry || "+1") : undefined}
+                                    maxlength={100}
+                                    containerStyle={styles.inputContainer}
+                                    wrapperStyle={styles.inputWrapper}
+                                />
+                                <View style={styles.helperContainer}>
+                                    <Text style={[styles.helperText, (isValidEmail || isMobile) && styles.errorText]}>
+                                        {isValidEmail
+                                            ? "Enter a valid email address, e.g. name@example.com."
+                                            : isMobile
+                                                ? "Enter your complete 10-digit cell number."
+                                                : isNonUsaUser
+                                                    ? "Use the email address linked to your account."
+                                                    : "For cell numbers, enter all 10 digits."}
+                                    </Text>
+                                </View>
+                                <Buttons
+                                    onPress={fogotHandle}
+                                    height={normalize(48)}
+                                    width="100%"
+                                    backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#E4E7EC"}
+                                    borderRadius={normalize(10)}
+                                    text="Send Verification Code"
+                                    color={isButtonEnabled ? Colorpath.white : "#667085"}
+                                    fontSize={16}
+                                    fontFamily={Fonts.InterSemiBold}
+                                    marginTop={normalize(12)}
+                                    disabled={!isButtonEnabled}
+                                />
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => props.navigation.goBack()}
+                                accessibilityRole="button"
+                                style={styles.backButton}
+                            >
+                                <Feather name="arrow-left" size={16} color={Colorpath.ButtonColr} />
+                                <Text style={styles.backText}>Back to Sign In</Text>
+                            </TouchableOpacity>
+                        </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
@@ -361,36 +299,70 @@ const handleInputChange = (val) => {
  * @returns {Object}
  */
 const styles = {
-    headerContainer: {
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: normalize(70)
-        // backgroundColor:"red"
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: normalize(32),
+    },
+    content: {
+        width: '100%',
+        maxWidth: 480,
+        alignSelf: 'center',
+        paddingHorizontal: normalize(24),
+        paddingTop: normalize(28),
+    },
+    iconContainer: {
+        width: normalize(64),
+        height: normalize(64),
+        borderRadius: normalize(20),
+        backgroundColor: '#EEF2FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: normalize(24),
     },
     headerText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 30,
-        color: "#000000",
+        fontSize: 28,
+        color: '#101828',
     },
     subHeaderText: {
-        marginTop: normalize(8),
-        color: "#666666",
-        fontSize: 18,
+        marginTop: normalize(12),
+        color: '#667085',
+        fontSize: 15,
+        lineHeight: 23,
         fontFamily: Fonts.InterRegular,
-        textAlign: 'center',
+    },
+    form: {
+        marginTop: normalize(28),
     },
     inputContainer: {
-        alignItems: 'center',
-        marginTop: normalize(20)
+        marginBottom: 0,
     },
-    forgotContainer: {
-        marginTop: normalize(10),
-        alignSelf: 'center',
-        width: normalize(280),
+    inputWrapper: {
+        borderBottomColor: '#98A2B3',
+        minHeight: normalize(54),
+    },
+    helperContainer: {
+        minHeight: normalize(44),
+        paddingTop: normalize(10),
+    },
+    helperText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 12,
+        lineHeight: 18,
+        color: '#667085',
+    },
+    errorText: {
+        color: '#B42318',
+    },
+    backButton: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 48,
+        marginTop: normalize(20),
     },
-    forgotText: {
+    backText: {
+        marginLeft: normalize(8),
         fontFamily: Fonts.InterMedium,
         fontSize: 14,
         color: Colorpath.ButtonColr,

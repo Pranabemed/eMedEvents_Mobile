@@ -19,7 +19,7 @@ import { CommonActions } from '@react-navigation/native';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const StateModa = ({ isVisible, onClose, content, navigation, profile }) => {
+const StateModa = ({ isVisible, onClose, content, navigation, profile, isEditLicenseFlow = false }) => {
     const pressed = useRef(false);
     useEffect(() => {
         if (isVisible) {
@@ -41,7 +41,7 @@ const handleDone = () => {
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
-                    routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd", refreshLicensesAt: Date.now() } }]
+                    routes: [{ name: "TabNav", params: { initialRoute: "Home", detectmain: "newadd", refreshLicensesAt: Date.now(), suppressAutomaticPrimePrompt: isEditLicenseFlow } }]
                 })
             );
         }

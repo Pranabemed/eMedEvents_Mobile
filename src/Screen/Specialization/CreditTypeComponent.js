@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Credit type component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CreditTypeComponent, weekFilterProfession, onBackPress.
  */
@@ -8,18 +9,16 @@ import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
-import DropDownHeader from '../../Components/DropDownHeader'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable CreditTypeComponent component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
 const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, searchCreditName, searchtext }) => {
-    console.log(clist, "wekknamecustome")
+
         /**
  * Week filter profession utility.
  * @param {Object} props - Input object.
@@ -29,33 +28,19 @@ const CreditTypeComponent = ({ handleCreditType, clist, setcountrypicker, search
  */
 const weekFilterProfession = ({ item, index }) => {
         return (
-            <TouchableOpacity
+            <DropdownOption
                 onPress={() => {
                     handleCreditType(item);
                     setcountrypicker(false);
                 }}
-                style={{
-                    borderWidth: 0.5,
-                    marginTop: normalize(10),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: normalize(40),
-                    width: '85%',
-                    alignSelf: 'center',
-                }}
+
             >
                 <Text
-                    style={{
-                        fontSize: 14,
-                        lineHeight: normalize(14),
-                        textAlign: 'center',
-                        color: Colorpath.black,
-                        // textTransform: 'capitalize',
-                    }}
+                    style={dropdownStyles.optionText}
                 >
                     {item?.name}
                 </Text>
-            </TouchableOpacity>
+            </DropdownOption>
         );
     };
     const [showloader, setShowLoader] = useState(false);
@@ -91,51 +76,25 @@ const onBackPress = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <DropDownHeader title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
+                    <DropDownHeader standardized title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
                 ) : (
                     <View>
-                        <DropDownHeader title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
+                        <DropDownHeader standardized title="Credit Type*" onClosePress={() => { setcountrypicker(false) }} />
                     </View>
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor: searchtext ? '#f0f0f0' : '#ffffff',
-                                borderBottomColor: '#000000',
-                                borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={searchCreditName}
-                                value={searchtext}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(10),
-                                }}
-                                placeholder="Search Credit Name*"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={searchCreditName}
+                            value={searchtext}
+                            placeholder="Search Credit Name*" />
                     <View style={{ flex: 1 }}>
-                        <FlatList
+                        <DropdownList
                             data={clist}
                             renderItem={weekFilterProfession}
                             keyExtractor={(item, index) => index.toString()}
@@ -164,7 +123,7 @@ const onBackPress = () => {
                         />
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
     )
 }

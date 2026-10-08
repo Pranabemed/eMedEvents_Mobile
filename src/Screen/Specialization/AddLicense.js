@@ -719,11 +719,13 @@ const handleAddState = (itemmode) => {
                     <CustomizedYear yearRange={yearRange} setCitypickeryear={setCitypickeryear} handleYearcust={handleYearcust} />
                 ) : <>
                     {Platform.OS === 'ios' ? <PageHeader
-                        title={isEditLicenseFlow ? "Edit License" : "Add License"}
+                        showTitle={isEditLicenseFlow}
+                        title={isEditLicenseFlow ? "Edit State License" : "Add License"}
                         onBackPress={addCreditBack}
                     /> : <View>
                         <PageHeader
-                            title={isEditLicenseFlow ? "Edit License" : "Add License"}
+                            showTitle={isEditLicenseFlow}
+                            title={isEditLicenseFlow ? "Edit State License" : "Add License"}
                             onBackPress={addCreditBack}
                         />
                     </View>}
@@ -734,11 +736,13 @@ const handleAddState = (itemmode) => {
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     >
                         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
-                            <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
-                                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#000000" }}>
-                                    {isEditLicenseFlow ? "Edit State license" : "Add Your New State License"}
-                                </Text>
-                            </View>
+                            {!isEditLicenseFlow && (
+                                <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
+                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#000000" }}>
+                                        {"Add Your New State License"}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
                                 <View style={{
                                     flexDirection: 'row',
@@ -808,6 +812,8 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                         }}>
                                             <InputField
                                                 icondisable={isEditLicenseFlow ? true : false}
+                                                wrapperStyle={isEditLicenseFlow ? { borderBottomColor: "#D0D5DD" } : undefined}
+                                                addnewtyle={isEditLicenseFlow ? { color: "#667085" } : undefined}
                                                 label={"Licensure State*"}
                                                 value={selectlicsense}
                                                 placeholder=""
@@ -861,6 +867,8 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                         }}>
                                             <InputField
                                                 icondisable={stateDateFetch ? true : false}
+                                                wrapperStyle={isEditLicenseFlow && stateDateFetch ? { borderBottomColor: "#D0D5DD" } : undefined}
+                                                addnewtyle={isEditLicenseFlow && stateDateFetch ? { color: "#667085" } : undefined}
                                                 label={rdate && stateDateFetch ? "Licensure Expiry  Date*" : rdate ? "License Issue Date*" : stateDateFetch ? "License Expiry Date*" : "License Issue Date*"}
                                                 value={(() => {
                                                     const rawDate = stateDateFetch || rdate || "";
@@ -1001,6 +1009,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                             />
                             <StateModa
                                 isVisible={isModalVisiblecred}
+                                isEditLicenseFlow={isEditLicenseFlow}
                                 onClose={toggleModalcred}
                                 content={isEditLicenseFlow ? "State license information \n updated successfully." : "State license information \n added successfully."}
                                 navigation={props.navigation}

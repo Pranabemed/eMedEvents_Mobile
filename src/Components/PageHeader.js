@@ -22,7 +22,7 @@ import Share from 'react-native-share';
  * @returns {JSX.Element}
  */
 
-const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand, hideCart = false }) => {
+const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetrue, searchPress, cartcount, cartHand, hideCart = false, showTitle = false }) => {
   const navigation = useNavigation();
   const cleanTitle = (title || '').replace(/\*/g, '').toLowerCase().trim();
 
@@ -113,7 +113,7 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
               <ArrowIcons name="keyboard-arrow-left" size={35} color={Colorpath.black} />
             </TouchableOpacity>
           )}
-          {!isPaymentOrCheckout ? (
+          {!showTitle && !isPaymentOrCheckout ? (
             <TouchableOpacity
               onPress={() => navigation.navigate("HeaderSearch")}
               style={{
@@ -220,7 +220,7 @@ const PageHeader = ({ nol, search, setSearch, title, onBackPress, avoid, sharetr
         paddingHorizontal: normalize(10)
       }}>
         {/* Back arrow and title container / search box */}
-        {!isPaymentOrCheckout && !search ? (
+        {!showTitle && !isPaymentOrCheckout && !search ? (
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',

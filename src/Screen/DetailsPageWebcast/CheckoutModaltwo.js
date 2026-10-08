@@ -1,3 +1,4 @@
+import { DropdownPanel } from '../../Components/DropDownHeader';
 /**
  * Checkout modaltwo screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ChecktwoCountry, weekFilterProfession.
  */
@@ -20,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const ChecktwoCountry = ({ countrypicker, setSearchcountry, activeIndex, searchcountry, handleCountrySet, setCountrypicker, searchCountryName, countryall }) => {
+const ChecktwoCountry = ({ standardized = false,  countrypicker, setSearchcountry, activeIndex, searchcountry, handleCountrySet, setCountrypicker, searchCountryName, countryall }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)
             useEffect(() => {
@@ -28,7 +29,7 @@ const ChecktwoCountry = ({ countrypicker, setSearchcountry, activeIndex, searchc
                         const timeout = setTimeout(() => {
                             setShowLoader(true);
                         }, 2000);
-                
+
                         return () => clearTimeout(timeout);
                     }, []);
         /**
@@ -81,6 +82,40 @@ const weekFilterProfession = ({ item }) => {
             </View>
         );
     };
+        if (standardized) {
+        return <DropdownPanel title="Country*" onClose={() => {
+                        setCountrypicker(!countrypicker);
+                        setSearchcountry("");
+                        // handleSpecialitySelect(selectedSpecialities, formData);
+                    }}
+            value={searchcountry} onChangeText={text => searchCountryName(text)} placeholder="Search Country Name*"
+            data={countryall} getLabel={item => item?.name}
+            onSelect={item => {
+                    handleCountrySet(item, activeIndex);
+                    setCountrypicker(!countrypicker);
+                    setSearchcountry("");
+                    // setCountryNew(item?.name);
+                }} ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"}/>:
+                            <View style={{
+                                height: normalize(50),
+                                width: normalize(170),
+                                backgroundColor: "#DADADA",
+                                alignSelf: 'center',
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: normalize(10)
+                            }}>
+                                <Text
+                                    style={{
+                                        color: Colorpath.grey,
+                                        fontFamily: Fonts.InterRegular,
+                                        fontSize: normalize(20),
+                                    }}>
+                                    No data found
+                                </Text>
+                            </View>
+                        } />;
+    }
     return (
         <>
             <MyStatusBar

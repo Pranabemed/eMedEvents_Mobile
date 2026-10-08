@@ -172,6 +172,10 @@ forgotFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
+    clearForgotState(state) {
+      state.status = "";
+      state.forgotResponse = null;
+    },
         /**
  * Reducer logic for reset request state.
  * @param {*} state - Input value.
@@ -1165,6 +1169,7 @@ export const {
   forgotRequest,
   forgotSuccess,
   forgotFailure,
+  clearForgotState,
   resetRequest,
   resetSuccess,
   resetFailure,

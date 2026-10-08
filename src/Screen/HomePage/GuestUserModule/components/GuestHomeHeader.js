@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../../../Components/DropDownHeader';
 /**
  * Guest home header reusable component module. Provides a React Native UI building block used across screens. Exported members: GuestHomeHeaderComponent, fetchStates, handleStateSelect, handleSignInPress, modalStyles, GuestHomeHeader.
  */
@@ -65,10 +66,13 @@ const fetchStates = async () => {
     fetchStates();
   }, [isUsaUser]);
 
-  const filteredStates = (statesList || []).filter(item => {
-    const name = String(item?.name || item?.state_name || item?.title || '').toLowerCase();
-    return name.includes(stateSearch.toLowerCase().trim());
-  });
+  const filteredStates = useMemo(() => {
+    const query = stateSearch.toLowerCase().trim();
+    return (statesList || []).filter(item => {
+      const name = String(item?.name || item?.state_name || item?.title || '').toLowerCase();
+      return name.includes(query);
+    });
+  }, [statesList, stateSearch]);
 
     /**
  * Handles state select.
@@ -78,7 +82,7 @@ const fetchStates = async () => {
 const handleStateSelect = (stateObj) => {
     setStateModalVisible(false);
     setStateSearch('');
-    
+
     const stateName = getStateName(stateObj).toLowerCase().trim().replace(/\s+/g, '-');
 
     navigation.navigate('Globalresult', {
@@ -155,42 +159,14 @@ const handleSignInPress = async () => {
 
         <Modal visible={stateModalVisible} transparent animationType="slide">
           <SafeAreaView style={modalStyles.stateModalContainer}>
-            <View style={modalStyles.stateModalHeader}>
-              <TouchableOpacity
-                onPress={() => {
+            <DropDownHeader standardized title="Select State" onClosePress={() => {
                   setStateModalVisible(false);
                   setStateSearch('');
-                }}
-                style={modalStyles.backButton}
-              >
-                <Icon name="close" size={normalize(24)} color="#333333" />
-              </TouchableOpacity>
-              <Text style={modalStyles.stateModalTitle}>Select State</Text>
-              <View style={{ width: normalize(24) }} />
-            </View>
+                }} />
 
-            <View style={modalStyles.searchBarContainer}>
-              <Icon
-                name="search"
-                size={normalize(20)}
-                color="#9CA3AF"
-                style={modalStyles.searchIcon}
-              />
-              <TextInput
-                style={modalStyles.searchInput}
-                placeholder="Search State"
-                placeholderTextColor="#9CA3AF"
-                value={stateSearch}
-                onChangeText={setStateSearch}
-              />
-              {stateSearch.length > 0 ? (
-                <TouchableOpacity onPress={() => setStateSearch('')}>
-                  <Icon name="clear" size={normalize(20)} color="#9CA3AF" />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+            <DropdownSearch placeholder="Search State" value={stateSearch} onChangeText={setStateSearch} />
 
-            <FlatList
+            <DropdownList
               data={filteredStates}
               keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? index)}
               contentContainerStyle={modalStyles.stateList}
@@ -200,12 +176,12 @@ const handleSignInPress = async () => {
               renderItem={({ item }) => {
                 const name = getStateName(item);
                 return (
-                  <TouchableOpacity
-                    style={modalStyles.stateItem}
+                  <DropdownOption
+
                     onPress={() => handleStateSelect(item)}
                   >
-                    <Text style={modalStyles.stateItemText}>{name}</Text>
-                  </TouchableOpacity>
+                    <Text style={dropdownStyles.optionText}>{name}</Text>
+                  </DropdownOption>
                 );
               }}
             />
@@ -284,42 +260,14 @@ const handleSignInPress = async () => {
 
       <Modal visible={stateModalVisible} transparent animationType="slide">
         <SafeAreaView style={modalStyles.stateModalContainer}>
-          <View style={modalStyles.stateModalHeader}>
-            <TouchableOpacity
-              onPress={() => {
+          <DropDownHeader standardized title="Select State" onClosePress={() => {
                 setStateModalVisible(false);
                 setStateSearch('');
-              }}
-              style={modalStyles.backButton}
-            >
-              <Icon name="close" size={normalize(24)} color="#333333" />
-            </TouchableOpacity>
-            <Text style={modalStyles.stateModalTitle}>Select State</Text>
-            <View style={{ width: normalize(24) }} />
-          </View>
+              }} />
 
-          <View style={modalStyles.searchBarContainer}>
-            <Icon
-              name="search"
-              size={normalize(20)}
-              color="#9CA3AF"
-              style={modalStyles.searchIcon}
-            />
-            <TextInput
-              style={modalStyles.searchInput}
-              placeholder="Search State"
-              placeholderTextColor="#9CA3AF"
-              value={stateSearch}
-              onChangeText={setStateSearch}
-            />
-            {stateSearch.length > 0 ? (
-              <TouchableOpacity onPress={() => setStateSearch('')}>
-                <Icon name="clear" size={normalize(20)} color="#9CA3AF" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          <DropdownSearch placeholder="Search State" value={stateSearch} onChangeText={setStateSearch} />
 
-          <FlatList
+          <DropdownList
             data={filteredStates}
             keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? index)}
             contentContainerStyle={modalStyles.stateList}
@@ -329,12 +277,12 @@ const handleSignInPress = async () => {
             renderItem={({ item }) => {
               const name = getStateName(item);
               return (
-                <TouchableOpacity
-                  style={modalStyles.stateItem}
+                <DropdownOption
+
                   onPress={() => handleStateSelect(item)}
                 >
-                  <Text style={modalStyles.stateItemText}>{name}</Text>
-                </TouchableOpacity>
+                  <Text style={dropdownStyles.optionText}>{name}</Text>
+                </DropdownOption>
               );
             }}
           />

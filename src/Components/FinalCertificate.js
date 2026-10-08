@@ -219,12 +219,14 @@ const downPress = () => {
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === "ios" ? (
                     <PageHeader
+                        showTitle
                         title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate"}
                         onBackPress={downPress}
                     />
                 ) : (
                     <View>
                         <PageHeader
+                            showTitle
                             title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate"}
                             onBackPress={downPress}
                         />

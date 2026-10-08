@@ -1026,7 +1026,7 @@ const CreateStateInfor = (props) => {
                                                 keyboardType="number-pad"
                                             />
                                         </View>
-                                       
+
                                     </View> */}
                                     {/* <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
                                         <Animated.View style={{ opacity: animatedValueslic, transform: [{ scale: scaleValueselic }] }}>

@@ -215,12 +215,14 @@ onPress: () => { navigation.navigate("ImagePDF", { pdffile: destinationPath }) }
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === "ios" ? (
                     <PageHeader
+                        showTitle
                         title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate Image"}
                         onBackPress={downPressImage}
                     />
                 ) : (
                     <View>
                         <PageHeader
+                            showTitle
                             title={props?.route?.params?.PngFIle?.notrq ? "View Document" : "Course Certificate Image"}
                             onBackPress={downPressImage}
                         />

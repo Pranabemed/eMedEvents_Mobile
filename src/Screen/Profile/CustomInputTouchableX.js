@@ -15,6 +15,7 @@ import {
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
 import Icon from 'react-native-vector-icons/Entypo';
+import StandardDropdownField from '../../Components/IconTextIn';
 
 /**
  * Reusable CustomInputTouchableX component.
@@ -25,6 +26,7 @@ import Icon from 'react-native-vector-icons/Entypo';
  */
 
 const CustomInputTouchableX = ({
+    standardized = false,
     label,
     value,
     placeholder,
@@ -45,13 +47,14 @@ const CustomInputTouchableX = ({
     const [isFocused, setIsFocused] = useState(false);
     const animated = useRef(new Animated.Value(value || chipData.length > 0 ? 1 : 0)).current;
     useEffect(() => {
+        if (standardized) return;
         Animated.timing(animated, {
             toValue: isFocused || value || chipData.length > 0 ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,
         }).start();
-    }, [isFocused, value, chipData]);
+    }, [animated, isFocused, value, chipData, standardized]);
     console.log(chipData?.length,"chipdata=======");
     const styles = StyleSheet.create({
     inputGroup: {
@@ -111,6 +114,21 @@ const CustomInputTouchableX = ({
         fontSize: 14,
         color: "#999999",
     };
+
+    if (standardized) {
+        return <StandardDropdownField standardized label={label} value={value} placeholder={placeholder}
+            onPress={onPress} onIconpres={onIconpres} disabled={disabled}>
+            {chipData.length > 0 && <View style={styles.chipContainer}>
+                {chipData.map((chip, index) => <View key={index} style={styles.chip}>
+                    <Text style={styles.chipText}>{chip}</Text>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Remove ${chip}`}
+                        onPress={() => onRemoveChip?.(index)} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="cross" size={18} color="#667085" />
+                    </TouchableOpacity>
+                </View>)}
+            </View>}
+        </StandardDropdownField>;
+    }
 
     return (
         <View style={[styles.inputGroup, containerStyle]}>

@@ -526,7 +526,7 @@ const Main = (props) => {
       }
     };
   }, [primeadd, isDrawerVisible]);
-  const { detectmain } = props?.route?.params || {}
+  const { detectmain, suppressAutomaticPrimePrompt = false } = props?.route?.params || {}
   console.log(detectmain, "detectmain");
   const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
@@ -1082,7 +1082,7 @@ const Main = (props) => {
   }, [isFocus, hasActivePrimeMembership]);
 
   useEffect(() => {
-    if (!isFocus || primeCardSessionSkipped) return;
+    if (!isFocus || primeCardSessionSkipped || suppressAutomaticPrimePrompt) return;
     const directLoginUser =
       AuthReducer?.dircetloginResponse?.user ||
       AuthReducer?.dircetloginResponse ||
@@ -1106,7 +1106,7 @@ const Main = (props) => {
     if (!isNonUsaUser && (isPhysicianFlow || allProfTake || hasAllProfTake) && isNonSubscribedUser && !hasActivePrimeMembership && !isHasActiveFreeTrial) {
       setPrimeadd(true);
     }
-  }, [isFocus, primeCardSessionSkipped, isNonUsaUser, isPhysicianFlow, allProfTake, hasAllProfTake, hasActivePrimeMembership, exploreTrialClicked, AuthReducer?.status, AuthReducer?.primeTrailResponse, AuthReducer?.dircetloginResponse, DashboardReducer?.mainprofileResponse, finalProfessionmain]);
+  }, [isFocus, primeCardSessionSkipped, suppressAutomaticPrimePrompt, isNonUsaUser, isPhysicianFlow, allProfTake, hasAllProfTake, hasActivePrimeMembership, exploreTrialClicked, AuthReducer?.status, AuthReducer?.primeTrailResponse, AuthReducer?.dircetloginResponse, DashboardReducer?.mainprofileResponse, finalProfessionmain]);
   /**
 * Open guest verification alert utility.
 *
@@ -1437,6 +1437,7 @@ const Main = (props) => {
         console.log(professionRaw, "ewerktkjerh", activeUser, isNonSubscribedNoSubscription);
 
         if (
+          !suppressAutomaticPrimePrompt &&
           !isNonUsaUser &&
           !isPrimeCardFlowComplete &&
           !isExploreTrialClicked &&
@@ -1550,7 +1551,7 @@ const Main = (props) => {
       }
     };
     loadGuestVerifyModal();
-  }, [isFocus, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
+  }, [isFocus, suppressAutomaticPrimePrompt, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
   const subscription = WebcastReducer?.PrimeCheckResponse?.subscription;
   const isPrimePaymentSuccess =
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';

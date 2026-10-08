@@ -765,8 +765,8 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                     setSpeids={setSpeids}
                     speids={speids}
                 /> : countrypicker ? <ChecktwoCountryNew setCountryNew={setCountryNew} countrypicker={countrypicker} setSearchcountry={setSearchcountry} searchcountry={searchcountry} handleCountrySet={handleCountrySet} setCountrypicker={setCountrypicker} searchCountryName={handleCountry} countryall={countryall} />
-                    : pratice ? <CheckStateShow pratice={pratice} setSearchState={setSearchpratice} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />
-                        : cityPicker ? <CheckThreeCity handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} /> : <>
+                    : pratice ? <CheckStateShow standardized pratice={pratice} setSearchState={setSearchpratice} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />
+                        : cityPicker ? <CheckThreeCity standardized handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} /> : <>
                             <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
                                 {Platform.OS === "ios" ? (
                                     <PageHeader

@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 
 /**
  * Choose mandatory component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ChooseMandatoryComponent, weekFilterProfession.
@@ -9,18 +10,16 @@ import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
-import DropDownHeader from '../../Components/DropDownHeader'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable ChooseMandatoryComponent component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
 const ChooseMandatoryComponent = ({topicwiseStatehand, clisttopic,setStatetopicpicker, searchTopicName, searchtexttopic }) => {
-    console.log(clisttopic,"wekknamecustome")
+
         /**
  * Week filter profession utility.
  * @param {Object} props - Input object.
@@ -30,33 +29,19 @@ const ChooseMandatoryComponent = ({topicwiseStatehand, clisttopic,setStatetopicp
  */
 const weekFilterProfession = ({ item, index }) => {
         return (
-            <TouchableOpacity
+            <DropdownOption
             onPress={() => {
                 topicwiseStatehand(item);
                 setStatetopicpicker(false);
             }}
-            style={{
-                borderWidth: 0.5,
-                marginTop: normalize(10),
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: normalize(40),
-                width: '85%',
-                alignSelf: 'center',
-            }}
+
         >
             <Text
-                style={{
-                    fontSize: 14,
-                    lineHeight: normalize(14),
-                    textAlign: 'center',
-                    color: Colorpath.black,
-                    textTransform: 'capitalize',
-                }}
+                style={dropdownStyles.optionText}
             >
                 {item?.name}
             </Text>
-        </TouchableOpacity>
+        </DropdownOption>
         );
     };
     return (
@@ -65,51 +50,25 @@ const weekFilterProfession = ({ item, index }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <DropDownHeader title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
+                    <DropDownHeader standardized title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
                 ) : (
                     <View>
-                        <DropDownHeader title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
+                        <DropDownHeader standardized title="State Mandatory Topic*" onClosePress={()=>{setStatetopicpicker(false)}} />
                     </View>
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor: searchtexttopic ? '#f0f0f0' : '#ffffff',
-                                borderBottomColor: '#000000',
-                                borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={searchTopicName}
-                                value={searchtexttopic}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(10),
-                                }}
-                                placeholder="Search topic name*"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={searchTopicName}
+                            value={searchtexttopic}
+                            placeholder="Search topic name*" />
                     <View style={{ flex: 1 }}>
-                        <FlatList
+                        <DropdownList
                             data={clisttopic}
                             renderItem={weekFilterProfession}
                             keyExtractor={(item, index) => index.toString()}
@@ -138,7 +97,7 @@ const weekFilterProfession = ({ item, index }) => {
                         />
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
     )
 }

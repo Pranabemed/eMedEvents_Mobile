@@ -152,7 +152,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
         return merged;
       }));
     }
-  }, [totalQuantity, firstname, lastname, emailad, professionad, speciality, speciality_id, npino, address, medicallics, license_number, license_expiry_date, cellno, dialcode, setFormData]);
+  }, [totalQuantity, firstname, lastname, emailad, professionad, speciality, speciality_id, npino, address, country, country_id, state, state_id, city, city_id, medicallics, license_number, license_expiry_date, cellno, dialcode, setFormData]);
   console.log(selectedSpecialities, "selectedSpecialities=----------", formData, country_id, errorFlags);
   const [newState, setNewState] = useState("");
   const [newIndex, setNewIndex] = useState("");
@@ -286,8 +286,9 @@ const handleInputChange = (index, key, value) => {
  * @returns {void}
  */
 const fetchSpecialities = (index) => {
-    if (allProfession?.profession) {
-      const fetchedSpecialities = specaillized(allProfession.profession);
+    const attendeeProfession = formData[index]?.professionad || allProfession?.profession;
+    if (attendeeProfession) {
+      const fetchedSpecialities = specaillized(attendeeProfession.split(' - ')[0]);
       if (Array.isArray(fetchedSpecialities)) {
         setSelectedSpecialities(fetchedSpecialities);
       }
@@ -333,7 +334,8 @@ const statePick = (index) => {
     console.log(index, "fghekjghjfk123344")
     setActiveindexs(index);
     setPratice(true);
-    // PraticingState();
+    const selectedCountryId = formData[index]?.country_id;
+    if (selectedCountryId) PraticingState(selectedCountryId);
   }
     /**
  * City pick utility.
@@ -344,7 +346,8 @@ const cityPick = (index) => {
     console.log(index, "fghekjghjfk123344")
     setActiveIndexct(index);
     setCityPicker(true);
-    // PraticingState();
+    const selectedStateId = formData[index]?.state_id;
+    if (selectedStateId) cityReq(selectedStateId);
   }
     /**
  * Profession track utility.

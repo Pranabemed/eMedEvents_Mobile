@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Praticing state component screen module. Renders a React Native screen or a screen-scoped support component. Exported members: PraticingStateComponent, onBackPress, weekFilterProfession.
  */
@@ -8,18 +9,16 @@ import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
-import DropDownHeader from '../../Components/DropDownHeader'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable PraticingStateComponent component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
 const PraticingStateComponent = ({ handlePratcing, slistpratice, setPratice, searchStateNamePratice, searchpratice, setSearchpratice }) => {
-    console.log(slistpratice, "wekknamecustome");
+
     const [showLoader, setShowLoader] = useState(false)
     useEffect(() => {
         // Simulate 2-second loading time
@@ -55,39 +54,21 @@ const onBackPress = () => {
 const weekFilterProfession = ({ item, index }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-                <TouchableOpacity
+                <DropdownOption
                     onPress={() => {
                         handlePratcing(item);
                         setPratice(false);
                     }}
-                    style={{
-                        // borderWidth: 0.5,
-                        marginTop: normalize(10),
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: normalize(40),
-                        width: '85%',
-                        alignSelf: 'center',
-                    }}
+
                 >
                     <Text
-                        style={{
-                            fontSize: 14,
-                            width: '100%',
-                            textAlign: 'center',
-                            color: Colorpath.black,
-                            flexShrink: 1,
-                            fontFamily: Fonts.InterRegular,
-                            textAlign: "left",
-                            lineHeight: 14
-                            // textTransform: 'capitalize',
-                        }}
+                        style={dropdownStyles.optionText}
                     >
                         {item?.state_name ? item?.state_name : item?.name}
 
                     </Text>
-                </TouchableOpacity >
-                <View style={{ height: 0.8, width: '94%', backgroundColor: "#DADADA" }} />
+                </DropdownOption >
+
             </View >
 
         );
@@ -98,15 +79,15 @@ const weekFilterProfession = ({ item, index }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <DropDownHeader title="State*" onClosePress={() => {
+                    <DropDownHeader standardized title="State*" onClosePress={() => {
                         setPratice(false);
                         setSearchpratice("");
                     }} />
                 ) : (
                     <View>
-                        <DropDownHeader title="State*" onClosePress={() => {
+                        <DropDownHeader standardized title="State*" onClosePress={() => {
                             setPratice(false);
                             setSearchpratice("");
                         }} />
@@ -116,41 +97,13 @@ const weekFilterProfession = ({ item, index }) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor: '#ffffff',
-                                // borderBottomColor: '#000000',
-                                // borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={searchStateNamePratice}
-                                value={searchpratice}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(13),
-                                    borderWidth: 0.8,
-                                    borderColor: "#DADADA"
-                                }}
-                                placeholder="Search State"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={searchStateNamePratice}
+                            value={searchpratice}
+                            placeholder="Search State" />
                     <View style={{ flex: 1 }}>
-                        <FlatList
+                        <DropdownList
                             data={slistpratice}
                             renderItem={weekFilterProfession}
                             keyExtractor={(item, index) => index.toString()}
@@ -179,7 +132,7 @@ const weekFilterProfession = ({ item, index }) => {
                         />
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
     )
 }

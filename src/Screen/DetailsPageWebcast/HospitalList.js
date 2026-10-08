@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Hospital list screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HospitalList, hospFilterTake.
  */
@@ -8,12 +9,10 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import PageHeader from '../../Components/PageHeader';
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable HospitalList component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
@@ -27,36 +26,19 @@ const HospitalList  = ({hosppicker,hospAll,setSearchhosp, searchhosp,handlehospS
  */
 const hospFilterTake = ({ item}) => {
     return (
-        <TouchableOpacity onPress={()=>{
+        <DropdownOption onPress={()=>{
             handlehospShows(item);
             setHosppicker(!hosppicker);
             setSearchhosp("");
         }}
-            style={{
-                borderWidth: 2,
-                borderColor:  Colorpath.Pagebg,
-                marginTop: normalize(10),
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: normalize(40),
-                width: '85%',
-                alignSelf: 'center',
-                backgroundColor: "#D3D3D3",
-                opacity:  1,
-            }}
+
         >
             <Text
-                style={{
-                    fontSize: 14,
-                    lineHeight: normalize(14),
-                    textAlign: 'center',
-                    color: Colorpath.black,
-                    textTransform: 'capitalize',
-                }}
+                style={dropdownStyles.optionText}
             >
                 {item?.name}
             </Text>
-        </TouchableOpacity>
+        </DropdownOption>
     );
 };
     return (
@@ -65,16 +47,16 @@ const hospFilterTake = ({ item}) => {
             barStyle={'light-content'}
             backgroundColor={Colorpath.Pagebg}
         />
-        <SafeAreaView style={{ height:normalize(800),width:normalize(320),justifyContent:"center",alignSelf:"center", backgroundColor: Colorpath.Pagebg }}>
+        <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
             {Platform.OS === 'ios' ? (
-                <PageHeader title="Hospital List*" onBackPress={()=>{
+                <DropDownHeader standardized title="Hospital List*" onClosePress={()=>{
                     setHosppicker(!hosppicker);
                     setSearchhosp("");
                     // handleSpecialitySelect(selectedSpecialities, formData);
                 }} />
             ) : (
                 <View style={{ marginTop: normalize(40) }}>
-                    <PageHeader title="Hospital List*" onBackPress={()=>{
+                    <DropDownHeader standardized title="Hospital List*" onClosePress={()=>{
                         setHosppicker(!hosppicker);
                         setSearchhosp("");
                         // handleSpecialitySelect(selectedSpecialities, formData);
@@ -85,38 +67,12 @@ const hospFilterTake = ({ item}) => {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View style={{
-                    flexDirection: "row",
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10),
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}>
-                    <View
-                        style={{
-                            backgroundColor: searchhosp ? '#f0f0f0' : '#ffffff',
-                            borderBottomColor: '#000000',
-                            borderBottomWidth: 0.5,
-                            marginTop: normalize(10),
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                        }}>
-                        <TextInput
-                            editable
+                <DropdownSearch editable
                             maxLength={40}
                             onChangeText={text => searchHospName(text)}
                             value={searchhosp}
-                            style={{
-                                height: normalize(50),
-                                width: normalize(300),
-                                paddingLeft: normalize(10),
-                            }}
-                            placeholder="Search Hospital Name*"
-                            placeholderTextColor={"RGB(170, 170, 170)"}
-                        />
-                    </View>
-                </View>
-                    <FlatList
+                            placeholder="Search Hospital Name*" />
+                    <DropdownList
                         data={hospAll}
                         renderItem={hospFilterTake}
                         keyExtractor={(item, index) => index.toString()}
@@ -144,9 +100,9 @@ const hospFilterTake = ({ item}) => {
                         }
                     />
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     </>
-      
+
     )
 }
 
@@ -155,4 +111,4 @@ const hospFilterTake = ({ item}) => {
  *
  * @returns {*}
  */
-export default HospitalList 
+export default HospitalList

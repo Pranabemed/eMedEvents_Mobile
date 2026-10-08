@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Checkout modalone screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckoutModalone, weekFilterProfession, handlePress, determineIndexToMerge.
  */
@@ -10,10 +11,8 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import PageHeader from '../../Components/PageHeader';
 import Buttons from '../../Components/Button';
 import TickMark from 'react-native-vector-icons/Ionicons';
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable CheckoutModalone component.
@@ -30,7 +29,7 @@ const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id
                         const timeout = setTimeout(() => {
                             setShowLoader(true);
                         }, 2000);
-                
+
                         return () => clearTimeout(timeout);
                     }, []);
         /**
@@ -92,14 +91,7 @@ const determineIndexToMerge = () => {
 
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-                <TouchableOpacity onPress={handlePress} style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    minHeight: normalize(43),
-                    width: normalize(300),
-                    paddingHorizontal: normalize(10),
-                    marginVertical: normalize(5),
-                }}>
+                <DropdownOption selected={Boolean(isPreviouslySelected)} onPress={handlePress} >
                     <View style={{ marginRight: normalize(10) }}>
                         {formData[activeIndex]?.speciality_ids?.includes(item.id) ? (
                             <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.black, borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), borderWidth: 0.8 }}>
@@ -111,20 +103,13 @@ const determineIndexToMerge = () => {
                     </View>
                     <View style={{ flex: 1 }}>
                         <Text
-                            style={{
-                                fontSize: 16,
-                                lineHeight: normalize(20),
-                                textAlign: 'left',
-                                color: Colorpath.black,
-                                textTransform: 'capitalize',
-                                fontFamily: Fonts.InterRegular,
-                            }}
+                            style={dropdownStyles.optionText}
                         >
                             {item?.name}
                         </Text>
                     </View>
-                </TouchableOpacity>
-                <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#DADADA" }} />
+                </DropdownOption>
+
             </View>
         );
     };
@@ -134,16 +119,16 @@ const determineIndexToMerge = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ height: normalize(800), width: normalize(320), justifyContent: "center", alignSelf: "center", backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <PageHeader title="Select Specialty(ies)" onBackPress={() => {
+                    <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
                         setstatepicker(!statepicker);
                         setSearchState("");
                         // handleSpecialitySelect(selectedSpecialities, formData);
                     }} />
                 ) : (
                     <View>
-                        <PageHeader title="Select Specialty(ies)" onBackPress={() => {
+                        <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
                             setstatepicker(!statepicker);
                             setSearchState("");
                             // handleSpecialitySelect(selectedSpecialities, formData);
@@ -154,44 +139,16 @@ const determineIndexToMerge = () => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor:'#ffffff',
-                                // borderBottomColor: '#000000',
-                                // borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={text => searchStateName(text)}
-                                value={searchState}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(13),
-                                    borderWidth:0.8,
-                                    borderColor:"#DADADA"
-                                }}
-                                placeholder="Search and choose your specialties*"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
-                    <FlatList
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={text => searchStateName(text)}
+                            value={searchState}
+                            placeholder="Search and choose your specialties*" />
+                    <DropdownList
                         data={slist}
                         renderItem={weekFilterProfession}
                         keyExtractor={(item, index) => index.toString()}
-                        contentContainerStyle={{ paddingBottom: normalize(250) }}
+                        style={{ flex: 1, minHeight: 0 }}
                         keyboardShouldPersistTaps="always"
                         ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"} />:
                             <View style={{
@@ -216,17 +173,13 @@ const determineIndexToMerge = () => {
                     />
                     {formData[activeIndex]?.speciality?.length > 0 && <View style={{
                         width: "100%",
-                        position: 'absolute',
-                        height: normalize(120),
-                        bottom: Platform.OS === 'ios' ? normalize(124) : normalize(89),
-                        left: 0,
-                        right: 0,
+                        flexShrink: 0,
                         backgroundColor: Colorpath.white,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        paddingBottom: normalize(20),
+                        paddingVertical: normalize(16),
                         borderColor: "#DADADA",
-                        borderWidth: 0.8
+                        borderTopWidth: 0.8
                     }}>
                         <Buttons
                             onPress={() => {
@@ -241,11 +194,10 @@ const determineIndexToMerge = () => {
                             color={Colorpath.white}
                             fontSize={16}
                             fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(-15)}
                         />
                     </View>}
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
 
     )

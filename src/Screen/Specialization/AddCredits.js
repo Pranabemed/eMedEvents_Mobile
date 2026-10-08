@@ -111,11 +111,11 @@ const AddCredits = (props) => {
     const [ocrData, setOCRData] = useState(null);
     const [moretext, setMoretext] = useState(false);
     console.log(finalstate, "mmmmmmmm", moretext)
-        /**
- * Add credit back utility.
- * @returns {void}
- */
-const addCreditBack = () => {
+    /**
+* Add credit back utility.
+* @returns {void}
+*/
+    const addCreditBack = () => {
         props.navigation.goBack();
     };
     console.log(AuthReducer, "df,mkkkk", clisttopic, clisttopic[0]?.name, cleardata, ProfilePicObj1);
@@ -128,11 +128,11 @@ const addCreditBack = () => {
     const [finalProfession, setFinalProfession] = useState(null);
     const returnToDashboardVault = props?.route?.params?.returnToDashboardVault === true;
     useEffect(() => {
-                /**
- * Token handle vault utility.
- * @returns {void}
- */
-const token_handle_vault = () => {
+        /**
+* Token handle vault utility.
+* @returns {void}
+*/
+        const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     const [board_special, profession_data] = await Promise.all([
@@ -152,13 +152,13 @@ const token_handle_vault = () => {
         };
 
         token_handle_vault();
-    }, [props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard]);
-        /**
- * Handles credit type.
- * @param {*} item - Input value.
- * @returns {void}
- */
-const handleCreditType = (item) => {
+    }, [props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard, props?.route?.params?.creditvalutstate]);
+    /**
+* Handles credit type.
+* @param {*} item - Input value.
+* @returns {void}
+*/
+    const handleCreditType = (item) => {
         setCountry(item?.name);
         setcountrypicker(false);
         setCreditId(item?.id);
@@ -194,11 +194,11 @@ const handleCreditType = (item) => {
         React.useCallback(() => {
             let obj = {};
 
-                        /**
- * Fetch data utility.
- * @returns {void}
- */
-const fetchData = () => {
+            /**
+* Fetch data utility.
+* @returns {void}
+*/
+            const fetchData = () => {
                 connectionrequest()
                     .then(() => {
                         dispatch(stateMandatoryRequest(obj));
@@ -217,13 +217,13 @@ const fetchData = () => {
         }, [])
     );
 
-        /**
- * Direct camera credit utility.
- * @returns {void}
- *
- * @remarks Does not return a value.
- */
-function directCameraCredit() {
+    /**
+* Direct camera credit utility.
+* @returns {void}
+*
+* @remarks Does not return a value.
+*/
+    function directCameraCredit() {
         ImagePicker.openCamera({
             width: 300,
             height: 400,
@@ -243,19 +243,19 @@ function directCameraCredit() {
             })
             .catch(err => console.log(err));
     }
-        /**
- * Toggle modalcred utility.
- * @returns {void}
- */
-const toggleModalcred = () => {
+    /**
+* Toggle modalcred utility.
+* @returns {void}
+*/
+    const toggleModalcred = () => {
         setModalVisiblecred(!isModalVisiblecred);
     };
     console.log(finalProfession?.profession, "profession======122");
-        /**
- * Addcredit again utility.
- * @returns {void}
- */
-const addcreditAgain = () => {
+    /**
+* Addcredit again utility.
+* @returns {void}
+*/
+    const addcreditAgain = () => {
         const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
             AuthReducer?.loginResponse?.user?.profession ||
             AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
@@ -283,11 +283,11 @@ const addcreditAgain = () => {
         }
     }, [isNonUsaUser, isfocused, finalProfession, finalverifyadd]);
     const StateMandatoryDat = [{ id: 0, name: "No" }, { id: 1, name: "Yes" }]
-        /**
- * Handles add credits.
- * @returns {void}
- */
-const handleAddCredits = () => {
+    /**
+* Handles add credits.
+* @returns {void}
+*/
+    const handleAddCredits = () => {
         if (!ProfilePicObj1 && !isNonUsaUser) {
             showErrorAlert("Please upload a valid file (accepted formats: .docx, .pptx, .word, .jpg, .png, .jpeg)");
         } else if (!activitytitle) {
@@ -338,12 +338,12 @@ const handleAddCredits = () => {
                 .catch(err => { showErrorAlert("Please connect to internet") })
         }
     }
-        /**
- * Search credit name utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchCreditName = text => {
+    /**
+* Search credit name utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchCreditName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -428,12 +428,12 @@ const searchCreditName = text => {
         }
     }, [clisttopic]);
     console.log(stopic, "stopic------1222")
-        /**
- * Search topic name utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchTopicName = text => {
+    /**
+* Search topic name utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchTopicName = text => {
         console.log(text, 'text12333');
         if (text) {
             const listAllData = selectCountrytopic?.filter(function (item) {
@@ -460,13 +460,13 @@ const searchTopicName = text => {
         const obj = new FormData();
         obj.append("document", ProfilePicObj1 || `${fullDataMemo?.certiPath?.certificate_path}${fullDataMemo?.certificate}`);
 
-                /**
- * Handles request.
- *
- * @async
- * @returns {Promise<*>}
- */
-const handleRequest = async () => {
+        /**
+* Handles request.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const handleRequest = async () => {
             try {
                 await connectionrequest();
                 dispatch(OCRCertificateRequest(obj));
@@ -690,13 +690,13 @@ const handleRequest = async () => {
     const finalStateWise = stateManData ? stateManData : "No data";
     const StateNameFetch = props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || props?.route?.params?.mainAdd?.creditID?.state_name || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null;
     console.log(StateNameFetch, "StateNameFetch===========", finalStateWise)
-        /**
- * Returns state data by name.
- * @param {*} finalStateWise - Input value.
- * @param {*} StateNameFetch - Input value.
- * @returns {*}
- */
-function getStateDataByName(finalStateWise, StateNameFetch) {
+    /**
+* Returns state data by name.
+* @param {*} finalStateWise - Input value.
+* @param {*} StateNameFetch - Input value.
+* @returns {*}
+*/
+    function getStateDataByName(finalStateWise, StateNameFetch) {
         for (const key in finalStateWise) {
             if (finalStateWise[key].state_name === StateNameFetch) {
                 return finalStateWise[key];
@@ -704,12 +704,12 @@ function getStateDataByName(finalStateWise, StateNameFetch) {
         }
         return null;
     }
-        /**
- * Detectfile addcredit helper.
- * @param {*} file - Input value.
- * @returns {void}
- */
-function detectfileAddcredit(file) {
+    /**
+* Detectfile addcredit helper.
+* @param {*} file - Input value.
+* @returns {void}
+*/
+    function detectfileAddcredit(file) {
         console.log(file, "file000");
         const fileName = typeof file === 'string' ? file : file?.uri;
         if (fileName && typeof fileName === 'string') {
@@ -719,13 +719,13 @@ function detectfileAddcredit(file) {
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("No pressed")
+                    onPress: () => console.log("No pressed")
                 }, {
                     text: "Yes",                     /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                    onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -738,13 +738,13 @@ onPress: () => {
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("No pressed")
+                    onPress: () => console.log("No pressed")
                 }, {
                     text: "Yes",                     /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                    onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -757,13 +757,13 @@ onPress: () => {
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("No pressed")
+                    onPress: () => console.log("No pressed")
                 }, {
                     text: "Yes",                     /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                    onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -776,13 +776,13 @@ onPress: () => {
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("No pressed")
+                    onPress: () => console.log("No pressed")
                 }, {
                     text: "Yes",                     /**
  * On press utility.
  * @returns {void}
  */
-onPress: () => {
+                    onPress: () => {
                         setProfilePicObj1("");
                         setActivitytitle('');
                         setProvideName('');
@@ -794,12 +794,12 @@ onPress: () => {
             console.log("Invalid file or file URI");
         }
     }
-        /**
- * Topicwise statehand utility.
- * @param {*} hello - Input value.
- * @returns {void}
- */
-const topicwiseStatehand = (hello) => {
+    /**
+* Topicwise statehand utility.
+* @param {*} hello - Input value.
+* @returns {void}
+*/
+    const topicwiseStatehand = (hello) => {
         setStopic(hello?.name);
         setTopicId(hello?.id)
         setStatetopicpicker(false);
@@ -834,11 +834,11 @@ const topicwiseStatehand = (hello) => {
         }
     }, [finalstate])
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             addCreditBack();
             return true;
         };
@@ -850,12 +850,12 @@ const onBackPress = () => {
 
         return () => backHandler.remove();
     }, []);
-        /**
- * Handles change.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleChange = (text) => {
+    /**
+* Handles change.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleChange = (text) => {
         const numericValue = text.replace(/[^0-9.]/g, "");
         if (text.startsWith("-") || text == "-1" || parseFloat(text) < 0) {
             return;
@@ -885,8 +885,8 @@ const handleChange = (text) => {
                             topicwiseStatehand={topicwiseStatehand}
                             setStatetopicpicker={setStatetopicpicker}
                         />) : <>
-                    {Platform.OS === 'ios' ? <PageHeader title="Add Credits" onBackPress={addCreditBack} /> : <View>
-                        <PageHeader title="Add Credits" onBackPress={addCreditBack} />
+                    {Platform.OS === 'ios' ? <PageHeader showTitle title={props?.route?.params?.fulldata?.fulldata ? "Edit Credits" : "Add Credits"} onBackPress={addCreditBack} /> : <View>
+                        <PageHeader showTitle title={props?.route?.params?.fulldata?.fulldata ? "Edit Credits" : "Add Credits"} onBackPress={addCreditBack} />
                     </View>}
                     <Loader
                         visible={DashboardReducer?.status == 'Dashboard/addCreditVaultRequest' || DashboardReducer?.status == 'Dashboard/OCRCertificateRequest'} />
@@ -899,7 +899,7 @@ const handleChange = (text) => {
                             )}
                             <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                                 <Text style={isNonUsaUser ? styles.nonusaheaderText : styles.headerText}>
-                                    {isNonUsaUser ? "Add previous or external CE activities to your vault for personalized recommendations." : `Add New Credit for ${props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name || props?.route?.params?.creditvalutboard?.board_data?.board_name || props?.route?.params?.FullBoard?.boardtakefinal || props?.route?.params?.mainAdd?.creditID?.state || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null}`}
+                                    {isNonUsaUser ? (props?.route?.params?.fulldata?.fulldata ? "Edit your previous or external CE activity details." : "Add previous or external CE activities to your vault for personalized recommendations.") : `${props?.route?.params?.fulldata?.fulldata ? "Edit Credit" : "Add New Credit"} for ${props?.route?.params?.creditvalutstate?.state_name || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name || props?.route?.params?.creditvalutboard?.board_data?.board_name || props?.route?.params?.FullBoard?.boardtakefinal || props?.route?.params?.mainAdd?.creditID?.state || props?.route?.params?.creditvalut?.state_name || props?.route?.params?.fulldata?.statenamefull?.state_name || DashboardReducer?.stateCourseResponse?.data?.state_data?.state_name || props?.route?.params?.mainAdd?.state_name || null}`}
                                 </Text>
                             </View>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
@@ -1106,30 +1106,38 @@ const handleChange = (text) => {
                                                 leftIcon={cdate ? <CrossIcon name="closecircle" size={18} color="#949494" /> : <CalenderIcon name="calendar" size={25} color="#949494" />}
                                                 onLeftIconPress={() => {
                                                     if (cdate) {
-                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes",                                                         /**
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{
+                                                            text: "Yes",                                                         /**
  * On press utility.
  * @returns {*}
  */
-onPress: () => setCdate(""), style: "default" }, { text: "No",                                                         /**
+                                                            onPress: () => setCdate(""), style: "default"
+                                                        }, {
+                                                            text: "No",                                                         /**
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                            onPress: () => console.log("dfdf"), style: "cancel"
+                                                        }])
                                                     } else {
                                                         setOpendate(!opendate)
                                                     }
                                                 }}
                                                 onwholePress={() => {
                                                     if (cdate) {
-                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{ text: "Yes",                                                         /**
+                                                        Alert.alert("eMedEvents", "Are you sure you want to remove issue date ?", [{
+                                                            text: "Yes",                                                         /**
  * On press utility.
  * @returns {*}
  */
-onPress: () => setCdate(""), style: "default" }, { text: "No",                                                         /**
+                                                            onPress: () => setCdate(""), style: "default"
+                                                        }, {
+                                                            text: "No",                                                         /**
  * On press utility.
  * @returns {*}
  */
-onPress: () => console.log("dfdf"), style: "cancel" }])
+                                                            onPress: () => console.log("dfdf"), style: "cancel"
+                                                        }])
                                                     } else {
                                                         setOpendate(!opendate)
                                                     }
@@ -1180,14 +1188,13 @@ onPress: () => console.log("dfdf"), style: "cancel" }])
                                                             keyboardType="default"
                                                             showCountryCode={false}
                                                             editable={false}
-                                                            leftIcon={<DropdownIcon name="chevron-small-down" style={{ bottom: -13 }} size={25} color="#949494" />}
+                                                            leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
                                                             onLeftIconPress={() => {
                                                                 setStateMan(true);
                                                             }}
                                                             onwholePress={() => setStateMan(true)}
                                                             marginleft={normalize(270)}
-                                                            bgv={true}
-                                                            notext={"State Mandated Course*"}
+                                                            spaceneeded={true}
                                                         />
                                                     </Pressable>
                                                 </View>
@@ -1200,7 +1207,7 @@ onPress: () => console.log("dfdf"), style: "cancel" }])
                                                     flex: 1,
                                                     paddingRight: normalize(0)
                                                 }}>
-                                                    <Pressable disabled={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true} onPress={() => setStateMan(true)}>
+                                                    <Pressable disabled={!(ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course)} onPress={() => setStateMan(true)}>
                                                         <InputField
                                                             icondisable={ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.mandated_course ? false : true}
                                                             label={"State Mandated Course*"}
@@ -1236,7 +1243,7 @@ onPress: () => console.log("dfdf"), style: "cancel" }])
                                                         value={stopic}
                                                         placeholder={finalstate === "Yes" ? "" : "Choose State Mandatory Topic*"}
                                                         placeholderTextColor="#949494"
-                                                        newstyle={finalstate === "Yes" ? "Yes" : "No"}
+                                                        newstyle="Yes"
                                                         rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
                                                         onPress={() => {
                                                             setStatetopicpicker(!statetopicpicker);

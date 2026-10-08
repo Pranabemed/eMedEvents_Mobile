@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 
 /**
  * Board vault modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: BoardVaultModal, weekFilterProfession.
@@ -9,25 +10,23 @@ import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
-import DropDownHeader from '../../Components/DropDownHeader'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable BoardVaultModal component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
 const BoardVaultModal = ({ handleBoardname, clisttopicboard, setStatepickboard, searchTopicNameboard, searchtexttopicboard }) => {
-    console.log(clisttopicboard, "wekknamecustome");
+
     const [showLoader,setShowLoader] = useState(false);
      useEffect(() => {
             // Simulate 2-second loading time
             const timeout = setTimeout(() => {
                 setShowLoader(true);
             }, 5000);
-    
+
             return () => clearTimeout(timeout);
         }, []);
         /**
@@ -39,39 +38,21 @@ const BoardVaultModal = ({ handleBoardname, clisttopicboard, setStatepickboard, 
  */
 const weekFilterProfession = ({ item, index }) => {
         return (
-            <View style={{justifyContent:"center",alignItems:"center"}}> 
-                <TouchableOpacity
+            <View style={{justifyContent:"center",alignItems:"center"}}>
+                <DropdownOption
                     onPress={() => {
                         handleBoardname(item);
                         setStatepickboard(false);
                     }}
-                    style={{
-                        // borderWidth: 0.5,
-                        marginTop: normalize(10),
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: normalize(40),
-                        width: '87%',
-                        alignSelf: 'center',
-                    }}
+
                 >
                     <Text
-                        style={{
-                            fontSize: 14,
-                            width: '100%',
-                            textAlign: 'center',
-                            color: Colorpath.black,
-                            flexShrink: 1,
-                            fontFamily: Fonts.InterRegular,
-                            textAlign: "left",
-                            lineHeight: 14
-                            // textTransform: 'capitalize',
-                        }}
+                        style={dropdownStyles.optionText}
                     >
                         {item?.board_data?.board_name}
                     </Text>
-                </TouchableOpacity>
-                <View style={{ height: 0.8, width: '94%', backgroundColor: "#DADADA" }} />
+                </DropdownOption>
+
             </View>
         );
     };
@@ -81,57 +62,31 @@ const weekFilterProfession = ({ item, index }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <DropDownHeader title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
+                    <DropDownHeader standardized title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
                 ) : (
                     <View>
-                        <DropDownHeader title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
+                        <DropDownHeader standardized title="Board name*" onClosePress={() => { setStatepickboard(false) }} />
                     </View>
                 )}
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor: searchtexttopicboard ? '#f0f0f0' : '#ffffff',
-                                borderBottomColor: '#000000',
-                                borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={searchTopicNameboard}
-                                value={searchtexttopicboard}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(10),
-                                }}
-                                placeholder="Search board name"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={searchTopicNameboard}
+                            value={searchtexttopicboard}
+                            placeholder="Search board name" />
                     <View style={{ flex: 1 }}>
-                        <FlatList
+                        <DropdownList
                             data={clisttopicboard}
                             renderItem={weekFilterProfession}
                             keyExtractor={(item, index) => index.toString()}
                             contentContainerStyle={{ paddingBottom: normalize(50) }}
                             keyboardShouldPersistTaps="always"
-                            ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"}/> : 
+                            ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"}/> :
                                 <View style={{
                                     height: normalize(50),
                                     width: normalize(170),
@@ -154,7 +109,7 @@ const weekFilterProfession = ({ item, index }) => {
                         />
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
     )
 }

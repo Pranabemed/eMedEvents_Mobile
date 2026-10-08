@@ -96,7 +96,7 @@ const addCretBack = () => {
             );
             navigation.goBack();
         } else if (props?.route?.params?.takeback == "back") {
-            navigation.navigate("TabNav", { initialRoute: "Contact" });
+            navigation.goBack();
         } else if (props?.route?.params?.profiledet) {
             navigation.goBack();
         } else {
@@ -480,6 +480,7 @@ const boardCertificateAdd = () => {
         }
     }
     useEffect(() => {
+        if (!isFocus) return;
                 /**
  * On back press utility.
  * @returns {boolean}
@@ -494,7 +495,7 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [isFocus]);
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);

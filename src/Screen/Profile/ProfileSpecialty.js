@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Profile specialty screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfileSpeciality, weekFilterProfession, handlePress.
  */
@@ -8,21 +9,19 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import PageHeader from '../../Components/PageHeader';
 import Buttons from '../../Components/Button';
 import TickMark from 'react-native-vector-icons/Ionicons';
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 /**
  * Reusable ProfileSpeciality component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
 
 const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepicker, previousSpec, handleSpecialityChange, selectedSpecialities, setSelectedSpecialities, handleSpecialitySelect, formData, setstatepicker, setSearchState, searchState, searchStateName, slist, onSubmit }) => {
-    console.log(selectedSpecialities, "selectedSpecialitieqwwww12233s--------", formData, previousSpec)
+
     const [checked, setChecked] = useState(false);
     const [showLoader,setShowLoader] = useState(false);
         /**
@@ -34,7 +33,7 @@ const ProfileSpeciality = ({ setSpeids, speids, controlled, setFormData, statepi
 const weekFilterProfession = ({ item }) => {
         const isSelected = selectedSpecialities.some(speciality => speciality.id === item?.id);
         const isPreviouslySelected = formData?.speciality_ids?.some(id => id === item.id)
-        console.log("isPreviouslySelected=====", formData);
+
                 /**
  * Handles press.
  * @returns {void}
@@ -103,20 +102,12 @@ onPress: () => {
 
         return (
             <>
-                <TouchableOpacity
+                <DropdownOption selected={formData?.speciality_ids?.includes(item.id)}
                     onPress={() => {
                         setSpeids(item?.id);
                         handlePress();
                     }}
-                    style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        minHeight: normalize(43),
-                        width: normalize(300),
-                        paddingHorizontal: normalize(10),
-                        marginVertical: normalize(5),
-                        alignSelf: "center",
-                    }}
+
                 >
                     <View style={{ marginRight: normalize(10) }}>
                         {formData?.speciality_ids?.includes(item.id) ? (
@@ -129,20 +120,13 @@ onPress: () => {
                     </View>
                     <View style={{ flex: 1 }}>
                         <Text numberOfLines={2}
-                            style={{
-                                fontSize: 16,
-                                lineHeight: normalize(20),
-                                textAlign: 'left',
-                                color: Colorpath.black,
-                                textTransform: 'capitalize',
-                                fontFamily: Fonts.InterRegular,
-                            }}
+                            style={dropdownStyles.optionText}
                         >
                             {item?.name}
                         </Text>
                     </View>
-                </TouchableOpacity>
-                <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#DADADA", alignSelf: "center" }} />
+                </DropdownOption>
+
             </>
         );
     };
@@ -152,7 +136,7 @@ onPress: () => {
             const timeout = setTimeout(() => {
                 setShowLoader(true);
             }, 2000);
-    
+
             return () => clearTimeout(timeout);
         }, []);
     return (
@@ -161,15 +145,15 @@ onPress: () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <SafeAreaView style={{ height: normalize(800), width: normalize(320), justifyContent: "center", alignSelf: "center", backgroundColor: Colorpath.Pagebg }}>
+            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
-                    <PageHeader title="Select Specialty(ies)" onBackPress={() => {
+                    <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
                         setstatepicker(!statepicker);
                         setSearchState("");
                     }} />
                 ) : (
                     <View>
-                        <PageHeader title="Select Specialty(ies)" onBackPress={() => {
+                        <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
                             setstatepicker(!statepicker);
                             setSearchState("");
                         }} />
@@ -179,44 +163,16 @@ onPress: () => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <View style={{
-                        flexDirection: "row",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <View
-                            style={{
-                                backgroundColor:  '#ffffff',
-                                // borderBottomColor: '#000000',
-                                // borderBottomWidth: 0.5,
-                                marginTop: normalize(10),
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                            }}>
-                            <TextInput
-                                editable
-                                maxLength={40}
-                                onChangeText={text => searchStateName(text)}
-                                value={searchState}
-                                style={{
-                                    height: normalize(50),
-                                    width: normalize(300),
-                                    paddingLeft: normalize(13),
-                                    borderWidth:0.8,
-                                    borderColor:"#DADADA"
-                                }}
-                                placeholder="Search and choose your specialties*"
-                                placeholderTextColor={"RGB(170, 170, 170)"}
-                            />
-                        </View>
-                    </View>
-                    <FlatList
+                    <DropdownSearch editable
+                            maxLength={40}
+                            onChangeText={text => searchStateName(text)}
+                            value={searchState}
+                            placeholder="Search and choose your specialties*" />
+                    <DropdownList
                         data={slist}
                         renderItem={weekFilterProfession}
                         keyExtractor={(item, index) => index.toString()}
-                        contentContainerStyle={{ paddingBottom: normalize(250) }}
+                        style={{ flex: 1, minHeight: 0 }}
                         keyboardShouldPersistTaps="always"
                         ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"}/> :
                             <View style={{
@@ -241,18 +197,13 @@ onPress: () => {
                     />
                     {isEnable && <View style={{
                         width: "100%",
-                        position: 'absolute',
-                        height: normalize(120),
-                        bottom: Platform.OS === 'ios' ? normalize(124) : normalize(98),
-                        left: 0,
-                        right: 0,
+                        flexShrink: 0,
                         backgroundColor: Colorpath.white,
                         justifyContent: 'center',
                         alignItems: 'center',
-                        paddingBottom: normalize(20),
+                        paddingVertical: normalize(16),
                         borderColor: "#DADADA",
-                        borderWidth: 0.8
-                        // paddingBottom: normalize(20),
+                        borderTopWidth: 0.8
                     }}>
                         <Buttons
                             onPress={() => {
@@ -270,11 +221,10 @@ onPress: () => {
                             color={Colorpath.white}
                             fontSize={16}
                             fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(-15)}
                         />
                     </View>}
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         </>
 
     )

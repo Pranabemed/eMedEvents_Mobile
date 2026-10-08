@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * File Name: ProfessionDropdown.js
  * Module: CME Requirement
@@ -8,7 +9,7 @@
  * Dependencies: react, react-native, react-native-vector-icons/MaterialIcons, react-native-safe-area-context, ../../Themes/Colorpath, ../../Themes/Fonts, ../../Utils/Helpers/Dimen
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -101,10 +102,13 @@ const ProfessionDropdown = ({
 
   const professions = ['Physician', 'Nursing', 'Dentist', 'Pharmacist'];
 
-  const filteredStates = (statesList || []).filter(item => {
-    const name = String(item?.name || item?.state_name || item?.title || '').toLowerCase();
-    return name.includes(stateSearch.toLowerCase().trim());
-  });
+  const filteredStates = useMemo(() => {
+    const query = stateSearch.toLowerCase().trim();
+    return (statesList || []).filter(item => {
+      const name = String(item?.name || item?.state_name || item?.title || '').toLowerCase();
+      return name.includes(query);
+    });
+  }, [statesList, stateSearch]);
 
   /**
    * Description: Resolves state display name from supported payload shapes.
@@ -184,28 +188,25 @@ const ProfessionDropdown = ({
           onPress={() => setProfModalVisible(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Profession</Text>
+            <DropDownHeader standardized title="Select Profession" onClosePress={() => setProfModalVisible(false)} />
             {professions.map(prof => (
-              <TouchableOpacity
+              <DropdownOption selected={selectedProfession === prof}
                 key={prof}
-                style={styles.modalItem}
+
                 onPress={() => {
                   onSelectProfession(prof);
                   setProfModalVisible(false);
                 }}
               >
                 <Text
-                  style={[
-                    styles.modalItemText,
-                    selectedProfession === prof && styles.selectedItemText,
-                  ]}
+                  style={dropdownStyles.optionText}
                 >
                   {prof}
                 </Text>
                 {selectedProfession === prof ? (
                   <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
                 ) : null}
-              </TouchableOpacity>
+              </DropdownOption>
             ))}
           </View>
         </TouchableOpacity>
@@ -213,42 +214,14 @@ const ProfessionDropdown = ({
 
       <Modal visible={stateModalVisible} transparent animationType="slide">
         <SafeAreaView style={styles.stateModalContainer}>
-          <View style={styles.stateModalHeader}>
-            <TouchableOpacity
-              onPress={() => {
+          <DropDownHeader standardized title="Select State" onClosePress={() => {
                 setStateModalVisible(false);
                 setStateSearch('');
-              }}
-              style={styles.backButton}
-            >
-              <Icon name="close" size={normalize(24)} color="#333333" />
-            </TouchableOpacity>
-            <Text style={styles.stateModalTitle}>Select State</Text>
-            <View style={{ width: normalize(24) }} />
-          </View>
+              }} />
 
-          <View style={styles.searchBarContainer}>
-            <Icon
-              name="search"
-              size={normalize(20)}
-              color="#9CA3AF"
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search State"
-              placeholderTextColor="#9CA3AF"
-              value={stateSearch}
-              onChangeText={setStateSearch}
-            />
-            {stateSearch.length > 0 ? (
-              <TouchableOpacity onPress={() => setStateSearch('')}>
-                <Icon name="clear" size={normalize(20)} color="#9CA3AF" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          <DropdownSearch placeholder="Search State" value={stateSearch} onChangeText={setStateSearch} />
 
-          <FlatList
+          <DropdownList
             data={filteredStates}
             keyExtractor={(item, index) => String(item?.id ?? item?.state_id ?? index)}
             contentContainerStyle={styles.stateList}
@@ -258,16 +231,16 @@ const ProfessionDropdown = ({
             renderItem={({ item }) => {
               const name = getStateName(item);
               return (
-                <TouchableOpacity
-                  style={styles.stateItem}
+                <DropdownOption
+
                   onPress={() => {
                     onSelectState(item);
                     setStateModalVisible(false);
                     setStateSearch('');
                   }}
                 >
-                  <Text style={styles.stateItemText}>{name}</Text>
-                </TouchableOpacity>
+                  <Text style={dropdownStyles.optionText}>{name}</Text>
+                </DropdownOption>
               );
             }}
           />

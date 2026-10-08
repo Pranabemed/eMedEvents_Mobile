@@ -82,7 +82,6 @@ const AllSpecial = (props) => {
     const [selectCountry, setSelectCountry] = useState([]);
     const [searchtext, setSearchtext] = useState(false);
     const [country, setCountry] = useState('');
-    const showSpecialty = isNonUsaUser || (selectedId != null && (selectedId !== 12 || Boolean(country.trim())));
     const [countrypicker, setcountrypicker] = useState(false);
     const [slist, setSlist] = useState('');
     const [selectState, setSelectState] = useState([]);
@@ -102,6 +101,9 @@ const AllSpecial = (props) => {
     const [countryId, setCountryId] = useState("1")
     const [otherProfessionValue, setOtherProfessionValue] = useState('');
     const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState('');
+    const showSpecialty = isNonUsaUser
+        ? Boolean(selectedProfessionalGroup && (selectedProfessionalGroup !== 'Other' || otherProfessionValue.trim()))
+        : selectedId != null && (selectedId !== 12 || Boolean(country.trim()));
     const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     const [playerSessionID, setPlayerSessionID] = useState('');
     const [fcm, setFcm] = useState(false);

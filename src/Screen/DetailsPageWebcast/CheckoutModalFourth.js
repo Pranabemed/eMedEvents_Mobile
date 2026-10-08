@@ -1,3 +1,4 @@
+import { DropdownPanel } from '../../Components/DropDownHeader';
 /**
  * Checkout modal fourth screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckThreeCity, weekFilterProfession.
  */
@@ -20,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const CheckThreeCity = ({ cityPicker, cityAll, setSearchcity, activeIndex, searchcity, handlecityShows, setCityPicker, searchCityName }) => {
+const CheckThreeCity = ({ standardized = false,  cityPicker, cityAll, setSearchcity, activeIndex, searchcity, handlecityShows, setCityPicker, searchCityName }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)
             useEffect(() => {
@@ -28,7 +29,7 @@ const CheckThreeCity = ({ cityPicker, cityAll, setSearchcity, activeIndex, searc
                         const timeout = setTimeout(() => {
                             setShowLoader(true);
                         }, 2000);
-                
+
                         return () => clearTimeout(timeout);
                     }, []);
         /**
@@ -79,6 +80,39 @@ const weekFilterProfession = ({ item }) => {
             </View>
         );
     };
+        if (standardized) {
+        return <DropdownPanel title="City*" onClose={() => {
+                        setCityPicker(!cityPicker);
+                        setSearchcity("");
+                        // handleSpecialitySelect(selectedSpecialities, formData);
+                    }}
+            value={searchcity} onChangeText={text => searchCityName(text)} placeholder="Search City Name*"
+            data={cityAll} getLabel={item => item?.name}
+            onSelect={item => {
+                    handlecityShows(item, activeIndex);
+                    setCityPicker(!cityPicker);
+                    setSearchcity("");
+                }} ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"} />:
+                            <View style={{
+                                height: normalize(50),
+                                width: normalize(170),
+                                backgroundColor: "#DADADA",
+                                alignSelf: 'center',
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: normalize(10)
+                            }}>
+                                <Text
+                                    style={{
+                                        color: Colorpath.grey,
+                                        fontFamily: Fonts.InterRegular,
+                                        fontSize: normalize(20),
+                                    }}>
+                                    No data found
+                                </Text>
+                            </View>
+                        } />;
+    }
     return (
         <>
             <MyStatusBar

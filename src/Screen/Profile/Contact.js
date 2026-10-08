@@ -951,7 +951,7 @@ const ContactProfile = (props) => {
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {countrypicker ?
-                    (<ChecktwoCountry
+                    (<ChecktwoCountry standardized
                         countrypicker={countrypicker}
                         setSearchcountry={setSearchcountry}
                         searchcountry={searchcountry}
@@ -972,7 +972,7 @@ const ContactProfile = (props) => {
                             setStatepicker={setStatepicker}
                         />) :
                         citypicker ? (
-                            <CheckThreeCity
+                            <CheckThreeCity standardized
                                 handlecityShows={handlecityShows}
                                 cityPicker={citypicker}
                                 setCityPicker={setCitypicker}

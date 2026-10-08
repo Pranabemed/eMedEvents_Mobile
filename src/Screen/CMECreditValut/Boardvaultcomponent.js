@@ -14,7 +14,6 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import ErrorIcon from 'react-native-vector-icons/MaterialIcons';;
 import moment from 'moment';
 import BoardVaultModal from './BoardVaultModal';
-import { CommonActions } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
 import { useSelector } from 'react-redux';
 import ArrowNeed from 'react-native-vector-icons/Feather';
@@ -125,7 +124,7 @@ const cleanNumber = (value) => {
                             </View>
                         </View>
                     </View>
-                    <TouchableOpacity onPress={() => { navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddCertificate", params: { takeback: "back" } }] })); }}>
+                    <TouchableOpacity onPress={() => navigation.navigate("AddCertificate", { takeback: "back" })}>
                         <View style={stylefalse.innerCardex}>
                             <View style={stylefalse.iconContainerex}>
                                 <Image

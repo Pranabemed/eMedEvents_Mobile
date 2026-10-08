@@ -343,7 +343,7 @@ const DashoardVault = (props) => {
                 setSelectCountrytopic(stateDataArray);
                 setClisttopic(stateDataArray);
 
-                const defaultState = stateDataArray[0];
+                const defaultState = stateDataArray.find(state => String(state.state_id) === String(stateid)) || stateDataArray[0];
                 setCertificatedata(defaultState);
                 setStatewise(defaultState?.state_name || "");
                 setStateid(defaultState?.state_id || "");
@@ -362,7 +362,7 @@ const DashoardVault = (props) => {
             setSelectCountrytopic(uniqueStates);
             setClisttopic(uniqueStates);
 
-            const defaultState = uniqueStates[0];
+            const defaultState = uniqueStates.find(state => String(state.state_id) === String(stateid)) || uniqueStates[0];
             setCertificatedata(defaultState);
             setStatewise(defaultState?.state_name || defaultState?.board_data?.board_name || "");
             setStateid(defaultState?.state_id || "");
@@ -381,7 +381,7 @@ const DashoardVault = (props) => {
         JSON.stringify(DashboardReducer?.stateMandatorySuccess?.state_data),
         JSON.stringify(DashboardReducer?.dashMbResponse?.data?.licensures),
         JSON.stringify(DashboardReducer?.dashboardResponse?.data?.licensures),
-        DashboardReducer?.status,
+        stateid,
     ]);
 
 
@@ -673,12 +673,8 @@ const DashoardVault = (props) => {
         setStatewise(vault?.state_name);
         setCertificatedata(vault);
         setStatepick(false);
-        setCreditwise(null);
-        if (stateid) {
-            let obj = {
-                "state_id": stateid
-            }
-            dispatch(stateCourseRequest(obj));
+        if (String(vault?.state_id) !== String(stateid)) {
+            setCreditwise(null);
         }
     }
     useEffect(() => {

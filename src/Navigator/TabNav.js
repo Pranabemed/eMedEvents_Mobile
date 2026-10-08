@@ -119,7 +119,7 @@ function TabScreen() {
   const navigation = useNavigation();
   const isFoucs = useIsFocused();
   const route = useRoute();
-  const { detectmain, initialRoute, refreshLicensesAt } = route.params || {};
+  const { detectmain, initialRoute, refreshLicensesAt, suppressAutomaticPrimePrompt = false } = route.params || {};
   console.log(route.params, detectmain, "route.params =====")
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
@@ -596,7 +596,7 @@ function TabScreen() {
             key={index}
             name={item.name}
             component={item.component}
-            initialParams={{ detectmain: "newadd" }}
+            initialParams={{ detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
             options={{
               /**
 * Navigation helper that exposes tab bar icon behavior.
@@ -776,7 +776,7 @@ function TabScreen() {
           key={index}
           name={item.name}
           component={item.component}
-          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd" }}
+          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
           options={{
             /**
 * Navigation helper that exposes tab bar icon behavior.
@@ -959,7 +959,7 @@ function TabScreen() {
           key={index}
           name={item.name}
           component={item.component}
-          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd" }}
+          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
           options={{
             /**
 * Navigation helper that exposes tab bar icon behavior.

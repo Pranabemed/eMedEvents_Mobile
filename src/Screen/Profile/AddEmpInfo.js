@@ -485,7 +485,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                         setStatepicker={setStatepicker}
                     />) :
                     citypicker ? (
-                        <CheckThreeCity
+                        <CheckThreeCity standardized
                             handlecityShows={handlecityShows}
                             cityPicker={citypicker}
                             setCityPicker={setCitypicker}

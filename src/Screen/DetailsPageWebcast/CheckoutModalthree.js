@@ -1,3 +1,4 @@
+import { DropdownPanel } from '../../Components/DropDownHeader';
 
 /**
  * Checkout modalthree screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckStateShow, weekFilterProfession, handleBackPress.
@@ -21,7 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const CheckStateShow = ({ pratice, setSearchState, activeIndex, searchpratice, handleStateshows, setPratice, searchStateNamePratice, slistpratice }) => {
+const CheckStateShow = ({ standardized = false,  pratice, setSearchState, activeIndex, searchpratice, handleStateshows, setPratice, searchStateNamePratice, slistpratice }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)
             useEffect(() => {
@@ -29,7 +30,7 @@ const CheckStateShow = ({ pratice, setSearchState, activeIndex, searchpratice, h
                         const timeout = setTimeout(() => {
                             setShowLoader(true);
                         }, 2000);
-                
+
                         return () => clearTimeout(timeout);
                     }, []);
         /**
@@ -89,6 +90,37 @@ const handleBackPress = () => {
         setPratice(!pratice);
         setSearchState("");
     };
+        if (standardized) {
+        return <DropdownPanel title="State*" onClose={() => {
+                        handleBackPress();
+                    }}
+            value={searchpratice} onChangeText={text => searchStateNamePratice(text, activeIndex)} placeholder="Search State Name"
+            data={slistpratice} getLabel={item => item?.name}
+            onSelect={item => {
+                    handleStateshows(item, activeIndex);
+                    setPratice(!pratice);
+                    setSearchState("");
+                }} ListEmptyComponent={!showLoader ? <ActivityIndicator size={"small"} color={"green"} />:
+                            <View style={{
+                                height: normalize(50),
+                                width: normalize(170),
+                                backgroundColor: "#DADADA",
+                                alignSelf: 'center',
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: normalize(10)
+                            }}>
+                                <Text
+                                    style={{
+                                        color: Colorpath.grey,
+                                        fontFamily: Fonts.InterRegular,
+                                        fontSize: normalize(20),
+                                    }}>
+                                    No data found
+                                </Text>
+                            </View>
+                        } />;
+    }
     return (
         <>
             <MyStatusBar
