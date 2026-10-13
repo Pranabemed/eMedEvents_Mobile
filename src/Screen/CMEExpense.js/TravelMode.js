@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Travel mode screen module. Renders a React Native screen or a screen-scoped support component. Exported members: TravelMode.
  */
@@ -45,7 +46,8 @@ const TravelMode = ({ expenspicker, setExpenspicker, dommyData, traveltake, setT
                             width: '100%',
                             backgroundColor: '#fff',
                         }}>
-                        <FlatList
+                        <DropDownHeader standardized title="Travel Mode" onClosePress={() => setExpenspicker(false)} />
+                    <DropdownList
                             contentContainerStyle={{
                                 paddingBottom: normalize(70),
                                 paddingTop: normalize(7),
@@ -56,16 +58,16 @@ const TravelMode = ({ expenspicker, setExpenspicker, dommyData, traveltake, setT
                             renderItem={({ item, index }) => {
                                 return (
                                     <>
-                                        <TouchableOpacity onPress={() => {
+                                        <DropdownOption onPress={() => {
                                             setTraveltake(item);
                                             setExpenspicker(false);
                                         }}
-                                            style={[styles.dropDownItem, { flexDirection: "row" }]}
+                                            selected={traveltake === item}
                                         >
-                                            <Text style={styles.dropDownItemText}>
+                                            <Text style={dropdownStyles.optionText}>
                                                 {item}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </DropdownOption>
                                     </>
                                 );
                             }}

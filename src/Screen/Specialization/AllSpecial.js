@@ -907,7 +907,7 @@ const licData = (hill) => {
                                         flex: 1,
                                         paddingRight: normalize(0)
                                     }}>
-                                        <InputField
+                                        <InputField dropdownPresentation
                                             label={otherProfessionValue ? "Profession*" : "Profession*"}
                                             value={otherProfessionValue}
                                             placeholder=""
@@ -960,7 +960,7 @@ const licData = (hill) => {
                                         }}
                                     /> */}
 
-                                    <InputField
+                                    <InputField dropdownPresentation
                                         label={country ? "Profession*" : "Profession*"}
                                         value={country}
                                         placeholder=""
@@ -1009,7 +1009,7 @@ const licData = (hill) => {
                                                 setstatepicker(!statepicker);
                                             }}
                                         /> */}
-                                    <InputField
+                                    <InputField dropdownPresentation
                                         icondisable={isNonUsaUser && !(statelist?.length > 0)}
                                         label={state ? "Speciality*" : "Speciality*"}
                                         value={state}
@@ -1037,7 +1037,7 @@ const licData = (hill) => {
                                     flex: 1,
                                     paddingRight: normalize(0)
                                 }}>
-                                    <InputField
+                                    <InputField dropdownPresentation
                                         icondisable={statelistpratice?.length > 0 ? false : true}
                                         label={statepratice ? "Currently Practicing State In*" : "Currently Practicing State In*"}
                                         value={statepratice}

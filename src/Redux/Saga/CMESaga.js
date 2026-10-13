@@ -30,12 +30,12 @@ export function* cmeCourseSaga(action) {
   try {
     let response = yield call(postApi,action?.payload?.search_speciality == "" ?'Conference/conferenceList' : action?.payload?.listby_type == "interstedconferences" ? 'Conference/conferenceList' : 'Conference/conferenceList?', action.payload, header);
     if (response?.status == 200) {
-      yield put(cmeCourseSuccess(response?.data));
+      yield put({ ...cmeCourseSuccess(response?.data), ...(action.meta ? { meta: action.meta } : {}) });
     } else {
-      yield put(cmeCourseFailure(response?.data));
+      yield put({ ...cmeCourseFailure(response?.data), ...(action.meta ? { meta: action.meta } : {}) });
     }
   } catch (error) {
-    yield put(cmeCourseFailure(error));
+    yield put({ ...cmeCourseFailure(error), ...(action.meta ? { meta: action.meta } : {}) });
   }
 }
 /**

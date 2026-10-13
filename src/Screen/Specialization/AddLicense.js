@@ -2,7 +2,7 @@
  * Add license screen module. Renders a React Native screen or a screen-scoped support component. Exported members: AddLicense, isZeroDate, isEmptyLike, resetToTab, addCreditBack, token_handle_vault, toggleModalcred, licesenseState, convertDate, handleFromDateConfirm, handleToDateConfirm, handleYearcust, directCameraUpload, searchStateNamePratice, onBackPress, addLicsenseHandle, handleAddState.
  */
 
-import { View, Text, Platform, ScrollView, KeyboardAvoidingView, Alert, Animated, Easing, BackHandler, Pressable } from 'react-native'
+import { View, Text, Platform, ScrollView, KeyboardAvoidingView, Keyboard, Alert, Animated, Easing, BackHandler, Pressable } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -508,6 +508,22 @@ const handleToDateConfirm = (val) => {
         setCdate(moment(val).format('YYYY-MM-DD'));
         setOpendatelicy(false);
     };
+    const openLicensureState = () => {
+        Keyboard.dismiss();
+        setPraticelic(!praticelic);
+    };
+    const openLicenseIssueDate = () => {
+        Keyboard.dismiss();
+        setOpendatelic(true);
+    };
+    const openLicenseExpiry = () => {
+        Keyboard.dismiss();
+        if (stateDateFetch) {
+            setCitypickeryear(true);
+        } else {
+            setOpendatelicy(true);
+        }
+    };
 
     useEffect(() => {
         if (AuthReducer.status == 'Auth/licesensSuccess') {
@@ -719,12 +735,12 @@ const handleAddState = (itemmode) => {
                     <CustomizedYear yearRange={yearRange} setCitypickeryear={setCitypickeryear} handleYearcust={handleYearcust} />
                 ) : <>
                     {Platform.OS === 'ios' ? <PageHeader
-                        showTitle={isEditLicenseFlow}
+                        showTitle={true}
                         title={isEditLicenseFlow ? "Edit State License" : "Add License"}
                         onBackPress={addCreditBack}
                     /> : <View>
                         <PageHeader
-                            showTitle={isEditLicenseFlow}
+                            showTitle={true}
                             title={isEditLicenseFlow ? "Edit State License" : "Add License"}
                             onBackPress={addCreditBack}
                         />
@@ -736,13 +752,6 @@ const handleAddState = (itemmode) => {
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     >
                         <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
-                            {!isEditLicenseFlow && (
-                                <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#000000" }}>
-                                        {"Add Your New State License"}
-                                    </Text>
-                                </View>
-                            )}
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
                                 <View style={{
                                     flexDirection: 'row',
@@ -801,7 +810,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                     </View>
                                 </View>
 
-                                <Pressable onPress={() => setPraticelic(!praticelic)} disabled={isEditLicenseFlow ? true : false}>
+                                <Pressable onPress={openLicensureState} disabled={isEditLicenseFlow ? true : false}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -814,7 +823,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                                 icondisable={isEditLicenseFlow ? true : false}
                                                 wrapperStyle={isEditLicenseFlow ? { borderBottomColor: "#D0D5DD" } : undefined}
                                                 addnewtyle={isEditLicenseFlow ? { color: "#667085" } : undefined}
-                                                label={"Licensure State*"}
+                                                label={"Select Licensure State*"}
                                                 value={selectlicsense}
                                                 placeholder=""
                                                 placeholderTextColor="#949494"
@@ -822,9 +831,9 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                                 showCountryCode={false}
                                                 editable={false}
                                                 leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                                onLeftIconPress={() => setPraticelic(!praticelic)}
+                                                onLeftIconPress={openLicensureState}
                                                 marginleft={normalize(270)}
-                                                onwholePress={() => setPraticelic(!praticelic)}
+                                                onwholePress={openLicensureState}
                                                 spaceneeded={true}
                                             />
                                         </View>
@@ -850,13 +859,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                         />
                                     </View>
                                 </View>
-                                <Pressable onPress={() => {
-                                    if (props?.route?.params?.profiledet?.from_date ?? props?.route?.params?.myTaskask?.addLic?.from_date) {
-                                        setOpendatelic(true);
-                                    } else {
-                                        setOpendatelic(true);
-                                    }
-                                }} disabled={stateDateFetch ? true : false}>
+                                <Pressable onPress={openLicenseIssueDate} disabled={stateDateFetch ? true : false}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -884,20 +887,8 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                                 showCountryCode={false}
                                                 editable={false}
                                                 leftIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                                                onLeftIconPress={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date ?? props?.route?.params?.myTaskask?.addLic?.from_date) {
-                                                        setOpendatelic(true);
-                                                    } else {
-                                                        setOpendatelic(true);
-                                                    }
-                                                }}
-                                                onwholePress={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date ?? props?.route?.params?.myTaskask?.addLic?.from_date) {
-                                                        setOpendatelic(true);
-                                                    } else {
-                                                        setOpendatelic(true);
-                                                    }
-                                                }}
+                                                onLeftIconPress={openLicenseIssueDate}
+                                                onwholePress={openLicenseIssueDate}
                                                 marginleft={normalize(270)}
                                                 spaceneeded={true}
                                             />
@@ -943,20 +934,8 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                             placeholder={cdate ? cdate : stateDateFetch ? "License Expiry Year*" : "License Expiry Date*"}
                                             placeholderTextColor="#949494"
                                             rightIcon={stateDateFetch ? <DropdownIcon name="chevron-small-down" size={25} color="#949494" /> : <CalenderIcon name="calendar" size={25} color="#949494" />}
-                                            onPress={() => {
-                                                if (stateDateFetch) {
-                                                    setCitypickeryear(true);
-                                                } else {
-                                                    setOpendatelicy(true);
-                                                }
-                                            }}
-                                            onIconpres={() => {
-                                                if (stateDateFetch) {
-                                                    setCitypickeryear(true);
-                                                } else {
-                                                    setOpendatelicy(true);
-                                                }
-                                            }}
+                                            onPress={openLicenseExpiry}
+                                            onIconpres={openLicenseExpiry}
                                         />
 
                                     </View>

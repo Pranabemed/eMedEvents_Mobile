@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -52,13 +52,23 @@ const ProfileMain = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const lastFocusedMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
+    const skipRefreshForCurrentFocusRef = useRef(false);
+    if (!isFoucs) {
+        skipRefreshForCurrentFocusRef.current = false;
+    } else if (
+        lastFocusedMainProfileRef.current &&
+        DashboardReducer?.mainprofileResponse &&
+        lastFocusedMainProfileRef.current !== DashboardReducer.mainprofileResponse
+    ) {
+        skipRefreshForCurrentFocusRef.current = true;
+    }
     const [allHandle, setAllHandle] = useState(null);
     const [finalverifyvaultprof, setFinalverifyvaultprof] = useState(null);
     const [finalProfessionprof, setFinalProfessionprof] = useState(null);
     const [primeitprof, setPrimeitprof] = useState(false);
     const [primeitprofs, setPrimeitprofs] = useState(false);
     const [subitprof, setSubitprof] = useState(false);
-    const [allProf, setAllProf] = useState("");
     const [nettrue, setNettrue] = useState("");
     const [primeSkipped, setPrimeSkipped] = useState(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
@@ -77,11 +87,12 @@ const ProfileMain = (props) => {
                 console.log(e);
             }
         };
-        if (isFoucs) {
+        if (isFoucs && !skipRefreshForCurrentFocusRef.current) {
             checkPrimeSkipped();
         }
     }, [isFoucs]);
     useEffect(() => {
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
         let mounted = true;
         readNonUsaFlowState().then(state => {
             if (mounted) setNonUsaFlowState(state);
@@ -106,6 +117,7 @@ const ProfileMain = (props) => {
             .toLowerCase()
             .replace(/[^a-z0-9]/g, '')
             .trim();
+    const isDegreeOnlyProfession = (value) => ['md', 'do', 'dpm'].includes(normalizeProfessionHandle(value));
     /**
 * Returns display name.
 * @param {*} source - Input value.
@@ -117,33 +129,60 @@ const ProfileMain = (props) => {
         const lastname = read(source?.personal_information?.lastname || source?.lastname);
         return { firstname, lastname };
     };
+    const buildProfessionLabel = (profession, professionType) => {
+        let cleanProf = String(profession || '').trim();
+        const cleanType = String(professionType || '').trim();
+
+        if (!cleanProf) return cleanType;
+        cleanProf = cleanProf.replace(/(\s*-\s*[\w\d]+)(?:\1)+$/i, '$1').trim();
+
+        if (cleanType) {
+            const escapedType = cleanType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            cleanProf = cleanProf.replace(new RegExp(`(\\s*-\\s*${escapedType})+\\s*$`, 'i'), '').trim();
+            return cleanProf ? `${cleanProf} - ${cleanType}` : cleanType;
+        }
+
+        return cleanProf;
+    };
     /**
 * Returns display profession.
 * @param {*} source - Input value.
 * @returns {*}
 */
-    const getDisplayProfession = (source) => {
+    const getDisplayProfession = (source, fallbackType = '') => {
         if (!source) return "";
         const profession = read(source?.professional_information?.profession || source?.profession);
-        const professionType = read(source?.professional_information?.profession_type || source?.profession_type || source?.professional_information?.designation || source?.designation);
-        return profession && professionType ? `${profession} - ${professionType}` : (profession || professionType || "");
+        if (!profession || isDegreeOnlyProfession(profession)) return "";
+        const professionType = read(
+            source?.professional_information?.profession_type ||
+            source?.profession_type ||
+            source?.professional_information?.designation ||
+            source?.designation ||
+            fallbackType
+        );
+        return buildProfessionLabel(profession, professionType);
     };
     useEffect(() => {
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        let active = true;
         /**
 * Token error utility.
 * @returns {void}
 */
         const token_error = () => {
             AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
-                if (loginHandleProccess) {
+                if (active && loginHandleProccess) {
                     let objToken = { "token": loginHandleProccess, "key": {} }
                     connectionrequest()
                         .then(() => {
+                            if (!active) return;
                             dispatch(tokenRequest(objToken))
                             dispatch(mainprofileRequest(objToken))
                             dispatch(dashPerRequest(objToken))
                         })
-                        .catch((err) => showErrorAlert("Please connect to internet", err))
+                        .catch((err) => {
+                            if (active) showErrorAlert("Please connect to internet", err)
+                        })
                 }
             });
         };
@@ -152,7 +191,15 @@ const ProfileMain = (props) => {
         } catch (error) {
             console.log(error);
         }
-    }, [isFoucs]);
+        return () => {
+            active = false;
+        };
+    }, [dispatch, isFoucs]);
+    useEffect(() => {
+        if (isFoucs) {
+            lastFocusedMainProfileRef.current = DashboardReducer?.mainprofileResponse;
+        }
+    }, [DashboardReducer?.mainprofileResponse, isFoucs]);
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -230,20 +277,37 @@ const ProfileMain = (props) => {
         finalProfessionprof ||
         finalverifyvaultprof;
 
-    const rawProfName = read(
+    const professionCandidates = [
         effectiveAllHandle?.professional_information?.profession ||
-        effectiveAllHandle?.profession ||
+        effectiveAllHandle?.profession,
         DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
-        DashboardReducer?.mainprofileResponse?.profession ||
+        DashboardReducer?.mainprofileResponse?.profession,
+        finalProfessionprof?.professional_information?.profession ||
+        finalProfessionprof?.profession,
+        allHandle?.professional_information?.profession ||
+        allHandle?.profession,
+        AuthReducer?.againloginsiginResponse?.user?.professional_information?.profession ||
+        AuthReducer?.againloginsiginResponse?.user?.profession,
+        AuthReducer?.loginResponse?.user?.professional_information?.profession ||
+        AuthReducer?.loginResponse?.user?.profession,
         AuthReducer?.dircetloginResponse?.user?.professional_information?.profession ||
-        AuthReducer?.dircetloginResponse?.user?.profession ||
-        AuthReducer?.dircetloginResponse?.profession
-    );
+        AuthReducer?.dircetloginResponse?.user?.profession,
+        AuthReducer?.dircetloginResponse?.profession,
+    ].map(read).filter(Boolean);
+    const rawProfessionCandidate = professionCandidates.find(value => !isDegreeOnlyProfession(value));
+    const rawProfName = rawProfessionCandidate || (professionCandidates.some(isDegreeOnlyProfession) ? 'Physician' : '');
     const rawProfType = read(
         effectiveAllHandle?.professional_information?.profession_type ||
         effectiveAllHandle?.profession_type ||
         DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
         DashboardReducer?.mainprofileResponse?.profession_type ||
+        finalProfessionprof?.profession_type ||
+        finalProfessionprof?.designation ||
+        allHandle?.profession_type ||
+        AuthReducer?.againloginsiginResponse?.user?.professional_information?.profession_type ||
+        AuthReducer?.againloginsiginResponse?.user?.profession_type ||
+        AuthReducer?.loginResponse?.user?.professional_information?.profession_type ||
+        AuthReducer?.loginResponse?.user?.profession_type ||
         AuthReducer?.dircetloginResponse?.user?.professional_information?.profession_type ||
         AuthReducer?.dircetloginResponse?.user?.profession_type ||
         AuthReducer?.dircetloginResponse?.profession_type
@@ -251,7 +315,7 @@ const ProfileMain = (props) => {
 
     const pName = normalizeProfessionHandle(rawProfName);
     const pType = normalizeProfessionHandle(rawProfType);
-    const profCombined = normalizeProfessionHandle(getDisplayProfession(effectiveAllHandle) || `${rawProfName} - ${rawProfType}`);
+    const profCombined = normalizeProfessionHandle(getDisplayProfession(effectiveAllHandle) || buildProfessionLabel(rawProfName, rawProfType));
 
     const validHandles = new Set(["physicianmd", "physiciando", "physiciandpm", "physician-md", "physician-do", "physician-dpm"]);
     const isPhysicianProfMDDODPM =
@@ -260,6 +324,26 @@ const ProfileMain = (props) => {
         pName.includes('physician') ||
         ['md', 'do', 'dpm'].includes(pType) ||
         ['physicianmd', 'physiciando', 'physiciandpm'].includes(pName + pType);
+
+    const editSpecialities =
+        effectiveAllHandle?.professional_information?.specialities ||
+        effectiveAllHandle?.specialities ||
+        finalProfessionprof?.professional_information?.specialities ||
+        finalProfessionprof?.specialities;
+    const professionalInformationForEdit = {
+        ...(effectiveAllHandle || {}),
+        profession: rawProfName,
+        profession_type: rawProfType,
+        designation: rawProfType,
+        specialities: editSpecialities,
+        professional_information: {
+            ...(effectiveAllHandle?.professional_information || {}),
+            profession: rawProfName,
+            profession_type: rawProfType,
+            designation: rawProfType,
+            specialities: editSpecialities,
+        },
+    };
 
     const mainProfileUserAddr = DashboardReducer?.mainprofileResponse?.user_address;
     const mainAddrCountryName = String(mainProfileUserAddr?.country_name || '').trim().toUpperCase();
@@ -338,14 +422,27 @@ const ProfileMain = (props) => {
         { id: 3, name: "Certification Boards", Img: Imagepath.BoardImg },
         { id: 5, name: "Change Password", Img: Imagepath.PassChange }
     ];
-    const [text, setText] = useState('');
-
-    useEffect(() => {
-        if (effectiveAllHandle?.specialities) {
-            const myObject = effectiveAllHandle?.specialities
-            const valuesArray = Object.values(myObject);
-            setText(valuesArray.join(', '));
+    const text = useMemo(() => {
+        const specSource = effectiveAllHandle?.specialities || effectiveAllHandle?.professional_information?.specialities;
+        if (!specSource) return '';
+        if (typeof specSource === 'string') return specSource;
+        if (Array.isArray(specSource)) {
+            return specSource.map(item => {
+                if (typeof item === 'object' && item !== null) {
+                    return item.name || item.speciality_name || item.id || '';
+                }
+                return String(item);
+            }).filter(Boolean).join(', ');
         }
+        if (typeof specSource === 'object') {
+            return Object.values(specSource).map(val => {
+                if (typeof val === 'object' && val !== null) {
+                    return val.name || val.speciality_name || '';
+                }
+                return String(val);
+            }).filter(Boolean).join(', ');
+        }
+        return '';
     }, [effectiveAllHandle]);
     useEffect(() => {
         if (allProfTake) {
@@ -367,64 +464,60 @@ const ProfileMain = (props) => {
 
     }, [DashboardReducer?.dashPerResponse])
     useEffect(() => {
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        let active = true;
         /**
 * Token handle vault utility.
-* @returns {void}
+* @returns {Promise<void>}
 */
-        const token_handle_vault = () => {
-            setTimeout(async () => {
-                try {
-                    const [board_special, profession_data] = await Promise.all([
-                        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-                        AsyncStorage.getItem(constants.PROFESSION)
-                    ]);
-                    const board_special_json = board_special ? JSON.parse(board_special) : null;
-                    const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
-                    setFinalverifyvaultprof(board_special_json);
-                    setFinalProfessionprof(profession_data_json);
-                    console.log(board_special_json, "statelicesene=================");
-                    console.log(profession_data_json, "profession=================");
-                } catch (error) {
-                    console.log('Error fetching data:', error);
-                }
-            }, 100);
+        const token_handle_vault = async () => {
+            try {
+                const [board_special, profession_data] = await Promise.all([
+                    AsyncStorage.getItem(constants.VERIFYSTATEDATA),
+                    AsyncStorage.getItem(constants.PROFESSION)
+                ]);
+                if (!active) return;
+                const board_special_json = board_special ? JSON.parse(board_special) : null;
+                const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
+                setFinalverifyvaultprof(board_special_json);
+                setFinalProfessionprof(profession_data_json);
+                console.log(board_special_json, "statelicesene=================");
+                console.log(profession_data_json, "profession=================");
+            } catch (error) {
+                console.log('Error fetching data:', error);
+            }
         };
 
         token_handle_vault();
+        return () => {
+            active = false;
+        };
     }, [isFoucs]);
     useEffect(() => {
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        let active = true;
         connectionrequest()
             .then(() => {
-                dispatch(PrimeCheckRequest({}))
+                if (active) dispatch(PrimeCheckRequest({}))
             })
-            .catch((err) => showErrorAlert("Please connect to internet", err))
-    }, [isFoucs])
-    useEffect(() => {
-        const computedProf =
-            getDisplayProfession(DashboardReducer?.mainprofileResponse) ||
-            getDisplayProfession(finalProfessionprof) ||
-            getDisplayProfession(finalverifyvaultprof) ||
-            getDisplayProfession(AuthReducer?.againloginsiginResponse?.user) ||
-            getDisplayProfession(AuthReducer?.loginResponse?.user) ||
-            getDisplayProfession(AuthReducer?.verifymobileResponse?.user) ||
-            getDisplayProfession(AuthReducer?.directloginResponse?.user) ||
-            getDisplayProfession(AuthReducer?.dircetloginResponse?.user) ||
-            getDisplayProfession(allHandle) ||
-            (rawProfName && rawProfType ? `${rawProfName} - ${rawProfType}` : (rawProfName || rawProfType || ""));
-        setAllProf(computedProf);
-    }, [
-        DashboardReducer?.mainprofileResponse,
-        finalProfessionprof,
-        finalverifyvaultprof,
-        AuthReducer?.againloginsiginResponse?.user,
-        AuthReducer?.loginResponse?.user,
-        AuthReducer?.verifymobileResponse?.user,
-        AuthReducer?.directloginResponse?.user,
-        AuthReducer?.dircetloginResponse?.user,
-        allHandle,
-        rawProfName,
-        rawProfType
-    ]);
+            .catch((err) => {
+                if (active) showErrorAlert("Please connect to internet", err)
+            })
+        return () => {
+            active = false;
+        };
+    }, [dispatch, isFoucs])
+    const allProf =
+        getDisplayProfession(DashboardReducer?.mainprofileResponse, rawProfType) ||
+        getDisplayProfession(finalProfessionprof, rawProfType) ||
+        getDisplayProfession(finalverifyvaultprof, rawProfType) ||
+        getDisplayProfession(AuthReducer?.againloginsiginResponse?.user, rawProfType) ||
+        getDisplayProfession(AuthReducer?.loginResponse?.user, rawProfType) ||
+        getDisplayProfession(AuthReducer?.verifymobileResponse?.user, rawProfType) ||
+        getDisplayProfession(AuthReducer?.directloginResponse?.user, rawProfType) ||
+        getDisplayProfession(AuthReducer?.dircetloginResponse?.user, rawProfType) ||
+        getDisplayProfession(allHandle, rawProfType) ||
+        (buildProfessionLabel(rawProfName, rawProfType) || rawProfName || rawProfType || "");
     const isPrimeTrial = useMemo(() => {
         return isPrimeSubscriptionMissing(WebcastReducer?.PrimeCheckResponse);
     }, [WebcastReducer?.PrimeCheckResponse]);
@@ -479,7 +572,7 @@ const ProfileMain = (props) => {
                         props.navigation.navigate("ContactProfile", { wholedata: allHandle });
                     } else if (item?.id == 1) {
                         dispatch(dashPerRequest())
-                        props.navigation.navigate("PersonalInfo", { personal: allHandle });
+                        props.navigation.navigate("PersonalInfo", { personal: professionalInformationForEdit });
                     } else if (item?.id == 2) {
                         props.navigation.dispatch(
                             CommonActions.reset({
@@ -633,7 +726,7 @@ const ProfileMain = (props) => {
 
                     )}
                 </View>
-                <Loader visible={DashboardReducer?.status == 'Dashboard/mainprofileRequest'} />
+                <Loader visible={DashboardReducer?.status == 'Dashboard/mainprofileRequest' && !DashboardReducer?.mainprofileResponse} />
                 <ScrollView>
                     <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(10) }}>
                         <CircleLoader allProfTake={allProfTake} percentage={DashboardReducer?.mainprofileResponse?.profile_complete_percentage} mainData={DashboardReducer?.mainprofileResponse} />

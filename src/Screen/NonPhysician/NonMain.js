@@ -222,6 +222,11 @@ const onBackPress = () => {
  */
 const courserenderData = ({ item, index }) => {
         console.log(item, "item-=---------")
+        const isRecentlyViewed = Boolean(props?.route?.params?.myact?.recnt);
+        const priceText = String(item?.display_price ?? item?.price ?? item?.ticketprice ?? '').trim();
+        const priceLabel = priceText.toUpperCase() === 'FREE'
+            ? 'FREE'
+            : `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}`;
         return (
             <View>
                 <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
@@ -237,7 +242,7 @@ const courserenderData = ({ item, index }) => {
                         }}
                     >
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                            <TouchableOpacity onPress={() => { titlhandleUrl(item); }}>
+                            <TouchableOpacity style={isRecentlyViewed ? { flex: 1, minWidth: 0 } : undefined} onPress={() => { titlhandleUrl(item); }}>
                                 <Text
                                     numberOfLines={2}
                                     style={{
@@ -247,7 +252,7 @@ const courserenderData = ({ item, index }) => {
                                         fontWeight: "bold",
                                         flexShrink: 1,
                                         flexWrap: 'wrap',
-                                        width: normalize(250)
+                                        width: isRecentlyViewed ? undefined : normalize(250)
                                     }}
                                 >
                                     {item?.title}
@@ -268,7 +273,8 @@ const courserenderData = ({ item, index }) => {
 
                         <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
 
-                        {item?.display_cme ? <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), borderRadius: normalize(20), backgroundColor: "#FFF2E0", marginTop: normalize(10), alignSelf: 'flex-start' }}>
+                        <View style={isRecentlyViewed ? styles.recentMetadata : undefined}>
+                        {item?.display_cme ? <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), borderRadius: normalize(20), backgroundColor: "#FFF2E0", marginTop: normalize(10), alignSelf: 'flex-start', ...(isRecentlyViewed ? { flexShrink: 1, marginTop: 0, alignSelf: 'center' } : {}) }}>
                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, fontWeight: "bold", color: "#666" }}>
                                 {`${item?.display_cme
                                     ? item?.display_cme?.toLowerCase()?.includes("contact hour")
@@ -278,9 +284,23 @@ const courserenderData = ({ item, index }) => {
                                     }`}
                             </Text>
                         </View> : null}
+                        {isRecentlyViewed && item?.average_rating ? (
+                            <View style={styles.recentRating}>
+                                <Image source={Imagepath.Star} style={{ height: normalize(12), width: normalize(12), resizeMode: 'contain' }} />
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, lineHeight: 16, includeFontPadding: false, color: '#666', marginLeft: normalize(5) }}>
+                                    {item.average_rating}
+                                </Text>
+                            </View>
+                        ) : null}
+                        </View>
 
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
                             <View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
+                                {isRecentlyViewed && priceText ? (
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.ButtonColr, marginRight: normalize(10), marginBottom: item?.completed_percentage ? normalize(5) : 0 }}>
+                                        {priceLabel}
+                                    </Text>
+                                ) : null}
                                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     {item?.completed_percentage ? <>
                                         <Image source={item?.completed_percentage === 100 ? Imagepath.Complt : Imagepath.Pending} style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }} />
@@ -296,7 +316,7 @@ const courserenderData = ({ item, index }) => {
                                             {item?.completed_percentage === 100 ? "Completed" : `${item?.completed_percentage != null ? item?.completed_percentage : 0}% Completed`}
                                         </Text>
                                     </> : null}
-                                    {item?.average_rating ? <View style={{ flexDirection: "row", marginLeft: normalize(10) }}>
+                                    {!isRecentlyViewed && item?.average_rating ? <View style={{ flexDirection: "row", marginLeft: normalize(10) }}>
                                         <Image source={Imagepath.Star} style={{ height: normalize(10), width: normalize(10), resizeMode: "contain", top: 2 }} />
                                         <Text
                                             style={{
@@ -330,7 +350,8 @@ const courserenderData = ({ item, index }) => {
                                     justifyContent: "center",
                                     alignItems: "center",
                                     borderColor: Colorpath.ButtonColr,
-                                    borderWidth: 0.5
+                                    borderWidth: 0.5,
+                                    ...(isRecentlyViewed ? { height: undefined, minHeight: normalize(32), paddingVertical: normalize(6), paddingHorizontal: normalize(8) } : {})
                                 }}
                             >
                                 <Text
@@ -338,6 +359,7 @@ const courserenderData = ({ item, index }) => {
                                         fontFamily: Fonts.InterMedium,
                                         fontSize: 16,
                                         color: "#2C4DB9",
+                                        ...(isRecentlyViewed ? { textAlign: 'center', includeFontPadding: false } : {}),
                                     }}
                                 >
                                     {item?.button_display_text || item?.buttonText}
@@ -492,6 +514,18 @@ export default NonMain;
  * @returns {*}
  */
 const styles = StyleSheet.create({
+    recentMetadata: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        marginTop: normalize(8),
+        columnGap: normalize(10),
+    },
+    recentRating: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexShrink: 0,
+    },
     dropDownItem: {
         borderWidth: 1,
         marginTop: normalize(10),

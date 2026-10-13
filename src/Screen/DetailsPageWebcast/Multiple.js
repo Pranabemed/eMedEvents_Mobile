@@ -1,3 +1,4 @@
+import { dropdownFieldName, dropdownPlaceholder } from '../../Components/DropDownHeader';
 /**
  * Multiple screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CustomInputTouchableY, getLabelAnimatedStyle.
  */
@@ -40,15 +41,16 @@ const CustomInputTouchableY = ({
     formData
 }) => {
     const [isFocused, setIsFocused] = useState(false);
-    const animated = useRef(new Animated.Value(value || chipData.length > 0 ? 1 : 0)).current;
+    const hasSelection = Boolean(value || formData?.[index]?.speciality_ids?.length || (Array.isArray(chipData) && chipData.length));
+    const animated = useRef(new Animated.Value(hasSelection ? 1 : 0)).current;
     useEffect(() => {
         Animated.timing(animated, {
-            toValue: isFocused || value || chipData.length > 0 ? 1 : 0,
+            toValue: isFocused || hasSelection ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
             useNativeDriver: false,
         }).start();
-    }, [isFocused, value, chipData]);
+    }, [isFocused, hasSelection]);
     console.log(chipData, "chidate----------", value, formData)
     const styles = StyleSheet.create({
         inputGroup: {
@@ -84,6 +86,8 @@ const CustomInputTouchableY = ({
             zIndex: 10,
         },
         childContainer: {
+            flex: 1,
+            minWidth: 0,
             flexDirection: 'row',
             flexWrap: 'wrap',
             marginTop: normalize(8),
@@ -101,7 +105,7 @@ const getLabelAnimatedStyle = (index, animated) => ({
         position: 'absolute',
         left: 0,
         // Each label gets its own base top offset depending on index
-        top: formData[index]?.speciality?.length > 0 ? 0 : 22, // <-- dynamically adjusts (you can tweak 40 to your layout spacing)
+        top: hasSelection ? 0 : 22, // <-- dynamically adjusts (you can tweak 40 to your layout spacing)
         transform: [
             {
                 translateY: animated.interpolate({
@@ -122,12 +126,12 @@ const getLabelAnimatedStyle = (index, animated) => ({
         <View style={styles.inputGroup}>
             {/* Floating Label */}
             <Animated.Text style={getLabelAnimatedStyle(index, animated)}>
-                {label}
+                {hasSelection || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)}
             </Animated.Text>
 
             {/* Touchable Wrapper */}
             <View style={styles.inputWrapper}>
-                <Pressable
+                {!hasSelection && <Pressable
                     style={[styles.textTouchable, { bottom: 2 }]}
                     onPress={() => {
                         onPress?.(index);
@@ -146,7 +150,7 @@ const getLabelAnimatedStyle = (index, animated) => ({
                     >
                         {value || placeholder}
                     </Text>
-                </Pressable>
+                </Pressable>}
                 {children ? <View style={styles.childContainer}>{children}</View> : null}
                 {/* Dropdown Icon */}
                 {rightIcon && (

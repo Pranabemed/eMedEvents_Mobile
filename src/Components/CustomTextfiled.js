@@ -1,3 +1,4 @@
+import { dropdownPlaceholder } from './DropDownHeader';
 /**
  * Custom textfiled reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomTextField, onChangeText, onFocus, onBlur, renderRightIcon.
  */
@@ -172,7 +173,7 @@ const renderRightIcon = () => {
           secureTextEntry={eyeVisible ? props.isSecure : !props.isSecure}
           keyboardType={props.keyboardType}
           autoCapitalize={props.autoCapitalize}
-          placeholder={props.placeholder}
+          placeholder={props.dropdownPresentation ? dropdownPlaceholder(props.placeholder) : props.placeholder}
           placeholderTextColor={props.placeholderTextColor}
           maxLength={props.maxLength}
           value={props.value}

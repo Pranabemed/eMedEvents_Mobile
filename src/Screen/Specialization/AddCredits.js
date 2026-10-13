@@ -1033,7 +1033,7 @@ const AddCredits = (props) => {
                                             flex: 1,
                                             paddingRight: normalize(0)
                                         }}>
-                                            <InputField
+                                            <InputField dropdownPresentation
                                                 icondisable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true}
                                                 label={"Credit Type*"}
                                                 value={country}
@@ -1241,7 +1241,7 @@ const AddCredits = (props) => {
                                                     <CustomInputTouchable
                                                         label={"Choose State Mandatory Topic*"}
                                                         value={stopic}
-                                                        placeholder={finalstate === "Yes" ? "" : "Choose State Mandatory Topic*"}
+                                                        placeholder=""
                                                         placeholderTextColor="#949494"
                                                         newstyle="Yes"
                                                         rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}

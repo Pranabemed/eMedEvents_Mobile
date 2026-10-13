@@ -37,13 +37,13 @@ export function* HomelistSaga(action) {
     let response = yield call(postApi, 'Home/list', action.payload, header);
     console.log('guest module response: ', response);
     if (response?.status === 200) {
-      yield put(HomelistSuccess(response?.data));
+      yield put({ ...HomelistSuccess(response?.data), ...(action.meta ? { meta: action.meta } : {}) });
     } else {
-      yield put(HomelistFailure(response?.data));
+      yield put({ ...HomelistFailure(response?.data), ...(action.meta ? { meta: action.meta } : {}) });
     }
   } catch (error) {
     console.log('webcast error:', error);
-    yield put(HomelistFailure(error));
+    yield put({ ...HomelistFailure(error), ...(action.meta ? { meta: action.meta } : {}) });
   }
 }
 

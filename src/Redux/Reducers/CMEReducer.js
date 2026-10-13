@@ -72,6 +72,7 @@ const CMESlice = createSlice({
  * @returns {void}
  */
 cmeCourseRequest(state, action) {
+      state.cmeCourseRequestId = action.meta?.globalResultRequestId ?? null;
       state.status = action.type;
     },
         /**
@@ -81,6 +82,7 @@ cmeCourseRequest(state, action) {
  * @returns {void}
  */
 cmeCourseSuccess(state, action) {
+      state.cmeCourseRequestId = action.meta?.globalResultRequestId ?? null;
       state.cmeCourseResponse = action.payload;
       state.status = action.type;
     },
@@ -91,6 +93,7 @@ cmeCourseSuccess(state, action) {
  * @returns {void}
  */
 cmeCourseFailure(state, action) {
+      state.cmeCourseRequestId = action.meta?.globalResultRequestId ?? null;
       state.status = action.type;
       state.error = action.error;
     },

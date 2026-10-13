@@ -24,7 +24,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colorpath.Pagebg,
   },
   scrollContent: {
-    paddingBottom: normalize(80),
+    flexGrow: 1,
+    paddingBottom: normalize(120),
   },
   logoContainer: {
     justifyContent: 'center',

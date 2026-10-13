@@ -630,7 +630,7 @@ const renderFields = (fields) => {
                                 borderBottomWidth: 0.5,
                             }}>
                             <TouchableOpacity onPress={() => { setExpenspicker(true); }}>
-                                <CustomTextField
+                                <CustomTextField dropdownPresentation
                                     value={traveltake}
                                     color={"#000000"}
                                     height={normalize(30)}

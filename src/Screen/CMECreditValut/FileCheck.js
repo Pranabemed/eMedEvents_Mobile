@@ -72,6 +72,7 @@ const CertficateHandle = (props) => {
         return () => unsubscribe();
     }, [isConnected]);
     const [zippath, setZippath] = useState("");
+    const pendingTranscript = useRef(null);
     const dispatch = useDispatch();
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
@@ -235,7 +236,7 @@ const CertficateHandle = (props) => {
                 status = CreditVaultReducer.status;
                 setZippath(CreditVaultReducer?.downloadTranscriptResponse);
                 console.log(CreditVaultReducer?.downloadTranscriptResponse, "CreditVaultReducer?.downloadTranscriptResponse")
-                if (CreditVaultReducer?.downloadTranscriptResponse?.msg == "There are no certificates.") {
+                if (pendingTranscript.current === "usa" && CreditVaultReducer?.downloadTranscriptResponse?.msg == "There are no certificates.") {
                     showErrorAlert(CreditVaultReducer?.downloadTranscriptResponse?.msg)
                 }
                 break;
@@ -243,24 +244,29 @@ const CertficateHandle = (props) => {
                 status = CreditVaultReducer.status;
                 setZippath(CreditVaultReducer?.downloadTranscriptNonUsaResponse);
                 console.log(CreditVaultReducer?.downloadTranscriptNonUsaResponse, "CreditVaultReducer?.downloadTranscriptNonUsaResponse")
-                if (CreditVaultReducer?.downloadTranscriptNonUsaResponse?.msg == "There are no certificates.") {
+                if (pendingTranscript.current === "nonUsa" && CreditVaultReducer?.downloadTranscriptNonUsaResponse?.msg == "There are no certificates.") {
                     showErrorAlert(CreditVaultReducer?.downloadTranscriptNonUsaResponse?.msg)
                 }
                 break;
             case 'CreditVault/downloadTranscriptFailure':
             case 'CreditVault/downloadTranscriptNonUsaFailure':
+                pendingTranscript.current = null;
                 status = CreditVaultReducer.status;
                 break;
         }
     }
 
     useEffect(() => {
+        if (pendingTranscript.current !== "usa") return;
+        pendingTranscript.current = null;
         if (CreditVaultReducer?.downloadTranscriptResponse?.archive_file) {
             downloadZipFile(CreditVaultReducer?.downloadTranscriptResponse);
         }
     }, [CreditVaultReducer?.downloadTranscriptResponse])
 
     useEffect(() => {
+        if (pendingTranscript.current !== "nonUsa") return;
+        pendingTranscript.current = null;
         if (CreditVaultReducer?.downloadTranscriptNonUsaResponse?.archive_file) {
             downloadZipFile(CreditVaultReducer?.downloadTranscriptNonUsaResponse);
         }
@@ -373,6 +379,7 @@ const CertficateHandle = (props) => {
             }
             connectionrequest()
                 .then(() => {
+                    pendingTranscript.current = "nonUsa";
                     dispatch(downloadTranscriptNonUsaRequest(statedown))
                 })
                 .catch((err) => {
@@ -386,6 +393,7 @@ const CertficateHandle = (props) => {
         }
         connectionrequest()
             .then(() => {
+                pendingTranscript.current = "usa";
                 dispatch(downloadTranscriptRequest(obj))
             })
             .catch((err) => {
@@ -407,6 +415,7 @@ const CertficateHandle = (props) => {
         }
         connectionrequest()
             .then(() => {
+                pendingTranscript.current = "usa";
                 dispatch(downloadTranscriptRequest(statedown))
             })
             .catch((err) => {

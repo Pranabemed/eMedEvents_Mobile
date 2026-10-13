@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, BackHandler, ActivityIndicator } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -78,8 +78,13 @@ const SearchBack = () => {
     const [totalboardname, setTotalboardname] = useState([]);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
+    const handleDeleteSuccess = useCallback((deletedId) => {
+        setWebcastview(currentData => currentData?.filter(item => item.id !== deletedId) ?? []);
+        setPaginatedData(currentData => currentData.filter(item => item.id !== deletedId));
+    }, []);
     console.log(props?.route?.params?.board, "props?.route?.params?.state======", DashboardReducer?.mainprofileResponse?.professional_information);
     useEffect(() => {
+        if (!isFocus) return;
         boardCheck();
         connectionrequest()
             .then(() => {
@@ -89,7 +94,7 @@ const SearchBack = () => {
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err)
             })
-    }, [props?.route?.params?.board, isFocus, profiletakeshow])
+    }, [props?.route?.params?.board, isFocus])
      const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
@@ -153,6 +158,9 @@ const boardCheck = () => {
                     });
                     setWebcastview(filteredCertifications);
                     setPaginatedData(filteredCertifications.slice(0, 5));
+                } else {
+                    setWebcastview([]);
+                    setPaginatedData([]);
                 }
                 break;
             case 'Profile/boardListProfileFailure':
@@ -261,7 +269,10 @@ const stateTakeItemboard = ({ item, index }) => {
                                 width: '100%'
                             }}>
                                 <View style={{ flex: 1, marginRight: 10 }}>
-                                    <TouchableOpacity>
+                                    <TouchableOpacity onPress={() => {
+                                        setDetectdata(item);
+                                        setProfiletakeshow(true);
+                                    }}>
                                         <Text
                                             numberOfLines={2}
                                             style={{
@@ -280,7 +291,7 @@ const stateTakeItemboard = ({ item, index }) => {
                                 </View>
                                 <TouchableOpacity onPress={() => {
                                     setDetectdata(item);
-                                    setProfiletakeshow(!profiletakeshow);
+                                    setProfiletakeshow(true);
                                 }} style={{ marginTop: normalize(-8) }}>
                                     <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
                                 </TouchableOpacity>
@@ -387,16 +398,18 @@ const onBackPress = () => {
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title="Board Certifications"
+                            showTitle
                             onBackPress={SearchBack}
                         />
                     ) : (
                         <PageHeader
                             title="Board Certifications"
+                            showTitle
                             onBackPress={SearchBack}
                         />
                     )}
                 </View>
-                <Loader visible={ProfileReducer?.status == 'Profile/boardListProfileRequest'} />
+                <Loader visible={isFocus && !profiletakeshow && webcastview === null && ProfileReducer?.status == 'Profile/boardListProfileRequest'} />
                 <View>
                     <FlatList
                         data={paginatedData}
@@ -495,7 +508,7 @@ const onBackPress = () => {
                     </TouchableOpacity>
                 </View>}
             </SafeAreaView>}
-            <ProfileModal board={"new"} main={ProfileReducer?.boardListProfileResponse?.certification_file_path} setPaginatedData={setPaginatedData} paginatedData={paginatedData} nav={props.navigation} detectdata={detectdata} setProfiletakeshow={setProfiletakeshow} profiletakeshow={profiletakeshow} />
+            <ProfileModal board={"new"} main={ProfileReducer?.boardListProfileResponse?.certification_file_path} setPaginatedData={setPaginatedData} paginatedData={paginatedData} nav={props.navigation} detectdata={detectdata} setProfiletakeshow={setProfiletakeshow} profiletakeshow={profiletakeshow} onDeleteSuccess={handleDeleteSuccess} />
         </>
     )
 }

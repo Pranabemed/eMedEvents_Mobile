@@ -19,7 +19,7 @@ import MyStatusBar from '../../Utils/MyStatusBar';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const ChecktwoCountryNew = ({ setCountryNew, countrypicker, setSearchcountry, activeIndex, searchcountry, handleCountrySet, setCountrypicker, searchCountryName, countryall }) => {
+const ChecktwoCountryNew = ({ required = true, setCountryNew, countrypicker, setSearchcountry, activeIndex, searchcountry, handleCountrySet, setCountrypicker, searchCountryName, countryall }) => {
 
     const [showLoader,setShowLoader] = useState(false);
      useEffect(() => {
@@ -64,7 +64,7 @@ const weekFilterProfession = ({ item }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader standardized title="Country*" onClosePress={() => {
                         setCountrypicker(!countrypicker);
@@ -84,7 +84,7 @@ const weekFilterProfession = ({ item }) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <DropdownSearch editable
+                    <DropdownSearch required={required} editable
                             maxLength={40}
                             onChangeText={text => searchCountryName(text)}
                             value={searchcountry}

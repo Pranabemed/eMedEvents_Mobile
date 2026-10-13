@@ -3,7 +3,7 @@
  */
 
 import { View, Platform, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Image, Alert, BackHandler, ActivityIndicator } from 'react-native'
-import React, { useEffect, useLayoutEffect, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
@@ -59,11 +59,12 @@ function cutomPrice(price) {
     const isOffline = network.isConnected === false || network.isInternetReachable === false;
     const isSavingTickets = WebcastReducer?.status === 'WebCast/saveTicketInpersonRequest';
     const [isfilterVisible, setIssfilterVisible] = useState(false);
+    const pendingModalNavigation = useRef(null);
     const [finalamount, setFinalamount] = useState("");
     const [inpersonticket, setInpersonticket] = useState(null)
     const [modalHeight, setModalHeight] = useState(300);
     const subtotalAmount = parseFloat(finalamount || "0") || 0;
-    const listBottomPadding = normalize(150);
+    const listBottomPadding = normalize(16);
     useEffect(() => {
         if (isFocused && props?.route?.params?.realData?.realData) {
             setIssfilterVisible(true);
@@ -412,35 +413,36 @@ const stateDataFilter = ({ item, index }) => {
             setFinalamount(totalSum);
         }
     }, [totalAmounts])
-    if (status1 == '' || WebcastReducer.status != status1) {
-        switch (WebcastReducer.status) {
-            case 'WebCast/saveTicketInpersonRequest':
-                status1 = WebcastReducer.status;
-                break;
-            case 'WebCast/saveTicketInpersonSuccess':
-                status1 = WebcastReducer.status;
-                setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
-                if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
-                    setIssfilterVisible(false);
-                    props.navigation.navigate("Checkout", {
-                        inPersonTicket: {
-                            inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
-                            inpersonSpanrole: props?.route?.params?.realData?.realData,
-                            guestOrigin: props?.route?.params?.realData?.guestOrigin,
-                            subtotalAmount: subtotalAmount,
-                            processingFeeAmount: 0,
-                            totalTicketPrice: subtotalAmount
-                        }
-                    });
-                    // props.navigation.navigate("Checkout",  { checkoutSpan: { checkoutSpan: props?.route?.params?.realData, finalTicket: WebcastReducer?.saveTicketInpersonResponse }});
-                }
-                console.log("saveTicketfollowed>>>>", WebcastReducer?.saveTicketInpersonResponse);
-                break;
-            case 'WebCast/saveTicketInpersonFailure':
-                status1 = WebcastReducer.status;
-                break;
+    useEffect(() => {
+        if (!isFocused) return;
+        if (status1 == '' || WebcastReducer.status != status1) {
+            switch (WebcastReducer.status) {
+                case 'WebCast/saveTicketInpersonRequest':
+                    status1 = WebcastReducer.status;
+                    break;
+                case 'WebCast/saveTicketInpersonSuccess':
+                    status1 = WebcastReducer.status;
+                    setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
+                    if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
+                        props.navigation.navigate("Checkout", {
+                            inPersonTicket: {
+                                inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
+                                inpersonSpanrole: props?.route?.params?.realData?.realData,
+                                guestOrigin: props?.route?.params?.realData?.guestOrigin,
+                                subtotalAmount: subtotalAmount,
+                                processingFeeAmount: 0,
+                                totalTicketPrice: subtotalAmount
+                            }
+                        });
+                    }
+                    console.log("saveTicketfollowed>>>>", WebcastReducer?.saveTicketInpersonResponse);
+                    break;
+                case 'WebCast/saveTicketInpersonFailure':
+                    status1 = WebcastReducer.status;
+                    break;
+            }
         }
-    }
+    }, [isFocused, WebcastReducer.status, WebcastReducer?.saveTicketInpersonResponse, props.navigation, props?.route?.params?.realData, subtotalAmount]);
         /**
  * Back press in utility.
  * @returns {void}
@@ -477,47 +479,44 @@ const onBackPress = () => {
                     animationIn={'slideInUp'}
                     animationOut={'slideOutDown'}
                     backdropTransitionOutTiming={0}
-                    hideModalContentWhileAnimating={true}
+                    hideModalContentWhileAnimating={false}
+                    useNativeDriver={true}
                     isVisible={isfilterVisible}
                     style={{ width: '100%', alignSelf: 'center', margin: 0, justifyContent: 'flex-end' }}
-                    animationInTiming={800}
-                    animationOutTiming={1000}
+                    animationInTiming={300}
+                    animationOutTiming={300}
+                    useNativeDriverForBackdrop={true}
                     onBackdropPress={backPressIn}
                     onBackButtonPress={backPressIn}
-                    onSwipeComplete={backPressIn}
-                    swipeDirection="down"
-                    propagateSwipe
                 >
                     <View style={{
                         backgroundColor: Colorpath.white, borderTopRightRadius: normalize(20),
-                        borderTopLeftRadius: normalize(20), bottom: 0, height: normalize(470)
+                        borderTopLeftRadius: normalize(20), bottom: 0, height: normalize(470), maxHeight: '85%'
                     }}>
                         <TouchableOpacity
                             onPress={backPressIn}
                             accessibilityRole="button"
                             accessibilityLabel="Close ticket selection"
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
+                            style={{ justifyContent: "center", alignItems: "center", paddingTop: normalize(10), paddingBottom: normalize(5) }}>
                             <View style={styles.modalIndicator} />
                         </TouchableOpacity>
-                        <View>
-                            {/* <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}> */}
-                            <View style={styles.container}>
-                                <FlatList
-                                    data={props?.route?.params?.realData?.ticketall}
-                                    renderItem={stateDataFilter}
-                                    keyExtractor={(item, index) => index.toString()}
-                                    contentContainerStyle={{ paddingBottom: listBottomPadding }}
-                                />
-                            </View>
-                            {/* </ScrollView> */}
+                        <View style={{ flex: 1, width: '100%' }}>
+                            <FlatList
+                                style={{ flex: 1, width: '100%' }}
+                                scrollEnabled={true}
+                                nestedScrollEnabled={true}
+                                showsVerticalScrollIndicator={true}
+                                keyboardShouldPersistTaps="handled"
+                                data={props?.route?.params?.realData?.ticketall}
+                                renderItem={stateDataFilter}
+                                keyExtractor={(item, index) => index.toString()}
+                                contentContainerStyle={{ paddingBottom: normalize(30) }}
+                            />
                         </View>
                         <View style={{
-                            position: 'absolute',
                             height: normalize(108),
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
+                            flexShrink: 0,
                             backgroundColor: Colorpath.white,
                             borderColor: "#DDDDDD",
                             borderWidth: 1,
@@ -562,14 +561,9 @@ const onBackPress = () => {
                             </View>
                         </View>
                         {isSavingTickets && !isOffline && (
-                            <TouchableOpacity
-                                onPress={backPressIn}
-                                activeOpacity={1}
-                                accessibilityRole="button"
-                                accessibilityLabel="Close ticket selection"
-                                style={[StyleSheet.absoluteFillObject, { backgroundColor: Colorpath.Pagebg, alignItems: 'center', justifyContent: 'center' }]}>
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(255,255,255,0.85)', alignItems: 'center', justifyContent: 'center', borderTopRightRadius: normalize(20), borderTopLeftRadius: normalize(20) }]}>
                                 <ActivityIndicator size="large" color={Colorpath.ButtonColr} />
-                            </TouchableOpacity>
+                            </View>
                         )}
                         {isOffline && <IntOff />}
                     </View>

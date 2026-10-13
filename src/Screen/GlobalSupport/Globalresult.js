@@ -2,7 +2,7 @@
  * Globalresult screen module. Renders a React Native screen or a screen-scoped support component. Exported members: getStateId, getStateLabel, getResultButtonLabel, getResultPriceLabel, getResultTypeLabel, getResultCreditLabel, Globalresult, onBackPress, fullDataRefresh, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates, handleGuestProfessionSelect, handleGuestStateSelect, handleGuestBrowseCourses, handlePress, styles.
  */
 
-import { View, Text, Platform, Image, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput, Dimensions } from 'react-native'
+import { View, Text, Platform, Image, TouchableOpacity, Pressable, FlatList, RefreshControl, ActivityIndicator, StyleSheet, BackHandler, TextInput, Dimensions } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CMEChecklistModal from '../CMECreditValut/CMEChecklistModal';
 import { mergeConferencePage } from '../../Utils/Helpers/conferencePagination';
+import { nanoid } from '@reduxjs/toolkit';
 import { HomelistRequest } from '../../Redux/Reducers/GuestReducer';
 
 /**
@@ -161,7 +162,7 @@ const Globalresult = (props) => {
     }, [isConnected]);
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [hasFetchedResults, setHasFetchedResults] = useState(false);
     const [pageNum, setPageNum] = useState(0);
     const [homeHasMore, setHomeHasMore] = useState(true);
@@ -188,8 +189,7 @@ const Globalresult = (props) => {
     const hasFocusedOnceRef = useRef(false);
     const requestStatusRef = useRef("");
     const guestResponseRef = useRef(null);
-    const lastTrigRef = useRef();
-    const lastFilterRef = useRef();
+    const activeResultsRequest = useRef(null);
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
     const isFreeOnlyResults = useMemo(() => {
@@ -267,15 +267,7 @@ const Globalresult = (props) => {
     const filteredStateList = stateList.filter(item =>
         String(getStateLabel(item)).toLowerCase().includes(stateSearchText.trim().toLowerCase()),
     );
-    let totalResults = Number(
-        CMEReducer?.cmeCourseResponse?.conferences_count ??
-        GuestReducer?.HomelistResponse?.data?.count ??
-        GuestReducer?.HomelistResponse?.data?.total_count ??
-        GuestReducer?.HomelistResponse?.count ??
-        GuestReducer?.HomelistResponse?.total_count ??
-        props?.route?.params?.trig?.totalDaa?.count ??
-        0,
-    );
+    let totalResults = displayedResultsCount;
     if (totalResults === 0 && props?.route?.params?.homeListPayload) {
         totalResults = storeAlldata.length;
     }
@@ -287,12 +279,14 @@ const Globalresult = (props) => {
             JSON.stringify({
                 trig: props?.route?.params?.trig ?? null,
                 filterDatSh: props?.route?.params?.filterDatSh ?? null,
+                homeListPayload: props?.route?.params?.homeListPayload ?? null,
+                sectionTitle: props?.route?.params?.sectionTitle ?? null,
             }),
-        [props?.route?.params?.filterDatSh, props?.route?.params?.trig],
+        [props?.route?.params?.filterDatSh, props?.route?.params?.trig, props?.route?.params?.homeListPayload, props?.route?.params?.sectionTitle],
     );
-    const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(routeQueryKey);
+    const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(null);
     const isRouteRefreshing = displayedRouteQueryKey !== routeQueryKey;
-    const displayTitle = props?.route?.params?.sectionTitle || CMEReducer?.cmeCourseResponse?.header_title;
+    const displayTitle = props?.route?.params?.sectionTitle || displayedHeaderTitle;
     const isMostPopularConferences = props?.route?.params?.homeListPayload?.sectionTitle === 'Most Popular Conferences' || props?.route?.params?.sectionTitle === 'Most Popular Conferences';
     const resetResultsView = useCallback((options = {}) => {
         const {
@@ -302,6 +296,8 @@ const Globalresult = (props) => {
         } = options;
 
         setStoreAlldata([]);
+        requestStatusRef.current = '';
+        activeResultsRequest.current = null;
         setHomeHasMore(true);
         if (props?.route?.params?.homeListPayload) {
             setHomeRefreshKey(key => key + 1);
@@ -324,38 +320,6 @@ const Globalresult = (props) => {
         }
         dispatch(clearCmeCourseData());
     }, [dispatch, props?.route?.params?.homeListPayload]);
-    useEffect(() => {
-        const currentTrig = props?.route?.params?.trig;
-        if (currentTrig) {
-            const currentTrigStr = JSON.stringify(currentTrig);
-            if (currentTrigStr !== lastTrigRef.current) {
-                lastTrigRef.current = currentTrigStr;
-                resetResultsView({ clearSort: true, loadingState: true });
-                fetchHandle(undefined, { pageNum: 0, sortType: '' });
-            }
-        }
-    }, [props?.route?.params?.trig, resetResultsView, fetchHandle]);
-    useEffect(() => {
-        const currentFilter = props?.route?.params?.filterDatSh?.filterDatSh;
-        if (currentFilter) {
-            const currentFilterStr = JSON.stringify(currentFilter);
-            if (currentFilterStr !== lastFilterRef.current) {
-                lastFilterRef.current = currentFilterStr;
-                resetResultsView({ loadingState: true });
-                fetchHandle(undefined, { pageNum: 0, sortType });
-            }
-        }
-    }, [props?.route?.params?.filterDatSh, resetResultsView, sortType, fetchHandle]);
-    useEffect(() => {
-        const homeListPayload = props?.route?.params?.homeListPayload;
-        if (homeListPayload) {
-            const currentPayloadStr = JSON.stringify(homeListPayload);
-            if (currentPayloadStr !== lastTrigRef.current) {
-                lastTrigRef.current = currentPayloadStr;
-                resetResultsView({ clearSort: true, loadingState: true });
-            }
-        }
-    }, [props?.route?.params?.homeListPayload, resetResultsView]);
     useEffect(() => {
         if (!isGuestCmeFlow) return;
 
@@ -508,6 +472,8 @@ const Globalresult = (props) => {
 
     useEffect(() => {
         if (props?.route?.params?.homeListPayload) {
+            const request = { id: nanoid(), query: routeQueryKey, page: pageNum };
+            activeResultsRequest.current = request;
             homeRequestInFlight.current = true;
             setApiReq(true);
             setLoading(true);
@@ -517,13 +483,15 @@ const Globalresult = (props) => {
             }
             connectionrequest()
                 .then(() => {
-                    dispatch(HomelistRequest({
+                    if (activeResultsRequest.current !== request) return;
+                    dispatch({ ...HomelistRequest({
                         ...props.route.params.homeListPayload,
                         pageno: pageNum,
                         limit: limit
-                    }));
+                    }), meta: { globalResultRequestId: request.id } });
                 })
                 .catch((err) => {
+                    if (activeResultsRequest.current !== request) return;
                     showErrorAlert("Please connect to internet", err);
                     homeRequestInFlight.current = false;
                     setApiReq(false);
@@ -531,14 +499,21 @@ const Globalresult = (props) => {
                     setRefreshing(false);
                     setHasFetchedResults(true);
                     setLoading(false);
+                    setDisplayedRouteQueryKey(routeQueryKey);
                 });
+            return () => {
+                if (activeResultsRequest.current === request) activeResultsRequest.current = null;
+            };
         }
-    }, [dispatch, props?.route?.params?.homeListPayload, pageNum, limit, homeRefreshKey]);
+    }, [dispatch, props?.route?.params?.homeListPayload, pageNum, limit, homeRefreshKey, routeQueryKey]);
     console.log(pageNum, "ewflrl")
     const fetchHandle = useCallback((d, options = {}) => {
         if (props?.route?.params?.homeListPayload) return;
 
         const requestedPageNum = options?.pageNum ?? pageNum;
+        const request = { id: nanoid(), query: routeQueryKey, page: requestedPageNum };
+        activeResultsRequest.current = request;
+        requestStatusRef.current = "";
         const requestedSortType = options?.sortType ?? d?.type ?? sortType ?? "";
         if (requestedPageNum === 0) {
             setLoading(true);
@@ -669,13 +644,27 @@ const Globalresult = (props) => {
         }
         connectionrequest()
             .then(() => {
-                dispatch(cmeCourseRequest(obj));
+                if (activeResultsRequest.current !== request) return;
+                dispatch({ ...cmeCourseRequest(obj), meta: { globalResultRequestId: request.id } });
             })
             .catch((err) => {
+                if (activeResultsRequest.current !== request) return;
                 showErrorAlert("Please connect to internet", err);
                 setLoading(false);
+                setHasFetchedResults(true);
+                setDisplayedRouteQueryKey(routeQueryKey);
             });
-    }, [dispatch, limit, pageNum, props?.route?.params?.filterDatSh, props?.route?.params?.trig, sortType]);
+    }, [dispatch, limit, pageNum, props?.route?.params?.filterDatSh, props?.route?.params?.trig, sortType, routeQueryKey, props?.route?.params?.homeListPayload]);
+
+    const latestFetchHandle = useRef(fetchHandle);
+    latestFetchHandle.current = fetchHandle;
+    useLayoutEffect(() => {
+        resetResultsView({ clearSort: true, loadingState: true });
+        if (!props?.route?.params?.homeListPayload) {
+            latestFetchHandle.current(undefined, { pageNum: 0, sortType: '' });
+        }
+        return () => { activeResultsRequest.current = null; };
+    }, [routeQueryKey, resetResultsView, props?.route?.params?.homeListPayload]);
 
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', () => {
@@ -792,6 +781,8 @@ const Globalresult = (props) => {
     }
 
     useEffect(() => {
+        if (!activeResultsRequest.current || activeResultsRequest.current.query !== routeQueryKey ||
+            CMEReducer.cmeCourseRequestId !== activeResultsRequest.current.id) return;
         if (props?.route?.params?.homeListPayload || !CMEReducer.status || requestStatusRef.current === CMEReducer.status) {
             return;
         }
@@ -804,13 +795,16 @@ const Globalresult = (props) => {
                 setLoading(true);
                 break;
             case 'CME/cmeCourseSuccess':
+                setDisplayedHeaderTitle(CMEReducer.cmeCourseResponse?.header_title || '');
+                setDisplayedResultsCount(Number(CMEReducer.cmeCourseResponse?.conferences_count ?? 0));
+                setDisplayedAggregations(CMEReducer.cmeCourseResponse?.aggregations || null);
                 setApiReq(false);
                 setLoading(false);
                 setHasFetchedResults(true);
                 setRefreshing(false);
                 setDisplayedRouteQueryKey(routeQueryKey);
                 if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-                    if (pageNum === 0) {
+                    if (activeResultsRequest.current.page === 0) {
                         setStoreAlldata(CMEReducer?.cmeCourseResponse?.conferences);
                     } else {
                         let modifiedData = [
@@ -823,7 +817,7 @@ const Globalresult = (props) => {
                         setStoreAlldata(modifiedData);
                     }
                 } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
-                    if (pageNum === 0) setStoreAlldata([]);
+                    if (activeResultsRequest.current.page === 0) setStoreAlldata([]);
                     setApiReq(false);
                     setLoading(false);
                 }
@@ -837,9 +831,11 @@ const Globalresult = (props) => {
                 setDisplayedRouteQueryKey(routeQueryKey);
                 break;
         }
-    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata]);
+    }, [CMEReducer.status, CMEReducer.cmeCourseRequestId, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload]);
 
     useEffect(() => {
+        if (!activeResultsRequest.current || activeResultsRequest.current.query !== routeQueryKey ||
+            GuestReducer.HomelistRequestId !== activeResultsRequest.current.id) return;
         if (!props?.route?.params?.homeListPayload || !GuestReducer.status) {
             return;
         }
@@ -891,7 +887,8 @@ const Globalresult = (props) => {
                     conferences = Object.values(root).find(val => Array.isArray(val)) || [];
                 }
 
-                const pageResult = mergeConferencePage(storeAlldata, conferences, pageNum, limit);
+                setDisplayedResultsCount(Number(root?.count ?? root?.total_count ?? 0));
+                const pageResult = mergeConferencePage(storeAlldata, conferences, activeResultsRequest.current.page, limit);
                 setStoreAlldata(pageResult.items);
                 setHomeHasMore(pageResult.hasMore);
                 break;
@@ -905,7 +902,7 @@ const Globalresult = (props) => {
                 setDisplayedRouteQueryKey(routeQueryKey);
                 break;
         }
-    }, [GuestReducer.status, GuestReducer?.HomelistResponse, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload?.sectionTitle]);
+    }, [GuestReducer.status, GuestReducer.HomelistRequestId, GuestReducer?.HomelistResponse, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload, limit]);
 
     /**
 * Search globalitem utility.
@@ -1181,7 +1178,7 @@ const Globalresult = (props) => {
 
                     )}
                 </View>
-                <Loader visible={isRouteRefreshing || (loading && storeAlldata?.length === 0) || shouldOpenCmeChecklist} />
+                <Loader visible={isRouteRefreshing || !hasFetchedResults || (loading && storeAlldata?.length === 0) || shouldOpenCmeChecklist} />
                 {isGuestCmeFlow && (
                     <View style={styles.guestTopSection}>
                         <View style={styles.guestSelectorCard}>
@@ -1217,7 +1214,7 @@ const Globalresult = (props) => {
                         </View>
                     </View>
                 )}
-                {!isRouteRefreshing && storeAlldata?.length > 0 && (
+                {!isRouteRefreshing && hasFetchedResults && !loading && storeAlldata?.length > 0 && (
                     <>
                         {isMostPopularConferences ? (
                             <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
@@ -1270,11 +1267,15 @@ const Globalresult = (props) => {
                 <View style={{ flex: 1 }}>
                     {(() => {
                         const displayData = (() => {
-                            if (!props?.route?.params?.homeListPayload || !sortType) {
-                                return isRouteRefreshing ? [] : storeAlldata;
+                            if (isRouteRefreshing || !hasFetchedResults || (loading && pageNum === 0)) {
+                                return [];
                             }
 
-                            let sorted = [...(isRouteRefreshing ? [] : storeAlldata)];
+                            if (!props?.route?.params?.homeListPayload || !sortType) {
+                                return storeAlldata;
+                            }
+
+                            let sorted = [...storeAlldata];
 
                             const getPrice = (item) => {
                                 const rawPrice = item?.display_price ?? item?.price ?? item?.ticketprice ?? item?.displayPrice ?? '';
@@ -1371,10 +1372,15 @@ const Globalresult = (props) => {
                         alignSelf: 'center',
                         margin: 0,
                     }}
+                    onBackButtonPress={() => setSortedFall(false)}
                     onBackdropPress={() => setSortedFall(false)}>
-                    <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => setSortedFall(false)}>
+                    <View style={{ flex: 1 }}>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Close sort options"
+                            style={StyleSheet.absoluteFillObject}
+                            onPress={() => setSortedFall(false)}
+                        />
 
                         <View
                             style={props?.route?.params?.trig?.newCt ? {
@@ -1430,9 +1436,9 @@ const Globalresult = (props) => {
                             />
 
                         </View>
-                    </TouchableOpacity>
+                    </View>
                 </Modal>
-                {!isMostPopularConferences && CMEReducer?.cmeCourseResponse?.aggregations && storeAlldata?.length > 0 && <View style={{
+                {!isRouteRefreshing && hasFetchedResults && !loading && !isMostPopularConferences && displayedAggregations && storeAlldata?.length > 0 && <View style={{
                     position: 'absolute',
                     bottom: 70,
                     right: 0,
@@ -1440,7 +1446,7 @@ const Globalresult = (props) => {
                     zIndex: 999
                 }}>
                     <TouchableOpacity onPress={() => {
-                        props.navigation.navigate("FilterScreen", { wholeDats: { wholeDats: CMEReducer?.cmeCourseResponse?.aggregations, mainKeyAll: props?.route?.params?.trig ? props?.route?.params : props?.route?.params?.filterDatSh?.returnTake, ClearText: props?.route?.params?.filterDatSh?.filterDatSh, takeTrue: props?.route?.params?.filterDatSh?.selectedItem, PriceDrop: { minget: props?.route?.params?.filterDatSh?.minVal, maxget: props?.route?.params?.filterDatSh?.maxVal, mingetp: props?.route?.params?.filterDatSh?.minValP, maxgetp: props?.route?.params?.filterDatSh?.maxValp, CME: props?.route?.params?.filterDatSh?.selectedIt } } });
+                        props.navigation.navigate("FilterScreen", { wholeDats: { wholeDats: displayedAggregations, mainKeyAll: props?.route?.params?.trig ? props?.route?.params : props?.route?.params?.filterDatSh?.returnTake, ClearText: props?.route?.params?.filterDatSh?.filterDatSh, takeTrue: props?.route?.params?.filterDatSh?.selectedItem, PriceDrop: { minget: props?.route?.params?.filterDatSh?.minVal, maxget: props?.route?.params?.filterDatSh?.maxVal, mingetp: props?.route?.params?.filterDatSh?.minValP, maxgetp: props?.route?.params?.filterDatSh?.maxValp, CME: props?.route?.params?.filterDatSh?.selectedIt } } });
                     }} style={{
                         flexDirection: "row",
                         alignItems: "center",

@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../../../Components/DropDownHeader';
 /**
  * Guest profession popup reusable component module. Provides a React Native UI building block used across screens. Exported members: POPUP_SHOWN_KEY, getDisplayValue, normalizeList, normalizeProfessionResponse, normalizeSpecialtyResponse, GuestProfessionPopup, validateEmail, styles.
  */
@@ -310,12 +311,12 @@ export /**
     }, [fetchProfessions, fetchSpecialties, resetState, visible]);
 
     const professionLabel = useMemo(
-      () => (profession ? profession : 'Select your profession'),
+      () => (profession ? profession : 'Select Profession'),
       [profession],
     );
 
     const specialtyLabel = useMemo(
-      () => (specialty ? specialty : 'Select your specialty'),
+      () => (specialty ? specialty : 'Select Specialty'),
       [specialty],
     );
 
@@ -533,7 +534,7 @@ export /**
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>
-                    <Text style={styles.required}>* </Text>Profession
+                    Select Profession
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -560,13 +561,14 @@ export /**
 
                   {professionOpen ? (
                     <View style={styles.dropdownShell}>
+                      <DropDownHeader standardized title="Profession" onClosePress={() => setProfessionOpen(false)} />
                       {professionLoading ? (
                         <View style={styles.loaderWrap}>
                           <ActivityIndicator color={Colorpath.ButtonColr} />
                           <Text style={styles.loaderText}>Loading professions...</Text>
                         </View>
                       ) : (
-                        <FlatList
+                        <DropdownList
                           data={professionOptions}
                           keyExtractor={(item, index) => String(item?.id ?? index)}
                           showsVerticalScrollIndicator={false}
@@ -580,18 +582,18 @@ export /**
                           renderItem={({ item }) => {
                             const isSelected = profession === item?.label;
                             return (
-                              <TouchableOpacity
-                                style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                              <DropdownOption
+                                selected={isSelected}
                                 activeOpacity={0.8}
                                 onPress={() => handleProfessionSelect(item)}
                               >
-                                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                                <Text style={dropdownStyles.optionText}>
                                   {item?.label}
                                 </Text>
                                 {isSelected ? (
                                   <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
                                 ) : null}
-                              </TouchableOpacity>
+                              </DropdownOption>
                             );
                           }}
                         />
@@ -602,7 +604,7 @@ export /**
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>
-                    <Text style={styles.required}>* </Text>Specialty
+                    Select Specialty
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -637,13 +639,14 @@ export /**
 
                   {specialtyOpen ? (
                     <View style={styles.dropdownShell}>
+                      <DropDownHeader standardized title="Specialty" onClosePress={() => setSpecialtyOpen(false)} />
                       {specialtyLoading ? (
                         <View style={styles.loaderWrap}>
                           <ActivityIndicator color={Colorpath.ButtonColr} />
                           <Text style={styles.loaderText}>Loading specialties...</Text>
                         </View>
                       ) : (
-                        <FlatList
+                        <DropdownList
                           data={specialtyOptions}
                           keyExtractor={(item, index) => String(item?.id ?? index)}
                           showsVerticalScrollIndicator={false}
@@ -657,18 +660,18 @@ export /**
                           renderItem={({ item }) => {
                             const isSelected = specialty === item?.label;
                             return (
-                              <TouchableOpacity
-                                style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                              <DropdownOption
+                                selected={isSelected}
                                 activeOpacity={0.8}
                                 onPress={() => handleSpecialtySelect(item)}
                               >
-                                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                                <Text style={dropdownStyles.optionText}>
                                   {item?.label}
                                 </Text>
                                 {isSelected ? (
                                   <Icon name="check" size={normalize(18)} color={Colorpath.ButtonColr} />
                                 ) : null}
-                              </TouchableOpacity>
+                              </DropdownOption>
                             );
                           }}
                         />

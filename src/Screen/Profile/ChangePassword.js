@@ -157,11 +157,13 @@ const ChangePassword = (props) => {
                     {Platform.OS === "ios" ? (
                         <PageHeader
                             title="Change Password"
+                            showTitle
                             onBackPress={backTo}
                         />
                     ) : (
                         <PageHeader
                             title="Change Password"
+                            showTitle
                             onBackPress={backTo}
                         />
                     )}

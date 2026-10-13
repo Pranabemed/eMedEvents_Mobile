@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const CheckThreeCity = ({ standardized = false,  cityPicker, cityAll, setSearchcity, activeIndex, searchcity, handlecityShows, setCityPicker, searchCityName }) => {
+const CheckThreeCity = ({ standardized = true, required = true,  cityPicker, cityAll, setSearchcity, activeIndex, searchcity, handlecityShows, setCityPicker, searchCityName }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)
             useEffect(() => {
@@ -81,7 +81,7 @@ const weekFilterProfession = ({ item }) => {
         );
     };
         if (standardized) {
-        return <DropdownPanel title="City*" onClose={() => {
+        return <DropdownPanel required={required} title="City*" onClose={() => {
                         setCityPicker(!cityPicker);
                         setSearchcity("");
                         // handleSpecialitySelect(selectedSpecialities, formData);

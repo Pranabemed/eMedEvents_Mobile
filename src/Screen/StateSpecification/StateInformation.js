@@ -483,7 +483,7 @@ const onBackPress = () => {
                                                 onPress={() => setCitypickeryear(prev => !prev)}
                                                 style={{ flexDirection: 'row' }}
                                             >
-                                                <DropdownInputs
+                                                <DropdownInputs dropdownPresentation
                                                     label={cdate ? "Licensure Renewal Year*" : null}
                                                     placeholder="Year*"
                                                     value={cdate ? cdate.toString() : ""}

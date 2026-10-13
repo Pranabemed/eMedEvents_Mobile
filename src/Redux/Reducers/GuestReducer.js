@@ -50,6 +50,7 @@ const GuestSlice = createSlice({
  * @returns {void}
  */
 HomelistRequest(state, action) {
+      state.HomelistRequestId = action.meta?.globalResultRequestId ?? null;
       state.status = action.type;
     },
         /**
@@ -59,6 +60,7 @@ HomelistRequest(state, action) {
  * @returns {void}
  */
 HomelistSuccess(state, action) {
+      state.HomelistRequestId = action.meta?.globalResultRequestId ?? null;
       state.HomelistResponse = action.payload;
       state.status = action.type;
     },
@@ -69,6 +71,7 @@ HomelistSuccess(state, action) {
  * @returns {void}
  */
 HomelistFailure(state, action) {
+      state.HomelistRequestId = action.meta?.globalResultRequestId ?? null;
       state.status = action.type;
       state.error = action.error;
     },

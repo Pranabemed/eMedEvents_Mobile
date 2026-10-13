@@ -58,7 +58,7 @@ const weekFilterProfession = ({ item, index }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <View >
                     <DropDownHeader standardized title="Certification Board*" onClosePress={()=>{
@@ -78,7 +78,7 @@ const weekFilterProfession = ({ item, index }) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <DropdownSearch editable
+                    <DropdownSearch required editable
                             maxLength={50}
                             onChangeText={searchBoardNameFinal}
                             value={searchboardname}

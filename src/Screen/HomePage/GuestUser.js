@@ -12,6 +12,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BackHandler } from 'react-native';
+import Snackbar from 'react-native-snackbar';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getApi } from '../../Utils/Helpers/ApiRequest';
@@ -95,6 +96,8 @@ const GuestUser = props => {
 
   const shouldResetRef = useRef(false);
   const guestHomeRequestInFlightRef = useRef(false);
+  const isExitSnackbarVisibleRef = useRef(false);
+  const exitSnackbarTimeoutRef = useRef(null);
   const guestProtectedRoutes = useMemo(() => new Set([
     'Statewebcast',
     'Globalresult',
@@ -208,22 +211,49 @@ const initGuestData = async () => {
   }, [isFocused]);
 
   useEffect(() => {
-        /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
-      if (props.navigation.canGoBack()) {
-        props.navigation.goBack();
-      } else {
-        props.navigation.navigate('Onboard');
+    if (!isFocused) return undefined;
+
+    const resetExitPrompt = () => {
+      isExitSnackbarVisibleRef.current = false;
+      if (exitSnackbarTimeoutRef.current) {
+        clearTimeout(exitSnackbarTimeoutRef.current);
+        exitSnackbarTimeoutRef.current = null;
       }
+    };
+
+    const exitApp = () => {
+      resetExitPrompt();
+      BackHandler.exitApp();
+    };
+
+    const onBackPress = () => {
+      if (isExitSnackbarVisibleRef.current) {
+        exitApp();
+        return true;
+      }
+
+      isExitSnackbarVisibleRef.current = true;
+      Snackbar.show({
+        text: 'Press back again to exit',
+        duration: Snackbar.LENGTH_LONG,
+        backgroundColor: '#2C2C2C',
+        textColor: '#FFFFFF',
+        action: {
+          text: 'EXIT',
+          textColor: '#D87AF6',
+          onPress: exitApp,
+        },
+      });
+      exitSnackbarTimeoutRef.current = setTimeout(resetExitPrompt, 3000);
       return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => backHandler.remove();
-  }, [props.navigation]);
+    return () => {
+      backHandler.remove();
+      resetExitPrompt();
+    };
+  }, [isFocused]);
 
   useEffect(() => {
     let isMounted = true;

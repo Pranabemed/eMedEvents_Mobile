@@ -4,7 +4,7 @@ import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpe
  * Checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, GUEST_REGISTRATION_FLOW_KEY, Checkout, cleanNumber, getRouteTransactionFee, buildPaymentPrice, persistGuestRegistrationSession, checkoutClear, handleSearch, handleCountry, handlePratice, handlePraticeLic, handleCity, toggleModalPaymentfree, toggleModalFailedfree, resetGuestCheckoutFields, searchCountryNameProfession, handleProfession, onBackPress, loadGuestRegistrationFlow, token_handle_vault, defaultCountryToGeo, clean, specaillized, countryReq, PraticingState, LicStateTakeDo, cityReq, handleFree, statusCheck, allTicketsFree, formatPhoneNumberno, formatIndianPhoneNumber, showModal, isUSASelected, getRequiredFieldsForAttendee, handleInputChange, validateEmail, validateCellNo, validateSingleAttendee, emailCheck, sendEmailCheckRequests, mergeCustomFieldsWithLabels, handleInputChangeeamilad, proceedPayment, convertToISODate, allTicketsFreeac, cartPayment, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, formatPhoneNumber, handleCountrySet, handleStateshows, handleLicStateshows, handleLicDate, handleDobDate, handlecityShows, applyCoupon, styles.
  */
 
-import { TouchableOpacity, Text, View, Image, Platform, KeyboardAvoidingView, ActivityIndicator, Alert, StyleSheet, BackHandler } from 'react-native'
+import { TouchableOpacity, Text, View, Image, Platform, KeyboardAvoidingView, ActivityIndicator, Alert, StyleSheet, BackHandler, Keyboard } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import Colorpath from '../../Themes/Colorpath'
@@ -168,7 +168,16 @@ const Checkout = (props) => {
 
     const [loaderVisible, setLoaderVisible] = useState(false);
     const network = useNetInfo();
-    const isOffline = network.isConnected === false || network.isInternetReachable === false;
+    const networkOffline = network.isConnected === false || network.isInternetReachable === false;
+    const [isOffline, setIsOffline] = useState(networkOffline);
+    useEffect(() => {
+        if (networkOffline) {
+            setIsOffline(true);
+            return;
+        }
+        const timer = setTimeout(() => setIsOffline(false), 300);
+        return () => clearTimeout(timer);
+    }, [networkOffline]);
     const connectionrequest = async () => {
         const state = await NetInfo.fetch();
         if (state.isConnected !== true || state.isInternetReachable === false) {
@@ -569,11 +578,27 @@ const handleProfession = (did, ixd) => {
         });
     }
     useEffect(() => {
+        if (!isfocus) return;
                 /**
  * On back press utility.
  * @returns {boolean}
  */
 const onBackPress = () => {
+            const activePicker = [
+                [countrypickerprof, setcountrypickerprof, setSearchtext],
+                [statepicker, setstatepicker, setSearchState],
+                [countrypicker, setCountrypicker, setSearchcountry],
+                [pratice, setPratice, setSearchpratice],
+                [licstatepratice, setLicstatepratice, setSearchpraticelic],
+                [cityPicker, setCityPicker, setSearchcity],
+            ].find(([isOpen]) => isOpen);
+
+            if (activePicker) {
+                Keyboard.dismiss();
+                activePicker[1](false);
+                activePicker[2]('');
+                return true;
+            }
             checkoutClear();
             return true;
         };
@@ -584,7 +609,7 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    });
     useEffect(() => {
                 /**
  * Load guest registration flow utility.
@@ -1251,15 +1276,13 @@ const formatIndianPhoneNumber = (input) => {
  */
 const showModal = () => {
         setIsVisibletext(true);
-        setTimeout(() => {
-            setIsVisibletext(false);
-            setAllmsg("");
-        }, 5000);
     };
 
     useEffect(() => {
         if (allmsg) {
             showModal();
+            const timer = setTimeout(() => setIsVisibletext(false), 5000);
+            return () => clearTimeout(timer);
         }
     }, [allmsg]);
     // const requiredFields = [
@@ -2280,12 +2303,12 @@ const applyCoupon = () => {
                     isVisible={isVisibletext}
                     onBackdropPress={() => {
                         setIsVisibletext(false);
-                        setAllmsg("");
                     }}
                     onBackButtonPress={() => {
                         setIsVisibletext(false);
-                        setAllmsg("");
                     }}
+                    onModalHide={() => setAllmsg("")}
+                    useNativeDriverForBackdrop={true}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                     backdropTransitionOutTiming={0}

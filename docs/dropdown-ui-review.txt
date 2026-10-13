@@ -1,0 +1,73 @@
+Dropdown UI update
+
+Reference: Profile > Contact > Country uses CheckoutModaltwo's standardized DropdownPanel in src/Components/DropDownHeader.js. Its existing colors, fonts, search border/radius, row spacing, header, close icon and highlight styles are reused, not redesigned.
+
+Updated coverage:
+- Profession, specialty, country, state, city and year selectors used by Profile, All Special, state/license setup, certificates, credits, Checkout, Register Interest and Contact Us.
+- CreditVault state and board selectors; board, credit type and mandatory topic selectors.
+- Employment status, hospital, travel mode, conference format and course status lists.
+- Explore profession/state filters, guest profession/specialty selectors and Checkout custom ticket dropdowns.
+- Shared closed-field placeholder text now uses Select [Field Name]. Existing input-box shapes are retained.
+- Required search markers render separately from the TextInput query; optional Contact Us selectors explicitly suppress them.
+
+Scope and behavior:
+Only dropdown presentation and regression tests were changed during this task. Existing APIs, payloads, validations, navigation and dependency logic were retained. AST comparison found zero existing screen event callbacks removed or changed. Native date/calendar controls, upload controls, normal editable inputs, and non-dropdown page content retain their existing presentation. Lists which previously had no search retain that behavior; no new filtering logic was introduced. Existing dropdown hosting (inline, screen, or modal) remains in place.
+
+Verification:
+57 tests passed in 5 suites: DropdownUI, CheckoutPersonalization, SignupLocation, InterestCheckoutCountry and RegisterInterestCountry.
+Checks cover selection payloads and attendee indexes, search/clear, specialty chips, disabled controls, optional/required markers, normal-input labels, employment/travel selection, and country-related registration behavior.
+All 45 modified source files parse successfully; git diff --check passed.
+Targeted lint passed for DropDownHeader, IconTextIn and CellInput.
+CustomTextfiled has 3 pre-existing duplicate-key lint errors (paddingLeft, keyboardType, borderWidth), reproduced using the before-change copy.
+PhoneInput has 5 pre-existing test failures and 1 passing test, reproduced using an isolated before-change copy. These were not changed in this dropdown UI task.
+
+Not verified:
+No Android/iOS device visual run was performed. Pixel matching, animation smoothness, real keyboard behavior and end-to-end API flows therefore still require device QA. Shared style reuse is verified in source, not a claim of device-level visual acceptance.
+
+Files modified in this task (prior task changes are excluded):
+src/Components/CellInput.js
+src/Components/CustomTextfiled.js
+src/Components/DropDownHeader.js
+src/Components/DropDownSec.js
+src/Components/IconTextIn.js
+src/Components/StateDataComponent.js
+src/Screen/CMECourse/Course.js
+src/Screen/CMECreditValut/BoardVaultModal.js
+src/Screen/CMECreditValut/StateVaultModal.js
+src/Screen/CMEExpense.js/Dynamicmodal.js
+src/Screen/CMEExpense.js/TravelMode.js
+src/Screen/DetailsPageWebcast/CheckCountryNew.js
+src/Screen/DetailsPageWebcast/CheckoutInputbox.js
+src/Screen/DetailsPageWebcast/CheckoutModalFourth.js
+src/Screen/DetailsPageWebcast/CheckoutModalone.js
+src/Screen/DetailsPageWebcast/CheckoutModalthree.js
+src/Screen/DetailsPageWebcast/CheckoutModaltwo.js
+src/Screen/DetailsPageWebcast/ExploreInput.js
+src/Screen/DetailsPageWebcast/HospitalList.js
+src/Screen/DetailsPageWebcast/InPersonProfession.js
+src/Screen/DetailsPageWebcast/LicStateShowDt.js
+src/Screen/DetailsPageWebcast/LocationComponent.js
+src/Screen/DetailsPageWebcast/Multiple.js
+src/Screen/DetailsPageWebcast/ProfessionModal.js
+src/Screen/GlobalSupport/ContactUs.js
+src/Screen/HomePage/GuestUserModule/components/GuestProfessionPopup.js
+src/Screen/Profile/AddEmpInfo.js
+src/Screen/Profile/CustomInputTouchableX.js
+src/Screen/Profile/EmpStatus.js
+src/Screen/Profile/ProfileSpecialty.js
+src/Screen/Profile/StateContact.js
+src/Screen/Specialization/AddCertificate.js
+src/Screen/Specialization/AddCredits.js
+src/Screen/Specialization/AddLicense.js
+src/Screen/Specialization/AllSpecial.js
+src/Screen/Specialization/BoardCustomed.js
+src/Screen/Specialization/ChooseMandatoryComponent.js
+src/Screen/Specialization/CreditTypeComponent.js
+src/Screen/Specialization/PraticingStateComponent.js
+src/Screen/Specialization/ProfessionComponent.js
+src/Screen/Specialization/SepcialityComponent.js
+src/Screen/StateSpecification/CityComponent.js
+src/Screen/StateSpecification/CreateStateInfor.js
+src/Screen/StateSpecification/CustomizedYear.js
+src/Screen/StateSpecification/StateInformation.js
+__tests__/DropdownUI.test.js

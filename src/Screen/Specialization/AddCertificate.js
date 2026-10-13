@@ -2,7 +2,7 @@
  * Add certificate screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddCertificate, addCretBack, toggleModalcert, directUploadBoard, handleBoardname, token_handle_vault, transformDataSpecial, transformData, boardSpecialty, searchBoardNameFinal, boardCertificateAdd, onBackPress, styles.
  */
 
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Keyboard, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -75,6 +75,18 @@ const AddCertificate = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const navigation = useNavigation();
     const dispatch = useDispatch();
+    const openCertificationBoard = () => {
+        Keyboard.dismiss();
+        setBoardnamepick(!boardnamepick);
+    };
+    const openCertificateIssueDate = () => {
+        Keyboard.dismiss();
+        setBoardfd(true);
+    };
+    const openCertificateExpiryDate = () => {
+        Keyboard.dismiss();
+        setBoarded(true);
+    };
         /**
  * Add cret back utility.
  * @returns {void}
@@ -509,11 +521,13 @@ const onBackPress = () => {
                 {boardnamepick ? (<BoardCustomed setsearchboardname={setsearchboardname} boardnamepick={boardnamepick} handleBoardname={handleBoardname} setBoardnamepick={setBoardnamepick} searchboardname={searchboardname} searchBoardNameFinal={searchBoardNameFinal} boardnamereal={boardnamereal} />) : <>
                     {Platform.OS === 'ios' ? <View style={{ marginTop: normalize(20) }}>
                         <PageHeader
+                            showTitle
                             title={props?.route?.params?.profiledet ? "Edit Certification" : "Add Certification"}
                             onBackPress={addCretBack}
                         />
                     </View> : <View>
                         <PageHeader
+                            showTitle
                             title={props?.route?.params?.profiledet ? "Edit Certification" : "Add Certification"}
                             onBackPress={addCretBack}
                         />
@@ -621,7 +635,7 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                             /> */}
                                         <InputField
                                             icondisable={props?.route?.params?.profiledet ? true : false}
-                                            label={"Certification Board*"}
+                                            label={"Select Certification Board*"}
                                             value={certificateboard}
                                             placeholder=""
                                             placeholderTextColor="#949494"
@@ -629,10 +643,10 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                             showCountryCode={false}
                                             editable={false}
                                             leftIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                            onLeftIconPress={() => setBoardnamepick(!boardnamepick)}
+                                            onLeftIconPress={openCertificationBoard}
                                             marginleft={normalize(270)}
                                             multiline={true}
-                                            onwholePress={() => setBoardnamepick(!boardnamepick)}
+                                            onwholePress={openCertificationBoard}
                                             onlyfor={true}
                                             spaceneeded={true}
                                         />
@@ -658,13 +672,7 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                         />
                                     </View>
                                 </View>
-                                <Pressable onPress={() => {
-                                    if (props?.route?.params?.profiledet?.from_date) {
-                                        setBoardfd(true);
-                                    } else {
-                                        setBoardfd(true);
-                                    }
-                                }}>
+                                <Pressable onPress={openCertificateIssueDate}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -684,27 +692,15 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                                 showCountryCode={false}
                                                 editable={false}
                                                 leftIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                                                onLeftIconPress={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date) {
-                                                        setBoardfd(true);
-                                                    } else {
-                                                        setBoardfd(true);
-                                                    }
-                                                }}
+                                                onLeftIconPress={openCertificateIssueDate}
                                                 marginleft={normalize(270)}
-                                                onwholePress={() => {
-                                                    if (props?.route?.params?.profiledet?.from_date) {
-                                                        setBoardfd(true);
-                                                    } else {
-                                                        setBoardfd(true);
-                                                    }
-                                                }}
+                                                onwholePress={openCertificateIssueDate}
                                                 spaceneeded={true}
                                             />
                                         </View>
                                     </View>
                                 </Pressable>
-                                <Pressable onPress={() => setBoarded(true)}>
+                                <Pressable onPress={openCertificateExpiryDate}>
                                     <View style={{
                                         flexDirection: 'row',
                                         flex: 1
@@ -724,9 +720,9 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                                 showCountryCode={false}
                                                 editable={false}
                                                 leftIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
-                                                onLeftIconPress={() => setBoarded(true)}
+                                                onLeftIconPress={openCertificateExpiryDate}
                                                 marginleft={normalize(270)}
-                                                onwholePress={() => setBoarded(true)}
+                                                onwholePress={openCertificateExpiryDate}
                                                 spaceneeded={true}
                                             />
                                         </View>

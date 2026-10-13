@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Profession modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfessionModal, handlePress.
  */
@@ -50,7 +51,8 @@ const ProfessionModal = ({setProfessionstype,profesionstype,professionFetch,prof
                         width: '100%',
                         backgroundColor: '#fff',
                     }}>
-                    <FlatList
+                    <DropDownHeader standardized title="Profession" onClosePress={() => setCreditModal(false)} />
+                    <DropdownList
                         contentContainerStyle={{
                             paddingBottom: normalize(70),
                             paddingTop: normalize(7),
@@ -75,19 +77,19 @@ const handlePress = (data) => {
 
                             return (
                                 <>
-                                    <TouchableOpacity
+                                    <DropdownOption
                                         onPress={() => { handlePress(item) }}
-                                        style={styles.dropDownItem}
+                                        selected={profesionstype === item?.profesions_type}
                                     >
 
                                         <View style={{ paddingHorizontal: normalize(10) }}>
                                             <Icon name={item.Icon} size={20} color={Colorpath.black} />
                                         </View>
-                                        <Text style={[styles.dropDownItemText,{bottom:10}]}>
+                                        <Text style={dropdownStyles.optionText}>
                                             {item?.name}
                                         </Text>
 
-                                    </TouchableOpacity>
+                                    </DropdownOption>
                                 </>
                             );
                         }}

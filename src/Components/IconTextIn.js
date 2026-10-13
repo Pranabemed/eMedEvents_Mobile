@@ -15,7 +15,7 @@ import {
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
 import DropdownIcon from 'react-native-vector-icons/MaterialIcons';
-import { dropdownStyles } from './DropDownHeader';
+import { dropdownStyles, dropdownFieldName, dropdownPlaceholder } from './DropDownHeader';
 
 /**
  * Reusable CustomInputTouchable component.
@@ -31,7 +31,7 @@ const CustomInputTouchable = ({
     label,
     value,
     placeholder,
-    placeholderTextColor,
+    placeholderTextColor = "#949494",
     rightIcon,
     onPress,
     containerStyle,
@@ -52,10 +52,10 @@ const CustomInputTouchable = ({
             toValue: isFocused || value ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
-            useNativeDriver: false,
+            useNativeDriver: true,
         }).start();
     }, [animated, isFocused, value, standardized]);
-    console.log(newFont, "newFont======")
+
     const labelAnimatedStyle = {
         position: 'absolute',
         left: 0,
@@ -75,15 +75,17 @@ const CustomInputTouchable = ({
 
 
     if (standardized) {
+        const cleanLabel = dropdownFieldName(label);
+        const formattedPlaceholder = dropdownPlaceholder(cleanLabel);
         return (
             <View style={[dropdownStyles.fieldGroup, containerStyle]}>
-                <Text style={dropdownStyles.fieldLabel}>{label}</Text>
+                <Text style={dropdownStyles.fieldLabel}>{cleanLabel}</Text>
                 <View style={[dropdownStyles.field, disabled && dropdownStyles.fieldDisabled, wrapperStyle]}>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={label}
                         accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled}
                         onPress={onPress} style={dropdownStyles.fieldValueTouch}>
                         {children || <Text style={[dropdownStyles.optionText, !value && dropdownStyles.placeholder]} numberOfLines={2}>
-                            {value || placeholder || 'Select an option'}
+                            {value || formattedPlaceholder}
                         </Text>}
                     </TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open ${label || 'options'}`}
@@ -95,10 +97,14 @@ const CustomInputTouchable = ({
         );
     }
 
+    const isDropdown = /down/i.test(rightIcon?.props?.name || '');
+    const displayLabel = isDropdown ? (value || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)) : label;
+    const displayText = value ? value : (isFocused || !label ? (isDropdown ? dropdownPlaceholder(label) : placeholder) : '');
+
     return (
         <View style={[styles.inputGroup, containerStyle]}>
             <Animated.Text style={[labelAnimatedStyle, labelStyle]}>
-                {label}
+                {displayLabel}
             </Animated.Text>
 
             <View style={newstyle == "No" ? [
@@ -117,7 +123,7 @@ const CustomInputTouchable = ({
                 }
             ]}>
                 <Pressable
-                    style={[styles.textTouchable, { bottom: 2 }]}
+                    style={[styles.textTouchable, { justifyContent: 'center' }]}
                     onPress={() => {
                         onPress && onPress();
                         setIsFocused(true);
@@ -130,13 +136,13 @@ const CustomInputTouchable = ({
                                 color: value ? '#000000' : placeholderTextColor,
                                 fontSize: value ? 16 : 14,
                                 fontFamily: Fonts.InterRegular,
-                                top: 12
+                                includeFontPadding: false,
                             },
                             textStyle
                         ]}
                         numberOfLines={6}
                     >
-                        {value ? value : placeholder}
+                        {displayText}
                     </Text>
                 </Pressable>
 

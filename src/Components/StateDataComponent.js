@@ -1,8 +1,9 @@
+import DropDownHeader, { DropdownSearch, DropdownList, DropdownOption, dropdownStyles } from './DropDownHeader';
 /**
  * State data component reusable component module. Provides a React Native UI building block used across screens. Exported members: StateDataComponent, courseRole.
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, FlatList, ScrollView, TextInput, TouchableOpacity } from 'react-native'
+import { View, Text, Keyboard, KeyboardAvoidingView, Platform, FlatList, ScrollView, TextInput, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Colorpath from '../Themes/Colorpath';
 import Fonts from '../Themes/Fonts';
@@ -35,90 +36,15 @@ const courseRole =()=>{
             />
                     <SafeAreaView
                         style={{
-                            backgroundColor: Colorpath.Pagebg,
+                            backgroundColor: Colorpath.white,
                             flex: 1,
                             width: '100%',
                         }}
                     >
-                {Platform.OS == 'ios' ? <PageHeader
-                    title="Search State ..."
-                    onBackPress={courseRole}
-                /> : <View>
-                    <PageHeader
-                        title="Search State ..."
-                        onBackPress={courseRole}
-                    />
-                </View>}
-                    <KeyboardAvoidingView
-                        style={{ flex: 1 }}
-                        behavior={Platform.OS == 'ios' ? 'padding' : undefined}
-                        keyboardVerticalOffset={normalize(70)}
-                    >
-                        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(20) }}>
-                            {/* <View style={{ justifyContent: "center", alignItems: "center" }}>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setSearchState("");
-                                    }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: '50%',
-                                        transform: [{ translateX: -normalize(25) }],
-                                        zIndex: 1,
-                                        backgroundColor: "white",
-                                        height: normalize(50),
-                                        width: normalize(50),
-                                        borderRadius: normalize(30),
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                </TouchableOpacity>
-                            </View> */}
-
-                            <View
-                                style={{
-                                    borderRadius: normalize(7),
-                                    height: Platform.select({
-                                        ios: normalize(500),
-                                        android: normalize(390),
-                                    }),
-                                    width: '100%',
-                                    backgroundColor: Colorpath.Pagebg,
-                                    marginTop: normalize(60)
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        paddingHorizontal: normalize(10),
-                                        alignItems: 'center',
-                                        borderRadius: normalize(9),
-                                        alignSelf: 'center',
-                                        marginTop: normalize(15),
-                                    }}
-                                >
-                                    <TextInput
-                                        placeholder={'Search State*'}
-                                        value={searchpratice}
-                                        onChangeText={searchStateNamePratice}
-                                        style={{
-                                            height: normalize(45),
-                                            width: normalize(270),
-                                            alignSelf: 'center',
-                                            borderRadius: normalize(9),
-                                            paddingHorizontal: normalize(10),
-                                            fontSize: 12,
-                                            color: Colorpath.black,
-                                            backgroundColor: Colorpath.textField,
-                                            borderWidth: 0.5,
-                                            borderColor: "#999"
-                                        }}
-                                        placeholderTextColor={Colorpath.placeholder}
-                                    />
-                                </View>
-
-                                <FlatList
+                <DropDownHeader standardized title="State" onClosePress={courseRole} />
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS == 'ios' ? 'padding' : undefined} keyboardVerticalOffset={normalize(70)}>
+                    <DropdownSearch placeholder="Search State" required value={searchpratice} onChangeText={searchStateNamePratice} />
+                                <DropdownList
                                     contentContainerStyle={{
                                         paddingBottom: normalize(90),
                                         paddingTop: normalize(7),
@@ -153,24 +79,21 @@ const courseRole =()=>{
                                     }
                                     renderItem={({ item, index }) => {
                                         return (
-                                            <TouchableOpacity
+                                            <DropdownOption
                                                 key={index}
                                                 onPress={() => {
                                                     setStatepratice(item?.name);
                                                     setSpecailidpratice(item.id);
                                                     Keyboard.dismiss();
                                                 }}
-                                                style={[styles.dropDownItem]}
                                             >
-                                                <Text style={[styles.dropDownItemText]}>
+                                                <Text style={dropdownStyles.optionText}>
                                                     {item?.name}
                                                 </Text>
-                                            </TouchableOpacity>
+                                            </DropdownOption>
                                         );
                                     }}
                                 />
-                            </View>
-                        </ScrollView>
                     </KeyboardAvoidingView>
                 </SafeAreaView>
 

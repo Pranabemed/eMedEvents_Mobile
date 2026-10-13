@@ -102,15 +102,14 @@ test('clear search retains the same mounted input', () => {
 });
 
 jest.mock('../src/Components/PageHeader', () => 'LegacyHeader');
-test('shared country selector preserves Checkout default and opts in for profile callers', () => {
+test('shared country selector uses Profile UI by default and preserves attendee selection', () => {
   const Country = require('../src/Screen/DetailsPageWebcast/CheckoutModaltwo').default;
   const selected = jest.fn(), close = jest.fn(), clear = jest.fn();
   const props = {countrypicker: true, setSearchcountry: clear, activeIndex: 2, searchcountry: '',
     handleCountrySet: selected, setCountrypicker: close, searchCountryName: jest.fn(), countryall: [{id: 1, name: 'USA'}]};
   const screen = render(<Country {...props} />);
-  expect(screen.UNSAFE_getByType('LegacyHeader')).toBeTruthy();
-  expect(screen.queryByLabelText('Close dropdown')).toBeNull();
-  screen.rerender(<Country {...props} standardized />);
+  expect(screen.queryByText('LegacyHeader')).toBeNull();
+  expect(screen.getByPlaceholderText('Search Country')).toBeTruthy();
   expect(screen.getByLabelText('Close dropdown')).toBeTruthy();
   fireEvent.press(screen.getByText('USA'));
   expect(selected).toHaveBeenCalledWith({id: 1, name: 'USA'}, 2);
@@ -181,4 +180,82 @@ test.each(['state', 'city'])('Checkout %s dropdown preserves the selected attend
   expect(select).toHaveBeenCalledWith(item, 2);
   expect(close).toHaveBeenCalledWith(false);
   expect(clear).toHaveBeenCalledWith('');
+});
+
+
+test('dropdown search inputs omit stars for required and optional selectors', () => {
+  const change = jest.fn();
+  const screen = render(<DropdownSearch placeholder="Search Country Name*" value="" onChangeText={change} />);
+  expect(screen.queryByText('*')).toBeNull();
+  fireEvent.changeText(screen.getByPlaceholderText('Search Country'), 'India');
+  expect(change).toHaveBeenCalledWith('India');
+  screen.rerender(<DropdownSearch placeholder="Search Country Name*" required={false} value="India" onChangeText={change} />);
+  expect(screen.queryByText('*')).toBeNull();
+});
+
+test.each(['Profession', 'Specialty', 'Country', 'State', 'City', 'Year'])('dropdown placeholder for %s excludes required marker', field => {
+  const {dropdownPlaceholder} = require('../src/Components/DropDownHeader');
+  expect(dropdownPlaceholder(`${field} *`)).toBe(`Select ${field}`);
+});
+
+test('normal input labels keep their existing text and dropdown presentation is explicit', () => {
+  const Input = require('../src/Components/CellInput').default;
+  const screen = render(<Input label="First Name*" value="" editable />);
+  expect(screen.getByText('First Name*')).toBeTruthy();
+  screen.rerender(<Input dropdownPresentation label="City*" value="" editable={false} leftIcon={<Text>v</Text>} onwholePress={jest.fn()} />);
+  expect(screen.getByText('Select City')).toBeTruthy();
+});
+
+test('optional country selector retains search and selection without required marker', () => {
+  const Country = require('../src/Screen/DetailsPageWebcast/CheckoutModaltwo').default;
+  const select = jest.fn(), close = jest.fn();
+  const screen = render(<Country required={false} countrypicker countryall={[{id: 2, name: 'India'}]}
+    searchcountry="" searchCountryName={jest.fn()} setSearchcountry={jest.fn()} setCountrypicker={close} handleCountrySet={select} />);
+  expect(screen.queryByText('*')).toBeNull();
+  fireEvent.press(screen.getByText('India'));
+  expect(select).toHaveBeenCalledWith({id: 2, name: 'India'}, undefined);
+  expect(close).toHaveBeenCalledWith(false);
+});
+
+test('employment status dropdown preserves selected value and close callback', () => {
+  const Picker = require('../src/Screen/Profile/EmpStatus').default;
+  const select = jest.fn(), close = jest.fn();
+  const screen = render(<Picker profiletakeshow empstatusname="Full-Time" setEmpstatusname={select} setProfiletakeshow={close} />);
+  fireEvent.press(screen.getByText('Part-Time'));
+  expect(select).toHaveBeenCalledWith('Part-Time');
+  expect(close).toHaveBeenCalledWith(false);
+});
+
+test('travel dropdown preserves the original option value', () => {
+  const Picker = require('../src/Screen/CMEExpense.js/TravelMode').default;
+  const select = jest.fn(), close = jest.fn();
+  const screen = render(<Picker expenspicker dommyData={['Air', 'Train']} traveltake="Air" setTraveltake={select} setExpenspicker={close} />);
+  fireEvent.press(screen.getByText('Train'));
+  expect(select).toHaveBeenCalledWith('Train');
+  expect(close).toHaveBeenCalledWith(false);
+});
+
+
+test.each(['Profession*', 'Speciality(s)*', 'Country *', 'State*', 'City*'])('dropdown heading consistently prefixes %s with Select', title => {
+  const {dropdownPlaceholder} = require('../src/Components/DropDownHeader');
+  const screen = render(<DropDownHeader standardized title={title} onClosePress={jest.fn()} />);
+  expect(screen.getByText(dropdownPlaceholder(title))).toBeTruthy();
+  expect(screen.queryByText('*')).toBeNull();
+});
+
+test('Checkout specialty chips do not share their row with placeholder text', () => {
+  const Field = require('../src/Screen/DetailsPageWebcast/Multiple').default;
+  const open = jest.fn();
+  const screen = render(<Field label="Speciality*" value="" placeholder="" chipData={0} index={0}
+    formData={[{speciality: 'Cardiology, Neurology', speciality_ids: [1, 2]}]}
+    onPress={open} onIconpres={open} rightIcon={<Text>Open specialties</Text>}>
+    <Text>Cardiology</Text><Text>Neurology</Text>
+  </Field>);
+  expect(screen.queryByText('Select Specialty')).toBeNull();
+  expect(screen.getByText('Specialty')).toBeTruthy();
+  expect(screen.getByText('Cardiology')).toBeTruthy();
+  expect(screen.getByText('Neurology')).toBeTruthy();
+  fireEvent.press(screen.getByText('Open specialties'));
+  expect(open).toHaveBeenCalledWith(0);
+  expect(screen.queryByText('Select Specialty')).toBeNull();
 });

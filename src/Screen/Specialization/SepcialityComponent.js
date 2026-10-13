@@ -50,7 +50,7 @@ const onBackPress = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader standardized title="Speciality" onClosePress={() => {
                         setstatepicker(false);

@@ -22,7 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const CheckStateShow = ({ standardized = false,  pratice, setSearchState, activeIndex, searchpratice, handleStateshows, setPratice, searchStateNamePratice, slistpratice }) => {
+const CheckStateShow = ({ standardized = true, required = true,  pratice, setSearchState, activeIndex, searchpratice, handleStateshows, setPratice, searchStateNamePratice, slistpratice }) => {
     console.log("selectedSpecialitieqwwww12233s--------");
      const[showLoader,setShowLoader] = useState(false)
             useEffect(() => {
@@ -91,7 +91,7 @@ const handleBackPress = () => {
         setSearchState("");
     };
         if (standardized) {
-        return <DropdownPanel title="State*" onClose={() => {
+        return <DropdownPanel required={required} title="State*" onClose={() => {
                         handleBackPress();
                     }}
             value={searchpratice} onChangeText={text => searchStateNamePratice(text, activeIndex)} placeholder="Search State Name"

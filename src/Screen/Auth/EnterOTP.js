@@ -179,11 +179,24 @@ const handleKeyPress = ({ nativeEvent }, index) => {
  * @returns {void}
  */
 const verifyHandleForgot = () => {
-        const enteredOTPForgot = otpforgot && otpforgot.join('');
+        const enteredOTPForgot = otpforgot ? otpforgot.join('').trim() : '';
         console.log(enteredOTPForgot, typeof enteredOTPForgot, "manually otp");
-        const forgotOTP = AuthReducer?.forgotResponse?.phone_otp
-        console.log(forgotOTP, "forgotOTP=========");
-        if (enteredOTPForgot == forgotOTP) {
+        if (enteredOTPForgot.length !== 6) {
+            showErrorAlert("Please enter a valid 6-digit OTP.");
+            return;
+        }
+        const forgotResponse = AuthReducer?.forgotResponse || {};
+        const validForgotOtps = [
+            forgotResponse?.email_otp,
+            forgotResponse?.phone_otp,
+            forgotResponse?.otp,
+            forgotResponse?.data?.email_otp,
+            forgotResponse?.data?.phone_otp,
+            forgotResponse?.data?.otp,
+        ]
+            .filter(value => value != null)
+            .map(value => String(value).trim());
+        if (validForgotOtps.includes(enteredOTPForgot)) {
             props.navigation.navigate('ResetMPIN');
         } else {
             showErrorAlert("Invalid OTP. Please try again.");

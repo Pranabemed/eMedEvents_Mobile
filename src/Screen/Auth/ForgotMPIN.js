@@ -133,19 +133,19 @@ const ForgotMPIN = (props) => {
             }
         }
     }, [AuthReducer.status, email, isNonUsaUser, props.navigation, props?.route?.params?.phoneCode, showPassword]);
-        /**
- * Back era ft utility.
- * @returns {void}
- */
-const backEraFt = () => {
+    /**
+* Back era ft utility.
+* @returns {void}
+*/
+    const backEraFt = () => {
         props.navigation.goBack();
     }
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             backEraFt();
             return true;
         };
@@ -157,18 +157,18 @@ const onBackPress = () => {
 
         return () => backHandler.remove();
     }, []);
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input) => formatUsPhone(input);
-        /**
- * Formats indian phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatIndianPhoneNumber = (input) => {
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input) => formatUsPhone(input);
+    /**
+* Formats indian phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -186,12 +186,12 @@ const formatIndianPhoneNumber = (input) => {
     useEffect(() => {
         setCellCountry(props?.route?.params?.phoneCode || "+1");
     }, [props?.route?.params?.phoneCode])
-        /**
- * Handles input change.
- * @param {*} val - Input value.
- * @returns {void}
- */
-const handleInputChange = (val) => {
+    /**
+* Handles input change.
+* @param {*} val - Input value.
+* @returns {void}
+*/
+    const handleInputChange = (val) => {
         const digits = val.replace(/\D/g, '');
         const isPhoneNumber = !isNonUsaUser && digits.length > 0 && !/[a-zA-Z]/.test(val);
         if (isPhoneNumber) {
@@ -218,20 +218,20 @@ const handleInputChange = (val) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+                <View style={{ paddingTop: Platform.OS === 'ios' ? normalize(0) : normalize(0), paddingHorizontal: normalize(5) }}>
+                    <Header
+                        onPress={() => props.navigation.goBack()}
+                        tintColor={Colorpath.black}
+                    />
+                </View>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                        <Loader
-                            visible={AuthReducer?.status == 'Auth/forgotRequest'} />
-                        <Header
-                            onPress={() => props.navigation.goBack()}
-                            tintColor={Colorpath.black}
-                        />
+                    <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true} contentContainerStyle={styles.scrollContent}>
                         <View style={styles.content}>
                             <View style={styles.iconContainer}>
-                                <Feather name="lock" size={30} color={Colorpath.ButtonColr} />
+                                <Feather name="lock" size={56} color={Colorpath.ButtonColr} />
                             </View>
                             <Text style={styles.headerText}>Forgot Password?</Text>
                             <Text style={styles.subHeaderText}>
@@ -253,17 +253,15 @@ const handleInputChange = (val) => {
                                     containerStyle={styles.inputContainer}
                                     wrapperStyle={styles.inputWrapper}
                                 />
-                                <View style={styles.helperContainer}>
-                                    <Text style={[styles.helperText, (isValidEmail || isMobile) && styles.errorText]}>
-                                        {isValidEmail
-                                            ? "Enter a valid email address, e.g. name@example.com."
-                                            : isMobile
-                                                ? "Enter your complete 10-digit cell number."
-                                                : isNonUsaUser
-                                                    ? "Use the email address linked to your account."
-                                                    : "For cell numbers, enter all 10 digits."}
-                                    </Text>
-                                </View>
+                                {(isValidEmail || isMobile) && (
+                                    <View style={styles.helperContainer}>
+                                        <Text style={[styles.helperText, styles.errorText]}>
+                                            {isValidEmail
+                                                ? "Enter a valid email address, e.g. name@example.com."
+                                                : "Enter your complete 10-digit cell number."}
+                                        </Text>
+                                    </View>
+                                )}
                                 <Buttons
                                     onPress={fogotHandle}
                                     height={normalize(48)}
@@ -274,7 +272,7 @@ const handleInputChange = (val) => {
                                     color={isButtonEnabled ? Colorpath.white : "#667085"}
                                     fontSize={16}
                                     fontFamily={Fonts.InterSemiBold}
-                                    marginTop={normalize(12)}
+                                    marginTop={normalize(16)}
                                     disabled={!isButtonEnabled}
                                 />
                             </View>
@@ -289,6 +287,7 @@ const handleInputChange = (val) => {
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
+                <Loader visible={AuthReducer?.status === 'Auth/forgotRequest'} />
             </SafeAreaView>
         </>
     );
@@ -301,38 +300,45 @@ const handleInputChange = (val) => {
 const styles = {
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: normalize(32),
+        paddingBottom: normalize(80),
     },
     content: {
         width: '100%',
         maxWidth: 480,
         alignSelf: 'center',
         paddingHorizontal: normalize(24),
-        paddingTop: normalize(28),
+        paddingTop: normalize(10),
+        alignItems: 'center',
     },
     iconContainer: {
-        width: normalize(64),
-        height: normalize(64),
-        borderRadius: normalize(20),
+        width: normalize(76),
+        height: normalize(76),
+        borderRadius: normalize(38),
         backgroundColor: '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: normalize(24),
+        alignSelf: 'center',
+        marginBottom: normalize(20),
     },
     headerText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 28,
+        fontSize: 26,
         color: '#101828',
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     subHeaderText: {
-        marginTop: normalize(12),
+        marginTop: normalize(10),
         color: '#667085',
-        fontSize: 15,
-        lineHeight: 23,
+        fontSize: 14,
+        lineHeight: 22,
         fontFamily: Fonts.InterRegular,
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     form: {
-        marginTop: normalize(28),
+        width: '100%',
+        marginTop: normalize(24),
     },
     inputContainer: {
         marginBottom: 0,
@@ -342,8 +348,7 @@ const styles = {
         minHeight: normalize(54),
     },
     helperContainer: {
-        minHeight: normalize(44),
-        paddingTop: normalize(10),
+        paddingTop: normalize(6),
     },
     helperText: {
         fontFamily: Fonts.InterRegular,

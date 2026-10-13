@@ -1,3 +1,4 @@
+import { isPushPermissionRequestInProgress } from '../Utils/Helpers/PushNotifications';
 /**
  * Stack nav navigation module. Exposes route helpers and navigation references used across the app. Exported members: GUEST_REGISTRATION_FLOW_KEY, DEEPLINK_BOOTSTRAP_KEY, isEmedDeepLink, StackNav, handleAppStateChange, handleUrl, getActiveRouteName.
  */
@@ -436,6 +437,7 @@ const StackNav = props => {
     AddMobileLogin: AddMobileLogin
   }
   const wasBackgrounded = useRef(false);
+  const notificationPermissionBackground = useRef(false);
 
 
   const resetToSplashScreen = useCallback(() => {
@@ -455,12 +457,16 @@ const StackNav = props => {
 */
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'background') {
-        // App was truly minimized
+        notificationPermissionBackground.current = isPushPermissionRequestInProgress();
         wasBackgrounded.current = true;
       } else if (nextAppState === 'active' && wasBackgrounded.current) {
         // Only reset to Splash when returning from a real background (app minimized)
         // NOT on 'inactive' (keyboard dismiss, notification pull-down, alerts, etc.)
         wasBackgrounded.current = false;
+        if (notificationPermissionBackground.current || isPushPermissionRequestInProgress()) {
+          notificationPermissionBackground.current = false;
+          return;
+        }
         if (isExternalNavigationInProgress.current) {
           console.log('[DeepLink] Skipping Splash reset after intentional external navigation');
           isExternalNavigationInProgress.current = false;
@@ -729,9 +735,17 @@ const StackNav = props => {
     // 2. Initial trigger on mount
     loadAuthData();
 
-    // 3. Listen for foreground events
+    // Permission dialogs do not require an authentication reload or deep-link replay.
+    let permissionInterrupted = false;
     const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'inactive' || nextAppState === 'background') {
+        permissionInterrupted = permissionInterrupted || isPushPermissionRequestInProgress();
+      }
       if (nextAppState === 'active') {
+        if (permissionInterrupted || isPushPermissionRequestInProgress()) {
+          permissionInterrupted = false;
+          return;
+        }
         console.log('App returned to foreground - re-syncing auth...');
         loadAuthData();
         Linking.getInitialURL().then((url) => {

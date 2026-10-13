@@ -263,6 +263,13 @@ const Statewebcast = props => {
     }, [goBackToGuestUser, guestFallbackUrl, isGuestWebcastFlow]);
 
     const boardCast = useCallback(() => {
+        const navigationState = props.navigation.getState();
+        const previousRoute = navigationState.routes[navigationState.index - 1];
+        const isRecentlyViewed = previousRoute?.name === 'NonMain' && previousRoute?.params?.myact?.recnt;
+        if ((previousRoute?.name === 'Globalresult' || isRecentlyViewed) && props.navigation.canGoBack()) {
+            props.navigation.goBack();
+            return;
+        }
         if (props?.route?.params?.webCastURL?.Realback === "guest") {
             goBackToGuestUser();
             return;
@@ -512,14 +519,14 @@ const scrollToReviews = () => {
     const [expandspecailtar, setExpandspecailtar] = useState(false);
     const [expandreview, setExpandreview] = useState(false);
     const [expandcon, setExpandcon] = useState(false);
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(null)
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
-    }, [isConnected]);
+    }, []);
         /**
  * Toggle expansion utility.
  * @returns {void}
@@ -809,7 +816,7 @@ onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 {Platform.OS === 'ios' ? (
                     <PageHeader title="" onBackPress={boardCast} sharetrue={sharetrue} searchPress={resolvedShareUrl} cartcount={cartcount} cartHand={cartHand} hideCart={hideGuestCartIcon} />
                 ) : (
@@ -970,7 +977,8 @@ onPress: () => { props.navigation.goBack() }, style: "cancel" }]);
                         </>
                     )}
                 </View>
-            </SafeAreaView>}
+                {conn === false && <IntOff />}
+            </SafeAreaView>
         </>
     );
 };

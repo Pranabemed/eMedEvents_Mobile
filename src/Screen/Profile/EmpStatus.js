@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Emp status screen module. Renders a React Native screen or a screen-scoped support component. Exported members: EmpStatusModal, styles.
  */
@@ -43,7 +44,8 @@ const EmpStatusModal = ({ setEmpstatusname, empstatusname, profiletakeshow, setP
                         width: '100%',
                         backgroundColor: '#fff',
                     }}>
-                    <FlatList
+                    <DropDownHeader standardized title="Employment Status" onClosePress={() => setProfiletakeshow(false)} />
+                    <DropdownList
                         contentContainerStyle={{
                             paddingBottom: normalize(70),
                             paddingTop: normalize(7),
@@ -54,17 +56,17 @@ const EmpStatusModal = ({ setEmpstatusname, empstatusname, profiletakeshow, setP
                         renderItem={({ item, index }) => {
                             return (
                                 <>
-                                    <TouchableOpacity onPress={() => {
+                                    <DropdownOption onPress={() => {
                                         setProfiletakeshow(!profiletakeshow);
                                         setEmpstatusname(item?.name);
                                     }}
-                                        style={styles.dropDownItem}
+                                        selected={empstatusname === item?.name}
                                     >
-                                        <Text style={styles.dropDownItemText}>
+                                        <Text style={dropdownStyles.optionText}>
                                             {item?.name}
                                         </Text>
 
-                                    </TouchableOpacity>
+                                    </DropdownOption>
                                 </>
                             );
                         }}

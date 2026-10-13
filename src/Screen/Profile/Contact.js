@@ -40,8 +40,6 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
-import { useFocusEffect } from '@react-navigation/native';
 
 /**
  * Reusable isPhysicianProfessionalInformation component.
@@ -56,7 +54,6 @@ let status = "";
  * Status1 string constant.
  * @returns {string}
  */
-let status1 = "";
 /**
  * Google api key constant.
  * @returns {string}
@@ -267,26 +264,24 @@ const ContactProfile = (props) => {
     }
     console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
     const initialCountryRef = useRef(null);
-    const lastHandledContactStatusRef = useRef("");
-
-    useFocusEffect(
-        React.useCallback(() => {
-            lastHandledContactStatusRef.current = "";
-            return () => {
-                lastHandledContactStatusRef.current = "";
-            };
-        }, [])
-    );
+    const contactSubmissionRef = useRef({
+        active: false,
+        contactDone: false,
+        personalDone: false,
+        initialContactResponse: null,
+        initialPersonalResponse: null,
+    });
 
     useEffect(() => {
+        if (!contactSubmissionRef.current.active) return;
+
         if (
-            (ProfileReducer.status === 'Profile/contactInfoSuccess' || ProfileReducer.status === 'Profile/personalInfoSuccess') &&
-            lastHandledContactStatusRef.current !== ProfileReducer.status
+            !contactSubmissionRef.current.contactDone &&
+            ProfileReducer?.contactInfoResponse !== contactSubmissionRef.current.initialContactResponse
         ) {
-            lastHandledContactStatusRef.current = ProfileReducer.status;
-            setLoading(false);
             const res = ProfileReducer?.contactInfoResponse;
-            const isSuccess = Boolean(
+            const isSuccess = res?.status !== false && Boolean(
+                res ||
                 res?.status ||
                 res?.msg?.toLowerCase()?.includes('contact') ||
                 res?.msg?.toLowerCase()?.includes('updated') ||
@@ -294,65 +289,63 @@ const ContactProfile = (props) => {
                 res?.message?.toLowerCase()?.includes('success')
             );
             if (isSuccess) {
-                const successMsg = res?.msg || res?.message || "Contact information updated successfully!";
-                showErrorAlert(successMsg);
-                (async () => {
-                    try {
-                        const { clearNonUsaFlowState } = require('../../Utils/Helpers/nonUsaFlow');
-                        await clearNonUsaFlowState();
-                        require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', '');
-                    } catch (e) {
-                        console.log(e);
-                    }
-                })();
-                dispatch(mainprofileRequest({}));
-                const nextPersonal = DashboardReducer?.mainprofileResponse || ProfileReducer?.personalInfoResponse?.user ||
-                    ProfileReducer?.contactInfoResponse?.user ||
-                    props?.route?.params?.wholedata ||
-                    {};
-                setPendingPersonal(nextPersonal);
-
-                const wasUSA = isUsCountry({ country: initialCountryRef.current || '' });
-                const isNowUSA = isUsCountry({ country, country_id });
-                const movedToUSA = !wasUSA && isNowUSA;
-
-                if (movedToUSA) {
-                    markNonUsaProfessionUpdateRequired();
-                    setProfessionModalVisible(true);
-                } else {
-                    props.navigation.navigate("TabNav", { screen: "Profiles" });
-                }
-                initialCountryRef.current = country;
+                contactSubmissionRef.current.contactDone = true;
             } else if (res && res.status === false) {
+                contactSubmissionRef.current.active = false;
+                setLoading(false);
                 showErrorAlert(res?.msg || res?.message || "Failed to update contact information.");
+                return;
             }
-        } else if (
-            (ProfileReducer.status === 'Profile/contactInfoFailure' || ProfileReducer.status === 'Profile/personalInfoFailure') &&
-            lastHandledContactStatusRef.current !== ProfileReducer.status
+        }
+
+        if (
+            !contactSubmissionRef.current.personalDone &&
+            ProfileReducer?.personalInfoResponse !== contactSubmissionRef.current.initialPersonalResponse
         ) {
-            lastHandledContactStatusRef.current = ProfileReducer.status;
+            contactSubmissionRef.current.personalDone = true;
+        }
+
+        if (ProfileReducer.status === 'Profile/contactInfoFailure' || ProfileReducer.status === 'Profile/personalInfoFailure') {
+            contactSubmissionRef.current.active = false;
             setLoading(false);
             showErrorAlert(ProfileReducer?.error || "Failed to update contact information. Please try again.");
+            return;
+        }
+
+        if (contactSubmissionRef.current.contactDone && contactSubmissionRef.current.personalDone) {
+            contactSubmissionRef.current.active = false;
+            setLoading(false);
+            const res = ProfileReducer?.contactInfoResponse;
+            const successMsg = res?.msg || res?.message || "Contact information updated successfully!";
+            showErrorAlert(successMsg);
+            (async () => {
+                try {
+                    const { clearNonUsaFlowState } = require('../../Utils/Helpers/nonUsaFlow');
+                    await clearNonUsaFlowState();
+                    require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', '');
+                } catch (e) {
+                    console.log(e);
+                }
+            })();
+            const nextPersonal = DashboardReducer?.mainprofileResponse || ProfileReducer?.personalInfoResponse?.user ||
+                ProfileReducer?.contactInfoResponse?.user ||
+                props?.route?.params?.wholedata ||
+                {};
+            setPendingPersonal(nextPersonal);
+
+            const wasUSA = isUsCountry({ country: initialCountryRef.current || '' });
+            const isNowUSA = isUsCountry({ country, country_id });
+            const movedToUSA = !wasUSA && isNowUSA;
+
+            if (movedToUSA) {
+                markNonUsaProfessionUpdateRequired();
+                setProfessionModalVisible(true);
+            } else {
+                props.navigation.goBack();
+            }
+            initialCountryRef.current = country;
         }
     }, [ProfileReducer.status, ProfileReducer.contactInfoResponse, ProfileReducer.personalInfoResponse, country, country_id]);
-
-    if (status1 == '' || ProfileReducer.status != status1) {
-        switch (ProfileReducer.status) {
-            case 'Profile/contactInfoRequest':
-                status1 = ProfileReducer.status;
-                setLoading(true);
-                break;
-            case 'Profile/contactInfoSuccess':
-                status1 = ProfileReducer.status;
-                setLoading(false);
-                break;
-            case 'Profile/contactInfoFailure':
-                status1 = ProfileReducer.status;
-                setLoading(false);
-                break;
-
-        }
-    }
     const [isFieldFocused, setIsFieldFocused] = useState(false);
     const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -505,6 +498,7 @@ const ContactProfile = (props) => {
 * @returns {void}
 */
     const handleContactTake = () => {
+        if (contactSubmissionRef.current.active) return;
         const cellNoRegex = /^\d{10}$/;
         const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
         if (!firstname) {
@@ -550,12 +544,22 @@ const ContactProfile = (props) => {
                 "last_name": lastname,
                 "dob": dobdate
             }
+            contactSubmissionRef.current = {
+                active: true,
+                contactDone: false,
+                personalDone: false,
+                initialContactResponse: ProfileReducer?.contactInfoResponse,
+                initialPersonalResponse: ProfileReducer?.personalInfoResponse,
+            };
+            setLoading(true);
             connectionrequest()
                 .then(() => {
                     dispatch(contactInfoRequest(obj));
                     dispatch(personalInfoRequest(userObj));
                 })
                 .catch((err) => {
+                    contactSubmissionRef.current.active = false;
+                    setLoading(false);
                     showErrorAlert("Please connect to internet", err)
                 })
         }
@@ -811,6 +815,18 @@ const ContactProfile = (props) => {
 */
     const handleCountrySet = (didi) => {
         console.log(cellno, "cellno======", didi)
+        const hasCountryChanged = String(country_id || '') !== String(didi?.id || '');
+        if (hasCountryChanged) {
+            setState("");
+            setState_id("");
+            setCity("");
+            setCity_id("");
+            setSearchpratice("");
+            setSearchcity("");
+            setSlistpratice([]);
+            setCityAll([]);
+            setCityshow([]);
+        }
         PraticingState(didi?.id);
         setCountry(didi?.name);
         stateRequest(didi?.id);
@@ -837,6 +853,14 @@ const ContactProfile = (props) => {
 * @returns {void}
 */
     const handleStateshows = (ctid) => {
+        const hasStateChanged = String(state_id || '') !== String(ctid?.id || '');
+        if (hasStateChanged) {
+            setCity("");
+            setCity_id("");
+            setSearchcity("");
+            setCityAll([]);
+            setCityshow([]);
+        }
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);
@@ -984,11 +1008,13 @@ const ContactProfile = (props) => {
                                 {Platform.OS === "ios" ? (
                                     <PageHeader
                                         title="Contact Information"
+                                        showTitle
                                         onBackPress={SearchBack}
                                     />
                                 ) : (
                                     <PageHeader
                                         title="Contact Information"
+                                        showTitle
                                         onBackPress={SearchBack}
                                     />
 
@@ -1064,6 +1090,9 @@ const ContactProfile = (props) => {
                                                     showCountryCode={false}
                                                     maxlength={100}
                                                     editable={false}
+                                                    wrapperStyle={styles.disabledEmailWrapper}
+                                                    labelStyle={styles.disabledEmailLabel}
+                                                    addnewtyle={styles.disabledEmailText}
                                                 />
                                             </View>
                                         </View>
@@ -1200,14 +1229,10 @@ const ContactProfile = (props) => {
                                                     onPress={() => {
                                                         setCountrypicker(!countrypicker);
                                                         countryReq();
-                                                        setState("");
-                                                        setCity("");
                                                     }}
                                                     onIconpres={() => {
                                                         setCountrypicker(!countrypicker);
                                                         countryReq();
-                                                        setState("");
-                                                        setCity("");
                                                     }}
                                                 />
                                             </View>
@@ -1229,12 +1254,10 @@ const ContactProfile = (props) => {
                                                     onPress={() => {
                                                         setStatepicker(!statepicker);
                                                         PraticingState(country_id);
-                                                        setCity("");
                                                     }}
                                                     onIconpres={() => {
                                                         setStatepicker(!statepicker);
                                                         PraticingState(country_id);
-                                                        setCity("");
                                                     }}
                                                     disabled={country ? false : true}
                                                 />
@@ -1433,6 +1456,18 @@ const ContactProfile = (props) => {
  * @returns {*}
  */
 const styles = StyleSheet.create({
+    disabledEmailWrapper: {
+        backgroundColor: '#F0F0F0',
+        borderBottomColor: '#B8B8B8',
+        borderRadius: normalize(6),
+        paddingHorizontal: normalize(10),
+    },
+    disabledEmailLabel: {
+        left: normalize(10),
+    },
+    disabledEmailText: {
+        color: '#7A7A7A',
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.45)',

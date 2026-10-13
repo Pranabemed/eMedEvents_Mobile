@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
 import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
 /**
@@ -744,7 +745,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                 backgroundColor={Colorpath.Pagebg}
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                {statepicker ? <ProfileSpeciality
+                {statepicker ? <ProfileSpeciality required={false}
                     formData={formData}
                     statepicker={statepicker}
                     setstatepicker={setstatepicker}
@@ -764,9 +765,9 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                     controlled={"close"}
                     setSpeids={setSpeids}
                     speids={speids}
-                /> : countrypicker ? <ChecktwoCountryNew setCountryNew={setCountryNew} countrypicker={countrypicker} setSearchcountry={setSearchcountry} searchcountry={searchcountry} handleCountrySet={handleCountrySet} setCountrypicker={setCountrypicker} searchCountryName={handleCountry} countryall={countryall} />
-                    : pratice ? <CheckStateShow standardized pratice={pratice} setSearchState={setSearchpratice} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />
-                        : cityPicker ? <CheckThreeCity standardized handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} /> : <>
+                /> : countrypicker ? <ChecktwoCountryNew required={false} setCountryNew={setCountryNew} countrypicker={countrypicker} setSearchcountry={setSearchcountry} searchcountry={searchcountry} handleCountrySet={handleCountrySet} setCountrypicker={setCountrypicker} searchCountryName={handleCountry} countryall={countryall} />
+                    : pratice ? <CheckStateShow required={false} standardized pratice={pratice} setSearchState={setSearchpratice} searchpratice={searchpratice} handleStateshows={handleStateshows} setPratice={setPratice} searchStateNamePratice={handlePratice} slistpratice={slistpratice} />
+                        : cityPicker ? <CheckThreeCity required={false} standardized handlecityShows={handlecityShows} cityPicker={cityPicker} setCityPicker={setCityPicker} setSearchcity={setSearchcity} searchcity={searchcity} searchCityName={handleCity} cityAll={cityAll} /> : <>
                             <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(40) }}>
                                 {Platform.OS === "ios" ? (
                                     <PageHeader
@@ -1191,7 +1192,8 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                 width: '100%',
                                 backgroundColor: '#fff',
                             }}>
-                            <FlatList
+                            <DropDownHeader standardized title="Conference Format" onClosePress={() => setConfget(false)} />
+                            <DropdownList
                                 contentContainerStyle={{
                                     paddingBottom: normalize(70),
                                     paddingTop: normalize(7),
@@ -1201,17 +1203,17 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                 data={conf_Type}
                                 renderItem={({ item, index }) => {
                                     return (
-                                        <TouchableOpacity
+                                        <DropdownOption
                                             key={index}
                                             onPress={() => {
                                                 setConfget(false);
                                                 setConfformat(item?.name);
                                             }}
-                                            style={[styles.dropDownItem]}>
-                                            <Text style={[styles.dropDownItemText]}>
+                                            selected={confformat === item?.name}>
+                                            <Text style={dropdownStyles.optionText}>
                                                 {item?.name}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </DropdownOption>
                                     );
                                 }}
                             />

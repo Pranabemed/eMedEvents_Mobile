@@ -64,7 +64,7 @@ const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, st
                     <Animated.View style={{ opacity: animatedValuestatedate, transform: [{ scale: scaleValuesestatedate }] }}>
                         {particular == "All Professions" ? "" : (
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginBottom: normalize(-2)}}>
-                                {"Choose your profession"}
+                                {"Select Profession"}
                             </Text>
                         )}
                     </Animated.View>
@@ -78,7 +78,7 @@ const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, st
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between"}}>  
                                 <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0 }}>  
-                                    {particular == "All Professions" ? "Choose your profession":particular ? particular : "Choose your profession"}
+                                    {particular == "All Professions" ? "Select Profession":particular ? particular : "Select Profession"}
                                 </Text>
                                 <TouchableOpacity onPress={() => { setCreditModal(true);
                                     setDownlink(false);
@@ -93,7 +93,7 @@ const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, st
                     <Animated.View style={{ opacity: animatedValuestatedatesatte, transform: [{ scale: scaleValuesestatedatesatte }] }}>
                         {statewise == "All States"? "":(
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginBottom: normalize(-2), lineHeight: 16 }}>
-                                {"Choose your State"}
+                                {"Select State"}
                             </Text>
                         )}
                     </Animated.View>
@@ -107,7 +107,7 @@ const ExploreInput = ({setDownlink, setStatepick, setCreditModal, particular, st
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between"}}>  
                                 <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0 }}>  
-                                    {statewise == "All States" ? "Choose your State" :statewise ? statewise : "Choose your State"}
+                                    {statewise == "All States" ? "Select State" :statewise ? statewise : "Select State"}
                                 </Text>
                                 <TouchableOpacity onPress={() => { 
                                     setStatepick(true);

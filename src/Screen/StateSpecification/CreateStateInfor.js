@@ -874,7 +874,7 @@ const CreateStateInfor = (props) => {
                                                         onPress={() => setCitypicker(!citypicker)}
                                                         onIconpres={() => setCitypicker(!citypicker)}
                                                     /> */}
-                                                    <InputField
+                                                    <InputField dropdownPresentation
                                                         label="City*"
                                                         value={displayCity}
                                                         placeholder=""
@@ -1117,7 +1117,7 @@ const CreateStateInfor = (props) => {
                                                     <View style={{
                                                         flex: 0.5,
                                                     }}>
-                                                        <InputField
+                                                        <InputField dropdownPresentation
                                                             label={cdate ? "Renewal Year*" : "Renewal Year*"}
                                                             value={cdate ? cdate.toString() : ""}
                                                             placeholder=""

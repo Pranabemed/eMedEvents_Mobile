@@ -554,7 +554,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                 setHospname("");
                                                 setCity("");
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={state}
                                                     color={"#000000"}
                                                     height={normalize(50)}
@@ -591,7 +591,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                 setCitypicker(!citypicker);
                                                 cityReq(state_id);
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={city}
                                                     color={"#000000"}
                                                     height={normalize(50)}
@@ -672,7 +672,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                             <TouchableOpacity onPress={() => {
                                                 setHosppicker(!hosppicker);
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={hospname}
                                                     color={"#000000"}
                                                     height={normalize(50)}
@@ -750,7 +750,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                             <TouchableOpacity onPress={() => {
                                                 setProfiletakeshow(!profiletakeshow);
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={empstatusname}
                                                     color={"#000000"}
                                                     height={normalize(50)}
@@ -978,7 +978,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                 setHospname("");
                                                 setCity("");
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={state}
                                                     color={"#000000"}
                                                     height={normalize(50)}
@@ -1015,7 +1015,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                 setCitypicker(!citypicker);
                                                 cityReq(state_id);
                                             }}>
-                                                <CustomTextField
+                                                <CustomTextField dropdownPresentation
                                                     value={city}
                                                     color={"#000000"}
                                                     height={normalize(50)}

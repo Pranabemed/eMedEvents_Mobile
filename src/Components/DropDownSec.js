@@ -1,3 +1,4 @@
+import { dropdownFieldName, dropdownPlaceholder } from './DropDownHeader';
 /**
  * Drop down sec reusable component module. Provides a React Native UI building block used across screens. Exported members: DropdownInputs, onChangeText, onFocus, onBlur.
  */
@@ -85,7 +86,7 @@ const onBlur = () => {
     <View style={{ flexDirection: 'column' }}>
       <Animated.View style={{ opacity: animatedLabelValue, transform: [{ scale: scaleLabelValue }] }}>
         <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>
-          {props.label} 
+          {props.dropdownPresentation ? dropdownFieldName(props.label) : props.label}
         </Text>
       </Animated.View>
       <View
@@ -109,7 +110,7 @@ const onBlur = () => {
             ref={ref}
             keyboardType={props.keyboardType}
             autoCapitalize={props.autoCapitalize}
-            placeholder={props.placeholder || 'Enter text'}
+            placeholder={props.dropdownPresentation ? dropdownPlaceholder(props.placeholder) : props.placeholder || 'Enter text'}
             placeholderTextColor={props.placeholderTextColor || '#AAAAAA'}
             maxLength={props.maxLength || 50}
             value={textValue}

@@ -7,6 +7,7 @@ import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, AndroidStyle, EventType } from '@notifee/react-native';
 import { saveNotification } from './Notification/NotificationStorage';
 import { handleNotification } from './Notification/NotificationService';
+import { requestAndroidNotificationPermission } from './AndroidNotificationPermission';
 
 /**
  * Android channel id constant.
@@ -255,35 +256,61 @@ const displayIncomingNotification = async remoteMessage => {
   }
 };
 
+let pushPermissionPromise = null;
+let permissionDialogSettledAt = 0;
+const PUSH_PERMISSION_ASKED_KEY = 'PUSH_NOTIFICATION_PERMISSION_ASKED';
+
+// Native foreground events may arrive just after the permission promise resolves.
+export const isPushPermissionRequestInProgress = () =>
+  pushPermissionPromise !== null || Date.now() - permissionDialogSettledAt < 1000;
+
 export /**
  * Request push permission utility helper.
  *
  * @async
  * @returns {Promise<*>}
  */
-const requestPushPermission = async () => {
-  try {
-    if (Platform.OS === 'ios') {
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+const requestPushPermission = () => {
+  if (pushPermissionPromise) return pushPermissionPromise;
 
-      return enabled;
+  pushPermissionPromise = (async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        let authStatus = await messaging().hasPermission();
+        if (authStatus === messaging.AuthorizationStatus.NOT_DETERMINED) {
+          try {
+            authStatus = await messaging().requestPermission();
+          } finally {
+            permissionDialogSettledAt = Date.now();
+          }
+        }
+        return authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      }
+
+      if (Platform.OS === 'android' && Platform.Version >= 33) {
+        const permission = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
+        if (await PermissionsAndroid.check(permission)) return true;
+        if (await AsyncStorage.getItem(PUSH_PERMISSION_ASKED_KEY) === 'true') return false;
+        let result;
+        try {
+          result = await requestAndroidNotificationPermission(permission);
+        } finally {
+          permissionDialogSettledAt = Date.now();
+        }
+        await AsyncStorage.setItem(PUSH_PERMISSION_ASKED_KEY, 'true');
+        return result === PermissionsAndroid.RESULTS.GRANTED;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('[PushNotifications] Permission request failed:', error?.message || error);
+      return false;
     }
-
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      const result = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      return result === PermissionsAndroid.RESULTS.GRANTED;
-    }
-
-    return true;
-  } catch (error) {
-    console.warn('[PushNotifications] Permission request failed:', error?.message || error);
-    return false;
-  }
+  })().finally(() => {
+    pushPermissionPromise = null;
+  });
+  return pushPermissionPromise;
 };
 
 export /**

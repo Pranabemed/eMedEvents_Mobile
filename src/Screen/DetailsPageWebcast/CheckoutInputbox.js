@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
 import { formatUsPhone, isUsCallingCode } from '../../Utils/Helpers/UsPhone';
@@ -999,7 +1000,7 @@ const renderForms = () => {
                     flexWrap: 'wrap',
                     justifyContent: 'flex-start',
                     alignItems: 'center',
-                    width: normalize(300),
+                    width: '100%',
                     // marginBottom: normalize(10),
                   }}>
                     {formData[index]?.speciality_ids?.map((id, i) => (
@@ -1011,8 +1012,9 @@ const renderForms = () => {
                         marginRight: normalize(5),
                         marginBottom: normalize(5),
                         borderRadius: normalize(5),
+                        maxWidth: '100%',
                       }}>
-                        <Text style={{ fontSize: normalize(12), color: '#000', marginRight: normalize(5) }}>
+                        <Text style={{ fontSize: normalize(12), color: '#000', marginRight: normalize(5), flexShrink: 1 }}>
                           {formData[index].speciality.split(', ')[i]}
                         </Text>
                         <TouchableOpacity style={{ height: normalize(20), width: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => removeSpeciality(index, id)}>
@@ -1248,7 +1250,7 @@ const renderForms = () => {
                       }}>
                         <CustomInputTouchable
                           label={field.required === "1" ? `${field?.field_label}*` : field?.field_label}
-                          value={formData[index]?.[field.field_name] || (field.required === "1" ? `${field.field_label}*` : field.field_label)}
+                          value={formData[index]?.[field.field_name] || ''}
                           placeholder={""}
                           placeholderTextColor="#949494"
                           rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
@@ -1274,58 +1276,26 @@ const renderForms = () => {
                           // borderColor:"#949494"
                           // maxHeight: '50%'
                         }}>
-                          <View style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: normalize(16)
-                          }}>
-                            <Text style={{
-                              fontSize: 18,
-                              fontFamily: Fonts.InterRegular,
-                              fontWeight: 'bold',
-                              color: '#000000'
-                            }}>
-                              {field.field_label}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={() => setDropdownModal({ visible: false, index: null, fieldName: null, options: null })}
-                            >
-                              <Text style={{
-                                fontSize: 16,
-                                fontFamily: Fonts.InterRegular,
-                                color: '#007AFF'
-                              }}>
-                                Done
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
+                          <DropDownHeader standardized title={field.field_label}
+                            onClosePress={() => setDropdownModal({ visible: false, index: null, fieldName: null, options: null })} />
 
-                          <FlatList
+                          <DropdownList
                             data={Object.entries(dropdownModal.options || {})}
                             keyExtractor={(item) => item[0]}
                             renderItem={({ item }) => {
                               const [key, value] = item;
                               return (
-                                <TouchableOpacity
+                                <DropdownOption
                                   onPress={() => {
                                     handleInputChange(index, field.field_name, value);
                                     setDropdownModal({ visible: false, index: null, fieldName: null, options: null });
                                   }}
-                                  style={{
-                                    paddingVertical: normalize(12),
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: '#f0f0f0'
-                                  }}
+                                  selected={formData[index]?.[field.field_name] === value}
                                 >
-                                  <Text style={{
-                                    fontSize: 16,
-                                    fontFamily: Fonts.InterRegular,
-                                    color: formData[index]?.[field.field_name] === value ? 'green' : '#000000'
-                                  }}>
+                                  <Text style={dropdownStyles.optionText}>
                                     {value}
                                   </Text>
-                                </TouchableOpacity>
+                                </DropdownOption>
                               );
                             }}
                           />

@@ -75,7 +75,7 @@ const handleBackPress = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader standardized title="State*" onClosePress={() => {
                         handleBackPress();
@@ -91,7 +91,7 @@ const handleBackPress = () => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <DropdownSearch editable
+                    <DropdownSearch required editable
                             maxLength={40}
                             onChangeText={text => searchStateNamePratice(text, activeIndex)}
                             value={searchpratice}

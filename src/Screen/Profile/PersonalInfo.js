@@ -29,8 +29,7 @@ import ProfessionComponent from '../Specialization/ProfessionComponent'
 import { professionInfoRequest } from '../../Redux/Reducers/ProfileReducer'
 import { chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer'
 import Loader from '../../Utils/Helpers/Loader'
-import Video from 'react-native-video'
-import { dashboardRequest, dashMbRequest, dashPerRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
+import { dashboardRequest, dashMbRequest, dashPerRequest, mainprofileRequest, mainprofileSuccess } from '../../Redux/Reducers/DashboardReducer'
 import { AppContext } from '../GlobalSupport/AppContext'
 import InputField from '../../Components/CellInput'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
@@ -47,18 +46,47 @@ import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, markNon
  * @returns {JSX.Element}
  */
 
-const buildProfessionLabel = (profession, professionType) => {
-    const cleanProfession = String(profession || '').trim();
-    const cleanProfessionType = String(professionType || '').trim();
+const parseProfessionAndType = (profession, professionType = '') => {
+    let cleanProf = String(profession || '').trim();
+    let cleanType = String(professionType || '').trim();
 
-    if (!cleanProfession) return '';
-    if (!cleanProfessionType) return cleanProfession;
-    if (cleanProfession.toLowerCase().replace(/\s+/g, '').endsWith(`-${cleanProfessionType.toLowerCase().replace(/\s+/g, '')}`)) {
-        return cleanProfession;
+    // Check if cleanProf has hyphenated suffix like "- DO", "-DO", " - MD", etc.
+    const match = cleanProf.match(/^(.*?)\s*-\s*([A-Za-z0-9]+)$/);
+    if (match) {
+        const base = match[1].trim();
+        const type = match[2].trim();
+        return {
+            baseProf: base,
+            profType: cleanType || type,
+            fullProf: `${base} - ${cleanType || type}`,
+        };
     }
 
-    return `${cleanProfession} - ${cleanProfessionType}`;
+    if (cleanType) {
+        return {
+            baseProf: cleanProf,
+            profType: cleanType,
+            fullProf: cleanProf ? `${cleanProf} - ${cleanType}` : cleanType,
+        };
+    }
+
+    return {
+        baseProf: cleanProf,
+        profType: '',
+        fullProf: cleanProf,
+    };
 };
+
+const buildProfessionLabel = (profession, professionType) => {
+    const { fullProf } = parseProfessionAndType(profession, professionType);
+    return fullProf;
+};
+
+const getBaseProfession = (profession, professionType) => {
+    const { baseProf } = parseProfessionAndType(profession, professionType);
+    return baseProf;
+};
+
 /**
  * Determines whether physician professional information is true.
  * @param {Object} info - Input value.
@@ -68,7 +96,7 @@ const isPhysicianProfessionalInformation = (info = {}) => {
     const profession = String(info?.profession || '').trim().toLowerCase();
     const professionType = String(info?.profession_type || '').trim().toLowerCase();
 
-    if (profession !== 'physician') return false;
+    if (profession !== 'physician' && !profession.startsWith('physician')) return false;
     return ['md', 'do', 'dpm'].includes(professionType);
 };
 
@@ -143,6 +171,9 @@ const PersonalInfo = (props) => {
     const [countrypicker, setcountrypicker] = useState(false);
     const [noloaderext, setNoloaderext] = useState(false);
     const [speids, setSpeids] = useState("");
+    const isInitialSpecLoaded = useRef(false);
+    const isNavigatingRef = useRef(false);
+    const professionUpdatePendingRef = useRef(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
         professionUpdateRequired: false,
@@ -163,11 +194,11 @@ const PersonalInfo = (props) => {
         };
     }, []);
 
-    const userObj = props?.route?.params?.personal || DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
+    const userObj = DashboardReducer?.mainprofileResponse || props?.route?.params?.personal || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user;
     const [detectedCountry, setDetectedCountry] = useState({});
     useEffect(() => {
         let active = true;
-        getCountryAndDialCode().then(info => { if (active) setDetectedCountry(info || {}); }).catch(() => {});
+        getCountryAndDialCode().then(info => { if (active) setDetectedCountry(info || {}); }).catch(() => { });
         return () => { active = false; };
     }, []);
     const storedCountry = props?.route?.params?.applicableCountry || userObj?.user_address || userObj || {};
@@ -199,27 +230,24 @@ const PersonalInfo = (props) => {
 
         const profession = source?.professional_information?.profession || source?.profession;
         const profession_type = source?.professional_information?.profession_type || source?.profession_type;
-        /**
-* Clean utility.
-* @param {*} value - Input value.
-* @returns {*}
-*/
-        const clean = (value) => {
-            if (value == null) return '';
-            return String(value).trim();
-        };
-        const cleanedProfession = clean(profession);
-        const cleanedProfessionType = clean(profession_type);
-        const combinedValue =
-            cleanedProfession && cleanedProfessionType
-                ? `${cleanedProfession} - ${cleanedProfessionType}`
-                : cleanedProfession || cleanedProfessionType;
+        const fallbackType =
+            profession_type ||
+            source?.professional_information?.designation ||
+            source?.designation ||
+            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+            DashboardReducer?.mainprofileResponse?.profession_type ||
+            AuthReducer?.loginResponse?.user?.profession_type ||
+            AuthReducer?.againloginsiginResponse?.user?.profession_type ||
+            nonUsaFlowState?.profession_type ||
+            '';
 
-        if (!props?.route?.params?.forceProfessionChange) setCountry(combinedValue || '');
+        const { fullProf } = parseProfessionAndType(profession, fallbackType);
+
+        if (!props?.route?.params?.forceProfessionChange) setCountry(fullProf || '');
         setSelectedOption(source?.professional_information?.dea_registered);
         const npiNumber = source?.professional_information?.npi_number;
         setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
-    }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user])
+    }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, nonUsaFlowState?.profession_type]);
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
     /**
 * Specaillized utility.
@@ -242,7 +270,8 @@ const PersonalInfo = (props) => {
         setClist([]);
         setSelectCountry([]);
         if (props?.route?.params?.forceProfessionChange) {
-            setFormData({speciality: '', speciality_ids: []});
+            isInitialSpecLoaded.current = true;
+            setFormData({ speciality: '', speciality_ids: [] });
             setCountry('');
             setSpeciality('');
             setSpeciality_id([]);
@@ -286,69 +315,89 @@ const PersonalInfo = (props) => {
     const [take, setTake] = useState("");
     const cellNoRegexwpdd = /^\d{10}$/;
     const isValidWhatsappNodd = take?.length > 0 && !cellNoRegexwpdd.test(take);
-    if (status == '' || AuthReducer.status != status) {
+    useEffect(() => {
+        if (!AuthReducer?.status) return;
         switch (AuthReducer.status) {
-            case 'Auth/professionRequest':
-                status = AuthReducer.status;
-                break;
             case 'Auth/professionSuccess':
-                status = AuthReducer.status;
-                setSelectCountry(AuthReducer?.professionResponse?.profession_credentials);
-                setClist(AuthReducer?.professionResponse?.profession_credentials);
-                break;
-            case 'Auth/professionFailure':
-                status = AuthReducer.status;
-                break;
-            case 'Auth/specializationRequest':
-                status = AuthReducer.status;
+                setSelectCountry(AuthReducer?.professionResponse?.profession_credentials || []);
+                setClist(AuthReducer?.professionResponse?.profession_credentials || []);
                 break;
             case 'Auth/specializationSuccess':
-                status = AuthReducer.status;
-                setSelectState(AuthReducer?.specializationResponse?.specialities);
-                setSlist(AuthReducer?.specializationResponse?.specialities);
-                break;
-            case 'Auth/specializationFailure':
-                status = AuthReducer.status;
+                setSelectState(AuthReducer?.specializationResponse?.specialities || []);
+                setSlist(AuthReducer?.specializationResponse?.specialities || []);
                 break;
         }
-    }
-    if (status1 == '' || ProfileReducer.status != status1) {
+    }, [AuthReducer?.status, AuthReducer?.professionResponse?.profession_credentials, AuthReducer?.specializationResponse?.specialities]);
+
+    useEffect(() => {
+        if (!ProfileReducer?.status) return;
         switch (ProfileReducer.status) {
-            case 'Profile/professionInfoRequest':
-                status1 = ProfileReducer.status;
-                break;
             case 'Profile/professionInfoSuccess':
-                status1 = ProfileReducer.status;
+                if (!professionUpdatePendingRef.current) break;
                 const isProfessionSuccess = Boolean(
                     ProfileReducer?.professionInfoResponse?.status ||
                     ProfileReducer?.professionInfoResponse?.msg?.toLowerCase()?.includes('professional') ||
                     ProfileReducer?.professionInfoResponse?.msg?.toLowerCase()?.includes('updated') ||
                     ProfileReducer?.professionInfoResponse?.user
                 );
-                if (isProfessionSuccess) {
-                    const updatedUser = ProfileReducer?.professionInfoResponse?.user || ProfileReducer?.personalInfoResponse?.user;
-                    if (updatedUser) {
-                        (async () => {
-                            try {
-                                const storedProf = await AsyncStorage.getItem(constants.PROFESSION);
-                                const parsedProf = storedProf ? JSON.parse(storedProf) : {};
-                                const merged = { ...parsedProf, ...updatedUser };
-                                await AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(merged));
-                            } catch (e) {
-                                console.log('Error updating PROFESSION storage:', e);
-                            }
-                        })();
-                    }
-                    const latestProfessionInfo = ProfileReducer?.latestProfessionInfo || {};
-                    const latestProfessionLabel = buildProfessionLabel(
-                        latestProfessionInfo?.profession,
-                        latestProfessionInfo?.profession_type
-                    );
+                if (isProfessionSuccess && !isNavigatingRef.current) {
+                    professionUpdatePendingRef.current = false;
+                    isNavigatingRef.current = true;
+                    const fallbackType =
+                        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+                        DashboardReducer?.mainprofileResponse?.profession_type ||
+                        AuthReducer?.loginResponse?.user?.profession_type ||
+                        AuthReducer?.againloginsiginResponse?.user?.profession_type ||
+                        '';
+                    const { baseProf, profType, fullProf } = parseProfessionAndType(country, fallbackType);
+                    const specialitiesMap = {};
+                    const specNames = formData?.speciality ? formData.speciality.split(', ').map(s => s.trim()) : [];
+                    (formData?.speciality_ids || []).forEach((id, idx) => {
+                        if (id) {
+                            specialitiesMap[String(id)] = specNames[idx] || '';
+                        }
+                    });
+
+                    const currentMain = DashboardReducer?.mainprofileResponse || {};
+                    const updatedMainProfile = {
+                        ...currentMain,
+                        profession: fullProf,
+                        profession_type: profType,
+                        designation: profType,
+                        specialities: specialitiesMap,
+                        professional_information: {
+                            ...(currentMain?.professional_information || {}),
+                            profession: fullProf,
+                            profession_type: profType,
+                            designation: profType,
+                            specialities: specialitiesMap,
+                            npi_number: take,
+                            dea_registered: isNonUsaUser ? "0" : selectedOption,
+                        }
+                    };
+                    dispatch(mainprofileSuccess(updatedMainProfile));
+
+                    (async () => {
+                        try {
+                            const storedProf = await AsyncStorage.getItem(constants.PROFESSION);
+                            const parsedProf = storedProf ? JSON.parse(storedProf) : {};
+                            const merged = {
+                                ...parsedProf,
+                                profession: fullProf,
+                                profession_type: profType,
+                                designation: profType,
+                                specialities: specialitiesMap,
+                                npi_number: take,
+                                dea_registered: isNonUsaUser ? "0" : selectedOption,
+                            };
+                            await AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(merged));
+                        } catch (e) {
+                            console.log('Error updating PROFESSION storage:', e);
+                        }
+                    })();
+
                     showErrorAlert("Professional information updated successfully.");
-                    dispatch(mainprofileRequest({}));
-                    dispatch(dashPerRequest({}));
-                    dispatch(dashMbRequest({}));
-                    dispatch(dashboardRequest({}));
+
                     const activeLicensesList =
                         DashboardReducer?.mainprofileResponse?.licensures ||
                         DashboardReducer?.dashPerResponse?.data?.licensures ||
@@ -360,8 +409,10 @@ const PersonalInfo = (props) => {
                         AuthReducer?.licesensResponse?.licensure_states.length > 0
                     );
 
-                    console.log(ProfileReducer?.professionInfoResponse, "log-----------",!hasActiveLicenses , hasLicensureStatesAvailable);
-                    if (!hasActiveLicenses && hasLicensureStatesAvailable) {
+                    console.log(ProfileReducer?.professionInfoResponse, "log-----------", !hasActiveLicenses, hasLicensureStatesAvailable);
+                    if (props?.navigation?.canGoBack() && !props?.route?.params?.forceProfessionChange) {
+                        props.navigation.goBack();
+                    } else if (!hasActiveLicenses && hasLicensureStatesAvailable) {
                         props.navigation.dispatch(
                             CommonActions.reset({
                                 index: 0,
@@ -405,11 +456,11 @@ const PersonalInfo = (props) => {
                 }
                 break;
             case 'Profile/professionInfoFailure':
-                status1 = ProfileReducer.status;
+                professionUpdatePendingRef.current = false;
+                isNavigatingRef.current = false;
                 break;
-
         }
-    }
+    }, [ProfileReducer?.status, ProfileReducer?.professionInfoResponse]);
     /**
 * Search country name utility.
 * @param {*} text - Input value.
@@ -444,7 +495,10 @@ const PersonalInfo = (props) => {
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0]);
-        setFormData("");
+        setFormData({ speciality: '', speciality_ids: [] });
+        setSpeciality('');
+        setSpeciality_id([]);
+        isInitialSpecLoaded.current = true;
         if (did) {
             dispatch(licesensRequest(did));
         }
@@ -488,9 +542,6 @@ const PersonalInfo = (props) => {
         setstatepicker(false);
         setSearchState("");
         setSelectedSpecialities([]);
-        if (country) {
-            dispatch(licesensRequest(country));
-        }
     };
 
     /**
@@ -503,7 +554,7 @@ const PersonalInfo = (props) => {
         console.log(selectedSpecialities, selectedIds, "selectedIds============");
         let updatedFormData = formData || { speciality_ids: [], speciality: '' };
         const uniqueSpecialities = [...new Set(selectedSpecialities)];
-        const uniqueIds = [...new Set(selectedIds)];
+        const uniqueIds = [...new Set(selectedIds.map(String))];
         const specialityString = uniqueSpecialities.join(', ').trim();
         updatedFormData = {
             ...updatedFormData,
@@ -511,6 +562,8 @@ const PersonalInfo = (props) => {
             speciality_ids: uniqueIds
         };
         setFormData(updatedFormData); // Update state
+        setSpeciality(specialityString);
+        setSpeciality_id(uniqueIds);
     };
     /**
 * Remove speciality utility.
@@ -521,30 +574,55 @@ const PersonalInfo = (props) => {
         // Ensure speciality_ids and speciality are arrays
         const currentSpecialityIds = formData?.speciality_ids || [];
         const currentSpecialities = formData?.speciality?.split(', ') || [];
-        const updatedSpecialityIds = currentSpecialityIds.filter(id => id !== specialityId);
-        const updatedSpecialityNames = currentSpecialities.filter((_, index) => currentSpecialityIds[index] !== specialityId);
+        const updatedSpecialityIds = currentSpecialityIds.filter(id => String(id) !== String(specialityId));
+        const updatedSpecialityNames = currentSpecialities.filter((_, index) => String(currentSpecialityIds[index]) !== String(specialityId));
         handleSpecialityChange(updatedSpecialityNames, updatedSpecialityIds);
     };
 
     useEffect(() => {
-        if (!props?.route?.params?.forceProfessionChange && props?.route?.params?.personal?.specialities) {
-            const specialties = Object.entries(props?.route?.params?.personal?.specialities).map(([id, name]) => ({
-                id: String(id),
-                name: String(name),
-            }));
+        if (isInitialSpecLoaded.current) return;
+        const activeSource = (DashboardReducer?.mainprofileResponse && Object.keys(DashboardReducer.mainprofileResponse).length > 0)
+            ? DashboardReducer.mainprofileResponse
+            : props?.route?.params?.personal;
+        const activeSpecialities = activeSource?.specialities || activeSource?.professional_information?.specialities;
+        if (!props?.route?.params?.forceProfessionChange && activeSpecialities) {
+            let specialties = [];
+            if (Array.isArray(activeSpecialities)) {
+                specialties = activeSpecialities.map((item, idx) => {
+                    if (typeof item === 'object' && item !== null) {
+                        return {
+                            id: String(item.id || item.speciality_id || idx),
+                            name: String(item.name || item.speciality_name || item.id || ''),
+                        };
+                    }
+                    return { id: String(item), name: String(item) };
+                });
+            } else if (typeof activeSpecialities === 'object' && activeSpecialities !== null) {
+                specialties = Object.entries(activeSpecialities).map(([id, name]) => ({
+                    id: String(id),
+                    name: typeof name === 'object' && name !== null ? String(name.name || name.speciality_name || id) : String(name),
+                }));
+            }
 
-            console.log(specialties, "specialties00000001222");
-            const namesString = specialties.map(specialty => specialty.name).join(', ');
-            const ids = specialties.map(specialty => String(specialty.id));
-            setSpeciality(namesString);
-            setSpeciality_id(ids);
-            setPreviousSpec(specialties);
+            if (specialties.length > 0) {
+                console.log(specialties, "specialties00000001222");
+                const namesString = specialties.map(specialty => specialty.name).join(', ');
+                const ids = specialties.map(specialty => String(specialty.id));
+                setSpeciality(namesString);
+                setSpeciality_id(ids);
+                setPreviousSpec(specialties);
+                setFormData({
+                    speciality: namesString,
+                    speciality_ids: ids,
+                });
+                isInitialSpecLoaded.current = true;
+            }
         }
-    }, [props?.route?.params?.personal]);
+    }, [DashboardReducer?.mainprofileResponse, props?.route?.params?.personal]);
     console.log(speciality, "initialFormData----------", speciality_id, formData, noloaderext);
     const memoizedSetFormData = useCallback((data) => setFormData(data), [setFormData]);
     useEffect(() => {
-        if (speciality && speciality_id) {
+        if (speciality && speciality_id && !formData?.speciality && (!formData?.speciality_ids || formData?.speciality_ids?.length === 0)) {
             const initialFormData = {
                 speciality: speciality || '',
                 speciality_ids: Array.isArray(speciality_id) ? speciality_id : [],
@@ -569,17 +647,31 @@ const PersonalInfo = (props) => {
         } else if (isValidWhatsappNodd) {
             showErrorAlert("NPI must be 10 digits only ")
         } else {
-            const input = country;
-            const match = input.match(/- (\w+)$/);
-            const result = match ? match[1] : "";
-            console.log(result);
+            if (professionUpdatePendingRef.current) return;
+            professionUpdatePendingRef.current = true;
+            isNavigatingRef.current = false;
+            const fallbackType =
+                DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+                DashboardReducer?.mainprofileResponse?.profession_type ||
+                AuthReducer?.loginResponse?.user?.profession_type ||
+                AuthReducer?.againloginsiginResponse?.user?.profession_type ||
+                '';
+            const { baseProf, profType, fullProf } = parseProfessionAndType(country, fallbackType);
+            const specialitiesMap = {};
+            const specNames = formData?.speciality ? formData.speciality.split(', ').map(s => s.trim()) : [];
+            (formData?.speciality_ids || []).forEach((id, idx) => {
+                if (id) {
+                    specialitiesMap[String(id)] = specNames[idx] || '';
+                }
+            });
             let obj = {
                 "npi_number": take,
-                "profession": country,
-                "profession_type": result,
-                "designation": result,
+                "profession": fullProf || baseProf || country,
+                "profession_type": profType,
+                "designation": profType,
                 "dea_registered": isNonUsaUser ? "0" : selectedOption,
-                "specialities": formData?.speciality_ids
+                "specialities": formData?.speciality_ids,
+                "specialities_data": specialitiesMap,
             }
             console.log(obj, "obj===============");
             connectionrequest()
@@ -587,6 +679,7 @@ const PersonalInfo = (props) => {
                     dispatch(professionInfoRequest(obj));
                 })
                 .catch((err) => {
+                    professionUpdatePendingRef.current = false;
                     showErrorAlert("Please connect to internet", err)
                 })
         }
@@ -785,52 +878,12 @@ const PersonalInfo = (props) => {
                                     placeholderTextColor="#949494"
                                     rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
                                     onPress={() => {
-                                        if (makeDid == 5) {
-                                            Alert.alert("eMedEvents", "You can select upto 5 specialities.", [{
-                                                text: "Cancel",                                                 /**
- * On press utility.
- * @returns {void}
- */
-                                                onPress: () => {
-                                                    console.log("Hello");
-                                                }, style: "default"
-                                            }, {
-                                                text: "Save",                                                 /**
- * On press utility.
- * @returns {void}
- */
-                                                onPress: () => {
-                                                    console.log("Hello");
-                                                }, style: "default"
-                                            }])
-                                        } else {
-                                            specaillized(country?.split(' - ')[0])
-                                            setstatepicker(!statepicker);
-                                        }
+                                        specaillized(country?.split(' - ')[0])
+                                        setstatepicker(!statepicker);
                                     }}
                                     onIconpres={() => {
-                                        if (makeDid == 5) {
-                                            Alert.alert("eMedEvents", "You can select upto 5 specialities.", [{
-                                                text: "Cancel",                                                 /**
- * On press utility.
- * @returns {void}
- */
-                                                onPress: () => {
-                                                    console.log("Hello");
-                                                }, style: "default"
-                                            }, {
-                                                text: "Save",                                                 /**
- * On press utility.
- * @returns {void}
- */
-                                                onPress: () => {
-                                                    console.log("Hello");
-                                                }, style: "default"
-                                            }])
-                                        } else {
-                                            specaillized(country?.split(' - ')[0])
-                                            setstatepicker(!statepicker);
-                                        }
+                                        specaillized(country?.split(' - ')[0])
+                                        setstatepicker(!statepicker);
                                     }}
                                     chipData={formData?.speciality ? formData.speciality.split(', ') : []}
                                     onRemoveChip={(index) => {

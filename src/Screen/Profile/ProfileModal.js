@@ -3,7 +3,7 @@
  */
 
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform, StyleSheet } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/AntDesign'
 import Colorpath from '../../Themes/Colorpath';
@@ -37,7 +37,7 @@ let statusd = "";
  * @param {*} props.nav - Nested property value.
  * @returns {JSX.Element}
  */
-const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData, profiletakeshow, setProfiletakeshow, remove, detectdata, nav }) => {
+const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData, profiletakeshow, setProfiletakeshow, remove, detectdata, nav, onDeleteSuccess }) => {
     const profileData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }, { id: 2, name: "Delete", Icon: "delete" }];
     const deletTake = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }];
     const deletTakef = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }];
@@ -46,6 +46,19 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
     console.log(detectdata, "detectdata--------------", paginatedData);
     const dispatch = useDispatch();
     const ProfileReducer = useSelector(state => state.ProfileReducer);
+
+    useEffect(() => {
+        if (
+            ProfileReducer.status === 'Profile/boardListDeleteSuccess' &&
+            ProfileReducer?.boardListDeleteResponse?.msg === 'Certification information deleted successfully.'
+        ) {
+            showErrorAlert('Certification information deleted successfully.');
+            onDeleteSuccess?.(detectdata?.id);
+            dispatch(boardListProfileRequest({}));
+            setProfiletakeshow(false);
+        }
+    }, [ProfileReducer.status, ProfileReducer?.boardListDeleteResponse, detectdata?.id, dispatch, onDeleteSuccess, setProfiletakeshow]);
+
         /**
  * Delet lic utility.
  * @returns {void}
@@ -133,11 +146,6 @@ onPress: () => { setCreditModal(false) } }]);
             case 'Profile/boardListDeleteSuccess':
                 statusd = ProfileReducer.status;
                 console.log(ProfileReducer?.boardListDeleteResponse, "log-----------");
-                if (ProfileReducer?.boardListDeleteResponse?.msg == "Certification information deleted successfully.") {
-                    showErrorAlert("Certification information deleted successfully.");
-                    dispatch(boardListProfileRequest({}));
-                    setProfiletakeshow(!profiletakeshow);
-                }
                 break;
             case 'Profile/boardListDeleteFailure':
                 statusd = ProfileReducer.status;

@@ -1,3 +1,4 @@
+import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Course, CMEPress, handleLinearTextChange, onBackPress, styles.
  */
@@ -285,7 +286,8 @@ const onBackPress = () => {
                                 width: '100%',
                                 backgroundColor: '#fff',
                             }}>
-                            <FlatList
+                            <DropDownHeader standardized title="Course Status" onClosePress={() => setModalShow(false)} />
+                            <DropdownList
                                 contentContainerStyle={{
                                     // paddingBottom: normalize(70),
                                     paddingTop: normalize(7),
@@ -295,7 +297,7 @@ const onBackPress = () => {
                                 data={cmecourseData}
                                 renderItem={({ item, index }) => {
                                     return (
-                                        <TouchableOpacity
+                                        <DropdownOption
                                             key={index}
                                             onPress={() => {
                                                 if (linearText) {
@@ -305,11 +307,11 @@ const onBackPress = () => {
                                                 }
                                                 setModalShow(false);
                                             }}
-                                            style={[styles.dropDownItem]}>
-                                            <Text style={[styles.dropDownItemText]}>
+                                            selected={(linearText ? fetchname : fetchnamechnage) === item?.name}>
+                                            <Text style={dropdownStyles.optionText}>
                                                 {item?.name}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </DropdownOption>
                                     );
                                 }}
                             />

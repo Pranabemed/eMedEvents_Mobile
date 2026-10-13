@@ -13,7 +13,7 @@ import { CommonActions } from '@react-navigation/native';
 import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
 import { useDispatch, useSelector } from 'react-redux';
 import Buttons from './Button';
-import { ConfActRequest } from '../Redux/Reducers/CMEReducer';
+import { ConfActRequest, clearCmeCourseData } from '../Redux/Reducers/CMEReducer';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import ProfessionCourseShimmer from './ProfessionCourseShimmer';
 import showErrorAlert from '../Utils/Helpers/Toast';
@@ -275,29 +275,71 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         )
     }
     useEffect(() => {
-        switch (CMEReducer.status) {
-            case 'CME/cmeCourseRequest':
+        switch (DashboardReducer?.status) {
+            case 'Dashboard/dashPerRequest':
+            case 'Dashboard/dashMbRequest':
+            case 'Dashboard/dashboardRequest':
                 hasReceivedResponse.current = false;
                 setLoading(true);
                 setStoreAlldata([]);
                 break;
-            case 'CME/cmeCourseSuccess': {
+            case 'Dashboard/dashPerSuccess':
+            case 'Dashboard/dashMbSuccess':
+            case 'Dashboard/dashboardSuccess': {
                 hasReceivedResponse.current = true;
                 setLoading(false);
-                const conferences = CMEReducer?.cmeCourseResponse?.conferences || [];
-                const uniqueConferences = conferences.filter(
+                const activities =
+                    DashboardReducer?.dashPerResponse?.data?.my_activities ||
+                    DashboardReducer?.dashMbResponse?.data?.my_activities ||
+                    DashboardReducer?.dashboardResponse?.data?.my_activities ||
+                    CMEReducer?.cmeCourseResponse?.conferences ||
+                    [];
+                const uniqueActivities = activities.filter(
                     (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
                 );
-                setStoreAlldata(uniqueConferences);
+                setStoreAlldata(uniqueActivities);
                 break;
             }
-            case 'CME/cmeCourseFailure':
+            case 'Dashboard/dashPerFailure':
+            case 'Dashboard/dashMbFailure':
+            case 'Dashboard/dashboardFailure':
                 hasReceivedResponse.current = true;
                 setLoading(false);
                 setStoreAlldata([]);
                 break;
+            default:
+                if (CMEReducer?.status === 'CME/cmeCourseRequest') {
+                    hasReceivedResponse.current = false;
+                    setLoading(true);
+                    setStoreAlldata([]);
+                } else if (CMEReducer?.status === 'CME/cmeCourseSuccess') {
+                    hasReceivedResponse.current = true;
+                    setLoading(false);
+                    const conferences =
+                        DashboardReducer?.dashPerResponse?.data?.my_activities ||
+                        DashboardReducer?.dashMbResponse?.data?.my_activities ||
+                        DashboardReducer?.dashboardResponse?.data?.my_activities ||
+                        CMEReducer?.cmeCourseResponse?.conferences ||
+                        [];
+                    const uniqueConferences = conferences.filter(
+                        (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
+                    );
+                    setStoreAlldata(uniqueConferences);
+                } else if (CMEReducer?.status === 'CME/cmeCourseFailure') {
+                    hasReceivedResponse.current = true;
+                    setLoading(false);
+                    setStoreAlldata([]);
+                }
+                break;
         }
-    }, [CMEReducer.status, CMEReducer?.cmeCourseResponse?.conferences]);
+    }, [
+        DashboardReducer?.status,
+        DashboardReducer?.dashPerResponse?.data?.my_activities,
+        DashboardReducer?.dashMbResponse?.data?.my_activities,
+        DashboardReducer?.dashboardResponse?.data?.my_activities,
+        CMEReducer?.status,
+        CMEReducer?.cmeCourseResponse?.conferences,
+    ]);
     /**
 * Returns full name.
 * @param {*} obj - Input value.
@@ -501,6 +543,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     {!loading && (
                         <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
                             <TouchableOpacity onPress={() => {
+                                dispatch(clearCmeCourseData());
                                 navigation.dispatch(
                                     CommonActions.reset({
                                         index: 0,
@@ -539,6 +582,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     <View style={{ marginTop: normalize(10) }}>
                                         <Buttons
                                             onPress={() => {
+                                                dispatch(clearCmeCourseData());
                                                 navigation.dispatch(
                                                     CommonActions.reset({
                                                         index: 0,

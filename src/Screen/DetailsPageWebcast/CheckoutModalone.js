@@ -39,61 +39,63 @@ const CheckoutModalone = ({ statepicker, previousSpec, speciality, speciality_id
  * @returns {JSX.Element}
  */
 const weekFilterProfession = ({ item }) => {
-        const isSelected = selectedSpecialities.some(speciality => speciality.id === item?.id);
-        const isPreviouslySelected = formData[activeIndex]?.speciality_ids?.some(id => id === item.id)
-        console.log("isPreviouslySelected=====", activeIndex);
-                /**
- * Handles press.
- * @returns {void}
- */
-const handlePress = () => {
-            setSelectedSpecialities(prev => {
-                const newSelections = prev.map((item, index) =>
-                    index === activeIndex ? [...item] : []
-                );
-                const currentSelections = newSelections[activeIndex] || [];
-                if (!Array.isArray(currentSelections)) {
-                    console.error("Expected currentSelections to be an array:", currentSelections);
-                    return prev;
-                }
-                const isCurrentlySelected = currentSelections.some(speciality => speciality.id === item.id);
-                const hasPreviousSpecData = previousSpec && previousSpec.length > 0;
-                if (isCurrentlySelected) {
-                    newSelections[activeIndex] = currentSelections.filter(speciality => speciality.id !== item.id);
+        const hasSelectedSpec = Array.isArray(selectedSpecialities) && Array.isArray(selectedSpecialities[activeIndex]);
+        const isPreviouslySelected = hasSelectedSpec
+            ? selectedSpecialities[activeIndex].some(speciality => String(speciality?.id) === String(item?.id))
+            : Boolean(formData[activeIndex]?.speciality_ids?.some(id => String(id) === String(item?.id)));
+
+        const handlePress = () => {
+            const itemIdStr = String(item?.id);
+            if (hasSelectedSpec) {
+                const currentList = selectedSpecialities[activeIndex] || [];
+                const isSelected = currentList.some(s => String(s?.id) === itemIdStr);
+                let nextList = [];
+                if (isSelected) {
+                    nextList = currentList.filter(s => String(s?.id) !== itemIdStr);
                 } else {
-                    if (hasPreviousSpecData && activeIndex === determineIndexToMerge()) {
-                        newSelections[activeIndex] = [
-                            ...currentSelections,
-                            item,
-                            ...previousSpec
-                        ].filter((s, index, self) =>
-                            index === self.findIndex((t) => (t.id === s.id))
-                        );
-                    } else {
-                        newSelections[activeIndex] = [...currentSelections, item];
+                    if (currentList.length >= 5) {
+                        Alert.alert("eMedEvents", "You can select up to 5 specialities.");
+                        return;
                     }
+                    nextList = [...currentList, item];
                 }
-                const updatedSpecialities = newSelections[activeIndex].map(s => s.name);
-                const updatedSpecialityIds = newSelections[activeIndex].map(s => s.id);
-                handleSpecialityChange(activeIndex, updatedSpecialities, updatedSpecialityIds);
+                const updatedNames = nextList.map(s => s?.name);
+                const updatedIds = nextList.map(s => s?.id);
+                if (setSelectedSpecialities) {
+                    setSelectedSpecialities(prev => {
+                        if (!Array.isArray(prev)) return prev;
+                        return prev.map((list, idx) => idx === activeIndex ? nextList : list);
+                    });
+                }
+                handleSpecialityChange(activeIndex, updatedNames, updatedIds);
+                return;
+            }
+            const currentIds = formData[activeIndex]?.speciality_ids ? formData[activeIndex].speciality_ids.map(id => String(id)) : [];
+            const currentNames = formData[activeIndex]?.speciality ? formData[activeIndex].speciality.split(', ').map(s => s.trim()).filter(Boolean) : [];
 
-                return newSelections;
-            });
-        };
+            let updatedIds = [];
+            let updatedNames = [];
 
-                /**
- * Determine index to merge utility.
- * @returns {number}
- */
-const determineIndexToMerge = () => {
-            return 0;
+            if (currentIds.includes(itemIdStr)) {
+                const indicesToKeep = currentIds.map((id, idx) => id !== itemIdStr ? idx : -1).filter(idx => idx !== -1);
+                updatedIds = indicesToKeep.map(idx => currentIds[idx]);
+                updatedNames = indicesToKeep.map(idx => currentNames[idx] || '');
+            } else {
+                if (currentIds.length >= 5) {
+                    Alert.alert("eMedEvents", "You can select up to 5 specialities.");
+                    return;
+                }
+                updatedIds = [...currentIds, itemIdStr];
+                updatedNames = [...currentNames, item?.name];
+            }
+            handleSpecialityChange(activeIndex, updatedNames, updatedIds);
         };
 
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-                <DropdownOption selected={Boolean(isPreviouslySelected)} onPress={handlePress} >
+                <DropdownOption selected={Boolean(formData[activeIndex]?.speciality_ids?.some(id => String(id) === String(item?.id)))} onPress={handlePress} >
                     <View style={{ marginRight: normalize(10) }}>
-                        {formData[activeIndex]?.speciality_ids?.includes(item.id) ? (
+                        {formData[activeIndex]?.speciality_ids?.some(id => String(id) === String(item?.id)) ? (
                             <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.black, borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(2), borderWidth: 0.8 }}>
                                 <TickMark name="checkmark" color={Colorpath.white} size={17} />
                             </View>
@@ -119,7 +121,7 @@ const determineIndexToMerge = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
                         setstatepicker(!statepicker);

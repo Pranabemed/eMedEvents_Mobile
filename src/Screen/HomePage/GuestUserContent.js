@@ -8,8 +8,9 @@
  * Dependencies: react, react-native, react-native-safe-area-context, ../../Themes/Colorpath, ../../Utils/MyStatusBar, ../CMECreditValut/CMEChecklistModal, ./GuestUser.styles, ./GuestUserModule/hooks/useGuestUserContentData, ./GuestUserModule/components/*
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -73,6 +74,12 @@ import { GuestProfessionPopup } from './GuestUserModule/components/GuestProfessi
  * Falls back to shimmer or empty-safe rendering when section data is missing.
  */
 const GuestUserContent = ({ guest }) => {
+  const scrollViewRef = useRef(null);
+
+  useFocusEffect(useCallback(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  }, []));
+
   const { width } = useWindowDimensions();
   const carouselItemWidth = Math.max(width - 32, 0);
   const {
@@ -133,7 +140,7 @@ const GuestUserContent = ({ guest }) => {
     <>
       <MyStatusBar barStyle="dark-content" backgroundColor={Colorpath.Pagebg} translucent={false} />
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} stickyHeaderIndices={[1]}>
+        <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} stickyHeaderIndices={[1]}>
           <View style={[styles.page, { width, paddingBottom: 0 }]}>
             <GuestHomeHeader
               width={width}
@@ -238,10 +245,10 @@ const GuestUserContent = ({ guest }) => {
             ) : null}
 
             {isHomeLoading ? (
-              <GuestCarouselShimmer title="Specialty Featured" width={width} />
+              <GuestCarouselShimmer title="Specialty Bundle" width={width} />
             ) : specialtyFeaturedItems.length > 0 ? (
               <CarouselSection
-                title="Specialty Featured"
+                title="Specialty Bundle"
                 action="View all"
                 data={specialtyFeaturedItems}
                 renderItem={renderFeaturedCard}

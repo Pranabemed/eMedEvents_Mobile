@@ -124,36 +124,20 @@ const Login = (props) => {
  * @returns {void}
  */
 const handleInputChange = (val) => {
-    const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
-    const mobileRegex = /^\d{10}$/;
-    setEmail(val);
-    if (isNonUsaFlow) {
-      setMobile(false);
-      setIsPasswordFieldVisible(true);
-      return;
-    }
-    // Block input after first digit if no location permission
-    if (mobile && !locationPermission && val.length > 0) {
-      setEmail(val);
-      setInputBlocked(true);
-    }
-    if (val.trim() === '') {
-      setMobile(false);
-      setIsPasswordFieldVisible(false);
-      return;
-    }
-    if (emailRegex.test(val)) {
-      setIsPasswordFieldVisible(true);
-    } else if (mobileRegex.test(val)) {
-      setIsPasswordFieldVisible(false);
-    } else if (/^\d+$/.test(val)) {
+    const digits = val.replace(/\D/g, '');
+    const isPhoneNumber = !isNonUsaFlow && digits.length > 0 && !/[a-zA-Z]/.test(val);
+    if (isPhoneNumber) {
+      const cappedDigits = digits.slice(0, 10);
+      const formatted = (phoneCountryCode || "+1") === "+1" ? formatUsPhone(cappedDigits) : cappedDigits;
+      setEmail(formatted);
+      setMobileHd(formatted);
       setMobile(true);
       setIsPasswordFieldVisible(false);
-    } else if (/^[a-zA-Z]/.test(val)) {
-      setIsPasswordFieldVisible(false);
     } else {
-      setIsPasswordFieldVisible(false);
+      setEmail(val);
+      setMobileHd("");
       setMobile(false);
+      setIsPasswordFieldVisible(true);
     }
   };
     /**
@@ -877,10 +861,14 @@ const onBackPress = () => {
         {/* <Loader visible={AuthReducer?.status == 'Auth/loginRequest' || nonloader || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} /> */}
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? normalize(10) : 0}
         >
-          <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            keyboardShouldPersistTaps="always" 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+          >
             <View style={[styles.logoContainer, Platform.OS === 'ios' ? styles.logoContainerIos : styles.logoContainerAndroid]}>
               <Image source={Imagepath.eMedfulllogo} style={styles.logoImage} />
             </View>

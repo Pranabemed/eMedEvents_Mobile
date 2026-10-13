@@ -79,7 +79,7 @@ const weekFilterProfession = ({ item, index }) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            <View style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
                     <DropDownHeader standardized title="State*" onClosePress={() => {
                         setPratice(false);
@@ -97,7 +97,7 @@ const weekFilterProfession = ({ item, index }) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <DropdownSearch editable
+                    <DropdownSearch required editable
                             maxLength={40}
                             onChangeText={searchStateNamePratice}
                             value={searchpratice}

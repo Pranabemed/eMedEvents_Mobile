@@ -41,6 +41,8 @@ let status = "";
  * @returns {JSX.Element}
  */
 const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
+    const renewalUrl = typeof renewal === 'string' ? renewal.trim() : '';
+    const hasValidRenewalUrl = /^https?:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d{1,5})?(?:[/?#][^\s]*)?$/i.test(renewalUrl);
     const {
         setExpireDate,
         setFinddata,
@@ -504,12 +506,12 @@ const handleOpenRenewalLink = (renewallink) => {
                         <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }))}>
                             <Text style={styles.update}>{"Update"}</Text>
                         </Pressable>
-                        <Pressable style={styles.renewRow} onPress={() => handleOpenRenewalLink(renewal)}>
+                        {hasValidRenewalUrl && <Pressable style={styles.renewRow} onPress={() => handleOpenRenewalLink(renewalUrl)}>
                             <Text style={styles.renew}>{"Renew State Licenses"}</Text>
                             <View style={styles.arrowCircleBlack}>
                                 <ArrowNeed name={"arrow-up-right"} color={"#FFFFFF"} size={12} />
                             </View>
-                        </Pressable>
+                        </Pressable>}
                     </View>
                 </View> : <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
                     <View style={styles.activebody}>

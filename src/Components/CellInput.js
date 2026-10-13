@@ -1,3 +1,4 @@
+import { dropdownFieldName, dropdownPlaceholder } from './DropDownHeader';
 import { countryIdentity, isUsCountry } from '../Utils/Helpers/ApplicableCountry';
 import { getCountryDialCode } from '../Utils/Helpers/PhoneCountry';
 import { getCountryAndDialCode } from '../Utils/Helpers/IPServer';
@@ -54,6 +55,7 @@ const InputField = forwardRef((
     {
         spaceneeded,
         label,
+        dropdownPresentation = false,
         value,
         onChangeText,
         placeholder,
@@ -314,7 +316,7 @@ const floatingLabelNode = (text) => (
     const rowContent = (
         <View style={[staticStyles.inputWrapper, wrapperStyle]}>
 
-            {floatingLabelNode(icondisable && bgv ? '' : label)}
+            {floatingLabelNode(icondisable && bgv ? '' : dropdownPresentation ? (displayValue ? dropdownFieldName(label) : dropdownPlaceholder(label)) : label)}
 
             {countryCodeNode}
 
