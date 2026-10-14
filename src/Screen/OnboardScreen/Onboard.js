@@ -25,6 +25,7 @@ import { getPublicIP } from '../../Utils/Helpers/IPServer';
 import { useIsFocused } from '@react-navigation/native';
 import analytics from '@react-native-firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Snackbar from 'react-native-snackbar';
 
 /**
  * Reusable Onboard component.
@@ -87,6 +88,8 @@ const Onboard = (props) => {
     const sliderRef = useRef(null);
     const autoScrollRef = useRef(null);
     const currentIndexRef = useRef(0);
+    const isExitSnackbarVisibleRef = useRef(false);
+    const exitSnackbarTimeoutRef = useRef(null);
     const isFocused = useIsFocused();
     const isCompactWidth = width <= 290;
     // const isLastSlide = currentIndex === sliderData.length - 1;
@@ -154,10 +157,6 @@ const _renderItem = ({ item }) => {
         );
     };
 
-    const BackToback = useCallback(() => {
-        props.navigation.goBack();
-    }, [props.navigation]);
-
     const continueAsGuest = useCallback(() => {
         const guestSessionId = String(Math.floor(10000000000 + Math.random() * 90000000000));
         AsyncStorage.setItem('PLAYERSESSION', guestSessionId)
@@ -181,12 +180,40 @@ const _renderItem = ({ item }) => {
     }, [props.navigation]);
 
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
-            BackToback();
+        if (!isFocused) return undefined;
+
+        const resetExitPrompt = () => {
+            isExitSnackbarVisibleRef.current = false;
+            if (exitSnackbarTimeoutRef.current) {
+                clearTimeout(exitSnackbarTimeoutRef.current);
+                exitSnackbarTimeoutRef.current = null;
+            }
+        };
+
+        const exitApp = () => {
+            resetExitPrompt();
+            BackHandler.exitApp();
+        };
+
+        const onBackPress = () => {
+            if (isExitSnackbarVisibleRef.current) {
+                exitApp();
+                return true;
+            }
+
+            isExitSnackbarVisibleRef.current = true;
+            Snackbar.show({
+                text: 'Press back again to exit',
+                duration: Snackbar.LENGTH_LONG,
+                backgroundColor: '#2C2C2C',
+                textColor: '#FFFFFF',
+                action: {
+                    text: 'EXIT',
+                    textColor: '#D87AF6',
+                    onPress: exitApp,
+                },
+            });
+            exitSnackbarTimeoutRef.current = setTimeout(resetExitPrompt, 3000);
             return true;
         };
 
@@ -195,8 +222,11 @@ const onBackPress = () => {
             onBackPress
         );
 
-        return () => backHandler.remove();
-    }, [BackToback]);
+        return () => {
+            backHandler.remove();
+            resetExitPrompt();
+        };
+    }, [isFocused]);
 
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });

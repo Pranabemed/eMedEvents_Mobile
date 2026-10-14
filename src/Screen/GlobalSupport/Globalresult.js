@@ -1214,7 +1214,7 @@ const Globalresult = (props) => {
                         </View>
                     </View>
                 )}
-                {!isRouteRefreshing && hasFetchedResults && !loading && storeAlldata?.length > 0 && (
+                {!isRouteRefreshing && hasFetchedResults && storeAlldata?.length > 0 && (
                     <>
                         {isMostPopularConferences ? (
                             <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>

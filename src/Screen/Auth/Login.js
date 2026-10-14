@@ -912,6 +912,10 @@ const onBackPress = () => {
                       label="Email / Cell Number"
                       value={mobileHd}
                       onChangeText={(val) => {
+                        if (/[a-zA-Z@]/.test(val)) {
+                          handleInputChange(val);
+                          return;
+                        }
                         const digits = val.replace(/\D/g, '').slice(0, 10);
                         if (phoneCountryCode == "+1") {
                           const formatted = formatPhoneNumber(digits);
@@ -926,7 +930,7 @@ const onBackPress = () => {
                       }}
                       placeholder=""
                       placeholderTextColor="#949494"
-                      keyboardType="number-pad"
+                      keyboardType="default"
                       showCountryCode={true}
                       countryCode={phoneCountryCode || "+1"}
                       maxlength={phoneCountryCode == "+1" ? 14 : 10}

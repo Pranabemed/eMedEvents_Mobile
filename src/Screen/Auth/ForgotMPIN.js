@@ -246,7 +246,7 @@ const ForgotMPIN = (props) => {
                                     onChangeText={handleInputChange}
                                     placeholder=""
                                     placeholderTextColor="#949494"
-                                    keyboardType={mobile ? "phone-pad" : "default"}
+                                    keyboardType="default"
                                     showCountryCode={Boolean(mobile && email && email.length > 0)}
                                     countryCode={mobile && email?.length > 0 ? (cellCountry || "+1") : undefined}
                                     maxlength={100}
