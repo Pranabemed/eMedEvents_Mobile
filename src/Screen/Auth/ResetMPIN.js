@@ -207,7 +207,7 @@ const onBackPress = () => {
                                         <Text style={[styles.helperText, styles.errorText]}>
                                             {!cnfrmPasswordValid
                                                 ? 'Password must be 8+ chars, with 1 uppercase , 1 special character and 1 number.'
-                                                : 'Passwords do not match.'}
+                                                : 'Password do not match.'}
                                         </Text>
                                     </View>
                                 )}

@@ -158,6 +158,8 @@ const GuestUser = props => {
   }, [props.navigation, selectedProfession, selectedState, resetGuestSelections]);
 
   useEffect(() => {
+    let hasInitialized = false;
+
         /**
  * Init guest data utility.
  *
@@ -205,10 +207,33 @@ const initGuestData = async () => {
         console.log('Error initializing guest data:', err);
       }
     };
-    if (isFocused) {
+
+    const initializeAfterTransition = () => {
+      if (!isFocused || hasInitialized) return;
+      hasInitialized = true;
       initGuestData();
+    };
+
+    if (!isFocused) return undefined;
+
+    const unsubscribe = typeof props.navigation?.addListener === 'function'
+      ? props.navigation.addListener('transitionEnd', event => {
+          if (!event?.data?.closing) {
+            initializeAfterTransition();
+          }
+        })
+      : null;
+
+    if (!unsubscribe) {
+      initializeAfterTransition();
     }
-  }, [isFocused]);
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [isFocused, props.navigation]);
 
   useEffect(() => {
     if (!isFocused) return undefined;

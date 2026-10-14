@@ -174,6 +174,7 @@ const PersonalInfo = (props) => {
     const isInitialSpecLoaded = useRef(false);
     const isNavigatingRef = useRef(false);
     const professionUpdatePendingRef = useRef(false);
+    const deaSelectionTouchedRef = useRef(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
         professionUpdateRequired: false,
@@ -244,7 +245,16 @@ const PersonalInfo = (props) => {
         const { fullProf } = parseProfessionAndType(profession, fallbackType);
 
         if (!props?.route?.params?.forceProfessionChange) setCountry(fullProf || '');
-        setSelectedOption(source?.professional_information?.dea_registered);
+        const deaRegistered = source?.professional_information?.dea_registered;
+        if (!deaSelectionTouchedRef.current) {
+            setSelectedOption(
+                deaRegistered === 1 || deaRegistered === '1' || deaRegistered === true
+                    ? '1'
+                    : deaRegistered === 0 || deaRegistered === '0' || deaRegistered === false
+                        ? '0'
+                        : null
+            );
+        }
         const npiNumber = source?.professional_information?.npi_number;
         setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
     }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, nonUsaFlowState?.profession_type]);
@@ -900,18 +910,30 @@ const PersonalInfo = (props) => {
                                         <View style={styles.optionContainer}>
                                             <CustomRadioButton
                                                 selected={selectedOption === '1'}
-                                                onPress={() => setSelectedOption('1')}
+                                                onPress={() => {
+                                                    deaSelectionTouchedRef.current = true;
+                                                    setSelectedOption('1');
+                                                }}
                                             />
-                                            <TouchableOpacity onPress={() => setSelectedOption('1')}>
+                                            <TouchableOpacity onPress={() => {
+                                                deaSelectionTouchedRef.current = true;
+                                                setSelectedOption('1');
+                                            }}>
                                                 <Text style={styles.optionText}>{"Yes"}</Text>
                                             </TouchableOpacity>
                                         </View>
                                         <View style={styles.optionContainer}>
                                             <CustomRadioButton
                                                 selected={selectedOption === '0'}
-                                                onPress={() => setSelectedOption('0')}
+                                                onPress={() => {
+                                                    deaSelectionTouchedRef.current = true;
+                                                    setSelectedOption('0');
+                                                }}
                                             />
-                                            <TouchableOpacity onPress={() => setSelectedOption('0')}>
+                                            <TouchableOpacity onPress={() => {
+                                                deaSelectionTouchedRef.current = true;
+                                                setSelectedOption('0');
+                                            }}>
                                                 <Text style={styles.optionText}>{"No"}</Text>
                                             </TouchableOpacity>
                                         </View>

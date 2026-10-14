@@ -834,22 +834,46 @@ const onBackPress = () => {
     props.navigation.setOptions({ gestureEnabled: false });
   }, []);
   useEffect(() => {
-      if (!isFocus) return;
-      let active = true;
-      const task = InteractionManager.runAfterInteractions(() => {
-          generateDeviceToken()
-              .then(token => {
-                  if (active) setFcm(token);
-              })
-              .catch(err => {
-                  if (active) showErrorAlert("Unable to enable notifications", err);
-              });
+    if (!isFocus) return;
+    let active = true;
+    let hasRequested = false;
+    let interactionTask = null;
+
+    const requestToken = () => {
+      if (!active || hasRequested) return;
+      hasRequested = true;
+      interactionTask = InteractionManager.runAfterInteractions(() => {
+        if (!active) return;
+        generateDeviceToken()
+          .then(token => {
+            if (active && token) setFcm(token);
+          })
+          .catch(err => {
+            if (active) showErrorAlert("Unable to enable notifications", err);
+          });
       });
-      return () => {
-          active = false;
-          task.cancel();
-      };
-  }, [isFocus]);
+    };
+
+    const unsubscribe = typeof props.navigation?.addListener === 'function'
+      ? props.navigation.addListener('transitionEnd', (e) => {
+          if (!e?.data?.closing) {
+            requestToken();
+          }
+        })
+      : null;
+
+    if (!unsubscribe) {
+      requestToken();
+    }
+
+    return () => {
+      active = false;
+      interactionTask?.cancel();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [isFocus, props.navigation]);
   return (
     <>
       <MyStatusBar
