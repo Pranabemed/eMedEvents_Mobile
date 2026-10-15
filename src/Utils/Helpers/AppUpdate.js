@@ -228,11 +228,12 @@ const AppUpdateHandler = () => {
   const listenerAdded = useRef(false);  // Android download listener guard
   const isChecking = useRef(false);  // Debounce simultaneous checks
   const modalShown = useRef(false);  // Track shown state without closure issues
+  const dismissedForSession = useRef(false); // Reset automatically on fresh app launch
   const lastCheckedAt = useRef(0); // Throttle checks triggered by navigation
 
   // ─── Open update modal ───────────────────────────────────────────────────────
   const openUpdateModal = useCallback((version, mandatory, url) => {
-    if (modalShown.current) return; // already visible, don't stack
+    if (modalShown.current || dismissedForSession.current) return; // already visible or dismissed this session
     modalShown.current = true;
     setLatestVersion(version ?? '');
     setIsMandatory(!!mandatory);
@@ -247,6 +248,11 @@ const AppUpdateHandler = () => {
     setProgress(0);
     setStatusText('');
   }, []);
+
+  const handleLater = useCallback(() => {
+    dismissedForSession.current = true;
+    closeModal();
+  }, [closeModal]);
 
   // ─── iOS check ───────────────────────────────────────────────────────────────
   const checkIOS = useCallback(async (currentVersion) => {
@@ -579,7 +585,7 @@ const startUpdate = async () => {
               {!isMandatory && (
                 <TouchableOpacity
                   style={styles.laterBtn}
-                  onPress={closeModal}
+                  onPress={handleLater}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.laterText}>Later</Text>
