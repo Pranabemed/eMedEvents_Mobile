@@ -15,6 +15,7 @@ import NonPhysicianCat from '../../Components/NonPhysicianCat';
 import StateIntData from '../../Components/StateInt';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import styles from './NoIntData.styles';
+import { useIsFocused } from '@react-navigation/native';
 
 /**
  * Reusable MainInt component.
@@ -30,6 +31,7 @@ import styles from './NoIntData.styles';
  * @returns {JSX.Element}
  */
 const MainInt = (props) => {
+  const isFocus = useIsFocused();
   const {
     takestate,
     addit,
@@ -54,6 +56,7 @@ const MainInt = (props) => {
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
   useEffect(() => {
+    if (!isFocus) return undefined;
         /**
  * Reset state utility.
  * @returns {void}
@@ -109,7 +112,7 @@ onPress: () => {
       backHandler.remove();
       resetState();
     };
-  }, []);
+  }, [isFocus]);
   useLayoutEffect(() => {
           props.navigation.setOptions({ gestureEnabled: false });
       }, [props.navigation]);

@@ -56,6 +56,7 @@ const InputField = forwardRef((
         spaceneeded,
         label,
         dropdownPresentation = false,
+        required = false,
         value,
         onChangeText,
         placeholder,
@@ -316,7 +317,7 @@ const floatingLabelNode = (text) => (
     const rowContent = (
         <View style={[staticStyles.inputWrapper, wrapperStyle]}>
 
-            {floatingLabelNode(icondisable && bgv ? '' : dropdownPresentation ? (displayValue ? dropdownFieldName(label) : dropdownPlaceholder(label)) : label)}
+            {floatingLabelNode(icondisable && bgv ? '' : `${dropdownPresentation ? (displayValue ? dropdownFieldName(label) : dropdownPlaceholder(label)) : label}${required ? '*' : ''}`)}
 
             {countryCodeNode}
 

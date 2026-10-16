@@ -62,6 +62,13 @@ const AppProvider = ({ children }) => {
   const dashboardLicensures = useSelector(
     state => state?.DashboardReducer?.dashboardResponse?.data?.licensures
   );
+  const dashPerLicensures = useSelector(
+    state => state?.DashboardReducer?.dashPerResponse?.data?.licensures
+  );
+  const dashMbLicensures = useSelector(
+    state => state?.DashboardReducer?.dashMbResponse?.data?.licensures
+  );
+  const dashboardStatus = useSelector(state => state?.DashboardReducer?.status);
   const prevAuthTokenRef = useRef(authToken);
 
     /**
@@ -90,26 +97,43 @@ const resetSessionContext = () => {
   };
 
   useEffect(() => {
-    if (dashboardLicensures === undefined || dashboardLicensures === null) return;
-
-    if (dashboardLicensures === 0) {
-      setFulldashbaord(0);
-      return;
+    const licenseSources = [dashPerLicensures, dashMbLicensures, dashboardLicensures];
+    const isLicensureSuccessStatus = [
+      'Dashboard/dashPerSuccess',
+      'Dashboard/dashMbSuccess',
+      'Dashboard/dashboardSuccess',
+    ].includes(dashboardStatus);
+    let resolvedLicensures;
+    if (dashboardStatus === 'Dashboard/dashPerSuccess' && Array.isArray(dashPerLicensures)) {
+      resolvedLicensures = dashPerLicensures;
+    } else if (dashboardStatus === 'Dashboard/dashMbSuccess' && Array.isArray(dashMbLicensures)) {
+      resolvedLicensures = dashMbLicensures;
+    } else if (dashboardStatus === 'Dashboard/dashboardSuccess' && Array.isArray(dashboardLicensures)) {
+      resolvedLicensures = dashboardLicensures;
+    } else {
+      resolvedLicensures =
+        licenseSources.find(source => Array.isArray(source) && source.length > 0) ||
+        licenseSources.find(Array.isArray);
     }
 
-    if (!Array.isArray(dashboardLicensures)) {
-      setFulldashbaord([]);
-      return;
-    }
+    if (!resolvedLicensures) return;
 
-    const uniqueStates = dashboardLicensures.filter((state, index, self) => {
+    const uniqueStates = resolvedLicensures.filter((state, index, self) => {
       return index === self.findIndex((s) =>
         s.state_id === state.state_id &&
         s.board_id === state.board_id
       );
     });
-    setFulldashbaord(uniqueStates);
-  }, [dashboardLicensures]);
+    setFulldashbaord(current => {
+      if (!isLicensureSuccessStatus && Array.isArray(current)) {
+        return current;
+      }
+      if (Array.isArray(current) && JSON.stringify(current) === JSON.stringify(uniqueStates)) {
+        return current;
+      }
+      return uniqueStates;
+    });
+  }, [dashboardStatus, dashPerLicensures, dashMbLicensures, dashboardLicensures]);
 
   useEffect(() => {
     // Clear all stale in-memory dashboard/session data when account token changes.
@@ -136,6 +160,7 @@ const clearContextData = () => {
     setAddit,
     fulldashbaord,
     setFulldashbaord,
+    setFulldashboard: setFulldashbaord,
     setStateCount,
     stateCount,
     isConnected,
@@ -169,8 +194,9 @@ const clearContextData = () => {
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('Connection State:', state.isConnected);
-      setIsConnected(state.isConnected);
+      const hasInternet = Boolean(state.isConnected && state.isInternetReachable !== false);
+      console.log('Connection State:', hasInternet);
+      setIsConnected(hasInternet);
     });
 
     return () => unsubscribe();
@@ -179,7 +205,7 @@ const clearContextData = () => {
   return (
     <AppContext.Provider value={values}>
       {children}
-      {!isConnected && <Internet />}
+      {isConnected === false && <Internet />}
     </AppContext.Provider>
   );
 };

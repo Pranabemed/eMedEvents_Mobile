@@ -1,10 +1,9 @@
-import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 /**
  * Course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Course, CMEPress, handleLinearTextChange, onBackPress, styles.
  */
 
-import { View, Text, Platform, TouchableOpacity, StyleSheet, FlatList, Animated, Easing, BackHandler, Alert, Image } from 'react-native';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { View, Text, Platform, TouchableOpacity, StyleSheet, FlatList, BackHandler, Alert } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
 import PageHeader from '../../Components/PageHeader';
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -12,14 +11,12 @@ import GradientButton from '../../Components/LinearButton';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
-import Modal from 'react-native-modal';
 import OnlineCourse from './OnlineCourse';
 import Livecourse from './Livecourse';
 import { CommonActions } from '@react-navigation/native';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 import Loader from '../../Utils/Helpers/Loader';
 import { useSelector } from 'react-redux';
-import Imagepath from '../../Themes/Imagepath';
 import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
@@ -54,7 +51,6 @@ const CMEPress = () => {
     const cmecourseData = [{ id: 0, name: "All" }, { id: 1, name: "Pending" }, { id: 2, name: "Completed" }];
     const [fetchname, setFetchname] = useState("All");
     const [fetchnamechnage, setFetchnamechange] = useState("All");
-    const [modalShow, setModalShow] = useState(false);
     const [loadingdownst, setLoadingdownst] = useState(false);
     const [loadingdownstlv, setLoadingdownstlv] = useState(false);
         /**
@@ -67,8 +63,6 @@ const handleLinearTextChange = (isOnline) => {
         setFetchname("All");
         setFetchnamechange("All");
     };
-    const animatedboardname = useRef(new Animated.Value(1)).current;
-    const scalvaluesboard = useRef(new Animated.Value(0)).current;
     const [filteredItems, setFilteredItems] = useState([]);
     const [pendingall, setPendingall] = useState([]);
     const [compltall, setCompltall] = useState([]);
@@ -82,42 +76,6 @@ const handleLinearTextChange = (isOnline) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useEffect(() => {
-        const targetImg = fetchname ? 1 : 0.8;
-        Animated.parallel([
-            Animated.timing(animatedboardname, {
-                toValue: fetchname ? 1 : 0,
-                duration: 600,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-            }),
-            Animated.timing(scalvaluesboard, {
-                toValue: targetImg,
-                duration: 600,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [fetchname]);
-    const animatedboardnamelive = useRef(new Animated.Value(1)).current;
-    const scalvaluesboardlive = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-        const livecourse = fetchnamechnage ? 1 : 0.8;
-        Animated.parallel([
-            Animated.timing(animatedboardnamelive, {
-                toValue: fetchnamechnage ? 1 : 0,
-                duration: 600,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-            }),
-            Animated.timing(scalvaluesboardlive, {
-                toValue: livecourse,
-                duration: 600,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [fetchnamechnage]);
     useEffect(() => {
                 /**
  * On back press utility.
@@ -176,84 +134,28 @@ const onBackPress = () => {
                     </View>
                 </View>
                 <View>
-                    <View style={{ justifyContent: "center", alignItems: "center", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                        {linearText ? (
-                            <View>
-                                <Animated.View style={{ opacity: animatedboardname, transform: [{ scale: scalvaluesboard }] }}>
-                                    {fetchname ? (
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginLeft: normalize(0) }}>
-                                            {"Online Course"}
-                                        </Text>
-                                    ) : null}
-                                </Animated.View>
-                                <View style={{ width: normalize(279), marginTop: normalize(5) }}>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setModalShow(!modalShow);
-                                        }}
-                                    >
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0 }}>
-                                                {fetchname ? fetchname : "Online Course"}
-                                            </Text>
-                                            <TouchableOpacity style={{ bottom: normalize(17) }} onPress={() => { setModalShow(!modalShow); }}>
-                                                <Image source={Imagepath.SortedPng} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
-                                                {/* <ArrowIcon name={fetchname ? 'arrow-drop-up' : 'arrow-drop-down'} size={28} color={"#000000"} /> */}
-                                            </TouchableOpacity>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            // <TouchableOpacity onPress={() => { setModalShow(!modalShow) }} style={{ height: normalize(45), width: normalize(290), borderRadius: normalize(10), borderWidth: 0.5, borderColor: "#DDDDDD", backgroundColor: "#FFFFFF", justifyContent: "space-between", flexDirection: "row" }}>
-                            //     <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: normalize(13), marginLeft: normalize(10) }}>
-                            //         {fetchname}
-                            //     </Text>
-                            //     <ArrowIcons
-                            //         name="keyboard-arrow-down"
-                            //         size={30}
-                            //         color={Colorpath.black}
-                            //         style={{ paddingVertical: normalize(10), marginLeft: normalize(10) }}
-                            //     />
-                            // </TouchableOpacity>
-                        ) : (
-                            // <TouchableOpacity onPress={() => { setModalShow(!modalShow) }} style={{ height: normalize(45), width: normalize(290), borderRadius: normalize(10), borderWidth: 0.5, borderColor: "#DDDDDD", backgroundColor: "#FFFFFF", justifyContent: "space-between", flexDirection: "row" }}>
-                            //     <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: normalize(13), marginLeft: normalize(10) }}>
-                            //         {fetchnamechnage}
-                            //     </Text>
-                            //     <ArrowIcons
-                            //         name="keyboard-arrow-down"
-                            //         size={30}
-                            //         color={Colorpath.black}
-                            //         style={{ paddingVertical: normalize(10), marginLeft: normalize(10) }}
-                            //     />
-                            // </TouchableOpacity>
-                            <View>
-                                <Animated.View style={{ opacity: animatedboardnamelive, transform: [{ scale: scalvaluesboardlive }] }}>
-                                    {fetchnamechnage ? (
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginLeft: normalize(0) }}>
-                                            {"Live Course"}
-                                        </Text>
-                                    ) : null}
-                                </Animated.View>
-                                <View style={{ width: normalize(279), marginTop: normalize(5) }}>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setModalShow(!modalShow);
-                                        }}
-                                    >
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0 }}>
-                                                {fetchnamechnage ? fetchnamechnage : "Live Course"}
-                                            </Text>
-                                            <TouchableOpacity style={{ bottom: normalize(17) }} onPress={() => { setModalShow(!modalShow); }}>
-                                                <Image source={Imagepath.SortedPng} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
-                                                {/* <ArrowIcon name={fetchnamechnage ? 'arrow-drop-up' : 'arrow-drop-down'} size={28} color={"#000000"} /> */}
-                                            </TouchableOpacity>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )}
+                    <View style={styles.statusRow}>
+                        {cmecourseData.map(item => {
+                            const selectedStatus = linearText ? fetchname : fetchnamechnage;
+                            const isSelected = selectedStatus === item.name;
+                            return (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={styles.statusTab}
+                                    onPress={() => {
+                                        if (linearText) {
+                                            setFetchname(item.name);
+                                        } else {
+                                            setFetchnamechange(item.name);
+                                        }
+                                    }}>
+                                    <Text style={[styles.statusText, isSelected && styles.statusTextActive]}>
+                                        {item.name}
+                                    </Text>
+                                    <View style={[styles.statusUnderline, isSelected && styles.statusUnderlineActive]} />
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                     <View style={{ bottom: normalize(10) }}>
                         {linearText && <OnlineCourse loading={loading} setLoading={setLoading} filteredItems={filteredItems} setFilteredItems={setFilteredItems} setPendingall={setPendingall} pendingall={pendingall} setCompltall={setCompltall} compltall={compltall} dataAll={dataAll} setDataAll={setDataAll} setLoadingdownst={setLoadingdownst} loadingdownst={loadingdownst} crediwhole={props?.route?.params?.taskData} fetchname={fetchname} />}
@@ -262,62 +164,6 @@ const onBackPress = () => {
                         {!linearText && <Livecourse setLoadingdownstlv={setLoadingdownstlv} loadingdownstlv={loadingdownstlv} creditwholelive={props?.route?.params?.taskData} fetchnamelive={fetchnamechnage} />}
                     </View>
                 </View>
-                <Modal
-                    animationIn={'slideInUp'}
-                    animationOut={'slideOutDown'}
-                    isVisible={modalShow}
-                    backdropColor={Colorpath.black}
-                    style={{
-                        width: '100%',
-                        alignSelf: 'center',
-                        margin: 0,
-                    }}
-                    onBackdropPress={() => setModalShow(false)}>
-                    <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => setModalShow(false)}>
-
-                        <View
-                            style={{
-                                borderRadius: normalize(7),
-                                height: Platform.OS === 'ios' ? normalize(180) : normalize(180),
-                                position: 'absolute',
-                                bottom: 0,
-                                width: '100%',
-                                backgroundColor: '#fff',
-                            }}>
-                            <DropDownHeader standardized title="Course Status" onClosePress={() => setModalShow(false)} />
-                            <DropdownList
-                                contentContainerStyle={{
-                                    // paddingBottom: normalize(70),
-                                    paddingTop: normalize(7),
-                                }}
-                                showsVerticalScrollIndicator={false}
-                                keyExtractor={item => item.id}
-                                data={cmecourseData}
-                                renderItem={({ item, index }) => {
-                                    return (
-                                        <DropdownOption
-                                            key={index}
-                                            onPress={() => {
-                                                if (linearText) {
-                                                    setFetchname(item?.name);
-                                                } else {
-                                                    setFetchnamechange(item?.name);
-                                                }
-                                                setModalShow(false);
-                                            }}
-                                            selected={(linearText ? fetchname : fetchnamechnage) === item?.name}>
-                                            <Text style={dropdownStyles.optionText}>
-                                                {item?.name}
-                                            </Text>
-                                        </DropdownOption>
-                                    );
-                                }}
-                            />
-                        </View>
-                    </TouchableOpacity>
-                </Modal>
             </SafeAreaView>}
         </>
     )
@@ -335,6 +181,40 @@ export default Course
  * @returns {*}
  */
 const styles = StyleSheet.create({
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: normalize(300),
+        alignSelf: 'center',
+        marginTop: normalize(12),
+        marginBottom: normalize(8),
+    },
+    statusTab: {
+        width: normalize(96),
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: normalize(7),
+    },
+    statusText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: '#666666',
+    },
+    statusTextActive: {
+        fontFamily: Fonts.InterSemiBold,
+        color: Colorpath.ButtonColr,
+        fontWeight: 'bold',
+    },
+    statusUnderline: {
+        width: '100%',
+        height: normalize(2),
+        marginTop: normalize(7),
+        backgroundColor: 'transparent',
+    },
+    statusUnderlineActive: {
+        backgroundColor: Colorpath.ButtonColr,
+    },
     dropDownItem: {
         borderWidth: 1,
         marginTop: normalize(10),

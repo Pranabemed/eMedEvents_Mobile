@@ -860,14 +860,18 @@ const renderAddLicenseCard = () => (
                                 itemHeight={windowHeight * 0.9}
                                 sliderHeight={windowHeight * 0.9}
                                 scrollAnimationDuration={1000}
-                                renderItem={({ item, index }) => <Carouselcarditem hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
+                                renderItem={({ item, index }) => <Carouselcarditem allProfTake={allProfTake} hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} onCloseExpiredModal={() => {
+                                    if (fulldashbaord?.length > 1 && index < fulldashbaord.length - 1) {
+                                        carouselRef.current?.snapToItem(index + 1);
+                                    }
+                                }} />}
                                 firstItem={initialIndex || 0}
                                 onSnapToItem={(index) => {
                                     handleAllIndex(index);
                                 }}
                             />
-                            <View style={styles.paginationContainer}>
-                                {fulldashbaord && fulldashbaord?.length >= 2 && fulldashbaord?.map((_, index) => (
+                            {fulldashbaord?.length >= 2 && <View style={styles.paginationContainer}>
+                                {fulldashbaord.map((_, index) => (
                                     <View
                                         key={index}
                                         style={[
@@ -876,7 +880,7 @@ const renderAddLicenseCard = () => (
                                         ]}
                                     />
                                 ))}
-                            </View>
+                            </View>}
                             {profileType !== 'SkipProfile' ? (
                                 (!enables && !bothNoRequirement) ? <View>
                                     <Buttons
@@ -1055,7 +1059,10 @@ const styles = StyleSheet.create({
     paginationContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginVertical: Platform.OS === 'ios' ? normalize(18) : normalize(10)
+        alignItems: 'center',
+        height: normalize(12),
+        marginTop: normalize(3),
+        marginBottom: normalize(3),
     },
     dot: {
         height: 10,

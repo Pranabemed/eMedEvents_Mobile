@@ -16,7 +16,7 @@ import Buttons from '../../Components/Button';
 import CustomModal from '../../Components/Modal';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
-import { againloginsiginRequest, chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer';
+import { againloginsiginRequest, chooseStatecardRequest, licesensRequest } from '../../Redux/Reducers/AuthReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
@@ -282,11 +282,6 @@ const resendMobileOTP = () => {
         }
     }
 
-    const validHandles = useMemo(() => new Set([
-        "Physician - MD",
-        "Physician - DO",
-        "Physician - DPM"
-    ]), []);
         /**
  * Normalizes flag.
  * @param {*} value - Input value.
@@ -301,26 +296,30 @@ const normalizeFlag = (value) => {
     const loginResponse = AuthReducer?.againloginsiginResponse || {};
     const user = loginResponse?.user || {};
     const chooseStatecardResponse = AuthReducer?.chooseStatecardResponse || {};
-    const isGuestPrimeUser = useMemo(() => {
-        const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
-        const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
-        return subscriptionUser === 'non-subscribed' && subscriptions.length === 0;
-    }, [user?.subscription_user, user?.subscriptions]);
-
+    const currentMainProfile = DashboardReducer?.mainprofileResponse;
     // Memoized derived values
-    const profFromDashboard = useMemo(() => (
-        user?.profession && user?.profession_type
-            ? `${user.profession} - ${user.profession_type}`
-            : null
-    ), [user.profession, user.profession_type]);
+    const profFromDashboard = useMemo(() => {
+        const professionalInformation = currentMainProfile?.professional_information || {};
+        const profession = String(professionalInformation?.profession || '').trim();
+        const professionType = String(professionalInformation?.profession_type || '').trim();
+        return profession && professionType && !profession.includes('-')
+            ? `${profession} - ${professionType}`
+            : profession || null;
+    }, [currentMainProfile]);
 
     const allProfTake = useMemo(() => (
-        validHandles.has(profFromDashboard)
-    ), [validHandles, profFromDashboard]);
+        ['physician-md', 'physician-do', 'physician-dpm'].includes(
+            String(profFromDashboard || '').toLowerCase().replace(/\s+/g, '')
+        )
+    ), [profFromDashboard]);
 
     const token = useMemo(() => loginResponse?.token, [loginResponse]);
     const tokenObj = useMemo(() => ({ token, key: {} }), [token]);
     const prevToken = useRef(null);
+    const prevLicensureProfession = useRef(null);
+    const profileRequestPending = useRef(false);
+    const profileClearedForRequest = useRef(false);
+    const [isCurrentProfileReady, setIsCurrentProfileReady] = useState(false);
 
     // Track if we have valid state license data
     const hasStateLicenseData = useRef(false);
@@ -343,10 +342,30 @@ const normalizeFlag = (value) => {
             // Reset flags when token changes
             hasStateLicenseData.current = false;
             stateLicenseCheckComplete.current = false;
+            profileRequestPending.current = true;
+            profileClearedForRequest.current = false;
+            setIsCurrentProfileReady(false);
             dispatch(chooseStatecardRequest(tokenObj));
+            dispatch(mainprofileRequest(tokenObj));
             prevToken.current = token;
         }
-    }, [token, tokenObj, dispatch]);
+        if (token && profFromDashboard && profFromDashboard !== prevLicensureProfession.current) {
+            dispatch(licesensRequest(profFromDashboard));
+            prevLicensureProfession.current = profFromDashboard;
+        }
+    }, [token, tokenObj, dispatch, profFromDashboard]);
+
+    useEffect(() => {
+        if (!profileRequestPending.current) return;
+        if (currentMainProfile === null) {
+            profileClearedForRequest.current = true;
+            return;
+        }
+        if (profileClearedForRequest.current && currentMainProfile?.professional_information) {
+            profileRequestPending.current = false;
+            setIsCurrentProfileReady(true);
+        }
+    }, [currentMainProfile]);
 
     // Monitor when state license response is valid
     useEffect(() => {
@@ -363,14 +382,14 @@ const normalizeFlag = (value) => {
         const isPhoneNotVerified = phoneVerifiedFlag === false;
         const isEmailVerified = emailVerifiedFlag === true;
         const isSuccess = normalizeFlag(loginResponse?.success) === true || loginResponse?.success === true;
-        const hasLicense = !!user.license_number;
+        const hasLicense = !!String(
+            user?.license_number || user?.licensures?.[0]?.license_number || ''
+        ).trim();
 
-        // Get state licenses only if we have valid data
-        const stateLicenses = hasStateLicenseData.current
-            ? chooseStatecardResponse?.state_licensures || []
-            : [];
-
-        const hasStateLicensures = stateLicenses.length > 0;
+        const availableLicensureStates = AuthReducer?.licesensResponse?.licensure_states;
+        const licensureStatesCheckComplete = AuthReducer?.licesensRequestedProfession === profFromDashboard &&
+            Array.isArray(availableLicensureStates);
+        const hasStateLicense = hasLicense || (chooseStatecardResponse?.state_licensures?.length > 0);
 
         // Track navigation state to prevent duplicate calls
         let navigationHandled = false;
@@ -399,43 +418,24 @@ const handleNavigation = (destination, params = {}) => {
             handleNavigation("VerifyMobileOTP", { validPh: { phonecode: props?.route?.params?.mobileNo?.phoneCode } });
             return;
         }
-        if (!token) {
+        if (!token || !isCurrentProfileReady) {
             // OTP verify responses without token should not force dashboard flow.
             // Keep user on current screen unless verification routes above are applicable.
             return;
         }
 
-        if (isGuestPrimeUser) {
-            setNonloader(true);
-            handleNavigation("PrimeCard", {
-                ...props?.route?.params,
-                detectmain: "Prime",
-            });
+        if (isUsaIp && allProfTake && !licensureStatesCheckComplete) {
             return;
         }
-
-        if (allProfTake && !hasLicense && !hasStateLicenseData.current) {
-            return;
-        }
-        if (allProfTake || isUsaIp) {
-            if (hasLicense) {
+        if (isUsaIp && allProfTake) {
+            if (hasStateLicense) {
                 setNonloader(true);
                 dispatch(dashboardRequest(tokenObj));
                 setGtprof(true);
             }
-            else if (hasStateLicensures) {
-                setNonloader(true);
-                handleNavigation("ChooseState", {
-                    dataVr: { dataVr: stateLicenses, Loc: loginResponse?.user?.user_location }
-                });
-            }
             else {
                 setNonloader(true);
-                if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
-                    handleNavigation("TabNav");
-                } else {
-                    handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
-                }
+                handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
             }
         }
         else if (isSuccess) {
@@ -449,14 +449,18 @@ const handleNavigation = (destination, params = {}) => {
         }
     }, [
         token,
+        currentMainProfile,
+        isCurrentProfileReady,
         allProfTake,
+        isUsaIp,
         loginResponse,
         user?.license_number,
+        user?.licensures,
         chooseStatecardResponse, // Now watching the entire response object
+        AuthReducer?.licesensResponse,
+        AuthReducer?.licesensRequestedProfession,
         nonUsaPermanentFlags,
         tokenObj
-        ,
-        isGuestPrimeUser
     ]);
     useEffect(() => {
         if (DashboardReducer?.status === 'Dashboard/dashboardSuccess') {

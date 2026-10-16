@@ -76,12 +76,16 @@ const SearchBack = () => {
     const [boardscount, setBoardscount] = useState("");
     const [boardtake, setBoardtake] = useState("");
     const [totalboardname, setTotalboardname] = useState([]);
+    const [recentlyDeletedBoardId, setRecentlyDeletedBoardId] = useState(null);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
-    const handleDeleteSuccess = useCallback((deletedId) => {
-        setWebcastview(currentData => currentData?.filter(item => item.id !== deletedId) ?? []);
-        setPaginatedData(currentData => currentData.filter(item => item.id !== deletedId));
-    }, []);
+    const handleDeleteSuccess = useCallback((deletedItem) => {
+        const deletedId = deletedItem?.id;
+        setRecentlyDeletedBoardId(deletedItem?.board_id ?? null);
+        setWebcastview(currentData => currentData?.filter(item => String(item.id) !== String(deletedId)) ?? []);
+        setPaginatedData(currentData => currentData.filter(item => String(item.id) !== String(deletedId)));
+        dispatch(dashboardRequest({}));
+    }, [dispatch]);
     console.log(props?.route?.params?.board, "props?.route?.params?.state======", DashboardReducer?.mainprofileResponse?.professional_information);
     useEffect(() => {
         if (!isFocus) return;
@@ -95,6 +99,18 @@ const SearchBack = () => {
                 showErrorAlert("Please connect to internet", err)
             })
     }, [props?.route?.params?.board, isFocus])
+    useEffect(() => {
+        const certifications = ProfileReducer?.boardListProfileResponse?.board_certifications;
+        if (!Array.isArray(certifications)) return;
+        const uniqueCertifications = certifications.filter((certification, index, self) =>
+            index === self.findIndex(item =>
+                String(item.id ?? item.board_id) === String(certification.id ?? certification.board_id)
+            )
+        );
+        setWebcastview(uniqueCertifications);
+        setPaginatedData(uniqueCertifications.slice(0, 5));
+        setPage(1);
+    }, [ProfileReducer?.boardListProfileResponse]);
      const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
@@ -446,6 +462,7 @@ const onBackPress = () => {
                                                                 name: "AddCertificate",
                                                                 params: {
                                                                     profile: "text",
+                                                                    recentlyDeletedBoardId,
                                                                 }
                                                             }
                                                         ]
@@ -470,7 +487,7 @@ const onBackPress = () => {
                             </View>
                         } />
                 </View>
-                {boardtake?.length == 0 ? null : <View style={{
+                {(boardtake?.length > 0 || paginatedData.length === 0) && <View style={{
                     position: 'absolute',
                     bottom: 70,
                     right: 0,
@@ -486,6 +503,7 @@ const onBackPress = () => {
                                         name: "AddCertificate",
                                         params: {
                                             profile: "text",
+                                            recentlyDeletedBoardId,
                                         }
                                     }
                                 ]

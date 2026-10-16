@@ -36,6 +36,7 @@ import BoardCustomed from './BoardCustomed';
 import TextInputSingle from '../../Components/SingleTextinput'
 import CustomInputTouchable from '../../Components/IconTextIn'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
+import { boardListProfileRequest } from '../../Redux/Reducers/ProfileReducer';
 import InputField from '../../Components/CellInput'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -231,6 +232,9 @@ const toggleModalcert = () => {
                 setVisible(false);
                 toggleModalcert();
                 dispatch(dashboardRequest({}));
+                if (props?.route?.params?.profile || props?.route?.params?.profiledet) {
+                    dispatch(boardListProfileRequest({}));
+                }
                 break;
             case 'Dashboard/boardcertificateFailure':
                 status = DashboardReducer.status;
@@ -325,12 +329,14 @@ const transformDataSpecial = (data) => {
     };
     const roleBoardIds = useMemo(() => {
         const roleData = DashboardReducer?.dashboardResponse?.data?.board_certifications || [];
+        const recentlyDeletedBoardId = props?.route?.params?.recentlyDeletedBoardId;
         return roleData
+            .filter(item => String(item.board_id) !== String(recentlyDeletedBoardId))
             .filter((item, index, self) =>
                 index === self.findIndex((t) => t.board_id === item.board_id)
             )
             .map(item => item.board_id);
-    }, [DashboardReducer?.dashboardResponse?.data?.board_certifications]);
+    }, [DashboardReducer?.dashboardResponse?.data?.board_certifications, props?.route?.params?.recentlyDeletedBoardId]);
 
     useEffect(() => {
         const allBoardSpeciality = DashboardReducer?.boardSpecialityResponse?.certification_boards;

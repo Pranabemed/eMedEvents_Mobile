@@ -22,7 +22,7 @@ import RNFS from "react-native-fs";
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, setGocertificate, gocertificate }) => {
+const CellModalPayemnt = ({ setPaymentcardfree, dataPayemnt, maindata, isVisible, content, navigation, name, onDashboardPress, setGocertificate, gocertificate }) => {
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
@@ -101,6 +101,15 @@ const onPress = async () => {
         }
     };
 
+    const goToDashboard = () => {
+        setPaymentcardfree(false);
+        if (typeof onDashboardPress === 'function') {
+            onDashboardPress(getMergedParams());
+            return;
+        }
+        navigation?.navigate(name, getMergedParams());
+    };
+
     return (
         <Modal
             isVisible={isVisible}
@@ -113,8 +122,7 @@ const onPress = async () => {
         >
             {dataPayemnt?.ButtonArr ? (<View style={styles.container}>
                 <TouchableOpacity onPress={() => {
-                    navigation?.navigate(name, getMergedParams());
-                    setPaymentcardfree(false);
+                    goToDashboard();
                 }} style={styles.closeIcon}>
                     <CloseIcon name="close" size={24} color={Colorpath.white} />
                 </TouchableOpacity>
@@ -144,8 +152,7 @@ const onPress = async () => {
                     <View style={dataPayemnt?.invoice ? [styles.buttonContainer, { marginTop: normalize(7) }] : [styles.buttonContainerg, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate("TabNav", getMergedParams());
-                                setPaymentcardfree(false);
+                                goToDashboard();
                             }}
                             style={dataPayemnt?.invoice ? styles.button : styles.singlebutton}
                         >
@@ -176,8 +183,7 @@ const onPress = async () => {
                 <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                     <TouchableOpacity
                         onPress={() => {
-                            setPaymentcardfree(false);
-                            navigation?.navigate(name, getMergedParams());
+                            goToDashboard();
                         }}
                         style={styles.button}
                     >
@@ -199,8 +205,7 @@ const onPress = async () => {
                     <Text style={styles.content}>{content}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
-                    setPaymentcardfree(false);
-                    navigation?.navigate(name, getMergedParams());
+                    goToDashboard();
                     if (gocertificate) {
                         setGocertificate(!gocertificate);
                     }

@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, InteractionManager } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, InteractionManager, Keyboard } from 'react-native';
 import Modal from 'react-native-modal';
 import normalize from '../Utils/Helpers/Dimen';
 import Fonts from '../Themes/Fonts';
@@ -12,6 +12,7 @@ import VerifiedCheck from 'react-native-vector-icons/AntDesign';
 import { CommonActions } from '@react-navigation/native';
 import { readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 import { useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Reusable CellModal component.
@@ -53,6 +54,7 @@ const resetToTabHome = () => {
     const handleDone = async () => {
         if (pressed.current) return;
         pressed.current = true;
+        Keyboard.dismiss();
 
         try {
             await AsyncStorage.setItem('GUEST_VERIFICATION_COMPLETED', 'true');
@@ -111,7 +113,14 @@ const resetToTabHome = () => {
                 navigation.dispatch(
                     CommonActions.reset({
                         index: 0,
-                        routes: [{ name: "TabNav", params: { initialRoute: "Contact", detectmain: "main" } }],
+                        routes: [{
+                            name: "TabNav",
+                            params: {
+                                initialRoute: "Contact",
+                                detectmain: "main",
+                                refreshCreditVaultAt: Date.now(),
+                            },
+                        }],
                     })
                 );
             } else if (name == "CertficateHandle") {

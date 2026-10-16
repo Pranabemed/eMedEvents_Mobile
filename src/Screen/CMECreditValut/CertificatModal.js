@@ -222,7 +222,7 @@ const handlePress = (data) => {
                                 console.log(particular, "id=====122", data)
                                 // setCreditModal(false);
                                 if (item?.id == 0) {
-                                    navigation.navigate("AddCredits", { isNonUsaUser, fulldata: { fulldata: particular, certiPath: certificatefecthed, statenamefull: statename, takeboardall:takeboard} })
+                                    navigation.navigate("AddCredits", { isNonUsaUser, returnToDashboardVault: true, fulldata: { fulldata: particular, certiPath: certificatefecthed, statenamefull: statename, takeboardall:takeboard} })
                                     setCreditModal(false)
                                 } else if (item?.id == 1) {
                                     detectFileType(particular);
@@ -286,4 +286,4 @@ onPress: () => { console.log("jello") } }])
  *
  * @returns {*}
  */
-export default CertificatModal 
+export default CertificatModal

@@ -58,8 +58,8 @@ const weekFilterProfession = ({ item, index }) => {
     return (
         <>
             <MyStatusBar
-                barStyle={'light-content'}
-                backgroundColor={Colorpath.Pagebg}
+                barStyle={'dark-content'}
+                backgroundColor={Colorpath.white}
             />
             <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (

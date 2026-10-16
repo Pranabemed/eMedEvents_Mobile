@@ -35,6 +35,7 @@ import DropdownIcon from 'react-native-vector-icons/Entypo';
 import InputField from '../../Components/CellInput'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clearNonUsaStateLicenseFlowCompleted } from '../../Utils/Helpers/nonUsaFlow';
+import { stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
 
 /**
  * Reusable AddLicense component.
@@ -548,6 +549,9 @@ const handleToDateConfirm = (val) => {
                 console.log('clearNonUsaStateLicenseFlowCompleted error', err);
             });
             dispatch(dashboardRequest({}));
+            if (props?.route?.params?.profile === "text" || props?.route?.params?.profiledet) {
+                dispatch(stateLicenseListRequest({}));
+            }
             setModalVisiblecred(true);
         }
         if (DashboardReducer.status == 'Dashboard/dashboardSuccess') {

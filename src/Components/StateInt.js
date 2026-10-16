@@ -113,7 +113,7 @@ const handleRot =()=>{
                                 }
                                 itemHeight={windowHeight * 0.9}
                                 sliderHeight={windowHeight * 0.9}
-                                renderItem={({ item, index }) => <Carouselcarditem setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
+                                renderItem={({ item, index }) => <Carouselcarditem allProfTake={true} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
                                 firstItem={0}
                             />
                         </View>

@@ -380,14 +380,17 @@ const VerifyMobileOTP = (props) => {
             inputsmobile.current[0].focus();
         }
     };
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     const profFromRoute = props?.route?.params?.validPh?.profall ?? null;
     const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type &&
+            !String(DashboardReducer?.mainprofileResponse?.professional_information?.profession || '').includes('-')
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
-    const allProfTake = validHandles.has(profFromRoute) || validHandles.has(profFromDashboard);
+            : DashboardReducer?.mainprofileResponse?.professional_information?.profession || null;
+    const allProfTake = [profFromRoute, profFromDashboard].some(profession =>
+        ['physician-md', 'physician-do', 'physician-dpm'].includes(
+            String(profession || '').toLowerCase().replace(/\s+/g, '')
+        )
+    );
     console.log(DashboardReducer?.mainprofileResponse, "mainprofile---------", allProfTake)
     if (status == '' || AuthReducer.status != status) {
         switch (AuthReducer.status) {
@@ -417,7 +420,7 @@ const VerifyMobileOTP = (props) => {
                         AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
                     ]);
 
-                    if (guestFlow && !hasValidLicenseInfo) {
+                    if (guestFlow && isUsaIp && allProfTake && !hasValidLicenseInfo) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
@@ -432,7 +435,7 @@ const VerifyMobileOTP = (props) => {
                         return;
                     }
 
-                    if (guestFlow && hasValidLicenseInfo) {
+                    if (guestFlow && (!isUsaIp || !allProfTake || hasValidLicenseInfo)) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
@@ -443,7 +446,7 @@ const VerifyMobileOTP = (props) => {
                         return;
                     }
 
-                    if (allProfTake || isUsaIp) {
+                    if (isUsaIp && allProfTake) {
                         toggleModal();
                         dispatch(chooseStatecardRequest({}))
                     } else {

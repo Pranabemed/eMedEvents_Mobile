@@ -2,7 +2,7 @@
  * Profile main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfileMain, checkPrimeSkipped, read, getDisplayName, getDisplayProfession, token_error, profileBack, token_handle_vault, profileItem, handleRot, stylesd.
  */
 
-import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native'
+import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar, BackHandler } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
@@ -53,6 +53,10 @@ const ProfileMain = (props) => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const lastFocusedMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
+    const profileAtRequestStartRef = useRef(null);
+    const currentMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
+    const profileRequestWasLoadingRef = useRef(false);
+    currentMainProfileRef.current = DashboardReducer?.mainprofileResponse;
     const skipRefreshForCurrentFocusRef = useRef(false);
     if (!isFoucs) {
         skipRefreshForCurrentFocusRef.current = false;
@@ -72,6 +76,10 @@ const ProfileMain = (props) => {
     const [nettrue, setNettrue] = useState("");
     const [primeSkipped, setPrimeSkipped] = useState(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    const [isProfileDataLoading, setIsProfileDataLoading] = useState(() => {
+        const profile = DashboardReducer?.mainprofileResponse;
+        return !profile || typeof profile !== 'object' || Object.keys(profile).length === 0;
+    });
     useEffect(() => {
         /**
 * Check prime skipped utility.
@@ -151,26 +159,26 @@ const ProfileMain = (props) => {
 */
     const getDisplayProfession = (source, fallbackType = '') => {
         if (!source) return "";
-        const profession = read(source?.professional_information?.profession || source?.profession);
+        const professionalInformation = source?.professional_information;
+        const profession = read(professionalInformation?.profession ?? source?.profession);
         if (!profession || isDegreeOnlyProfession(profession)) return "";
-        const professionType = read(
-            source?.professional_information?.profession_type ||
-            source?.profession_type ||
-            source?.professional_information?.designation ||
-            source?.designation ||
-            fallbackType
-        );
+        const professionType = read(professionalInformation
+            ? professionalInformation?.profession_type ?? ''
+            : source?.profession_type ?? fallbackType);
         return buildProfessionLabel(profession, professionType);
     };
     useEffect(() => {
         if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
         let active = true;
+        profileAtRequestStartRef.current = currentMainProfileRef.current;
+        setIsProfileDataLoading(true);
         /**
 * Token error utility.
 * @returns {void}
 */
         const token_error = () => {
             AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
+                if (!active) return;
                 if (active && loginHandleProccess) {
                     let objToken = { "token": loginHandleProccess, "key": {} }
                     connectionrequest()
@@ -181,9 +189,16 @@ const ProfileMain = (props) => {
                             dispatch(dashPerRequest(objToken))
                         })
                         .catch((err) => {
-                            if (active) showErrorAlert("Please connect to internet", err)
+                            if (active) {
+                                setIsProfileDataLoading(false);
+                                showErrorAlert("Please connect to internet", err)
+                            }
                         })
+                } else {
+                    setIsProfileDataLoading(false);
                 }
+            }).catch(() => {
+                if (active) setIsProfileDataLoading(false);
             });
         };
         try {
@@ -195,6 +210,24 @@ const ProfileMain = (props) => {
             active = false;
         };
     }, [dispatch, isFoucs]);
+    useEffect(() => {
+        const profile = DashboardReducer?.mainprofileResponse;
+        const hasProfileData = profile && typeof profile === 'object' && Object.keys(profile).length > 0;
+        if (DashboardReducer?.mainProfileLoading) {
+            profileRequestWasLoadingRef.current = true;
+            setIsProfileDataLoading(true);
+            return;
+        }
+
+        const profileRequestFinished = profileRequestWasLoadingRef.current;
+
+        const receivedFreshProfile = hasProfileData && profile !== profileAtRequestStartRef.current;
+
+        if (receivedFreshProfile || profileRequestFinished) {
+            profileRequestWasLoadingRef.current = false;
+            setIsProfileDataLoading(false);
+        }
+    }, [DashboardReducer?.mainProfileLoading, DashboardReducer?.mainprofileResponse]);
     useEffect(() => {
         if (isFoucs) {
             lastFocusedMainProfileRef.current = DashboardReducer?.mainprofileResponse;
@@ -227,6 +260,14 @@ const ProfileMain = (props) => {
             })
         );
     }
+    useEffect(() => {
+        if (!isFoucs) return undefined;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            props.navigation.navigate('Home');
+            return true;
+        });
+        return () => backHandler.remove();
+    }, [isFoucs, props.navigation]);
     useEffect(() => {
         const hasMainProfile =
             DashboardReducer?.mainprofileResponse &&
@@ -296,22 +337,10 @@ const ProfileMain = (props) => {
     ].map(read).filter(Boolean);
     const rawProfessionCandidate = professionCandidates.find(value => !isDegreeOnlyProfession(value));
     const rawProfName = rawProfessionCandidate || (professionCandidates.some(isDegreeOnlyProfession) ? 'Physician' : '');
-    const rawProfType = read(
-        effectiveAllHandle?.professional_information?.profession_type ||
-        effectiveAllHandle?.profession_type ||
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
-        DashboardReducer?.mainprofileResponse?.profession_type ||
-        finalProfessionprof?.profession_type ||
-        finalProfessionprof?.designation ||
-        allHandle?.profession_type ||
-        AuthReducer?.againloginsiginResponse?.user?.professional_information?.profession_type ||
-        AuthReducer?.againloginsiginResponse?.user?.profession_type ||
-        AuthReducer?.loginResponse?.user?.professional_information?.profession_type ||
-        AuthReducer?.loginResponse?.user?.profession_type ||
-        AuthReducer?.dircetloginResponse?.user?.professional_information?.profession_type ||
-        AuthReducer?.dircetloginResponse?.user?.profession_type ||
-        AuthReducer?.dircetloginResponse?.profession_type
-    );
+    const effectiveProfessionalInformation = effectiveAllHandle?.professional_information;
+    const rawProfType = read(effectiveProfessionalInformation
+        ? effectiveProfessionalInformation?.profession_type ?? ''
+        : effectiveAllHandle?.profession_type ?? '');
 
     const pName = normalizeProfessionHandle(rawProfName);
     const pType = normalizeProfessionHandle(rawProfType);
@@ -726,8 +755,8 @@ const ProfileMain = (props) => {
 
                     )}
                 </View>
-                <Loader visible={DashboardReducer?.status == 'Dashboard/mainprofileRequest' && !DashboardReducer?.mainprofileResponse} />
-                <ScrollView>
+                <Loader visible={isProfileDataLoading} />
+                {!isProfileDataLoading && <ScrollView>
                     <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(10) }}>
                         <CircleLoader allProfTake={allProfTake} percentage={DashboardReducer?.mainprofileResponse?.profile_complete_percentage} mainData={DashboardReducer?.mainprofileResponse} />
                         {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -831,7 +860,7 @@ const ProfileMain = (props) => {
                             contentContainerStyle={{ paddingBottom: normalize(20) }}
                             keyExtractor={(item, index) => index.toString()} />
                     </View>
-                </ScrollView>
+                </ScrollView>}
             </SafeAreaView>}
 
             {subitprof && showPrimeCardButton && <PrimeCard primeadd={subitprof} setPrimeadd={setSubitprof} />}

@@ -8,6 +8,7 @@ import Colorpath from '../Themes/Colorpath'
 import normalize from '../Utils/Helpers/Dimen';
 import Modal from 'react-native-modal';
 import Fonts from '../Themes/Fonts';
+import CloseIcon from 'react-native-vector-icons/AntDesign';
 
 /**
  * Reusable CMECard component.
@@ -55,6 +56,13 @@ function formatRenewalYears(renewal_cycle, to_date) {
                     paddingBottom: normalize(25)
                 }}
                 behavior={Platform.OS == 'ios' ? 'padding' : 'height'}>
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Close My CME Requirements"
+                    onPress={() => setCMECard(false)}
+                    style={{ position: 'absolute', top: normalize(12), right: normalize(14), zIndex: 10, padding: normalize(5) }}>
+                    <CloseIcon name="close" size={normalize(22)} color="#000000" />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={()=>setCMECard(!CMECard)} style={{ justifyContent: "center", alignItems: "center", marginBottom: normalize(5)}}>
                     <View style={{ height: 5, width: normalize(50), backgroundColor: "#DDDDDD", borderRadius: normalize(5) }} />
                 </TouchableOpacity>

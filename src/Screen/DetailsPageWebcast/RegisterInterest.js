@@ -191,7 +191,7 @@ const intBack = () => {
 
     const markPersonalizationEdited = useCheckoutPersonalization({
         focused: isFocus,
-        profile: DashboardReducer?.mainprofileResponse,
+        profile: isGuestInterestCheckout ? null : DashboardReducer?.mainprofileResponse,
         options: slist,
         onApply: patch => {
             if (patch.email) setEmailad(patch.email);
@@ -584,6 +584,10 @@ const handleFromDateConfirm = (val) => {
         setTouched(prev => ({ ...prev, licdate: true }));
     };
     useEffect(() => {
+        if (isGuestInterestCheckout) {
+            setCellnumber("");
+            return;
+        }
         if (DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.phone) {
             const allDatashow = DashboardReducer?.mainprofileResponse?.user_address;
             const licAll = isUsUser ? DashboardReducer?.mainprofileResponse?.licensures?.[0] : null
@@ -628,7 +632,7 @@ const handleFromDateConfirm = (val) => {
 
             setCellnumber(isUsUser ? formatUsPhone(phoneNumberToUse) : String(phoneNumberToUse || ''))
         }
-    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isUsUser])
+    }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isUsUser, isGuestInterestCheckout])
 const formatPhoneNumberno = (input) => formatUsPhone(input);
 
         /**

@@ -2,8 +2,8 @@
  * Dashoard vault screen module. Renders a React Native screen or a screen-scoped support component. Exported members: parseExpiryDate, DashoardVault, searchTopicNameboard, handleBoardname, onhandle, oncmeModalclose, fetchData, getDisplayProfession, searchTopicName, vaultState, downCredit, handleRot, stylesd.
  */
 
-import { View, Text, Platform, ScrollView, TouchableOpacity, Dimensions, StyleSheet, Image } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { View, Text, Platform, ScrollView, TouchableOpacity, Dimensions, StyleSheet, Image, BackHandler, Modal } from 'react-native'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -66,6 +66,14 @@ const DashoardVault = (props) => {
     const [width, setWidth] = useState(true);
     const [statepick, setStatepick] = useState("");
     const navigation = useNavigation();
+    useEffect(() => {
+        if (!isFocus) return undefined;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            navigation.navigate('Home');
+            return true;
+        });
+        return () => backHandler.remove();
+    }, [isFocus, navigation]);
     const dispatch = useDispatch();
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
@@ -130,6 +138,14 @@ const DashoardVault = (props) => {
         stateLicenseFlowCompleted: false,
     });
     const [exploreTrialClicked, setExploreTrialClicked] = useState(false);
+    const [initialVaultReady, setInitialVaultReady] = useState({
+        profile: false,
+        dashboard: false,
+        state: false,
+        board: false,
+        prime: false,
+    });
+    const initialVaultResponseRef = useRef({});
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setConn(state.isConnected);
@@ -138,6 +154,20 @@ const DashoardVault = (props) => {
     }, [isConnected]);
     useEffect(() => {
         if (isFocus) {
+            initialVaultResponseRef.current = {
+                profile: DashboardReducer?.mainprofileResponse,
+                dashboard: DashboardReducer?.dashMbResponse,
+                state: DashboardReducer?.stateMandatoryResponse,
+                board: CreditVaultReducer?.boardvaultResponse,
+                prime: WebcastReducer?.PrimeCheckResponse,
+            };
+            setInitialVaultReady({
+                profile: false,
+                dashboard: false,
+                state: false,
+                board: false,
+                prime: false,
+            });
             connectionrequest()
                 .then(() => {
                     dispatch(boardvaultRequest({}));
@@ -151,6 +181,63 @@ const DashoardVault = (props) => {
                 });
         }
     }, [isFocus]);
+
+    useEffect(() => {
+        const baseline = initialVaultResponseRef.current;
+        const completed = {
+            profile: DashboardReducer?.mainprofileResponse != null &&
+                DashboardReducer?.mainprofileResponse !== baseline.profile,
+            dashboard: DashboardReducer?.dashMbResponse != null &&
+                DashboardReducer?.dashMbResponse !== baseline.dashboard,
+            state: DashboardReducer?.stateMandatoryResponse != null &&
+                DashboardReducer?.stateMandatoryResponse !== baseline.state,
+            board: CreditVaultReducer?.boardvaultResponse != null &&
+                CreditVaultReducer?.boardvaultResponse !== baseline.board,
+            prime: WebcastReducer?.PrimeCheckResponse != null &&
+                WebcastReducer?.PrimeCheckResponse !== baseline.prime,
+        };
+
+        if (Object.values(completed).some(Boolean)) {
+            setInitialVaultReady(previous => ({
+                profile: previous.profile || completed.profile,
+                dashboard: previous.dashboard || completed.dashboard,
+                state: previous.state || completed.state,
+                board: previous.board || completed.board,
+                prime: previous.prime || completed.prime,
+            }));
+        }
+    }, [
+        DashboardReducer?.mainprofileResponse,
+        DashboardReducer?.dashMbResponse,
+        DashboardReducer?.stateMandatoryResponse,
+        CreditVaultReducer?.boardvaultResponse,
+        WebcastReducer?.PrimeCheckResponse,
+    ]);
+
+    useEffect(() => {
+        const status = DashboardReducer?.status;
+        if (status === 'Dashboard/mainprofileSuccess' || status === 'Dashboard/mainprofileFailure') {
+            setInitialVaultReady(previous => ({ ...previous, profile: true }));
+        } else if (status === 'Dashboard/dashMbSuccess' || status === 'Dashboard/dashMbFailure') {
+            setInitialVaultReady(previous => ({ ...previous, dashboard: true }));
+        } else if (status === 'Dashboard/stateMandatorySuccess' || status === 'Dashboard/stateMandatoryFailure') {
+            setInitialVaultReady(previous => ({ ...previous, state: true }));
+        }
+    }, [DashboardReducer?.status]);
+
+    useEffect(() => {
+        const status = CreditVaultReducer?.status;
+        if (status === 'CreditVault/boardvaultSuccess' || status === 'CreditVault/boardvaultFailure') {
+            setInitialVaultReady(previous => ({ ...previous, board: true }));
+        }
+    }, [CreditVaultReducer?.status]);
+
+    useEffect(() => {
+        const status = WebcastReducer?.status;
+        if (status === 'WebCast/PrimeCheckSuccess' || status === 'WebCast/PrimeCheckFailure') {
+            setInitialVaultReady(previous => ({ ...previous, prime: true }));
+        }
+    }, [WebcastReducer?.status]);
 
     useEffect(() => {
         if (CreditVaultReducer.status === 'CreditVault/boardvaultRequest') {
@@ -311,15 +398,12 @@ const DashoardVault = (props) => {
             setLoadingCreditwise(false);
         }
 
-        if (DashboardReducer.status === 'Dashboard/stateReportingSuccess') {
-            setRenewalCheck(DashboardReducer?.stateReportingResponse?.renewal_report);
-            if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
-                setRenewalvault(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
-            } else {
-                setRenewalvault(null);
-            }
-        }
-    }, [DashboardReducer.status, DashboardReducer?.stateCourseResponse, DashboardReducer?.stateReportingResponse]);
+    }, [DashboardReducer.status, DashboardReducer?.stateCourseResponse]);
+    useEffect(() => {
+        const renewalReport = DashboardReducer?.stateReportingResponse?.renewal_report;
+        setRenewalCheck(renewalReport || null);
+        setRenewalvault(renewalReport?.renewal_link || null);
+    }, [DashboardReducer?.stateReportingResponse?.renewal_report]);
 
     useEffect(() => {
         if (CreditVaultReducer.status === 'CreditVault/professionvaultSuccess') {
@@ -564,6 +648,8 @@ const DashoardVault = (props) => {
     }, [certificatedata])
     useEffect(() => {
         if (stateid) {
+            setRenewalCheck(null);
+            setRenewalvault(null);
             let obj = {
                 "state_id": stateid
             }
@@ -734,6 +820,10 @@ const DashoardVault = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    const isCreditVaultDataReady =
+        isAsyncStorageLoaded &&
+        isProfileReady &&
+        Object.values(initialVaultReady).every(Boolean);
     return (
         <>
             <MyStatusBar
@@ -764,7 +854,12 @@ const DashoardVault = (props) => {
                     <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>{"Please check your internet connection \n                    and try again"}</Text>
                 </View>
             </SafeAreaView> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                {statepick ? (
+                <Modal
+                    visible={Boolean(statepick)}
+                    animationType="slide"
+                    presentationStyle="fullScreen"
+                    onRequestClose={() => setStatepick(false)}
+                >
                     <StateVaultModal
                         vaultState={vaultState}
                         setStatepick={setStatepick}
@@ -772,7 +867,8 @@ const DashoardVault = (props) => {
                         searchTopicName={searchTopicName}
                         clisttopic={clisttopic}
                     />
-                ) : statepickboard ? (<BoardVaultModal
+                </Modal>
+                {statepickboard ? (<BoardVaultModal
                     handleBoardname={handleBoardname}
                     setStatepickboard={setStatepickboard}
                     statepickboard={statepickboard}
@@ -794,8 +890,8 @@ const DashoardVault = (props) => {
                                 )}
                             </View>
                         )}
-                        <Loader visible={!isAsyncStorageLoaded || loadingCreditwise || (isNonUsaUser && loadingStatewise)} />
-                        {shouldShowAddLicenseCard ? (
+                        <Loader visible={!isCreditVaultDataReady || loadingCreditwise || (isNonUsaUser && loadingStatewise)} />
+                        {isCreditVaultDataReady && (shouldShowAddLicenseCard ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
                                     <View style={stylesd.nonUsaBanner}>
@@ -830,7 +926,10 @@ const DashoardVault = (props) => {
                                         <TouchableOpacity
                                             style={stylesd.nonUsaButton}
                                             onPress={() => {
-                                                navigation.navigate("AddCredits", { isNonUsaUser: isNonUsaUser });
+                                                navigation.navigate("AddCredits", {
+                                                    isNonUsaUser: isNonUsaUser,
+                                                    returnToDashboardVault: true,
+                                                });
                                             }}
                                         >
                                             <Text style={stylesd.nonUsaButtonText}>Add Credits</Text>
@@ -1041,7 +1140,7 @@ const DashoardVault = (props) => {
                                     </View>
                                 </ScrollView>
                             </>
-                        )}
+                        ))}
                     </>)}
 
             </SafeAreaView>}

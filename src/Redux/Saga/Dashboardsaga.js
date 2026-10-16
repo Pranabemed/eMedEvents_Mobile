@@ -234,7 +234,7 @@ export function* creditTypeSaga(action) {
     // authorization: items.token,
   };
   try {
-    let response = yield call(getApi, `master/creditTypes?profession=${action.payload}`, header);
+    let response = yield call(getApi, `master/creditTypes?profession=${encodeURIComponent(action.payload)}`, header);
     if (response?.data?.success == true) {
       yield put(addCreditsSuccess(response?.data));
       //   showErrorAlert(response?.data?.msg);

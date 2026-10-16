@@ -524,6 +524,8 @@ checkstateFailure(state, action) {
  * @returns {void}
  */
 licesensRequest(state, action) {
+      state.licesensResponse = null;
+      state.licesensRequestedProfession = action.payload;
       state.status = action.type;
     },
         /**
@@ -543,6 +545,7 @@ licesensSuccess(state, action) {
  * @returns {void}
  */
 licesensFailure(state, action) {
+      state.licesensResponse = { licensure_states: [] };
       state.status = action.type;
       state.error = action.error;
     },

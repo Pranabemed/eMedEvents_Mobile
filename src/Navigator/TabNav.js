@@ -26,7 +26,7 @@ import CMEExDashboard from '../Screen/CMEExpense.js/CMEExDashboard';
 import Menu from '../Screen/Auth/Menu';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
-import { dashPerRequest, mainprofileRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
+import { dashPerRequest, mainprofileRequest, stateDashboardRequest, stateMandatoryRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import VoiceSearchBar from '../Screen/GlobalSupport/Voice';
 import NativeVoice from '../Screen/GlobalSupport/NativeVoice';
@@ -119,7 +119,7 @@ function TabScreen() {
   const navigation = useNavigation();
   const isFoucs = useIsFocused();
   const route = useRoute();
-  const { detectmain, initialRoute, refreshLicensesAt, suppressAutomaticPrimePrompt = false } = route.params || {};
+  const { detectmain, initialRoute, refreshLicensesAt, refreshCreditVaultAt, suppressAutomaticPrimePrompt = false } = route.params || {};
   console.log(route.params, detectmain, "route.params =====")
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
@@ -388,6 +388,18 @@ function TabScreen() {
       }
     }
   }, [initialRoute, navigation]);
+  useEffect(() => {
+    if (!refreshCreditVaultAt) return;
+    const refreshCreditVault = () => {
+      connectionrequest()
+        .then(() => dispatch(stateMandatoryRequest({})))
+        .catch(err => showErrorAlert('Please connect to internet', err));
+    };
+
+    refreshCreditVault();
+    const refreshTimer = setTimeout(refreshCreditVault, 1000);
+    return () => clearTimeout(refreshTimer);
+  }, [dispatch, refreshCreditVaultAt]);
   useEffect(() => {
     connectionrequest()
       .then(() => {

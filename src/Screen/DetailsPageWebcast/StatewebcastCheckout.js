@@ -230,10 +230,11 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     navigation.navigate("RegisterInterest", {
       checkoutSpan: {
         checkoutSpan: webcastdeatils,
-        finalTicket: WebcastReducer?.checkoutTicketResponse
+        finalTicket: WebcastReducer?.checkoutTicketResponse,
+        guestOrigin,
       }
     })
-  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse])
+  }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse, guestOrigin])
   useEffect(() => {
     if (WebcastReducer.status == 'WebCast/checkoutTicketSuccess') {
       switch (finalcheck) {

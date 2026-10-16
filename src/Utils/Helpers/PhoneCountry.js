@@ -128,10 +128,13 @@ export const isUsPhoneContext = (callingCode, ...sources) => {
 };
 
 export const formatPhoneWithCountry = (value, callingCode, ...sources) => {
-  const text = String(value ?? '').trim();
-  if (!text) return '';
-  const parsed = text.startsWith('+') ? parsePhoneNumberFromString(text) : null;
-  const code = normalizeDialCode(callingCode) || (parsed ? `+${parsed.countryCallingCode}` : '');
+  const rawText = String(value ?? '').trim();
+  if (!rawText) return '';
+  const rawParsed = rawText.startsWith('+') ? parsePhoneNumberFromString(rawText) : null;
+  const code = normalizeDialCode(callingCode) || (rawParsed ? `+${rawParsed.countryCallingCode}` : '');
+  const text = code === '+1'
+    ? rawText.replace(/^(?:\+1[\s.-]*){2,}/, '+1 ')
+    : rawText;
   if (isUsPhoneContext(code, ...sources) && isValidUsPhone(text)) return `+1 ${formatUsPhone(text)}`;
   return code && !text.startsWith('+') ? `${code} ${text}` : text;
 };

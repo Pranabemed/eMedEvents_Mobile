@@ -57,8 +57,8 @@ const parseProfessionAndType = (profession, professionType = '') => {
         const type = match[2].trim();
         return {
             baseProf: base,
-            profType: cleanType || type,
-            fullProf: `${base} - ${cleanType || type}`,
+            profType: type,
+            fullProf: `${base} - ${type}`,
         };
     }
 
@@ -174,6 +174,7 @@ const PersonalInfo = (props) => {
     const isInitialSpecLoaded = useRef(false);
     const isNavigatingRef = useRef(false);
     const professionUpdatePendingRef = useRef(false);
+    const selectedProfessionRef = useRef('');
     const deaSelectionTouchedRef = useRef(false);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
@@ -229,22 +230,17 @@ const PersonalInfo = (props) => {
 
         if (!source) return;
 
-        const profession = source?.professional_information?.profession || source?.profession;
-        const profession_type = source?.professional_information?.profession_type || source?.profession_type;
-        const fallbackType =
-            profession_type ||
-            source?.professional_information?.designation ||
-            source?.designation ||
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
-            DashboardReducer?.mainprofileResponse?.profession_type ||
-            AuthReducer?.loginResponse?.user?.profession_type ||
-            AuthReducer?.againloginsiginResponse?.user?.profession_type ||
-            nonUsaFlowState?.profession_type ||
-            '';
+        const professionalInformation = source?.professional_information;
+        const profession = professionalInformation?.profession ?? source?.profession;
+        const professionType = professionalInformation
+            ? professionalInformation?.profession_type
+            : source?.profession_type;
 
-        const { fullProf } = parseProfessionAndType(profession, fallbackType);
+        const { fullProf } = parseProfessionAndType(profession, professionType ?? '');
 
-        if (!props?.route?.params?.forceProfessionChange) setCountry(fullProf || '');
+        if (!props?.route?.params?.forceProfessionChange && !selectedProfessionRef.current) {
+            setCountry(fullProf || '');
+        }
         const deaRegistered = source?.professional_information?.dea_registered;
         if (!deaSelectionTouchedRef.current) {
             setSelectedOption(
@@ -257,7 +253,7 @@ const PersonalInfo = (props) => {
         }
         const npiNumber = source?.professional_information?.npi_number;
         setTake(npiNumber && npiNumber !== "0" ? npiNumber : "");
-    }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user, nonUsaFlowState?.profession_type]);
+    }, [props?.route?.params?.personal, DashboardReducer?.mainprofileResponse, AuthReducer?.loginResponse?.user, AuthReducer?.againloginsiginResponse?.user, AuthReducer?.verifymobileResponse?.user]);
     console.log(props?.route?.params?.personal, "props?.route?.params?.specialities------", formData)
     /**
 * Specaillized utility.
@@ -279,7 +275,7 @@ const PersonalInfo = (props) => {
         let active = true;
         setClist([]);
         setSelectCountry([]);
-        if (props?.route?.params?.forceProfessionChange) {
+        if (props?.route?.params?.forceProfessionChange && !selectedProfessionRef.current) {
             isInitialSpecLoaded.current = true;
             setFormData({ speciality: '', speciality_ids: [] });
             setCountry('');
@@ -353,13 +349,8 @@ const PersonalInfo = (props) => {
                 if (isProfessionSuccess && !isNavigatingRef.current) {
                     professionUpdatePendingRef.current = false;
                     isNavigatingRef.current = true;
-                    const fallbackType =
-                        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
-                        DashboardReducer?.mainprofileResponse?.profession_type ||
-                        AuthReducer?.loginResponse?.user?.profession_type ||
-                        AuthReducer?.againloginsiginResponse?.user?.profession_type ||
-                        '';
-                    const { baseProf, profType, fullProf } = parseProfessionAndType(country, fallbackType);
+                    const selectedProfession = selectedProfessionRef.current || country;
+                    const { profType, fullProf } = parseProfessionAndType(selectedProfession);
                     const specialitiesMap = {};
                     const specNames = formData?.speciality ? formData.speciality.split(', ').map(s => s.trim()) : [];
                     (formData?.speciality_ids || []).forEach((id, idx) => {
@@ -502,6 +493,7 @@ const PersonalInfo = (props) => {
 * @returns {void}
 */
     const handleProfession = (did) => {
+        selectedProfessionRef.current = did;
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0]);
@@ -648,7 +640,8 @@ const PersonalInfo = (props) => {
 * @returns {void}
 */
     const makeUpdateProf = () => {
-        if (!country) {
+        const selectedProfession = selectedProfessionRef.current || country;
+        if (!selectedProfession) {
             showErrorAlert("Please choose profession ")
         } else if (!makeDid) {
             showErrorAlert("Please choose specialty")
@@ -660,13 +653,7 @@ const PersonalInfo = (props) => {
             if (professionUpdatePendingRef.current) return;
             professionUpdatePendingRef.current = true;
             isNavigatingRef.current = false;
-            const fallbackType =
-                DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
-                DashboardReducer?.mainprofileResponse?.profession_type ||
-                AuthReducer?.loginResponse?.user?.profession_type ||
-                AuthReducer?.againloginsiginResponse?.user?.profession_type ||
-                '';
-            const { baseProf, profType, fullProf } = parseProfessionAndType(country, fallbackType);
+            const { baseProf, profType, fullProf } = parseProfessionAndType(selectedProfession);
             const specialitiesMap = {};
             const specNames = formData?.speciality ? formData.speciality.split(', ').map(s => s.trim()) : [];
             (formData?.speciality_ids || []).forEach((id, idx) => {
@@ -676,7 +663,7 @@ const PersonalInfo = (props) => {
             });
             let obj = {
                 "npi_number": take,
-                "profession": fullProf || baseProf || country,
+                "profession": fullProf || baseProf || selectedProfession,
                 "profession_type": profType,
                 "designation": profType,
                 "dea_registered": isNonUsaUser ? "0" : selectedOption,

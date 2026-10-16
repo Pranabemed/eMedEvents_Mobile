@@ -524,9 +524,11 @@ const token_handle = () => {
 
   const profFromDashboard = useMemo(() => {
     const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || {};
-    return profInfo.profession && profInfo.profession_type
-      ? `${profInfo.profession} - ${profInfo.profession_type}`
-      : null;
+    const profession = String(profInfo.profession || '').trim();
+    const professionType = String(profInfo.profession_type || '').trim();
+    return profession && professionType && !profession.includes('-')
+      ? `${profession} - ${professionType}`
+      : profession || null;
   }, [DashboardReducer?.mainprofileResponse, AuthReducer?.signupResponse]);
 
   useEffect(() => {
@@ -586,11 +588,11 @@ const token_handle = () => {
   ]);
 
   useEffect(() => {
-    if (!loadingDashboard && profFromDashboard) {
+    if (profFromDashboard) {
       console.log('[Splash] Triggering licHandl for:', profFromDashboard);
       licHandl(profFromDashboard);
     }
-  }, [profFromDashboard, loadingDashboard]);
+  }, [profFromDashboard]);
 
   const lastStateIdHandledRef = useRef(null);
   const lastReportIdHandledRef = useRef(null);
@@ -670,22 +672,20 @@ const licHandl = (profFromDashboard) => {
     if (loadingDashboard) return;
     if (loadingVerify) return;
     if (loadingCountry) return;
+    if (hasAuthToken && !profFromDashboard) return;
 
     const loginResponse = AuthReducer?.loginResponse || {};
     const verifyData = AuthReducer?.verifyResponse?.data || AuthReducer?.verifyResponse?.user || AuthReducer?.verifyResponse || {};
     const { is_verified, phone_verified, email, phone } = verifyData;
-    const primeProfileSource = DashboardReducer?.mainprofileResponse || professionState || loginResponse?.user || {};
-    const primeSubscriptionUser = String(primeProfileSource?.subscription_user || '').trim().toLowerCase();
-    const primeSubscriptions = Array.isArray(primeProfileSource?.subscriptions) ? primeProfileSource.subscriptions : [];
-    const isPrimeCardEligibleUser = primeSubscriptionUser === 'non-subscribed' && primeSubscriptions.length === 0;
-
-    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || AuthReducer?.signupResponse?.user || DashboardReducer?.dashboardResponse?.data?.user_information || {};
-    const profFromDashboard = profInfo.profession && profInfo.profession_type
-      ? `${profInfo.profession} - ${profInfo.profession_type}`
-      : null;
     const stateLicenses = AuthReducer?.chooseStatecardResponse?.state_licensures || [];
-    const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
-    const allProfTake = validHandles.has(profFromDashboard);
+    const allProfTake = ['physician-md', 'physician-do', 'physician-dpm'].includes(
+      String(profFromDashboard || '').toLowerCase().replace(/\s+/g, '')
+    );
+    const availableLicensureStates = AuthReducer?.licesensResponse?.licensure_states;
+    const licensureStatesCheckComplete = AuthReducer?.licesensRequestedProfession === profFromDashboard &&
+      Array.isArray(availableLicensureStates);
+    const isValidDashboard = Array.isArray(dashboard) &&
+      dashboard.some(item => String(item || '').trim() !== '');
 
     const isVerified = isVerifiedFlag(is_verified) || isVerifiedFlag(emaiV);
     const isPhoneVerified = isVerifiedFlag(phone_verified) || isVerifiedFlag(phoneV);
@@ -812,22 +812,25 @@ const licHandl = (profFromDashboard) => {
       return;
     }
 
-    if (bothVerified && isPrimeCardEligibleUser) {
-      if (!hasNavigatedRef.current) {
-        hasNavigatedRef.current = true;
-        props.navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'PrimeCard', params: { detectmain: 'Prime' } }],
-          })
-        );
-      }
+    if (allProfTake && bothVerified) {
+      if (!licensureStatesCheckComplete) return;
+      hasNavigatedRef.current = true;
+      props.navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{
+            name: isValidDashboard ? 'TabNav' : 'CreateStateInfor',
+            params: isValidDashboard ? undefined : {
+              dataVerify: {
+                dataVerify: 'Nodasta',
+                allDat: loginResponse?.user,
+              },
+            },
+          }],
+        })
+      );
       return;
     }
-
-    const isValidDashboard = !loadingDashboard &&
-      Array.isArray(dashboard) &&
-      dashboard.some(item => String(item || "").trim() !== "");
 
     if (loadingDashboard) return;
 
@@ -960,8 +963,11 @@ function navigateToVerification() {
     emaiV,
     phoneV,
     dashboard,
+    profFromDashboard,
     AuthReducer?.verifyResponse,
     AuthReducer?.chooseStatecardResponse?.state_licensures,
+    AuthReducer?.licesensResponse,
+    AuthReducer?.licesensRequestedProfession,
     DashboardReducer?.mainprofileResponse,
     DashboardReducer?.dashboardResponse?.data,
     AuthReducer?.signupResponse,

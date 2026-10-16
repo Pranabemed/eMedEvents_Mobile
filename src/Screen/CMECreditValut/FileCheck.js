@@ -408,15 +408,25 @@ const CertficateHandle = (props) => {
 */
     const stateTranscript = (data, range) => {
         console.log(data, range, "transcript-------");
-        let statedown = {
-            "board_id": props?.route?.params?.boardID?.board_data?.board_id,
+        const boardId = props?.route?.params?.boardID?.board_data?.board_id ||
+            props?.route?.params?.boardID?.board_id;
+        const statedown = {
+            "board_id": isNonUsaUser ? 0 : boardId,
             "type": "licensure",
-            "range": range
+            ...(!isNonUsaUser && range ? { "range": range } : {})
+        };
+
+        if (!isNonUsaUser && !boardId) {
+            showErrorAlert("Unable to download transcript because the licensing board is unavailable.");
+            return;
         }
+
         connectionrequest()
             .then(() => {
-                pendingTranscript.current = "usa";
-                dispatch(downloadTranscriptRequest(statedown))
+                pendingTranscript.current = isNonUsaUser ? "nonUsa" : "usa";
+                dispatch(isNonUsaUser
+                    ? downloadTranscriptNonUsaRequest(statedown)
+                    : downloadTranscriptRequest(statedown));
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err)
@@ -821,11 +831,21 @@ const CertficateHandle = (props) => {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    <Loader visible={isInitialNonUsaLoading || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptNonUsaRequest'} />
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
+                    {(isInitialNonUsaLoading || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptNonUsaRequest') && (
+                        <View style={styles.nonUsaLoader}>
+                            <Image
+                                source={require('../../Assets/Images/gifemed.gif')}
+                                style={styles.nonUsaLoaderImage}
+                            />
+                        </View>
+                    )}
+                    <ScrollView contentContainerStyle={[
+                        styles.scrollContent,
+                        (!stateget || Object.keys(stateget).length === 0) && styles.nonUsaEmptyScrollContent,
+                    ]}>
                         <View style={{ flex: 1 }}>
                             {!isInitialNonUsaLoading && (
-                                <View style={{ marginTop: normalize(10) }}>
+                                <View style={{ marginTop: normalize(10), flex: 1 }}>
                                     {stateget && Object.keys(stateget).length > 0 ? (
                                         Object.keys(stateget)
                                             .sort((a, b) => parseInt(b) - parseInt(a))
@@ -905,6 +925,8 @@ const CertficateHandle = (props) => {
                                     ) : (
                                         <FlatList
                                             data={nonUsaCertificateRows}
+                                            style={{ flex: 1 }}
+                                            contentContainerStyle={nonUsaCertificateRows.length === 0 ? styles.nonUsaEmptyListContent : undefined}
                                             renderItem={({ item }) => renderCertificateCard(item, 'certificate')}
                                             keyExtractor={(item, index) => String(item?.id ?? item?._id ?? index)}
                                             ListEmptyComponent={
@@ -921,7 +943,10 @@ const CertficateHandle = (props) => {
                                                             <TouchableOpacity
                                                                 style={styles.nonUsaButton}
                                                                 onPress={() => {
-                                                                    props.navigation.navigate("AddCredits", { isNonUsaUser: true });
+                                                                    props.navigation.navigate("AddCredits", {
+                                                                        isNonUsaUser: true,
+                                                                        returnToDashboardVault: true,
+                                                                    });
                                                                 }}
                                                             >
                                                                 <Text style={styles.nonUsaButtonText}>Add Credits</Text>
@@ -936,30 +961,21 @@ const CertficateHandle = (props) => {
                             )}
                         </View>
                     </ScrollView>
-                    <View style={{
-                        position: 'absolute',
-                        bottom: 70,
-                        right: 0,
-                        paddingHorizontal: normalize(20),
-                        zIndex: 999
-                    }}>
-                        <TouchableOpacity onPress={() => {
-                            props.navigation.navigate("AddCredits", { isNonUsaUser: true });
-                        }} style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            height: normalize(50),
-                            width: normalize(50),
-                            backgroundColor: Colorpath.ButtonColr,
-                            borderWidth: 0.5,
-                            borderColor: "#AAAAAA",
-                            borderRadius: normalize(50),
-                            paddingHorizontal: normalize(15)
-                        }}>
-                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={25} />
-                        </TouchableOpacity>
-                    </View>
+                    {hasNonUsaCertificateRows && (
+                        <View style={styles.nonUsaAddButtonContainer}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    props.navigation.navigate("AddCredits", {
+                                        isNonUsaUser: true,
+                                        returnToDashboardVault: true,
+                                    });
+                                }}
+                                style={styles.nonUsaAddButton}
+                            >
+                                <Search name="plus" color={Colorpath.white} size={25} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
                     <CertificatModal
                         isNonUsaUser={isNonUsaUser}
                         setStateget={setStateget}
@@ -1338,6 +1354,43 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: normalize(140),
+    },
+    nonUsaEmptyScrollContent: {
+        flexGrow: 1,
+        paddingBottom: 0,
+    },
+    nonUsaEmptyListContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+    },
+    nonUsaLoader: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colorpath.Pagebg,
+        zIndex: 1000001,
+    },
+    nonUsaLoaderImage: {
+        height: normalize(50),
+        width: normalize(50),
+        resizeMode: 'contain',
+    },
+    nonUsaAddButtonContainer: {
+        position: 'absolute',
+        bottom: 70,
+        right: 0,
+        paddingHorizontal: normalize(20),
+        zIndex: 999,
+    },
+    nonUsaAddButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: normalize(50),
+        width: normalize(50),
+        backgroundColor: Colorpath.ButtonColr,
+        borderWidth: 0.5,
+        borderColor: '#AAAAAA',
+        borderRadius: normalize(50),
     },
     yearContainer: {
         marginBottom: normalize(10),

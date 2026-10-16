@@ -33,11 +33,9 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
 const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
-    // Start as true so shimmer shows immediately on mount (before API fires)
     const [loading, setLoading] = useState(true);
     const [wholeDa, setWholeDa] = useState("");
-    // Tracks whether at least one CME response has come back (success or failure)
-    // so we never show the empty-state text prematurely
+    // Tracks whether the list can render its result or empty state.
     const hasReceivedResponse = React.useRef(false);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const dispatch = useDispatch();
@@ -264,9 +262,9 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             {(item?.startdate || item?.enddate || item?.location) && (<View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
                                 {renderLocationAndDates()}
                             </View>)}
-                            {item?.display_price && <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
-                            {!item?.display_price ? null : <View style={{ justifyContent: "flex-end", alignItems: "flex-end", marginTop: normalize(3) }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr }}>{item?.display_price == "FREE" ? `${item?.display_price}` : `${item?.display_currency_code}${item?.display_price}`}</Text>
+                            {item?.buttonText && <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
+                            {!item?.buttonText ? null : <View style={{ justifyContent: "flex-end", alignItems: "flex-end", marginTop: normalize(3) }}>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr }}>{item?.buttonText}</Text>
                             </View>}
                         </View>
                     </TouchableOpacity>
@@ -292,7 +290,6 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     DashboardReducer?.dashPerResponse?.data?.my_activities ||
                     DashboardReducer?.dashMbResponse?.data?.my_activities ||
                     DashboardReducer?.dashboardResponse?.data?.my_activities ||
-                    CMEReducer?.cmeCourseResponse?.conferences ||
                     [];
                 const uniqueActivities = activities.filter(
                     (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
@@ -308,28 +305,6 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                 setStoreAlldata([]);
                 break;
             default:
-                if (CMEReducer?.status === 'CME/cmeCourseRequest') {
-                    hasReceivedResponse.current = false;
-                    setLoading(true);
-                    setStoreAlldata([]);
-                } else if (CMEReducer?.status === 'CME/cmeCourseSuccess') {
-                    hasReceivedResponse.current = true;
-                    setLoading(false);
-                    const conferences =
-                        DashboardReducer?.dashPerResponse?.data?.my_activities ||
-                        DashboardReducer?.dashMbResponse?.data?.my_activities ||
-                        DashboardReducer?.dashboardResponse?.data?.my_activities ||
-                        CMEReducer?.cmeCourseResponse?.conferences ||
-                        [];
-                    const uniqueConferences = conferences.filter(
-                        (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
-                    );
-                    setStoreAlldata(uniqueConferences);
-                } else if (CMEReducer?.status === 'CME/cmeCourseFailure') {
-                    hasReceivedResponse.current = true;
-                    setLoading(false);
-                    setStoreAlldata([]);
-                }
                 break;
         }
     }, [
@@ -337,8 +312,31 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         DashboardReducer?.dashPerResponse?.data?.my_activities,
         DashboardReducer?.dashMbResponse?.data?.my_activities,
         DashboardReducer?.dashboardResponse?.data?.my_activities,
-        CMEReducer?.status,
-        CMEReducer?.cmeCourseResponse?.conferences,
+    ]);
+    useEffect(() => {
+        const responses = [
+            DashboardReducer?.dashPerResponse,
+            DashboardReducer?.dashMbResponse,
+            DashboardReducer?.dashboardResponse,
+        ];
+        const hasResolvedResponse = responses.some(response =>
+            response && Object.prototype.hasOwnProperty.call(response, 'data')
+        );
+        if (!hasResolvedResponse) return;
+
+        const activities = responses
+            .map(response => response?.data?.my_activities)
+            .find(Array.isArray) || [];
+        const uniqueActivities = activities.filter(
+            (value, index, self) => index === self.findIndex(item => item?.id === value?.id),
+        );
+        setStoreAlldata(uniqueActivities);
+        hasReceivedResponse.current = true;
+        setLoading(false);
+    }, [
+        DashboardReducer?.dashPerResponse,
+        DashboardReducer?.dashMbResponse,
+        DashboardReducer?.dashboardResponse,
     ]);
     /**
 * Returns full name.
@@ -493,7 +491,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
             <View>
                 <ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
                     {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
-                    {loading ? (
+                    {loading && !hasReceivedResponse.current && storeAlldata !== null ? (
                         <ProfessionCourseShimmer count={3} />
                     ) : (
                         <FlatList
@@ -504,39 +502,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             onEndReachedThreshold={0.5}
                             contentContainerStyle={{ paddingBottom: normalize(10) }}
                             scrollEventThrottle={16}
-                            ListEmptyComponent={
-                                hasReceivedResponse.current ? (
-                                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                width: normalize(290),
-                                                borderRadius: normalize(10),
-                                                backgroundColor: "#FFFFFF",
-                                                paddingHorizontal: normalize(10),
-                                                paddingVertical: normalize(10),
-                                                alignItems: "center",
-                                                borderStyle: 'dotted',
-                                                borderWidth: 1,
-                                            }}
-                                        >
-                                            <View style={{ flex: 1, justifyContent: "center" }}>
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 16,
-                                                        color: Colorpath.ButtonColr,
-                                                        fontWeight: "bold",
-                                                        alignSelf: "center"
-                                                    }}
-                                                >
-                                                    {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                ) : null
-                            }
+                            ListEmptyComponent={null}
                         />
                     )}
                     {/* Browse Courses button – hidden while shimmer is showing */}

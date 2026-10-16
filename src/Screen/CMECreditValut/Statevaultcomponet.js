@@ -30,6 +30,8 @@ import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsa
  * @returns {JSX.Element}
  */
 const Statevaultcomponet = ({ modalshow, setModalShow, renewalCheck, vaultState, renewalvault, cmemodal, setCmemodal, setCertificatedata, certificatedata, setBoardname, expirelicno, gencredit, gentopiccredit, mantopiccredit, mancredit, totalCredit, licesense, boardname, isfocused, loadingStatewise, setLoadingStatewise, loadingCreditwise, setLoadingCreditwise, setCreditwise, expireDatecredit, countdownMessagecredit, stateid, navigation, statewise, searchtexttopic, searchTopicName, clisttopic, setStatepick, styles, statepick, setStateid, setStatewise, creditwise, stateCourseRequest, dispatch, hideCertificateAction }) => {
+    const renewalUrl = typeof renewalvault === 'string' ? renewalvault.trim() : '';
+    const hasValidRenewalUrl = /^https?:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d{1,5})?(?:[/?#][^\s]*)?$/i.test(renewalUrl);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const isAccreditationUser =
         AuthReducer?.dircetloginResponse?.accreditation_user === true ||
@@ -289,7 +291,7 @@ const cleanNumber = (value) => {
                                         color: "#198754"
                                     }}>{"Update"}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => { handleOpenRenewalLinkCred(renewalvault) }}>
+                                {hasValidRenewalUrl && <TouchableOpacity onPress={() => { handleOpenRenewalLinkCred(renewalUrl) }}>
                                     <Text style={{
                                         textDecorationLine: "underline",
                                         fontFamily: Fonts.InterSemiBold,
@@ -297,7 +299,7 @@ const cleanNumber = (value) => {
                                         color: Colorpath.ButtonColr,
                                         marginLeft: 3,
                                     }}>{"Renewal Link"}</Text>
-                                </TouchableOpacity>
+                                </TouchableOpacity>}
                             </View>) : (<View style={styles.countdownRow}>
                                 <ErrorIcon name="error-outline" color={"#FF5E62"} size={20} />
                                 <Text style={styles.countdownText}>{`${countdownMessagecredit} days left`}</Text>
@@ -414,12 +416,12 @@ const cleanNumber = (value) => {
                                     <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: creditwise, creditvault: "TabNav" } } }] }))}>
                                         <Text style={stylesmodal.update}>{"Update"}</Text>
                                     </Pressable>
-                                    <Pressable style={stylesmodal.renewRow} onPress={() => handleOpenRenewalLinkCred(renewalvault)}>
+                                    {hasValidRenewalUrl && <Pressable style={stylesmodal.renewRow} onPress={() => handleOpenRenewalLinkCred(renewalUrl)}>
                                         <Text style={stylesmodal.renew}>{"Renew State License"}</Text>
                                         <View style={stylesmodal.arrowCircleBlack}>
                                             <ArrowNeed name={"arrow-up-right"} color={"#FFFFFF"} size={12} />
                                         </View>
-                                    </Pressable>
+                                    </Pressable>}
                                 </View>
                             </View> : <View style={{ justifyContent: "center", alignItems: "center", top: normalize(12) }}>
                                 <View style={stylesmodal.activebody}>
@@ -537,6 +539,15 @@ const cleanNumber = (value) => {
             style={stylesmodal.modal}
         >
             <View style={stylesmodal.container}>
+                <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close expired state license alert"
+                    onPress={() => setModalShow(false)}
+                    hitSlop={10}
+                    style={{ position: "absolute", top: normalize(8), right: normalize(8), zIndex: 1 }}
+                >
+                    <ArrowNeed name="x" color={Colorpath.black} size={22} />
+                </Pressable>
                 <View style={{ justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
                     <Text style={{
                         fontFamily: Fonts.InterMedium,

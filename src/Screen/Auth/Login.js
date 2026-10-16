@@ -14,7 +14,7 @@ import Buttons from '../../Components/Button';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { chooseStatecardRequest, loginRequest, loginsiginRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
+import { chooseStatecardRequest, licesensRequest, loginRequest, loginsiginRequest, verifyRequest } from '../../Redux/Reducers/AuthReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Imagepath from '../../Themes/Imagepath';
@@ -39,30 +39,6 @@ import constants from '../../Utils/Helpers/constants';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import styles from './Login.styles';
-
-/**
- * Normalizes a profession handle string by converting to lowercase and removing spaces.
- * 
- * **Purpose:** Ensure consistent formatting for profession handles (e.g., 'Physician - MD' -> 'physician-md').
- * 
- * **Parameters:**
- * @param {string} professionHandle - The raw profession string from the API.
- * 
- * **Return Value:**
- * @returns {string} The normalized string.
- * 
- * **Throws:** None
- * 
- * **Example Usage:**
- * ```javascript
- * const normalized = normalizeProfessionHandle("Physician - MD"); // Returns "physician-md"
- * ```
- */
-const normalizeProfessionHandle = (professionHandle) =>
-  String(professionHandle || '')
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .trim();
 
 /**
  * Main Login Screen component.
@@ -106,6 +82,10 @@ const Login = (props) => {
   const [Usph, setUsph] = useState("")
   const [mobileHd, setMobileHd] = useState("");
   const [nonloader, setNonloader] = useState(false);
+  const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
+  const loginSubmissionRef = useRef(false);
+  const authRequestSeenRef = useRef(false);
+  const dashboardRequestSeenRef = useRef(false);
   const [locationPermission, setLocationPermission] = useState(false);
   const [inputBlocked, setInputBlocked] = useState(false);
   const [permissionRequested, setPermissionRequested] = useState(false);
@@ -255,6 +235,7 @@ const formatIndianPhoneNumber = (input) => {
  * @returns {void}
  */
 const handleLogin = () => {
+    if (loginSubmissionRef.current) return;
     const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
     const mobileRegex = /^\d{10}$/;
     if (!email) {
@@ -266,6 +247,10 @@ const handleLogin = () => {
     } else if ((isPasswordFieldVisible || isNonUsaFlow) && !password) {
       showErrorAlert("Please enter your password to continue");
     } else {
+      loginSubmissionRef.current = true;
+      authRequestSeenRef.current = false;
+      dashboardRequestSeenRef.current = false;
+      setIsLoginSubmitting(true);
       let formattedEmail = email;
       let finalFormattedPhone = "";
       if (!isNonUsaFlow && phoneCountryCode == "+1" && email) {
@@ -288,10 +273,54 @@ const handleLogin = () => {
           dispatch((isPasswordFieldVisible || isNonUsaFlow) ? loginRequest(obj) : loginsiginRequest(obj));
         })
         .catch(err => {
+          loginSubmissionRef.current = false;
+          setIsLoginSubmitting(false);
           showErrorAlert("Please connect to the internet", err);
         });
     }
   };
+  useEffect(() => {
+    if (!loginSubmissionRef.current) return;
+    const authRequestStatuses = [
+      'Auth/loginRequest',
+      'Auth/loginsiginRequest',
+      'Auth/verifyRequest',
+      'Auth/chooseStatecardRequest',
+      'Auth/licesensRequest',
+    ];
+    const dashboardRequestStatuses = [
+      'Dashboard/dashboardRequest',
+      'Dashboard/mainprofileRequest',
+    ];
+    const authFailedStatuses = [
+      'Auth/loginFailure',
+      'Auth/loginsiginFailure',
+      'Auth/verifyFailure',
+      'Auth/chooseStatecardFailure',
+      'Auth/licesensFailure',
+    ];
+    const dashboardFailedStatuses = [
+      'Dashboard/dashboardFailure',
+      'Dashboard/mainprofileFailure',
+    ];
+    if (authRequestStatuses.includes(AuthReducer?.status)) authRequestSeenRef.current = true;
+    if (dashboardRequestStatuses.includes(DashboardReducer?.status)) dashboardRequestSeenRef.current = true;
+    const currentAuthRequestFailed = authRequestSeenRef.current && authFailedStatuses.includes(AuthReducer?.status);
+    const currentDashboardRequestFailed = dashboardRequestSeenRef.current && dashboardFailedStatuses.includes(DashboardReducer?.status);
+    if (currentAuthRequestFailed || currentDashboardRequestFailed) {
+      loginSubmissionRef.current = false;
+      setIsLoginSubmitting(false);
+      setNonloader(false);
+    }
+  }, [AuthReducer?.status, DashboardReducer?.status]);
+  useEffect(() => {
+    if (isFocus) return;
+    loginSubmissionRef.current = false;
+    authRequestSeenRef.current = false;
+    dashboardRequestSeenRef.current = false;
+    setIsLoginSubmitting(false);
+    setNonloader(false);
+  }, [isFocus]);
     /**
  * Verify handle utility.
  * @returns {void}
@@ -303,6 +332,8 @@ const verifyHandle = () => {
         dispatch(verifyRequest(obj));
       })
       .catch((err) => {
+        loginSubmissionRef.current = false;
+        setIsLoginSubmitting(false);
         showErrorAlert("Please connect to internet", err);
       });
   };
@@ -443,11 +474,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
           setNonloader(true);
           setGtprof(false);
         } else {
-        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
           props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
-        } else {
-          props?.navigation.navigate("CreateStateInfor");
-        }
         }
         return;
       }
@@ -460,14 +487,10 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
       });
       return;
     }
+    loginSubmissionRef.current = false;
+    setIsLoginSubmitting(false);
     showErrorAlert(loginSignInResponse?.msg || "something went wrong !");
   }, [AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
-  const validHandles = useMemo(() => new Set([
-    "Physician - MD",
-    "Physician - DO",
-    "Physician - DPM"
-  ]), []);
-
   const loginResponse = AuthReducer?.loginResponse || {};
   const user = loginResponse?.user || {};
   const isGuestPrimeUser = useMemo(() => {
@@ -476,34 +499,32 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
     return subscriptionUser == 'non-subscribed' && subscriptions.length == 0;
   }, [user?.subscription_user, user?.subscriptions]);
   console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
-  const normalizedProfessionHandle = normalizeProfessionHandle(
-    user?.profession && user?.profession_type ? `${user.profession}-${user.profession_type}` : `${user?.profession || ''}-${user?.profession_type || ''}`
-  );
-  const subscriptionList = Array.isArray(user?.subscription) ? user.subscription : [];
-  const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
-  const shouldShowPrimeCardForLogin =
-    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
-    subscriptionUser == 'non-subscribed' &&
-    subscriptionList.length == 0;
-  const shouldShowStateLicenseForLogin =
-    ['physician-md', 'physician-do', 'physician-dpm'].includes(normalizedProfessionHandle) &&
-    subscriptionList.length > 0;
   const chooseStatecardResponse = AuthReducer?.chooseStatecardResponse || {};
+  const currentMainProfile = DashboardReducer?.mainprofileResponse;
 
   // Memoized derived values
-  const profFromDashboard = useMemo(() => (
-    user?.profession && user?.profession_type
-      ? `${user.profession} - ${user.profession_type}`
-      : null
-  ), [user.profession, user.profession_type]);
+  const profFromDashboard = useMemo(() => {
+    const professionalInformation = currentMainProfile?.professional_information || {};
+    const profession = String(professionalInformation?.profession || '').trim();
+    const professionType = String(professionalInformation?.profession_type || '').trim();
+    return profession && professionType && !profession.includes('-')
+      ? `${profession} - ${professionType}`
+      : profession || null;
+  }, [currentMainProfile]);
 
   const allProfTake = useMemo(() => (
-    validHandles.has(profFromDashboard)
-  ), [validHandles, profFromDashboard]);
+    ['physician-md', 'physician-do', 'physician-dpm'].includes(
+      String(profFromDashboard || '').toLowerCase().replace(/\s+/g, '')
+    )
+  ), [profFromDashboard]);
 
   const token = useMemo(() => loginResponse?.token, [loginResponse]);
   const tokenObj = useMemo(() => ({ token, key: {} }), [token]);
   const prevToken = useRef(null);
+  const prevLicensureProfession = useRef(null);
+  const profileRequestPending = useRef(false);
+  const profileClearedForRequest = useRef(false);
+  const [isCurrentProfileReady, setIsCurrentProfileReady] = useState(false);
 
   // Track if we have valid state license data
   const hasStateLicenseData = useRef(false);
@@ -517,10 +538,34 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
       // Reset flags when token changes
       hasStateLicenseData.current = false;
       stateLicenseCheckComplete.current = false;
+      profileRequestPending.current = true;
+      profileClearedForRequest.current = false;
+      setIsCurrentProfileReady(false);
       dispatch(chooseStatecardRequest(tokenObj));
+      dispatch(mainprofileRequest(tokenObj));
       prevToken.current = token;
     }
-  }, [token, tokenObj, dispatch]);
+    if (token && profFromDashboard && profFromDashboard !== prevLicensureProfession.current) {
+      dispatch(licesensRequest(profFromDashboard));
+      prevLicensureProfession.current = profFromDashboard;
+    }
+  }, [token, tokenObj, dispatch, profFromDashboard]);
+
+  useEffect(() => {
+    if (!profileRequestPending.current) return;
+    if (currentMainProfile === null) {
+      profileClearedForRequest.current = true;
+      return;
+    }
+    if (
+      DashboardReducer?.status === 'Dashboard/mainprofileSuccess' &&
+      currentMainProfile &&
+      typeof currentMainProfile === 'object'
+    ) {
+      profileRequestPending.current = false;
+      setIsCurrentProfileReady(true);
+    }
+  }, [currentMainProfile, DashboardReducer?.status]);
 
   // Monitor when state license response is valid
   useEffect(() => {
@@ -531,7 +576,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
 
   // Main navigation logic
   useEffect(() => {
-    if (!token) return;
+    if (!token || !isCurrentProfileReady) return;
     AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(isGuestPrimeUser)).catch(err => {
       console.log('Error storing guest prime flag', err);
     });
@@ -544,19 +589,12 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
       user?.licensures?.[0] ||
       DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
       {};
-    const primaryLicenseFromDate = String(primaryLicense?.from_date || '').trim();
-    const hasLicense = !!(
-      String(primaryLicense?.license_number || '').trim() &&
-      primaryLicenseFromDate &&
-      primaryLicenseFromDate !== '0000-00-00'
-    );
+    const hasLicense = !!String(primaryLicense?.license_number || '').trim();
     // noLicense: true when license_number is null or "" (API returns "" when not yet added)
-    // Get state licenses only if we have valid data
-    const stateLicenses = hasStateLicenseData.current
-      ? chooseStatecardResponse?.state_licensures || []
-      : [];
-
-    const hasStateLicensures = stateLicenses.length > 0;
+    const availableLicensureStates = AuthReducer?.licesensResponse?.licensure_states;
+    const licensureStatesCheckComplete = AuthReducer?.licesensRequestedProfession === profFromDashboard &&
+      Array.isArray(availableLicensureStates);
+    const hasStateLicense = hasLicense || (chooseStatecardResponse?.state_licensures?.length > 0);
 
     // Track navigation state to prevent duplicate calls
     let navigationHandled = false;
@@ -637,49 +675,19 @@ const proceedNonUsaLogin = async () => {
       handleNavigation("LoginMobile", { validPh: { cellno: loginResponse?.phone, phonecode: phoneCountryCode } });
       return;
     }
-    if (isUsaFlow && isGuestPrimeUser) {
-      setNonloader(true);
-      handleNavigation("PrimeCard", {
-        ...props?.route?.params,
-        detectmain: "Prime",
-      });
-      return;
-    }
-    if (allProfTake && (shouldShowPrimeCardForLogin || shouldShowStateLicenseForLogin)) {
-      handleNavigation("PrimeCard", {
-        ...props?.route?.params,
-        subscriptionDataExists: shouldShowStateLicenseForLogin || undefined,
-      });
-      return;
-    }
-    const activeResponse = (AuthReducer?.verifyResponse && Object.keys(AuthReducer.verifyResponse).length > 0)
-      ? AuthReducer.verifyResponse
-      : loginResponse;
-    const isFullyVerified = activeResponse?.is_verified == "1" && activeResponse?.phone_verified == "1";
-
-    if (allProfTake && !hasLicense && !hasStateLicenseData.current && !isFullyVerified) {
+    if (isUsaFlow && allProfTake && !licensureStatesCheckComplete) {
       return;
     }
 
-    if (allProfTake) {
-      if (hasLicense || isFullyVerified) {
+    if (isUsaFlow && allProfTake) {
+      if (hasStateLicense) {
         setNonloader(true);
         dispatch(dashboardRequest(tokenObj));
         setGtprof(true);
       }
-      else if (hasStateLicensures) {
-        setNonloader(true);
-        handleNavigation("ChooseState", {
-          dataVr: { dataVr: stateLicenses, Loc: loginResponse?.user?.user_location }
-        });
-      }
       else {
         setNonloader(true);
-        if (nonUsaPermanentFlags?.stateLicenseFlowCompleted) {
-          handleNavigation("TabNav");
-        } else {
-          handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
-        }
+        handleNavigation("CreateStateInfor", { dataVerify: { dataVerify: "Nodasta", allDat: loginResponse?.user } });
       }
     }
     else if (loginResponse.success) {
@@ -692,11 +700,15 @@ const proceedNonUsaLogin = async () => {
     }
   }, [
     token,
+    currentMainProfile,
+    isCurrentProfileReady,
     allProfTake,
     loginResponse,
     user?.license_number,
     user?.licensures,
     chooseStatecardResponse,
+    AuthReducer?.licesensResponse,
+    AuthReducer?.licesensRequestedProfession,
     nonUsaPermanentFlags,
     phoneCountryCode,
     tokenObj,
@@ -881,8 +893,6 @@ const onBackPress = () => {
         backgroundColor={Colorpath.Pagebg}
       />
       <SafeAreaView style={styles.screen}>
-        <Loader visible={nonloader || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} />
-        {/* <Loader visible={AuthReducer?.status == 'Auth/loginRequest' || nonloader || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} /> */}
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -994,7 +1004,8 @@ const onBackPress = () => {
                 fontSize={18}
                 fontFamily={Fonts.InterSemiBold}
                 marginTop={normalize(0)}
-                disabled={!isButtonEnabled}
+                disabled={!isButtonEnabled || isLoginSubmitting}
+                loading={isLoginSubmitting || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest'}
               />
             </View>
             <View style={styles.footerRow}>
@@ -1022,6 +1033,7 @@ const onBackPress = () => {
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
+        <Loader visible={isLoginSubmitting || nonloader || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest' || AuthReducer?.status == 'Auth/verifyRequest'} />
       </SafeAreaView>
     </>
   );

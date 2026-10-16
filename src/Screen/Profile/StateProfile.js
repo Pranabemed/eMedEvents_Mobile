@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, ActivityIndicator, Image, BackHandler } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -101,6 +101,17 @@ const SearchBack = () => {
     const [fetcheddtpr, setFetchdtpr] = useState(null);
     const [stateCountpr, setStateCountpr] = useState(null);
     const [ticktry, setTicktry] = useState(false);
+    const handleDeleteSuccess = useCallback((deletedItem) => {
+        const deletedId = deletedItem?.id;
+        setWebcastviewpr(currentData =>
+            Array.isArray(currentData) ? currentData.filter(item => String(item.id) !== String(deletedId)) : []
+        );
+        setPaginatedDatapr(currentData =>
+            currentData.filter(item => String(item.id) !== String(deletedId))
+        );
+        setDetectdata("");
+        setPage(1);
+    }, []);
     useEffect(() => {
         connectionrequest()
             .then(() => {
@@ -157,7 +168,7 @@ const token_handle_vault = () => {
         ticktry
     ]);
     useEffect(() => {
-        if (props?.route?.params?.state) {
+        if (isFocus && props?.route?.params?.state) {
             connectionrequest()
                 .then(() => {
                     dispatch(stateLicenseListRequest({}))
@@ -166,7 +177,22 @@ const token_handle_vault = () => {
                     showErrorAlert("Please connect to internet", err)
                 })
         }
-    }, [props?.route?.params?.state])
+    }, [props?.route?.params?.state, isFocus])
+    useEffect(() => {
+        const licenses = ProfileReducer?.stateLicenseListResponse?.licensures;
+        if (!Array.isArray(licenses)) return;
+        const uniqueLicenses = licenses.filter((license, index, self) =>
+            index === self.findIndex(item =>
+                String(item.id ?? item.state_id) === String(license.id ?? license.state_id)
+            )
+        );
+        const sortedLicenses = [...uniqueLicenses].sort((a, b) =>
+            String(a?.state_name || '').localeCompare(String(b?.state_name || ''))
+        );
+        setWebcastviewpr(sortedLicenses);
+        setPaginatedDatapr(sortedLicenses.slice(0, 5));
+        setPage(1);
+    }, [ProfileReducer?.stateLicenseListResponse]);
     if (status == '' || ProfileReducer.status != status) {
         switch (ProfileReducer.status) {
             case 'Profile/stateLicenseListRequest':
@@ -185,6 +211,10 @@ const token_handle_vault = () => {
                     );
                     setWebcastviewpr(sortedData);
                     setPaginatedDatapr(sortedData.slice(0, 5));
+                } else {
+                    setWebcastviewpr([]);
+                    setPaginatedDatapr([]);
+                    setPage(1);
                 }
                 break;
             case 'Profile/stateLicenseListFailure':
@@ -405,7 +435,7 @@ const stateProfileget = ({ item, index }) => {
                             </View>
                         } />
                 </View>
-                {(!stateCount || stateCount.length > 0) && !pushnew && <View style={{
+                {(paginatedDatapr.length === 0 || ((!stateCount || stateCount.length > 0) && !pushnew)) && <View style={{
                     position: 'absolute',
                     bottom: 70,
                     right: 0,
@@ -433,7 +463,7 @@ const stateProfileget = ({ item, index }) => {
                     </TouchableOpacity> */}
                 </View>}
             </SafeAreaView>}
-            <ProfileModal setTicktry={setTicktry} main={ProfileReducer?.stateLicenseListResponse?.lisensure_file_path} setPaginatedData={setPaginatedDatapr} paginatedData={paginatedDatapr} nav={props.navigation} detectdata={detectdata} setProfiletakeshow={setProfiletakeshow} profiletakeshow={profiletakeshow} />
+            <ProfileModal setTicktry={setTicktry} main={ProfileReducer?.stateLicenseListResponse?.lisensure_file_path} setPaginatedData={setPaginatedDatapr} paginatedData={paginatedDatapr} nav={props.navigation} detectdata={detectdata} setProfiletakeshow={setProfiletakeshow} profiletakeshow={profiletakeshow} onDeleteSuccess={handleDeleteSuccess} />
         </>
     )
 }

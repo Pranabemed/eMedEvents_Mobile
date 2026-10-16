@@ -42,6 +42,8 @@ import InputField from '../../Components/CellInput';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
 import showDur from '../../Utils/Helpers/Duration';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import NetInfo from '@react-native-community/netinfo';
+import IntOff from '../../Utils/Helpers/IntOff';
 
 /**
  * Reusable AddCredits component.
@@ -58,7 +60,16 @@ let status = "";
  * @returns {JSX.Element}
  */
 const AddCredits = (props) => {
+    const isfocused = useIsFocused();
+    const [conn, setConn] = useState(true);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setConn(state.isConnected !== false && state.isInternetReachable !== false);
+        });
+
+        return () => unsubscribe();
+    }, []);
     useEffect(() => {
         let mounted = true;
         if (isfocused) {
@@ -72,9 +83,6 @@ const AddCredits = (props) => {
             mounted = false;
         };
     }, [isfocused]);
-
-    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyadd || finalProfession;
-    const isNonUsaUser = props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
 
     console.log(props?.route?.params?.creditvalut, props?.route?.params?.creditvalutboard, "jjjjjjj", props?.route?.params?.creditvalutstate?.state_name, "Props111", props?.route?.params?.creditvalutboard?.board_data?.board_id, ocrData, props?.route?.params?.FullBoard, props?.route?.params?.boardCert);
     console.log("Propsfulldata=====", props?.route?.params, props?.route?.params?.fulldata, "hjhh", props?.route?.params?.fulldata?.fulldata);
@@ -93,7 +101,6 @@ const AddCredits = (props) => {
     const [selectCountry, setSelectCountry] = useState([]);
     const [clist, setClist] = useState('');
     const [searchtext, setSearchtext] = useState('');
-    const isfocused = useIsFocused();
     const [countrypicker, setcountrypicker] = useState(false);
     const [country, setCountry] = useState('');
     const [creditId, setCreditId] = useState();
@@ -126,7 +133,26 @@ const AddCredits = (props) => {
         : ProfilePicObj1)
     const [finalverifyadd, setFinalverifyadd] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
+    const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyadd || finalProfession;
+    const isNonUsaUser = props?.route?.params?.isNonUsaUser === true || nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const profileProfession = DashboardReducer?.mainprofileResponse?.professional_information || {};
+    const profileProfessionName = String(profileProfession?.profession || '').trim();
+    const resolvedCreditProfession = String(
+        profileProfessionName ||
+        DashboardReducer?.mainprofileResponse?.profession ||
+        AuthReducer?.verifymobileResponse?.user?.profession ||
+        AuthReducer?.loginResponse?.user?.profession ||
+        AuthReducer?.againloginsiginResponse?.user?.profession ||
+        finalProfession?.profession ||
+        finalverifyadd?.profession ||
+        ''
+    ).split(/\s+-\s+/)[0].trim();
     const returnToDashboardVault = props?.route?.params?.returnToDashboardVault === true;
+    const requiresStateMandatedCourse = !isNonUsaUser &&
+        clisttopic?.length > 0 &&
+        !props?.route?.params?.FullBoard?.stateid &&
+        !props?.route?.params?.creditvalutboard?.board_data?.board_id &&
+        !props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id;
     useEffect(() => {
         /**
 * Token handle vault utility.
@@ -169,10 +195,12 @@ const AddCredits = (props) => {
         }
     }, [country])
     useEffect(() => {
-        if (!searchtext && DashboardReducer?.addCreditsResponse?.credit_types) {
-            setClist(DashboardReducer?.addCreditsResponse?.credit_types);
+        const creditTypes = DashboardReducer?.addCreditsResponse?.credit_types;
+        if (!searchtext && Array.isArray(creditTypes)) {
+            setSelectCountry(creditTypes);
+            setClist(creditTypes);
         }
-    }, [searchtext])
+    }, [searchtext, DashboardReducer?.addCreditsResponse?.credit_types])
     // useEffect(() => {
     //     const token_handle_vaultadd = () => {
     //       setTimeout(async () => {
@@ -256,12 +284,10 @@ const AddCredits = (props) => {
 * @returns {void}
 */
     const addcreditAgain = () => {
-        const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
-            AuthReducer?.loginResponse?.user?.profession ||
-            AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
+        if (!resolvedCreditProfession) return;
         connectionrequest()
             .then(() => {
-                dispatch(addCreditsRequest(profession));
+                dispatch(addCreditsRequest(resolvedCreditProfession));
             })
             .catch(err => {
                 console.log(err);
@@ -269,39 +295,47 @@ const AddCredits = (props) => {
             });
     }
     useEffect(() => {
-        if (isNonUsaUser && isfocused) {
-            const profession = finalProfession?.profession || AuthReducer?.verifymobileResponse?.user?.profession ||
-                AuthReducer?.loginResponse?.user?.profession ||
-                AuthReducer?.againloginsiginResponse?.user?.profession || finalverifyadd?.profession || "Physician";
+        if (isfocused && resolvedCreditProfession) {
             connectionrequest()
                 .then(() => {
-                    dispatch(addCreditsRequest(profession));
+                    dispatch(addCreditsRequest(resolvedCreditProfession));
                 })
                 .catch(err => {
                     console.log(err);
                 });
         }
-    }, [isNonUsaUser, isfocused, finalProfession, finalverifyadd]);
+    }, [isfocused, resolvedCreditProfession, dispatch]);
     const StateMandatoryDat = [{ id: 0, name: "No" }, { id: 1, name: "Yes" }]
+    const uploadedFileName = String(
+        ProfilePicObj1?.name || ProfilePicObj1?.uri || ProfilePicObj1 || ''
+    ).split('?')[0];
+    const hasValidUploadedDocument = Boolean(ProfilePicObj1) &&
+        /\.(docx?|pptx?|word|jpe?g|png)$/i.test(uploadedFileName);
     /**
 * Handles add credits.
 * @returns {void}
 */
     const handleAddCredits = () => {
-        if (!ProfilePicObj1 && !isNonUsaUser) {
+        const creditsValue = Number(creditscount);
+
+        if (!ProfilePicObj1) {
             showErrorAlert("Please upload a valid file (accepted formats: .docx, .pptx, .word, .jpg, .png, .jpeg)");
-        } else if (!activitytitle) {
+        } else if (!hasValidUploadedDocument) {
+            showErrorAlert("Please upload a valid file (accepted formats: .doc, .docx, .ppt, .pptx, .word, .jpg, .png, .jpeg)");
+        } else if (!activitytitle.trim()) {
             showErrorAlert("Enter your activity title.");
-        } else if (!provideName) {
-            showErrorAlert("Enter your provide name.");
-        } else if (!country) {
+        } else if (!provideName.trim()) {
+            showErrorAlert("Enter your provider name.");
+        } else if (!country || creditId == null) {
             showErrorAlert("Select your credit type");
-        } else if (!creditscount) {
-            showErrorAlert("Enter your credits");
+        } else if (!String(creditscount).trim() || !Number.isFinite(creditsValue) || creditsValue <= 0) {
+            showErrorAlert("Enter valid credits greater than zero");
+        } else if (!cdate) {
+            showErrorAlert("Select your issue date");
+        } else if (requiresStateMandatedCourse && !finalstate) {
+            showErrorAlert("Select whether this is a state mandated course");
         } else if (!isNonUsaUser && finalstate === "Yes" && !stopic) {
             showErrorAlert("Select your topic")
-        } else if (!cdate) {
-            showErrorAlert("Select your issue date ");
         } else {
             let obj = new FormData();
             obj.append("id", props?.route?.params?.creditvalutstate?.id || props?.route?.params?.mainAdd?.creditID?.id || props?.route?.params?.creditvalut?.id || props?.route?.params?.fulldata?.fulldata?.id || props?.route?.params?.mainAdd?.id || props?.route?.params?.mainAdd?.state_data?.id || 0);
@@ -870,7 +904,7 @@ const AddCredits = (props) => {
         <>
             <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                {countrypicker ? (
+                {conn === false ? <IntOff /> : countrypicker ? (
                     <CreditTypeComponent
                         clist={clist}
                         searchCreditName={searchCreditName}
@@ -890,8 +924,18 @@ const AddCredits = (props) => {
                     </View>}
                     <Loader
                         visible={DashboardReducer?.status == 'Dashboard/addCreditVaultRequest' || DashboardReducer?.status == 'Dashboard/OCRCertificateRequest'} />
-                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: normalize(50) }}>
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    >
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            contentContainerStyle={{ paddingBottom: normalize(120) }}
+                            keyboardShouldPersistTaps="handled"
+                            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+                            nestedScrollEnabled={true}
+                            showsVerticalScrollIndicator={true}>
                             {!isNonUsaUser && (
                                 <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10), backgroundColor: "#FF6D68", justifyContent: "center", alignItems: "center" }}>
                                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#FFFFFF" }}>{"Upload/Scan the document first to fill the form"}</Text>
@@ -941,7 +985,7 @@ const AddCredits = (props) => {
                                             textStyle={{ color: ProfilePicObj1 ? Colorpath.ButtonColr : "#949494" }}
                                         /> */}
                                             <InputField
-                                                label={"Upload/Scan Document*"}
+                                                label="Upload/Scan Document*"
                                                 value={ProfilePicObj1
                                                     ? ProfilePicObj1.uri
                                                         ? ProfilePicObj1.uri
@@ -1034,8 +1078,9 @@ const AddCredits = (props) => {
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField dropdownPresentation
+                                                required={true}
                                                 icondisable={isNonUsaUser || ProfilePicObj1 || props?.route?.params?.fulldata?.fulldata?.credit_type ? false : true}
-                                                label={"Credit Type*"}
+                                                label={"Credit Type"}
                                                 value={country}
                                                 placeholder=""
                                                 placeholderTextColor="#949494"
@@ -1261,9 +1306,10 @@ const AddCredits = (props) => {
                             </View>
                             <Buttons
                                 onPress={handleAddCredits}
+                                disabled={!hasValidUploadedDocument}
                                 height={normalize(45)}
                                 width={normalize(300)}
-                                backgroundColor={Colorpath.ButtonColr}
+                                backgroundColor={hasValidUploadedDocument ? Colorpath.ButtonColr : "#DADADA"}
                                 borderRadius={normalize(9)}
                                 text="Save"
                                 color={Colorpath.white}
@@ -1292,7 +1338,7 @@ const AddCredits = (props) => {
                                 onClose={toggleModalcred}
                                 content={isNonUsaUser ? "Credit details \n added successfully." : (props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully.")}
                                 navigation={props.navigation}
-                                name={isNonUsaUser ? "CertficateHandle" : returnToDashboardVault ? "DashoardVault" : "goBack"}
+                                name={returnToDashboardVault ? "DashoardVault" : isNonUsaUser ? "CertficateHandle" : "goBack"}
                             />
 
 

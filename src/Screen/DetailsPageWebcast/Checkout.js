@@ -502,6 +502,12 @@ const toggleModalFailedfree = (tik) => {
             }
             : null;
     const checkoutCompletionRoute = 'TabNav';
+    const completeCheckoutToDashboard = () => {
+        props.navigation.reset({
+            index: 0,
+            routes: [{ name: checkoutCompletionRoute }],
+        });
+    };
     /**
  * Reset guest checkout fields utility.
  * @returns {void}
@@ -2359,6 +2365,7 @@ const applyCoupon = () => {
                     content={ticketSave?.tickets?.[0]?.itemamt > 0 && !notadded ? "Your payment has been \n successfully completed." : "Your registration has been \n successfully confirmed."}
                     navigation={navigation}
                     name={checkoutCompletionRoute}
+                    onDashboardPress={completeCheckoutToDashboard}
                     dataPayemnt={WebcastReducer?.StatusPaymentResponse}
                     maindata={props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole}
                 />

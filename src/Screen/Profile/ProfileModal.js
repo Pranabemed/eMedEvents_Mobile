@@ -3,7 +3,7 @@
  */
 
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform, StyleSheet } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/AntDesign'
 import Colorpath from '../../Themes/Colorpath';
@@ -46,24 +46,37 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
     console.log(detectdata, "detectdata--------------", paginatedData);
     const dispatch = useDispatch();
     const ProfileReducer = useSelector(state => state.ProfileReducer);
+    const deletePendingRef = useRef(false);
 
     useEffect(() => {
-        if (
-            ProfileReducer.status === 'Profile/boardListDeleteSuccess' &&
-            ProfileReducer?.boardListDeleteResponse?.msg === 'Certification information deleted successfully.'
-        ) {
+        if (!deletePendingRef.current) return;
+        if (ProfileReducer.status === 'Profile/boardListDeleteSuccess') {
+            deletePendingRef.current = false;
             showErrorAlert('Certification information deleted successfully.');
-            onDeleteSuccess?.(detectdata?.id);
+            onDeleteSuccess?.(detectdata);
             dispatch(boardListProfileRequest({}));
             setProfiletakeshow(false);
+        } else if (ProfileReducer.status === 'Profile/stateLicenseDeleteSuccess') {
+            deletePendingRef.current = false;
+            showErrorAlert('Licensure information deleted successfully.');
+            onDeleteSuccess?.(detectdata);
+            dispatch(stateLicenseListRequest({}));
+            setTicktry?.(currentValue => !currentValue);
+            setProfiletakeshow(false);
+        } else if (
+            ProfileReducer.status === 'Profile/boardListDeleteFailure' ||
+            ProfileReducer.status === 'Profile/stateLicenseDeleteFailure'
+        ) {
+            deletePendingRef.current = false;
         }
-    }, [ProfileReducer.status, ProfileReducer?.boardListDeleteResponse, detectdata?.id, dispatch, onDeleteSuccess, setProfiletakeshow]);
+    }, [ProfileReducer.status, ProfileReducer?.boardListDeleteResponse, ProfileReducer?.stateLicenseDeleteResponse, detectdata?.id, dispatch, onDeleteSuccess, setProfiletakeshow, setTicktry]);
 
         /**
  * Delet lic utility.
  * @returns {void}
  */
 const deletLic = () => {
+        deletePendingRef.current = true;
         let obj = {
             "id": detectdata?.id
         }
@@ -72,6 +85,7 @@ const deletLic = () => {
                 dispatch(board ? boardListDeleteRequest(obj) : stateLicenseDeleteRequest(obj))
             })
             .catch((err) => {
+                deletePendingRef.current = false;
                 showErrorAlert("Please connect to internet", err)
             })
     }
@@ -128,13 +142,6 @@ onPress: () => { setCreditModal(false) } }]);
                 break;
             case 'Profile/stateLicenseDeleteSuccess':
                 statusd = ProfileReducer.status;
-                setTicktry(true)
-                console.log(ProfileReducer?.stateLicenseDeleteResponse, "log-----------");
-                if (ProfileReducer?.stateLicenseDeleteResponse?.msg == "Licensure information deleted successfully.") {
-                    showErrorAlert("Licensure information deleted successfully.");
-                    dispatch(stateLicenseListRequest({}));
-                    setProfiletakeshow(!profiletakeshow);
-                }
                 break;
             case 'Profile/stateLicenseDeleteFailure':
                 statusd = ProfileReducer.status;
@@ -152,14 +159,6 @@ onPress: () => { setCreditModal(false) } }]);
                 break;
         }
     }
-        /**
- * Remove id from state utility.
- * @returns {void}
- */
-const removeIdFromState = () => {
-        const updatedRemvoe = paginatedData.filter(item => item.id !== detectdata?.id);
-        setPaginatedData(updatedRemvoe);
-    };
     const to_date = detectdata?.to_date;
     const currentDate = new Date();
     let status = "Active"; 
@@ -370,7 +369,6 @@ const removeIdFromState = () => {
  * @returns {void}
  */
 onPress: () => {
-                                                    removeIdFromState();
                                                     setProfiletakeshow(!profiletakeshow);
                                                 }, style: "default"
                                             }, { text: "Yes",                                             /**
@@ -422,7 +420,6 @@ onPress: () => { deletLic(); }, style: "default" }])
  * @returns {void}
  */
 onPress: () => {
-                                                    removeIdFromState();
                                                     setProfiletakeshow(!profiletakeshow);
                                                 }, style: "default"
                                             }, { text: "Yes",                                             /**

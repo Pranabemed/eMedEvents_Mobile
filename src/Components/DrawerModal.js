@@ -45,6 +45,7 @@ import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
 import { hasUsaPrimeProfile, isPrimePhysicianProfile, isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
+import { getCountryAndDialCode } from '../Utils/Helpers/IPServer';
 
 /**
  * Reusable DrawerModal component.
@@ -76,6 +77,7 @@ export default function DrawerModal(props) {
   const [primeSkipped, setPrimeSkipped] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
+  const [resolvedIpCountryCode, setResolvedIpCountryCode] = useState('');
   const [nonUsaPermanentFlags, setNonUsaPermanentFlags] = useState({
     professionUpdateRequired: false,
     stateLicenseFlowCompleted: false,
@@ -105,10 +107,14 @@ export default function DrawerModal(props) {
       if (!mounted) return;
 
       const auth_user_json = auth_user ? JSON.parse(auth_user) : null;
+      const board_special_json = board_special ? JSON.parse(board_special) : null;
+      const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
 
       setNonUsaFlowState(state);
       setNonUsaPermanentFlags(flags);
       setStoredAuthUser(auth_user_json);
+      setFinalverifyvault(board_special_json);
+      setFinalProfession(profession_data_json);
       setCurrentProfile(activeProfile);
       setIsProfileReady(true);
     }).catch(err => {
@@ -122,7 +128,7 @@ export default function DrawerModal(props) {
       mounted = false;
     };
   }, []);
-  const hasActiveSession =
+  const authenticatedUser =
     AuthReducer?.dircetloginResponse?.user ||
     AuthReducer?.directloginResponse?.user ||
     AuthReducer?.signupResponse?.user ||
@@ -131,11 +137,15 @@ export default function DrawerModal(props) {
     AuthReducer?.verifymobileResponse?.user ||
     storedAuthUser;
 
-  const resolvedUser = hasActiveSession
-    ? (DashboardReducer?.mainprofileResponse && Object.keys(DashboardReducer.mainprofileResponse).length > 0
-      ? DashboardReducer.mainprofileResponse
-      : hasActiveSession)
+  const latestProfileUser = DashboardReducer?.mainprofileResponse &&
+    Object.keys(DashboardReducer.mainprofileResponse).length > 0
+    ? DashboardReducer.mainprofileResponse
     : null;
+
+  // Keep the last complete profile while a refresh is in progress. The reducer
+  // clears mainprofileResponse on request, which previously made the drawer
+  // briefly use older login/storage data and select the wrong menu.
+  const resolvedUser = latestProfileUser || allHandled || authenticatedUser || null;
 
   const resolvedDrawerUser = resolvedUser;
 
@@ -217,6 +227,13 @@ export default function DrawerModal(props) {
       return () => cleanup?.();
     }
   }, [props.isVisible, syncDrawerProfileState]);
+  useEffect(() => {
+    let active = true;
+    getCountryAndDialCode().then(info => {
+      if (active) setResolvedIpCountryCode(String(info?.country || '').trim().toUpperCase());
+    }).catch(err => console.log('Drawer IP country lookup error', err));
+    return () => { active = false; };
+  }, [AuthReducer?.status]);
   useEffect(() => {
     const authChanged =
       AuthReducer?.status === 'Auth/logoutSuccess' ||
@@ -306,8 +323,11 @@ export default function DrawerModal(props) {
 
   const hasDrawerLicensures = (
     (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer?.mainprofileResponse?.licensures.length > 0) ||
+    (Array.isArray(DashboardReducer?.dashPerResponse?.data?.licensures) && DashboardReducer?.dashPerResponse?.data?.licensures.length > 0) ||
     (Array.isArray(DashboardReducer?.dashMbResponse?.data?.licensures) && DashboardReducer?.dashMbResponse?.data?.licensures.length > 0) ||
-    (Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures) && DashboardReducer?.dashboardResponse?.data?.licensures.length > 0)
+    (Array.isArray(DashboardReducer?.dashboardResponse?.data?.licensures) && DashboardReducer?.dashboardResponse?.data?.licensures.length > 0) ||
+    (Array.isArray(fulldashbaord?.licensures) && fulldashbaord.licensures.length > 0) ||
+    (Array.isArray(fulldashbaord?.data?.licensures) && fulldashbaord.data.licensures.length > 0)
   );
 
   const isPhysicianProfMDDODPM =
@@ -320,6 +340,7 @@ export default function DrawerModal(props) {
   const allProfTake = (isProfileReady || Boolean(resolvedDrawerUser)) && currentProfile !== 'SkipProfile' && isPhysicianProfMDDODPM;
   useEffect(() => {
     if (AuthReducer.status === 'Auth/logoutSuccess') {
+      setAllHandled(null);
       setLogoutPending(false);
       setSubit(false);
       props.onBackdropPress?.();
@@ -443,23 +464,21 @@ export default function DrawerModal(props) {
     ['1', '233'].includes(fallbackAddrCountryId)
   );
 
-  const isUsaIpAddress = nonUsaFlowState?.isNonUsa !== true && (
-    !nonUsaFlowState?.ipCountryCode ||
-    isUsaCountryCode(nonUsaFlowState?.ipCountryCode)
-  );
+  const currentIpCountryCode = resolvedIpCountryCode || nonUsaFlowState?.ipCountryCode;
+  const isUsaIpAddress = isUsaCountryCode(currentIpCountryCode);
 
   const primeProfileSources = [
-    DashboardReducer?.mainprofileResponse,
     AuthReducer?.dircetloginResponse,
     AuthReducer?.directloginResponse,
     AuthReducer?.loginResponse,
     AuthReducer?.againloginsiginResponse,
     AuthReducer?.verifymobileResponse,
+    AuthReducer?.signupResponse,
+    DashboardReducer?.mainprofileResponse,
     storedAuthUser,
     finalProfession,
   ];
-  const isPrimePhysician = isPrimePhysicianProfile(...primeProfileSources) &&
-    (!isAccreditationUser || hasDrawerLicensures);
+  const isPrimePhysician = isPrimePhysicianProfile(...primeProfileSources);
   const isUsaPhysicianMDDODPM = isPrimePhysician &&
     (hasUsaPrimeProfile(...primeProfileSources) || isUsaIpAddress);
 

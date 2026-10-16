@@ -78,7 +78,7 @@ const PrimeCard = ({
         justifyContent: 'flex-end',
       }}
       animationInTiming={800}
-      animationOutTiming={1000}
+      animationOutTiming={250}
       onBackdropPress={handleDismiss}
       onBackButtonPress={handleDismiss}
       useNativeDriver={true}

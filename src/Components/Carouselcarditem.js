@@ -28,6 +28,7 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 let status = "";
+const dismissedExpiredLicenses = new Set();
 /**
  * Carouselcarditem component.
  * @param {Object} props - Input object.
@@ -40,7 +41,7 @@ let status = "";
  * @param {*} props.index - Nested property value.
  * @returns {JSX.Element}
  */
-const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index }) => {
+const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal, val, index, allProfTake: resolvedAllProfTake, onCloseExpiredModal }) => {
     const renewalUrl = typeof renewal === 'string' ? renewal.trim() : '';
     const hasValidRenewalUrl = /^https?:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d{1,5})?(?:[/?#][^\s]*)?$/i.test(renewalUrl);
     const {
@@ -74,7 +75,12 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         dashboardProfession && dashboardProfessionType
             ? `${dashboardProfession} - ${dashboardProfessionType}`
             : '';
-    const allProfTake = validHandles.has(profFromDashboard);
+    // The parent resolves profession from stable profile/auth sources. Prefer it
+    // so a dashboard refresh cannot temporarily change Medical/CME to Nursing/CE
+    // while mainprofileResponse is cleared by the request reducer.
+    const allProfTake = typeof resolvedAllProfTake === 'boolean'
+        ? resolvedAllProfTake
+        : validHandles.has(profFromDashboard);
     useEffect(() => {
                 /**
  * Token handle vault utility.
@@ -414,6 +420,9 @@ const handleOpenRenewalLink = (renewallink) => {
     const parsedExpiry = moment(item?.to_date, ["YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY", "MM/DD/YYYY", moment.ISO_8601], true);
     const isExpiryValid = parsedExpiry.isValid();
     const formattedExpiry = isExpiryValid ? parsedExpiry.format('MMM DD, YYYY') : "N/A";
+    const expiredModalSessionKey = [item?.state_id, item?.board_id, item?.license_number, item?.to_date, index]
+        .map(value => String(value ?? ''))
+        .join('|');
     useEffect(() => {
         let interactionPromise = null;
         let timeoutId = null;
@@ -446,7 +455,9 @@ const handleOpenRenewalLink = (renewallink) => {
             setExpireDate(isExpired);
             setCountdownMessage(message);
 
-            if (isExpired) {
+            if (isExpired && dismissedExpiredLicenses.has(expiredModalSessionKey)) {
+                setDashMod(false);
+            } else if (isExpired) {
                 if (isFocus) {
                     interactionPromise = InteractionManager.runAfterInteractions(() => {
                         timeoutId = setTimeout(() => {
@@ -470,7 +481,7 @@ const handleOpenRenewalLink = (renewallink) => {
                 clearTimeout(timeoutId);
             }
         };
-    }, [item?.to_date, item?.from_date, item?.expiry_date, item?.license_number, item?.license_expire_days, item?.board_name, isActiveCard, isExpiryValid, isMissingLicenseData, isFocus, parsedExpiry, setExpireDate]);
+    }, [item?.to_date, item?.from_date, item?.expiry_date, item?.license_number, item?.license_expire_days, item?.board_name, isActiveCard, isExpiryValid, isMissingLicenseData, isFocus, parsedExpiry, setExpireDate, expiredModalSessionKey]);
     return (
         <>
             <View style={styles.container}>
@@ -529,6 +540,19 @@ const handleOpenRenewalLink = (renewallink) => {
                     style={stylesmodal.modal}
                 >
                     <View style={stylesmodal.container}>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Close expired state license alert"
+                            onPress={() => {
+                                dismissedExpiredLicenses.add(expiredModalSessionKey);
+                                setDashMod(false);
+                                onCloseExpiredModal?.();
+                            }}
+                            hitSlop={10}
+                            style={{ position: "absolute", top: normalize(8), right: normalize(8), zIndex: 1 }}
+                        >
+                            <ArrowNeed name="x" color={Colorpath.black} size={22} />
+                        </Pressable>
                         <View style={{ justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
                             <Text style={{
                                 fontFamily: Fonts.InterMedium,

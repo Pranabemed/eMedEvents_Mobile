@@ -40,6 +40,7 @@ const initialState = {
   status: '',
   token: null,
   isLoading: true,
+  mainProfileLoading: false,
   dashboardResponse:{},
   stateDashboardResponse:{},
   stateCourseResponse:{},
@@ -164,6 +165,7 @@ stateCourseFailure(state, action) {
  * @returns {void}
  */
 addCreditsRequest(state, action) {
+      state.addCreditsResponse = {};
       state.status = action.type;
     },
         /**
@@ -454,6 +456,8 @@ OCRCertificateFailure(state, action) {
  * @returns {void}
  */
 mainprofileRequest(state, action) {
+      state.mainprofileResponse = null;
+      state.mainProfileLoading = true;
       state.status = action.type;
     },
         /**
@@ -464,6 +468,7 @@ mainprofileRequest(state, action) {
  */
 mainprofileSuccess(state, action) {
       state.mainprofileResponse = action.payload;
+      state.mainProfileLoading = false;
       state.status = action.type;
     },
         /**
@@ -473,6 +478,7 @@ mainprofileSuccess(state, action) {
  * @returns {void}
  */
 mainprofileFailure(state, action) {
+      state.mainProfileLoading = false;
       state.status = action.type;
       state.error = action.error;
     },
