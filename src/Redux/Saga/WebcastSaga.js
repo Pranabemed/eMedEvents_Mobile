@@ -267,7 +267,9 @@ export function* saveRegistSaga(action) {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
-    IPADDRESS: ipAddress ? ipAddress : ""
+    IPADDRESS: ipAddress ? ipAddress : "",
+    // Guest registration applies the dial code on the backend.
+    skipPhoneNormalization: Boolean(action?.payload?.playerSessionID),
   };
   try {
     let response = yield call(postApi, 'transaction/saveRegistration', action.payload, header);
@@ -717,13 +719,16 @@ export function* PrimeCheckSaga(action) {
  */
 export function* RegisterIntPrSaga(action) {
   let items = yield select(getItem);
+  const { __guestRegistration, ...requestPayload } = action?.payload || {};
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
     authorization: items.token,
+    // Guest interest registration applies the dial code on the backend.
+    skipPhoneNormalization: Boolean(__guestRegistration),
   };
   try {
-    let response = yield call(postApi, 'Transaction/interestConference', action.payload, header);
+    let response = yield call(postApi, 'Transaction/interestConference', requestPayload, header);
     if (response?.status == 200) {
       yield put(RegisterIntSuccess(response?.data));
     } else {

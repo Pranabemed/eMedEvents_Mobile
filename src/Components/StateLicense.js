@@ -23,7 +23,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import { dashboardRequest, stateDashboardRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
-import HomeShimmer from './DashBoardShimmer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
@@ -453,23 +452,16 @@ const stateTake = (toklen, anoth) => {
         profileType !== 'SkipProfile' &&
         allProfTake &&
         (() => {
-            const isGlobalLoading =
-                AuthReducer?.status?.toLowerCase().includes('dashboardrequest') ||
-                AuthReducer?.status?.toLowerCase().includes('licesensrequest') ||
-                DashboardReducer?.status?.toLowerCase().includes('dashboardrequest');
+            const licensureLoaded = Array.isArray(AuthReducer?.licesensResponse?.licensure_states);
+            const chooseStateLoaded = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures);
 
-            // Bias towards TRUE only while GLOBAL related API is in flight
-            if (isGlobalLoading) return true;
-
-            const contextLoaded = Array.isArray(stateCount);
-            const licensureLoaded = !!AuthReducer?.licesensResponse?.licensure_states;
-            const chooseStateLoaded = !!AuthReducer?.chooseStatecardResponse?.state_licensures;
+            // Never advertise Add License until availability is confirmed.
+            if (!licensureLoaded && !chooseStateLoaded) return false;
 
             const existingStateIds = new Set(
                 Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
             );
 
-            const contextHasRemaining = contextLoaded && stateCount.length > 0;
             const licensureHasRemaining = licensureLoaded && derivedRemainingStates.length > 0;
 
             const chooseStateLicensures = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures)
@@ -481,16 +473,7 @@ const stateTake = (toklen, anoth) => {
             });
             const chooseStateHasRemaining = chooseStateLoaded && chooseStateRemaining.length > 0;
 
-            const hasRemaining =
-                contextHasRemaining || licensureHasRemaining || chooseStateHasRemaining;
-
-            // Wait until ALL primary sources have responded at least once
-            const allSourcesLoaded = contextLoaded && licensureLoaded && chooseStateLoaded;
-
-            // IF we aren't loaded yet, default to TRUE (keeps button visible during refresh)
-            if (!allSourcesLoaded) return true;
-
-            const result = hasRemaining;
+            const result = licensureHasRemaining || chooseStateHasRemaining;
             if (!result) {
                 console.log(`[StateLicense/canAddLicenses] ${Date.now()} - Hiding`, {
                     context: stateCount?.length,
@@ -739,7 +722,8 @@ const handleAllIndex = (index) => {
     const shouldShowAddLicenseCard =
         (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
         !fulldashbaord?.length &&
-        !isNonUsaUser;
+        !isNonUsaUser &&
+        canAddLicenses;
         /**
  * Render add license card utility.
  * @returns {JSX.Element}
@@ -1046,7 +1030,7 @@ const renderAddLicenseCard = () => (
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />
                         <Cmemodal setCmemodal={setCmemodal} isModal={cmemodal} onCmeFalse={cmeModalFalse} />
                         {!isSkipProfile && <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />}
-                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : isNonUsaUser ? <RestProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} addit={addit} takestate={takestate} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} DashboardReducer={DashboardReducer} CMEReducer={CMEReducer} profileType={profileType} /> : <HomeShimmer />)}
+                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <RestProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} addit={addit} takestate={takestate} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} DashboardReducer={DashboardReducer} CMEReducer={CMEReducer} profileType={profileType} />)}
             </View>
         </>
     );

@@ -442,7 +442,35 @@ const ProfileMain = (props) => {
     const isPhysicianUser = isPhysicianProfMDDODPM && (!isAccreditationUser || hasLicensuresData);
     const allProfTake = isProfileCountryUsa && (dashboardLicenses.length > 0 || (hasLicensureStates && isPhysicianProfMDDODPM));
     const isNonUsaUser = !isPhysicianUser || !isProfileCountryUsa;
-    const showPrimeCardButton = isPhysicianUser && isUsaIpAddress;
+    // Prime belongs only to the currently selected MD/DO/DPM profession.
+    // Do not use professionCandidates here because it intentionally contains
+    // older login/storage values that can still describe the previous profile.
+    const currentProfessionName = read(
+        effectiveAllHandle?.professional_information?.profession ??
+        effectiveAllHandle?.profession
+    );
+    const currentProfessionType = read(
+        effectiveAllHandle?.professional_information?.profession_type ??
+        effectiveAllHandle?.profession_type ??
+        effectiveAllHandle?.professional_information?.designation ??
+        effectiveAllHandle?.designation
+    );
+    const currentProfessionHandle = normalizeProfessionHandle(
+        getDisplayProfession(effectiveAllHandle) ||
+        buildProfessionLabel(currentProfessionName, currentProfessionType)
+    );
+    const currentProfessionNameHandle = normalizeProfessionHandle(currentProfessionName);
+    const currentProfessionTypeHandle = normalizeProfessionHandle(currentProfessionType);
+    const isCurrentPrimeProfession =
+        validHandles.has(currentProfessionHandle) ||
+        validHandles.has(currentProfessionNameHandle) ||
+        ['physicianmd', 'physiciando', 'physiciandpm'].includes(
+            currentProfessionNameHandle + currentProfessionTypeHandle
+        );
+    const showPrimeCardButton =
+        isCurrentPrimeProfession &&
+        (!isAccreditationUser || hasLicensuresData) &&
+        isUsaIpAddress;
     console.log(showPrimeCardButton, "showPrimeCardButton====", isNonSubscribedUser)
     const profileData = [
         { id: 0, name: "Contact Information", Img: Imagepath.Profile },

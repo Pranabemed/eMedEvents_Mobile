@@ -60,6 +60,21 @@ test('signup example sends +1 while retaining all ten digits', async () => {
   expect(JSON.parse(axios.defaults.adapter.mock.calls[0][0].data).phone).toBe('+1 (646) 656-6666');
 });
 
+test('guest registration leaves the US phone national so the backend adds +1 only once', async () => {
+  await postApi(
+    'transaction/saveRegistration',
+    {
+      playerSessionID: 'guest-session',
+      attendee: [{country_id: '1', phone: '(999) 400-0000'}],
+      billing: {country_id: '1', phone: '(999) 400-0000'},
+    },
+    {skipPhoneNormalization: true},
+  );
+  const body = JSON.parse(axios.defaults.adapter.mock.calls[0][0].data);
+  expect(body.attendee[0].phone).toBe('(999) 400-0000');
+  expect(body.billing.phone).toBe('(999) 400-0000');
+});
+
 test.each(['5959659595', '(595) 965-9595', '+15959659595', '+1 (595) 965-9595'])('matches the web signup format for %s without duplicating +1', async phone => {
   await postApi('user/signup', {signup_usa: true, phone});
   expect(JSON.parse(axios.defaults.adapter.mock.calls[0][0].data).phone).toBe('+1 (595) 965-9595');

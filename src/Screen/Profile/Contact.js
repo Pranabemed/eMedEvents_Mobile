@@ -501,6 +501,22 @@ const ContactProfile = (props) => {
         if (contactSubmissionRef.current.active) return;
         const cellNoRegex = /^\d{10}$/;
         const filteredTextcell = cellno && cellno?.length > 0 && cellno.replace(/[^\d]/g, '');
+        const availableCountries = Array.isArray(countryall) ? countryall : [];
+        const availableStates = Array.isArray(slistpratice)
+            ? slistpratice
+            : (AuthReducer?.stateResponse?.states || []);
+        const availableCities = Array.isArray(cityAll)
+            ? cityAll
+            : (AuthReducer?.cityResponse?.cities || []);
+        const resolvedCountryId = country_id || availableCountries.find(item =>
+            normalizeLocationName(item?.name) === normalizeLocationName(country)
+        )?.id;
+        const resolvedStateId = state_id || availableStates.find(item =>
+            normalizeLocationName(item?.name) === normalizeLocationName(state)
+        )?.id;
+        const resolvedCityId = city_id || availableCities.find(item =>
+            normalizeLocationName(item?.name) === normalizeLocationName(city)
+        )?.id;
         if (!firstname) {
             showErrorAlert("Enter your first name")
         } else if (!lastname) {
@@ -515,6 +531,8 @@ const ContactProfile = (props) => {
             showErrorAlert("Enter your state name")
         } else if (!city) {
             showErrorAlert("Enter your city name")
+        } else if (!resolvedCountryId || !resolvedStateId || !resolvedCityId) {
+            showErrorAlert("Please wait for country, state and city details to finish loading.")
         } else if (!zipcode) {
             showErrorAlert("Enter your ZIP code.")
         } else if (!cellno) {
@@ -530,9 +548,9 @@ const ContactProfile = (props) => {
                 "social_linkedin": "",
                 "social_doximity": "",
                 "address": address,
-                "country_id": country_id,
-                "state_id": state_id,
-                "city_id": city_id,
+                "country_id": resolvedCountryId,
+                "state_id": resolvedStateId,
+                "city_id": resolvedCityId,
                 "postal_code": zipcode,
                 "contact_number": isUsCountry({ country }) ? requireUsPhone(cellno) : cellno,
                 "alternate_email": "",
@@ -767,6 +785,12 @@ const ContactProfile = (props) => {
         };
         return countryMap[country] || country;
     };
+    const normalizeLocationName = (value) =>
+        String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/telengana/g, 'telangana')
+            .replace(/[^a-z0-9]/g, '');
     /**
 * Fetch postal code from geocode utility.
 *
@@ -931,7 +955,7 @@ const ContactProfile = (props) => {
     useEffect(() => {
         if (Array.isArray(slistpratice) && slistpratice.length > 0 && state) {
             const matchedState = slistpratice.find(s =>
-                String(s.name || '').trim().toLowerCase() === String(state || '').trim().toLowerCase() ||
+                normalizeLocationName(s.name) === normalizeLocationName(state) ||
                 String(s.id || '') === String(state_id || '')
             );
             if (matchedState) {
@@ -942,6 +966,20 @@ const ContactProfile = (props) => {
             }
         }
     }, [slistpratice, state, state_id]);
+    useEffect(() => {
+        const availableCities = Array.isArray(cityAll)
+            ? cityAll
+            : (AuthReducer?.cityResponse?.cities || []);
+        if (!availableCities.length || !city) return;
+
+        const matchedCity = availableCities.find(item =>
+            normalizeLocationName(item?.name) === normalizeLocationName(city) ||
+            String(item?.id || '') === String(city_id || '')
+        );
+        if (matchedCity && String(city_id || '') !== String(matchedCity.id || '')) {
+            setCity_id(matchedCity.id);
+        }
+    }, [cityAll, AuthReducer?.cityResponse?.cities, city, city_id]);
     useEffect(() => {
         if (country) {
             setSearchcountry("");

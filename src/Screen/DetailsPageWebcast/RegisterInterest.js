@@ -711,7 +711,8 @@ const buildConferencePayload = () => {
                 });
                 const payload = {
                     conference_id: props?.route?.params?.checkoutSpan?.checkoutSpan?.conferenceId,
-                    attendee: [attendeeData]
+                    attendee: [attendeeData],
+                    __guestRegistration: isGuestInterestCheckout,
                 };
                 return payload;
             };

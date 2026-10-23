@@ -37,6 +37,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
     const [wholeDa, setWholeDa] = useState("");
     // Tracks whether the list can render its result or empty state.
     const hasReceivedResponse = React.useRef(false);
+    const DASHBOARD_LOADING_TIMEOUT_MS = 10000;
     const AuthReducer = useSelector(state => state.AuthReducer);
     const dispatch = useDispatch();
     const {
@@ -338,6 +339,22 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         DashboardReducer?.dashMbResponse,
         DashboardReducer?.dashboardResponse,
     ]);
+
+    // Dashboard endpoints are requested in parallel and share a single Redux
+    // status field. If another request overwrites that status, or an endpoint
+    // does not settle, the returning-user Home page used to shimmer forever.
+    // Stop blocking the page; late responses still populate the list above.
+    useEffect(() => {
+        if (!loading || hasReceivedResponse.current) return undefined;
+
+        const timeout = setTimeout(() => {
+            hasReceivedResponse.current = true;
+            setLoading(false);
+            setStoreAlldata(current => Array.isArray(current) ? current : []);
+        }, DASHBOARD_LOADING_TIMEOUT_MS);
+
+        return () => clearTimeout(timeout);
+    }, [loading]);
     /**
 * Returns full name.
 * @param {*} obj - Input value.

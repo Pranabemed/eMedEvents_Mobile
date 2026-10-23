@@ -33,7 +33,7 @@ import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
-import { hasUsaPrimeProfile, isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable normalizeProfessionHandle component.
@@ -79,6 +79,7 @@ const PRIME_CARD_TEST_COUNTRY_CODE = '';
  * @returns {string}
  */
 const GUEST_VERIFICATION_COMPLETED_KEY = 'GUEST_VERIFICATION_COMPLETED';
+const HOME_HYDRATION_TIMEOUT_MS = 8000;
 
 /**
  * Normalizes profession handle.
@@ -313,6 +314,7 @@ const Main = (props) => {
   const [finalverifyvaultmain, setFinalverifyvaultmain] = useState(null);
   const [finalProfessionmain, setFinalProfessionmain] = useState(null);
   const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
+  const [homeHydrationTimedOut, setHomeHydrationTimedOut] = useState(false);
   // freeTrail and daysleft state variables are replaced with synchronous memoized values below
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
   const [isSkippedFlow, setIsSkippedFlow] = useState(false);
@@ -350,6 +352,23 @@ const Main = (props) => {
       loadExploreTrialClicked();
     }
   }, [isFocus]);
+
+  // A returning user must never be trapped behind the Home shimmer when one of
+  // the startup API calls is slow or never settles. Local account hydration is
+  // sufficient to render the non-USA dashboard while the requests continue in
+  // the background.
+  useEffect(() => {
+    if (!isFocus || isAsyncStorageLoaded) {
+      setHomeHydrationTimedOut(false);
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => {
+      setHomeHydrationTimedOut(true);
+    }, HOME_HYDRATION_TIMEOUT_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isFocus, isAsyncStorageLoaded]);
   const endDateStringMain =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
     DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.end_date ||
@@ -488,14 +507,6 @@ const Main = (props) => {
     }
     return true;
   }, [resolvedIpCountryCode, nonUsaFlowState, isAddressUsa, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
-  const hasUsaPrimeAccount = hasUsaPrimeProfile(
-    DashboardReducer?.mainprofileResponse,
-    AuthReducer?.dircetloginResponse,
-    AuthReducer?.directloginResponse,
-    AuthReducer?.loginResponse,
-    AuthReducer?.againloginsiginResponse,
-    finalProfessionmain,
-  );
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
@@ -615,7 +626,10 @@ const Main = (props) => {
     finalProfessionmain?.email ||
     nonUsaFlowState?.isNonUsa
   );
-  const shouldHoldSkeleton = !isAsyncStorageLoaded && !hasLoadedProfile;
+  const shouldHoldSkeleton =
+    !homeHydrationTimedOut &&
+    !isAsyncStorageLoaded &&
+    !hasLoadedProfile;
   const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
     DashboardReducer?.mainprofileResponse?.licensures?.length ||
@@ -1563,12 +1577,20 @@ const Main = (props) => {
       hasSubscribedStatus || (hasSubscriptionRecord && !hasTrialOrNonSubscribedStatus)
     ))
   );
-  const isUsaPrimeLocation =
-    isUsaCountryCode(String(resolvedIpCountryCode || nonUsaFlowState?.ipCountryCode || '').trim().toUpperCase()) ||
-    hasUsaPrimeAccount;
-  const shouldShowPrimeStrip = (!isNonUsaUser || isUsaPrimeLocation) &&
+  const isPrimeLocationEligible =
+    !isNonUsaUser &&
+    isUsaCountryCode(String(resolvedIpCountryCode || '').trim().toUpperCase());
+  const shouldShowPrimeStrip = isPrimeLocationEligible &&
     (allProfTake || hasAllProfTake) &&
     !hasActivePrimeMembership;
+  useEffect(() => {
+    const resolvedCountry = String(resolvedIpCountryCode || '').trim().toUpperCase();
+    if (resolvedCountry && resolvedCountry !== 'UNKNOWN' && !isUsaCountryCode(resolvedCountry)) {
+      setPrimeadd(false);
+      primePromptVisibleRef.current = false;
+      setShowGuestPrimePrompt(false);
+    }
+  }, [resolvedIpCountryCode]);
   const isPrimeTrial = !hasActivePrimeMembership && subscriptionSources.some(source =>
     String(source?.subscription_user || '').trim().toLowerCase() === 'free'
   );
@@ -1653,12 +1675,6 @@ const Main = (props) => {
 * @returns {void}
 */
   const setDaysleft = () => { };
-  const isNonUsaIpUser = Boolean(
-    resolvedIpCountryCode &&
-    resolvedIpCountryCode !== 'US' &&
-    resolvedIpCountryCode !== 'USA' &&
-    resolvedIpCountryCode !== 'unknown'
-  );
   useEffect(() => {
     if (endDateStringMain && allProfTake) {
       const endDateString =
@@ -1988,7 +2004,7 @@ const Main = (props) => {
             )}
           </View>
 
-          {((((enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake) && (!isNonUsaUser || isSubscriptionExpiredSync)) || shouldShowPrimeStrip) && !freeTrail) ? <View style={{
+          {(isPrimeLocationEligible && ((((enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake)) || shouldShowPrimeStrip) && !freeTrail)) ? <View style={{
             position: 'absolute',
             height: normalize(56),
             bottom: 0,
@@ -2002,7 +2018,7 @@ const Main = (props) => {
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : freeTrail && !isNonUsaUser && (allProfTake || isPhysicianFlow) ? <View
+          </View> : isPrimeLocationEligible && freeTrail && (allProfTake || isPhysicianFlow) ? <View
             style={{
               position: 'absolute',
               bottom: 0,
@@ -2120,7 +2136,7 @@ const Main = (props) => {
             const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
             const isEligibleToRenderPrimeCard = (subUserCheck === "free" || subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && (subUserCheck !== "subscribed");
 
-            return (!isAccreditationUser && (!isNonUsaUser || isUsaPrimeLocation) && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+            return (!isAccreditationUser && isPrimeLocationEligible && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}

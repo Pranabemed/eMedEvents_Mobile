@@ -291,12 +291,14 @@ axiosInstance.interceptors.request.use(
     // Serialize complete USA phones in the web format: +1 (XXX) XXX-XXXX.
     // Reject incomplete values before any network request. Retries may
     // contain Axios-serialized JSON; preserve other body types (e.g. FormData).
-    if (typeof config.data === 'string') {
-      let body;
-      try { body = JSON.parse(config.data); } catch (_) { /* Non-JSON body. */ }
-      if (body && typeof body === 'object') config.data = JSON.stringify(normalizePhonePayload(body));
-    } else {
-      config.data = normalizePhonePayload(config.data);
+    if (!config.skipPhoneNormalization) {
+      if (typeof config.data === 'string') {
+        let body;
+        try { body = JSON.parse(config.data); } catch (_) { /* Non-JSON body. */ }
+        if (body && typeof body === 'object') config.data = JSON.stringify(normalizePhonePayload(body));
+      } else {
+        config.data = normalizePhonePayload(config.data);
+      }
     }
     try {
       if (!config.headers) config.headers = {};
@@ -555,6 +557,7 @@ export async function postApi(url, payload, header = {}) {
   const requestPromise = axiosInstance.post(buildApiUrl(url), payload, {
     headers: reqHeaders,
     skipBasicAuth: header.skipBasicAuth,
+    skipPhoneNormalization: header.skipPhoneNormalization,
   });
 
   if (isDashboardEndpoint(url)) {

@@ -176,7 +176,12 @@ const fullDataRefresh = () => {
  * @returns {boolean}
  */
 const onBackPress = () => {
-            registBaack();
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }],
+                })
+            );
             return true;
         };
 

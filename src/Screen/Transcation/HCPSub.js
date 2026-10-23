@@ -18,6 +18,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CommonActions } from '@react-navigation/native';
 
 /**
  * Reusable HCPSub component.
@@ -80,7 +81,12 @@ const handleLinearTextChange = (isOnline) => {
  * @returns {boolean}
  */
 const onBackPress = () => {
-            HCPBack();
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }],
+                })
+            );
             return true;
         };
 
