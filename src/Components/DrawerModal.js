@@ -15,8 +15,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Linking,
-  InteractionManager
+  Linking
 } from 'react-native';
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,7 +43,7 @@ import Buttons from './Button';
 import StackNav from '../Navigator/StackNav';
 import { navigationRef } from '../Navigator/RootNavigation';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, NON_USA_PROFESSION_UPDATE_REQUIRED_KEY, NON_USA_STATE_LICENSE_FLOW_COMPLETED_KEY, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
-import { hasUsaPrimeProfile, isPrimePhysicianProfile, isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
+import { hasUsaPrimeProfile, isPrimePhysicianProfile, isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../Utils/Helpers/primeSubscription';
 import { getCountryAndDialCode } from '../Utils/Helpers/IPServer';
 
 /**
@@ -73,6 +72,7 @@ export default function DrawerModal(props) {
   const [primeit, setPrimeit] = useState(false);
   const [primeits, setPrimeits] = useState(false);
   const [subit, setSubit] = useState(false);
+  const [isMenuNavigating, setIsMenuNavigating] = useState(false);
   const [nettruedr, setNettruedr] = useState(true)
   const [primeSkipped, setPrimeSkipped] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
@@ -162,16 +162,34 @@ export default function DrawerModal(props) {
     ? loginUser.user
     : loginUser;
 
-  const isPrimeSubscribed =
-    activeUser?.subscription_user === 'subscribed' ||
-    activeUser?.is_prime === 1 ||
-    activeUser?.is_prime === '1' ||
-    activeUser?.is_prime === true ||
-    activeUser?.is_prime_user === 1 ||
-    activeUser?.is_prime_user === '1' ||
-    activeUser?.is_prime_user === true;
-
+  const membershipSources = [
+    resolvedUser,
+    activeUser,
+    finalProfession,
+    finalverifyvault,
+    AuthReducer?.loginResponse?.user,
+    AuthReducer?.againloginsiginResponse?.user,
+    AuthReducer?.signupResponse?.user,
+  ];
+  const isPrimeSubscribed = membershipSources.some(source => {
+    const user = source?.user || source;
+    const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+    return ['subscribed', 'premium'].includes(subscriptionUser) ||
+      [true, 1, '1'].includes(user?.is_prime) ||
+      [true, 1, '1'].includes(user?.is_prime_user);
+  });
+  const hasActiveTrialProfile = membershipSources.some(source => {
+    const user = source?.user || source;
+    const subscriptionUser = String(user?.subscription_user || '').trim().toLowerCase();
+    const subscriptions = Array.isArray(user?.subscriptions) ? user.subscriptions : [];
+    return subscriptionUser === 'free' || subscriptions.some(subscription => {
+      const status = String(subscription?.status || '').trim().toLowerCase();
+      const type = String(subscription?.type || subscription?.subscription_type || '').trim().toLowerCase();
+      return status === 'active' && (type.includes('trial') || type.includes('free'));
+    });
+  });
   const isPrimeTrialActive =
+    hasActiveTrialProfile ||
     AuthReducer?.status === 'Auth/primeTrailSuccess' ||
     AuthReducer?.primeTrailResponse?.status === true ||
     AuthReducer?.primeTrailResponse?.msg === 'Trail Activated Successfully' ||
@@ -181,7 +199,40 @@ export default function DrawerModal(props) {
     WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' ||
     WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
 
-  const isPrimeUserActive = Boolean(isPrimeSubscribed || isPrimeTrialActive || isPrimePaymentActive);
+  const primeCheckSubscription = WebcastReducer?.PrimeCheckResponse?.subscription;
+  const primeCheckSubscriptionType = String(
+    primeCheckSubscription?.type || primeCheckSubscription?.subscription_type || ''
+  ).trim().toLowerCase();
+  const isPrimeCheckTrial =
+    primeCheckSubscriptionType.includes('trial') ||
+    primeCheckSubscriptionType.includes('free');
+  const hasActivePrimeCheck = isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse);
+  const isPrimeUserActive = Boolean(
+    isPrimeSubscribed ||
+    isPrimeTrialActive ||
+    isPrimePaymentActive ||
+    hasActivePrimeCheck
+  );
+  const isPaidPrimeMember = Boolean(
+    isPrimeSubscribed ||
+    isPrimePaymentActive ||
+    (hasActivePrimeCheck && !isPrimeCheckTrial && !isPrimeTrialActive)
+  );
+  const membershipEndDate =
+    primeCheckSubscription?.end_date ||
+    membershipSources
+      .map(source => {
+        const user = source?.user || source;
+        return Array.isArray(user?.subscriptions) ? user.subscriptions[0]?.end_date : null;
+      })
+      .find(Boolean);
+  const parsedMembershipEndDate = membershipEndDate ? new Date(membershipEndDate) : null;
+  const isMembershipExpired = Boolean(
+    parsedMembershipEndDate &&
+    !Number.isNaN(parsedMembershipEndDate.getTime()) &&
+    new Date().setHours(0, 0, 0, 0) >= parsedMembershipEndDate.setHours(0, 0, 0, 0)
+  );
+  const hasFullMenuAccess = isPrimeUserActive && !isMembershipExpired;
 
   const resolvedSubscriptionUser =
     activeUser?.subscription_user ||
@@ -270,17 +321,18 @@ export default function DrawerModal(props) {
 * @returns {void}
 */
   const navigateSmooth = (name, params) => {
-    props.drawerPress?.();
-    props.onBackdropPress?.();
+    if (isMenuNavigating) return;
+    setIsMenuNavigating(true);
+    const homeRoute = { name: 'TabNav', params: { initialRoute: params?.initialRoute || 'Home' } };
     requestAnimationFrame(() => {
-      InteractionManager.runAfterInteractions(() => {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name, params }]
-          })
-        );
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: name === 'TabNav'
+            ? [homeRoute]
+            : [{ name, params: { ...params, fromMenu: true, back: 'tabnav' } }]
+        })
+      );
     });
   };
   useEffect(() => {
@@ -509,7 +561,7 @@ export default function DrawerModal(props) {
 
   const modalKey = currentProfile === 'SkipProfile'
     ? otherMenuItems
-    : isPhysicianUser
+    : isPhysicianUser && hasFullMenuAccess
       ? physicianMenuItems
       : otherMenuItems;
   const downKey = [
@@ -933,7 +985,6 @@ export default function DrawerModal(props) {
             shadowRadius: 2,
             elevation: 3
           }}>
-          {/* <Loader visible={DashboardReducer?.status == 'Dashboard/mainprofileRequest'} /> */}
           {nettruedr ? <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
             <View
               style={{
@@ -1028,7 +1079,7 @@ export default function DrawerModal(props) {
                           fontWeight: "500"
                         }}
                       >
-                        {isPrimeUserActive
+                        {isPaidPrimeMember
                           ? "Prime Member"
                           : "Become a Prime Member"}
                       </Text>
@@ -1114,6 +1165,7 @@ export default function DrawerModal(props) {
             </View>
           </SafeAreaView>}
         </SafeAreaView>
+        <Loader visible={isMenuNavigating} />
         {subit && <PrimeCard primeadd={subit} setPrimeadd={setSubit} />}
       </Modal>
     </>

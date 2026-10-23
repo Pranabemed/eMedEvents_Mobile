@@ -303,6 +303,7 @@ const Main = (props) => {
   const DashboardReducer = useSelector(state => state.DashboardReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const AuthReducer = useSelector(state => state.AuthReducer);
+  const ProfileReducer = useSelector(state => state.ProfileReducer);
   const [cmecourse, setCmecourse] = useState(false);
   const [finalShow, setFinalShow] = useState(null);
   const [visible, setVisible] = useState(false);
@@ -559,7 +560,11 @@ const Main = (props) => {
     {};
   const dashboardProfession = String(dashboardProfessionInfo?.profession || '').trim();
   const dashboardProfessionType = String(dashboardProfessionInfo?.profession_type || '').trim();
+  const latestProfession = String(ProfileReducer?.latestProfessionInfo?.profession || '').trim();
+  const latestProfessionType = String(ProfileReducer?.latestProfessionInfo?.profession_type || '').trim();
+  const isLatestProfessionReady = Boolean(latestProfession && latestProfessionType);
   const isDashboardProfessionReady = Boolean(dashboardProfession && dashboardProfessionType);
+  const profFromLatest = buildProfessionLabel(latestProfession, latestProfessionType);
   const profFromDashboard = buildProfessionLabel(dashboardProfession, dashboardProfessionType);
   const profFromAuth = buildProfessionLabel(
     authProfessionInfo?.profession,
@@ -569,23 +574,28 @@ const Main = (props) => {
     finalProfessionmain?.profession || finalverifyvaultmain?.profession,
     finalProfessionmain?.profession_type || finalverifyvaultmain?.profession_type
   );
-  const resolvedProfessionHandle = profFromAuth
+  const resolvedProfessionHandle = isLatestProfessionReady
     ? findMatchedProfessionHandle(
+      [profFromLatest, `${latestProfession} ${latestProfessionType}`.trim()],
+      supportedProfessionHandles
+    )
+    : isDashboardProfessionReady
+    ? findMatchedProfessionHandle(
+      [
+        profFromDashboard,
+        dashboardProfession,
+        `${dashboardProfession} ${dashboardProfessionType}`.trim(),
+      ],
+      supportedProfessionHandles
+    )
+    : profFromAuth
+      ? findMatchedProfessionHandle(
       [
         profFromAuth,
         `${authProfessionInfo?.profession || ''} ${authProfessionInfo?.profession_type || ''}`.trim(),
       ],
       supportedProfessionHandles
     )
-    : profFromDashboard
-      ? findMatchedProfessionHandle(
-        [
-          profFromDashboard,
-          dashboardProfession,
-          `${dashboardProfession} ${dashboardProfessionType}`.trim(),
-        ],
-        supportedProfessionHandles
-      )
       : findMatchedProfessionHandle(
         [
           profFromSaved,
@@ -594,10 +604,10 @@ const Main = (props) => {
         supportedProfessionHandles
       );
 
-  const cleanCurrentProf = String(authProfessionInfo?.profession || dashboardProfession || finalProfessionmain?.profession || '').toLowerCase();
-  const cleanCurrentType = String(authProfessionInfo?.profession_type || dashboardProfessionType || finalProfessionmain?.profession_type || '').toLowerCase();
+  const cleanCurrentProf = String(isLatestProfessionReady ? latestProfession : (isDashboardProfessionReady ? dashboardProfession : (authProfessionInfo?.profession || finalProfessionmain?.profession || ''))).toLowerCase();
+  const cleanCurrentType = String(isLatestProfessionReady ? latestProfessionType : (isDashboardProfessionReady ? dashboardProfessionType : (authProfessionInfo?.profession_type || finalProfessionmain?.profession_type || ''))).toLowerCase();
 
-  const isPhysicianHandleMatch = physicianHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('physician') || ['md', 'do', 'dpm'].includes(cleanCurrentType);
+  const isPhysicianHandleMatch = physicianHandles.has(resolvedProfessionHandle) || ['md', 'do', 'dpm'].includes(cleanCurrentType);
   const isNursingHandleMatch = nursingHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('nursing') || ['rn', 'aprn', 'cna', 'lpn'].includes(cleanCurrentType);
 
   const allProfTake = isPhysicianHandleMatch;
@@ -622,6 +632,10 @@ const Main = (props) => {
     AuthReducer?.directloginResponse?.user?.email ||
     AuthReducer?.directloginResponse?.email ||
     AuthReducer?.loginResponse?.user?.email ||
+    AuthReducer?.signupResponse?.user?.email ||
+    AuthReducer?.verifymobileResponse?.user?.email ||
+    AuthReducer?.verifyResponse?.user?.email ||
+    AuthReducer?.verifyResponse?.email ||
     finalverifyvaultmain?.email ||
     finalProfessionmain?.email ||
     nonUsaFlowState?.isNonUsa
@@ -775,7 +789,7 @@ const Main = (props) => {
   }, [isFocus]);
   const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
-  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || isPhysicianFlow || (!isPhysicianFlow && !isNursingFlow));
+  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || isPhysicianFlow || isNursingFlow || (!isPhysicianFlow && !isNursingFlow));
   const dashboardLicensesMain = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || [];
   const hasNoLicensuresMain = !Array.isArray(dashboardLicensesMain) || dashboardLicensesMain.length === 0;
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
@@ -1179,49 +1193,8 @@ const Main = (props) => {
       console.log('handleGuestPrimeSkip flag error', error);
     }
   };
-  const handlePrimeCardDismiss = async () => {
-    // Close immediately; persistence must not block the modal animation.
+  const handlePrimeCardDismiss = () => {
     setPrimeadd(false);
-    primePromptVisibleRef.current = false;
-    setShowGuestPrimePrompt(false);
-    setCurrentProfile('SkipProfile');
-    setExploreTrialClicked(false);
-    setPrimeCardSessionSkipped(true);
-    try {
-      const [guestFlowRaw, verifyRaw, professionRaw, verificationCompletedRaw] = await Promise.all([
-        AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY),
-        AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-        AsyncStorage.getItem(constants.PROFESSION),
-        AsyncStorage.getItem(GUEST_VERIFICATION_COMPLETED_KEY),
-      ]);
-      const isUsaLocation = ['US', 'USA'].includes(String(resolvedIpCountryCode || '').trim().toUpperCase());
-      const storedVerifyData = parseStoredJson(verifyRaw);
-      const storedProfessionData = parseStoredJson(professionRaw);
-      const registeredGuest = parseStoredJson(guestFlowRaw);
-      const registeredUser = storedVerifyData || storedProfessionData;
-
-      if (
-        isUsaLocation &&
-        registeredGuest &&
-        verificationCompletedRaw !== 'true' &&
-        requiresVerification(registeredUser, false, AuthReducer?.verifyResponse, storedVerifyData)
-      ) {
-        setGuestVerifyData(registeredUser);
-        setGuestVerifyModalVisible(true);
-      }
-    } catch (error) {
-      console.log('handlePrimeCardDismiss verification check error', error);
-    }
-    try {
-      await Promise.all([
-        AsyncStorage.setItem('SessionPrimeSkipped', 'true'),
-        AsyncStorage.setItem('PrimeMembershipSkipped', 'true'),
-        AsyncStorage.setItem('activeProfile', 'SkipProfile'),
-        AsyncStorage.removeItem('ExploreTrialClicked'),
-      ]);
-    } catch (error) {
-      console.log('handlePrimeCardDismiss flag error', error);
-    }
   };
   /**
 * Handles guest prime explore trial.
@@ -1231,8 +1204,15 @@ const Main = (props) => {
 */
   const handleGuestPrimeExploreTrial = async () => {
     await setGuestPrimeVerificationPending();
-    await AsyncStorage.removeItem('activeProfile');
-    await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+    await Promise.all([
+      AsyncStorage.removeItem('activeProfile'),
+      AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+      AsyncStorage.removeItem('SessionPrimeSkipped'),
+      AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+      AsyncStorage.setItem('ExploreTrialClicked', 'true'),
+    ]);
+    setPrimeCardSessionSkipped(false);
+    setForceNewProfession(false);
     setExploreTrialClicked(true);
     try {
       dispatch(primeTrailRequest({}));
@@ -1571,10 +1551,17 @@ const Main = (props) => {
       String(source?.subscription_user || '').trim().toLowerCase()
     )
   );
+  const hasActiveTrialStatus =
+    AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+    subscriptionSources.some(source =>
+      String(source?.subscription_user || '').trim().toLowerCase() === 'free'
+    );
   const hasActivePrimeMembership = Boolean(
     isPrimePaymentSuccess ||
     (!isSubscriptionExpiredSync && (
-      hasSubscribedStatus || (hasSubscriptionRecord && !hasTrialOrNonSubscribedStatus)
+      hasActiveTrialStatus ||
+      hasSubscribedStatus ||
+      (hasSubscriptionRecord && !hasTrialOrNonSubscribedStatus)
     ))
   );
   const isPrimeLocationEligible =

@@ -31,7 +31,7 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 
-const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType }) => {
+const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType, hideGreeting = false }) => {
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [loading, setLoading] = useState(true);
     const [wholeDa, setWholeDa] = useState("");
@@ -265,7 +265,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </View>)}
                             {item?.buttonText && <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
                             {!item?.buttonText ? null : <View style={{ justifyContent: "flex-end", alignItems: "flex-end", marginTop: normalize(3) }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr }}>{item?.buttonText}</Text>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.ButtonColr }}>{item?.buttonText}</Text>
                             </View>}
                         </View>
                     </TouchableOpacity>
@@ -360,19 +360,15 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
 * @param {*} obj - Input value.
 * @returns {*}
 */
-    const getFullName = (obj) => {
-        const first = obj?.firstname;
-        const last = obj?.lastname;
-        return (first != null && last != null) ? `${first} ${last}` : undefined;
-    };
+    const getLastName = (obj) => obj?.lastname || undefined;
 
     const nameShow =
-        getFullName(wholeDa) ||
-        getFullName(finalProfessionmain?.user) ||
-        getFullName(AuthReducer?.loginResponse?.user) ||
-        getFullName(AuthReducer?.againloginsiginResponse?.user) ||
-        getFullName(AuthReducer?.signupResponse?.user) ||
-        getFullName(DashboardReducer?.mainprofileResponse?.personal_information) ||
+        getLastName(DashboardReducer?.mainprofileResponse?.personal_information) ||
+        getLastName(wholeDa) ||
+        getLastName(finalProfessionmain?.user) ||
+        getLastName(AuthReducer?.loginResponse?.user) ||
+        getLastName(AuthReducer?.againloginsiginResponse?.user) ||
+        getLastName(AuthReducer?.signupResponse?.user) ||
         '';
     /**
 * Returns first truthy profession.
@@ -394,7 +390,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         .replace(/\s+/g, '-');
     return (
         <View style={{ paddingHorizontal: normalize(10), paddingVertical: profileType === 'SkipProfile' ? 0 : normalize(10) }}>
-            {profileType !== 'SkipProfile' && (
+            {profileType !== 'SkipProfile' && !hideGreeting && (
                 <View style={{ marginTop: normalize(5) }}>
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
                 </View>

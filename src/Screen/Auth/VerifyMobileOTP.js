@@ -386,8 +386,23 @@ const VerifyMobileOTP = (props) => {
             !String(DashboardReducer?.mainprofileResponse?.professional_information?.profession || '').includes('-')
             ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
             : DashboardReducer?.mainprofileResponse?.professional_information?.profession || null;
-    const allProfTake = [profFromRoute, profFromDashboard].some(profession =>
-        ['physician-md', 'physician-do', 'physician-dpm'].includes(
+    const authProfessionInfo =
+        AuthReducer?.verifymobileResponse?.user ||
+        AuthReducer?.signupResponse?.user ||
+        AuthReducer?.loginResponse?.user ||
+        {};
+    const profFromAuth = authProfessionInfo?.profession && authProfessionInfo?.profession_type
+        ? `${authProfessionInfo.profession} - ${authProfessionInfo.profession_type}`
+        : authProfessionInfo?.profession || null;
+    const physicianHandles = ['physician-md', 'physician-do', 'physician-dpm'];
+    const stateLicenseHandles = [...physicianHandles, 'nursing-rn', 'nursing-aprn', 'nursing-cna', 'nursing-lpn'];
+    const allProfTake = [profFromRoute, profFromDashboard, profFromAuth].some(profession =>
+        physicianHandles.includes(
+            String(profession || '').toLowerCase().replace(/\s+/g, '')
+        )
+    );
+    const isStateLicenseProfession = [profFromRoute, profFromDashboard, profFromAuth].some(profession =>
+        stateLicenseHandles.includes(
             String(profession || '').toLowerCase().replace(/\s+/g, '')
         )
     );
@@ -420,7 +435,7 @@ const VerifyMobileOTP = (props) => {
                         AsyncStorage.setItem(GUEST_VERIFICATION_COMPLETED_KEY, 'true'),
                     ]);
 
-                    if (guestFlow && isUsaIp && allProfTake && !hasValidLicenseInfo) {
+                    if (guestFlow && isUsaIp && isStateLicenseProfession && !hasValidLicenseInfo) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
@@ -435,7 +450,7 @@ const VerifyMobileOTP = (props) => {
                         return;
                     }
 
-                    if (guestFlow && (!isUsaIp || !allProfTake || hasValidLicenseInfo)) {
+                    if (guestFlow && (!isUsaIp || !isStateLicenseProfession || hasValidLicenseInfo)) {
                         await Promise.all([
                             AsyncStorage.removeItem(GUEST_REGISTRATION_FLOW_KEY),
                             AsyncStorage.removeItem('IS_GUEST_CONVERTED_USER'),
@@ -446,7 +461,7 @@ const VerifyMobileOTP = (props) => {
                         return;
                     }
 
-                    if (isUsaIp && allProfTake) {
+                    if (isUsaIp && isStateLicenseProfession) {
                         toggleModal();
                         dispatch(chooseStatecardRequest({}))
                     } else {
@@ -529,7 +544,7 @@ const VerifyMobileOTP = (props) => {
                     break;
                 } else {
                     setNoload(false);
-                    if (!allProfTake) {
+                    if (!isStateLicenseProfession) {
                         toggleModal();
                     }
                     setFulldashbaord(uniqueStates || []);
@@ -859,7 +874,7 @@ const VerifyMobileOTP = (props) => {
                                 onClose={toggleModal}
                                 content={"Your cell number has been \n successfully verified"}
                                 navigation={props.navigation}
-                                name={(hasValidLicenseRecord(DashboardReducer?.mainprofileResponse?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user) || !allProfTake) ? "TabNav" : (AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor")}
+                                name={(hasValidLicenseRecord(DashboardReducer?.mainprofileResponse?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user?.licensures?.[0]) || hasValidLicenseRecord(AuthReducer?.verifymobileResponse?.user) || !isStateLicenseProfession) ? "TabNav" : (AuthReducer?.chooseStatecardResponse?.state_licensures?.length > 0 ? "ChooseState" : "CreateStateInfor")}
                                 profMerge={profMerge}
                             />
                         </View>

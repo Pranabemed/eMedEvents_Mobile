@@ -58,7 +58,9 @@ const toggleDrawerModal = () => {
  * @returns {void}
  */
 const HCPBack = () => {
-        toggleDrawerModal();
+        props.navigation.dispatch(
+            CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
+        );
     }
     useEffect(() => {
         if (Object.keys(storeAlldatas)?.length > 0) {

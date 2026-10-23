@@ -386,13 +386,13 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         topicEarned == 0 && topicTotal == 0 &&
         generalEarned == 0 && generalTotal == 0
     );
-    const firstData =
-        AuthReducer?.loginResponse?.user?.firstname ||
-        AuthReducer?.againloginsiginResponse?.user?.firstname ||
-        AuthReducer?.signupResponse?.user?.firstname ||
-        DashboardReducer?.dashboardResponse?.data?.user_information?.firstname ||
-        DashboardReducer?.dashPerResponse?.data?.user_information?.firstname ||
-        DashboardReducer?.mainprofileResponse?.personal_information?.firstname;
+    const lastData =
+        DashboardReducer?.mainprofileResponse?.personal_information?.lastname ||
+        AuthReducer?.loginResponse?.user?.lastname ||
+        AuthReducer?.againloginsiginResponse?.user?.lastname ||
+        AuthReducer?.signupResponse?.user?.lastname ||
+        DashboardReducer?.dashboardResponse?.data?.user_information?.lastname ||
+        DashboardReducer?.dashPerResponse?.data?.user_information?.lastname;
     const hasLicensureCards = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
     const hasResolvedDashboard =
         fulldashbaord == 0 ||
@@ -404,7 +404,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
 
             <View>
                 {hasResolvedDashboard && hasLicensureCards && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hello, ${firstData || ''}`}</Text>
+                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hey, ${lastData || ''}`}</Text>
                 </View>}
                 {hasLicensureCards ?
                     <View key={`dashboard-${fulldashbaord.length}`}>

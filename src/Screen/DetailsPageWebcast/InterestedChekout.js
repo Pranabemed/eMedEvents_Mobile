@@ -46,7 +46,7 @@ const profileBack = () => {
             CommonActions.reset({
                 index: 0,
                 routes: [
-                    { name: "TabNav" }
+                    { name: "TabNav", params: { initialRoute: "Home" } }
                 ],
             })
         );

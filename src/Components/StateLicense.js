@@ -376,8 +376,6 @@ const stateTake = (toklen, anoth) => {
         ProfileReducer?.latestProfessionInfo?.profession,
         ProfileReducer?.latestProfessionInfo?.profession_type
     );
-    const latestProfileProfession =
-        latestProfessionLabel || null;
     const dashboardProfessionLabel = buildProfessionLabel(
         DashboardReducer?.mainprofileResponse?.professional_information?.profession,
         DashboardReducer?.mainprofileResponse?.professional_information?.profession_type
@@ -392,8 +390,6 @@ const stateTake = (toklen, anoth) => {
                     : finalProfessionmain?.profession && finalProfessionmain?.profession_type
                         ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
                         : null;
-    const profFromDashboard =
-        dashboardProfessionLabel || null;
     const latestLicensureProfessionLabel =
         latestProfessionLabel ||
         dashboardProfessionLabel ||
@@ -404,34 +400,15 @@ const stateTake = (toklen, anoth) => {
             DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type
         );
     const resolvedProfessionHandle = findMatchedProfessionHandle(
-        [
-            latestProfileProfession,
-            ProfileReducer?.latestProfessionInfo?.profession,
-            `${ProfileReducer?.latestProfessionInfo?.profession || ''} ${ProfileReducer?.latestProfessionInfo?.profession_type || ''}`,
-            profFromDashboard,
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession,
-            `${DashboardReducer?.mainprofileResponse?.professional_information?.profession || ''} ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type || ''}`,
-            authProfession,
-            AuthReducer?.loginResponse?.user?.profession,
-            `${AuthReducer?.loginResponse?.user?.profession || ''} ${AuthReducer?.loginResponse?.user?.profession_type || ''}`,
-            AuthReducer?.againloginsiginResponse?.user?.profession,
-            `${AuthReducer?.againloginsiginResponse?.user?.profession || ''} ${AuthReducer?.againloginsiginResponse?.user?.profession_type || ''}`,
-            AuthReducer?.signupResponse?.user?.profession,
-            `${AuthReducer?.signupResponse?.user?.profession || ''} ${AuthReducer?.signupResponse?.user?.profession_type || ''}`,
-            finalProfessionmain?.profession,
-            `${finalProfessionmain?.profession || ''} ${finalProfessionmain?.profession_type || ''}`,
-            DashboardReducer?.dashPerResponse?.data?.user_information?.profession,
-            `${DashboardReducer?.dashPerResponse?.data?.user_information?.profession || ''} ${DashboardReducer?.dashPerResponse?.data?.user_information?.profession_type || ''}`,
-        ],
+        [latestLicensureProfessionLabel],
         [...validHandles]
     );
     const allProfTake = gtprof || validHandles.has(resolvedProfessionHandle);
-    const isPhysicianGreeting = Boolean(gtprof || allProfTake);
+    const isPhysicianGreeting = validHandles.has(resolvedProfessionHandle);
     const displayLastName = stableNameRef.current.last || nextLastName;
-    const displayFirstName = stableNameRef.current.first || nextFirstName;
     const greetingText = isPhysicianGreeting
-        ? `Hello, Dr.${displayLastName ? ` ${displayLastName}` : ""}`
-        : `Hello, ${displayFirstName}`;
+        ? `Hello Dr.${displayLastName ? ` ${displayLastName}` : ''}`
+        : `Hey, ${displayLastName}`;
     const derivedRemainingStates = useMemo(() => {
         const licensureStates = AuthReducer?.licesensResponse?.licensure_states;
         if (!Array.isArray(licensureStates) || !licensureStates.length) return [];
@@ -995,6 +972,7 @@ const renderAddLicenseCard = () => (
                                     DashboardReducer={DashboardReducer}
                                     CMEReducer={CMEReducer}
                                     profileType={profileType}
+                                    hideGreeting
                                 />
                             </View>
                         ) : allProfTake ? (
@@ -1030,7 +1008,7 @@ const renderAddLicenseCard = () => (
                         <TextModal setDetailsmodal={setDetailsmodal} isVisible={detailsmodal} onFalse={modalFalse} />
                         <Cmemodal setCmemodal={setCmemodal} isModal={cmemodal} onCmeFalse={cmeModalFalse} />
                         {!isSkipProfile && <CreditValult isVault={vaultModal} onVaultFalse={cmeValult} />}
-                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <RestProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} addit={addit} takestate={takestate} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} DashboardReducer={DashboardReducer} CMEReducer={CMEReducer} profileType={profileType} />)}
+                    </View> : (shouldShowAddLicenseCard ? renderAddLicenseCard() : <RestProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables} addit={addit} takestate={takestate} navigation={navigation} completedCount={completedCount} pendingCount={pendingCount} DashboardReducer={DashboardReducer} CMEReducer={CMEReducer} profileType={profileType} hideGreeting />)}
             </View>
         </>
     );

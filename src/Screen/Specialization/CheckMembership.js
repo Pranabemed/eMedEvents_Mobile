@@ -358,8 +358,13 @@ const CheckMembership = (props) => {
         pendingFreeTrialNavigationRef.current = true;
         try {
             await AsyncStorage.setItem('GuestPrimeVerificationPending', 'true');
-            await AsyncStorage.removeItem('activeProfile');
-            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+            await Promise.all([
+                AsyncStorage.removeItem('activeProfile'),
+                AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+                AsyncStorage.removeItem('SessionPrimeSkipped'),
+                AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+                AsyncStorage.setItem('ExploreTrialClicked', 'true'),
+            ]);
         } catch (error) {
             console.log('handleClk flag error', error);
         }
@@ -426,25 +431,35 @@ const CheckMembership = (props) => {
         pendingFreeTrialNavigationRef.current = false;
         (async () => {
             try {
-                await AsyncStorage.setItem('activeProfile', 'PrimeCard');
-                await AsyncStorage.setItem('ExploreTrialClicked', 'true');
-                await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
-                await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
-                await AsyncStorage.removeItem('SessionPrimeSkipped');
-                await AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY);
-                require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
+                await Promise.all([
+                    AsyncStorage.removeItem('activeProfile'),
+                    AsyncStorage.setItem('ExploreTrialClicked', 'true'),
+                    AsyncStorage.setItem('PrimeCardFlowComplete', 'true'),
+                    AsyncStorage.removeItem(PRIME_MEMBERSHIP_SKIPPED_KEY),
+                    AsyncStorage.removeItem('SessionPrimeSkipped'),
+                    AsyncStorage.removeItem(PRIME_MEMBERSHIP_PROMPT_PENDING_KEY),
+                    AsyncStorage.removeItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY),
+                ]);
+                require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', null);
                 await clearNonUsaFlowState();
             } catch (e) {
                 console.log(e);
             }
+            props.navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{
+                        name: 'TabNav',
+                        params: {
+                            initialRoute: 'Home',
+                            detectmain: 'main',
+                            refreshLicensesAt: Date.now(),
+                        },
+                    }],
+                })
+            );
         })();
-        props.navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [{ name: "PrimeCard", params: { ...props?.route?.params, exploreTrialClicked: true } }],
-            })
-        );
-    }, [AuthReducer?.status, props.navigation, props?.route?.params]);
+    }, [AuthReducer?.status, props.navigation]);
 
     if (isEligible === null) {
         return (

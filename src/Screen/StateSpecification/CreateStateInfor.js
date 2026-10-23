@@ -145,7 +145,10 @@ const CreateStateInfor = (props) => {
     ]);
     useEffect(() => {
         const normalizeHandle = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '').replace(/-/g, '');
-        const validHandles = new Set(['physicianmd', 'physiciando', 'physiciandpm']);
+        const validHandles = new Set([
+            'physicianmd', 'physiciando', 'physiciandpm',
+            'nursingrn', 'nursingaprn', 'nursingcna', 'nursinglpn'
+        ]);
         const pi = DashboardReducer?.mainprofileResponse?.professional_information;
         const authUser = AuthReducer?.loginResponse?.user || AuthReducer?.signupResponse?.user || AuthReducer?.againloginsiginResponse?.user || {};
         const routeAllowStateInfoFlow = props?.route?.params?.allowStateInfoFlow === true;

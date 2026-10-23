@@ -97,7 +97,7 @@ const addCreditBack = () => {
         const getAda = fulldashbaord?.[0];
         setAddit(getAda);
         if (props?.route?.params?.back == "tabnav") {
-            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }))
+            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav", params: { initialRoute: "Home" } }] }))
         } else {
             toggleDrawerModal();
         }

@@ -67,7 +67,9 @@ const toggleDrawerModal = () => {
  * @returns {void}
  */
 const registBaack = () => {
-        toggleDrawerModal();
+        props.navigation.dispatch(
+            CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
+        );
     }
     const TransReducer = useSelector(state => state.TransReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);

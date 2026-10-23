@@ -44,7 +44,9 @@ const Course = (props) => {
  */
 const CMEPress = () => {
         setAddit(statepush);
-        props.navigation.replace("TabNav");
+        props.navigation.dispatch(
+            CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
+        );
         // props.navigation.goBack();
     }
     const [linearText, setLinearText] = useState(true);
