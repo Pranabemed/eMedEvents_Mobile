@@ -110,7 +110,6 @@ const renderBrowseSearchInput = () => {
     const [combinedData, setCombinedData] = useState([]);
     const [selectedItm, setSelectedItm] = useState([]);
     const [resetOn, setResetOn] = useState(0);
-    const [finalds, setFinalds] = useState(false);
     const [cmetype, setCmetype] = useState(null);
     const MIN_DEFAULT = filtertake?.get_cme_points_from_stat;
     const MIN_PMin = filtertake?.get_price_from_stat
@@ -177,6 +176,7 @@ const renderBrowseSearchInput = () => {
  * @returns {void}
  */
 const FilterBack = () => {
+        const previouslySelectedItems = props?.route?.params?.wholeDats?.ClearText;
         if (props?.route?.params?.wholeDats?.norm == "ghgh") {
             props.navigation.dispatch(
                 CommonActions.reset({
@@ -187,7 +187,7 @@ const FilterBack = () => {
                         }
                     ],
                 }));
-        } else if (selectedItems?.length > 0) {
+        } else if (selectedItems?.length > 0 || previouslySelectedItems?.length > 0) {
             navigateToResults(buildGlobalResultParams());
         } else {
             props.navigation.goBack();
@@ -403,24 +403,23 @@ const updateSearch = (text) => setSearch(text);
 const toggleSelection = (item, types) => {
         console.log(item, types, "---------itemtypes1122");
         setSelectedItems(prevSelectedItems => {
-            const updatedItems = [...prevSelectedItems];
-            const typeIndex = updatedItems.findIndex(i => i[types]);
-            if (typeIndex !== -1) {
-                const existingType = updatedItems[typeIndex];
-                existingType[types] = existingType[types] || [];
-                if (existingType[types].includes(item)) {
-                    existingType[types] = existingType[types].filter(i => i !== item);
-                    if (existingType[types].length == 0) {
-                        updatedItems.splice(typeIndex, 1);
-                    }
-                } else {
-                    existingType[types].push(item);
-                }
-            } else {
-                updatedItems.push({ [types]: [item] });
+            const existingType = prevSelectedItems.find(i => i[types]);
+            if (!existingType) {
+                return [...prevSelectedItems, { [types]: [item] }];
             }
 
-            return updatedItems;
+            const existingValues = existingType[types] || [];
+            const updatedValues = existingValues.includes(item)
+                ? existingValues.filter(i => i !== item)
+                : [...existingValues, item];
+
+            if (updatedValues.length === 0) {
+                return prevSelectedItems.filter(i => !i[types]);
+            }
+
+            return prevSelectedItems.map(i =>
+                i[types] ? { ...i, [types]: updatedValues } : i
+            );
         });
     };
     const filterToKeyMapd = filtertake
@@ -609,7 +608,6 @@ const hitItem = ({ item, index }) => {
 
                                 return uniqueItems;
                             });
-                            againHand();
                         }}>
                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#ff773d" }}>{cmetype.includes(item) ? "Clear" : ""}</Text>
                         </TouchableOpacity>}
@@ -628,7 +626,7 @@ const hitItem = ({ item, index }) => {
 const renderItem = ({ item, index }) => {
         if (item?.type == selectedFilter) {
             const type = selectedFilter;
-            const hitDat = finalds ? "" : props?.route?.params?.wholeDats?.ClearText || props?.route?.params?.wholeDats?.PriceDrop?.minget || props?.route?.params?.wholeDats?.PriceDrop?.maxget || props?.route?.params?.wholeDats?.PriceDrop?.mingetp || props?.route?.params?.wholeDats?.PriceDrop?.maxgetp;
+            const hitDat = selectedItems;
             const hasData = typeof hitDat == "object" && hitDat.some(item => {
                 return item.hasOwnProperty(type) && Array.isArray(item[type]) && item[type].length > 0;
             });
@@ -637,9 +635,9 @@ const renderItem = ({ item, index }) => {
                 <View>
                     <View style={{ justifyContent: "flex-end", flexDirection: "row" }}>
                         <TouchableOpacity onPress={() => {
-                            setFinalds(true);
-                            againHand();
-                            setSelectedItems([]);
+                            setSelectedItems(prevSelectedItems =>
+                                prevSelectedItems.filter(selectedItem => !selectedItem[type])
+                            );
                         }}>
                             {hasData && <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#ff773d", marginTop: normalize(16) }}>{"Clear"}</Text>}
                         </TouchableOpacity>
@@ -1122,7 +1120,7 @@ const renderContent = () => {
                             keyExtractor={(item) => item}
                             style={styles.filterList}
                         />
-                        <View style={styles.professionContainer}>
+                        <View key={selectedFilter} style={styles.professionContainer}>
                             {renderContent()}
                         </View>
                     </View>

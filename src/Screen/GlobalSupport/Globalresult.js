@@ -190,6 +190,7 @@ const Globalresult = (props) => {
     const requestStatusRef = useRef("");
     const guestResponseRef = useRef(null);
     const activeResultsRequest = useRef(null);
+    const unfilteredAggregationsRef = useRef({ key: null, data: null });
     const sortedData = [{ id: 0, name: "Price- Low to High", type: "PRICE_ASC" }, { id: 1, name: "Price- High to Low", type: "PRICE_DESC" }, { id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }];
     const sorteddataforCity = [{ id: 2, name: "By Date- Newest to Oldest", type: "STARTDATE_DESC" }, { id: 3, name: "By Date- Oldest to Newest", type: "STARTDATE_ASC" }, { id: 4, name: "By CME Point- Low to High", type: "CMEPOINTS_ASC" }, { id: 5, name: "By CME Point- High to Low", type: "CMEPOINTS_DESC" }]
     const isFreeOnlyResults = useMemo(() => {
@@ -283,6 +284,18 @@ const Globalresult = (props) => {
                 sectionTitle: props?.route?.params?.sectionTitle ?? null,
             }),
         [props?.route?.params?.filterDatSh, props?.route?.params?.trig, props?.route?.params?.homeListPayload, props?.route?.params?.sectionTitle],
+    );
+    const aggregationQueryKey = useMemo(
+        () => JSON.stringify(props?.route?.params?.trig ?? props?.route?.params?.filterDatSh?.returnTake?.trig ?? null),
+        [props?.route?.params?.filterDatSh?.returnTake?.trig, props?.route?.params?.trig],
+    );
+    const hasAppliedFilters = Boolean(
+        props?.route?.params?.filterDatSh?.filterDatSh?.length > 0 ||
+        props?.route?.params?.filterDatSh?.selectedIt?.length > 0 ||
+        props?.route?.params?.filterDatSh?.minVal !== '' && props?.route?.params?.filterDatSh?.minVal !== undefined && props?.route?.params?.filterDatSh?.minVal !== null ||
+        props?.route?.params?.filterDatSh?.maxVal !== '' && props?.route?.params?.filterDatSh?.maxVal !== undefined && props?.route?.params?.filterDatSh?.maxVal !== null ||
+        props?.route?.params?.filterDatSh?.minValP !== '' && props?.route?.params?.filterDatSh?.minValP !== undefined && props?.route?.params?.filterDatSh?.minValP !== null ||
+        props?.route?.params?.filterDatSh?.maxValp !== '' && props?.route?.params?.filterDatSh?.maxValp !== undefined && props?.route?.params?.filterDatSh?.maxValp !== null
     );
     const [displayedRouteQueryKey, setDisplayedRouteQueryKey] = useState(null);
     const isRouteRefreshing = displayedRouteQueryKey !== routeQueryKey;
@@ -794,10 +807,21 @@ const Globalresult = (props) => {
                 setApiReq(true);
                 setLoading(true);
                 break;
-            case 'CME/cmeCourseSuccess':
+            case 'CME/cmeCourseSuccess': {
+                const responseAggregations = CMEReducer.cmeCourseResponse?.aggregations || null;
+                if (!hasAppliedFilters && activeResultsRequest.current.page === 0 && responseAggregations) {
+                    unfilteredAggregationsRef.current = {
+                        key: aggregationQueryKey,
+                        data: responseAggregations,
+                    };
+                }
                 setDisplayedHeaderTitle(CMEReducer.cmeCourseResponse?.header_title || '');
                 setDisplayedResultsCount(Number(CMEReducer.cmeCourseResponse?.conferences_count ?? 0));
-                setDisplayedAggregations(CMEReducer.cmeCourseResponse?.aggregations || null);
+                setDisplayedAggregations(
+                    hasAppliedFilters && unfilteredAggregationsRef.current.key === aggregationQueryKey
+                        ? unfilteredAggregationsRef.current.data
+                        : responseAggregations
+                );
                 setApiReq(false);
                 setLoading(false);
                 setHasFetchedResults(true);
@@ -822,6 +846,7 @@ const Globalresult = (props) => {
                     setLoading(false);
                 }
                 break;
+            }
             case 'CME/cmeCourseFailure':
                 setPageNum(0);
                 setApiReq(false);
@@ -831,7 +856,7 @@ const Globalresult = (props) => {
                 setDisplayedRouteQueryKey(routeQueryKey);
                 break;
         }
-    }, [CMEReducer.status, CMEReducer.cmeCourseRequestId, CMEReducer?.cmeCourseResponse, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload]);
+    }, [CMEReducer.status, CMEReducer.cmeCourseRequestId, CMEReducer?.cmeCourseResponse, aggregationQueryKey, hasAppliedFilters, pageNum, routeQueryKey, storeAlldata, props?.route?.params?.homeListPayload]);
 
     useEffect(() => {
         if (!activeResultsRequest.current || activeResultsRequest.current.query !== routeQueryKey ||

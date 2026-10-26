@@ -66,7 +66,12 @@ function cutomPrice(price) {
     const subtotalAmount = parseFloat(finalamount || "0") || 0;
     const listBottomPadding = normalize(16);
     useEffect(() => {
-        if (isFocused && props?.route?.params?.realData?.realData) {
+        if (!isFocused) {
+            setIssfilterVisible(false);
+            return;
+        }
+
+        if (props?.route?.params?.realData?.realData && pendingModalNavigation.current !== 'checkout') {
             setIssfilterVisible(true);
         }
     }, [isFocused, props?.route?.params?.realData?.realData])
@@ -96,6 +101,8 @@ function cutomPrice(price) {
  */
 const inPersonSaveTicket = async () => {
         if (clickHistory?.length > 0) {
+            pendingModalNavigation.current = 'checkout';
+            setIssfilterVisible(false);
             console.log("Hello", clickHistory)
             const checkoutSpan = props?.route?.params?.realData?.realData?.conferenceId;
             let obj = {
@@ -126,6 +133,10 @@ const inPersonSaveTicket = async () => {
                     dispatch(saveTicketInpersonRequest(obj));
                 })
                 .catch((err) => {
+                    pendingModalNavigation.current = null;
+                    if (isFocused) {
+                        setIssfilterVisible(true);
+                    }
                     showErrorAlert("Please connect to internet", err);
                 });
         }
@@ -422,6 +433,7 @@ const stateDataFilter = ({ item, index }) => {
                     break;
                 case 'WebCast/saveTicketInpersonSuccess':
                     status1 = WebcastReducer.status;
+                    setIssfilterVisible(false);
                     setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
                     if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
                         props.navigation.navigate("Checkout", {
@@ -439,6 +451,8 @@ const stateDataFilter = ({ item, index }) => {
                     break;
                 case 'WebCast/saveTicketInpersonFailure':
                     status1 = WebcastReducer.status;
+                    pendingModalNavigation.current = null;
+                    setIssfilterVisible(true);
                     break;
             }
         }
@@ -448,6 +462,7 @@ const stateDataFilter = ({ item, index }) => {
  * @returns {void}
  */
 const backPressIn = () => {
+        pendingModalNavigation.current = null;
         setIssfilterVisible(false);
         props.navigation.goBack();
     }
@@ -479,7 +494,7 @@ const onBackPress = () => {
                     animationIn={'slideInUp'}
                     animationOut={'slideOutDown'}
                     backdropTransitionOutTiming={0}
-                    hideModalContentWhileAnimating={false}
+                    hideModalContentWhileAnimating={true}
                     useNativeDriver={true}
                     isVisible={isfilterVisible}
                     style={{ width: '100%', alignSelf: 'center', margin: 0, justifyContent: 'flex-end' }}
