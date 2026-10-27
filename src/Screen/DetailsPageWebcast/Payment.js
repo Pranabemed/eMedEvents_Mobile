@@ -8,7 +8,7 @@ import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import normalize from '../../Utils/Helpers/Dimen';
-import { useIsFocused } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import MaskInput, { Masks } from 'react-native-mask-input';
 import Fonts from '../../Themes/Fonts';
 import TextFieldIn from '../../Components/Textfield';
@@ -516,6 +516,33 @@ function paymentwalletHandle() {
  * @returns {void}
  */
 const paymentPress = () => {
+        const isInPersonRegistrationPayment = Boolean(
+            props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket ||
+            props?.route?.params?.invoiceTxt?.paymentprice?.inpersonSpanrole
+        );
+
+        if (isInPersonRegistrationPayment) {
+            const navigationState = props.navigation.getState();
+            const stateWebcastIndex = navigationState?.routes
+                ?.map(route => route.name)
+                ?.lastIndexOf('Statewebcast');
+
+            if (stateWebcastIndex >= 0) {
+                const routes = navigationState.routes.slice(0, stateWebcastIndex + 1);
+                props.navigation.dispatch(
+                    CommonActions.reset({
+                        ...navigationState,
+                        routes,
+                        index: routes.length - 1,
+                    })
+                );
+                return;
+            }
+
+            props.navigation.navigate('Statewebcast');
+            return;
+        }
+
         if (handlePayemnt) {
             const fullDta = fulldashbaord?.[0];
             setAddit(fullDta);

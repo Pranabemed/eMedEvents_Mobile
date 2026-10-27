@@ -71,7 +71,8 @@ function cutomPrice(price) {
             return;
         }
 
-        if (props?.route?.params?.realData?.realData && pendingModalNavigation.current !== 'checkout') {
+        if (props?.route?.params?.realData?.realData) {
+            pendingModalNavigation.current = null;
             setIssfilterVisible(true);
         }
     }, [isFocused, props?.route?.params?.realData?.realData])

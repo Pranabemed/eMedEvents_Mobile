@@ -3,7 +3,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, ScrollView, StatusBar, BackHandler, Pressable, Linking } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, ActivityIndicator, Image, ScrollView, StatusBar, BackHandler, Pressable } from 'react-native';
 import Video from 'react-native-video';
 import PlayIcon from 'react-native-vector-icons/AntDesign';
 import FullIcon from 'react-native-vector-icons/Feather';
@@ -224,7 +224,13 @@ const VideoComponent = (props) => {
         }
     }
     useEffect(() => {
-        if (preserveVideoContent) return;
+        if (preserveVideoContent || !isFocus) return;
+        setApiInFlight(true);
+        setShowLoader(true);
+        setVideoUrl(null);
+        setExternalVideoUrl(null);
+        setNonVideoContent(null);
+        setLoading(true);
         let ActivityId = activeCourseModuleId
             || props?.route?.params?.postdata?.next_activity_id
             || props?.route?.params?.RoleData?.current_activity_id
@@ -245,10 +251,14 @@ const VideoComponent = (props) => {
             .then(() => {
                 dispatch(cmeactivityRequest(obj));
             })
-            .catch((err) => { showErrorAlert("Please connect to internet", err) })
+            .catch((err) => {
+                setApiInFlight(false);
+                setShowLoader(false);
+                showErrorAlert("Please connect to internet", err);
+            })
     }, [isFocus, activeCourseModuleId, preserveVideoContent])
     useEffect(() => {
-        if (preserveVideoContent) return;
+        if (preserveVideoContent || !isFocus) return;
         const reviseText = props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100
         let revisebj = {
             "conference_id": props?.route?.params?.RoleData?.id
@@ -1526,7 +1536,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                 </View>}
 
                 {conn == false ? <IntOff /> : <ScrollView scrollEnabled={!fullscreen} contentContainerStyle={{ paddingBottom: fullscreen ? normalize(320) : normalize(120) }}>
-                    {(hasVideoSource || (externalVideoUrl && getEmbedUrl(externalVideoUrl))) ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
+                    {apiInFlight ? <ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : (hasVideoSource || (externalVideoUrl && getEmbedUrl(externalVideoUrl))) ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
                         {hasVideoSource ? (
                             <Pressable
                                 style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
@@ -1710,12 +1720,11 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                         )}
 
                         {externalVideoUrl ? (
-                            <Pressable
-                                onPress={() => Linking.openURL(externalVideoUrl)}
-                                style={styles.openExternalButton}
-                            >
-                                <Text style={styles.openExternalButtonText}>Open Video in Browser</Text>
-                            </Pressable>
+                            <ActivityIndicator
+                                style={{ paddingVertical: normalize(12) }}
+                                size={"small"}
+                                color={"green"}
+                            />
                         ) : null}
                     </View> : CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook && !fullscreen ? (<View>
                         <FlipbookComponent path={CMEReducer?.cmeactivityResponse?.onlineDisplayPath} link={CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook} />
