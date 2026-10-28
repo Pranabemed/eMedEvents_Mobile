@@ -190,6 +190,24 @@ test('in-person ticket screen does not navigate using a cached previous invoice'
   expect(props.navigation.push).not.toHaveBeenCalled();
 });
 
+test.each(['guest', 'member'])('autofilled state resolves its ID and accepts a new city for %s checkout', async mode => {
+  const props = checkoutProps('CITY', 100);
+  props.route.params.checkoutSpan.guestOrigin = mode;
+  const screen = await mount(Checkout, props);
+  const control = () => screen.tree.root.findByType('./CheckoutMain').props;
+  await act(async () => control().setFormData([
+    {country: 'India', country_id: '99', state: ' Telangana ', state_id: '', city: '', city_id: ''},
+  ]));
+  mockDispatch.mockClear();
+  mockState.AuthReducer = {...mockState.AuthReducer, stateResponse: {states: [{id: '36', name: 'Telangana'}]}};
+  await screen.update();
+  expect(control().formData[0]).toMatchObject({state: 'Telangana', state_id: '36'});
+  expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({type: 'Auth/cityRequest', payload: '36'}));
+  await act(async () => control().handlecityShows({id: '100', name: 'Hyderabad'}, 0));
+  await screen.update();
+  expect(control().formData[0]).toMatchObject({city: 'Hyderabad', city_id: '100', state_id: '36'});
+});
+
 test('changing India to USA clears attendee and primary profession/specialty defaults', async () => {
   const {tree} = await mount(Checkout, checkoutProps('COUNTRY', 100));
   const control = () => tree.root.findByType('./CheckoutMain').props;

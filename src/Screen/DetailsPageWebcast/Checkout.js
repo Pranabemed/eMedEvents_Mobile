@@ -805,15 +805,26 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
     }, [countryall, country, country_id, detectedCountry, detectedCountryName, formData]);
 
     useEffect(() => {
-        if (!detectedState || !Array.isArray(slistpratice) || slistpratice.length === 0) return;
+        if (!Array.isArray(slistpratice) || slistpratice.length === 0) return;
         const primaryRegistrant = formData?.[0];
-        if (!primaryRegistrant?.country_id || primaryRegistrant?.state || primaryRegistrant?.state_id) return;
+        if (!primaryRegistrant?.country_id || primaryRegistrant?.state_id) return;
+        const stateName = primaryRegistrant?.state || detectedState;
+        if (!stateName) return;
         const normalizeLocation = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         const matchedState = slistpratice.find(item =>
-            normalizeLocation(item?.name) === normalizeLocation(detectedState)
+            normalizeLocation(item?.name) === normalizeLocation(stateName)
         );
         if (matchedState) {
-            handleStateshows(matchedState, 0);
+            if (primaryRegistrant.state) {
+                setState(matchedState.name);
+                setState_id(matchedState.id);
+                cityReq(matchedState.id);
+                setFormData(previous => previous.map((attendee, index) => index === 0
+                    ? { ...attendee, state: matchedState.name, state_id: matchedState.id }
+                    : attendee));
+            } else {
+                handleStateshows(matchedState, 0);
+            }
         }
     }, [detectedState, formData, slistpratice]);
 

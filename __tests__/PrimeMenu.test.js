@@ -70,3 +70,23 @@ test('existing Prime user retains Prime Member label', async () => {
   expect(label('Prime Member')).toBe(true);
   expect(label('Become a Prime Member')).toBe(false);
 });
+
+test('Prime Member updates immediately when profile country changes from USA to India and back', async () => {
+  const member = {...user, subscription_user: 'subscribed'};
+  mockState.AuthReducer = {dircetloginResponse: {user: member}};
+  await act(async () => {tree = create(<DrawerModal isVisible onBackdropPress={() => {}} />);});
+  expect(label('Prime Member')).toBe(true);
+
+  mockState.DashboardReducer = {mainprofileResponse: {
+    ...member,
+    user_address: {country_code: 'IN', country_name: 'India', country_id: '99'},
+  }};
+  await act(async () => tree.update(<DrawerModal isVisible onBackdropPress={() => {}} />));
+  expect(label('Prime Member')).toBe(false);
+  expect(label('Become a Prime Member')).toBe(false);
+
+  mockState.DashboardReducer = {mainprofileResponse: member};
+  await act(async () => tree.update(<DrawerModal isVisible onBackdropPress={() => {}} />));
+  expect(label('Prime Member')).toBe(true);
+  expect(label('Become a Prime Member')).toBe(false);
+});
