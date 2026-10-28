@@ -123,6 +123,7 @@ const formatNumberWithCommas = (value) => {
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
+     console.log(ticketSave, "spanroute22222=========")
     const feeAwareBaseAmount = Number(
         checkoutBaseAmount != null
             ? checkoutBaseAmount
@@ -955,7 +956,7 @@ function formatPrice(price) {
                     } else {
                         setPaymentcardfree(false);
                         setPaymentfdfree(false);
-                        proceedPayment();
+                        proceedPayment(ticketSave);
                     }
                 }}
                 height={normalize(45)}

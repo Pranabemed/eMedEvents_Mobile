@@ -1,5 +1,6 @@
 import React from 'react';
 import {act, render} from '@testing-library/react-native';
+import {BackHandler} from 'react-native';
 import {Provider} from 'react-redux';
 import {configureStore} from '@reduxjs/toolkit';
 import Globalresult from '../src/Screen/GlobalSupport/Globalresult';
@@ -21,11 +22,11 @@ jest.mock('react-native-safe-area-context', () => ({SafeAreaView: require('react
 
 const conference = (id, title) => ({id, title, detailpage_url: `https://example.com/${id}`});
 const response = title => ({header_title: title, conferences_count: 20, conferences: [conference(title, title)], aggregations: {title}});
-const navigation = {addListener: jest.fn(() => () => {}), setOptions: jest.fn(), dispatch: jest.fn(), navigate: jest.fn(), goBack: jest.fn()};
+const navigation = {addListener: jest.fn(() => () => {}), setOptions: jest.fn(), setParams: jest.fn(), dispatch: jest.fn(), navigate: jest.fn(), goBack: jest.fn()};
 const browse = {trig: {rqstType: 'normallist', mainKey: 'listby_type', beforetake: 'recommended'}};
-function setup(params = browse, cached = response('Stale result')) {
+function setup(params = browse, cached = response('Stale result'), token = 'signed-in') {
   const actions = [];
-  const store = configureStore({reducer: {CMEReducer: cmeReducer, GuestReducer: guestReducer, AuthReducer: () => ({token: 'signed-in'}), CreditVaultReducer: () => ({})}, middleware: getDefault => getDefault({serializableCheck: false}).concat(() => next => action => {actions.push(action); return next(action);})});
+  const store = configureStore({reducer: {CMEReducer: cmeReducer, GuestReducer: guestReducer, AuthReducer: () => ({token}), CreditVaultReducer: () => ({})}, middleware: getDefault => getDefault({serializableCheck: false}).concat(() => next => action => {actions.push(action); return next(action);})});
   store.dispatch(cmeCourseSuccess(cached));
   store.dispatch(HomelistSuccess({data: {popular_courses: [conference('old-home', 'Old home result')]}}));
   const tree = nextParams => <Provider store={store}><AppContext.Provider value={{isConnected: true}}><Globalresult navigation={navigation} route={{params: nextParams}} /></AppContext.Provider></Provider>;
@@ -37,6 +38,38 @@ const lastRequest = (actions, type = 'CME/cmeCourseRequest') => actions.filter(a
 const reply = (store, request, data, creator = cmeCourseSuccess) => act(() => store.dispatch({...creator(data), meta: request.meta}));
 
 beforeEach(() => connectionrequest.mockImplementation(() => Promise.resolve(true)));
+
+test.each([
+  ['guest', 'hardware'], ['guest', 'header'],
+  ['signed-in', 'hardware'], ['signed-in', 'header'],
+])('%s %s back clears empty filters without leaving results', async (account, back) => {
+  const listener = jest.spyOn(BackHandler, 'addEventListener');
+  const original = {trig: {...browse.trig, Realback: account === 'guest' ? 'guest' : 'cont'}};
+  const filtered = {...original, filterDatSh: {returnTake: original, filterDatSh: [], minValP: 999}};
+  const {store, screen, actions, tree} = setup(filtered, response('Stale result'), account === 'guest' ? null : 'signed-in');
+  try {
+    await flush();
+    reply(store, lastRequest(actions), {conferences: [], conferences_count: 0});
+    act(() => {
+      if (back === 'hardware') listener.mock.calls.filter(([event]) => event === 'hardwareBackPress').at(-1)[1]();
+      else screen.UNSAFE_getAllByType('PageHeader')[0].props.onBackPress();
+    });
+    expect(navigation.setParams).toHaveBeenCalledWith({...original, filterDatSh: null});
+    expect(navigation.goBack).not.toHaveBeenCalled();
+    expect(navigation.navigate).not.toHaveBeenCalled();
+    expect(navigation.dispatch).not.toHaveBeenCalled();
+    screen.rerender(tree({...filtered, ...navigation.setParams.mock.calls.at(-1)[0]}));
+    await flush();
+    const restored = lastRequest(actions);
+    expect(restored.payload.price_from).not.toBe(999);
+    reply(store, restored, response('Original course'));
+    expect(screen.getAllByText('Original course').length).toBeGreaterThan(0);
+    act(() => screen.UNSAFE_getAllByType('PageHeader')[0].props.onBackPress());
+    expect(navigation.goBack).toHaveBeenCalled();
+  } finally {
+    listener.mockRestore();
+  }
+});
 
 test('cached and unrelated results never replace the current Browse Courses request', async () => {
   const {store, screen, actions} = setup();

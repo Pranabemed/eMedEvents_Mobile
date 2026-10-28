@@ -123,14 +123,14 @@ const weekFilterProfession = ({ item }) => {
             />
             <View style={dropdownStyles.panel}>
                 {Platform.OS === 'ios' ? (
-                    <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
+                    <DropDownHeader standardized title="Select Specialty(s)" onClosePress={() => {
                         setstatepicker(!statepicker);
                         setSearchState("");
                         // handleSpecialitySelect(selectedSpecialities, formData);
                     }} />
                 ) : (
                     <View>
-                        <DropDownHeader standardized title="Select Specialty(ies)" onClosePress={() => {
+                        <DropDownHeader standardized title="Select Specialty(s)" onClosePress={() => {
                             setstatepicker(!statepicker);
                             setSearchState("");
                             // handleSpecialitySelect(selectedSpecialities, formData);

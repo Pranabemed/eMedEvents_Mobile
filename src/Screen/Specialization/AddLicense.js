@@ -23,6 +23,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import { dashboardRequest, stateLicesenseRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
+import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/FileUploadValidation';
 import { CommonActions, useIsFocused } from '@react-navigation/native'
 import PraticingStateComponent from './PraticingStateComponent'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -581,29 +582,38 @@ const handleYearcust = (don) => {
  *
  * @remarks Does not return a value.
  */
-function directCameraUpload() {
-        ImagePicker.openCamera({
+async function directCameraUpload() {
+        try {
+            const response = await ImagePicker.openCamera({
             width: 300,
             height: 400,
-            cropping: true,
+            cropping: false,
             mediaType: "photo",
             includeBase64: false,
             saveToPhotos: true,
-        })
-            .then(response => {
+            });
+            if (!await isUploadFileSizeValid(response)) {
+                showErrorAlert(FILE_SIZE_ERROR);
+                return;
+            }
+            const selectedImage = await ImagePicker.openCropper({
+                path: response.path,
+                width: 300,
+                height: 400,
+            });
                 let imageObj = {
-                    name: response.filename
-                        ? response.filename
-                        : response.path.replace(/^.*[\\\/]/, ''),
-                    type: response.mime,
-                    uri: response.path.startsWith('file://') ? response.path : `file://${response.path}`,
+                    name: selectedImage.filename
+                        ? selectedImage.filename
+                        : selectedImage.path.replace(/^.*[\\\/]/, ''),
+                    type: selectedImage.mime,
+                    uri: selectedImage.path.startsWith('file://') ? selectedImage.path : `file://${selectedImage.path}`,
+                    size: selectedImage.size,
                 };
                 setProfilePicObjlic(imageObj);
                 setProfilePicUrilic(imageObj.uri);
-            })
-            .catch(err => {
-                console.log('Error opening camera:', err);
-            });
+        } catch (err) {
+            console.log('Error opening camera:', err);
+        }
     }
 
         /**
@@ -999,6 +1009,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                 profile={props?.route?.params?.myTaskask?.BackMyTask ? "" : props?.route?.params?.myTaskask?.Back ? "" : props?.route?.params?.profiledet ? "text" : props?.route?.params?.profile === "text" ? "text" : ""}
                             />
                             <CameraPicker
+                                maxFileSizeBytes={2 * 1024 * 1024}
                                 cropping={true}
                                 pickerVisible={cameraPickerlic}
                                 onBackdropPress={() => setCameraPickerlic(false)}

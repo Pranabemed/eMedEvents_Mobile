@@ -142,6 +142,38 @@ test('Checkout profession selection retains the attendee index and close behavio
   expect(screen.getByLabelText('Close dropdown')).toBeTruthy();
 });
 
+test.each(['checkout', 'shared'])('%s profession picker restores all options on reopening', kind => {
+  const Picker = kind === 'checkout'
+    ? require('../src/Screen/DetailsPageWebcast/InPersonProfession').default
+    : require('../src/Screen/Specialization/ProfessionComponent').default;
+  const options = ['Acute Physician', 'Nurse', 'Pharmacist'];
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    const [query, setQuery] = useState('');
+    const [list, setList] = useState(options);
+    const [selected, setSelected] = useState('');
+    const search = text => {
+      setQuery(text);
+      setList(options.filter(item => item.toLowerCase().includes(text.toLowerCase())));
+    };
+    return open ? <Picker profindex={0} countrypickerprof clist={list} searchtext={query}
+      searchCountryName={search} setSearchtext={setQuery} setcountrypicker={setOpen} handleProfession={setSelected} />
+      : <Text onPress={() => setOpen(true)}>Reopen {selected}</Text>;
+  }
+  const screen = render(<Harness />);
+  fireEvent.changeText(screen.getByPlaceholderText('Search Profession'), 'Acute');
+  expect(screen.queryByText('Nurse')).toBeNull();
+  fireEvent.press(screen.getByText('Acute Physician'));
+  fireEvent.press(screen.getByText('Reopen Acute Physician'));
+  expect(screen.getByPlaceholderText('Search Profession').props.value).toBe('');
+  for (const option of options) expect(screen.getByText(option)).toBeTruthy();
+  fireEvent.changeText(screen.getByPlaceholderText('Search Profession'), 'Nurse');
+  expect(screen.queryByText('Acute Physician')).toBeNull();
+  fireEvent.press(screen.getByLabelText('Close dropdown'));
+  fireEvent.press(screen.getByText('Reopen Acute Physician'));
+  for (const option of options) expect(screen.getByText(option)).toBeTruthy();
+});
+
 test('Profile specialty chips retain their removal index with standardized styling', () => {
   const Field = require('../src/Screen/Profile/CustomInputTouchableX').default;
   const remove = jest.fn(), open = jest.fn();

@@ -253,7 +253,10 @@ const handleProfession = (did) => {
         setCountry(did);
         setcountrypicker(false);
         specaillized(did?.split(' - ')[0])
-        setFormData("");
+        setFormData({ speciality: '', speciality_ids: [] });
+        setSpeciality("");
+        setSpeciality_id([]);
+        setSelectedSpecialities([]);
         setState("");
         setState_id("");
         setProftree(false);
@@ -470,9 +473,6 @@ const toggleHand = () => {
 
         if (token) {
             await AsyncStorage.setItem(constants.TOKEN, token);
-            if (token !== AuthReducer?.token) {
-                dispatch(tokenSuccess(token));
-            }
         }
         if (refreshToken) {
             await AsyncStorage.setItem(constants.REFRESH_TOKEN, refreshToken);
@@ -488,6 +488,15 @@ const toggleHand = () => {
                     license_number: isUsUser ? (user?.license_number || licnumber || '') : '',
                 })
             );
+            await AsyncStorage.multiRemove([
+                'GUEST_VERIFICATION_COMPLETED',
+                GUEST_PRIME_VERIFICATION_PENDING_KEY,
+                SUPPRESS_GUEST_HOME_PROMPTS_ONCE_KEY,
+            ]);
+            await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
+        }
+        if (token && token !== AuthReducer?.token) {
+            dispatch(tokenSuccess(token));
         }
     }, [AuthReducer?.loginResponse?.token, AuthReducer?.token, dispatch, state_id, licnumber, isUsUser]);
 
@@ -677,7 +686,7 @@ const interSubmit = () => {
         if (!country) {
             showErrorAlert("Please choose your profession ")
         } else if (formData?.speciality_ids?.length == 0) {
-            showErrorAlert("Please choose your speciality(s)")
+            showErrorAlert("Please choose your specialty(s)")
         } else if (isUsUser && proftree && !state) {
             showErrorAlert("Please choose your medical license state")
         } else if (!zerocm) {
@@ -1120,7 +1129,8 @@ const buildConferencePayload = () => {
                                 </View>
                             </View>}
                             <CustomInputTouchableX
-                                label={"Speciality(s)*"}
+                                disabled={!country}
+                                label={"Specialty(s)*"}
                                 placeholder={""}
                                 placeholderTextColor="#949494"
                                 rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}

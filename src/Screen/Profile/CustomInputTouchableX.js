@@ -101,6 +101,7 @@ const CustomInputTouchableX = ({
             <View style={[
                 styles.inputWrapper,
                 wrapperStyle,
+                disabled && styles.inputDisabled,
                 newstyle == "No" && { backgroundColor: "#E6ECF2" },
                 { borderBottomWidth: 0.5, borderBottomColor: "#000000" }
             ]}>
@@ -198,6 +199,9 @@ const styles = StyleSheet.create({
         left: 20,
         height: 30,
         width: 45
+    },
+    inputDisabled: {
+        opacity: 0.45,
     },
 });
 

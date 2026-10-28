@@ -28,6 +28,7 @@ import { boardSpecialityRequest, boardcertificateRequest, dashboardRequest } fro
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
+import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/FileUploadValidation';
 import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import constants from '../../Utils/Helpers/constants'
@@ -248,25 +249,36 @@ const toggleModalcert = () => {
  *
  * @remarks Does not return a value.
  */
-function directUploadBoard() {
-        ImagePicker.openCamera({
+async function directUploadBoard() {
+        try {
+            const response = await ImagePicker.openCamera({
             width: 300,
             height: 400,
-            cropping: true,
-            mediaType: 'any',
-        })
-            .then(response => {
+            cropping: false,
+            mediaType: 'photo',
+            });
+            if (!await isUploadFileSizeValid(response)) {
+                showErrorAlert(FILE_SIZE_ERROR);
+                return;
+            }
+            const selectedImage = await ImagePicker.openCropper({
+                path: response.path,
+                width: 300,
+                height: 400,
+            });
                 let imageObj = {
-                    name: response.filename
-                        ? response.filename
-                        : response.path.replace(/^.*[\\\/]/, ''),
-                    type: response.mime,
-                    uri: response.path,
+                    name: selectedImage.filename
+                        ? selectedImage.filename
+                        : selectedImage.path.replace(/^.*[\\\/]/, ''),
+                    type: selectedImage.mime,
+                    uri: selectedImage.path,
+                    size: selectedImage.size,
                 };
                 setBoardPic(imageObj);
                 setBoardPicOT(imageObj.uri);
-            })
-            .catch(err => console.log(err));
+        } catch (err) {
+            console.log(err);
+        }
     }
     console.log(bspecialityname, "AuthReducer?.loginResponse?.user?.specialities=========", boardID, searchboardname);
         /**
@@ -839,6 +851,7 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                             textColor="black"
                         />}
                         <CameraPicker
+                            maxFileSizeBytes={2 * 1024 * 1024}
                             cropping={true}
                             pickerVisible={boardcamera}
                             onBackdropPress={() => setBoardcamera(false)}

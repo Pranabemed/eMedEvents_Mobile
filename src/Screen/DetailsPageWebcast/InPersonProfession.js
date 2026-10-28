@@ -4,7 +4,7 @@ import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownS
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, ActivityIndicator } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
@@ -18,6 +18,10 @@ import normalize from '../../Utils/Helpers/Dimen';
  * @returns {JSX.Element}
  */
 const ProfessionInPerson = ({ profindex, handleProfession, setSearchtext, countrypickerprof, clist, setcountrypicker, searchCountryName, searchtext }) => {
+    const resetSearchOnOpen = useRef(searchCountryName);
+    useEffect(() => {
+        resetSearchOnOpen.current('');
+    }, []);
     console.log(clist, "wekknamecustome");
     const [showLoader, setShowLoader] = useState(false)
     useEffect(() => {

@@ -4,7 +4,7 @@ import DropDownHeader, { DropdownSearch, DropdownOption, DropdownList, dropdownS
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, KeyboardAvoidingView, Alert, StyleSheet, ActivityIndicator, BackHandler } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import Fonts from '../../Themes/Fonts'
@@ -19,6 +19,10 @@ import normalize from '../../Utils/Helpers/Dimen';
  */
 
 const ProfessionComponent = ({ handleProfession, clist, setcountrypicker, searchCountryName, searchtext, setSearchtext }) => {
+    const resetSearchOnOpen = useRef(searchCountryName);
+    useEffect(() => {
+        resetSearchOnOpen.current('');
+    }, []);
 
     const [showLoader, setShowLoader] = useState(false);
     useEffect(() => {

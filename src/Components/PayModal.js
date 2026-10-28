@@ -45,12 +45,12 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
-        /**
- * Returns merged params.
- * @param {Object} extraParams - Input value.
- * @returns {Object}
- */
-const getMergedParams = (extraParams = {}) => {
+    /**
+* Returns merged params.
+* @param {Object} extraParams - Input value.
+* @returns {Object}
+*/
+    const getMergedParams = (extraParams = {}) => {
         return {
             ...(route?.params || {}),
             ...extraParams,
@@ -77,13 +77,13 @@ const getMergedParams = (extraParams = {}) => {
     } = useContext(AppContext);
     const [pdfsee, setPdfsee] = useState(false);
     const appState = useRef(AppState.currentState);
-        /**
- * On press utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const onPress = async () => {
+    /**
+* On press utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+    const onPress = async () => {
         try {
             // Ensure the URL is available
             const url = dataPayemnt?.invoice;
@@ -104,12 +104,12 @@ const onPress = async () => {
 
             if (downloadResult.statusCode === 200) {
                 console.log("File downloaded successfully:", localFile);
-                                /**
- * Handles app state change.
- * @param {*} nextAppState - Input value.
- * @returns {void}
- */
-const handleAppStateChange = (nextAppState) => {
+                /**
+* Handles app state change.
+* @param {*} nextAppState - Input value.
+* @returns {void}
+*/
+                const handleAppStateChange = (nextAppState) => {
                     if (
                         appState.current.match(/inactive|background/) &&
                         nextAppState === 'active'

@@ -21,7 +21,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import ChecktwoCountry from '../DetailsPageWebcast/CheckoutModaltwo'
 import CheckThreeCity from '../DetailsPageWebcast/CheckoutModalFourth'
 import { useDispatch, useSelector } from 'react-redux';
-import { cityRequest, countryRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
+import { cityRequest, citySuccess, countryRequest, stateRequest, stateSuccess } from '../../Redux/Reducers/AuthReducer'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { searchCountryNameFunction } from '../DetailsPageWebcast/SearchCountryname'
@@ -264,6 +264,7 @@ const ContactProfile = (props) => {
     }
     console.log(DashboardReducer?.mainprofileResponse?.professional_information, "ertrkjred===")
     const initialCountryRef = useRef(null);
+    const userSelectedCountryRef = useRef(false);
     const contactSubmissionRef = useRef({
         active: false,
         contactDone: false,
@@ -644,32 +645,36 @@ const ContactProfile = (props) => {
             const rawCountry = getFullCountryName(normalizeContactValue(userAddr?.country_name), countryall);
             const rawCalling = normalizeContactValue(userAddr?.calling_code);
 
-            setCountry(rawCountry);
-            setCountry_id(userAddr?.country_id || "");
-            if (rawCountry) {
-                initialCountryRef.current = rawCountry;
+            if (!userSelectedCountryRef.current) {
+                setCountry(rawCountry);
+                setCountry_id(userAddr?.country_id || "");
+                if (rawCountry) {
+                    initialCountryRef.current = rawCountry;
+                }
             }
 
             getCountryAndDialCode().then(geoInfo => {
                 setAddress(rawAddr || '');
 
-                if (!rawState) {
-                    setState(normalizeContactValue(geoInfo?.state_name));
-                } else {
-                    setState(rawState);
-                }
-
-                if (!rawCountry) {
-                    const fallbackCountry = getFullCountryName(geoInfo?.country_name || geoInfo?.country, countryall);
-                    setCountry(fallbackCountry);
-                    if (Array.isArray(countryall) && countryall.length > 0 && fallbackCountry) {
-                        const matched = countryall.find(c => String(c.name || '').toLowerCase() === fallbackCountry.toLowerCase());
-                        if (matched) {
-                            setCountry_id(matched.id);
-                        }
+                if (!userSelectedCountryRef.current) {
+                    if (!rawState) {
+                        setState(normalizeContactValue(geoInfo?.state_name));
+                    } else {
+                        setState(rawState);
                     }
-                } else {
-                    setCountry(rawCountry);
+
+                    if (!rawCountry) {
+                        const fallbackCountry = getFullCountryName(geoInfo?.country_name || geoInfo?.country, countryall);
+                        setCountry(fallbackCountry);
+                        if (Array.isArray(countryall) && countryall.length > 0 && fallbackCountry) {
+                            const matched = countryall.find(c => String(c.name || '').toLowerCase() === fallbackCountry.toLowerCase());
+                            if (matched) {
+                                setCountry_id(matched.id);
+                            }
+                        }
+                    } else {
+                        setCountry(rawCountry);
+                    }
                 }
 
                 const validDial = getValidDialCode(rawCalling, rawCountry, geoInfo, countryall);
@@ -687,7 +692,7 @@ const ContactProfile = (props) => {
                 } else {
                     setAddress(rawAddr);
                 }
-                if (rawState) {
+                if (!userSelectedCountryRef.current && rawState) {
                     setState(rawState);
                 }
                 const validDial = getValidDialCode(rawCalling, rawCountry, null, countryall);
@@ -701,9 +706,11 @@ const ContactProfile = (props) => {
                 setWhatsappno(formatPhoneNumber(rawWp, isUSA));
             });
 
-            setState_id(userAddr?.state_id || "");
-            setCity(normalizeContactValue(userAddr?.city_name));
-            setCity_id(userAddr?.city_id || "");
+            if (!userSelectedCountryRef.current) {
+                setState_id(userAddr?.state_id || "");
+                setCity(normalizeContactValue(userAddr?.city_name));
+                setCity_id(userAddr?.city_id || "");
+            }
             setZipcode(normalizeContactValue(userAddr?.zipcode));
             setWhatsappno(normalizeContactValue(props?.route?.params?.wholedata?.user_social?.social_whatsapp));
             setDobdate(formatDobWithMoment(props?.route?.params?.wholedata?.personal_information?.dob && props?.route?.params?.wholedata?.personal_information?.dob !== "0000-00-00" ? props?.route?.params?.wholedata?.personal_information?.dob : ""));
@@ -838,22 +845,22 @@ const ContactProfile = (props) => {
 * @returns {void}
 */
     const handleCountrySet = (didi) => {
-        console.log(cellno, "cellno======", didi)
-        const hasCountryChanged = String(country_id || '') !== String(didi?.id || '');
-        if (hasCountryChanged) {
-            setState("");
-            setState_id("");
-            setCity("");
-            setCity_id("");
-            setSearchpratice("");
-            setSearchcity("");
-            setSlistpratice([]);
-            setCityAll([]);
-            setCityshow([]);
-        }
+        console.log(cellno, "cellno======", didi);
+        userSelectedCountryRef.current = true;
+        setState("");
+        setState_id("");
+        setCity("");
+        setCity_id("");
+        setSearchpratice("");
+        setSearchcity("");
+        setSlistpratice([]);
+        setSelectStatepratice([]);
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
+        dispatch(stateSuccess({ states: [] }));
         PraticingState(didi?.id);
         setCountry(didi?.name);
-        stateRequest(didi?.id);
         setCountry_id(didi?.id);
         setDialcode(getValidDialCode(didi?.callingcode, didi?.name, null, countryall));
         const tempAccount = { country_id: didi?.id, country_name: didi?.name, country_code: didi?.callingcode };
@@ -877,17 +884,14 @@ const ContactProfile = (props) => {
 * @returns {void}
 */
     const handleStateshows = (ctid) => {
-        const hasStateChanged = String(state_id || '') !== String(ctid?.id || '');
-        if (hasStateChanged) {
-            setCity("");
-            setCity_id("");
-            setSearchcity("");
-            setCityAll([]);
-            setCityshow([]);
-        }
-        cityReq(ctid?.id)
+        setCity("");
+        setCity_id("");
+        setSearchcity("");
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
+        cityReq(ctid?.id);
         setState(ctid?.name);
-        cityRequest(ctid?.id);
         setState_id(ctid?.id);
     }
     /**
@@ -1284,20 +1288,22 @@ const ContactProfile = (props) => {
                                                 paddingRight: normalize(0)
                                             }}>
                                                 <CustomInputTouchable
+                                                    disabled={!country || !country_id || (Array.isArray(country_id) && country_id.length === 0)}
                                                     label={"State*"}
                                                     value={state}
                                                     placeholder={""}
                                                     placeholderTextColor="#949494"
                                                     rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
                                                     onPress={() => {
+                                                        if (!country || !country_id || (Array.isArray(country_id) && country_id.length === 0)) return;
                                                         setStatepicker(!statepicker);
                                                         PraticingState(country_id);
                                                     }}
                                                     onIconpres={() => {
+                                                        if (!country || !country_id || (Array.isArray(country_id) && country_id.length === 0)) return;
                                                         setStatepicker(!statepicker);
                                                         PraticingState(country_id);
                                                     }}
-                                                    disabled={country ? false : true}
                                                 />
                                             </View>
                                         </View>
@@ -1310,20 +1316,27 @@ const ContactProfile = (props) => {
                                                 paddingRight: normalize(0)
                                             }}>
                                                 <CustomInputTouchable
+                                                    disabled={
+                                                        !country || !country_id || (Array.isArray(country_id) && country_id.length === 0) ||
+                                                        !state || !state_id || (Array.isArray(state_id) && state_id.length === 0)
+                                                    }
                                                     label={"City*"}
                                                     value={city}
                                                     placeholder={""}
                                                     placeholderTextColor="#949494"
                                                     rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
                                                     onPress={() => {
+                                                        if (!country || !country_id || (Array.isArray(country_id) && country_id.length === 0) ||
+                                                            !state || !state_id || (Array.isArray(state_id) && state_id.length === 0)) return;
                                                         setCitypicker(!citypicker);
                                                         cityReq(state_id);
                                                     }}
                                                     onIconpres={() => {
+                                                        if (!country || !country_id || (Array.isArray(country_id) && country_id.length === 0) ||
+                                                            !state || !state_id || (Array.isArray(state_id) && state_id.length === 0)) return;
                                                         setCitypicker(!citypicker);
                                                         cityReq(state_id);
                                                     }}
-                                                    disabled={state ? false : true}
                                                 />
                                             </View>
                                         </View>

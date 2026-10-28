@@ -30,6 +30,7 @@ import DeleteIcon from 'react-native-vector-icons/MaterialIcons';
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
 import CrossIcon from 'react-native-vector-icons/AntDesign'
+import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/FileUploadValidation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
@@ -251,25 +252,36 @@ const AddCredits = (props) => {
 *
 * @remarks Does not return a value.
 */
-    function directCameraCredit() {
-        ImagePicker.openCamera({
+    async function directCameraCredit() {
+        try {
+            const response = await ImagePicker.openCamera({
             width: 300,
             height: 400,
-            cropping: true,
-            mediaType: 'any',
-        })
-            .then(response => {
-                let imageObj = {
-                    name: response.filename
-                        ? response.filename
-                        : response.path.replace(/^.*[\\\/]/, ''),
-                    type: response.mime,
-                    uri: response.path,
-                };
-                setProfilePicObj1(imageObj);
-                setProfilePicUri1(imageObj.uri);
-            })
-            .catch(err => console.log(err));
+            cropping: false,
+            mediaType: 'photo',
+            });
+            if (!await isUploadFileSizeValid(response)) {
+                showErrorAlert(FILE_SIZE_ERROR);
+                return;
+            }
+            const selectedImage = await ImagePicker.openCropper({
+                path: response.path,
+                width: 300,
+                height: 400,
+            });
+            let imageObj = {
+                name: selectedImage.filename
+                    ? selectedImage.filename
+                    : selectedImage.path.replace(/^.*[\\\/]/, ''),
+                type: selectedImage.mime,
+                uri: selectedImage.path,
+                size: selectedImage.size,
+            };
+            setProfilePicObj1(imageObj);
+            setProfilePicUri1(imageObj.uri);
+        } catch (err) {
+            console.log(err);
+        }
     }
     /**
 * Toggle modalcred utility.

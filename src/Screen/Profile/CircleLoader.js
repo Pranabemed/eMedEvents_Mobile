@@ -265,6 +265,7 @@ const updatProfile = () => {
                 </View>
             </View>
             <CameraPicker
+                maxFileSizeBytes={2 * 1024 * 1024}
                 profilehit={hite}
                 cropping={true}
                 pickerVisible={cameraPicker}

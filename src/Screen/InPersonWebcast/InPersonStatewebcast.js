@@ -29,7 +29,6 @@ import { useIsFocused } from '@react-navigation/native';
  * @returns {JSX.Element}
  */
 
-let status1 = "";
 /**
  * In person statewebcast component.
  * @param {*} props - Input value.
@@ -53,6 +52,7 @@ function cutomPrice(price) {
     console.log(props?.route?.params?.realData?.ticketall, "props===============");
     const dispatch = useDispatch();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const handledTicketStatus = useRef(WebcastReducer.status);
     console.log(WebcastReducer, "WebcastReducer")
     const isFocused = useIsFocused();
     const network = useNetInfo();
@@ -427,17 +427,21 @@ const stateDataFilter = ({ item, index }) => {
     }, [totalAmounts])
     useEffect(() => {
         if (!isFocused) return;
+        let status1 = handledTicketStatus.current;
         if (status1 == '' || WebcastReducer.status != status1) {
+            handledTicketStatus.current = WebcastReducer.status;
             switch (WebcastReducer.status) {
                 case 'WebCast/saveTicketInpersonRequest':
                     status1 = WebcastReducer.status;
                     break;
                 case 'WebCast/saveTicketInpersonSuccess':
                     status1 = WebcastReducer.status;
+                    if (pendingModalNavigation.current !== 'checkout') break;
+                    pendingModalNavigation.current = null;
                     setIssfilterVisible(false);
                     setInpersonticket(WebcastReducer?.saveTicketInpersonResponse);
                     if (WebcastReducer?.saveTicketInpersonResponse?.invoice) {
-                        props.navigation.navigate("Checkout", {
+                        props.navigation.push("Checkout", {
                             inPersonTicket: {
                                 inPersonTicket: WebcastReducer?.saveTicketInpersonResponse,
                                 inpersonSpanrole: props?.route?.params?.realData?.realData,

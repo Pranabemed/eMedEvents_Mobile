@@ -28,6 +28,8 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import AddressField from '../../Components/AutoData';
 import CustomInputTouchableZ from './Newmultiple';
 import CustomInputTouchableY from './Multiple';
+import showErrorAlert from '../../Utils/Helpers/Toast';
+import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/FileUploadValidation';
 /**
  * Google api key constant.
  * @returns {string}
@@ -119,18 +121,18 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
         npino: index === 0 ? npino || '' : '',
         address: index === 0 ? address || '' : '',
         country: index === 0 ? country || '' : '',
-        country_id: index === 0 ? (country_id ? country_id : []) || '' : '',
+        country_id: index === 0 ? (Array.isArray(country_id) ? (country_id[0] || '') : (country_id || '')) : '',
         state: index === 0 ? state || '' : '',
-        state_id: index === 0 ? (state_id ? state_id : []) || '' : '',
+        state_id: index === 0 ? (Array.isArray(state_id) ? (state_id[0] || '') : (state_id || '')) : '',
         city: index === 0 ? city || '' : '',
-        city_id: index === 0 ? (city_id ? city_id : []) || '' : '',
+        city_id: index === 0 ? (Array.isArray(city_id) ? (city_id[0] || '') : (city_id || '')) : '',
         zipcode: index === 0 ? zipcode || '' : '',
         cellno: index === 0 ? (isUsCallingCode(dialcode) ? formatUsPhone(cellno) : cellno || '') : '',
         searchpratice: '',
         medicallics: index === 0 ? medicallics || '' : '',
         license_number: index === 0 ? license_number || '' : '',
         license_expiry_date: index === 0 ? license_expiry_date || '' : '',
-        license_state_id: index === 0 ? (license_state_id ? license_state_id : []) || '' : '',
+        license_state_id: index === 0 ? (Array.isArray(license_state_id) ? (license_state_id[0] || '') : (license_state_id || '')) : '',
         dialcode: index === 0 ? dialcode || '' : '',
         dateofbirth: index === 0 ? dateofbirth || '' : ''
       }));
@@ -146,6 +148,12 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
           ['professionad', 'speciality', 'speciality_ids', 'medicallics', 'license_state_id', 'license_number', 'license_expiry_date'].forEach(key => {
             merged[key] = existing[key];
           });
+        }
+        if (existing.countryLocationReset || (existing.country_id && initial.country_id && String(existing.country_id) !== String(initial.country_id))) {
+          merged.state = existing.countryLocationReset ? (existing.state || '') : '';
+          merged.state_id = existing.countryLocationReset ? (existing.state_id || '') : '';
+          merged.city = existing.countryLocationReset ? (existing.city || '') : '';
+          merged.city_id = existing.countryLocationReset ? (existing.city_id || '') : '';
         }
         // An explicitly cleared phone must not be repopulated by a late profile response.
         if (editedPhoneIndexes.current.has(index)) merged.cellno = existing.cellno;
@@ -326,6 +334,18 @@ const DobPick = (index) => {
     setDobindex(index);
     setDobchoose(!dobchoose);
   }
+  const hasSelectedCountry = (attendee) => {
+    const cId = attendee?.country_id;
+    const cName = attendee?.country;
+    return Boolean(cName && cId && (!Array.isArray(cId) || cId.length > 0));
+  };
+
+  const hasSelectedState = (attendee) => {
+    const sId = attendee?.state_id;
+    const sName = attendee?.state;
+    return Boolean(sName && sId && (!Array.isArray(sId) || sId.length > 0));
+  };
+
     /**
  * State pick utility.
  * @param {number} index - Input value.
@@ -333,6 +353,7 @@ const DobPick = (index) => {
  */
 const statePick = (index) => {
     console.log(index, "fghekjghjfk123344")
+    if (!hasSelectedCountry(formData[index])) return;
     setActiveindexs(index);
     setPratice(true);
     const selectedCountryId = formData[index]?.country_id;
@@ -345,6 +366,7 @@ const statePick = (index) => {
  */
 const cityPick = (index) => {
     console.log(index, "fghekjghjfk123344")
+    if (!hasSelectedCountry(formData[index]) || !hasSelectedState(formData[index])) return;
     setActiveIndexct(index);
     setCityPicker(true);
     const selectedStateId = formData[index]?.state_id;
@@ -483,7 +505,12 @@ async function btnClick_galeryUpload(ind, namx) {
           name: response[0].name,
           type: response[0].type,
           uri: response[0].uri,
+          size: response[0].size,
         };
+        if (!await isUploadFileSizeValid(fileObj)) {
+          showErrorAlert(FILE_SIZE_ERROR);
+          return;
+        }
 
         // Update formData
         setFormData((prev) => {
@@ -945,6 +972,7 @@ const renderForms = () => {
               }}>
                 <CustomInputTouchable
                   label={"Profession*"}
+                  showRequiredMark
                   value={formData[index]?.professionad || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -984,7 +1012,9 @@ const renderForms = () => {
                 paddingRight: normalize(0)
               }}>
                 <CustomInputTouchableY
-                  label={"Speciality*"}
+                  disabled={!formData[index]?.professionad}
+                  label={"Specialty*"}
+                  showRequiredMark
                   value={formData[index]?.speciality?.length > 0 ? '' : ""}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1451,6 +1481,7 @@ onBlur: () => handleBlur(index),
               }}>
                 <CustomInputTouchable
                   label={"Country*"}
+                  showRequiredMark
                   value={formData[index]?.country || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1469,7 +1500,9 @@ onBlur: () => handleBlur(index),
                 paddingRight: normalize(0)
               }}>
                 <CustomInputTouchable
+                  disabled={!hasSelectedCountry(formData[index])}
                   label={"State*"}
+                  showRequiredMark
                   value={formData[index]?.state || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1488,7 +1521,9 @@ onBlur: () => handleBlur(index),
                 paddingRight: normalize(0)
               }}>
                 <CustomInputTouchable
+                  disabled={!hasSelectedCountry(formData[index]) || !hasSelectedState(formData[index])}
                   label={"City*"}
+                  showRequiredMark
                   value={formData[index]?.city || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1745,6 +1780,7 @@ onBlur: () => handleBlur(index),
               }}>
                 <CustomInputTouchable
                   label={"Country*"}
+                  showRequiredMark
                   value={formData[index]?.country || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1763,7 +1799,9 @@ onBlur: () => handleBlur(index),
                 paddingRight: normalize(0)
               }}>
                 <CustomInputTouchable
+                  disabled={!hasSelectedCountry(formData[index])}
                   label={"State*"}
+                  showRequiredMark
                   value={formData[index]?.state || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"
@@ -1782,7 +1820,9 @@ onBlur: () => handleBlur(index),
                 paddingRight: normalize(0)
               }}>
                 <CustomInputTouchable
+                  disabled={!hasSelectedCountry(formData[index]) || !hasSelectedState(formData[index])}
                   label={"City*"}
+                  showRequiredMark
                   value={formData[index]?.city || ''}
                   placeholder={""}
                   placeholderTextColor="#949494"

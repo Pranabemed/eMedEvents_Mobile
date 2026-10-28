@@ -441,6 +441,8 @@ const StackNav = props => {
 
 
   const resetToSplashScreen = useCallback(() => {
+    // A background/foreground transition must not discard an unfinished form.
+    if (['Login', 'SignUp'].includes(getCurrentRoute())) return;
     navigationRef.dispatch(
       CommonActions.reset({
         index: 0,
@@ -748,7 +750,9 @@ const StackNav = props => {
         }
         console.log('App returned to foreground - re-syncing auth...');
         loadAuthData();
+        if (['Login', 'SignUp'].includes(getCurrentRoute())) return;
         Linking.getInitialURL().then((url) => {
+          if (['Login', 'SignUp'].includes(getCurrentRoute())) return;
           if (url && (url.includes('directLogin') || url.includes('directlogin'))) {
             console.log('[AppState] Foreground/Active directLogin URL detected:', url);
             lastProcessedUrl.current = null;

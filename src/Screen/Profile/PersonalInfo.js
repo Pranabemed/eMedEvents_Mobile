@@ -829,8 +829,8 @@ const PersonalInfo = (props) => {
                                         paddingRight: normalize(0)
                                     }}>
                                         <CustomInputTouchable
-                                            label={"Speciality(s)*"}
-                                            value={formData?.speciality?.length > 0 ? 'Speciality(s)*' : ""}
+                                            label={"Specialty(s)*"}
+                                            value={formData?.speciality?.length > 0 ? 'Specialty(s)*' : ""}
                                             placeholder={""}
                                             placeholderTextColor="#949494"
                                             rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
@@ -870,7 +870,8 @@ const PersonalInfo = (props) => {
                                     </View>
                                 </View> */}
                                 <CustomInputTouchableX
-                                    label={"Speciality(s)*"}
+                                    disabled={!country}
+                                    label={"Specialty(s)*"}
                                     placeholder={""}
                                     placeholderTextColor="#949494"
                                     rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}

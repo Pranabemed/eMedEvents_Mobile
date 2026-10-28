@@ -437,6 +437,15 @@ const Globalresult = (props) => {
         });
     }, [props.navigation]);
     const SearchBack = useCallback(() => {
+        if (hasAppliedFilters && hasFetchedResults && !loading && !isRouteRefreshing && storeAlldata.length === 0) {
+            const originalParams = props?.route?.params?.filterDatSh?.returnTake || {};
+            props.navigation.setParams({
+                ...originalParams,
+                trig: originalParams.trig || props?.route?.params?.trig,
+                filterDatSh: null,
+            });
+            return;
+        }
         if (props.navigation.canGoBack?.()) {
             props.navigation.goBack();
         } else if (isGuestCmeFlow) {
@@ -459,7 +468,7 @@ const Globalresult = (props) => {
         } else {
             props.navigation.goBack();
         }
-    }, [goBackToGuestUser, isGuestCmeFlow, props.navigation, props?.route?.params?.trig]);
+    }, [goBackToGuestUser, isGuestCmeFlow, props.navigation, props?.route?.params?.trig, props?.route?.params?.filterDatSh, hasAppliedFilters, hasFetchedResults, loading, isRouteRefreshing, storeAlldata.length]);
     useEffect(() => {
         return () => {
             dispatch(clearCmeCourseData());

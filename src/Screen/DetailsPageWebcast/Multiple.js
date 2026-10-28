@@ -35,6 +35,7 @@ const CustomInputTouchableY = ({
     onPress,
     onIconpres,
     disabled,
+    showRequiredMark = false,
     chipData = [], // array of names
     children,
     index,
@@ -119,14 +120,14 @@ const getLabelAnimatedStyle = (index, animated) => ({
         color: '#999999',
     });
 
-    return (<TouchableOpacity onPress={() => {
+    return (<TouchableOpacity disabled={disabled} style={disabled ? { opacity: 0.45 } : undefined} onPress={() => {
         onPress?.(index);
         setIsFocused(true);
     }}>
         <View style={styles.inputGroup}>
             {/* Floating Label */}
             <Animated.Text style={getLabelAnimatedStyle(index, animated)}>
-                {hasSelection || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)}
+                {`${hasSelection || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)}${showRequiredMark ? '*' : ''}`}
             </Animated.Text>
 
             {/* Touchable Wrapper */}

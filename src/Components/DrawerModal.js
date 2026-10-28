@@ -520,19 +520,33 @@ export default function DrawerModal(props) {
   const isUsaIpAddress = isUsaCountryCode(currentIpCountryCode);
 
   const primeProfileSources = [
+    latestProfileUser,
+    resolvedUser,
     AuthReducer?.dircetloginResponse,
     AuthReducer?.directloginResponse,
     AuthReducer?.loginResponse,
     AuthReducer?.againloginsiginResponse,
     AuthReducer?.verifymobileResponse,
     AuthReducer?.signupResponse,
-    DashboardReducer?.mainprofileResponse,
     storedAuthUser,
     finalProfession,
   ];
   const isPrimePhysician = isPrimePhysicianProfile(...primeProfileSources);
+  const currentProfileAddress =
+    latestProfileUser?.user_address ||
+    latestProfileUser?.contact_information ||
+    latestProfileUser ||
+    resolvedUser?.user_address ||
+    resolvedUser?.contact_information ||
+    {};
+  const hasCurrentProfileCountry = Boolean(
+    currentProfileAddress?.country_code ||
+    currentProfileAddress?.country_name ||
+    currentProfileAddress?.country ||
+    currentProfileAddress?.country_id
+  );
   const isUsaPhysicianMDDODPM = isPrimePhysician &&
-    (hasUsaPrimeProfile(...primeProfileSources) || isUsaIpAddress);
+    (hasUsaPrimeProfile(...primeProfileSources) || (!hasCurrentProfileCountry && isUsaIpAddress));
 
   const isNonUsaUser = isProfileReady && currentProfile !== 'SkipProfile' && !isPhysicianUser;
 

@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, Linking, TouchableOpacity, Image, Alert, BackHandler, ScrollView } from 'react-native';
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -40,7 +40,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-let status1 = "";
 /**
  * Payment component.
  * @param {*} props - Input value.
@@ -53,12 +52,15 @@ const Payment = (props) => {
         setAddit
     } = useContext(AppContext);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
-        /**
- * Formats price.
- * @param {*} price - Input value.
- * @returns {*}
- */
-function formatPrice(price) {
+    const handledWebcastStatus = useRef(WebcastReducer.status);
+    let status1 = handledWebcastStatus.current;
+    const paymentSucceeded = useRef(false);
+    /**
+* Formats price.
+* @param {*} price - Input value.
+* @returns {*}
+*/
+    function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -92,6 +94,7 @@ function formatPrice(price) {
         return () => unsubscribe();
     }, [isConnected]);
     useEffect(() => {
+        if (!isFocus) return;
         setRemind("Credit Card");
         let obj = {}
         connectionrequest()
@@ -103,31 +106,31 @@ function formatPrice(price) {
             })
     }, [isFocus])
     // Options are defined dynamically based on wallet balance availability below
-        /**
- * Handles select.
- * @param {*} option - Input value.
- * @returns {void}
- */
-const handleSelect = (option) => {
+    /**
+* Handles select.
+* @param {*} option - Input value.
+* @returns {void}
+*/
+    const handleSelect = (option) => {
         setRemind(option);
     };
     const [paymentcard, setPaymentcard] = useState(false);
     const [finalex, setFinalex] = useState("")
     const [paymentfd, setPaymentfd] = useState(false);
-        /**
- * Toggle modal payment utility.
- * @param {*} tick - Input value.
- * @returns {void}
- */
-const toggleModalPayment = (tick) => {
+    /**
+* Toggle modal payment utility.
+* @param {*} tick - Input value.
+* @returns {void}
+*/
+    const toggleModalPayment = (tick) => {
         setPaymentcard(tick);
     };
-        /**
- * Toggle modal failed utility.
- * @param {*} vlk - Input value.
- * @returns {void}
- */
-const toggleModalFailed = (vlk) => {
+    /**
+* Toggle modal failed utility.
+* @param {*} vlk - Input value.
+* @returns {void}
+*/
+    const toggleModalFailed = (vlk) => {
         setPaymentfd(vlk);
     };
     useEffect(() => {
@@ -144,23 +147,14 @@ const toggleModalFailed = (vlk) => {
             }
         }
     }, [maskedEx])
-        /**
- * Take status utility.
- * @returns {void}
- */
-const takeStatus = () => {
+    /**
+* Take status utility.
+* @returns {void}
+*/
+    const takeStatus = () => {
         const routeParams = props?.route?.params;
 
-        const takeCourse =
-            routeParams?.invoiceTxt?.invoiceTxt ||
-            WebcastReducer?.addtoCartWebcastResponse?.invoice;
-
-        const cartCourse =
-            routeParams?.cartInvoice?.cartInvoice ||
-            WebcastReducer?.cartCheckoutResponse?.invoiceNumber;
-
-        // choose first available invoice
-        const finalInvoice = takeCourse || cartCourse;
+        const finalInvoice = routeParams?.invoiceTxt?.invoiceTxt || routeParams?.cartInvoice?.cartInvoice;
 
         if (!finalInvoice) return;
 
@@ -175,11 +169,11 @@ const takeStatus = () => {
             });
     };
 
-        /**
- * Walletpayemnthand utility.
- * @returns {void}
- */
-const walletpayemnthand = () => {
+    /**
+* Walletpayemnthand utility.
+* @returns {void}
+*/
+    const walletpayemnthand = () => {
         if (checked) {
             showErrorAlert("Please accept terms and conditions");
             return;
@@ -214,13 +208,13 @@ const walletpayemnthand = () => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-        /**
- * Payment handle utility.
- * @returns {void}
- *
- * @remarks Does not return a value.
- */
-function paymentHandle() {
+    /**
+* Payment handle utility.
+* @returns {void}
+*
+* @remarks Does not return a value.
+*/
+    function paymentHandle() {
         const errors = {
             nameEmpty: 'Enter the cardholder name.',
             nameInvalid: 'Enter a valid cardholder name ',
@@ -324,13 +318,13 @@ function paymentHandle() {
                 showErrorAlert(errors.noInternet);
             });
     }
-        /**
- * Paymentwallet handle utility.
- * @returns {void}
- *
- * @remarks Does not return a value.
- */
-function paymentwalletHandle() {
+    /**
+* Paymentwallet handle utility.
+* @returns {void}
+*
+* @remarks Does not return a value.
+*/
+    function paymentwalletHandle() {
         const errors = {
             nameEmpty: 'Please enter card holder name',
             nameInvalid: 'Please enter card holder name correctly',
@@ -433,7 +427,8 @@ function paymentwalletHandle() {
             });
 
     }
-    if (status1 == '' || WebcastReducer.status != status1) {
+    if (isFocus && (status1 == '' || WebcastReducer.status != status1)) {
+        handledWebcastStatus.current = WebcastReducer.status;
         switch (WebcastReducer.status) {
             case 'WebCast/webcastPaymentRequest':
                 status1 = WebcastReducer.status;
@@ -445,6 +440,7 @@ function paymentwalletHandle() {
                 } else if (WebcastReducer?.webcastPaymentResponse?.payment_status == "failed") {
                     showErrorAlert("Oops !! Your payment has been failed .")
                 } else if (WebcastReducer?.webcastPaymentResponse?.payment_status == 'success') {
+                    paymentSucceeded.current = true;
                     const difGet = props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket?.billing_address?.state_id || props?.route?.params?.cartInvoice?.paymentprice?.user_billing_address?.state_id || props?.route?.params?.invoiceTxt?.ticketShow?.license_state_id;
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     takeStatus();
@@ -463,6 +459,7 @@ function paymentwalletHandle() {
                 } else if (WebcastReducer?.cartPaymentResponse?.payment_status == "failed") {
                     showErrorAlert("Oops !! Your payment has been failed .")
                 } else if (WebcastReducer?.cartPaymentResponse?.payment_status == 'success') {
+                    paymentSucceeded.current = true;
                     const difGet = props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket?.billing_address?.state_id || props?.route?.params?.cartInvoice?.paymentprice?.user_billing_address?.state_id || props?.route?.params?.invoiceTxt?.ticketShow?.license_state_id;
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     takeStatus();
@@ -481,6 +478,7 @@ function paymentwalletHandle() {
                 } else if (WebcastReducer?.PaymentCheckResponse?.payment_status == "failed") {
                     toggleModalFailed(true);
                 } else if (WebcastReducer?.PaymentCheckResponse?.payment_status == 'success') {
+                    paymentSucceeded.current = true;
                     const difGet = props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket?.billing_address?.state_id || props?.route?.params?.cartInvoice?.paymentprice?.user_billing_address?.state_id || props?.route?.params?.invoiceTxt?.ticketShow?.license_state_id;
                     dispatch(stateDashboardRequest({ "state_id": difGet }))
                     toggleModalPayment(true);
@@ -510,12 +508,11 @@ function paymentwalletHandle() {
                 break;
         }
     }
-    const handlePayemnt = WebcastReducer?.webcastPaymentResponse?.payment_status == 'success' || WebcastReducer?.cartPaymentResponse?.payment_status == 'success' || WebcastReducer?.PaymentCheckResponse?.payment_status == 'success';
-        /**
- * Payment press utility.
- * @returns {void}
- */
-const paymentPress = () => {
+    /**
+* Payment press utility.
+* @returns {void}
+*/
+    const paymentPress = () => {
         const isInPersonRegistrationPayment = Boolean(
             props?.route?.params?.invoiceTxt?.paymentprice?.inPersonTicket ||
             props?.route?.params?.invoiceTxt?.paymentprice?.inpersonSpanrole
@@ -543,7 +540,7 @@ const paymentPress = () => {
             return;
         }
 
-        if (handlePayemnt) {
+        if (paymentSucceeded.current) {
             const fullDta = fulldashbaord?.[0];
             setAddit(fullDta);
             props.navigation.navigate("TabNav");
@@ -552,11 +549,11 @@ const paymentPress = () => {
         }
     }
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             paymentPress();
             return true;
         };
@@ -576,12 +573,12 @@ const onBackPress = () => {
             }, 10000);
         }
     }, [printgo])
-        /**
- * Cutom price helper.
- * @param {*} price - Input value.
- * @returns {*}
- */
-function cutomPrice(price) {
+    /**
+* Cutom price helper.
+* @param {*} price - Input value.
+* @returns {*}
+*/
+    function cutomPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) {
             return price;
@@ -590,24 +587,24 @@ function cutomPrice(price) {
 
         return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
     }
-        /**
- * Formats number with commas.
- * @param {*} value - Input value.
- * @returns {*}
- */
-const formatNumberWithCommas = (value) => {
+    /**
+* Formats number with commas.
+* @param {*} value - Input value.
+* @returns {*}
+*/
+    const formatNumberWithCommas = (value) => {
         if (value == null || value == undefined) return '';
         const stringValue = value.toString().replace(/,/g, '');
         const parts = stringValue.split('.');
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
-        /**
- * Clean number utility.
- * @param {*} value - Input value.
- * @returns {number}
- */
-const cleanNumber = (value) => {
+    /**
+* Clean number utility.
+* @param {*} value - Input value.
+* @returns {number}
+*/
+    const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -618,14 +615,15 @@ const cleanNumber = (value) => {
     const invoiceTxt = props?.route?.params?.invoiceTxt;
     const cartInvoice = props?.route?.params?.cartInvoice;
     console.log(invoiceTxt, cartInvoice, "invoiceTxtinvoiceTxt");
-    const paymentPrice = invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
+    const latestTicketSave = invoiceTxt?.latestTicketSave || cartInvoice?.latestTicketSave;
+    const paymentPrice = invoiceTxt?.latestPaymentPrice || cartInvoice?.latestPaymentPrice || invoiceTxt?.paymentprice || cartInvoice?.paymentprice || {};
     const isCartFlow = !!cartInvoice || !!paymentPrice?.cartData;
 
-        /**
- * Returns cart transaction fee value.
- * @returns {number}
- */
-const getCartTransactionFeeValue = () => {
+    /**
+* Returns cart transaction fee value.
+* @returns {number}
+*/
+    const getCartTransactionFeeValue = () => {
         if (paymentPrice?.transaction_fee !== undefined) {
             return cleanNumber(paymentPrice.transaction_fee);
         }
@@ -646,11 +644,17 @@ const getCartTransactionFeeValue = () => {
         return 0;
     };
 
-        /**
- * Returns register transaction fee value.
- * @returns {number}
- */
-const getRegisterTransactionFeeValue = () => {
+    /**
+* Returns register transaction fee value.
+* @returns {number}
+*/
+    const getRegisterTransactionFeeValue = () => {
+        if (latestTicketSave?.transaction_fee !== undefined) {
+            return cleanNumber(latestTicketSave.transaction_fee);
+        }
+        if (Array.isArray(latestTicketSave?.tickets)) {
+            return latestTicketSave.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
+        }
         if (paymentPrice?.transaction_fee !== undefined) {
             return cleanNumber(paymentPrice.transaction_fee);
         }
@@ -685,6 +689,8 @@ const getRegisterTransactionFeeValue = () => {
     const baseAmount = cleanNumber(
         paymentPrice?.subtotalAmount ??
         paymentPrice?.ticketAmount ??
+        latestTicketSave?.tickets?.[0]?.itemamt ??
+        latestTicketSave?.tickets?.[0]?.gross_value ??
         invoiceTxt?.ticketShow?.tickets?.[0]?.itemamt ??
         paymentPrice?.cartData?.subtotal_amount ??
         paymentPrice?.cartData?.total_paid_amount ??
@@ -694,6 +700,7 @@ const getRegisterTransactionFeeValue = () => {
     const storedTotalAmountWithFee = cleanNumber(
         paymentPrice?.total_amount_with_fee ??
         paymentPrice?.totalTicketPrice ??
+        latestTicketSave?.total_amount_with_fee ??
         paymentPrice?.cartData?.total_amount_with_fee ??
         (baseAmount + transactionFeeValue)
     );
@@ -708,11 +715,11 @@ const getRegisterTransactionFeeValue = () => {
         ? [
             { id: 2, label: 'Wallet Balance' },
             { id: 1, label: 'Credit Card' },
-          ]
+        ]
         : [
             { id: 1, label: 'Credit Card' },
             { id: 2, label: 'Wallet Balance' },
-          ];
+        ];
     const isOnlyCardOption = walletBalance == 0;
     const walletAppliedAmount = isWalletOptionAvailable
         ? cleanNumber(Math.min(walletBalance, baseAmount).toFixed(2))

@@ -17,6 +17,7 @@ jest.mock('../src/Utils/Helpers/nonUsaFlow', () => ({
   readNonUsaPermanentFlags: async () => ({}),
   isUsaCountryCode: value => value === 'US',
 }));
+jest.mock('../src/Utils/Helpers/IPServer', () => ({getCountryAndDialCode: async () => ({country: 'IN'})}));
 const user = {user_address: {country_code: 'US'}, profession: 'Physician', profession_type: 'MD', subscription_user: 'non-subscribed'};
 let tree;
 const label = text => tree.root.findAll(node => node.props.children === text).length > 0;
@@ -39,6 +40,19 @@ test('Menu updates when USA profile arrives without reload', async () => {
   mockState.DashboardReducer = {mainprofileResponse: {...user, professional_information: {profession: 'Physician', profession_type: 'MD'}}};
   await act(async () => tree.update(<DrawerModal isVisible onBackdropPress={() => {}} />));
   expect(label('Become a Prime Member')).toBe(true);
+});
+
+test('updated India profile overrides stale USA login and IP country', async () => {
+  mockState.AuthReducer = {dircetloginResponse: {user}};
+  await act(async () => {tree = create(<DrawerModal isVisible onBackdropPress={() => {}} />);});
+  expect(label('Become a Prime Member')).toBe(true);
+  mockState.DashboardReducer = {mainprofileResponse: {
+    ...user,
+    user_address: {country_id: '99', country_name: 'India', country_code: 'IN'},
+    professional_information: {profession: 'Physician', profession_type: 'MD'},
+  }};
+  await act(async () => tree.update(<DrawerModal isVisible onBackdropPress={() => {}} />));
+  expect(label('Become a Prime Member')).toBe(false);
 });
 
 test.each([

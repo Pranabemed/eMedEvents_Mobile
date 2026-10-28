@@ -15,7 +15,7 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import constants from '../../Utils/Helpers/constants';
-import { checkstateRequest, cityRequest, countryRequest, professionRequest, specializationRequest, stateRequest, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
+import { checkstateRequest, cityRequest, citySuccess, countryRequest, professionRequest, specializationRequest, stateRequest, stateSuccess, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
 import { isNonUsaAccount, readNonUsaFlowState, writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
@@ -57,7 +57,6 @@ let status = "";
  * Status1 string constant.
  * @returns {string}
  */
-let status1 = "";
 /**
  * Google api key constant.
  * @returns {string}
@@ -81,6 +80,8 @@ const GUEST_REGISTRATION_FLOW_KEY = 'GUEST_REGISTRATION_FLOW';
  */
 const Checkout = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer)
+    const handledWebcastStatus = useRef(WebcastReducer.status);
+    let status1 = handledWebcastStatus.current;
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     console.log(DashboardReducer?.mainprofileResponse, "log-----------");
@@ -129,6 +130,8 @@ const Checkout = (props) => {
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [playerSessionID, setPlayerSessionID] = useState("");
     const [detectedCountry, setDetectedCountry] = useState(null);
+    const [detectedCountryName, setDetectedCountryName] = useState("");
+    const [detectedState, setDetectedState] = useState("");
     const [activeIndex, setActiveIndex] = useState(null);
     const [activeIndexc, setActiveIndexc] = useState(null);
     const [activeIndexs, setActiveIndexs] = useState(null);
@@ -160,6 +163,9 @@ const Checkout = (props) => {
     const [codesave, setCodesave] = useState("");
     const [notadded, setNotadded] = useState(false);
     const [savefull, setSavefull] = useState(null);
+    const [latestTicketSaveForPayment, setLatestTicketSaveForPayment] = useState(null);
+    const pendingPaymentRef = useRef(null);
+    const pendingCartPaymentRef = useRef(null);
     const [customFields, setCustomFields] = useState(Array.from({ length: formData?.length }, () => ({})));  // Store custom fields for each attendee
     const [customFieldsLabels, setCustomFieldsLabels] = useState(Array.from({ length: formData?.length }, () => ({})));
     console.log(countrypickerprof, "countrypickerprof", clist, props?.route?.params?.inPersonTicket?.totalTicketPrice)
@@ -231,10 +237,15 @@ const Checkout = (props) => {
     useEffect(() => {
         const checkoutSpan = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket;
         console.log(checkoutSpan, "checkoutSpan-=-------")
+        setSavefull(null);
+        setCodesave("");
+        setCouponapp("");
         if (checkoutSpan?.finalTicket || checkoutSpan?.inPersonTicket || checkoutSpan?.user_billing_address || checkoutSpan?.billing_address || checkoutSpan?.inPersonTicket?.user_billing_address || checkoutSpan?.inPersonTicket?.billing_address) {
             const newTicketSave = checkoutSpan?.finalTicket || checkoutSpan?.inPersonTicket || checkoutSpan?.user_billing_address || checkoutSpan?.billing_address || checkoutSpan?.inPersonTicket?.user_billing_address || checkoutSpan?.inPersonTicket?.billing_address;
             console.log(newTicketSave, "newTicketSave");
             setTicketSave(newTicketSave);
+        } else {
+            setTicketSave(null);
         }
     }, [props?.route?.params?.checkoutSpan, props?.route?.params?.inPersonTicket]);
     useEffect(() => {
@@ -257,12 +268,12 @@ const Checkout = (props) => {
         }
     }, [props?.route?.params?.checkoutSpan?.cartData?.tickets])
     console.log(ticketSave, props?.route?.params?.checkoutSpan?.cartData?.tickets, "ticketSave========", props?.route?.params?.checkoutSpan?.finalTicket)
-        /**
- * Clean number utility.
- * @param {*} value - Input value.
- * @returns {number}
- */
-const cleanNumber = (value) => {
+    /**
+* Clean number utility.
+* @param {*} value - Input value.
+* @returns {number}
+*/
+    const cleanNumber = (value) => {
         if (typeof value == 'number') return value;
         if (typeof value == 'string') {
             const num = parseFloat(value.replace(/,/g, ''));
@@ -271,12 +282,19 @@ const cleanNumber = (value) => {
         return 0;
     };
     const routePaymentPrice = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket || {};
-        /**
- * Returns route transaction fee.
- * @param {*} source - Input value.
- * @returns {number}
- */
-const getRouteTransactionFee = (source = routePaymentPrice) => {
+    /**
+* Returns route transaction fee.
+* @param {*} source - Input value.
+* @returns {number}
+*/
+    const getRouteTransactionFee = (source = routePaymentPrice) => {
+        if (ticketSave?.transaction_fee !== undefined) {
+            return cleanNumber(ticketSave.transaction_fee);
+        }
+        if (Array.isArray(ticketSave?.tickets)) {
+            const currentTicketFee = ticketSave.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
+            return currentTicketFee;
+        }
         if (source?.transaction_fee !== undefined) {
             return cleanNumber(source.transaction_fee);
         }
@@ -300,50 +318,65 @@ const getRouteTransactionFee = (source = routePaymentPrice) => {
             const ticketsFee = source.cartData.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
             if (ticketsFee > 0) return ticketsFee;
         }
-        if (ticketSave?.transaction_fee !== undefined) {
-            return cleanNumber(ticketSave.transaction_fee);
-        }
-        if (Array.isArray(ticketSave?.tickets)) {
-            return ticketSave.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee), 0);
-        }
         return 0;
     };
-    const checkoutBaseAmount = routePaymentPrice?.subtotalAmount != null
-        ? cleanNumber(routePaymentPrice?.subtotalAmount)
-        : savefull?.discount_value != null && savefull?.total_value != null
-            ? cleanNumber(savefull?.total_value)
-            : cleanNumber(ticketSave?.tickets?.[0]?.itemamt || ticketSave?.tickets?.[0]?.gross_value || routePaymentPrice?.cartData?.subtotal_amount || routePaymentPrice?.cartData?.total_paid_amount || routePaymentPrice?.totalTicketPrice || 0);
-    const checkoutProcessingFeeAmount = routePaymentPrice?.processingFeeAmount != null
-        ? cleanNumber(routePaymentPrice?.processingFeeAmount)
-        : getRouteTransactionFee();
-    const checkoutTotalAmount = routePaymentPrice?.totalTicketPrice != null
-        ? cleanNumber(routePaymentPrice?.totalTicketPrice)
-        : routePaymentPrice?.total_amount_with_fee != null
-            ? cleanNumber(routePaymentPrice?.total_amount_with_fee)
-            : routePaymentPrice?.cartData?.total_amount_with_fee != null
-                ? cleanNumber(routePaymentPrice?.cartData?.total_amount_with_fee)
-                : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
-        /**
- * Build payment price utility.
- * @param {Object} source - Input value.
- * @returns {Object}
- */
-const buildPaymentPrice = (source = {}) => ({
-        subtotalAmount: checkoutBaseAmount,
-        processingFeeAmount: checkoutProcessingFeeAmount,
-        totalTicketPrice: checkoutTotalAmount,
-        transaction_fee: checkoutProcessingFeeAmount,
-        total_amount_with_fee: checkoutTotalAmount,
-        ...source,
-    });
-        /**
- * Persist guest registration session utility.
- *
- * @async
- * @param {*} registrationResponse - Input value.
- * @returns {Promise<*>}
- */
-const persistGuestRegistrationSession = async (registrationResponse) => {
+    const checkoutBaseAmount = savefull?.discount_value != null && savefull?.total_value != null
+        ? cleanNumber(savefull?.total_value)
+        : ticketSave?.tickets?.[0]?.itemamt != null || ticketSave?.tickets?.[0]?.gross_value != null
+            ? cleanNumber(ticketSave?.tickets?.[0]?.itemamt ?? ticketSave?.tickets?.[0]?.gross_value)
+            : routePaymentPrice?.subtotalAmount != null
+                ? cleanNumber(routePaymentPrice?.subtotalAmount)
+                : cleanNumber(routePaymentPrice?.cartData?.subtotal_amount || routePaymentPrice?.cartData?.total_paid_amount || routePaymentPrice?.totalTicketPrice || 0);
+    const checkoutProcessingFeeAmount = getRouteTransactionFee();
+    const hasCurrentTicketPricing = Array.isArray(ticketSave?.tickets) && ticketSave.tickets.length > 0;
+    const checkoutTotalAmount = hasCurrentTicketPricing
+        ? cleanNumber(ticketSave?.total_amount_with_fee ?? (checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2))
+        : routePaymentPrice?.totalTicketPrice != null
+            ? cleanNumber(routePaymentPrice?.totalTicketPrice)
+            : routePaymentPrice?.total_amount_with_fee != null
+                ? cleanNumber(routePaymentPrice?.total_amount_with_fee)
+                : routePaymentPrice?.cartData?.total_amount_with_fee != null
+                    ? cleanNumber(routePaymentPrice?.cartData?.total_amount_with_fee)
+                    : cleanNumber((checkoutBaseAmount + checkoutProcessingFeeAmount).toFixed(2));
+    /**
+* Build payment price utility.
+* @param {Object} source - Input value.
+* @returns {Object}
+*/
+const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
+        const currentTickets = Array.isArray(currentTicketSave?.tickets) ? currentTicketSave.tickets : [];
+        const currentTicket = currentTickets[0];
+        const currentBaseAmount = savefull?.discount_value != null && savefull?.total_value != null
+            ? cleanNumber(savefull.total_value)
+            : currentTicket?.itemamt != null || currentTicket?.gross_value != null
+                ? cleanNumber(currentTicket?.itemamt ?? currentTicket?.gross_value)
+                : checkoutBaseAmount;
+        const currentProcessingFee = currentTicketSave?.transaction_fee != null
+            ? cleanNumber(currentTicketSave.transaction_fee)
+            : currentTickets.length > 0
+                ? currentTickets.reduce((sum, item) => sum + cleanNumber(item?.transaction_fee), 0)
+                : checkoutProcessingFeeAmount;
+        const currentTotalAmount = currentTickets.length > 0
+            ? cleanNumber(currentTicketSave?.total_amount_with_fee ?? (currentBaseAmount + currentProcessingFee).toFixed(2))
+            : checkoutTotalAmount;
+
+        return {
+            ...source,
+            subtotalAmount: currentBaseAmount,
+            processingFeeAmount: currentProcessingFee,
+            totalTicketPrice: currentTotalAmount,
+            transaction_fee: currentProcessingFee,
+            total_amount_with_fee: currentTotalAmount,
+        };
+    };
+    /**
+* Persist guest registration session utility.
+*
+* @async
+* @param {*} registrationResponse - Input value.
+* @returns {Promise<*>}
+*/
+    const persistGuestRegistrationSession = async (registrationResponse) => {
         console.log('Persisting====', registrationResponse);
         const token = registrationResponse?.token;
         const refreshToken = registrationResponse?.refresh_token;
@@ -351,7 +384,6 @@ const persistGuestRegistrationSession = async (registrationResponse) => {
 
         if (token) {
             await AsyncStorage.setItem(constants.TOKEN, token);
-            dispatch(tokenSuccess(token));
         }
         if (refreshToken) {
             await AsyncStorage.setItem(constants.REFRESH_TOKEN, refreshToken);
@@ -371,6 +403,11 @@ const persistGuestRegistrationSession = async (registrationResponse) => {
                     license_number: updatedUser?.license_number || '',
                 })
             );
+            await AsyncStorage.multiRemove([
+                'GUEST_VERIFICATION_COMPLETED',
+                'GUEST_PRIME_VERIFICATION_PENDING',
+                'SUPPRESS_GUEST_HOME_PROMPTS_ONCE',
+            ]);
             await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
             if (isNonUsaUser) {
                 await writeNonUsaFlowState({
@@ -382,12 +419,15 @@ const persistGuestRegistrationSession = async (registrationResponse) => {
                 });
             }
         }
+        if (token) {
+            dispatch(tokenSuccess(token));
+        }
     };
-        /**
- * Checkout clear utility.
- * @returns {void}
- */
-const checkoutClear = () => {
+    /**
+* Checkout clear utility.
+* @returns {void}
+*/
+    const checkoutClear = () => {
         if (navigation.canGoBack()) {
             navigation.goBack();
             return;
@@ -401,52 +441,52 @@ const checkoutClear = () => {
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
     console.log(country_id, "country_id=======");
-        /**
- * Handles search.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleSearch = (text) => {
+    /**
+* Handles search.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleSearch = (text) => {
         searchStateNameFunction(text, selectState, setSlist, setSearchState, (filteredList, searchText) => {
             console.log('Filtered Data:', filteredList, 'Search Text:', searchText);
         });
     };
-        /**
- * Handles country.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleCountry = (text) => {
+    /**
+* Handles country.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleCountry = (text) => {
         searchCountryNameFunction(text, countryshow, setCountryall, setSearchcountry, (countryfil, searchcount) => {
             console.log('countryfil Data:', countryfil, 'Search Text:', searchcount);
         })
     }
-        /**
- * Handles pratice.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handlePratice = (text) => {
+    /**
+* Handles pratice.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handlePratice = (text) => {
         searchStateNamePraticeFunction(text, selectStatepratice, setSlistpratice, setSearchpratice, (praticefil, praticetxtcount) => {
             console.log('countryfil Data:', praticefil, 'Search Text:', praticetxtcount);
         })
     }
-        /**
- * Handles pratice lic.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handlePraticeLic = (text) => {
+    /**
+* Handles pratice lic.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handlePraticeLic = (text) => {
         searchStateLicNamePraticeFunction(text, selectStatepraticelic, setSlistpraticelic, setSearchpraticelic, (praticefillic, praticetxtcountlic) => {
             console.log('countryfil Data:', praticefillic, 'Search Text:', praticetxtcountlic);
         })
     }
-        /**
- * Handles city.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const handleCity = (text) => {
+    /**
+* Handles city.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const handleCity = (text) => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, (cityfill, citycountname) => {
             console.log('countryfil Data:', cityfill, 'Search Text:', citycountname);
         })
@@ -454,25 +494,25 @@ const handleCity = (text) => {
     const [paymentcardfree, setPaymentcardfree] = useState(false);
     const [paymentfdfree, setPaymentfdfree] = useState(false);
     const [guestRegistrationFlowActive, setGuestRegistrationFlowActive] = useState(false);
-        /**
- * Toggle modal paymentfree utility.
- * @param {*} dd - Input value.
- * @returns {void}
- */
-const toggleModalPaymentfree = (dd) => {
+    /**
+* Toggle modal paymentfree utility.
+* @param {*} dd - Input value.
+* @returns {void}
+*/
+    const toggleModalPaymentfree = (dd) => {
         console.log(paymentcardfree, "paymentcardfree-----", dd)
         setPaymentcardfree(dd);
     };
-        /**
- * Toggle modal failedfree utility.
- * @param {*} tik - Input value.
- * @returns {void}
- */
-const toggleModalFailedfree = (tik) => {
+    /**
+* Toggle modal failedfree utility.
+* @param {*} tik - Input value.
+* @returns {void}
+*/
+    const toggleModalFailedfree = (tik) => {
         console.log(paymentfdfree, "paymentcardfree-----", tik)
         setPaymentfdfree(tik);
     };
-    console.log(paymentcardfree, "paymentcardfree-----", paymentfdfree)
+    console.log(paymentcardfree, "paymentcardfree-----", paymentfdfree,latestTicketSaveForPayment)
     const guestOrigin =
         props?.route?.params?.checkoutSpan?.guestOrigin ||
         props?.route?.params?.inPersonTicket?.guestOrigin ||
@@ -503,7 +543,22 @@ const toggleModalFailedfree = (tik) => {
             }
             : null;
     const checkoutCompletionRoute = 'TabNav';
-    const completeCheckoutToDashboard = () => {
+    const completeCheckoutToDashboard = async () => {
+        if (isGuestCheckout) {
+            await AsyncStorage.setItem(
+                GUEST_REGISTRATION_FLOW_KEY,
+                JSON.stringify({
+                    license_state_id: formData?.[0]?.license_state_id || '',
+                    license_number: formData?.[0]?.license_number || '',
+                })
+            );
+            await AsyncStorage.multiRemove([
+                'GUEST_VERIFICATION_COMPLETED',
+                'GUEST_PRIME_VERIFICATION_PENDING',
+                'SUPPRESS_GUEST_HOME_PROMPTS_ONCE',
+            ]);
+            await AsyncStorage.setItem('IS_GUEST_CONVERTED_USER', 'true');
+        }
         props.navigation.reset({
             index: 0,
             routes: [{ name: checkoutCompletionRoute }],
@@ -513,7 +568,7 @@ const toggleModalFailedfree = (tik) => {
  * Reset guest checkout fields utility.
  * @returns {void}
  */
-const resetGuestCheckoutFields = () => {
+    const resetGuestCheckoutFields = () => {
         setFirstname("");
         setLastname("");
         setEmailad("");
@@ -537,12 +592,12 @@ const resetGuestCheckoutFields = () => {
         setSpeciality_id([]);
         setPreviousSpec("");
     };
-        /**
- * Search country name profession utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchCountryNameProfession = text => {
+    /**
+* Search country name profession utility.
+* @param {*} text - Input value.
+* @returns {void}
+*/
+    const searchCountryNameProfession = text => {
         console.log(text, 'text12333');
         if (text) {
             const listData = selectCountry?.filter(function (item) {
@@ -562,16 +617,19 @@ const searchCountryNameProfession = text => {
             setSearchtext(text);
         }
     };
-        /**
- * Handles profession.
- * @param {*} did - Input value.
- * @param {*} ixd - Input value.
- * @returns {void}
- */
-const handleProfession = (did, ixd) => {
+    /**
+* Handles profession.
+* @param {*} did - Input value.
+* @param {*} ixd - Input value.
+* @returns {void}
+*/
+    const handleProfession = (did, ixd) => {
+        setSelectedSpecialities([]);
         if (Number(ixd) === 0) {
             markPersonalizationEdited('profession');
             setProfessionad(did);
+            setSpeciality('');
+            setSpeciality_id([]);
         }
         console.log(did, "he;;;;======")
         specaillized(did?.split(' - ')[0])
@@ -579,18 +637,21 @@ const handleProfession = (did, ixd) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[ixd] = {
                 ...updatedFormData[ixd],
-                professionad: did
+                professionad: did,
+                speciality: '',
+                speciality_ids: [],
+                speciality_id: []
             };
             return updatedFormData;
         });
     }
     useEffect(() => {
         if (!isfocus) return;
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             const activePicker = [
                 [countrypickerprof, setcountrypickerprof, setSearchtext],
                 [statepicker, setstatepicker, setSearchState],
@@ -618,13 +679,13 @@ const onBackPress = () => {
         return () => backHandler.remove();
     });
     useEffect(() => {
-                /**
- * Load guest registration flow utility.
- *
- * @async
- * @returns {Promise<*>}
- */
-const loadGuestRegistrationFlow = async () => {
+        /**
+* Load guest registration flow utility.
+*
+* @async
+* @returns {Promise<*>}
+*/
+        const loadGuestRegistrationFlow = async () => {
             try {
                 const guestFlowRaw = await AsyncStorage.getItem(GUEST_REGISTRATION_FLOW_KEY);
                 setGuestRegistrationFlowActive(Boolean(guestFlowRaw));
@@ -637,11 +698,11 @@ const loadGuestRegistrationFlow = async () => {
         loadGuestRegistrationFlow();
     }, [isfocus, props?.route?.params?.checkoutSpan?.checkoutSpan, props?.route?.params?.inPersonTicket?.inpersonSpanrole]);
     useEffect(() => {
-                /**
- * Token handle vault utility.
- * @returns {void}
- */
-const token_handle_vault = () => {
+        /**
+* Token handle vault utility.
+* @returns {void}
+*/
+        const token_handle_vault = () => {
             setTimeout(async () => {
                 try {
                     if (isGuestCheckout && !guestRegistrationFlowActive) {
@@ -698,36 +759,38 @@ const token_handle_vault = () => {
             if (patch.specialty) {
                 setSpeciality(patch.specialty.name);
                 setSpeciality_id(patch.specialty.ids);
-                setPreviousSpec(patch.specialty.ids.map((id, index) => ({id, name: patch.specialty.name.split(', ')[index] || patch.specialty.name})));
+                setPreviousSpec(patch.specialty.ids.map((id, index) => ({ id, name: patch.specialty.name.split(', ')[index] || patch.specialty.name })));
                 fields.speciality = patch.specialty.name;
                 fields.speciality_ids = patch.specialty.ids;
             }
             setFormData(previous => {
                 if (!previous[0]) return previous;
-                return previous.map((attendee, index) => index === 0 ? {...attendee, ...fields} : attendee);
+                return previous.map((attendee, index) => index === 0 ? { ...attendee, ...fields } : attendee);
             });
         },
     });
 
 
     useEffect(() => {
-        if (!isGuestCheckout || !Array.isArray(countryall) || countryall.length === 0) return;
-        if (country || country_id) return; // country already selected/initialized
+        if (!Array.isArray(countryall) || countryall.length === 0) return;
+        if (country || country_id || formData?.[0]?.country || formData?.[0]?.country_id) return;
         if (detectedCountry === null) return; // Wait until we know the detected country
 
-                /**
- * Default country to geo utility.
- * @returns {void}
- */
-const defaultCountryToGeo = () => {
+        /**
+* Default country to geo utility.
+* @returns {void}
+*/
+        const defaultCountryToGeo = () => {
             try {
                 const targetCode = detectedCountry.toUpperCase();
-                const matchedCountry = countryall.find(c => 
+                const matchedCountry = countryall.find(c =>
                     String(c?.code).toUpperCase() === targetCode ||
                     String(c?.shortname).toUpperCase() === targetCode ||
+                    String(c?.name || '').trim().toLowerCase() === String(detectedCountryName || '').trim().toLowerCase() ||
                     (targetCode === 'US' && (
-                        String(c?.id) === '1' || 
-                        String(c?.name).toLowerCase() === 'united states'
+                        String(c?.id) === '1' ||
+                        String(c?.name).toLowerCase() === 'united states' ||
+                        String(c?.name).toLowerCase() === 'united states of america'
                     ))
                 );
                 if (matchedCountry) {
@@ -739,7 +802,20 @@ const defaultCountryToGeo = () => {
             }
         };
         defaultCountryToGeo();
-    }, [countryall, isGuestCheckout, detectedCountry]);
+    }, [countryall, country, country_id, detectedCountry, detectedCountryName, formData]);
+
+    useEffect(() => {
+        if (!detectedState || !Array.isArray(slistpratice) || slistpratice.length === 0) return;
+        const primaryRegistrant = formData?.[0];
+        if (!primaryRegistrant?.country_id || primaryRegistrant?.state || primaryRegistrant?.state_id) return;
+        const normalizeLocation = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchedState = slistpratice.find(item =>
+            normalizeLocation(item?.name) === normalizeLocation(detectedState)
+        );
+        if (matchedState) {
+            handleStateshows(matchedState, 0);
+        }
+    }, [detectedState, formData, slistpratice]);
 
     useEffect(() => {
         if (allProfession?.personal_information?.firstname || allProfession?.firstname) {
@@ -761,12 +837,12 @@ const defaultCountryToGeo = () => {
     }, [allProfession]);
     console.log(previousSpec, "previousSpec=======12223", formData, ticketSave?.discounts)
 
-        /**
- * Specaillized utility.
- * @param {*} data - Input value.
- * @returns {void}
- */
-const specaillized = (data) => {
+    /**
+* Specaillized utility.
+* @param {*} data - Input value.
+* @returns {void}
+*/
+    const specaillized = (data) => {
         const obj = data
         connectionrequest()
             .then(() => {
@@ -777,11 +853,11 @@ const specaillized = (data) => {
                 showErrorAlert('Please connect to Internet');
             });
     }
-        /**
- * Country req utility.
- * @returns {void}
- */
-const countryReq = () => {
+    /**
+* Country req utility.
+* @returns {void}
+*/
+    const countryReq = () => {
         connectionrequest()
             .then(() => {
                 dispatch(countryRequest())
@@ -790,12 +866,12 @@ const countryReq = () => {
                 showErrorAlert("Please connect to internet", err)
             })
     }
-        /**
- * Praticing state component.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const PraticingState = (index) => {
+    /**
+* Praticing state component.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const PraticingState = (index) => {
         connectionrequest()
             .then(() => {
                 dispatch(stateRequest(index)); // Dispatch the API call with the country_id
@@ -810,12 +886,12 @@ const PraticingState = (index) => {
             LicStateTakeDo(countrygo);
         }
     }, [isfocus])
-        /**
- * Lic state take do component.
- * @param {*} kol - Input value.
- * @returns {void}
- */
-const LicStateTakeDo = (kol) => {
+    /**
+* Lic state take do component.
+* @param {*} kol - Input value.
+* @returns {void}
+*/
+    const LicStateTakeDo = (kol) => {
         connectionrequest()
             .then(() => {
                 dispatch(checkstateRequest(kol)); // Dispatch the API call with the country_id
@@ -825,12 +901,12 @@ const LicStateTakeDo = (kol) => {
                 showErrorAlert('Please connect to Internet', err);
             });
     }
-        /**
- * City req utility.
- * @param {*} itid - Input value.
- * @returns {void}
- */
-const cityReq = (itid) => {
+    /**
+* City req utility.
+* @param {*} itid - Input value.
+* @returns {void}
+*/
+    const cityReq = (itid) => {
         connectionrequest()
             .then(() => {
                 dispatch(cityRequest(itid));
@@ -951,12 +1027,12 @@ const cityReq = (itid) => {
         }
     }
 
-        /**
- * Handles free.
- * @param {*} takeit - Input value.
- * @returns {void}
- */
-const handleFree = (takeit) => {
+    /**
+* Handles free.
+* @param {*} takeit - Input value.
+* @returns {void}
+*/
+    const handleFree = (takeit) => {
         let obj = {
             "invoice": takeit
         }
@@ -968,12 +1044,12 @@ const handleFree = (takeit) => {
                 showErrorAlert("Please connect to intenet", err)
             })
     }
-        /**
- * Status check utility.
- * @param {*} dochall - Input value.
- * @returns {void}
- */
-const statusCheck = (dochall) => {
+    /**
+* Status check utility.
+* @param {*} dochall - Input value.
+* @returns {void}
+*/
+    const statusCheck = (dochall) => {
         if (dochall) {
             let obj = { "invoice": dochall }
             connectionrequest()
@@ -985,50 +1061,63 @@ const statusCheck = (dochall) => {
                 })
         }
     }
-    if (status1 == '' || WebcastReducer.status != status1) {
+    if (isfocus && (status1 == '' || WebcastReducer.status != status1)) {
+        handledWebcastStatus.current = WebcastReducer.status;
         switch (WebcastReducer.status) {
             case 'WebCast/saveRegistRequest':
                 status1 = WebcastReducer.status;
                 break;
             case 'WebCast/saveRegistSuccess':
                 status1 = WebcastReducer.status;
+                const paymentSnapshot = pendingPaymentRef.current;
+                if (!paymentSnapshot) break;
+                const currentPaymentTicket = paymentSnapshot.ticketSave;
                 const finaleMed = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket;
                 const emededAcc = finaleMed?.checkoutSpan?.emeded_acc || finaleMed?.inpersonSpanrole?.emeded_acc;
                 const professionType = DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
                 const iseMededDoPass =
                     (emededAcc == "1" || emededAcc == 1) &&
                     (professionType == "DO" || professionType == "MD" || professionType == "DPM");
-                                /**
- * All tickets free utility.
- * @param {*} ticketsArray - Input value.
- * @returns {*}
- */
-const allTicketsFree = (ticketsArray) =>
+                /**
+* All tickets free utility.
+* @param {*} ticketsArray - Input value.
+* @returns {*}
+*/
+                const allTicketsFree = (ticketsArray) =>
                     ticketsArray?.length > 0 && ticketsArray.every(ticket => ticket?.ticket_type == "Free");
                 const isAllFree = allTicketsFree(props?.route?.params?.checkoutSpan?.finalTicket?.tickets) ||
                     allTicketsFree(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
-                const handleDis = ticketSave?.discounts == true && !props?.route?.params?.inPersonTicket?.inPersonTicket && checkoutBaseAmount == 0;
+                const handleDis = currentPaymentTicket?.discounts == true && !props?.route?.params?.inPersonTicket?.inPersonTicket && checkoutBaseAmount == 0;
                 if (WebcastReducer?.saveRegistResponse?.msg == "Registration details saved successfully.") {
-                    persistGuestRegistrationSession(WebcastReducer?.saveRegistResponse).catch(error => {
-                        console.log('persistGuestRegistrationSession error', error);
-                    });
+                    persistGuestRegistrationSession(WebcastReducer?.saveRegistResponse).then(() => {
                     if (isAllFree) {
-                        handleFree(ticketSave?.invoice);
+                        handleFree(currentPaymentTicket?.invoice);
                     } else if (handleDis) {
-                        handleFree(ticketSave?.invoice);
+                        handleFree(currentPaymentTicket?.invoice);
                     } else {
-                    props.navigation.navigate("Payment", {
-                        invoiceTxt: {
-                            invoiceTxt: ticketSave?.invoice, webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
-                                paymentprice: buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket), ticketShow: ticketSave,
+                        props.navigation.push("Payment", {
+                            invoiceTxt: {
+                                invoiceTxt: currentPaymentTicket?.invoice, webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan ? props?.route?.params?.checkoutSpan?.checkoutSpan : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
+                                paymentprice: paymentSnapshot?.paymentPrice || buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket, currentPaymentTicket), ticketShow: currentPaymentTicket,
+                                latestTicketSave: currentPaymentTicket,
+                                latestPaymentPrice: paymentSnapshot?.paymentPrice || buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket, currentPaymentTicket),
+                                checkoutRouteParams: paymentSnapshot?.checkoutRouteParams || props?.route?.params,
                                 emeded_acc: iseMededDoPass ? "added" : "notadded"
                             }
                         });
                     }
+                    }).catch(error => {
+                        console.log('persistGuestRegistrationSession error', error);
+                        showErrorAlert('Unable to save registration. Please try again.');
+                    });
+                    setLatestTicketSaveForPayment(null);
+                    pendingPaymentRef.current = null;
                 }
                 break;
             case 'WebCast/saveRegistFailure':
                 status1 = WebcastReducer.status;
+                setLatestTicketSaveForPayment(null);
+                pendingPaymentRef.current = null;
                 showErrorAlert("Oops! Something went wrong. Please try again.")
                 break;
             case 'WebCast/FreeTransRequest':
@@ -1065,25 +1154,24 @@ const allTicketsFree = (ticketsArray) =>
                 break;
             case 'WebCast/cartCheckoutSuccess':
                 status1 = WebcastReducer.status;
+                const cartSnapshot = pendingCartPaymentRef.current;
+                if (!cartSnapshot) break;
+                pendingCartPaymentRef.current = null;
                 if (WebcastReducer?.cartCheckoutResponse?.invoiceNumber) {
-                    props.navigation.navigate("Payment", {
+                    props.navigation.push("Payment", {
                         cartInvoice: {
                             cartInvoice: WebcastReducer.cartCheckoutResponse.invoiceNumber,
                             webcastTake: props?.route?.params?.checkoutSpan?.checkoutSpan
                                 ? props.route.params.checkoutSpan.checkoutSpan
                                 : props?.route?.params?.inPersonTicket?.inpersonSpanrole,
-                            paymentprice: buildPaymentPrice({
-                                ...(props?.route?.params?.checkoutSpan || {}),
-                                subtotalAmount: checkoutBaseAmount,
-                                processingFeeAmount: checkoutProcessingFeeAmount,
-                                totalTicketPrice: checkoutTotalAmount,
-                            }),
+                            paymentprice: cartSnapshot,
                         },
                     });
                 }
                 break;
             case 'WebCast/cartCheckoutFailure':
                 status1 = WebcastReducer.status;
+                pendingCartPaymentRef.current = null;
                 break;
             case 'WebCast/TransemailcheckRequest':
                 status1 = WebcastReducer.status;
@@ -1183,7 +1271,7 @@ const allTicketsFree = (ticketsArray) =>
                 // Extract country code and number from +<code><number> pattern
                 const parsedPhone = processPhoneNumber(String(authPhone));
                 const match = parsedPhone?.isValid ? [authPhone, parsedPhone.countryCode.replace('+', ''), parsedPhone.nationalNumber] : null;
-                console.log(match,"match========")
+                console.log(match, "match========")
                 if (match) {
                     callingCodeToUse = match[1];
                     phoneNumberToUse = match[2];
@@ -1223,19 +1311,19 @@ const allTicketsFree = (ticketsArray) =>
     }, [DashboardReducer?.mainprofileResponse, AuthReducer?.verifyResponse?.phone, isGuestCheckout]);
 
 
-        /**
- * Formats phone numberno.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatPhoneNumberno = (input) => formatUsPhone(input);
+    /**
+* Formats phone numberno.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumberno = (input) => formatUsPhone(input);
 
-        /**
- * Formats indian phone number.
- * @param {*} input - Input value.
- * @returns {*}
- */
-const formatIndianPhoneNumber = (input) => {
+    /**
+* Formats indian phone number.
+* @param {*} input - Input value.
+* @returns {*}
+*/
+    const formatIndianPhoneNumber = (input) => {
         if (!input) return "";
 
         const strInput = String(input);
@@ -1271,17 +1359,19 @@ const formatIndianPhoneNumber = (input) => {
         getCountryAndDialCode().then(info => {
             if (mounted && info?.country) {
                 setDetectedCountry(info.country);
+                setDetectedCountryName(info?.country_name || '');
+                setDetectedState(info?.state_name || '');
             }
         }).catch(err => console.log('Error reading country', err));
         return () => {
             mounted = false;
         };
     }, [isfocus]);
-        /**
- * Show modal utility.
- * @returns {void}
- */
-const showModal = () => {
+    /**
+* Show modal utility.
+* @returns {void}
+*/
+    const showModal = () => {
         setIsVisibletext(true);
     };
 
@@ -1333,16 +1423,16 @@ const showModal = () => {
             }
         });
     }
-        /**
- * Determines whether usaselected is true.
- * @param {Object} attendee - Input value.
- * @returns {*}
- */
-const isUSASelected = isUsCountry;
+    /**
+* Determines whether usaselected is true.
+* @param {Object} attendee - Input value.
+* @returns {*}
+*/
+    const isUSASelected = isUsCountry;
     const professionCountry = formData?.[profindex === '' ? 0 : profindex] || {};
     const applicableProfessionCountry = countryIdentity(professionCountry)
         ? professionCountry
-        : (countryIdentity({country, country_id}) ? {country, country_id} : {country: detectedCountry});
+        : (countryIdentity({ country, country_id }) ? { country, country_id } : { country: detectedCountry });
     const professionCountryKey = countryIdentity(applicableProfessionCountry);
     const isNonUsaUser = !isUsCountry(applicableProfessionCountry);
 
@@ -1363,12 +1453,12 @@ const isUSASelected = isUsCountry;
         return () => { active = false; };
     }, [isfocus, dispatch, professionCountryKey]);
 
-        /**
- * Returns required fields for attendee.
- * @param {Object} attendee - Input value.
- * @returns {*}
- */
-const getRequiredFieldsForAttendee = (attendee = {}) => {
+    /**
+* Returns required fields for attendee.
+* @param {Object} attendee - Input value.
+* @returns {*}
+*/
+    const getRequiredFieldsForAttendee = (attendee = {}) => {
         if (isUSASelected(attendee)) {
             return baseRequiredFields;
         }
@@ -1384,14 +1474,14 @@ const getRequiredFieldsForAttendee = (attendee = {}) => {
         "firstname", "lastname", "emailad", "address", "country", "state",
         "city", "zipcode", "cellno"
     ];
-        /**
- * Handles input change.
- * @param {number} index - Input value.
- * @param {*} field - Input value.
- * @param {*} value - Input value.
- * @returns {void}
- */
-const handleInputChange = (index, field, value) => {
+    /**
+* Handles input change.
+* @param {number} index - Input value.
+* @param {*} field - Input value.
+* @param {*} value - Input value.
+* @returns {void}
+*/
+    const handleInputChange = (index, field, value) => {
         const updatedFormData = [...formData];
         updatedFormData[index][field] = value;
         if (field === 'country' || field === 'country_id' || field === 'dialcode') {
@@ -1414,23 +1504,23 @@ const handleInputChange = (index, field, value) => {
             setIsCellNoTouched(updatedCellNoTouched);
         }
     };
-        /**
- * Validate email utility.
- * @param {*} email - Input value.
- * @returns {*}
- */
-const validateEmail = (email) => {
+    /**
+* Validate email utility.
+* @param {*} email - Input value.
+* @returns {*}
+*/
+    const validateEmail = (email) => {
         // Regular expression to validate email format
         const emailRegex = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         return emailRegex.test(email);
     };
 
-        /**
- * Validate cell no utility.
- * @param {*} cellno - Input value.
- * @returns {*}
- */
-const validateCellNo = (cellno, attendee = {}) => {
+    /**
+* Validate cell no utility.
+* @param {*} cellno - Input value.
+* @returns {*}
+*/
+    const validateCellNo = (cellno, attendee = {}) => {
         if (isUSASelected(attendee)) return isValidUsPhone(cellno);
         const cleaned = cellno.replace(/\D/g, '');
         return /^\d{10}$/.test(cleaned);
@@ -1499,12 +1589,12 @@ const validateCellNo = (cellno, attendee = {}) => {
     // Determine if all attendees are valid
     const fullAccess = attendeesFilledStatus.every(isFilled => isFilled);
     console.log(fullAccess, "fullaccess---")
-        /**
- * Validate single attendee utility.
- * @param {*} attendee - Input value.
- * @returns {*}
- */
-const validateSingleAttendee = (attendee) => {
+    /**
+* Validate single attendee utility.
+* @param {*} attendee - Input value.
+* @returns {*}
+*/
+    const validateSingleAttendee = (attendee) => {
         if (!attendee) {
             console.error("No attendee to validate!");
             return false;
@@ -1562,14 +1652,14 @@ const validateSingleAttendee = (attendee) => {
     });
 
 
-        /**
- * Email check utility.
- * @param {number} index - Input value.
- * @param {*} key - Input value.
- * @param {*} value - Input value.
- * @returns {void}
- */
-const emailCheck = (index, key, value) => {
+    /**
+* Email check utility.
+* @param {number} index - Input value.
+* @param {*} key - Input value.
+* @param {*} value - Input value.
+* @returns {void}
+*/
+    const emailCheck = (index, key, value) => {
         console.log(index, key, value, "updatedFormData============12222");
         const attendees = (Array.isArray(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets)
             ? props.route.params.inPersonTicket?.inPersonTicket?.tickets
@@ -1598,11 +1688,11 @@ const emailCheck = (index, key, value) => {
         console.log(emailCheckRequests, "emailCheckRequests");
 
         // Function to send email check requests
-                /**
- * Send email check requests utility.
- * @returns {*}
- */
-const sendEmailCheckRequests = () => {
+        /**
+* Send email check requests utility.
+* @returns {*}
+*/
+        const sendEmailCheckRequests = () => {
             const requests = emailCheckRequests.map((obj) =>
                 dispatch(TransemailcheckRequest(obj))  // Ensure you have this dispatch function set up
             );
@@ -1628,11 +1718,11 @@ const sendEmailCheckRequests = () => {
     const [mergedData, setMergedData] = useState({ custom_fields: [], custom_fields_labels: [] });
 
     useEffect(() => {
-                /**
- * Merge custom fields with labels utility.
- * @returns {Object}
- */
-const mergeCustomFieldsWithLabels = () => {
+        /**
+* Merge custom fields with labels utility.
+* @returns {Object}
+*/
+        const mergeCustomFieldsWithLabels = () => {
             const customFieldsMerged = [];
             const customFieldsLabelsMerged = [];
 
@@ -1673,14 +1763,14 @@ const mergeCustomFieldsWithLabels = () => {
     }, [customFields, customFieldsLabels]);
 
     console.log(mergedData, "mergedData0-0----------", formData, customField)
-        /**
- * Handles input changeeamilad.
- * @param {number} index - Input value.
- * @param {*} key - Input value.
- * @param {*} value - Input value.
- * @returns {void}
- */
-const handleInputChangeeamilad = (index, key, value) => {
+    /**
+* Handles input changeeamilad.
+* @param {number} index - Input value.
+* @param {*} key - Input value.
+* @param {*} value - Input value.
+* @returns {void}
+*/
+    const handleInputChangeeamilad = (index, key, value) => {
         console.log(value, "val======");
         const regexEmail = /^(?!.*\.\.)([^\s@]+)@([^\s@]+\.[^\s@\.]{2,4})(?<!\.)$/;
         const isValidEmail = regexEmail.test(value);
@@ -1688,11 +1778,13 @@ const handleInputChangeeamilad = (index, key, value) => {
             emailCheck(index, key, value);
         }
     };
-        /**
- * Proceed payment utility.
- * @returns {void}
- */
-const proceedPayment = () => {
+    /**
+* Proceed payment utility.
+* @returns {void}
+*/
+    const proceedPayment = (latestTicketSave) => {
+        setLatestTicketSaveForPayment(latestTicketSave);
+        const currentTicketSave = latestTicketSave || ticketSave;
         setIsEmailTouched(formData.map(() => true));
         if (!fullAccess || formData.some(attendee => !validateCellNo(attendee.cellno || '', attendee))) {
             return;
@@ -1713,12 +1805,12 @@ const proceedPayment = () => {
         console.log("Flattened Attendees with Duplicates by Quantity:", attendees);
 
         const attendeeData = formData.map((data, index) => {
-                        /**
- * Convert to isodate helper.
- * @param {*} dateString - Input value.
- * @returns {*}
- */
-function convertToISODate(dateString) {
+            /**
+* Convert to isodate helper.
+* @param {*} dateString - Input value.
+* @returns {*}
+*/
+            function convertToISODate(dateString) {
                 const dateObj = new Date(dateString);
                 if (isNaN(dateObj.getTime())) {
                     throw new Error("Invalid date string");
@@ -1769,24 +1861,24 @@ function convertToISODate(dateString) {
             zipcode: formData[0]?.zipcode || '',
             phone: isUSASelected(formData[0]) ? requireUsPhone(formData[0]?.cellno) : formData[0]?.cellno || ''
         };
-        const customFieldCheked = props?.route?.params?.checkoutSpan?.inPersonTicket?.custom_fields || props?.route?.params?.inPersonTicket?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
+        const customFieldCheked = props?.route?.params?.checkoutSpan?.inPersonTicket?.custom_fields || props?.route?.params?.inPersonTicket?.inPersonTicket?.custom_fields || currentTicketSave?.custom_fields;
         const jsonString = JSON.stringify(mergedData);
         const jsonWithoutBraces = jsonString.slice(1, -1);
         // Create the final object to be sent
-                /**
- * All tickets freeac utility.
- * @param {*} ticketsArray - Input value.
- * @returns {*}
- */
-const allTicketsFreeac = (ticketsArray) =>
+        /**
+* All tickets freeac utility.
+* @param {*} ticketsArray - Input value.
+* @returns {*}
+*/
+        const allTicketsFreeac = (ticketsArray) =>
             ticketsArray?.length > 0 && ticketsArray.every(ticket => ticket?.ticket_type == "Free");
         const isAllFreeAccess = allTicketsFreeac(props?.route?.params?.checkoutSpan?.finalTicket?.tickets) ||
             allTicketsFreeac(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets);
         const obj = isAllFreeAccess ? {
-            invoice: ticketSave?.invoice,
+            invoice: currentTicketSave?.invoice,
             attendee: attendeeData
         } : {
-            invoice: ticketSave?.invoice,
+            invoice: currentTicketSave?.invoice,
             attendee: attendeeData,
             billing: billingInfo // Ensure this structure matches your requirements
         };
@@ -1796,24 +1888,32 @@ const allTicketsFreeac = (ticketsArray) =>
         if (isGuestCheckout && playerSessionID) {
             obj.playerSessionID = playerSessionID;
         }
+        const latestPaymentRouteData = {
+            ticketSave: currentTicketSave,
+            paymentPrice: buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket, currentTicketSave),
+            checkoutRouteParams: props?.route?.params,
+        };
+        pendingPaymentRef.current = latestPaymentRouteData;
         console.log(obj, "Multiple data pushing", customFieldCheked);
         connectionrequest()
             .then(() => {
                 dispatch(saveRegistRequest(obj));
             })
             .catch((err) => {
+                setLatestTicketSaveForPayment(null);
+                pendingPaymentRef.current = null;
                 showErrorAlert("Please connect to internet", err);
             });
     };
 
     const fullPaymentId = props?.route?.params?.checkoutSpan?.cartData?.tickets;
 
-        /**
- * Cart payment utility.
- * @returns {void}
- */
-const cartPayment = () => {
-        if (isUsCountry({country, country_id}) && !isValidUsPhone(cellno)) {
+    /**
+* Cart payment utility.
+* @returns {void}
+*/
+    const cartPayment = () => {
+        if (isUsCountry({ country, country_id }) && !isValidUsPhone(cellno)) {
             showErrorAlert('Enter a complete 10-digit USA cell number.');
             return;
         }
@@ -1828,14 +1928,16 @@ const cartPayment = () => {
                 "state_id": props?.route?.params?.checkoutSpan?.user_billing_address?.state_id || state_id,
                 "city_id": props?.route?.params?.checkoutSpan?.user_billing_address?.city_id || city_id,
                 "zipcode": zipcode,
-                "phone": isUsCountry({country, country_id}) ? requireUsPhone(cellno) : cellno
+                "phone": isUsCountry({ country, country_id }) ? requireUsPhone(cellno) : cellno
             }
         }
         connectionrequest()
             .then(() => {
+                pendingCartPaymentRef.current = buildPaymentPrice(props?.route?.params?.checkoutSpan || {});
                 dispatch(cartCheckoutRequest(objcart))
             })
             .catch((err) => {
+                pendingCartPaymentRef.current = null;
                 showErrorAlert(err, "Please connect to internet");
             })
     }
@@ -1843,13 +1945,13 @@ const cartPayment = () => {
     const [selectedSpecialities, setSelectedSpecialities] = useState([]); // Track selected specialties
 
     // Handle the speciality selection (multi-select only)
-        /**
- * Handles speciality select.
- * @param {*} selectedItems - Input value.
- * @param {*} formData - Input value.
- * @returns {void}
- */
-const handleSpecialitySelect = (selectedItems, formData) => {
+    /**
+* Handles speciality select.
+* @param {*} selectedItems - Input value.
+* @param {*} formData - Input value.
+* @returns {void}
+*/
+    const handleSpecialitySelect = (selectedItems, formData) => {
         if (activeIndex === 0) markPersonalizationEdited('specialty');
         if (activeIndex !== null) {
             const updatedForm = [...formData];
@@ -1883,14 +1985,14 @@ const handleSpecialitySelect = (selectedItems, formData) => {
     //         return updatedForm;
     //     });
     // };
-        /**
- * Handles speciality change.
- * @param {number} index - Input value.
- * @param {*} selectedSpecialities - Input value.
- * @param {*} selectedIds - Input value.
- * @returns {void}
- */
-const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
+    /**
+* Handles speciality change.
+* @param {number} index - Input value.
+* @param {*} selectedSpecialities - Input value.
+* @param {*} selectedIds - Input value.
+* @returns {void}
+*/
+    const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
         if (Number(index) === 0) {
             markPersonalizationEdited('specialty');
             setSpeciality(selectedSpecialities.join(', '));
@@ -1914,13 +2016,13 @@ const handleSpecialityChange = (index, selectedSpecialities, selectedIds) => {
     };
 
 
-        /**
- * Remove speciality utility.
- * @param {number} index - Input value.
- * @param {*} specialityId - Input value.
- * @returns {void}
- */
-const removeSpeciality = (index, specialityId) => {
+    /**
+* Remove speciality utility.
+* @param {number} index - Input value.
+* @param {*} specialityId - Input value.
+* @returns {void}
+*/
+    const removeSpeciality = (index, specialityId) => {
         const currentSpecialityIds = formData[index]?.speciality_ids || [];
         const currentSpecialities = formData[index]?.speciality.split(', ') || [];
 
@@ -1937,24 +2039,45 @@ const removeSpeciality = (index, specialityId) => {
         // Update formData for the specific index
         handleSpecialityChange(index, updatedSpecialityNames, updatedSpecialityIds);
     };
-        /**
- * Formats phone number.
- * @param {*} input - Input value.
- * @param {boolean} isUSA - Input value.
- * @returns {*}
- */
-const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
-        /**
- * Handles country set.
- * @param {*} didi - Input value.
- * @param {number} index - Input value.
- * @returns {void}
- */
-const handleCountrySet = (didi, index) => {
-        const previousCountry = countryIdentity(formData[index]);
+    /**
+* Formats phone number.
+* @param {*} input - Input value.
+* @param {boolean} isUSA - Input value.
+* @returns {*}
+*/
+    const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
+    /**
+* Handles country set.
+* @param {*} didi - Input value.
+* @param {number} index - Input value.
+* @returns {void}
+*/
+    const handleCountrySet = (didi, index, options = {}) => {
+        const attendee = formData[index] || {};
+        const previousCountry = countryIdentity(attendee) ||
+            (Number(index) === 0 ? countryIdentity({ country, country_id }) : '');
         const countryChanged = Boolean(previousCountry) && previousCountry !== countryIdentity(didi);
-        if (Number(index) === 0 && countryChanged) markPersonalizationEdited('profession');
-        if (!props?.route?.params?.checkoutSpan) {
+        const hasProfessionData = Boolean(
+            attendee?.professionad ||
+            attendee?.speciality ||
+            attendee?.speciality_ids?.length
+        );
+        const shouldShowCountryChangeNotice =
+            options?.source === 'user' &&
+            countryChanged &&
+            hasProfessionData &&
+            !props?.route?.params?.checkoutSpan;
+        if (countryChanged) {
+            setSelectedSpecialities([]);
+            setPreviousSpec('');
+            if (Number(index) === 0) {
+                markPersonalizationEdited('profession');
+                setProfessionad('');
+                setSpeciality('');
+                setSpeciality_id([]);
+            }
+        }
+        if (shouldShowCountryChangeNotice) {
             Snackbar.show({
                 text: `Since you have updated the country for ${index == 0 ? "primary registrant" : `attendee ${index + 1}`}, kindly update your profession and specialty.`,
                 duration: Snackbar.LENGTH_LONG,
@@ -1963,10 +2086,23 @@ const handleCountrySet = (didi, index) => {
             });
         }
         console.log(didi, "mmmm", index)
+        setSearchpratice('');
+        setSlistpratice([]);
+        setSelectStatepratice([]);
+        setSearchcity('');
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
+        dispatch(stateSuccess({ states: [] }));
         PraticingState(didi?.id);
         setCountry(didi?.name);
-        stateRequest(didi?.id);
         setCountry_id(didi?.id);
+        if (Number(index) === 0) {
+            setState('');
+            setState_id('');
+            setCity('');
+            setCity_id('');
+        }
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
             const isUSA = isUsCountry(didi);
@@ -1974,6 +2110,7 @@ const handleCountrySet = (didi, index) => {
             const formattedNumber = currentCell ? formatPhoneNumber(currentCell, isUSA) : currentCell;
             updatedFormData[index] = {
                 ...updatedFormData[index],
+                countryLocationReset: true,
                 dialcode: didi?.callingcode || updatedFormData[index]?.dialcode,
                 country: didi?.name,
                 country_id: didi?.id,
@@ -1982,46 +2119,55 @@ const handleCountrySet = (didi, index) => {
                     professionad: '', speciality: '', speciality_ids: [], speciality_id: [],
                     medicallics: '', license_state_id: null, license_number: '', license_expiry_date: '',
                 } : {}),
-                state: null,
-                state_id: null,
-                city: null,
-                city_id: null,
+                state: '',
+                state_id: '',
+                city: '',
+                city_id: '',
                 ...(formattedNumber !== undefined ? { cellno: formattedNumber } : {})
             };
 
             return updatedFormData;
         });
     };
-        /**
- * Handles stateshows.
- * @param {*} ctid - Input value.
- * @param {number} indexsatte - Input value.
- * @returns {void}
- */
-const handleStateshows = (ctid, indexsatte) => {
-        cityReq(ctid?.id)
+    /**
+* Handles stateshows.
+* @param {*} ctid - Input value.
+* @param {number} indexsatte - Input value.
+* @returns {void}
+*/
+    const handleStateshows = (ctid, indexsatte) => {
+        setSearchcity('');
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
         setState(ctid?.name);
-        cityRequest(ctid?.id);
-        setState_id(ctid?.id)
+        setState_id(ctid?.id);
+        if (Number(indexsatte) === 0) {
+            setCity('');
+            setCity_id('');
+        }
+        cityReq(ctid?.id);
         // setPratice(false);
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[indexsatte] = {
                 ...updatedFormData[indexsatte],
                 state: ctid?.name,           // Set the selected country name
-                state_id: ctid?.id           // Set the selected country ID
+                state_id: ctid?.id,          // Set the selected country ID
+                city: '',
+                city_id: ''
             };
 
             return updatedFormData; // Return the updated form data
         });
     }
-        /**
- * Handles lic stateshows.
- * @param {*} lictid - Input value.
- * @param {number} indexsattelic - Input value.
- * @returns {void}
- */
-const handleLicStateshows = (lictid, indexsattelic) => {
+    /**
+* Handles lic stateshows.
+* @param {*} lictid - Input value.
+* @param {number} indexsattelic - Input value.
+* @returns {void}
+*/
+    const handleLicStateshows = (lictid, indexsattelic) => {
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[indexsattelic] = {
@@ -2033,13 +2179,13 @@ const handleLicStateshows = (lictid, indexsattelic) => {
             return updatedFormData; // Return the updated form data
         });
     }
-        /**
- * Handles lic date.
- * @param {*} expID - Input value.
- * @param {*} datInde - Input value.
- * @returns {void}
- */
-const handleLicDate = (expID, datInde) => {
+    /**
+* Handles lic date.
+* @param {*} expID - Input value.
+* @param {*} datInde - Input value.
+* @returns {void}
+*/
+    const handleLicDate = (expID, datInde) => {
         const formattedDate = moment(expID).format('YYYY-MM-DD');
         setOpendatelicyall(false);
         setFormData(prevFormData => {
@@ -2059,13 +2205,13 @@ const handleLicDate = (expID, datInde) => {
             return prevFormData;
         });
     };
-        /**
- * Handles dob date.
- * @param {*} dobID - Input value.
- * @param {*} dobix - Input value.
- * @returns {void}
- */
-const handleDobDate = (dobID, dobix) => {
+    /**
+* Handles dob date.
+* @param {*} dobID - Input value.
+* @param {*} dobix - Input value.
+* @returns {void}
+*/
+    const handleDobDate = (dobID, dobix) => {
         const formattedDateDob = moment(dobID).format('YYYY-MM-DD');
         setDobchoose(false);
         setFormData(prevFormData => {
@@ -2085,13 +2231,13 @@ const handleDobDate = (dobID, dobix) => {
             return prevFormData;
         });
     };
-        /**
- * Handlecity shows utility.
- * @param {*} ctshows - Input value.
- * @param {number} cityindex - Input value.
- * @returns {void}
- */
-const handlecityShows = (ctshows, cityindex) => {
+    /**
+* Handlecity shows utility.
+* @param {*} ctshows - Input value.
+* @param {number} cityindex - Input value.
+* @returns {void}
+*/
+    const handlecityShows = (ctshows, cityindex) => {
         console.log(ctshows, cityindex, "ctshows+++++cityindex")
         setCity(ctshows?.name);
         setCity_id(ctshows?.id)
@@ -2108,11 +2254,11 @@ const handlecityShows = (ctshows, cityindex) => {
         });
     }
 
-        /**
- * Apply coupon utility.
- * @returns {void}
- */
-const applyCoupon = () => {
+    /**
+* Apply coupon utility.
+* @returns {void}
+*/
+    const applyCoupon = () => {
         if (!couponapp) {
             showErrorAlert("Please enter a valid coupon ")
         } else {
@@ -2139,8 +2285,8 @@ const applyCoupon = () => {
     console.log(!statepicker || !countrypicker || !pratice || !cityPicker, opendatelicyall, dateindex, "country========123", countrypickerprof);
     const allPickersAreFalse = !licstatepratice && !statepicker && !countrypicker && !pratice && !cityPicker && !countrypickerprof;
     useLayoutEffect(() => {
-            props.navigation.setOptions({ gestureEnabled: false });
-        }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -2160,114 +2306,114 @@ const applyCoupon = () => {
                     )}
                     <Loader visible={loaderVisible && !isOffline} />
                     <View style={{ flex: 1, display: allPickersAreFalse ? 'flex' : 'none' }}>
-                    <CheckoutMain
-                        markPersonalizationEdited={markPersonalizationEdited}
-                        savefull={savefull}
-                        setSavefull={setSavefull}
-                        setNotadded={setNotadded}
-                        notadded={notadded}
-                        codesave={codesave}
-                        setCodesave={setCodesave}
-                        setCouponapp={setCouponapp}
-                        couponapp={couponapp}
-                        applyCoupon={applyCoupon}
-                        WebcastReducer={WebcastReducer}
-                        setAllmsg={setAllmsg}
-                        allmsg={allmsg}
-                        setProfindex={setProfindex}
-                        profindex={profindex}
-                        handleProfession={handleProfession}
-                        countrypickerprof={countrypickerprof}
-                        setcountrypickerprof={setcountrypickerprof}
-                        handlecityShows={handlecityShows}
-                        handleStateshows={handleStateshows}
-                        handleCountrySet={handleCountrySet}
-                        cityAll={cityAll}
-                        slistpratice={slistpratice}
-                        countryall={countryall}
-                        handleInputChange={handleInputChange}
-                        isEmailTouched={isEmailTouched}
-                        setIsEmailTouched={setIsEmailTouched}
-                        isCellNoTouched={isCellNoTouched}
-                        setIsCellNoTouched={setIsCellNoTouched}
-                        handleInputChangeeamilad={handleInputChangeeamilad}
-                        pratice={pratice}
-                        cityPicker={cityPicker}
-                        city_id={city_id}
-                        setCity_id={setCity_id}
-                        setState_id={setState_id}
-                        state_id={state_id}
-                        setCountry_id={setCountry_id}
-                        country_id={country_id}
-                        removeSpeciality={removeSpeciality}
-                        selectedSpecialities={selectedSpecialities}
-                        setSelectedSpecialities={setSelectedSpecialities}
-                        formData={formData}
-                        setFormData={setFormData}
-                        activeIndex={activeIndex}
-                        activeIndexc={activeIndexc}
-                        activeIndexct={activeIndexct}
-                        activeIndexs={activeIndexs}
-                        setActiveIndexc={setActiveIndexc}
-                        setActiveindexs={setActiveIndexs}
-                        setActiveIndexct={setActiveIndexct}
-                        setActiveIndex={setActiveIndex}
-                        setSearchState={setSearchState}
-                        searchState={searchState}
-                        searchStateName={handleSearch}
-                        slist={slist}
-                        speciality={speciality}
-                        setSpeciality={setSpeciality}
-                        speciality_id={speciality_id}
-                        setSpeciality_id={setSpeciality_id}
-                        statepicker={statepicker}
-                        fullAccess={props?.route?.params?.checkoutSpan?.cartData ? isSingleAttendeeValid : fullAccess}
-                        errorFlags={errorFlags}
-                        cartPayment={cartPayment}
-                        proceedPayment={proceedPayment}
-                        spanroute={props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket}
-                        ticketSave={ticketSave}
-                        searchpratice={searchpratice}
-                        searchpraticelic={searchpraticelic}
-                        licstatepratice={licstatepratice}
-                        setLicstatepratice={setLicstatepratice}
-                        activeIndexslic={activeIndexslic}
-                        setActiveIndexslic={setActiveIndexslic}
-                        slistpraticelic={slistpraticelic}
-                        license_expiry_date={license_expiry_date}
-                        setLicense_expiry_date={setLicense_expiry_date}
-                        license_state_id={license_state_id}
-                        setLicense_state_id={setLicense_state_id}
-                        license_number={license_number}
-                        setLicense_number={setLicense_number}
-                        handleLicStateshows={handleLicStateshows}
-                        medicallics={medicallics}
-                        setMedicallics={setMedicallics}
-                        opendatelicyall={opendatelicyall}
-                        setOpendatelicyall={setOpendatelicyall}
-                        dateindex={dateindex}
-                        setDateindex={setDateindex}
-                        dobindex={dobindex}
-                        setDobindex={setDobindex}
-                        setDobchoose={setDobchoose}
-                        dobchoose={dobchoose}
-                        errors={errors}
-                        setErrors={setErrors}
-                        customFields={customFields}
-                        setCustomFields={setCustomFields}
-                        customFieldsLabels={customFieldsLabels}
-                        setCustomFieldsLabels={setCustomFieldsLabels}
-                        setPaymentcardfree={setPaymentcardfree}
-                        setPaymentfdfree={setPaymentfdfree}
-                        checkoutBaseAmount={checkoutBaseAmount}
-                        checkoutProcessingFeeAmount={checkoutProcessingFeeAmount}
-                        checkoutTotalAmount={checkoutTotalAmount}
-                        dialcode={dialcode}
-                        SetDialcode={SetDialcode}
-                        setDateofbirth={setDateofbirth}
-                        dateofbirth={dateofbirth}
-                        iseMededDo={iseMededDo}
-                        firstname={firstname} setFirstname={setFirstname} lastname={lastname} setLastname={setLastname} emailad={emailad} setEmailad={setEmailad} professionad={professionad} setProfessionad={setProfessionad} setstatepicker={setstatepicker} allProfession={allProfession} specaillized={specaillized} npino={npino} setNpino={setNpino} address={address} setAddress={setAddress} setCountrypicker={setCountrypicker} countryReq={countryReq} country={country} PraticingState={PraticingState} setPratice={setPratice} state={state} setCityPicker={setCityPicker} cityReq={cityReq} city={city} zipcode={zipcode} setZipcode={setZipcode} cellno={cellno} setCellno={setCellno} />
+                        <CheckoutMain
+                            markPersonalizationEdited={markPersonalizationEdited}
+                            savefull={savefull}
+                            setSavefull={setSavefull}
+                            setNotadded={setNotadded}
+                            notadded={notadded}
+                            codesave={codesave}
+                            setCodesave={setCodesave}
+                            setCouponapp={setCouponapp}
+                            couponapp={couponapp}
+                            applyCoupon={applyCoupon}
+                            WebcastReducer={WebcastReducer}
+                            setAllmsg={setAllmsg}
+                            allmsg={allmsg}
+                            setProfindex={setProfindex}
+                            profindex={profindex}
+                            handleProfession={handleProfession}
+                            countrypickerprof={countrypickerprof}
+                            setcountrypickerprof={setcountrypickerprof}
+                            handlecityShows={handlecityShows}
+                            handleStateshows={handleStateshows}
+                            handleCountrySet={handleCountrySet}
+                            cityAll={cityAll}
+                            slistpratice={slistpratice}
+                            countryall={countryall}
+                            handleInputChange={handleInputChange}
+                            isEmailTouched={isEmailTouched}
+                            setIsEmailTouched={setIsEmailTouched}
+                            isCellNoTouched={isCellNoTouched}
+                            setIsCellNoTouched={setIsCellNoTouched}
+                            handleInputChangeeamilad={handleInputChangeeamilad}
+                            pratice={pratice}
+                            cityPicker={cityPicker}
+                            city_id={city_id}
+                            setCity_id={setCity_id}
+                            setState_id={setState_id}
+                            state_id={state_id}
+                            setCountry_id={setCountry_id}
+                            country_id={country_id}
+                            removeSpeciality={removeSpeciality}
+                            selectedSpecialities={selectedSpecialities}
+                            setSelectedSpecialities={setSelectedSpecialities}
+                            formData={formData}
+                            setFormData={setFormData}
+                            activeIndex={activeIndex}
+                            activeIndexc={activeIndexc}
+                            activeIndexct={activeIndexct}
+                            activeIndexs={activeIndexs}
+                            setActiveIndexc={setActiveIndexc}
+                            setActiveindexs={setActiveIndexs}
+                            setActiveIndexct={setActiveIndexct}
+                            setActiveIndex={setActiveIndex}
+                            setSearchState={setSearchState}
+                            searchState={searchState}
+                            searchStateName={handleSearch}
+                            slist={slist}
+                            speciality={speciality}
+                            setSpeciality={setSpeciality}
+                            speciality_id={speciality_id}
+                            setSpeciality_id={setSpeciality_id}
+                            statepicker={statepicker}
+                            fullAccess={props?.route?.params?.checkoutSpan?.cartData ? isSingleAttendeeValid : fullAccess}
+                            errorFlags={errorFlags}
+                            cartPayment={cartPayment}
+                            proceedPayment={proceedPayment}
+                            spanroute={props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket}
+                            ticketSave={ticketSave}
+                            searchpratice={searchpratice}
+                            searchpraticelic={searchpraticelic}
+                            licstatepratice={licstatepratice}
+                            setLicstatepratice={setLicstatepratice}
+                            activeIndexslic={activeIndexslic}
+                            setActiveIndexslic={setActiveIndexslic}
+                            slistpraticelic={slistpraticelic}
+                            license_expiry_date={license_expiry_date}
+                            setLicense_expiry_date={setLicense_expiry_date}
+                            license_state_id={license_state_id}
+                            setLicense_state_id={setLicense_state_id}
+                            license_number={license_number}
+                            setLicense_number={setLicense_number}
+                            handleLicStateshows={handleLicStateshows}
+                            medicallics={medicallics}
+                            setMedicallics={setMedicallics}
+                            opendatelicyall={opendatelicyall}
+                            setOpendatelicyall={setOpendatelicyall}
+                            dateindex={dateindex}
+                            setDateindex={setDateindex}
+                            dobindex={dobindex}
+                            setDobindex={setDobindex}
+                            setDobchoose={setDobchoose}
+                            dobchoose={dobchoose}
+                            errors={errors}
+                            setErrors={setErrors}
+                            customFields={customFields}
+                            setCustomFields={setCustomFields}
+                            customFieldsLabels={customFieldsLabels}
+                            setCustomFieldsLabels={setCustomFieldsLabels}
+                            setPaymentcardfree={setPaymentcardfree}
+                            setPaymentfdfree={setPaymentfdfree}
+                            checkoutBaseAmount={checkoutBaseAmount}
+                            checkoutProcessingFeeAmount={checkoutProcessingFeeAmount}
+                            checkoutTotalAmount={checkoutTotalAmount}
+                            dialcode={dialcode}
+                            SetDialcode={SetDialcode}
+                            setDateofbirth={setDateofbirth}
+                            dateofbirth={dateofbirth}
+                            iseMededDo={iseMededDo}
+                            firstname={firstname} setFirstname={setFirstname} lastname={lastname} setLastname={setLastname} emailad={emailad} setEmailad={setEmailad} professionad={professionad} setProfessionad={setProfessionad} setstatepicker={setstatepicker} allProfession={allProfession} specaillized={specaillized} npino={npino} setNpino={setNpino} address={address} setAddress={setAddress} setCountrypicker={setCountrypicker} countryReq={countryReq} country={country} PraticingState={PraticingState} setPratice={setPratice} state={state} setCityPicker={setCityPicker} cityReq={cityReq} city={city} zipcode={zipcode} setZipcode={setZipcode} cellno={cellno} setCellno={setCellno} />
                     </View>
                     {countrypickerprof && <ProfessionInPerson
                         setcountrypicker={setcountrypickerprof}

@@ -15,6 +15,8 @@ import ImagePicker from 'react-native-image-crop-picker';
 import Imagepath from '../Themes/Imagepath';
 import CamIcn from 'react-native-vector-icons/Feather';
 import { ResizeMode } from 'react-native-video';
+import showErrorAlert from '../Utils/Helpers/Toast';
+import { FILE_SIZE_ERROR, isUploadFileSizeValid, MAX_UPLOAD_FILE_SIZE_BYTES } from '../Utils/Helpers/FileUploadValidation';
 
 /**
  * Reusable CameraPicker component.
@@ -24,6 +26,15 @@ import { ResizeMode } from 'react-native-video';
  * @returns {JSX.Element}
  */
 export default function CameraPicker(props) {
+  const isFileSizeValid = async file => {
+    if (await isUploadFileSizeValid(file, props.maxFileSizeBytes)) {
+      return true;
+    }
+
+    showErrorAlert(FILE_SIZE_ERROR);
+    return false;
+  };
+
   // function to open gallery
     /**
  * Btn click galery upload utility.
@@ -45,7 +56,9 @@ async function btnClick_galeryUpload() {
           name: response[0].name,
           type: response[0].type,
           uri: response[0].uri,
+          size: response[0].size,
         };
+        if (!await isFileSizeValid(fileObj)) return;
         props.btnClick_galeryUpload(fileObj);
       } catch (err) {
         if (DocumentPicker.isCancel(err)) {
@@ -62,17 +75,18 @@ async function btnClick_galeryUpload() {
  *
  * @remarks Does not return a value.
  */
-function btnClick_ImageUpload() {
+async function btnClick_ImageUpload() {
     if (props.btnClick_ImageUpload) {
-      ImagePicker.openPicker({
-        width: normalize(300),
-        height: normalize(400),
-        cropping: props.cropping,
-        multiple: props.multiple,
-        mediaType: props.mediaType,
-        maxFiles: props.maxFiles
-      })
-        .then(response => {
+      try {
+        const response = await ImagePicker.openPicker({
+          width: normalize(300),
+          height: normalize(400),
+          cropping: false,
+          multiple: props.multiple,
+          mediaType: props.cropping ? (props.mediaType || 'photo') : props.mediaType,
+          maxFiles: props.maxFiles
+        });
+
           let arr = [];
           if (props.multiple) {
             response.filter(data => {
@@ -82,20 +96,38 @@ function btnClick_ImageUpload() {
                   : data.path.replace(/^.*[\\\/]/, ''),
                 type: data.mime,
                 uri: data.path,
+                size: data.size,
               });
             });
+            const validations = await Promise.all(arr.map(isFileSizeValid));
+            if (validations.some(isValid => !isValid)) return;
             props.btnClick_ImageUpload(arr);
           } else {
+            const originalFile = {
+              uri: response.path,
+              size: response.size,
+            };
+            if (!await isFileSizeValid(originalFile)) return;
+
+            const selectedImage = props.cropping
+              ? await ImagePicker.openCropper({
+                  path: response.path,
+                  width: normalize(300),
+                  height: normalize(400),
+                })
+              : response;
             let imageObj = {};
-            imageObj.name = response.filename
-              ? response.filename
-              : response.path.replace(/^.*[\\\/]/, '');
-            imageObj.type = response.mime;
-            imageObj.uri = response.path;
+            imageObj.name = selectedImage.filename
+              ? selectedImage.filename
+              : selectedImage.path.replace(/^.*[\\\/]/, '');
+            imageObj.type = selectedImage.mime;
+            imageObj.uri = selectedImage.path;
+            imageObj.size = selectedImage.size;
             props.btnClick_ImageUpload(imageObj);
           }
-        })
-        .catch(err => console.log(err));
+      } catch (err) {
+        console.log(err);
+      }
     }
   }
   // function to open camera
@@ -105,25 +137,36 @@ function btnClick_ImageUpload() {
  *
  * @remarks Does not return a value.
  */
-function btnClick_cameraUpload() {
+async function btnClick_cameraUpload() {
     if (props.btnClick_cameraUpload) {
-      ImagePicker.openCamera({
-        width: 300,
-        height: 400,
-        cropping: true,
-        mediaType: 'any',
-      })
-        .then(response => {
+      try {
+        const response = await ImagePicker.openCamera({
+          width: 300,
+          height: 400,
+          cropping: false,
+          mediaType: 'photo',
+        });
+        if (!await isFileSizeValid(response)) return;
+
+        const selectedImage = props.cropping
+          ? await ImagePicker.openCropper({
+              path: response.path,
+              width: 300,
+              height: 400,
+            })
+          : response;
           let imageObj = {
-            name: response.filename
-              ? response.filename
-              : response.path.replace(/^.*[\\\/]/, ''),
-            type: response.mime,
-            uri: response.path,
+            name: selectedImage.filename
+              ? selectedImage.filename
+              : selectedImage.path.replace(/^.*[\\\/]/, ''),
+            type: selectedImage.mime,
+            uri: selectedImage.path,
+            size: selectedImage.size,
           };
           props.btnClick_cameraUpload(imageObj);
-        })
-        .catch(err => console.log(err));
+      } catch (err) {
+        console.log(err);
+      }
     }
   }
 
@@ -208,7 +251,8 @@ CameraPicker.propTypes = {
   mediaType: PropTypes.string,
   cropping: PropTypes.bool,
   maxFiles: PropTypes.number,
-  profilehit: PropTypes.string
+  profilehit: PropTypes.string,
+  maxFileSizeBytes: PropTypes.number,
 };
 
 // // defaultPropsvalue
@@ -235,6 +279,7 @@ btnClick_ImageUpload: () => { },
  */
 onBackdropPress: () => { },
   multiple: false,
+  maxFileSizeBytes: MAX_UPLOAD_FILE_SIZE_BYTES,
   // cropping: PropTypes.bool
 };
 

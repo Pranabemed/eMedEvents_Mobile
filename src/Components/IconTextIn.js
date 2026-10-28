@@ -39,6 +39,7 @@ const CustomInputTouchable = ({
     wrapperStyle,
     textStyle,
     disabled,
+    showRequiredMark = false,
     onIconpres,
     newstyle,
     newFont
@@ -77,19 +78,26 @@ const CustomInputTouchable = ({
     if (standardized) {
         const cleanLabel = dropdownFieldName(label);
         const formattedPlaceholder = dropdownPlaceholder(cleanLabel);
+        const isDisabled = Boolean(disabled);
         return (
             <View style={[dropdownStyles.fieldGroup, containerStyle]}>
                 <Text style={dropdownStyles.fieldLabel}>{cleanLabel}</Text>
-                <View style={[dropdownStyles.field, disabled && dropdownStyles.fieldDisabled, wrapperStyle]}>
+                <View style={[dropdownStyles.field, isDisabled && dropdownStyles.fieldDisabled, wrapperStyle]}>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={label}
-                        accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled}
-                        onPress={onPress} style={dropdownStyles.fieldValueTouch}>
+                        accessibilityState={{ disabled: isDisabled }} disabled={isDisabled}
+                        onPress={() => {
+                            if (isDisabled) return;
+                            onPress && onPress();
+                        }} style={dropdownStyles.fieldValueTouch}>
                         {children || <Text style={[dropdownStyles.optionText, !value && dropdownStyles.placeholder]} numberOfLines={2}>
                             {value || formattedPlaceholder}
                         </Text>}
                     </TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open ${label || 'options'}`}
-                        disabled={disabled} onPress={onIconpres || onPress} style={dropdownStyles.close}>
+                        disabled={isDisabled} onPress={() => {
+                            if (isDisabled) return;
+                            (onIconpres || onPress) && (onIconpres || onPress)();
+                        }} style={dropdownStyles.close}>
                         <DropdownIcon name="keyboard-arrow-down" size={22} color="#667085" />
                     </TouchableOpacity>
                 </View>
@@ -97,8 +105,12 @@ const CustomInputTouchable = ({
         );
     }
 
+    const isDisabled = Boolean(disabled);
     const isDropdown = /down/i.test(rightIcon?.props?.name || '');
-    const displayLabel = isDropdown ? (value || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)) : label;
+    const requiredMark = showRequiredMark ? '*' : '';
+    const displayLabel = isDropdown
+        ? `${value || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)}${requiredMark}`
+        : label;
     const displayText = value ? value : (isFocused || !label ? (isDropdown ? dropdownPlaceholder(label) : placeholder) : '');
 
     return (
@@ -109,7 +121,9 @@ const CustomInputTouchable = ({
 
             <View style={newstyle == "No" ? [
                 styles.inputWrapper,
-                wrapperStyle, { backgroundColor: "#E6ECF2" },
+                wrapperStyle,
+                isDisabled && styles.inputDisabled,
+                { backgroundColor: "#E6ECF2" },
                 {
                     borderBottomWidth: 0.5,
                     borderBottomColor: "#000000"
@@ -117,6 +131,7 @@ const CustomInputTouchable = ({
             ] : [
                 styles.inputWrapper,
                 wrapperStyle,
+                isDisabled && styles.inputDisabled,
                 {
                     borderBottomWidth: 0.5,
                     borderBottomColor: "#000000"
@@ -125,10 +140,11 @@ const CustomInputTouchable = ({
                 <Pressable
                     style={[styles.textTouchable, { justifyContent: 'center' }]}
                     onPress={() => {
+                        if (isDisabled) return;
                         onPress && onPress();
                         setIsFocused(true);
                     }}
-                    disabled={disabled}
+                    disabled={isDisabled}
                 >
                     <Text
                         style={[
@@ -148,10 +164,11 @@ const CustomInputTouchable = ({
 
                 {rightIcon && (
                     <TouchableOpacity
-                        disabled={disabled}
+                        disabled={isDisabled}
                         style={styles.iconContainer}
                         onPress={() => {
-                            onIconpres && onIconpres();
+                            if (isDisabled) return;
+                            onIconpres ? onIconpres() : (onPress && onPress());
                             setIsFocused(true);
                         }}
                         activeOpacity={0.7}
@@ -199,6 +216,10 @@ const styles = StyleSheet.create({
         top: 5,
         height: 30,
         width: 45
+    },
+    inputDisabled: {
+        opacity: 0.45,
+        backgroundColor: '#F2F4F7',
     },
 });
 

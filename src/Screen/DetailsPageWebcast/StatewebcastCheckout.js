@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Linking, useWindowDimensions, Alert } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Fonts from '../../Themes/Fonts'
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
@@ -45,6 +45,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
   const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const [finalcheck, setFinalcheck] = useState("");
+  const checkoutRequestStartedRef = useRef(false);
   const videoNavigationData = useCallback((dataItem = webcastdeatils) => {
     const existingActivityData = Array.isArray(dataItem?.activityData) ? dataItem.activityData : [];
     const youtubeVideoId = dataItem?.video_audio_details?.[0]?.youtube_video_id
@@ -188,15 +189,17 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
 
       connectionrequest()
         .then(() => {
+          checkoutRequestStartedRef.current = true;
           dispatch(checkoutTicketRequest(obj));
         })
         .catch((err) => {
+          checkoutRequestStartedRef.current = false;
           showErrorAlert("Please connect to internet", err)
         })
     }
   }, [webcastdeatils, dispatch, refID]);
   const checkoutNav = useCallback(() => {
-    navigation.navigate("Checkout", {
+    navigation.push("Checkout", {
       checkoutSpan: {
         checkoutSpan: webcastdeatils,
         finalTicket: WebcastReducer?.checkoutTicketResponse,
@@ -236,7 +239,13 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     })
   }, [navigation, webcastdeatils, WebcastReducer?.checkoutTicketResponse, guestOrigin])
   useEffect(() => {
-    if (WebcastReducer.status == 'WebCast/checkoutTicketSuccess') {
+    if (checkoutRequestStartedRef.current && WebcastReducer.status == 'WebCast/checkoutTicketFailure') {
+      checkoutRequestStartedRef.current = false;
+      setFinalcheck("");
+      return;
+    }
+    if (checkoutRequestStartedRef.current && WebcastReducer.status == 'WebCast/checkoutTicketSuccess') {
+      checkoutRequestStartedRef.current = false;
       switch (finalcheck) {
         case "checkout":
           checkoutNav();
@@ -262,7 +271,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
       // Reset finalcheck after handling
       setFinalcheck("");
     }
-  }, [WebcastReducer.status, finalcheck, singleAddtoCart, checkoutNav, inpersonNav, alreadyCart, handleAddtoCart]);
+  }, [WebcastReducer.status, finalcheck, singleAddtoCart, checkoutNav, inpersonNav, alreadyCart, handleAddtoCart, registerCheck]);
   useEffect(() => {
     if (WebcastReducer.status == 'WebCast/addtoCartWebcastSuccess') {
       if (WebcastReducer?.addtoCartWebcastResponse?.success == true && WebcastReducer?.checkoutTicketResponse) {

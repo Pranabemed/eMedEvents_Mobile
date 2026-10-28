@@ -17,7 +17,7 @@ import Buttons from '../../Components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useIsFocused } from '@react-navigation/native'
 import { getCountryCallingCode } from 'libphonenumber-js';
-import { cityRequest, countryRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
+import { cityRequest, citySuccess, countryRequest, specializationRequest, stateRequest } from '../../Redux/Reducers/AuthReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import ProfileSpeciality from '../Profile/ProfileSpecialty'
@@ -575,6 +575,16 @@ onPress: () => getCurrentLocation() },
  * @returns {void}
  */
 const handleCountrySet = (didi) => {
+        setState_cont("");
+        setState_id("");
+        setCity_cont("");
+        setCity_id("");
+        setSearchpratice("");
+        setSearchcity("");
+        setSlistpratice([]);
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
         PraticingState(didi?.id);
         setPhoneCountryCode(didi?.callingcode);
         setCountryCode_cont(didi?.country_code)
@@ -594,6 +604,12 @@ const handleCountrySet = (didi) => {
  * @returns {void}
  */
 const handleStateshows = (ctid) => {
+        setCity_cont("");
+        setCity_id("");
+        setSearchcity("");
+        setCityAll([]);
+        setCityshow([]);
+        dispatch(citySuccess({ cities: [] }));
         cityReq(ctid?.id)
         setState_cont(ctid?.name);
         cityRequest(ctid?.id);
@@ -926,7 +942,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                 paddingRight: normalize(0)
                                             }}>
                                                 <CustomInputTouchable
-                                                    disabled={country_cont ? false : true}
+                                                    disabled={!country_cont || !country_id}
                                                     label={'State'}
                                                     value={state_cont}
                                                     placeholder={''}
@@ -957,7 +973,7 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
                                                     paddingRight: normalize(0)
                                                 }}>
                                                     <CustomInputTouchable
-                                                        disabled={state_cont ? false : true}
+                                                        disabled={!country_cont || !country_id || !state_cont || !state_id}
                                                         label={'City'}
                                                         value={city_cont}
                                                         placeholder={''}

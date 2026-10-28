@@ -380,6 +380,10 @@ const AddEmpTake = () => {
  * @returns {void}
  */
 const handleStateshows = (ctid) => {
+        setCity("");
+        setCity_id("");
+        setCityAll([]);
+        setCityshow([]);
         cityReq(ctid?.id)
         setState(ctid?.name);
         cityRequest(ctid?.id);

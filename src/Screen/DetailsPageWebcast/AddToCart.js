@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -23,7 +23,7 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AddToCartShimmer from '../../Components/AddToCartShimmer';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 /**
  * Reusable AddToCart component.
@@ -33,7 +33,6 @@ import { useFocusEffect } from '@react-navigation/native';
  * @returns {JSX.Element}
  */
 
-let status = "";
 /**
  * Add to cart component.
  * @param {*} props - Input value.
@@ -48,6 +47,9 @@ const AddToCart = (props) => {
     console.log("props.route", props?.route?.params?.addtocart?.addtocart == "startcallapi", props?.route?.params);
     console.log(props?.route?.params, "cupon======");
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const isFocused = useIsFocused();
+    const handledCartStatus = useRef(WebcastReducer.status);
+    const pendingFreeCheckout = useRef(false);
     const dispatch = useDispatch();
     const [couponapp, setCouponapp] = useState("");
     const [cartdetails, setCartdetails] = useState(null);
@@ -102,6 +104,11 @@ const cartPress = () => {
     }
     useFocusEffect(
         React.useCallback(() => {
+            setCart('');
+            setCartdetails(null);
+            setCodeText('');
+            setCouponapp('');
+            pendingFreeCheckout.current = false;
             let obj = {};
             connectionrequest()
                 .then(() => {
@@ -152,9 +159,11 @@ const CheckCart = () => {
         }
         connectionrequest()
             .then(() => {
+                pendingFreeCheckout.current = true;
                 dispatch(cartCheckoutRequest(objcart))
             })
             .catch((err) => {
+                pendingFreeCheckout.current = false;
                 showErrorAlert(err, "Please connect to internet");
             })
     }
@@ -175,25 +184,12 @@ const cartFreeTake = (invcz) => {
                 showErrorAlert(err, "Please connect to internet");
             })
     }
-    useEffect(() => {
-        if (WebcastReducer?.cartdetailsWebcastResponse) {
-            setLoading(false);
-            setCart(WebcastReducer?.cartdetailsWebcastResponse);
-            const seen = new Set();
-            const uniqueWebcastReducer = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets && WebcastReducer?.cartdetailsWebcastResponse?.cartData?.tickets.filter(item => {
-                if (seen.has(item.payment_ticket_id)) {
-                    return false;
-                }
-                seen.add(item.payment_ticket_id);
-                return true;
-            });
-
-            setCartdetails(uniqueWebcastReducer);
-        }
-    }, [WebcastReducer?.cartdetailsWebcastResponse])
     // ── Move switch-case into useEffect to avoid setState during render ─────
     useEffect(() => {
+        if (!isFocused) return;
+        let status = handledCartStatus.current;
         if (status == '' || WebcastReducer.status != status) {
+            handledCartStatus.current = WebcastReducer.status;
             switch (WebcastReducer.status) {
                 case 'WebCast/cartdetailsWebcastRequest':
                     status = WebcastReducer.status;
@@ -250,12 +246,15 @@ const cartFreeTake = (invcz) => {
                     break;
                 case 'WebCast/cartCheckoutSuccess':
                     status = WebcastReducer.status;
+                    if (!pendingFreeCheckout.current) break;
+                    pendingFreeCheckout.current = false;
                     if (WebcastReducer?.cartCheckoutResponse?.invoiceNumber) {
                         cartFreeTake(WebcastReducer?.cartCheckoutResponse?.invoiceNumber);
                     }
                     break;
                 case 'WebCast/cartCheckoutFailure':
                     status = WebcastReducer.status;
+                    pendingFreeCheckout.current = false;
                     break;
                 case 'WebCast/FreeCartRequest':
                     status = WebcastReducer.status;
@@ -276,7 +275,7 @@ const cartFreeTake = (invcz) => {
                     break;
             }
         }
-    }, [WebcastReducer.status]);
+    }, [WebcastReducer.status, isFocused]);
     const takeCountde = useMemo(() => (
         WebcastReducer?.cartcountWebcastResponse?.cartItemsCount || 0
     ), [WebcastReducer?.cartcountWebcastResponse?.cartItemsCount]);
@@ -422,10 +421,10 @@ onPress: () => {
     const hasFreeTicket = cart && cart?.cartData?.tickets?.length > 0 && cart?.cartData?.tickets.some((ticket) => ticket.paid_amount == "0");
     const allTicketsFree = cart && cart?.cartData?.tickets?.length > 0 && cart?.cartData?.tickets.every((ticket) => ticket.paid_amount == "0");
     const isFree = allTicketsFree || (cart?.cartData?.tickets?.length == 1 && hasFreeTicket);
-    const grossValue = WebcastReducer?.couponWebcastResponse?.gross_value ?? 0;
-    const totalPaid = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount ?? 0;
-    const totalValue = WebcastReducer?.couponWebcastResponse?.total_value ?? 0;
-    const totalQty = WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_qty ?? 0;
+    const grossValue = codeText?.gross_value ?? 0;
+    const totalPaid = cart?.cartData?.total_paid_amount ?? 0;
+    const totalValue = codeText?.total_value ?? 0;
+    const totalQty = cart?.cartData?.total_qty ?? 0;
         /**
  * Clean number utility.
  * @param {*} value - Input value.
@@ -454,7 +453,7 @@ const formatPrice = (price) => {
     };
     const ticketItems = cart?.cartData?.tickets || [];
     const latestCartBaseAmount = cleanNumber(
-        WebcastReducer?.couponWebcastResponse?.discount_value
+        codeText?.discount_value
             ? totalValue
             : cart?.cartData?.subtotal_amount ?? totalPaid
     );
@@ -587,7 +586,7 @@ const formatNumberWithCommas = (value) => {
                                         />
                                         <TouchableOpacity
                                             onPress={() => {
-                                                if (WebcastReducer?.couponWebcastResponse?.code == "Successfully applied.") {
+                                                if (codeText?.code == "Successfully applied.") {
                                                     setCouponapp("");
                                                     applyCoupon();
                                                 } else {
@@ -596,7 +595,7 @@ const formatNumberWithCommas = (value) => {
                                             }}
                                             style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10) }}
                                         >
-                                            {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? (
+                                            {codeText?.code === "Successfully applied." ? (
                                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
                                                     {"Apply"}
                                                 </Text>
@@ -621,11 +620,11 @@ const formatNumberWithCommas = (value) => {
                                     <Text style={{
                                         fontFamily: Fonts.InterSemiBold,
                                         fontSize: 14,
-                                        color: WebcastReducer?.couponWebcastResponse?.code === "Successfully applied." ? '#009E38' : "red"
+                                        color: codeText?.code === "Successfully applied." ? '#009E38' : "red"
                                     }}>
-                                        {WebcastReducer?.couponWebcastResponse?.code === "Successfully applied."
+                                        {codeText?.code === "Successfully applied."
                                             ? "Successfully applied."
-                                            : WebcastReducer?.couponWebcastResponse?.code === "Please check the code."
+                                            : codeText?.code === "Please check the code."
                                                 ? "Please check the code."
                                                 : "Please enter a valid coupon"
                                         }
@@ -657,18 +656,18 @@ const formatNumberWithCommas = (value) => {
                                                 color: Colorpath.black,
                                                 fontWeight: "bold"
                                             }}>
-                                                {WebcastReducer?.couponWebcastResponse?.discount_value
+                                                {codeText?.discount_value
                                                     ? `US$${grossValue}`
                                                     : `US$${totalPaid}`}
-                                                {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.gross_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
+                                                {/* {codeText?.discount_value ? `US$${codeText?.gross_value}` : `US$${cart?.cartData?.total_paid_amount}`} */}
                                             </Text>
                                         </View>
-                                        {WebcastReducer?.couponWebcastResponse?.discount_value ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
+                                        {codeText?.discount_value ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
                                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
                                                 {"Discount (-)"}
                                             </Text>
                                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                                                {`US$${WebcastReducer?.couponWebcastResponse?.discount_value}`}
+                                                {`US$${codeText?.discount_value}`}
                                             </Text>
                                         </View>) : null}
                                         <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
@@ -695,10 +694,10 @@ const formatNumberWithCommas = (value) => {
                                             }}>
                                                 {latestCartBaseAmount > 0
                                                     ? `US$${formatNumberWithCommas(formatPrice(latestCartBaseAmount))}`
-                                                    : WebcastReducer?.couponWebcastResponse?.discount_value
+                                                    : codeText?.discount_value
                                                         ? `US$${totalValue}`
                                                         : `US$${totalPaid}`}
-                                                {/* {WebcastReducer?.couponWebcastResponse?.discount_value ? `US$${WebcastReducer?.couponWebcastResponse?.total_value}` : `US$${WebcastReducer?.cartdetailsWebcastResponse?.cartData?.total_paid_amount}`} */}
+                                                {/* {codeText?.discount_value ? `US$${codeText?.total_value}` : `US$${cart?.cartData?.total_paid_amount}`} */}
                                             </Text>
                                         </View>
                                     </View>
@@ -708,7 +707,7 @@ const formatNumberWithCommas = (value) => {
                                                     if (isFree) {
                                                         CheckCart();
                                                     } else {
-                                                        props.navigation.navigate("Checkout", { checkoutSpan: buildCartRoutePayload() });
+                                                        props.navigation.push("Checkout", { checkoutSpan: buildCartRoutePayload() });
                                                     }
                                                 }}
                                                 height={normalize(45)}

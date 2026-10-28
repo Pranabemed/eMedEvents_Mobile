@@ -17,7 +17,7 @@ import normalize from '../Utils/Helpers/Dimen';
  * @returns {JSX.Element}
  */
 const DropDownHeader = ({ title, onClosePress, standardized = false }) => {
-    const cleanTitle = title === 'Select Specialty(ies)' ? title : dropdownPlaceholder(title);
+    const cleanTitle = title === 'Select Specialty(s)' ? title : dropdownPlaceholder(title);
     if (standardized) {
         return (
             <View style={dropdownStyles.header}>

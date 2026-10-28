@@ -173,21 +173,18 @@ const handleScroll = event => {
 
   return (
     <>
-      <SectionTitle
-        title="Specialities"
-        action="View all"
-        width={width}
-        onAction={() =>
-          navigation.navigate('BrowseScreen', {
-            highText: {
-              highText: 'Specialty',
-              CreditData: '',
-              isGuest: true,
-              Realback: 'guest',
-            },
-          })
-        }
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <SectionTitle title="Specialities" width={width} />
+        {specialityColumns.length > 1 ? (
+          <Animated.View
+            pointerEvents="none"
+            accessibilityLabel="Swipe to see more specialties"
+            style={{ opacity: hintOpacity, marginRight: 10, transform: [{ translateX: arrowShift }] }}
+          >
+            <Text style={styles.specialityHintArrowText}>{'>>>>>'}</Text>
+          </Animated.View>
+        ) : null}
+      </View>
       <View style={styles.specialityScrollWrap}>
         <ScrollView
           ref={scrollViewRef}
@@ -224,19 +221,6 @@ const handleScroll = event => {
             </View>
           ))}
         </ScrollView>
-        {specialityColumns.length > 1 ? (
-          <Animated.View pointerEvents="none" style={[styles.specialityHintWrap, { opacity: hintOpacity }]}>
-            <View style={styles.specialityHintFade} />
-            <View style={styles.specialityHintBadge}>
-              <Text style={styles.specialityHintText}>Swipe</Text>
-              <Animated.View style={[styles.specialityHintArrowRow, { transform: [{ translateX: arrowShift }] }]}>
-                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
-                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
-                <Text style={styles.specialityHintArrowText}>{'>'}</Text>
-              </Animated.View>
-            </View>
-          </Animated.View>
-        ) : null}
       </View>
     </>
   );

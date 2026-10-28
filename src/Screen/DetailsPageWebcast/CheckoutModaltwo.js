@@ -43,7 +43,7 @@ const weekFilterProfession = ({ item }) => {
         return (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
                 <TouchableOpacity onPress={() => {
-                    handleCountrySet(item, activeIndex);
+                    handleCountrySet(item, activeIndex, { source: 'user' });
                     setCountrypicker(!countrypicker);
                     setSearchcountry("");
                     // setCountryNew(item?.name);
@@ -91,7 +91,7 @@ const weekFilterProfession = ({ item }) => {
             value={searchcountry} onChangeText={text => searchCountryName(text)} placeholder="Search Country Name*"
             data={countryall} getLabel={item => item?.name}
             onSelect={item => {
-                    handleCountrySet(item, activeIndex);
+                    handleCountrySet(item, activeIndex, { source: 'user' });
                     setCountrypicker(!countrypicker);
                     setSearchcountry("");
                     // setCountryNew(item?.name);

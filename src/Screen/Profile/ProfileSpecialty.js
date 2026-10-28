@@ -149,7 +149,7 @@ const ProfileSpeciality = ({
             <View style={dropdownStyles.panel}>
                 <DropDownHeader
                     standardized
-                    title="Select Specialty(ies)"
+                    title="Select Specialty(s)"
                     onClosePress={() => {
                         setstatepicker(!statepicker);
                         setSearchState("");

@@ -532,15 +532,13 @@ const handleStateSelect = useCallback((item) => {
  */
 const handleProfession = (did) => {
         console.log("Hello=======did", did);
-        if (!isNonUsaUser) {
-            setState('');
-            setSpecailid('');
-            setSearchState('');
-            setstatepicker(false);
-            setStatelist([]);
-            setSelectState([]);
-            setSlist([]);
-        }
+        setState('');
+        setSpecailid('');
+        setSearchState('');
+        setstatepicker(false);
+        setStatelist([]);
+        setSelectState([]);
+        setSlist([]);
         licData(did);
         setLabel(did);
         setCountry(did);
@@ -1010,8 +1008,8 @@ const licData = (hill) => {
                                             }}
                                         /> */}
                                     <InputField dropdownPresentation
-                                        icondisable={isNonUsaUser && !(statelist?.length > 0)}
-                                        label={state ? "Speciality*" : "Speciality*"}
+                                        icondisable={!showSpecialty}
+                                        label={state ? "Specialty*" : "Specialty*"}
                                         value={state}
                                         placeholder=""
                                         placeholderTextColor="#949494"
