@@ -104,16 +104,29 @@ test('a checkout without a pending registration cannot open payment from cached 
   expect(props.navigation.push).not.toHaveBeenCalled();
 });
 
-test.each(['direct', 'in-person'])('%s consecutive registrations send the second invoice and price to Payment exactly once', async flow => {
+test.each(['direct', 'in-person', 'in-person-two-tickets'])('%s consecutive registrations send the second invoice and price to Payment exactly once', async flow => {
   const propsFor = (invoice, amount) => {
     const props = checkoutProps(invoice, amount);
-    if (flow === 'in-person') props.route.params = {inPersonTicket: {inPersonTicket: ticket(invoice, amount), inpersonSpanrole: {conferenceId: invoice}, subtotalAmount: amount, totalTicketPrice: amount}};
+    if (flow.startsWith('in-person')) {
+      const savedTicket = ticket(invoice, amount);
+      if (flow === 'in-person-two-tickets') {
+        savedTicket.tickets[0].quantity = 2;
+        savedTicket.tickets[0].itemamt = amount / 2;
+        // Exercise the subtotal + fee fallback when the API omits an invoice total.
+        delete savedTicket.total_amount_with_fee;
+      }
+      props.route.params = {inPersonTicket: {inPersonTicket: savedTicket, inpersonSpanrole: {conferenceId: invoice}, subtotalAmount: amount, totalTicketPrice: amount}};
+    }
     return props;
   };
   const firstProps = propsFor('FIRST', 100);
   const first = await mount(Checkout, firstProps);
   const proceed = async screen => {
     const control = () => screen.tree.root.findByType('./CheckoutMain').props;
+    if (flow === 'in-person-two-tickets') {
+      expect(control().checkoutBaseAmount).toBe(control().ticketSave.tickets[0].itemamt * 2);
+      expect(control().checkoutTotalAmount).toBe(control().checkoutBaseAmount);
+    }
     await act(async () => control().setFormData([{
       firstname: 'Test', lastname: 'User', emailad: 'test@example.com', professionad: 'Nurse',
       speciality: 'Cardiology', address: 'Test Street', country: 'United Kingdom', country_id: '232',
@@ -180,6 +193,38 @@ test('new cart ignores previous coupon price and inactive cart cannot run a free
   mockState.WebcastReducer = {...mockState.WebcastReducer, status: 'WebCast/cartCheckoutSuccess', cartCheckoutResponse: {invoiceNumber: 'SECOND'}};
   await old.update(); await current.update(false);
   expect(mockDispatch.mock.calls.some(([a]) => a.type === 'WebCast/FreeCartRequest')).toBe(false);
+});
+
+test.each([false, true])('multi-ticket cart carries the same total through Checkout and Payment (coupon: %s)', async coupon => {
+  const props = {navigation: navigation(), route: {params: {addtocart: {}}}};
+  const cart = await mount(AddToCart, props);
+  mockState.WebcastReducer = {status: 'WebCast/cartdetailsWebcastSuccess', cartdetailsWebcastResponse: {
+    cartData: {total_qty: 3, subtotal_amount: 250, total_paid_amount: 250, overall_transaction_fee: 10, total_amount_with_fee: 260,
+      tickets: [{payment_ticket_id: 'A', payment_id: 'A', ticket_qty: 2, paid_amount: 200, title: 'Conference A', credits: []}, {payment_ticket_id: 'B', payment_id: 'B', ticket_qty: 1, paid_amount: 50, title: 'Conference B', credits: []}]},
+  }};
+  await cart.update();
+  if (coupon) {
+    mockState.WebcastReducer = {...mockState.WebcastReducer, status: 'WebCast/couponWebcastSuccess', couponWebcastResponse: {gross_value: 250, discount_value: 50, total_value: 200}};
+    await cart.update();
+  }
+  const subtotalAmount = coupon ? 200 : 250;
+  const totalTicketPrice = subtotalAmount + 10;
+  expect(cart.tree.root.findAll(node => node.props.children === `US$${totalTicketPrice}`).length).toBeGreaterThan(0);
+  await act(async () => cart.tree.root.findAllByType('../../Components/Button').find(n => n.props.text === 'Proceed').props.onPress());
+  const checkoutRoute = props.navigation.push.mock.calls[0][1];
+  expect(checkoutRoute.checkoutSpan).toMatchObject({subtotalAmount, processingFeeAmount: 10, totalTicketPrice});
+  const checkoutProps = {navigation: navigation(), route: {params: checkoutRoute}};
+  const checkout = await mount(Checkout, checkoutProps);
+  const control = checkout.tree.root.findByType('./CheckoutMain').props;
+  expect(control.checkoutBaseAmount).toBe(subtotalAmount);
+  expect(control.checkoutTotalAmount).toBe(totalTicketPrice);
+  await act(async () => control.cartPayment());
+  mockState.WebcastReducer = {status: 'WebCast/cartCheckoutSuccess', cartCheckoutResponse: {invoiceNumber: 'MULTI'}};
+  await checkout.update();
+  const paymentRoute = checkoutProps.navigation.push.mock.calls[0][1];
+  expect(paymentRoute.cartInvoice.paymentprice).toMatchObject({subtotalAmount, processingFeeAmount: 10, totalTicketPrice});
+  const payment = await mount(Payment, {navigation: navigation(), route: {params: paymentRoute}});
+  expect(JSON.stringify(payment.tree.toJSON())).toContain(`US$${totalTicketPrice}`);
 });
 
 test('in-person ticket screen does not navigate using a cached previous invoice', async () => {

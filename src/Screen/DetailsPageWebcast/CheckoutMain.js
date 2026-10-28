@@ -196,7 +196,7 @@ const handleSoftDelete = (index) => {
     useEffect(() => {
         let totalQuantity = 0;
         if (spanroute?.inPersonTicket?.tickets) {
-            totalQuantity += spanroute.inPersonTicket.tickets.reduce((total, ticket) => total + ticket.quantity, 0);
+            totalQuantity += spanroute.inPersonTicket.tickets.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
         }
 
         if (spanroute?.finalTicket?.tickets) {
@@ -488,7 +488,7 @@ function formatPrice(price) {
                                             fontSize: 14,
                                             color: '#000000'
                                         }}>
-                                        {` Total (${spanroute?.inPersonTicket?.tickets?.length} tickets)`}
+                                        {` Total (${totalcount} tickets)`}
                                     </Text>
                                 </View>
                             ) : null}

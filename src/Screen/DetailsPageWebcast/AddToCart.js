@@ -462,8 +462,9 @@ const formatPrice = (price) => {
         ticketItems.reduce((sum, ticket) => sum + cleanNumber(ticket?.transaction_fee || 0), 0)
     );
     const latestCartTotalAmount = cleanNumber(
-        cart?.cartData?.total_amount_with_fee ??
-        (latestCartBaseAmount + latestCartProcessingFeeAmount)
+        codeText?.discount_value
+            ? codeText?.total_amount_with_fee ?? (latestCartBaseAmount + latestCartProcessingFeeAmount)
+            : cart?.cartData?.total_amount_with_fee ?? (latestCartBaseAmount + latestCartProcessingFeeAmount)
     );
         /**
  * Build cart route payload utility.
@@ -692,11 +693,7 @@ const formatNumberWithCommas = (value) => {
                                                 color: Colorpath.black,
                                                 fontWeight: "bold"
                                             }}>
-                                                {latestCartBaseAmount > 0
-                                                    ? `US$${formatNumberWithCommas(formatPrice(latestCartBaseAmount))}`
-                                                    : codeText?.discount_value
-                                                        ? `US$${totalValue}`
-                                                        : `US$${totalPaid}`}
+                                                {`US$${formatNumberWithCommas(formatPrice(latestCartTotalAmount))}`}
                                                 {/* {codeText?.discount_value ? `US$${codeText?.total_value}` : `US$${cart?.cartData?.total_paid_amount}`} */}
                                             </Text>
                                         </View>

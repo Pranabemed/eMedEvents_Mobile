@@ -323,6 +323,8 @@ const Checkout = (props) => {
     };
     const checkoutBaseAmount = savefull?.discount_value != null && savefull?.total_value != null
         ? cleanNumber(savefull?.total_value)
+        : props?.route?.params?.inPersonTicket && routePaymentPrice?.subtotalAmount != null
+            ? cleanNumber(routePaymentPrice.subtotalAmount)
         : ticketSave?.tickets?.[0]?.itemamt != null || ticketSave?.tickets?.[0]?.gross_value != null
             ? cleanNumber(ticketSave?.tickets?.[0]?.itemamt ?? ticketSave?.tickets?.[0]?.gross_value)
             : routePaymentPrice?.subtotalAmount != null
@@ -349,6 +351,8 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         const currentTicket = currentTickets[0];
         const currentBaseAmount = savefull?.discount_value != null && savefull?.total_value != null
             ? cleanNumber(savefull.total_value)
+            : props?.route?.params?.inPersonTicket && source?.subtotalAmount != null
+                ? cleanNumber(source.subtotalAmount)
             : currentTicket?.itemamt != null || currentTicket?.gross_value != null
                 ? cleanNumber(currentTicket?.itemamt ?? currentTicket?.gross_value)
                 : checkoutBaseAmount;

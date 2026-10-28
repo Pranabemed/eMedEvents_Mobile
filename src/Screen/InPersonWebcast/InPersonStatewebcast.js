@@ -214,7 +214,7 @@ const handleIncrement = (index, item) => {
         // Update total amounts
         setTotalAmounts((prevTotals) => {
             const newTotals = [...prevTotals];
-            const newTotal = (item?.amount || 0) * (currentClickHistory.length + 1);
+            const newTotal = (item?.amount ?? item?.itemamt ?? 0) * (currentClickHistory.length + 1);
             newTotals[index] = newTotal; // Update total for the current index
             return newTotals;
         });
@@ -241,7 +241,7 @@ const handleDecrement = (index, item) => {
             const newTotals = [...prevTotals];
             const currentClickHistory = clickHistory[index];
             if (currentClickHistory.length > 0) {
-                const newTotal = (item?.amount || 0) * (currentClickHistory.length - 1);
+                const newTotal = (item?.amount ?? item?.itemamt ?? 0) * (currentClickHistory.length - 1);
                 newTotals[index] = newTotal; // Update total for the current index
             } else {
                 newTotals[index] = 0; // Reset to 0 if no clicks
