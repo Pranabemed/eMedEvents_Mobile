@@ -208,6 +208,22 @@ test.each(['guest', 'member'])('autofilled state resolves its ID and accepts a n
   expect(control().formData[0]).toMatchObject({city: 'Hyderabad', city_id: '100', state_id: '36'});
 });
 
+test('updated saved contact address replaces old checkout location while preserving other attendees and subsequent edits', async () => {
+  const screen = await mount(Checkout, checkoutProps('ADDRESS', 100));
+  const control = () => screen.tree.root.findByType('./CheckoutMain').props;
+  const otherAttendee = {country: 'United States', country_id: '1', state: 'Texas', city: 'Austin'};
+  await act(async () => control().setFormData([{...otherAttendee, firstname: 'Jane'}, otherAttendee]));
+  const user_address = {country_name: 'India', country_id: '99', state_name: 'Telangana', state_id: '36', city_name: 'Hyderabad', city_id: '100', address: 'New contact address', zipcode: '500001'};
+  mockState.DashboardReducer = {mainprofileResponse: {user_address}};
+  await screen.update();
+  expect(control().formData[0]).toMatchObject({firstname: 'Jane', country: 'India', country_id: '99', state: 'Telangana', state_id: '36', city: 'Hyderabad', city_id: '100', address: 'New contact address', zipcode: '500001'});
+  expect(control().formData[1]).toEqual(otherAttendee);
+  await act(async () => control().handlecityShows({id: '101', name: 'Warangal'}, 0));
+  mockState.DashboardReducer = {mainprofileResponse: {user_address: {...user_address}}};
+  await screen.update();
+  expect(control().formData[0]).toMatchObject({city: 'Warangal', city_id: '101'});
+});
+
 test('changing India to USA clears attendee and primary profession/specialty defaults', async () => {
   const {tree} = await mount(Checkout, checkoutProps('COUNTRY', 100));
   const control = () => tree.root.findByType('./CheckoutMain').props;

@@ -127,6 +127,7 @@ const Checkout = (props) => {
     const [cityPicker, setCityPicker] = useState(false);
     const [ticketSave, setTicketSave] = useState(null);
     const [formData, setFormData] = useState([]);
+    const appliedProfileAddress = useRef(null);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
     const [playerSessionID, setPlayerSessionID] = useState("");
     const [detectedCountry, setDetectedCountry] = useState(null);
@@ -808,7 +809,10 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         if (!Array.isArray(slistpratice) || slistpratice.length === 0) return;
         const primaryRegistrant = formData?.[0];
         if (!primaryRegistrant?.country_id || primaryRegistrant?.state_id) return;
-        const stateName = primaryRegistrant?.state || detectedState;
+        const savedProfileAddress = DashboardReducer?.mainprofileResponse?.user_address ||
+            DashboardReducer?.mainprofileResponse?.contact_information;
+        const hasSavedCountry = !isGuestCheckout && Boolean(savedProfileAddress?.country_id || savedProfileAddress?.country_name);
+        const stateName = primaryRegistrant?.state || (!hasSavedCountry ? detectedState : '');
         if (!stateName) return;
         const normalizeLocation = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         const matchedState = slistpratice.find(item =>
@@ -826,7 +830,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
                 handleStateshows(matchedState, 0);
             }
         }
-    }, [detectedState, formData, slistpratice]);
+    }, [detectedState, formData, slistpratice, isGuestCheckout, DashboardReducer?.mainprofileResponse]);
 
     useEffect(() => {
         if (allProfession?.personal_information?.firstname || allProfession?.firstname) {
@@ -1269,7 +1273,8 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
     useEffect(() => {
         if (isGuestCheckout) return;
         if (DashboardReducer?.mainprofileResponse || AuthReducer?.verifyResponse?.phone) {
-            const allDatashow = DashboardReducer?.mainprofileResponse?.user_address;
+            const allDatashow = DashboardReducer?.mainprofileResponse?.user_address ||
+                DashboardReducer?.mainprofileResponse?.contact_information;
             const NpiNo = DashboardReducer?.mainprofileResponse?.professional_information?.npi_number;
 
             let phoneNumberToUse = allDatashow?.contact_no;
@@ -1314,6 +1319,30 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
             setState_id(allDatashow?.state_id);
             setCity_id(allDatashow?.city_id);
             setNpino(NpiNo);
+
+            // Replace autofilled/stale locations only when the saved contact address changes.
+            if (allDatashow?.country_id || allDatashow?.country_name) {
+                const savedAddress = {
+                    address: allDatashow.address || '',
+                    country: allDatashow.country_name || '',
+                    country_id: allDatashow.country_id || '',
+                    state: allDatashow.state_name || '',
+                    state_id: allDatashow.state_id || '',
+                    city: allDatashow.city_name || '',
+                    city_id: allDatashow.city_id || '',
+                    zipcode: allDatashow.zipcode || '',
+                };
+                const addressKey = JSON.stringify(savedAddress);
+                if (appliedProfileAddress.current !== addressKey) {
+                    appliedProfileAddress.current = addressKey;
+                    setAddress(savedAddress.address);
+                    setFormData(previous => {
+                        const next = [...previous];
+                        next[0] = { ...next[0], ...savedAddress, countryLocationReset: true };
+                        return next;
+                    });
+                }
+            }
 
             // ✅ Only set calling code if valid
             SetDialcode(callingCodeToUse || null);
