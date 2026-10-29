@@ -105,7 +105,7 @@ let status = "";
  *
  * @returns {*}
  */
-export default function StateLicense({ profileType, propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
+export default function StateLicense({ activePhysicianTrial = false, profileType, propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
     const isSkipProfile = profileType === 'SkipProfile';
     const dispatch = useDispatch();
@@ -697,10 +697,12 @@ const handleAllIndex = (index) => {
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     const shouldShowAddLicenseCard =
-        (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
         !fulldashbaord?.length &&
-        !isNonUsaUser &&
-        canAddLicenses;
+        (activePhysicianTrial || (
+            (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
+            !isNonUsaUser &&
+            canAddLicenses
+        ));
         /**
  * Render add license card utility.
  * @returns {JSX.Element}

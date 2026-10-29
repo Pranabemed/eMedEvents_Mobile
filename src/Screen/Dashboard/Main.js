@@ -661,6 +661,20 @@ const Main = (props) => {
 
   const allProfTake = isPhysicianHandleMatch;
   const isPhysicianFlow = allProfTake;
+  const trialUser = subscriptionSources.find(source =>
+    source?.subscription_user !== undefined && source?.subscription_user !== null
+  );
+  const shouldPreferTrialStateLicense = isPhysicianFlow &&
+    String(trialUser?.subscription_user || '').trim().toLowerCase() === 'free' &&
+    Array.isArray(trialUser?.subscriptions) && trialUser.subscriptions.some(record => {
+      const startDate = new Date(`${record?.start_date}T00:00:00`);
+      const endDate = new Date(`${record?.end_date}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return String(record?.subscription_status) === '1' &&
+        String(record?.active_status) === '1' &&
+        today >= startDate && today < endDate;
+    });
   const isNursingFlow = isNursingHandleMatch && !isPhysicianFlow;
 
   useEffect(() => {
@@ -848,13 +862,12 @@ const Main = (props) => {
   const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || isPhysicianFlow || isNursingFlow || (!isPhysicianFlow && !isNursingFlow));
-  const dashboardLicensesMain = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || [];
-  const hasNoLicensuresMain = !Array.isArray(dashboardLicensesMain) || dashboardLicensesMain.length === 0;
+  const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
+  const hasNoLicensuresMain = normalizedFulldashbaord.length === 0;
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
 
   const shouldRenderNewProfession =
     (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || (hasNoLicensuresMain && (hasNonUsaStateDataMain || isNonUsaUser));
-  const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   /**
 * Render main add license card utility.
 * @returns {JSX.Element}
@@ -2005,7 +2018,9 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
-                    {currentProfile === 'SkipProfile'
+                    {shouldPreferTrialStateLicense
+                      ? <StateLicense activePhysicianTrial={true} propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                      : currentProfile === 'SkipProfile'
                       ? (isPhysicianFlow
                         ? <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                         : isNursingFlow

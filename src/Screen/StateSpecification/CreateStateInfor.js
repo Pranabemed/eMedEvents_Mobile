@@ -31,7 +31,7 @@ import CityComponent from './CityComponent';
 import CustomizedYear from './CustomizedYear';
 import Imagepath from '../../Themes/Imagepath';
 import Header from '../../Components/Header';
-import { dashMbRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer';
+import { dashMbRequest, mainprofileRequest, stateLicesenseRequest } from '../../Redux/Reducers/DashboardReducer';
 import { AppContext } from '../GlobalSupport/AppContext';
 import CustomInput from '../../Components/NewTextIn';
 import CustomInputTouchable from '../../Components/IconTextIn';
@@ -85,6 +85,8 @@ const CreateStateInfor = (props) => {
     const [takestate, setTakestate] = useState("");
     const [cityReq, setCityReq] = useState("");
     const [noloadnew, setNoloadnew] = useState(false);
+    const pendingLicenseRef = useRef(null);
+    const licenseSaveAttemptedRef = useRef(false);
     const [thoun, setThoun] = useState("")
     const isFocus = useIsFocused();
     useEffect(() => {
@@ -568,6 +570,20 @@ const CreateStateInfor = (props) => {
             }
             connectionrequest()
                 .then(() => {
+                    if (props?.route?.params?.allowStateInfoFlow === true) {
+                        const stateId = DashboardReducer?.mainprofileResponse?.user_address?.state_id || licenseStateId || cityReq;
+                        const expiryDate = moment(obj.license_expiry_date, ['DD-MM-YYYY', moment.ISO_8601], true);
+                        if (!stateId || !expiryDate.isValid()) {
+                            showErrorAlert('Please check your state and license expiry date');
+                            return;
+                        }
+                        pendingLicenseRef.current = {
+                            stateId,
+                            licenseNumber: licno.trim(),
+                            expiryDate: expiryDate.format('YYYY-MM-DD'),
+                        };
+                        licenseSaveAttemptedRef.current = false;
+                    }
                     dispatch(stateInformSaveRequest(obj))
                 })
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
@@ -642,6 +658,27 @@ const CreateStateInfor = (props) => {
                 break;
             case 'Dashboard/dashMbSuccess':
                 status1 = DashboardReducer.status;
+                if (pendingLicenseRef.current) {
+                    const pendingLicense = pendingLicenseRef.current;
+                    const savedLicenses = DashboardReducer?.dashMbResponse?.data?.licensures;
+                    const hasSavedLicense = Array.isArray(savedLicenses) && savedLicenses.some(license =>
+                        String(license.state_id) === String(pendingLicense.stateId) &&
+                        String(license.license_number || '').trim() === pendingLicense.licenseNumber
+                    );
+                    if (!hasSavedLicense && !licenseSaveAttemptedRef.current) {
+                        licenseSaveAttemptedRef.current = true;
+                        const licenseData = new FormData();
+                        licenseData.append('id', 0);
+                        licenseData.append('state_id', pendingLicense.stateId);
+                        licenseData.append('from_date', '');
+                        licenseData.append('to_date', pendingLicense.expiryDate);
+                        licenseData.append('license_number', pendingLicense.licenseNumber);
+                        licenseData.append('delete_file', 1);
+                        dispatch(stateLicesenseRequest(licenseData));
+                        break;
+                    }
+                    pendingLicenseRef.current = null;
+                }
                 console.log("DashboardReducer999912222", DashboardReducer.dashMbResponse.data?.licensures);
                 const uniqueStates = DashboardReducer?.dashMbResponse?.data?.licensures?.filter((state, index, self) => {
                     return index === self.findIndex((s) =>
@@ -668,6 +705,26 @@ const CreateStateInfor = (props) => {
                 break;
             case 'Dashboard/dashMbFailure':
                 status1 = DashboardReducer.status;
+                setNoloadnew(false);
+                break;
+            case 'Dashboard/stateLicesenseSuccess':
+                status1 = DashboardReducer.status;
+                if (pendingLicenseRef.current && licenseSaveAttemptedRef.current) {
+                    (async () => {
+                        const token = await AsyncStorage.getItem(constants.TOKEN);
+                        dispatch(dashMbRequest({ token: token || AuthReducer?.loginsiginResponse?.token, key: {} }));
+                    })().catch(() => {
+                        setNoloadnew(false);
+                        showErrorAlert('Unable to refresh your state license. Please try again.');
+                    });
+                }
+                break;
+            case 'Dashboard/stateLicesenseFailure':
+                status1 = DashboardReducer.status;
+                if (pendingLicenseRef.current) {
+                    setNoloadnew(false);
+                    showErrorAlert('Unable to save your state license. Please try again.');
+                }
                 break;
         }
     }
@@ -830,9 +887,12 @@ const CreateStateInfor = (props) => {
                                                                 props?.route?.params?.dataVerify?.profession_type ||
                                                                 props?.route?.params?.dataVerify?.allDat?.profession_type || props?.route?.params?.dataVerify?.allDat?.user?.profession_type || DashboardReducer?.mainprofileResponse?.professional_information?.profession_type;
 
-                                                            return prof && type
-                                                                ? `${prof}-${type}`
-                                                                : prof || type || '';
+                                                            const profession = String(prof || '').trim();
+                                                            const professionType = String(type || '').trim();
+                                                            const existingType = profession.split(/[\s-]+/).pop();
+                                                            return profession && professionType && existingType.toLowerCase() !== professionType.toLowerCase()
+                                                                ? `${profession}-${professionType}`
+                                                                : profession || professionType;
                                                         })()}
                                                     </Text>
                                                 </View>
