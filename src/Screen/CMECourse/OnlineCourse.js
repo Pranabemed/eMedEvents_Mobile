@@ -3,7 +3,7 @@
  */
 
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Alert } from 'react-native';
-import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useContext, useRef, useMemo } from 'react';
 import Fonts from '../../Themes/Fonts';
 import IconDot from 'react-native-vector-icons/Entypo';
 import Colorpath from '../../Themes/Colorpath';
@@ -40,6 +40,9 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const statusRef = useRef("");
+    const hasMoreRef = useRef(true);
+    const isFetchingMoreRef = useRef(false);
+    const onEndReachedCalledDuringMomentum = useRef(true);
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
     const [pageNum, setPageNum] = useState(0);
@@ -51,7 +54,6 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const [certificate, setCertificate] = useState("");
     const [filtermodal, setFiltermodal] = useState(false);
     const [pdfUrist, setPdfUrist] = useState("");
-    const [showloader, setShowLoader] = useState(false);
         /**
  * Open filter modal utility.
  * @returns {void}
@@ -79,7 +81,7 @@ const handleSave = () => {
  */
 const handleUrl = () => {
         const url = onlineName?.detailpage_url;
-        const result = url.split('/').pop();
+        const result = typeof url === 'string' ? url.split('/').pop() : '';
         if (result) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, creditData: crediwhole } })
         }
@@ -91,7 +93,7 @@ const handleUrl = () => {
  */
 const titlhandleUrl = (make) => {
         const urltitle = make?.detailpage_url;
-        const resulttitle = urltitle.split('/').pop();
+        const resulttitle = typeof urltitle === 'string' ? urltitle.split('/').pop() : '';
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, creditData: crediwhole } })
         }
@@ -103,7 +105,7 @@ const titlhandleUrl = (make) => {
  */
 const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
-        const result = url.split('/').pop();
+        const result = typeof url === 'string' ? url.split('/').pop() : '';
         if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
         } else if (dataItem?.current_activity_api == "introduction") {
@@ -140,37 +142,56 @@ const fetchHandle = (page = pageNum) => {
             "request_type": "normallist",
             "listby_type": "myactivities"
         };
+        if (typeof setLoading === 'function') {
+            setLoading(true);
+        }
         connectionrequest()
             .then(() => {
                 dispatch(cmeCourseRequest(obj));
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
+                if (typeof setLoading === 'function') {
+                    setLoading(false);
+                }
+                isFetchingMoreRef.current = false;
             });
     };
     useFocusEffect(
         useCallback(() => {
             dispatch(clearCmeCourseData());
             statusRef.current = "";
+            hasMoreRef.current = true;
+            isFetchingMoreRef.current = false;
+            onEndReachedCalledDuringMomentum.current = true;
             setStoreAlldata([]); // Reset stored data on focus
             setPageNum(0); // Reset pagination
             fetchHandle(0); // Fetch fresh data specifically for page 0
         }, [dispatch])
     );
     const fetchMore = useCallback(() => {
-        if (!apiReq && CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-            const nextPage = pageNum + 1;
-            setPageNum(nextPage);
-            fetchHandle(nextPage);
+        if (isFetchingMoreRef.current || !hasMoreRef.current || apiReq || loading) {
+            return;
         }
-    }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
+        const currentConferences = CMEReducer?.cmeCourseResponse?.conferences;
+        if (!Array.isArray(currentConferences) || currentConferences.length < limit) {
+            hasMoreRef.current = false;
+            return;
+        }
+        isFetchingMoreRef.current = true;
+        const nextPage = pageNum + 1;
+        setPageNum(nextPage);
+        fetchHandle(nextPage);
+    }, [apiReq, loading, pageNum, CMEReducer?.cmeCourseResponse?.conferences, limit]);
 
         /**
  * Full data refresh utility.
  * @returns {void}
  */
 const fullDataRefresh = () => {
+        hasMoreRef.current = true;
+        isFetchingMoreRef.current = false;
+        onEndReachedCalledDuringMomentum.current = true;
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -182,11 +203,22 @@ const fullDataRefresh = () => {
             statusRef.current = CMEReducer.status;
             if (CMEReducer.status === 'CME/cmeCourseRequest') {
                 setApiReq(true);
-                setLoading(true);
+                if (typeof setLoading === 'function') {
+                    setLoading(true);
+                }
             } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
-                setLoading(false);
-                const newData = CMEReducer?.cmeCourseResponse?.conferences || [];
+                if (typeof setLoading === 'function') {
+                    setLoading(false);
+                }
+                isFetchingMoreRef.current = false;
+                const conferences = CMEReducer?.cmeCourseResponse?.conferences;
+                const newData = Array.isArray(conferences) ? conferences : [];
+                if (newData.length < limit) {
+                    hasMoreRef.current = false;
+                } else {
+                    hasMoreRef.current = true;
+                }
                 if (pageNum === 0) {
                     setStoreAlldata(newData);
                 } else {
@@ -200,40 +232,57 @@ const fullDataRefresh = () => {
                 }
             } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
-                setLoading(false);
+                if (typeof setLoading === 'function') {
+                    setLoading(false);
+                }
+                isFetchingMoreRef.current = false;
+                hasMoreRef.current = false;
             }
         } else if (CMEReducer.status === '') {
             statusRef.current = '';
         }
-    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum]);
+    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit, setLoading]);
 
-    useEffect(() => {
-        const filteredData = storeAlldata?.filter(item => {
+    const memoFilteredItems = useMemo(() => {
+        return storeAlldata?.filter(item => {
             const type = parseInt(item?.conference_type);
             const excludedTypes = [1, 6, 34];
             return !excludedTypes.includes(type);
         }) || [];
-        setFilteredItems(filteredData);
     }, [storeAlldata]);
+
+    const memoCompltall = useMemo(() => {
+        return memoFilteredItems.filter(item => item?.completed_percentage === 100);
+    }, [memoFilteredItems]);
+
+    const memoPendingall = useMemo(() => {
+        return memoFilteredItems.filter(item => item?.completed_percentage >= 0 && item?.completed_percentage <= 99);
+    }, [memoFilteredItems]);
+
+    const memoDataAll = useMemo(() => {
+        if (fetchname === "Pending") {
+            return memoPendingall;
+        }
+        if (fetchname === "Completed") {
+            return memoCompltall;
+        }
+        return memoFilteredItems;
+    }, [fetchname, memoFilteredItems, memoPendingall, memoCompltall]);
+
     useEffect(() => {
-        const filteredDataComplt = filteredItems?.filter(item => {
-            return item?.completed_percentage === 100;
-        }) || [];
-        setCompltall(filteredDataComplt);
-    }, [fetchname, filteredItems]);
-    useEffect(() => {
-        const filteredDataPending = filteredItems?.filter(item => {
-            return item?.completed_percentage >= 0 && item?.completed_percentage <= 99;
-        }) || [];
-        setPendingall(filteredDataPending);
-    }, [fetchname, filteredItems]);
-    useEffect(() => {
-        const resultData = fetchname === "All" ? filteredItems :
-            fetchname === "Pending" ? pendingall :
-                fetchname === "Completed" ? compltall :
-                    [];
-        setDataAll(resultData);
-    }, [fetchname, filteredItems, pendingall, compltall]);
+        if (typeof setDataAll === 'function') {
+            setDataAll(memoDataAll);
+        }
+        if (typeof setFilteredItems === 'function') {
+            setFilteredItems(memoFilteredItems);
+        }
+        if (typeof setCompltall === 'function') {
+            setCompltall(memoCompltall);
+        }
+        if (typeof setPendingall === 'function') {
+            setPendingall(memoPendingall);
+        }
+    }, [memoDataAll, memoFilteredItems, memoCompltall, memoPendingall, setDataAll, setFilteredItems, setCompltall, setPendingall]);
         /**
  * Handles linkst.
  * @param {*} link - Input value.
@@ -290,14 +339,7 @@ const openFileViewerst = async () => {
             openFileViewerst();
         }
     }, [pdfUrist]);
-    useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(true);
-        }, 5000);
 
-        return () => clearTimeout(timeout);
-    }, []);
         /**
  * Courserender data utility.
  * @param {Object} props - Input object.
@@ -477,15 +519,25 @@ const courserenderData = ({ item, index }) => {
     return (
         <View>
             <FlatList
-                data={dataAll}
+                data={memoDataAll}
                 renderItem={courserenderData}
-                keyExtractor={(item, index) => index.toString()}
-                onEndReached={fetchMore}
+                keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
+                onMomentumScrollBegin={() => {
+                    onEndReachedCalledDuringMomentum.current = false;
+                }}
+                onEndReached={() => {
+                    if (!onEndReachedCalledDuringMomentum.current) {
+                        fetchMore();
+                        onEndReachedCalledDuringMomentum.current = true;
+                    }
+                }}
                 onEndReachedThreshold={0.5}
                 contentContainerStyle={{ paddingBottom: normalize(280) }}
                 scrollEventThrottle={16}
                 ListFooterComponent={
-                    showloader && loading && dataAll?.length > 1 ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                    loading && pageNum > 0 ? (
+                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginVertical: normalize(15) }} />
+                    ) : null
                 }
                 refreshControl={
                     <RefreshControl
@@ -493,20 +545,22 @@ const courserenderData = ({ item, index }) => {
                         onRefresh={fullDataRefresh}
                     />
                 }
-                ListEmptyComponent={!showloader ? <ActivityIndicator size={"small"} color={"green"} /> : !loading &&
-                    <Text
-                        style={{
-                            alignContent: 'center',
-                            alignItems: 'center',
-                            alignSelf: 'center',
-                            color: Colorpath.grey,
-                            fontWeight: 'bold',
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: normalize(20),
-                            paddingTop: normalize(30),
-                        }}>
-                        No data found
-                    </Text>
+                ListEmptyComponent={
+                    !loading && (
+                        <Text
+                            style={{
+                                alignContent: 'center',
+                                alignItems: 'center',
+                                alignSelf: 'center',
+                                color: Colorpath.grey,
+                                fontWeight: 'bold',
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: normalize(20),
+                                paddingTop: normalize(30),
+                            }}>
+                            No data found
+                        </Text>
+                    )
                 }
             />
             {/* {This code for Schedule a course button,please don't remove} */}

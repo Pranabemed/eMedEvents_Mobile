@@ -1,3 +1,4 @@
+import TokenManager from '../../Utils/Helpers/TokenManager';
 import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 /**
  * Auth saga Redux-Saga module.
@@ -1139,6 +1140,7 @@ export function* stateLicsenseSaveSaga(action) {
  */
 export function* logoutSaga() {
   try {
+    yield call([TokenManager, TokenManager.endSession]);
     // yield call(AsyncStorage.removeItem, constants.CRED);
     yield call(AsyncStorage.removeItem, constants.VERIFYSTATEDATA);
     yield call(AsyncStorage.removeItem, constants.PROFESSION);

@@ -58,6 +58,7 @@ const AppProvider = ({ children }) => {
   const [completedCount, setCompletedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [primeCardSessionSkipped, setPrimeCardSessionSkipped] = useState(false);
+  const authStatus = useSelector(state => state?.AuthReducer?.status);
   const authToken = useSelector(state => state?.AuthReducer?.token);
   const dashboardLicensures = useSelector(
     state => state?.DashboardReducer?.dashboardResponse?.data?.licensures
@@ -134,6 +135,10 @@ const resetSessionContext = () => {
       return uniqueStates;
     });
   }, [dashboardStatus, dashPerLicensures, dashMbLicensures, dashboardLicensures]);
+
+  useEffect(() => {
+    if (authStatus === 'Auth/logoutSuccess') resetSessionContext();
+  }, [authStatus]);
 
   useEffect(() => {
     // Clear all stale in-memory dashboard/session data when account token changes.

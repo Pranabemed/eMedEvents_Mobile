@@ -635,6 +635,8 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
             setProfessionad(did);
             setSpeciality('');
             setSpeciality_id([]);
+            setLicense_state_id(null);
+            setMedicallics('');
         }
         console.log(did, "he;;;;======")
         specaillized(did?.split(' - ')[0])
@@ -642,10 +644,13 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[ixd] = {
                 ...updatedFormData[ixd],
+                professionReset: true,
                 professionad: did,
                 speciality: '',
                 speciality_ids: [],
-                speciality_id: []
+                speciality_id: [],
+                medicallics: null,
+                license_state_id: null
             };
             return updatedFormData;
         });
@@ -1536,6 +1541,15 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
                 updatedFormData[index].license_expiry_date = '';
             }
         }
+        if (field === 'professionad') {
+            updatedFormData[index].medicallics = null;
+            updatedFormData[index].license_state_id = null;
+            updatedFormData[index].professionReset = true;
+            if (Number(index) === 0) {
+                setLicense_state_id(null);
+                setMedicallics('');
+            }
+        }
         setFormData(updatedFormData);
 
         if (field === 'emailad') {
@@ -2212,10 +2226,15 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
 * @returns {void}
 */
     const handleLicStateshows = (lictid, indexsattelic) => {
+        if (Number(indexsattelic) === 0) {
+            setLicense_state_id(lictid?.id || null);
+            setMedicallics(lictid?.name || '');
+        }
         setFormData((prevFormData) => {
             const updatedFormData = [...prevFormData];
             updatedFormData[indexsattelic] = {
                 ...updatedFormData[indexsattelic],
+                professionReset: false,
                 medicallics: lictid?.name,
                 license_state_id: lictid?.id
             };

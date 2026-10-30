@@ -412,6 +412,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
     }
   }
   useEffect(() => {
+    if (!loginSubmissionRef.current || AuthReducer?.status !== 'Auth/loginsiginSuccess') return;
     const loginSignInResponse = AuthReducer?.loginsiginResponse;
     if (!loginSignInResponse || Object.keys(loginSignInResponse).length == 0) return;
     if (lastHandledSigninResponseRef.current == loginSignInResponse) return;
@@ -451,7 +452,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
         });
         return;
       }
-      if (isEmailVerified) {
+      if (isEmailVerified && loginSignInResponse?.token) {
         let objToken = { "token": loginSignInResponse?.token, "key": {} };
         dispatch(dashboardRequest(objToken));
         setNonloader(true);
@@ -467,7 +468,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
       props?.navigation.navigate("LoginMobile", { validPh: { cellno: email, phonecode: normalizedPhoneCode } });
       return;
     }
-      if (isPhoneVerified) {
+      if (isPhoneVerified && loginSignInResponse?.token) {
         if (isUSUser) {
           let objToken = { "token": loginSignInResponse?.token, "key": {} }
           dispatch(dashboardRequest(objToken));
@@ -490,7 +491,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
     loginSubmissionRef.current = false;
     setIsLoginSubmitting(false);
     showErrorAlert(loginSignInResponse?.msg || "something went wrong !");
-  }, [AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
+  }, [AuthReducer?.status, AuthReducer?.loginsiginResponse, phoneCountryCode, email, mobileHd, dispatch]);
   const loginResponse = AuthReducer?.loginResponse || {};
   const user = loginResponse?.user || {};
   const isGuestPrimeUser = useMemo(() => {
@@ -576,7 +577,7 @@ const isFalseFlag = (value) => value == false || value == 0 || value == "0" || v
 
   // Main navigation logic
   useEffect(() => {
-    if (!token || !isCurrentProfileReady) return;
+    if (!loginSubmissionRef.current || !token || !isCurrentProfileReady) return;
     AsyncStorage.setItem(constants.GUEST_PRIME_USER, JSON.stringify(isGuestPrimeUser)).catch(err => {
       console.log('Error storing guest prime flag', err);
     });
@@ -717,6 +718,7 @@ const proceedNonUsaLogin = async () => {
     isNonUsaFlow
   ]);
   useEffect(() => {
+    if (!loginSubmissionRef.current || !(token || AuthReducer?.loginsiginResponse?.token)) return;
     if (DashboardReducer?.dashboardResponse?.data?.licensures?.length > 0 && allProfTake) {
       const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
         return index === self.findIndex((s) =>
@@ -747,7 +749,7 @@ const proceedNonUsaLogin = async () => {
       dispatch(mainprofileRequest({}))
       props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "TabNav" }] }));
     }
-  }, [DashboardReducer?.dashboardResponse?.data, allProfTake])
+  }, [DashboardReducer?.dashboardResponse?.data, allProfTake, token, AuthReducer?.loginsiginResponse?.token])
   if (status1 == '' || DashboardReducer.status != status1) {
     switch (DashboardReducer.status) {
       case 'Dashboard/dashboardRequest':
@@ -755,6 +757,7 @@ const proceedNonUsaLogin = async () => {
         setNonloader(true);
         break;
       case 'Dashboard/dashboardSuccess':
+        if (!loginSubmissionRef.current || !(token || AuthReducer?.loginsiginResponse?.token)) break;
         status1 = DashboardReducer.status;
         setNonloader(false);
         const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {

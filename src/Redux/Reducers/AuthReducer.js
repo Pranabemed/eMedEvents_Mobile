@@ -920,15 +920,14 @@ logoutRequest(state, action) {
  * @returns {void}
  */
 logoutSuccess(state, action) {
-      state.logoutResponse = action.payload;
-      state.dircetloginResponse = null;
-      state.directloginResponse = null;
-      state.loginResponse = null;
-      state.againloginsiginResponse = null;
-      state.verifymobileResponse = null;
-      state.signupResponse = null;
-      state.tokenResponse = null;
-      state.status = action.type;
+      // Drop every cached authentication response so Login cannot replay a
+      // previous session when the guest opens Sign In again.
+      return {
+        ...initialState,
+        isLoading: false,
+        logoutResponse: action.payload,
+        status: action.type,
+      };
     },
         /**
  * Reducer logic for logout failure state.

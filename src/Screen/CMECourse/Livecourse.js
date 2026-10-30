@@ -3,7 +3,7 @@
  */
 
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
+import React, { useCallback, useContext, useEffect, useState, useRef, useMemo } from 'react'
 import Fonts from '../../Themes/Fonts'
 import IconDot from 'react-native-vector-icons/Entypo';
 import Colorpath from '../../Themes/Colorpath';
@@ -40,16 +40,15 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const statusRef = useRef("");
+    const hasMoreRef = useRef(true);
+    const isFetchingMoreRef = useRef(false);
+    const onEndReachedCalledDuringMomentum = useRef(true);
     const [storeAlldata, setStoreAlldata] = useState([]);
     const [apiReq, setApiReq] = useState(false);
     const [loading, setLoading] = useState(false);
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(100);
     const [refreshing, setRefreshing] = useState(false);
-    const [filteredItems, setFilteredItems] = useState([]);
-    const [pendingall, setPendingall] = useState([]);
-    const [compltall, setCompltall] = useState([]);
-    const [dataAll, setDataAll] = useState([]);
     const [modalviewlive, setModalviewlive] = useState(false);
     const [needReviewlive, setNeedReviewlive] = useState(0);
     const [onlineNamelive, setOnlineNamelive] = useState("");
@@ -65,6 +64,9 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
         if (isFocus) {
             dispatch(clearCmeCourseData());
             statusRef.current = "";
+            hasMoreRef.current = true;
+            isFetchingMoreRef.current = false;
+            onEndReachedCalledDuringMomentum.current = true;
             setStoreAlldata([]);
             setPageNum(0);
             fetchHandle(0);
@@ -77,7 +79,7 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
  */
 const fullActionlive = (dataItem) => {
         const url = dataItem?.detailpage_url;
-        const result = url.split('/').pop();
+        const result = typeof url === 'string' ? url.split('/').pop() : '';
         if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
         } else if (dataItem?.current_activity_api == "introduction") {
@@ -109,7 +111,7 @@ const fullActionlive = (dataItem) => {
  */
 const titlhandleUrllive = (make) => {
         const urltitle = make?.detailpage_url;
-        const resulttitle = urltitle.split('/').pop();
+        const resulttitle = typeof urltitle === 'string' ? urltitle.split('/').pop() : '';
         if (resulttitle) {
             navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, shareUrl: urltitle, creditData: creditwholelive } })
         }
@@ -182,6 +184,7 @@ const fetchHandle = (page = pageNum) => {
             "request_type": "normallist",
             "listby_type": "myactivities"
         };
+        setLoading(true);
         connectionrequest()
             .then(() => {
                 dispatch(cmeCourseRequest(obj));
@@ -189,22 +192,33 @@ const fetchHandle = (page = pageNum) => {
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
                 setLoading(false);
+                isFetchingMoreRef.current = false;
             });
     };
 
     const fetchMore = useCallback(() => {
-        if (!apiReq && !CMEReducer?.cmeCourseResponse?.conferences) {
-            const nextPage = pageNum + 1;
-            setPageNum(nextPage);
-            fetchHandle(nextPage);
+        if (isFetchingMoreRef.current || !hasMoreRef.current || apiReq || loading) {
+            return;
         }
-    }, [apiReq, pageNum, CMEReducer?.cmeCourseResponse?.conferences]);
+        const currentConferences = CMEReducer?.cmeCourseResponse?.conferences;
+        if (!Array.isArray(currentConferences) || currentConferences.length < limit) {
+            hasMoreRef.current = false;
+            return;
+        }
+        isFetchingMoreRef.current = true;
+        const nextPage = pageNum + 1;
+        setPageNum(nextPage);
+        fetchHandle(nextPage);
+    }, [apiReq, loading, pageNum, CMEReducer?.cmeCourseResponse?.conferences, limit]);
 
         /**
  * Full data refresh utility.
  * @returns {void}
  */
 const fullDataRefresh = () => {
+        hasMoreRef.current = true;
+        isFetchingMoreRef.current = false;
+        onEndReachedCalledDuringMomentum.current = true;
         setStoreAlldata([]);
         setPageNum(0);
         setRefreshing(false);
@@ -220,61 +234,60 @@ const fullDataRefresh = () => {
             } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
                 setLoading(false);
-                if (CMEReducer?.cmeCourseResponse?.conferences?.length > 0) {
-                    const newData = CMEReducer?.cmeCourseResponse?.conferences || [];
-                    if (pageNum === 0) {
-                        setStoreAlldata(newData);
-                    } else {
-                        setStoreAlldata(prevData => {
-                            const merged = [...prevData, ...newData];
-                            return merged.filter(
-                                (value, index, self) =>
-                                    index === self.findIndex(t => t?.id === value?.id)
-                            );
-                        });
-                    }
-                } else if (CMEReducer?.cmeCourseResponse?.conferences?.length == 0) {
-                    if (pageNum === 0) {
-                        setStoreAlldata([]);
-                    }
-                    setApiReq(false);
-                    setLoading(false);
+                isFetchingMoreRef.current = false;
+                const conferences = CMEReducer?.cmeCourseResponse?.conferences;
+                const newData = Array.isArray(conferences) ? conferences : [];
+                if (newData.length < limit) {
+                    hasMoreRef.current = false;
+                } else {
+                    hasMoreRef.current = true;
+                }
+                if (pageNum === 0) {
+                    setStoreAlldata(newData);
+                } else {
+                    setStoreAlldata(prevData => {
+                        const merged = [...prevData, ...newData];
+                        return merged.filter(
+                            (value, index, self) =>
+                                index === self.findIndex(t => t?.id === value?.id)
+                        );
+                    });
                 }
             } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
                 setLoading(false);
+                isFetchingMoreRef.current = false;
+                hasMoreRef.current = false;
             }
         } else if (CMEReducer.status === '') {
             statusRef.current = '';
         }
-    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum]);
+    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit]);
 
-    useEffect(() => {
-        const filteredData = storeAlldata?.filter(item => {
+    const filteredItems = useMemo(() => {
+        return storeAlldata?.filter(item => {
             const type = parseInt(item?.conference_type);
             const targetTypes = [1, 6, 34];
             return targetTypes?.includes(type);
         }) || [];
-        setFilteredItems(filteredData);
     }, [storeAlldata]);
-    useEffect(() => {
-        const filteredDataComplt = filteredItems?.filter(item => {
-            return item?.event_happening_text == "";
-        }) || [];
-        setCompltall(filteredDataComplt);
-    }, [fetchnamelive, filteredItems]);
-    useEffect(() => {
-        const filteredDataPending = filteredItems?.filter(item => {
-            return item?.event_happening_text;
-        }) || [];
-        setPendingall(filteredDataPending);
-    }, [fetchnamelive, filteredItems]);
-    useEffect(() => {
-        const resultData = fetchnamelive === "All" ? filteredItems :
-            fetchnamelive === "Pending" ? pendingall :
-                fetchnamelive === "Completed" ? compltall :
-                    [];
-        setDataAll(resultData);
+
+    const compltall = useMemo(() => {
+        return filteredItems.filter(item => item?.event_happening_text == "");
+    }, [filteredItems]);
+
+    const pendingall = useMemo(() => {
+        return filteredItems.filter(item => Boolean(item?.event_happening_text));
+    }, [filteredItems]);
+
+    const dataAll = useMemo(() => {
+        if (fetchnamelive === "Completed") {
+            return compltall;
+        }
+        if (fetchnamelive === "Pending") {
+            return pendingall;
+        }
+        return filteredItems;
     }, [fetchnamelive, filteredItems, pendingall, compltall]);
         /**
  * Courserender data utility.
@@ -406,13 +419,23 @@ const formatDateEnd = (dateStr) => {
             <FlatList
                 data={dataAll}
                 renderItem={courserenderData}
-                keyExtractor={(item, index) => index.toString()}
-                onEndReached={fetchMore}
+                keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
+                onMomentumScrollBegin={() => {
+                    onEndReachedCalledDuringMomentum.current = false;
+                }}
+                onEndReached={() => {
+                    if (!onEndReachedCalledDuringMomentum.current) {
+                        fetchMore();
+                        onEndReachedCalledDuringMomentum.current = true;
+                    }
+                }}
                 onEndReachedThreshold={0.5}
                 contentContainerStyle={{ paddingBottom: normalize(270) }}
                 scrollEventThrottle={16}
                 ListFooterComponent={
-                    (loading && dataAll?.length > 1 || loading) ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                    loading && pageNum > 0 ? (
+                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginVertical: normalize(15) }} />
+                    ) : null
                 }
                 refreshControl={
                     <RefreshControl
@@ -420,20 +443,24 @@ const formatDateEnd = (dateStr) => {
                         onRefresh={fullDataRefresh}
                     />
                 }
-                ListEmptyComponent={!loading &&
-                    <Text
-                        style={{
-                            alignContent: 'center',
-                            alignItems: 'center',
-                            alignSelf: 'center',
-                            color: Colorpath.grey,
-                            fontWeight: 'bold',
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: normalize(20),
-                            paddingTop: normalize(30),
-                        }}>
-                        No data found
-                    </Text>
+                ListEmptyComponent={
+                    loading && pageNum === 0 ? (
+                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginTop: normalize(30) }} />
+                    ) : !loading && (
+                        <Text
+                            style={{
+                                alignContent: 'center',
+                                alignItems: 'center',
+                                alignSelf: 'center',
+                                color: Colorpath.grey,
+                                fontWeight: 'bold',
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: normalize(20),
+                                paddingTop: normalize(30),
+                            }}>
+                            No data found
+                        </Text>
+                    )
                 }
             />
             <Modal

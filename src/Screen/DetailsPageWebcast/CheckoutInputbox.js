@@ -149,6 +149,11 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
             merged[key] = existing[key];
           });
         }
+        if (existing.professionReset) {
+          ['professionad', 'speciality', 'speciality_ids', 'medicallics', 'license_state_id'].forEach(key => {
+            merged[key] = existing[key];
+          });
+        }
         if (existing.countryLocationReset || (existing.country_id && initial.country_id && String(existing.country_id) !== String(initial.country_id))) {
           merged.state = existing.countryLocationReset ? (existing.state || '') : '';
           merged.state_id = existing.countryLocationReset ? (existing.state_id || '') : '';
@@ -260,6 +265,15 @@ const handleInputChange = (index, key, value) => {
       updatedForm[index] = {};
     }
     updatedForm[index][key] = value;
+    if (key === 'professionad') {
+      updatedForm[index].medicallics = null;
+      updatedForm[index].license_state_id = null;
+      updatedForm[index].professionReset = true;
+      if (index === 0) {
+        setLicense_state_id?.(null);
+        setMedicallics?.('');
+      }
+    }
     setFormData(updatedForm);
     if (key == 'npino') {
       if (value?.length == 0) {

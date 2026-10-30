@@ -88,6 +88,24 @@ const renderComponent = (props = {}) => {
         );
     };
 
+    test.each(['old-token', undefined])('does not reopen dashboard from a previous sign-in response (token: %s)', (token) => {
+        store = mockStore({
+            AuthReducer: {
+                status: 'Auth/loginsiginSuccess',
+                loginResponse: {},
+                loginsiginResponse: { success: true, phone_verified: '1', token },
+            },
+            DashboardReducer: {
+                status: 'Dashboard/dashboardSuccess',
+                dashboardResponse: { data: { licensures: [] } },
+            },
+        });
+        renderComponent();
+        expect(mockNavigation.dispatch).not.toHaveBeenCalled();
+        expect(mockNavigation.navigate).not.toHaveBeenCalled();
+        expect(store.getActions()).not.toContainEqual(expect.objectContaining({ type: 'Dashboard/dashboardRequest' }));
+    });
+
     test('renders properly and suppresses act warnings', async () => {
         const { getByText } = renderComponent();
 

@@ -71,6 +71,7 @@ import { getBasicAuthorizationHeader } from './BasicAuth';
  * @returns {*}
  */
 const REFRESH_BUFFER_MS = 90 * 1000;
+let sessionGeneration = 0;
 
 // ─── Minimum ms before we bother scheduling a timer ───────────────────────────
 /**
@@ -205,8 +206,9 @@ function getTokenExpiryMs(token) {
  * @returns {Promise<*>}
  */
 async function _doActualRefresh(reason) {
+    const generation = sessionGeneration;
     const refreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
-    if (!refreshToken) {
+    if (generation !== sessionGeneration || !refreshToken) {
         console.log('[TokenManager] No refresh_token — user not logged in, skipping:', reason);
         return null;
     }
@@ -217,6 +219,7 @@ async function _doActualRefresh(reason) {
     const maxAttempts = 3;
 
     while (attempt < maxAttempts) {
+        if (generation !== sessionGeneration) return null;
         attempt++;
         try {
             const userAgentHeader = getUserAgentJSON();
@@ -238,6 +241,11 @@ async function _doActualRefresh(reason) {
             if (res.data?.success && res.data?.token) {
                 const newToken = res.data.token;
                 const newRefreshToken = res.data.refresh_token || refreshToken;
+
+                // A refresh started by the previous account must not restore
+                // its tokens after logout or overwrite a new login.
+                const currentRefreshToken = await AsyncStorage.getItem(constants.REFRESH_TOKEN);
+                if (generation !== sessionGeneration || currentRefreshToken !== refreshToken) return null;
 
                 // ── Persist ──────────────────────────────────────────────────────
                 await AsyncStorage.setItem(constants.TOKEN, newToken);
@@ -524,6 +532,16 @@ async function _initAsync() {
  * @returns {Object}
  */
 const TokenManager = {
+    async endSession() {
+        sessionGeneration += 1;
+        if (_refreshTimerId !== null) {
+            clearTimeout(_refreshTimerId);
+            _refreshTimerId = null;
+        }
+        // Let an already-started storage write finish before logout removes
+        // credentials; a network response arriving later is ignored above.
+        if (_refreshPromise) await _refreshPromise;
+    },
     /**
      * Call ONCE from App.js on mount.
      * Returns a SYNCHRONOUS cleanup function (never a Promise).

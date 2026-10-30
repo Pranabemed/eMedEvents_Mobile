@@ -132,7 +132,10 @@ const handleSignInPress = async () => {
       console.warn('Failed to clear guest sign-in flags:', err);
     }
 
-    navigation.navigate('Login');
+    navigation.reset({
+      index: 1,
+      routes: [{ name: 'GuestUser' }, { name: 'Login' }],
+    });
   };
 
   if (renderTopOnly) {

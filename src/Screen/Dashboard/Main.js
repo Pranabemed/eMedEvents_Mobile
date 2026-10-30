@@ -1618,27 +1618,17 @@ const Main = (props) => {
     loadGuestVerifyModal();
     return () => { verificationEffectActive = false; };
   }, [isFocus, suppressAutomaticPrimePrompt, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
-  const isPrimeLocationEligible =
-    !isNonUsaUser &&
-    isUsaCountryCode(String(resolvedIpCountryCode || '').trim().toUpperCase());
+  const isPrimeLocationEligible = true;
   const shouldShowPrimeStrip = isPrimeMembershipResolved && isPrimeLocationEligible &&
     (allProfTake || hasAllProfTake) &&
     !hasActivePrimeMembership;
   useEffect(() => {
-    if (hasActivePrimeMembership) {
+    if (hasActivePrimeMembership && !freeTrail) {
       setPrimeadd(false);
       setShowGuestPrimePrompt(false);
       primePromptVisibleRef.current = false;
     }
-  }, [hasActivePrimeMembership]);
-  useEffect(() => {
-    const resolvedCountry = String(resolvedIpCountryCode || '').trim().toUpperCase();
-    if (resolvedCountry && resolvedCountry !== 'UNKNOWN' && !isUsaCountryCode(resolvedCountry)) {
-      setPrimeadd(false);
-      primePromptVisibleRef.current = false;
-      setShowGuestPrimePrompt(false);
-    }
-  }, [resolvedIpCountryCode]);
+  }, [hasActivePrimeMembership, freeTrail]);
   const isPrimeTrial = !hasActivePrimeMembership && subscriptionSources.some(source =>
     String(source?.subscription_user || '').trim().toLowerCase() === 'free'
   );
@@ -2068,7 +2058,7 @@ const Main = (props) => {
               <Image source={Imagepath.CrownDone} style={{ height: normalize(30), width: normalize(30), resizeMode: "contain" }} />
               <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold", alignItems: "center" }}>{"Get Prime Membership"}</Text>
             </TouchableOpacity>
-          </View> : isPrimeLocationEligible && freeTrail && (allProfTake || isPhysicianFlow) ? <View
+          </View> : (freeTrail && Boolean(primeTrialMessage)) ? <View
             style={{
               position: 'absolute',
               bottom: 0,
@@ -2079,8 +2069,7 @@ const Main = (props) => {
               paddingBottom: 0,
             }}
           >
-            <Pressable
-              onPress={() => setPrimeadd(true)}
+            <View
               style={{
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -2107,7 +2096,9 @@ const Main = (props) => {
                 {primeTrialMessage}
               </Text>
 
-              <View
+              <TouchableOpacity
+                onPress={() => setPrimeadd(true)}
+                activeOpacity={0.8}
                 style={{
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -2118,21 +2109,19 @@ const Main = (props) => {
                   bottom: normalize(5)
                 }}
               >
-                <Pressable onPress={() => setPrimeadd(true)}>
-                  <Text
-                    style={{
-                      fontFamily: Fonts.InterBold,
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      color: '#fff',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {'Subscribe Now'}
-                  </Text>
-                </Pressable>
-              </View>
-            </Pressable>
+                <Text
+                  style={{
+                    fontFamily: Fonts.InterBold,
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    color: '#fff',
+                    textAlign: 'center',
+                  }}
+                >
+                  {'Subscribe Now'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
             : null}
           {(() => {
@@ -2185,18 +2174,20 @@ const Main = (props) => {
 
             const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
             const isEligibleToRenderPrimeCard = (subUserCheck === "free" || subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && (subUserCheck !== "subscribed");
+            const isPrimeTrialActive = Boolean(freeTrail);
+            const shouldShowOnlyGetMembership = isPrimeTrialActive || isSubscriptionExpiredSync;
 
-            return (isPrimeMembershipResolved && !hasActivePrimeMembership && !isAccreditationUser && isPrimeLocationEligible && isEligibleToRenderPrimeCard && (allProfTake || isPhysicianFlow || hasAllProfTake) && primeadd && !isDrawerVisible) && <PrimeCard
+            return ((freeTrail || isSubscriptionExpiredSync || (isPrimeMembershipResolved && !hasActivePrimeMembership)) && !isAccreditationUser && isPrimeLocationEligible && (freeTrail || isSubscriptionExpiredSync || isEligibleToRenderPrimeCard) && (allProfTake || isPhysicianFlow || hasAllProfTake || isNonUsaUser || freeTrail) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}
-              primaryButtonText={shouldShowPrimeCardActions ? (canExploreFreeTrial ? 'Explore Free Trial 30 Days' : 'Get Prime Membership') : undefined}
-              onPrimaryAction={shouldShowPrimeCardActions ? (canExploreFreeTrial ? handleGuestPrimeExploreTrial : handleGuestPrimeMembership) : undefined}
-              secondaryButtonText={shouldShowPrimeCardActions && canExploreFreeTrial ? 'Get Prime Membership' : undefined}
-              onSecondaryAction={shouldShowPrimeCardActions && canExploreFreeTrial ? handleGuestPrimeMembership : undefined}
-              showSkip={shouldShowPrimeCardActions}
+              primaryButtonText={shouldShowOnlyGetMembership ? 'Get Prime Membership' : (shouldShowPrimeCardActions ? (canExploreFreeTrial ? 'Explore Free Trial 30 Days' : 'Get Prime Membership') : undefined)}
+              onPrimaryAction={shouldShowOnlyGetMembership ? handleGuestPrimeMembership : (shouldShowPrimeCardActions ? (canExploreFreeTrial ? handleGuestPrimeExploreTrial : handleGuestPrimeMembership) : undefined)}
+              secondaryButtonText={shouldShowOnlyGetMembership ? undefined : (shouldShowPrimeCardActions && canExploreFreeTrial ? 'Get Prime Membership' : undefined)}
+              onSecondaryAction={shouldShowOnlyGetMembership ? undefined : (shouldShowPrimeCardActions && canExploreFreeTrial ? handleGuestPrimeMembership : undefined)}
+              showSkip={shouldShowOnlyGetMembership ? false : shouldShowPrimeCardActions}
               onSkip={isSubscriptionExpiredSync ? () => setPrimeadd(false) : (shouldShowPrimeCardActions ? handleGuestPrimeSkip : undefined)}
-              hidePrimaryButton={canExploreFreeTrial && hideDefaultPrimaryButton}
+              hidePrimaryButton={shouldShowOnlyGetMembership ? false : (canExploreFreeTrial && hideDefaultPrimaryButton)}
             />;
           })()}
 

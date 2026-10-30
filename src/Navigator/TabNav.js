@@ -379,6 +379,11 @@ function TabScreen() {
       try {
         const validRoutes = ["Home", "Profiles", "Contact", "Volts"];
         if (validRoutes.includes(initialRoute)) {
+          if (initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) {
+            setTabmodal(true);
+            navigation.navigate("Home");
+            return;
+          }
           navigation.navigate(initialRoute);
         } else {
           navigation.navigate("Home");
@@ -387,7 +392,14 @@ function TabScreen() {
         console.log("TabNav initialRoute navigation error:", err);
       }
     }
-  }, [initialRoute, navigation]);
+  }, [initialRoute, navigation, tabsub, isSubscriptionExpiredSync]);
+
+  useEffect(() => {
+    if (initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) {
+      setTabmodal(true);
+      navigation.navigate("Home");
+    }
+  }, [initialRoute, tabsub, isSubscriptionExpiredSync, navigation]);
   useEffect(() => {
     if (!refreshCreditVaultAt) return;
     const refreshCreditVault = () => {
@@ -440,11 +452,21 @@ function TabScreen() {
   }, [isFoucs]);
   useEffect(() => {
     const endDateString =
-      WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
-      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfessiontab?.subscriptions?.[0]?.end_date;
+      WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
+      DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.end_date ||
+      DashboardReducer?.mainprofileResponse?.subscription?.end_date ||
+      AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date ||
+      AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+      finalProfessiontab?.subscriptions?.[0]?.end_date;
     const startDateString =
-      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
-      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || finalProfessiontab?.subscriptions?.[0]?.start_date;
+      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+      DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.start_date ||
+      DashboardReducer?.mainprofileResponse?.subscription?.start_date ||
+      AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      finalProfessiontab?.subscriptions?.[0]?.start_date;
     if (!endDateString) return;
     try {
       const endDate = new Date(endDateString);
@@ -461,14 +483,24 @@ function TabScreen() {
     } catch (error) {
       console.error('Error parsing date:', error);
     }
-  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalverifyvaulttab, finalProfessiontab]);
+  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, DashboardReducer?.mainprofileResponse, finalverifyvaulttab, finalProfessiontab]);
   const isSubscriptionExpiredSync = React.useMemo(() => {
     const endDateString =
-      WebcastReducer?.PrimeCheckResponse?.subscription?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
-      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || finalProfessiontab?.subscriptions?.[0]?.end_date;
+      WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
+      DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.end_date ||
+      DashboardReducer?.mainprofileResponse?.subscription?.end_date ||
+      AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date ||
+      AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
+      finalProfessiontab?.subscriptions?.[0]?.end_date;
     const startDateString =
-      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
-      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || finalProfessiontab?.subscriptions?.[0]?.start_date;
+      WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
+      DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.start_date ||
+      DashboardReducer?.mainprofileResponse?.subscription?.start_date ||
+      AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date ||
+      AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
+      finalProfessiontab?.subscriptions?.[0]?.start_date;
     if (!endDateString) return false;
     try {
       const endDate = new Date(endDateString);
@@ -481,7 +513,7 @@ function TabScreen() {
     } catch (error) {
       return false;
     }
-  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, finalProfessiontab]);
+  }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, DashboardReducer?.mainprofileResponse, finalProfessiontab]);
   const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab || DashboardReducer?.mainprofileResponse;
 
   const countryName = String(
@@ -552,7 +584,7 @@ function TabScreen() {
   }, [isConnected]);
   return ((allProfTake && fulldashbaord?.length !== 0) ? <>
     <Tab.Navigator
-      initialRouteName={initialRoute || lastActiveTab || "Home"}
+      initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
       screenOptions={{
         unmountOnBlur: false,
         freezeOnBlur: true,
@@ -590,8 +622,11 @@ function TabScreen() {
 */
         focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            e.preventDefault();
+            if (typeof e?.preventDefault === 'function') {
+              e.preventDefault();
+            }
             setTabmodal(true);
+            navigation.navigate("Home");
             return;
           }
           handleTabPress(route.name);
@@ -733,7 +768,7 @@ function TabScreen() {
     />
   </> : nettrue == false ? <>
     <Tab.Navigator
-      initialRouteName={initialRoute || lastActiveTab || "Home"}
+      initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
       screenOptions={{
         unmountOnBlur: false,
         freezeOnBlur: true,
@@ -771,8 +806,11 @@ function TabScreen() {
 */
         focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            e.preventDefault();
+            if (typeof e?.preventDefault === 'function') {
+              e.preventDefault();
+            }
             setTabmodal(true);
+            navigation.navigate("Home");
             return;
           }
           handleTabPress(route.name);
@@ -916,7 +954,7 @@ function TabScreen() {
     />
   </> : <>
     <Tab.Navigator
-      initialRouteName={initialRoute || lastActiveTab || "Home"}
+      initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
       screenOptions={{
         unmountOnBlur: false,
         freezeOnBlur: true,
@@ -954,8 +992,11 @@ function TabScreen() {
 */
         focus: (e) => {
           if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            e.preventDefault();
+            if (typeof e?.preventDefault === 'function') {
+              e.preventDefault();
+            }
             setTabmodal(true);
+            navigation.navigate("Home");
             return;
           }
           handleTabPress(route.name);

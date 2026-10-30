@@ -5,7 +5,7 @@ import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpe
  * Contact screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, isPhysicianProfessionalInformation, ContactProfile, SearchBack, detectCountry, getLabelStyle, handleFocus, handleBlur, closeProfessionModal, handleContactTake, handleCountry, handlePratice, handleCity, formatDobWithMoment, handlePlaceSelected, normalizeCountryName, fetchPostalCodeFromGeocode, handleCountrySet, handleStateshows, handlecityShows, countryReq, PraticingState, cityReq, formatPhoneNumber, styles.
  */
 
-import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Easing, Animated, Modal } from 'react-native'
+import { View, Text, Platform, TouchableOpacity, KeyboardAvoidingView, ScrollView, StyleSheet, Easing, Animated, Modal, BackHandler } from 'react-native'
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
@@ -1009,6 +1009,43 @@ const ContactProfile = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+    useEffect(() => {
+        const onBackPress = () => {
+            if (countrypicker) {
+                setCountrypicker(false);
+                setSearchcountry("");
+                return true;
+            }
+            if (statepicker) {
+                setStatepicker(false);
+                setPratice(false);
+                setSearchpratice("");
+                return true;
+            }
+            if (citypicker) {
+                setCitypicker(false);
+                setSearchcity("");
+                return true;
+            }
+            if (professionModalVisible) {
+                setProfessionModalVisible(false);
+                return true;
+            }
+            if (dobpicker) {
+                setDobpicker(false);
+                return true;
+            }
+            SearchBack();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            onBackPress
+        );
+
+        return () => backHandler.remove();
+    }, [countrypicker, statepicker, citypicker, professionModalVisible, dobpicker]);
     return (
         <>
             <MyStatusBar
