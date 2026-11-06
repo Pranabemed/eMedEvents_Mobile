@@ -40,6 +40,26 @@ const reply = (store, request, data, creator = cmeCourseSuccess) => act(() => st
 beforeEach(() => connectionrequest.mockImplementation(() => Promise.resolve(true)));
 
 test.each([
+  ['webinar', 'Live Webinar', false],
+  ['webinar', 'Live Webinar', true],
+  ['in-person', 'In-Person Event', false],
+  ['in-person', 'In-Person Event', true],
+])('%s payload matches the API contract (%s, filter return=%s)', async (conferenceType, label, filtered) => {
+  const original = {trig: {trig: conferenceType, rqstType: 'typebasedconferences', mainKey: 'conference_type', conference_type_text: [label], Realback: 'cont'}};
+  const params = filtered ? {filterDatSh: {returnTake: original, filterDatSh: []}} : original;
+  const {actions} = setup(params, undefined, null);
+  await flush();
+  expect(lastRequest(actions).payload).toEqual({
+    pageno: 0, limit: 9, sort_type: '', search_speciality: '',
+    conference_type_text: [label], cme_from: '', cme_to: '',
+    organization: '', price_from: '', price_to: '', startdate: '', location: '',
+    free_conf: '', noncme: '', speaker: '', search_mandate_states: [],
+    search_topic: '', search_profession: [], credittype: '',
+    request_type: 'typebasedconferences', conference_type: conferenceType,
+  });
+});
+
+test.each([
   ['guest', 'hardware'], ['guest', 'header'],
   ['signed-in', 'hardware'], ['signed-in', 'header'],
 ])('%s %s back clears empty filters without leaving results', async (account, back) => {

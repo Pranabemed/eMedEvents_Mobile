@@ -19,6 +19,7 @@ import HandleTextInput from './HandleTextInput';
 import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { mainprofileRequest, dashPerRequest, dashboardRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
+import { stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
 import { licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
@@ -297,6 +298,7 @@ const Main = (props) => {
     primeCardSessionSkipped,
     setPrimeCardSessionSkipped
   } = useContext(AppContext);
+  const isFocus = useIsFocused();
   const [focusedInput, setFocusedInput] = useState(null);
   const [linearText, setLinearText] = useState(true);
   const [showLine, setShowLine] = useState(false);
@@ -316,6 +318,7 @@ const Main = (props) => {
   const [finalProfessionmain, setFinalProfessionmain] = useState(null);
   const [isAsyncStorageLoaded, setIsAsyncStorageLoaded] = useState(false);
   const [homeHydrationTimedOut, setHomeHydrationTimedOut] = useState(false);
+  const [hasRenderedDashboard, setHasRenderedDashboard] = useState(false);
   // freeTrail and daysleft state variables are replaced with synchronous memoized values below
   const [guestVerifyModalVisible, setGuestVerifyModalVisible] = useState(false);
   const [isSkippedFlow, setIsSkippedFlow] = useState(false);
@@ -354,13 +357,9 @@ const Main = (props) => {
     }
   }, [isFocus]);
 
-  // A returning user must never be trapped behind the Home shimmer when one of
-  // the startup API calls is slow or never settles. Local account hydration is
-  // sufficient to render the non-USA dashboard while the requests continue in
-  // the background.
+  // Bound the initial skeleton wait even if storage or the profile request stalls.
   useEffect(() => {
-    if (!isFocus || isAsyncStorageLoaded) {
-      setHomeHydrationTimedOut(false);
+    if (!isFocus) {
       return undefined;
     }
 
@@ -369,10 +368,13 @@ const Main = (props) => {
     }, HOME_HYDRATION_TIMEOUT_MS);
 
     return () => clearTimeout(timeout);
-  }, [isFocus, isAsyncStorageLoaded]);
+  }, [isFocus]);
   const endDateStringMain =
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
     DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.end_date ||
+    AuthReducer?.primeTrailResponse?.subscription?.end_date ||
+    AuthReducer?.primeTrailResponse?.data?.subscription?.end_date ||
+    AuthReducer?.primeTrailResponse?.end_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     finalProfessionmain?.subscriptions?.[0]?.end_date;
   const startDateStringMain =
@@ -461,7 +463,6 @@ const Main = (props) => {
   const guestVerifyRequestStartedRef = useRef(false);
   const guestVerificationRefreshRef = useRef(false);
   const guestVerificationResponseRef = useRef(AuthReducer?.verifyResponse);
-  const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const [nettruedr, setNettruedr] = useState("");
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -594,7 +595,8 @@ const Main = (props) => {
   console.log(detectmain, "detectmain");
   const physicianHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
   const nursingHandles = new Set(["nursing-rn", "nursing-aprn", "nursing-cna", "nursing-lpn"]);
-  const supportedProfessionHandles = [...physicianHandles, ...nursingHandles];
+  const dentalHandles = new Set(["dentist-rdh", "dentist-dds", "dentist-rda", "dentist"]);
+  const supportedProfessionHandles = [...physicianHandles, ...nursingHandles, ...dentalHandles];
   const dashboardProfessionInfo = DashboardReducer?.mainprofileResponse?.professional_information;
   const authProfessionInfo =
     AuthReducer?.loginResponse?.user ||
@@ -658,6 +660,7 @@ const Main = (props) => {
 
   const isPhysicianHandleMatch = physicianHandles.has(resolvedProfessionHandle) || ['md', 'do', 'dpm'].includes(cleanCurrentType);
   const isNursingHandleMatch = nursingHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('nursing') || ['rn', 'aprn', 'cna', 'lpn'].includes(cleanCurrentType);
+  const isDentalHandleMatch = dentalHandles.has(resolvedProfessionHandle) || cleanCurrentProf.includes('dentist') || ['rdh', 'dds', 'rda', 'dentist'].includes(cleanCurrentType);
 
   const allProfTake = isPhysicianHandleMatch;
   const isPhysicianFlow = allProfTake;
@@ -675,7 +678,8 @@ const Main = (props) => {
         String(record?.active_status) === '1' &&
         today >= startDate && today < endDate;
     });
-  const isNursingFlow = isNursingHandleMatch && !isPhysicianFlow;
+  const isNonPhysicianFlow = (isNursingHandleMatch || isDentalHandleMatch) && !isPhysicianFlow;
+  const isNursingFlow = isNonPhysicianFlow;
 
   useEffect(() => {
     setHasAllProfTake(Boolean(allProfTake));
@@ -686,36 +690,19 @@ const Main = (props) => {
       setHasEnables(true);
     }
   }, [enables]);
-  const hasLoadedProfile = Boolean(
-    DashboardReducer?.mainprofileResponse?.user_id ||
-    DashboardReducer?.mainprofileResponse?.id ||
-    DashboardReducer?.mainprofileResponse?.email ||
-    AuthReducer?.dircetloginResponse?.user?.email ||
-    AuthReducer?.dircetloginResponse?.email ||
-    AuthReducer?.directloginResponse?.user?.email ||
-    AuthReducer?.directloginResponse?.email ||
-    AuthReducer?.loginResponse?.user?.email ||
-    AuthReducer?.signupResponse?.user?.email ||
-    AuthReducer?.verifymobileResponse?.user?.email ||
-    AuthReducer?.verifyResponse?.user?.email ||
-    AuthReducer?.verifyResponse?.email ||
-    finalverifyvaultmain?.email ||
-    finalProfessionmain?.email ||
-    DashboardReducer?.mainprofileResponse?.licensures?.length ||
-    DashboardReducer?.mainprofileResponse?.license_number ||
-    DashboardReducer?.dashMbResponse?.data?.licensures?.length ||
-    DashboardReducer?.dashboardResponse?.data?.licensures?.length ||
-    DashboardReducer?.dashPerResponse?.data?.licensures?.length ||
-    finalverifyvaultmain?.licensures?.length ||
-    finalverifyvaultmain?.license_number ||
-    finalProfessionmain?.licensures?.length ||
-    finalProfessionmain?.license_number ||
-    nonUsaFlowState?.isNonUsa
-  );
   const shouldHoldSkeleton =
+    !hasRenderedDashboard &&
     !homeHydrationTimedOut &&
-    !isAsyncStorageLoaded &&
-    !hasLoadedProfile;
+    (!isAsyncStorageLoaded || !isGuestPrimeReady ||
+      (isPhysicianFlow && currentProfile !== 'SkipProfile' &&
+        !Array.isArray(AuthReducer?.licesensResponse?.licensure_states) &&
+        !Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) &&
+        AuthReducer?.licesensLoading !== false) ||
+      (DashboardReducer.mainProfileLoading &&
+        !Object.keys(DashboardReducer.mainprofileResponse || {}).length));
+  useEffect(() => {
+    if (!shouldHoldSkeleton) setHasRenderedDashboard(true);
+  }, [shouldHoldSkeleton]);
   const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
   const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
     DashboardReducer?.mainprofileResponse?.licensures?.length ||
@@ -747,7 +734,12 @@ const Main = (props) => {
   useEffect(() => {
     if (!isFocus) return;
 
-    const profInfo = DashboardReducer?.mainprofileResponse?.professional_information || {};
+    const profInfo = ProfileReducer?.latestProfessionInfo?.profession
+      ? ProfileReducer.latestProfessionInfo
+      : DashboardReducer?.mainprofileResponse?.professional_information?.profession
+        ? DashboardReducer.mainprofileResponse.professional_information
+        : authProfessionInfo?.profession ? authProfessionInfo
+          : finalProfessionmain || finalverifyvaultmain || {};
     const professionRaw = String(profInfo.profession || '').trim();
     const profTypeRaw = String(profInfo.profession_type || profInfo.designation || '').trim();
 
@@ -766,7 +758,7 @@ const Main = (props) => {
         })
         .catch(err => console.log('Licensure refresh failed', err));
     }
-  }, [isFocus, DashboardReducer?.mainprofileResponse?.professional_information]);
+  }, [isFocus, ProfileReducer?.latestProfessionInfo, DashboardReducer?.mainprofileResponse?.professional_information, authProfessionInfo?.profession, authProfessionInfo?.profession_type, finalProfessionmain, finalverifyvaultmain]);
 
   // 🔹 Keep global context (gtprof) in sync with the latest detected profession
   useEffect(() => {
@@ -789,15 +781,11 @@ const Main = (props) => {
         dispatch(dashPerRequest({}));
         dispatch(dashboardRequest({}));
         dispatch(stateMandatoryRequest({}));
+        dispatch(stateLicenseListRequest({}));
       })
       .catch((err) => showErrorAlert("Please connect to internet", err));
   }, [detectmain, isFocus]);
 
-  // Keep the main page on skeleton until dashboard profession info or profile data is ready.
-  useEffect(() => {
-    if (!isFocus) return;
-    setShowLoader(true);
-  }, [isFocus, isAsyncStorageLoaded, DashboardReducer?.mainprofileResponse, DashboardReducer?.status]);
   const backPressCount = useRef(0);
   const isSnackbarVisible = useRef(false);
   const snackbarTimeout = useRef(null);
@@ -859,9 +847,8 @@ const Main = (props) => {
       resetState();
     };
   }, [isFocus]);
-  const [showloader, setShowLoader] = useState(false);
   const [freeze, setFreeze] = useState(false);
-  const shouldRenderDashboardContent = !shouldHoldSkeleton && (showloader || isPhysicianFlow || isNursingFlow || (!isPhysicianFlow && !isNursingFlow));
+  const shouldRenderDashboardContent = !shouldHoldSkeleton;
   const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
   const hasNoLicensuresMain = normalizedFulldashbaord.length === 0;
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
@@ -1031,6 +1018,14 @@ const Main = (props) => {
       isMounted = false;
     };
   }, [AuthReducer?.status, AuthReducer?.verifyResponse]);
+  useEffect(() => {
+    if (AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0)) {
+      connectionrequest().then(() => {
+        dispatch(PrimeCheckRequest({}));
+        dispatch(mainprofileRequest({}));
+      }).catch(err => console.log('primeTrailSuccess refresh error', err));
+    }
+  }, [AuthReducer?.status, AuthReducer?.primeTrailResponse]);
   console.log(isGuestPrimeUser, "isGuestPrimeUser=====", props?.route?.name)
   useEffect(() => {
     /**
@@ -1629,10 +1624,6 @@ const Main = (props) => {
       primePromptVisibleRef.current = false;
     }
   }, [hasActivePrimeMembership, freeTrail]);
-  const isPrimeTrial = !hasActivePrimeMembership && subscriptionSources.some(source =>
-    String(source?.subscription_user || '').trim().toLowerCase() === 'free'
-  );
-
   const _subUserStates = [
     DashboardReducer?.mainprofileResponse?.subscription_user,
     finalProfessionmain?.subscription_user,
@@ -1641,14 +1632,32 @@ const Main = (props) => {
     AuthReducer?.loginsiginResponse?.user?.subscription_user,
     finalverifyvaultmain?.subscription_user
   ];
-  const takeSub = !hasActivePrimeMembership && (isPrimeTrial || _subUserStates.includes("free"));
-  const hsdSub = !hasActivePrimeMembership && (
-    _subUserStates.includes("free") ||
-    isPrimeTrial
+  const hasPaidSubscription = Boolean(
+    isPrimePaymentSuccess ||
+    hasSubscribedStatus ||
+    _subUserStates.includes("subscribed") ||
+    subscriptionSources.some(source =>
+      String(source?.subscription_user || '').trim().toLowerCase() === 'subscribed'
+    )
   );
+  const isPrimeTrial = !hasPaidSubscription && (
+    exploreTrialClicked ||
+    AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+    (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0 && AuthReducer?.primeTrailResponse?.success !== false) ||
+    _subUserStates.includes("free") ||
+    subscriptionSources.some(source =>
+      String(source?.subscription_user || '').trim().toLowerCase() === 'free'
+    )
+  );
+
+  const takeSub = isPrimeTrial;
+  const hsdSub = isPrimeTrial;
   const { freeTrail, daysleft } = useMemo(() => {
     if (!endDateStringMain) {
-      return { freeTrail: takeSub, daysleft: false };
+      if (isPrimeTrial) {
+        return { freeTrail: true, daysleft: 30 };
+      }
+      return { freeTrail: false, daysleft: false };
     }
     try {
       const endDate = new Date(endDateStringMain);
@@ -1660,27 +1669,30 @@ const Main = (props) => {
 
       const timeDifference = normalizedEndDate - normalizedCurrentDate;
       const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
-      if (daysDifference > 0 && daysDifference <= 30) {
+      if (daysDifference > 0) {
+        return { freeTrail: true, daysleft: daysDiff };
+      }
+      if (isPrimeTrial && daysDiff > 0) {
         return { freeTrail: true, daysleft: daysDiff };
       }
       return { freeTrail: false, daysleft: false };
     } catch (e) {
-      return { freeTrail: takeSub, daysleft: false };
+      return { freeTrail: isPrimeTrial, daysleft: isPrimeTrial ? 30 : false };
     }
-  }, [endDateStringMain, takeSub]);
+  }, [endDateStringMain, isPrimeTrial]);
   const primeTrialMessage = useMemo(() => {
-    return freeTrail && hsdSub
+    return freeTrail && daysleft == 30
       ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
-      : freeTrail && daysleft == 30
-        ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
-        : daysleft
-          ? Math.abs(daysleft) > 29
-            ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
-            : `Your free trial of premium subscription will end in ${Math.abs(
-              daysleft,
-            )} day(s). Subscribe now to continue accessing premium features`
+      : daysleft
+        ? Math.abs(daysleft) > 29
+          ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
+          : `Your free trial of premium subscription will end in ${Math.abs(
+            daysleft,
+          )} day(s). Subscribe now to continue accessing premium features`
+        : freeTrail
+          ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
           : '';
-  }, [daysleft, freeTrail, hsdSub]);
+  }, [daysleft, freeTrail]);
   useEffect(() => {
     if (
       !isFocus ||

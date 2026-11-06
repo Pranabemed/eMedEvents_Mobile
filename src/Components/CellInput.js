@@ -275,10 +275,10 @@ const floatingLabelNode = (text) => (
                 addnewtyle,
                 icondisable && bgv && {
                     backgroundColor: '#E6ECF2',
-                    width: normalize(270),
+                    width: '100%',
                     height: normalize(45),
                 },
-                onlyfor && { width: normalize(270) },
+                onlyfor && { width: '100%' },
             ]}
             value={icondisable && bgv ? notext : displayValue}
             onChangeText={changeText}
@@ -289,9 +289,15 @@ const floatingLabelNode = (text) => (
             secureTextEntry={secureTextEntry}
             keyboardType={keyboardType}
             multiline={multiline}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             {...props}
+            onFocus={(e) => {
+                setIsFocused(true);
+                props.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+                setIsFocused(false);
+                props.onBlur?.(e);
+            }}
         />
     );
 
@@ -328,7 +334,9 @@ const floatingLabelNode = (text) => (
                     icondisable && bgv
                         ? staticStyles.leftIconContainerDisabled
                         : staticStyles.leftIconContainer,
-                    { marginLeft: marginleft || 0 },
+                    typeof marginleft === 'number' && marginleft >= normalize(200)
+                        ? { right: normalize(4) }
+                        : { marginLeft: marginleft || 0 },
                 ]}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

@@ -616,6 +616,15 @@ const Globalresult = (props) => {
                     : "",
         };
 
+        if (finalKey === 'typebasedconferences' && ['webinar', 'in-person'].includes(obj.conference_type)) {
+            const routeTrigger = props?.route?.params?.trig ?? props?.route?.params?.filterDatSh?.returnTake?.trig;
+            const conferenceTypeLabel = obj.conference_type === 'in-person' ? 'In-Person Event' : 'Live Webinar';
+            obj.conference_type_text = obj.conference_type_text || routeTrigger?.conference_type_text || [conferenceTypeLabel];
+            obj.search_profession = obj.search_profession || [];
+            delete obj[''];
+            if (!obj.searchKeyword) delete obj.searchKeyword;
+        }
+
         if (props?.route?.params?.trig?.request_type === 'stateconferences') {
             obj = {
                 "pageno": requestedPageNum,

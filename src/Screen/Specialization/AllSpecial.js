@@ -106,7 +106,7 @@ const AllSpecial = (props) => {
         : selectedId != null && (selectedId !== 12 || Boolean(country.trim()));
     const [guestSignupDraft, setGuestSignupDraft] = useState(null);
     const [playerSessionID, setPlayerSessionID] = useState('');
-    const [fcm, setFcm] = useState(false);
+    const [fcm, setFcm] = useState(props?.route?.params?.Alldata?.deviceToken || false);
     const dispatch = useDispatch();
     const AuthReducer = useSelector(state => state.AuthReducer);
     const isfocused = useIsFocused();

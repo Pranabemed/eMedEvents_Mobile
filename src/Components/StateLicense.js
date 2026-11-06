@@ -613,35 +613,6 @@ const cleanNumber = (value) => {
     );
     const hidetext = (!enables && !bothNoRequirement);
         /**
- * Returns dynamic height.
- * @returns {*}
- */
-const getDynamicHeight = () => {
-        if (profileType === 'SkipProfile') {
-            return fulldashbaord?.length > 1 ? normalize(250) : normalize(230);
-        }
-        if (enables) {
-            return normalize(355)
-        }
-        if ((!enables && bothNoRequirement)) {
-            return normalize(270);
-        }
-        if (allProfTake && !expireDate) {
-            return normalize(350);
-        }
-        if (allProfTake && expireDate && bothNoRequirement) {
-            return normalize(265);
-        }
-        if (allProfTake && expireDate) {
-            return normalize(350);
-        }
-        if ((!enables && !bothNoRequirement)) {
-            return normalize(310);
-        }
-        return normalize(250);
-    };
-
-        /**
  * Handles all index.
  * @param {number} index - Input value.
  * @returns {void}
@@ -773,9 +744,9 @@ const renderAddLicenseCard = () => (
                 </View>
                 {fulldashbaord?.length > 0 ?
                     <View key={`dashboard-${fulldashbaord.length}`}>
-                        <View style={{ height: getDynamicHeight(), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
+                        <View style={{ paddingBottom: normalize(10), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
                             {canAddLicenses ? (
-                                <View style={{ height: normalize(40), justifyContent: 'center' }}>
+                                <View style={{ minHeight: normalize(32), justifyContent: 'center' }}>
                                     <TouchableOpacity
                                         onPress={() => {
                                             if (enables) {
@@ -820,8 +791,8 @@ const renderAddLicenseCard = () => (
                                 itemWidth={
                                     Platform.OS === 'ios' ? windowWidth - normalize(20) : windowWidth - normalize(20)
                                 }
-                                itemHeight={windowHeight * 0.9}
-                                sliderHeight={windowHeight * 0.9}
+                                containerCustomStyle={{ flexGrow: 0 }}
+                                contentContainerCustomStyle={{ alignItems: 'flex-start' }}
                                 scrollAnimationDuration={1000}
                                 renderItem={({ item, index }) => <Carouselcarditem allProfTake={allProfTake} hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} onCloseExpiredModal={() => {
                                     if (fulldashbaord?.length > 1 && index < fulldashbaord.length - 1) {
@@ -845,7 +816,7 @@ const renderAddLicenseCard = () => (
                                 ))}
                             </View>}
                             {profileType !== 'SkipProfile' ? (
-                                (!enables && !bothNoRequirement) ? <View>
+                                (!enables && !bothNoRequirement) ? <View style={{ marginTop: normalize(10) }}>
                                     <Buttons
                                         onPress={() => {
                                             if (enables) {
@@ -874,7 +845,7 @@ const renderAddLicenseCard = () => (
                                         fontSize={16}
                                         fontFamily={Fonts.InterSemiBold}
                                         fontWeight={"bold"}
-                                        marginBottom={normalize(10)}
+                                        marginBottom={normalize(0)}
                                         source={"arrow-right"}
                                         image={true}
                                         size={20}
@@ -899,7 +870,7 @@ const renderAddLicenseCard = () => (
                                             }
                                         }}
                                     />
-                                </View> : (!bothNoRequirement && enables) ? <View>
+                                </View> : (!bothNoRequirement && enables) ? <View style={{ marginTop: normalize(10) }}>
                                     <Buttons
                                         onPress={() => {
                                             if (enables) {
@@ -928,7 +899,7 @@ const renderAddLicenseCard = () => (
                                         fontSize={16}
                                         fontFamily={Fonts.InterSemiBold}
                                         fontWeight={"bold"}
-                                        marginBottom={normalize(10)}
+                                        marginBottom={normalize(0)}
                                         source={"arrow-right"}
                                         image={true}
                                         size={20}

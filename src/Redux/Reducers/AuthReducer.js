@@ -524,7 +524,11 @@ checkstateFailure(state, action) {
  * @returns {void}
  */
 licesensRequest(state, action) {
-      state.licesensResponse = null;
+      // Refreshing the same profession must not hide available dashboard actions.
+      if (state.licesensRequestedProfession !== action.payload) {
+        state.licesensResponse = null;
+      }
+      state.licesensLoading = true;
       state.licesensRequestedProfession = action.payload;
       state.status = action.type;
     },
@@ -535,6 +539,7 @@ licesensRequest(state, action) {
  * @returns {void}
  */
 licesensSuccess(state, action) {
+      state.licesensLoading = false;
       state.licesensResponse = action.payload;
       state.status = action.type;
     },
@@ -545,6 +550,7 @@ licesensSuccess(state, action) {
  * @returns {void}
  */
 licesensFailure(state, action) {
+      state.licesensLoading = false;
       state.licesensResponse = { licensure_states: [] };
       state.status = action.type;
       state.error = action.error;
@@ -1103,14 +1109,26 @@ primeTrailRequest(state, action) {
 primeTrailSuccess(state, action) {
       state.primeTrailResponse = action.payload;
       state.status = action.type;
+      const now = new Date();
+      const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const defaultTrialSub = {
+        status: 'active',
+        type: 'trial',
+        start_date: now.toISOString().split('T')[0],
+        end_date: end.toISOString().split('T')[0],
+      };
       const updatedUser = action.payload?.user || action.payload?.data?.user;
       if (updatedUser) {
+        if (!updatedUser.subscription_user) updatedUser.subscription_user = 'free';
+        if (!updatedUser.subscriptions || updatedUser.subscriptions.length === 0) {
+          updatedUser.subscriptions = [defaultTrialSub];
+        }
         if (state.loginResponse?.user) state.loginResponse.user = { ...state.loginResponse.user, ...updatedUser };
         if (state.signupResponse?.user) state.signupResponse.user = { ...state.signupResponse.user, ...updatedUser };
         if (state.verifymobileResponse?.user) state.verifymobileResponse.user = { ...state.verifymobileResponse.user, ...updatedUser };
         if (state.againloginsiginResponse?.user) state.againloginsiginResponse.user = { ...state.againloginsiginResponse.user, ...updatedUser };
       } else {
-        const patch = { subscription_user: 'free', subscriptions: [{ status: 'active', type: 'trial' }] };
+        const patch = { subscription_user: 'free', subscriptions: [defaultTrialSub] };
         if (state.loginResponse?.user) state.loginResponse.user = { ...state.loginResponse.user, ...patch };
         if (state.signupResponse?.user) state.signupResponse.user = { ...state.signupResponse.user, ...patch };
         if (state.verifymobileResponse?.user) state.verifymobileResponse.user = { ...state.verifymobileResponse.user, ...patch };

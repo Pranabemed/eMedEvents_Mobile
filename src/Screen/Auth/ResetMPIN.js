@@ -171,7 +171,7 @@ const onBackPress = () => {
                             <View style={styles.headerContainer}>
                                 <Text style={styles.headerText}>Reset Password</Text>
                                 <Text style={styles.subHeaderText}>
-                                    Create a strong new password that is different from your previous password.
+                                    Create a strong password to secure your account.
                                 </Text>
                             </View>
                             <View style={styles.form}>

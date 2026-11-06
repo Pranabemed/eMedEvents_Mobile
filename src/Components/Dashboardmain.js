@@ -10,7 +10,6 @@ import Colorpath from '../Themes/Colorpath';
 import normalize from '../Utils/Helpers/Dimen';
 import TaskCardItem from './Taskcarditem';
 import { CommonActions } from '@react-navigation/native';
-import Buttons from './Button';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import ResumeDash from './ResumeDash';
 import StateRequireditem from './StateRequired';
@@ -24,7 +23,7 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButtonPress, setAddit, addit, takestate, setTakestate, tasksData, navigation, completedCount, pendingCount, totalcard, DashboardReducer, hasTasks, cmeValult }) => {
+const Dashboardmain = ({ statepush, allProfTake, finddata, enables, setAddit, addit, takestate, setTakestate, tasksData, navigation, completedCount, pendingCount, totalcard, DashboardReducer, hasTasks, cmeValult }) => {
     const {
         fulldashbaord,
         setStatepush
@@ -255,72 +254,6 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, handleButton
                         contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                     />
                 </View> : null}
-                {enables && <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
-                    <TouchableOpacity onPress={() => {
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [
-                                    {
-                                        name: "Globalresult",
-                                        params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: handleButtonPress } },
-                                    }
-                                ]
-                            })
-                        );
-                    }}
-                        style={{
-                            flexDirection: "row",
-                            height: normalize(95),
-                            width: normalize(300),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            alignItems: "center",
-                            borderWidth: 0.5,
-                            borderColor: "#DADADA"
-                        }}
-                    >
-                        <View style={{ flex: 1, justifyContent: "center" }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    fontWeight: "bold",
-                                }}
-                            >
-                                {"Recommendations are based on your profession, primary area of practice and state requirements."}
-                            </Text>
-                            <View style={{ marginTop: normalize(10) }}>
-                                <Buttons
-                                    onPress={() => {
-                                        setStatepush(addit);
-                                        navigation.dispatch(
-                                            CommonActions.reset({
-                                                index: 0,
-                                                routes: [
-                                                    {
-                                                        name: "Globalresult",
-                                                        params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: handleButtonPress, backProps: "yes" } },
-                                                    }
-                                                ]
-                                            })
-                                        );
-                                    }}
-                                    height={normalize(40)}
-                                    width={normalize(270)}
-                                    backgroundColor={Colorpath.ButtonColr}
-                                    borderRadius={normalize(5)}
-                                    text="Browse Courses"
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterSemiBold}
-                                />
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>}
             </View>
         </>
     )

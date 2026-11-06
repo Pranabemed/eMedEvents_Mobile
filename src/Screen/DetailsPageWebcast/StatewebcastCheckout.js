@@ -173,6 +173,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     }
   }, [webcastdeatils, dispatch]);
   const handleTicketsCheckout = useCallback(() => {
+    if (checkoutRequestStartedRef.current) return;
     if (webcastdeatils?.registrationTickets?.length > 0) {
       const checkoutSpan = webcastdeatils?.conferenceId;
       let obj = {
@@ -199,7 +200,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     }
   }, [webcastdeatils, dispatch, refID]);
   const checkoutNav = useCallback(() => {
-    navigation.push("Checkout", {
+    navigation.navigate("Checkout", {
       checkoutSpan: {
         checkoutSpan: webcastdeatils,
         finalTicket: WebcastReducer?.checkoutTicketResponse,

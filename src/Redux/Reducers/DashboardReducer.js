@@ -136,6 +136,9 @@ stateDashboardFailure(state, action) {
  * @returns {void}
  */
 stateCourseRequest(state, action) {
+      state.stateCourseRequestId = action.meta?.complianceRequestId;
+      state.stateCourseLoading = true;
+      state.stateCourseResponse = {};
       state.status = action.type;
     },
         /**
@@ -145,6 +148,8 @@ stateCourseRequest(state, action) {
  * @returns {void}
  */
 stateCourseSuccess(state, action) {
+      if (action.meta?.complianceRequestId !== state.stateCourseRequestId) return;
+      state.stateCourseLoading = false;
       state.stateCourseResponse = action.payload;
       state.status = action.type;
     },
@@ -155,6 +160,9 @@ stateCourseSuccess(state, action) {
  * @returns {void}
  */
 stateCourseFailure(state, action) {
+      if (action.meta?.complianceRequestId !== state.stateCourseRequestId) return;
+      state.stateCourseLoading = false;
+      state.stateCourseResponse = {};
       state.status = action.type;
       state.error = action.error;
     },   
@@ -456,7 +464,7 @@ OCRCertificateFailure(state, action) {
  * @returns {void}
  */
 mainprofileRequest(state, action) {
-      state.mainprofileResponse = null;
+      // Keep the displayed profile stable while refreshing; logout resets the slice.
       state.mainProfileLoading = true;
       state.status = action.type;
     },

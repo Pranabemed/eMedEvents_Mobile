@@ -12,16 +12,11 @@ import Fonts from '../../Themes/Fonts';
 import PageHeader from '../../Components/PageHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
+import { nanoid } from '@reduxjs/toolkit';
 import { stateCourseRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import FlatListShimmer from '../../Components/FlatlistShimmer';
 import { CommonActions } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
 import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
@@ -42,7 +37,9 @@ const ChooseSpecailization = (props) => {
         setAddit
     } = useContext(AppContext);
     console.log(props?.route?.params, "fghkjhrgkj")
-    const [CMEData, setCMEData] = useState(null);
+    const selectedStateId = props?.route?.params?.stateID?.state_id;
+    const [request, setRequest] = useState(null);
+    const [connectionFailed, setConnectionFailed] = useState(false);
     const dispatch = useDispatch();
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const [conn, setConn] = useState("")
@@ -53,38 +50,28 @@ const ChooseSpecailization = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useEffect(() => {
-        let obj = {
-            "state_id": props?.route?.params?.stateID?.state_id
-        }
+    useLayoutEffect(() => {
+        let active = true;
+        const nextRequest = {id: nanoid(), stateId: selectedStateId};
+        setRequest(nextRequest);
+        setConnectionFailed(false);
         connectionrequest()
             .then(() => {
-                dispatch(stateCourseRequest(obj));
+                if (!active) return;
+                dispatch({...stateCourseRequest({state_id: selectedStateId}), meta: {complianceRequestId: nextRequest.id}});
             })
-            .catch(err => { showErrorAlert("Please connect to internet", err) })
-    }, [props?.route?.params?.stateID])
-    if (status == '' || DashboardReducer.status != status) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/stateCourseRequest':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateCourseSuccess':
-                status = DashboardReducer.status;
-                setCMEData(DashboardReducer?.stateCourseResponse?.data);
-                console.log(DashboardReducer?.stateCourseResponse?.data, "stateCourseResponses===========")
-                // props.navigation.navigate("Login");
-                break;
-            case 'Dashboard/stateCourseFailure':
-                status = DashboardReducer.status;
-                break;
-        }
-    }
-    useEffect(() => {
-        if (DashboardReducer?.stateCourseResponse?.data) {
-            setCMEData(DashboardReducer?.stateCourseResponse?.data);
-        }
-    }, [DashboardReducer?.stateCourseResponse?.data])
-    console.log("cmedata0-------", CMEData);
+            .catch(err => {
+                if (!active) return;
+                setConnectionFailed(true);
+                showErrorAlert("Please connect to internet", err);
+            });
+        return () => { active = false; };
+    }, [dispatch, selectedStateId]);
+    const ownsResponse = request?.stateId === selectedStateId &&
+        request?.id === DashboardReducer.stateCourseRequestId;
+    const isLoading = !connectionFailed && (!ownsResponse || DashboardReducer.stateCourseLoading);
+    const CMEData = ownsResponse && !isLoading && !connectionFailed
+        ? DashboardReducer.stateCourseResponse?.data : null;
         /**
  * Handles back press.
  * @returns {void}
@@ -134,7 +121,7 @@ const cleanNumber = (value) => {
 const renderData = ({ item, index }) => {
         console.log(item, "itemgetingn---------", cleanNumber(item?.earned_credits), cleanNumber(item?.credits))
         return (
-            <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: { fullData: item, addCreds: DashboardReducer?.stateCourseResponse?.data?.state_data } }) }}>
+            <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: { fullData: item, addCreds: CMEData?.state_data } }) }}>
                 <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
                     <View
                         style={{
@@ -183,7 +170,7 @@ const renderData = ({ item, index }) => {
 
                             </View>
                         </View>
-                        {/* <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: {fullData:item,addCreds:DashboardReducer?.stateCourseResponse?.data?.state_data} }) }}> */}
+                        {/* <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: {fullData:item,addCreds:CMEData?.state_data} }) }}> */}
                         <ArrowIcons
                             name="keyboard-arrow-right"
                             size={30}
@@ -195,8 +182,8 @@ const renderData = ({ item, index }) => {
             </TouchableOpacity>
         )
     }
-    const genralErndCrd = cleanNumber(DashboardReducer?.stateCourseResponse?.data?.state_data?.credits_data?.total_general_earned_credits);
-    const genTotalCrd = cleanNumber(DashboardReducer?.stateCourseResponse?.data?.state_data?.credits_data?.total_general_credits);
+    const genralErndCrd = cleanNumber(CMEData?.state_data?.credits_data?.total_general_earned_credits);
+    const genTotalCrd = cleanNumber(CMEData?.state_data?.credits_data?.total_general_credits);
     console.log(genralErndCrd, genTotalCrd, "gfdghdfh========");
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
@@ -218,24 +205,26 @@ const renderData = ({ item, index }) => {
                     />
                 </View>}
 
-                <Loader visible={CMEData == null} />
-                {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                <Loader visible={Boolean(isLoading) && conn !== false} />
+                {conn === false ? <IntOff /> : isLoading ? null : !CMEData ? (
+                    <Text style={{padding: normalize(20)}}>Unable to load compliance data. Please go back and try again.</Text>
+                ) : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
                     <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
                         <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: "#000000", fontWeight: "bold" }}>
                             {props?.route?.params?.stateID?.state_name}
                         </Text>
                     </View>
-                    {DashboardReducer?.stateCourseResponse?.data?.state_data?.topics?.length > 0 ? (
+                    {CMEData?.state_data?.topics?.length > 0 ? (
                         <>
                             <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
                                 <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>
-                                    {"State required CME courses"}
+                                    {"State Mandatory Topics"}
                                 </Text>
                             </View>
                             <View>
-                                {DashboardReducer?.stateCourseResponse?.data?.state_data?.topics?.length > 0 ? (
+                                {CMEData?.state_data?.topics?.length > 0 ? (
                                     <FlatList
-                                        data={DashboardReducer?.stateCourseResponse?.data?.state_data?.topics}
+                                        data={CMEData?.state_data?.topics}
                                         renderItem={renderData}
                                         keyExtractor={(item, index) => index.toString()}
                                         ListEmptyComponent={
@@ -288,10 +277,10 @@ const renderData = ({ item, index }) => {
                     ) : null}
                     <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
                         <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>
-                            {"Courses relevant to your specialty(s) to \nearn additional CME credits"}
+                            {"General Credits"}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={() => { props.navigation.navigate("CourseRelevant", { mainData: DashboardReducer?.stateCourseResponse?.data }) }}>
+                    <TouchableOpacity onPress={() => { props.navigation.navigate("CourseRelevant", { mainData: CMEData }) }}>
                         <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(0) }}>
                             <View
                                 style={{
@@ -318,8 +307,8 @@ const renderData = ({ item, index }) => {
                                     </Text>
                                     <View style={{ flexDirection: "row", marginTop: normalize(10), gap: normalize(5) }}>
                                         {(() => {
-                                            const registered = DashboardReducer?.stateCourseResponse?.data?.speciality_cources?.registered_cources || [];
-                                            const suggested = DashboardReducer?.stateCourseResponse?.data?.speciality_cources?.suggested_cources || [];
+                                            const registered = CMEData?.speciality_cources?.registered_cources || [];
+                                            const suggested = CMEData?.speciality_cources?.suggested_cources || [];
                                             const total = registered.length + suggested.length;
 
                                             return total > 0 && (

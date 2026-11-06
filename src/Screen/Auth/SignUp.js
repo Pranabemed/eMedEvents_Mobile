@@ -3,7 +3,7 @@ import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpe
  * Sign up screen module. Renders a React Native screen or a screen-scoped support component. Exported members: SignUp, detectCountry, CreateAccount, handleInput, setMobileNo, setEmailExist, formatPhoneNumber, formatIndianPhoneNumber, backSingUp, onBackPress, styles.
  */
 
-import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, Image, BackHandler } from 'react-native';
+import { View, Text, Platform, KeyboardAvoidingView, TouchableOpacity, ScrollView, Alert, Image, BackHandler, InteractionManager } from 'react-native';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import Fonts from '../../Themes/Fonts';
@@ -21,10 +21,11 @@ import Imagepath from '../../Themes/Imagepath';
 import { processPhoneNumber } from '../../Utils/Helpers/PhoneNormalize';
 import InputField from '../../Components/CellInput';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { writeNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { loadGuestSignupDraft } from '../../Utils/Helpers/GuestSignupDraft';
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
 import styles from './SignUp.styles';
 
 /**
@@ -51,6 +52,8 @@ const SignUp = (props) => {
       ? String(props?.route?.params?.phoneCd?.phoneCd).trim() !== "+1"
       : true
   );
+  const [fcm, setFcm] = useState('');
+  const isFocus = useIsFocused();
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const emailRef = useRef(email);
@@ -58,6 +61,47 @@ const SignUp = (props) => {
   useEffect(() => {
     emailRef.current = email;
   }, [email]);
+  useEffect(() => {
+    if (!isFocus) return;
+    let active = true;
+    let hasRequested = false;
+    let interactionTask = null;
+
+    const requestToken = () => {
+      if (!active || hasRequested) return;
+      hasRequested = true;
+      interactionTask = InteractionManager.runAfterInteractions(() => {
+        if (!active) return;
+        generateDeviceToken()
+          .then(token => {
+            if (active && token) setFcm(token);
+          })
+          .catch(err => {
+            if (active) showErrorAlert("Unable to enable notifications", err);
+          });
+      });
+    };
+
+    const unsubscribe = typeof props.navigation?.addListener === 'function'
+      ? props.navigation.addListener('transitionEnd', (e) => {
+          if (!e?.data?.closing) {
+            requestToken();
+          }
+        })
+      : null;
+
+    if (!unsubscribe) {
+      requestToken();
+    }
+
+    return () => {
+      active = false;
+      interactionTask?.cancel();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [isFocus, props.navigation]);
   useEffect(() => {
     /**
 * Detect country utility.
@@ -163,6 +207,7 @@ const SignUp = (props) => {
           "password": password.trim(),
           "countryCode": signupCountryCode,
           "isNonUsaUser": isNonUsaFlow,
+          "deviceToken": fcm,
         }
       })
     }

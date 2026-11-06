@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, FlatList, TouchableOpacity, ScrollView, BackHandler } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
 import PageHeader from '../../Components/PageHeader';
@@ -31,32 +31,54 @@ import { useDispatch } from 'react-redux';
  */
 const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
-        const { isConnected,fulldashbaord,setAddit,statepush } = useContext(AppContext);
-        const dispatch = useDispatch();
-        /**
- * Resolve license state name utility.
- * @returns {*}
- */
-const resolveLicenseStateName = () => (
-        props?.route?.params?.taskData?.creditID?.state ||
-        props?.route?.params?.taskData?.creditID?.state_name ||
-        props?.route?.params?.backget?.creditID?.state ||
+    const { isConnected, fulldashbaord, setAddit, statepush } = useContext(AppContext);
+    const dispatch = useDispatch();
+    const activeCreditID = useMemo(() => {
+        return (
+            props?.route?.params?.taskData?.creditID ||
+            props?.route?.params?.backget?.taskData?.creditID ||
+            props?.route?.params?.backget?.creditID ||
+            statepush?.creditID ||
+            statepush ||
+            null
+        );
+    }, [props?.route?.params?.taskData, props?.route?.params?.backget, statepush]);
+
+    /**
+* Resolve license state name utility.
+* @returns {*}
+*/
+    const resolveLicenseStateName = useCallback(() => (
+        activeCreditID?.state ||
+        activeCreditID?.state_name ||
+        props?.route?.params?.taskData?.statid ||
+        props?.route?.params?.backget?.taskData?.statid ||
         props?.route?.params?.backget?.creditID?.state_name ||
         ""
-    );
-        /**
- * Resolve license expiry date utility.
- * @returns {*}
- */
-const resolveLicenseExpiryDate = () => (
+    ), [activeCreditID, props?.route?.params]);
+    /**
+* Resolve license expiry date utility.
+* @returns {*}
+*/
+    const resolveLicenseExpiryDate = useCallback(() => (
+        activeCreditID?.to_date ||
+        activeCreditID?.expiry_date ||
+        activeCreditID?.license_expiry_date ||
+        activeCreditID?.licence_expiry_date ||
         props?.route?.params?.taskData?.creditID?.to_date ||
         props?.route?.params?.taskData?.creditID?.expiry_date ||
         props?.route?.params?.taskData?.creditID?.license_expiry_date ||
+        props?.route?.params?.backget?.taskData?.creditID?.to_date ||
+        props?.route?.params?.backget?.taskData?.creditID?.expiry_date ||
+        props?.route?.params?.backget?.taskData?.creditID?.license_expiry_date ||
         props?.route?.params?.backget?.creditID?.to_date ||
         props?.route?.params?.backget?.creditID?.expiry_date ||
         props?.route?.params?.backget?.creditID?.license_expiry_date ||
+        statepush?.to_date ||
+        statepush?.expiry_date ||
+        statepush?.license_expiry_date ||
         ""
-    );
+    ), [activeCreditID, props?.route?.params, statepush]);
     const isLicenseExpired = useMemo(() => {
         const expiryValue = resolveLicenseExpiryDate();
         if (!expiryValue) return false;
@@ -73,19 +95,12 @@ const resolveLicenseExpiryDate = () => (
         if (!parsedExpiry.isValid()) return false;
 
         return moment().startOf("day").isAfter(parsedExpiry.startOf("day"));
-    }, [
-        props?.route?.params?.taskData?.creditID?.to_date,
-        props?.route?.params?.taskData?.creditID?.expiry_date,
-        props?.route?.params?.taskData?.creditID?.license_expiry_date,
-        props?.route?.params?.backget?.creditID?.to_date,
-        props?.route?.params?.backget?.creditID?.expiry_date,
-        props?.route?.params?.backget?.creditID?.license_expiry_date
-    ]);
-        /**
- * Task press utility.
- * @returns {void}
- */
-const taskPress = () => {
+    }, [resolveLicenseExpiryDate]);
+    /**
+* Task press utility.
+* @returns {void}
+*/
+    const taskPress = () => {
         setAddit(statepush);
         stateDashboardSuccess(null)
         if (props.navigation.canGoBack()) {
@@ -110,21 +125,21 @@ const taskPress = () => {
         );
         // props.navigation.goBack();
     };
-              /**
- * Task handle utility.
- * @returns {void}
- */
-const taskHandle = () => {
-            if (statepush) {
-                const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
-                connectionrequest()
-                    .then(() => {
-                        dispatch(stateDashboardRequest({ "state_id": takeIDST }))
-                    })
-                    .catch((err) => { showErrorAlert("Please connect to internet", err) })
-            }
+    /**
+* Task handle utility.
+* @returns {void}
+*/
+    const taskHandle = () => {
+        if (statepush) {
+            const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ "state_id": takeIDST }))
+                })
+                .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
-     const [conn, setConn] = useState("")
+    }
+    const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -135,35 +150,38 @@ const taskHandle = () => {
     const isfocused = useIsFocused();
     useEffect(() => {
         setTasks(true);
-    }, [isfocused])
+    }, [isfocused]);
     const [tasks, setTasks] = useState(false);
-    const [finalTask, setFinalTask] = useState([]);
-    useEffect(() => {
-        if (props?.route?.params?.taskData?.taskData) {
-            const taskData = props?.route?.params?.taskData?.taskData;
-            const updatedStateDataArray = isLicenseExpired
-                ? [...taskData, { title: resolveLicenseStateName(), button_display_text: "Update" }]
-                : taskData;
-            setFinalTask(updatedStateDataArray);
+
+    const rawTasks = useMemo(() => {
+        const t1 = props?.route?.params?.taskData?.taskData;
+        if (Array.isArray(t1) && t1.length > 0) return t1;
+        const t2 = props?.route?.params?.backget?.taskData?.taskData;
+        if (Array.isArray(t2) && t2.length > 0) return t2;
+        const t3 = props?.route?.params?.backget?.taskData;
+        if (Array.isArray(t3) && t3.length > 0) return t3;
+        return [];
+    }, [props?.route?.params?.taskData, props?.route?.params?.backget]);
+
+    const finalTask = useMemo(() => {
+        if (!rawTasks || rawTasks.length === 0) return [];
+        if (isLicenseExpired) {
+            const hasUpdate = rawTasks.some(t => t?.button_display_text === "Update");
+            if (!hasUpdate) {
+                return [...rawTasks, { title: resolveLicenseStateName(), button_display_text: "Update" }];
+            }
         }
-    }, [props?.route?.params?.taskData, isLicenseExpired])
-    useEffect(() => {
-        if (props?.route?.params?.backget?.taskData?.taskData) {
-            const backgetAll = props?.route?.params?.backget?.taskData?.taskData;
-            const updatedStateDataArray = isLicenseExpired
-                ? [...backgetAll, { title: resolveLicenseStateName(), button_display_text: "Update" }]
-                : backgetAll;
-            setFinalTask(updatedStateDataArray);
-        }
-    }, [props?.route?.params?.backget, isLicenseExpired])
-        /**
- * Task action utility.
- * @param {*} taskID - Input value.
- * @returns {void}
- */
-const taskAction = (taskID) => {
+        return rawTasks;
+    }, [rawTasks, isLicenseExpired, resolveLicenseStateName]);
+
+    /**
+* Task action utility.
+* @param {*} taskID - Input value.
+* @returns {void}
+*/
+    const taskAction = (taskID) => {
         const url_webcast = taskID?.detailpage_url;
-        const result_final = url_webcast.split('/').pop();
+        const result_final = url_webcast ? url_webcast.split('/').pop() : '';
         console.log(result_final, "webcast url=======");
         console.log(taskID, "taskID===============");
         if (taskID?.current_activity_api == "activitysession") {
@@ -175,48 +193,48 @@ const taskAction = (taskID) => {
         } else if (taskID?.button_display_text == "Add Credits") {
             props.navigation.navigate("AddCredits", { mainAdd: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData })
         } else if (result_final) {
-            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result_final, creditData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData } })
+            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result_final, creditData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData, Realback: "mytasks" } })
         }
     }
-        /**
- * Mytasktitle url utility.
- * @param {*} make - Input value.
- * @returns {void}
- */
-const mytasktitleUrl = (make) => {
+    /**
+* Mytasktitle url utility.
+* @param {*} make - Input value.
+* @returns {void}
+*/
+    const mytasktitleUrl = (make) => {
         const urltitle = make?.detailpage_url;
-        const resulttitle = urltitle.split('/').pop();
+        const resulttitle = urltitle ? urltitle.split('/').pop() : '';
         console.log(resulttitle, "webcast url=======", make);
         if (resulttitle) {
-            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData } })
+            props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData, Realback: "mytasks" } })
         }
     }
     console.log(finalTask, "finalTask------")
-        /**
- * Mytaskparticular data utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const mytaskparticularData = ({ item, index }) => {
+    /**
+* Mytaskparticular data utility.
+* @param {Object} props - Input object.
+* @param {*} props.item - Nested property value.
+* @param {*} props.index - Nested property value.
+* @returns {JSX.Element}
+*/
+    const mytaskparticularData = ({ item, index }) => {
         console.log(item, "item?.completed_percentage======")
-                /**
- * Formats datetask.
- * @param {*} taskrole - Input value.
- * @returns {*}
- */
-const formatDatetask = (taskrole) => {
+        /**
+* Formats datetask.
+* @param {*} taskrole - Input value.
+* @returns {*}
+*/
+        const formatDatetask = (taskrole) => {
             const date = moment(taskrole, "DD MMM'YY");
             return date.format("MMM D").replace(' ', '');
         };
         const finalDataTasking = formatDatetask(item?.startdate);
-                /**
- * Formats date endtask.
- * @param {*} taskrole - Input value.
- * @returns {*}
- */
-const formatDateEndtask = (taskrole) => {
+        /**
+* Formats date endtask.
+* @param {*} taskrole - Input value.
+* @returns {*}
+*/
+        const formatDateEndtask = (taskrole) => {
             const date = moment(taskrole, "DD MMM'YY");
             return date.format("MMM D, YY").replace('', '');
         };
@@ -269,7 +287,7 @@ const formatDateEndtask = (taskrole) => {
                                     color: "#848484",
                                 }}
                             >
-                                {`Exp: ${FormatDateZone(item?.startdate,item?.enddate)}`}
+                                {`Exp: ${FormatDateZone(item?.startdate, item?.enddate)}`}
                             </Text>
                         </View>}
                         {item?.display_cme && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(5), flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
@@ -288,7 +306,20 @@ const formatDateEndtask = (taskrole) => {
                         {item?.button_display_text == "Update" ? <View style={{ flexDirection: "row", justifyContent: "center", alignContent: "center", marginTop: normalize(10), width: "100%" }}>
                             <TouchableOpacity
                                 onPress={() => {
-                                    props.navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: props?.route?.params?.taskData?.creditID || props?.route?.params?.backget?.taskData?.creditID, backData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData, BackMyTask: "TabNav", backState: props?.route?.params?.taskData?.creditID?.state || props?.route?.params?.backget?.creditID?.state_name } } }] }));
+                                    props.navigation.dispatch(CommonActions.reset({
+                                        index: 0,
+                                        routes: [{
+                                            name: "AddLicense",
+                                            params: {
+                                                myTaskask: {
+                                                    addLic: activeCreditID || props?.route?.params?.taskData?.creditID || props?.route?.params?.backget?.taskData?.creditID,
+                                                    backData: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData,
+                                                    BackMyTask: "TabNav",
+                                                    backState: resolveLicenseStateName() || props?.route?.params?.taskData?.creditID?.state || props?.route?.params?.backget?.creditID?.state_name
+                                                }
+                                            }
+                                        }]
+                                    }));
                                 }}
                                 style={{
                                     height: normalize(30),
@@ -352,11 +383,11 @@ const formatDateEndtask = (taskrole) => {
         );
     };
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        /**
+* On back press utility.
+* @returns {boolean}
+*/
+        const onBackPress = () => {
             taskPress();
             return true;
         };
@@ -369,8 +400,8 @@ const onBackPress = () => {
         return () => backHandler.remove();
     }, []);
     useLayoutEffect(() => {
-                props.navigation.setOptions({ gestureEnabled: false });
-            }, []);
+        props.navigation.setOptions({ gestureEnabled: false });
+    }, []);
     return (
         <>
             <MyStatusBar
@@ -391,7 +422,7 @@ const onBackPress = () => {
                         />
                     </View>
                 )}
-                {conn == false ? <IntOff/> :<View>
+                {conn == false ? <IntOff /> : <View>
                     <FlatList
                         data={finalTask}
                         renderItem={mytaskparticularData}

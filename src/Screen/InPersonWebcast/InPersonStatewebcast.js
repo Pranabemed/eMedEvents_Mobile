@@ -18,6 +18,7 @@ import { saveTicketInpersonRequest } from '../../Redux/Reducers/WebcastReducer'
 import { useDispatch, useSelector } from 'react-redux'
 import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
+import Loader from '../../Utils/Helpers/Loader';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useIsFocused } from '@react-navigation/native';
 
@@ -103,7 +104,6 @@ function cutomPrice(price) {
 const inPersonSaveTicket = async () => {
         if (clickHistory?.length > 0) {
             pendingModalNavigation.current = 'checkout';
-            setIssfilterVisible(false);
             console.log("Hello", clickHistory)
             const checkoutSpan = props?.route?.params?.realData?.realData?.conferenceId;
             let obj = {
@@ -467,6 +467,7 @@ const stateDataFilter = ({ item, index }) => {
  * @returns {void}
  */
 const backPressIn = () => {
+        if (isSavingTickets) return;
         pendingModalNavigation.current = null;
         setIssfilterVisible(false);
         props.navigation.goBack();
@@ -588,6 +589,7 @@ const onBackPress = () => {
                         {isOffline && <IntOff />}
                     </View>
                 </Modal>
+                <Loader visible={isSavingTickets && !isOffline} />
             </SafeAreaView>
         </>
     )

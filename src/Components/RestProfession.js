@@ -2,8 +2,8 @@
  * Rest profession reusable component module. Provides a React Native UI building block used across screens. Exported members: RestProfession, token_error, handleRot, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates, getFullName, getFirstTruthyProfession.
  */
 
-import { View, Text, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native'
-import React, { useContext, useEffect, useState } from 'react'
+import { View, Text, Image, FlatList, TouchableOpacity, ScrollView, Pressable, StyleSheet, Dimensions, Platform } from 'react-native'
+import React, { useContext, useEffect, useState, useRef } from 'react'
 import moment from 'moment';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
@@ -22,6 +22,8 @@ import constants from '../Utils/Helpers/constants';
 import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../Navigator/StackNav';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
+import Carousel from 'react-native-snap-carousel';
+import ResumeDash from './ResumeDash';
 
 /**
  * Reusable RestProfession component.
@@ -42,9 +44,14 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
     const dispatch = useDispatch();
     const {
         setIsConnected,
-        isConnected
+        isConnected,
+        setStatepush
     } = useContext(AppContext);
     const [nettrue, setNettrue] = useState("");
+    const [valcourse, setValcourse] = useState(0);
+    const carouselRef = useRef(null);
+    const windowWidth = Dimensions.get('window').width;
+    const windowHeight = Dimensions.get('window').height;
     console.log(isConnected, "isConnected=========")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
@@ -88,190 +95,6 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         });
 
         return () => unsubscribe();
-    }
-    /**
-* Handles url.
-* @param {*} onlineName - Input value.
-* @returns {void}
-*/
-    const handleUrl = (onlineName) => {
-        const url = onlineName?.detailpage_url;
-        const result = url.split('/').pop();
-        console.log(result, "webcast url=======", onlineName);
-        let obj = {
-            "conference_id": onlineName?.id,
-            "action_type": "view",
-            "status": 1
-        }
-        connectionrequest()
-            .then(() => {
-                dispatch(ConfActRequest(obj));
-            })
-            .catch((err) => {
-                showErrorAlert("Please connect to internet", err);
-            });
-        if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } })
-        }
-    }
-    console.log(completedCount, pendingCount, "fdgd0000------")
-    /**
-* Search globalitem utility.
-* @param {Object} props - Input object.
-* @param {*} props.item - Nested property value.
-* @param {*} props.index - Nested property value.
-* @returns {JSX.Element}
-*/
-    const searchGlobalitem = ({ item, index }) => {
-        /**
-* Formats date.
-* @param {*} dateStr - Input value.
-* @returns {*}
-*/
-        const formatDate = (dateStr) => {
-            const date = moment(dateStr, "DD MMM'YY");
-            return date.format("MMM  D").replace(' ', '');
-        };
-        const formattedDate = formatDate(item?.startdate);
-        /**
-* Formats date end.
-* @param {*} dateStr - Input value.
-* @returns {*}
-*/
-        const formatDateEnd = (dateStr) => {
-            const date = moment(dateStr, "DD MMM'YY");
-            return date.format("MMM D, YYYY").replace('', '');
-        };
-        const formattedDateend = formatDateEnd(item?.enddate);
-        /**
-* Render location and dates utility.
-* @returns {*}
-*/
-        const renderLocationAndDates = () => {
-            if (item?.startdate && item?.enddate && item?.location) {
-                return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.WrongCal}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                bottom: normalize(3),
-                                marginLeft: normalize(5),
-                                width: normalize(220)
-                            }}
-                        >
-                            {`${formattedDate} - ${formattedDateend} | ${item?.location}`}
-                        </Text>
-                    </View>
-                );
-            } else if (item?.startdate && item?.enddate) {
-                return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.WrongCal}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                bottom: normalize(3),
-                                marginLeft: normalize(5)
-                            }}
-                        >
-                            {`${formattedDate} - ${formattedDateend}`}
-                        </Text>
-                    </View>
-                );
-            } else if (item?.location) {
-                return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.WrongCal}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                bottom: normalize(3),
-                            }}
-                        >
-                            {item?.location}
-                        </Text>
-                    </View>
-                );
-            }
-            return null;
-        };
-        return (
-            <View>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
-                    <TouchableOpacity onPress={() => { handleUrl(item) }}>
-                        <View
-                            style={{
-                                flexDirection: "column",
-                                width: normalize(300),
-                                borderRadius: normalize(10),
-                                backgroundColor: "#FFFFFF",
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(10),
-                                // shadowColor: "#000",
-                                // shadowOffset: { width: 0, height: 1 },
-                                // shadowOpacity: 0.2,
-                                // shadowRadius: 2,
-                                // elevation: 5
-                            }}
-                        >
-                            <View style={{ flex: 1 }}>
-                                <View style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    width: '106%'
-                                }}>
-                                    <View style={{ flex: 1, marginRight: 10 }}>
-                                        <View>
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterSemiBold,
-                                                    fontSize: 16,
-                                                    color: "#000000",
-                                                    fontWeight: "bold",
-                                                    flexWrap: 'wrap',
-                                                    lineHeight: 20,
-                                                }}
-                                                numberOfLines={2}
-                                                ellipsizeMode="tail"
-                                            >
-                                                {item?.title}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            </View>
-                            <View style={{ justifyContent: "flex-start", alignItems: "flex-start", paddingVertical: normalize(4) }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}</Text>
-                            </View>
-                            {(item?.startdate || item?.enddate || item?.location) && (<View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
-                                {renderLocationAndDates()}
-                            </View>)}
-                            {item?.buttonText && <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
-                            {!item?.buttonText ? null : <View style={{ justifyContent: "flex-end", alignItems: "flex-end", marginTop: normalize(3) }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: Colorpath.ButtonColr }}>{item?.buttonText}</Text>
-                            </View>}
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        )
     }
     useEffect(() => {
         switch (DashboardReducer?.status) {
@@ -395,131 +218,216 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
                 </View>
             )}
-            {completedCount == 1 ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), paddingHorizontal: normalize(10) }}>
-                <TouchableOpacity onPress={() => {
-                    if (enables) {
-                        setPrimeadd(true);
-                    } else {
-                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Course" }] }));
-                    }
-
-                }}
-                    style={{
-                        flexDirection: "row",
-                        height: normalize(110),
-                        width: normalize(300),
-                        borderRadius: normalize(10),
-                        backgroundColor: "#FFFFFF",
-                        paddingHorizontal: normalize(15),
-                        // paddingVertical: normalize(10),
-                        alignItems: "center",
-                        borderWidth: 0.5,
-                        borderColor: "#DADADA"
-                    }}
-                >
-                    <View style={{ flex: 1, justifyContent: "center" }}>
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#000000",
-                                fontWeight: "bold",
-                            }}
-                        >
-                            {"Your Registered Activities"}
-                        </Text>
-                        <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
-                            <View style={{
-                                flexDirection: "row",
-                                height: normalize(60),
-                                width: normalize(88),
-                                borderRadius: normalize(8),
-                                // paddingHorizontal: normalize(10),
-                                backgroundColor: "#EAF5FF",
-                                marginTop: normalize(5),
-                                justifyContent: "center", alignItems: "center"
-                            }}>
-                                <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}</Text>
-                                </View>
+            {(completedCount > 0 || pendingCount > 0 || completedCount == 1) ? (
+                <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), paddingHorizontal: normalize(10) }}>
+                    <TouchableOpacity
+                        onPress={() => {
+                            setStatepush?.(addit);
+                            navigation.dispatch(
+                                CommonActions.reset({
+                                    index: 0,
+                                    routes: [{
+                                        name: "Course",
+                                        params: {
+                                            taskData: { statid: takestate, creditID: addit },
+                                        },
+                                    }],
+                                })
+                            );
+                        }}
+                        style={{
+                            flexDirection: "row",
+                            minHeight: normalize(110),
+                            width: normalize(300),
+                            borderRadius: normalize(10),
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: normalize(15),
+                            paddingVertical: normalize(10),
+                            alignItems: "center",
+                            borderWidth: 0.5,
+                            borderColor: "#DADADA",
+                        }}
+                    >
+                        <View style={{ flex: 1, justifyContent: "center" }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                <Text
+                                    numberOfLines={1}
+                                    style={{
+                                        flex: 1,
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 14,
+                                        color: "#000000",
+                                        fontWeight: "bold",
+                                        marginRight: normalize(8),
+                                    }}
+                                >
+                                    {"Your Registered Activities"}
+                                </Text>
+                                <TouchableOpacity
+                                    style={{
+                                        backgroundColor: Colorpath.ButtonColr,
+                                        height: normalize(20),
+                                        width: normalize(20),
+                                        borderRadius: normalize(20),
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                    onPress={() => {
+                                        setStatepush?.(addit);
+                                        navigation.dispatch(
+                                            CommonActions.reset({
+                                                index: 0,
+                                                routes: [{
+                                                    name: "Course",
+                                                    params: {
+                                                        taskData: { statid: takestate, creditID: addit },
+                                                    },
+                                                }],
+                                            })
+                                        );
+                                    }}
+                                >
+                                    <ArrowIconsAnt
+                                        name="arrowright"
+                                        size={18}
+                                        color={Colorpath.white}
+                                        style={{ alignSelf: "center" }}
+                                    />
+                                </TouchableOpacity>
                             </View>
-                            <View style={{
-                                flexDirection: "row",
-                                height: normalize(60),
-                                width: normalize(88),
-                                borderRadius: normalize(8),
-                                // paddingHorizontal: normalize(10),
-                                backgroundColor: "#E7F5E8",
-                                marginTop: normalize(5),
-                                justifyContent: "center", alignItems: "center"
-                            }}>
-                                <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}</Text>
+                            <View style={{ flexDirection: "row", gap: normalize(5), marginTop: normalize(4) }}>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#EAF5FF",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}</Text>
+                                    </View>
                                 </View>
-                            </View>
-                            <View style={{
-                                flexDirection: "row",
-                                height: normalize(60),
-                                width: normalize(88),
-                                borderRadius: normalize(8),
-                                backgroundColor: "#F1EBFF",
-                                // paddingHorizontal: normalize(10),
-                                marginTop: normalize(5),
-                                justifyContent: "center", alignItems: "center"
-                            }}>
-                                <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}</Text>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#E7F5E8",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}</Text>
+                                    </View>
+                                </View>
+                                <View style={{
+                                    flexDirection: "row",
+                                    height: normalize(60),
+                                    width: normalize(88),
+                                    borderRadius: normalize(8),
+                                    backgroundColor: "#F1EBFF",
+                                    marginTop: normalize(5),
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}>
+                                    <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
-                    </View>
-                    <TouchableOpacity style={{ alignSelf: 'center', backgroundColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(20), justifyContent: "center", alignItems: "center" }} onPress={() => {
-                        if (enables) {
-                            setPrimeadd(true);
-                        } else {
-                            navigation.dispatch(CommonActions.reset({
-                                index: 0, routes: [{
-                                    name: "Course", params: {
-                                        taskData: { statid: takestate, creditID: addit },
-                                    }
-                                }]
-                            }));
-                        }
-                    }}>
-                        <ArrowIconsAnt
-                            name="arrowright"
-                            size={18}
-                            color={Colorpath.white}
-                            style={{ alignSelf: "center" }}
-                        />
                     </TouchableOpacity>
-                </TouchableOpacity>
-            </View> : null}
-            {profileType !== 'SkipProfile' && CMEReducer?.cmeCourseResponse?.header_title && storeAlldata?.length > 0 && <View style={{ paddingHorizontal: normalize(0), paddingVertical: (completedCount == 0 && pendingCount == 0) ? normalize(10) : normalize(5) }}>
-                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{CMEReducer?.cmeCourseResponse?.header_title}</Text>
-            </View>}
+                </View>
+            ) : null}
             <View>
                 <ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
-                    {/* ── Shimmer while cmeCourseRequest is in-flight ── */}
-                    {loading && !hasReceivedResponse.current && storeAlldata !== null ? (
-                        <ProfessionCourseShimmer count={3} />
-                    ) : (
-                        <FlatList
-                            scrollEnabled={false}
-                            data={storeAlldata?.slice(0, 2)}
-                            renderItem={searchGlobalitem}
-                            keyExtractor={(item, index) => item.id}
-                            onEndReachedThreshold={0.5}
-                            contentContainerStyle={{ paddingBottom: normalize(10) }}
-                            scrollEventThrottle={16}
-                            ListEmptyComponent={null}
-                        />
-                    )}
-                    {/* Browse Courses button – hidden while shimmer is showing */}
-                    {!loading && (
+                    {/* ── Shimmer while data is in-flight ── */}
+                    {loading && !hasReceivedResponse.current && storeAlldata?.length === 0 ? (
+                        <ProfessionCourseShimmer count={1} />
+                    ) : storeAlldata?.length > 0 ? (
+                        <View style={{ paddingVertical: normalize(10) }}>
+                            <Pressable
+                                onPress={() => {
+                                    setStatepush?.(addit);
+                                    navigation.dispatch(
+                                        CommonActions.reset({
+                                            index: 0,
+                                            routes: [
+                                                {
+                                                    name: "Course",
+                                                    params: {
+                                                        myact: {
+                                                            realdata: storeAlldata,
+                                                            creditData: addit || DashboardReducer?.mainprofileResponse?.licensures?.[0],
+                                                        },
+                                                    },
+                                                },
+                                            ],
+                                        })
+                                    );
+                                }}
+                                style={{
+                                    width: normalize(295),
+                                    alignSelf: "center",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    flexDirection: "row",
+                                    marginBottom: normalize(4),
+                                }}
+                            >
+                                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: "#000", fontWeight: "bold" }}>
+                                    {"Start or Resume Courses"}
+                                </Text>
+                                <Text style={{ fontFamily: Fonts.InterBold, fontSize: 14, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
+                                    {"View All"}
+                                </Text>
+                            </Pressable>
+                            <View style={{ alignItems: "center", justifyContent: "center" }}>
+                                <Carousel
+                                    ref={carouselRef}
+                                    layout={'default'}
+                                    data={storeAlldata}
+                                    marginTop={normalize(0)}
+                                    sliderWidth={normalize(300)}
+                                    itemWidth={normalize(295)}
+                                    scrollAnimationDuration={1000}
+                                    renderItem={({ item, index }) => (
+                                        <ResumeDash
+                                            item={item}
+                                            index={index}
+                                            addit={addit}
+                                        />
+                                    )}
+                                    firstItem={0}
+                                    onSnapToItem={(index) => {
+                                        setValcourse(index);
+                                    }}
+                                />
+                            </View>
+                            {storeAlldata && storeAlldata.length >= 2 && (
+                                <View style={styles.paginationContainer}>
+                                    {storeAlldata.map((_, index) => (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.dot,
+                                                valcourse === index ? styles.activeDot : styles.inactiveDot
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    ) : null}
+                    {/* Browse Courses button */}
+                    {(!loading || hasReceivedResponse.current) && (
                         <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
                             <TouchableOpacity onPress={() => {
                                 dispatch(clearCmeCourseData());
@@ -529,7 +437,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                         routes: [
                                             {
                                                 name: "Globalresult",
-                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0] } },
+                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null } },
                                             }
                                         ]
                                     })
@@ -539,25 +447,19 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     flexDirection: "row",
                                     height: normalize(105),
                                     width: normalize(300),
-                                    borderRadius: normalize(10),
-                                    backgroundColor: "#FFFFFF",
-                                    paddingHorizontal: normalize(12),
+                                    borderRadius: normalize(5),
+                                    borderWidth: 1,
+                                    borderColor: Colorpath.bordercolor,
+                                    backgroundColor: Colorpath.white,
+                                    justifyContent: "center",
                                     alignItems: "center",
-                                    borderWidth: 0.5,
-                                    borderColor: "#DADADA"
+                                    marginTop: normalize(10)
                                 }}
                             >
-                                <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterMedium,
-                                            fontSize: 14,
-                                            color: "#000000",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {"Recommendations are based on your profession, primary area of practice and state requirements."}
-                                    </Text>
+                                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                                    <View style={{ width: normalize(270) }}>
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 13, color: Colorpath.Gray, textAlign: "center" }}>{"Recommendations are based on your profession, primary area of practice and state requirements."}</Text>
+                                    </View>
                                     <View style={{ marginTop: normalize(10) }}>
                                         <Buttons
                                             onPress={() => {
@@ -568,7 +470,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                                         routes: [
                                                             {
                                                                 name: "Globalresult",
-                                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: DashboardReducer?.mainprofileResponse?.licensures?.[0], backProps: "yes" } },
+                                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null, backProps: "yes" } },
                                                             }
                                                         ]
                                                     })
@@ -694,6 +596,34 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    paginationContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: normalize(8),
+        marginBottom: normalize(4),
+    },
+    dot: {
+        height: 7,
+        marginHorizontal: 3,
+    },
+    inactiveDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: 'transparent',
+        borderColor: '#2C4DB9',
+        borderWidth: 1,
+    },
+    activeDot: {
+        width: 22,
+        height: 7,
+        borderRadius: 5,
+        backgroundColor: '#2C4DB9',
+    },
+});
 
 /**
  * Rest profession default export.

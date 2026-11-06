@@ -207,14 +207,14 @@ export function* stateCourseSaga(action) {
   try {
     let response = yield call(postApi, 'creditVault/complianceList', action.payload, header);
     if (response?.data?.success == true) {
-      yield put(stateCourseSuccess(response));
+      yield put({...stateCourseSuccess(response), meta: action.meta});
       //   showErrorAlert(response?.data?.msg);
     } else {
-      yield put(stateCourseFailure(response));
+      yield put({...stateCourseFailure(response), meta: action.meta});
       //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    yield put(stateCourseFailure(error));
+    yield put({...stateCourseFailure(error), meta: action.meta});
     showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }

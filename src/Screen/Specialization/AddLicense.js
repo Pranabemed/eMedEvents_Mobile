@@ -150,7 +150,7 @@ const addCreditBack = () => {
                                 backget:
                                 {
                                     taskData: props?.route?.params?.myTaskask?.backData,
-                                    creditID: { state_name: props?.route?.params?.myTaskask?.backState }
+                                    creditID: props?.route?.params?.myTaskask?.addLic || { state_name: props?.route?.params?.myTaskask?.backState }
                                 }
                             }
                         }
@@ -824,19 +824,23 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                     </View>
                                 </View>
 
-                                <Pressable onPress={openLicensureState} disabled={isEditLicenseFlow ? true : false}>
+                                <Pressable onPress={openLicensureState} disabled={isEditLicenseFlow ? true : false} style={{ width: '100%' }}>
                                     <View style={{
                                         flexDirection: 'row',
-                                        flex: 1
+                                        flex: 1,
+                                        width: '100%'
                                     }}>
                                         <View style={{
                                             flex: 1,
+                                            width: '100%',
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField
+                                                containerStyle={{ width: '100%' }}
                                                 icondisable={isEditLicenseFlow ? true : false}
-                                                wrapperStyle={isEditLicenseFlow ? { borderBottomColor: "#D0D5DD" } : undefined}
-                                                addnewtyle={isEditLicenseFlow ? { color: "#667085" } : undefined}
+                                                wrapperStyle={isEditLicenseFlow ? { backgroundColor: '#F0F0F0', borderBottomColor: '#B8B8B8', borderRadius: normalize(6), width: '100%', paddingHorizontal: 0 } : undefined}
+                                                labelStyle={isEditLicenseFlow ? { left: 0 } : undefined}
+                                                addnewtyle={isEditLicenseFlow ? { color: '#7A7A7A' } : undefined}
                                                 label={"Select Licensure State*"}
                                                 value={selectlicsense}
                                                 placeholder=""
@@ -873,19 +877,23 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                         />
                                     </View>
                                 </View>
-                                <Pressable onPress={openLicenseIssueDate} disabled={stateDateFetch ? true : false}>
+                                <Pressable onPress={openLicenseIssueDate} disabled={stateDateFetch ? true : false} style={{ width: '100%' }}>
                                     <View style={{
                                         flexDirection: 'row',
-                                        flex: 1
+                                        flex: 1,
+                                        width: '100%'
                                     }}>
                                         <View style={{
                                             flex: 1,
+                                            width: '100%',
                                             paddingRight: normalize(0)
                                         }}>
                                             <InputField
+                                                containerStyle={{ width: '100%' }}
                                                 icondisable={stateDateFetch ? true : false}
-                                                wrapperStyle={isEditLicenseFlow && stateDateFetch ? { borderBottomColor: "#D0D5DD" } : undefined}
-                                                addnewtyle={isEditLicenseFlow && stateDateFetch ? { color: "#667085" } : undefined}
+                                                wrapperStyle={isEditLicenseFlow && stateDateFetch ? { backgroundColor: '#F0F0F0', borderBottomColor: '#B8B8B8', borderRadius: normalize(6), width: '100%', paddingHorizontal: 0 } : undefined}
+                                                labelStyle={isEditLicenseFlow && stateDateFetch ? { left: 0 } : undefined}
+                                                addnewtyle={isEditLicenseFlow && stateDateFetch ? { color: '#7A7A7A' } : undefined}
                                                 label={rdate && stateDateFetch ? "Licensure Expiry  Date*" : rdate ? "License Issue Date*" : stateDateFetch ? "License Expiry Date*" : "License Issue Date*"}
                                                 value={(() => {
                                                     const rawDate = stateDateFetch || rdate || "";
@@ -976,7 +984,7 @@ onPress: () => setProfilePicObjlic(""), onCancel: "default" }])
                                             CommonActions.reset({
                                                 index: 0,
                                                 routes: [
-                                                    { name: "Mytasks", params: { backget: { taskData: props?.route?.params?.myTaskask?.backData, creditID: { state_name: props?.route?.params?.myTaskask?.backState } } } }
+                                                    { name: "Mytasks", params: { backget: { taskData: props?.route?.params?.myTaskask?.backData, creditID: props?.route?.params?.myTaskask?.addLic || { state_name: props?.route?.params?.myTaskask?.backState } } } }
                                                 ],
                                             })
                                         );

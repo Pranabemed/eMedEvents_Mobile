@@ -1312,27 +1312,35 @@ export function* PhoneOTPTokenSaga(action) {
  */
 export function* userPrimeCheck(action) {
   let items = yield select(getItem);
+  let token = items?.token || (yield call(AsyncStorage.getItem, constants.TOKEN));
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    authorization: items?.token,
+    authorization: token,
   };
   try {
     let response = yield call(postApi, 'User/saveUserPrimeTrial', action.payload, header);
     if (response?.data?.success == true) {
       yield put(primeTrailSuccess(response?.data));
       try {
-        yield put({ type: 'Dashboard/mainprofileRequest', payload: {} });
-        yield put({ type: 'WebCast/PrimeCheckRequest', payload: {} });
+        yield put(mainprofileRequest({}));
+        yield put(PrimeCheckRequest({}));
       } catch (e) {
         console.log('Error dispatching profile/prime check after trial activation', e);
       }
       try {
+        const now = new Date();
+        const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const storedProfession = yield call(AsyncStorage.getItem, constants.PROFESSION);
         if (storedProfession) {
           const parsed = JSON.parse(storedProfession);
           parsed.subscription_user = 'free';
-          if (!parsed.subscriptions) parsed.subscriptions = [];
+          parsed.subscriptions = [{
+            status: 'active',
+            type: 'trial',
+            start_date: now.toISOString().split('T')[0],
+            end_date: end.toISOString().split('T')[0],
+          }];
           yield call(AsyncStorage.setItem, constants.PROFESSION, JSON.stringify(parsed));
         }
         yield call(AsyncStorage.setItem, constants.GUEST_PRIME_USER, 'false');

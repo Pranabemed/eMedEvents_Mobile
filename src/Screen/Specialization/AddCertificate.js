@@ -634,10 +634,12 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
 
                                 <View style={{
                                     flexDirection: 'row',
-                                    flex: 1
+                                    flex: 1,
+                                    width: '100%'
                                 }}>
                                     <View style={{
                                         flex: 1,
+                                        width: '100%',
                                         paddingRight: normalize(0)
                                     }}>
                                         {/* <CustomInputTouchable
@@ -652,7 +654,11 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                                 onIconpres={() => { setBoardnamepick(!boardnamepick); }}
                                             /> */}
                                         <InputField
+                                            containerStyle={{ width: '100%' }}
                                             icondisable={props?.route?.params?.profiledet ? true : false}
+                                            wrapperStyle={props?.route?.params?.profiledet ? { backgroundColor: '#F0F0F0', borderBottomColor: '#B8B8B8', borderRadius: normalize(6), width: '100%', paddingHorizontal: 0 } : undefined}
+                                            labelStyle={props?.route?.params?.profiledet ? { left: 0 } : undefined}
+                                            addnewtyle={props?.route?.params?.profiledet ? { color: '#7A7A7A' } : undefined}
                                             label={"Select Certification Board*"}
                                             value={certificateboard}
                                             placeholder=""
@@ -665,7 +671,6 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                             marginleft={normalize(270)}
                                             multiline={true}
                                             onwholePress={openCertificationBoard}
-                                            onlyfor={true}
                                             spaceneeded={true}
                                         />
                                     </View>

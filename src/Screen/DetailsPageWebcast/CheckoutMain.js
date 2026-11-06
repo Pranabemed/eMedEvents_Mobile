@@ -104,7 +104,22 @@ const CheckoutMain = ({
     checkoutTotalAmount,
     setActiveIndexct, pratice, cityPicker, city_id, state_id, country_id, countrypicker, speciality_id, selectedSpecialities, removeSpeciality, setSelectedSpecialities, handleSpecialitySelect, formData, setFormData, activeIndex, setActiveIndex, setSearchState, searchState, searchStateName, slist, setSpeciality, setSpeciality_id, statepicker, cartPayment, proceedPayment, fullAccess, spanroute, ticketSave, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
     console.log(spanroute, statepicker, ticketSave, "spanroute=========", country_id, fullAccess, spanroute?.checkoutSpan?.cmeCreditsData);
-    const [totalcount, setTotalcount] = useState("");
+    const getInitialTotalCount = () => {
+        let totalQuantity = 0;
+        if (spanroute?.inPersonTicket?.tickets) {
+            totalQuantity += spanroute.inPersonTicket.tickets.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
+        }
+        if (spanroute?.finalTicket?.tickets) {
+            totalQuantity += spanroute.finalTicket.tickets.reduce((total, ticket) => total + ticket.quantity, 0);
+        }
+        if (spanroute?.cartData?.total_qty) {
+            totalQuantity = spanroute?.cartData?.total_qty;
+        } else if (Array.isArray(spanroute?.cartData?.tickets)) {
+            totalQuantity = spanroute?.cartData?.tickets?.length;
+        }
+        return totalQuantity;
+    };
+    const [totalcount, setTotalcount] = useState(getInitialTotalCount);
     const [checked, setChecked] = useState(false);
     const [formDate, setFormDate] = useState("");
     const [endDate, setEndDate] = useState("");
@@ -164,10 +179,10 @@ const handleToggleExpand = () => {
         isDisabled = !fullAccess; // If all values are false, require both fullAccess and otherKey
     }
     const conferenceTypeText = spanroute?.checkoutSpan?.conferenceTypeText || spanroute?.inpersonSpanrole?.conferenceTypeText;
-    const points1 = spanroute?.checkoutSpan?.cmeCreditsData[0]?.points || spanroute?.inpersonSpanrole?.cmeCreditsData[0]?.points;
-    const points2 = spanroute?.checkoutSpan?.cmeCreditsData[1]?.points || spanroute?.inpersonSpanrole?.cmeCreditsData[1]?.points;
-    const name1 = spanroute?.checkoutSpan?.cmeCreditsData[0]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData[0]?.name;
-    const name2 = spanroute?.checkoutSpan?.cmeCreditsData[1]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData[1]?.name;
+    const points1 = spanroute?.checkoutSpan?.cmeCreditsData?.[0]?.points || spanroute?.inpersonSpanrole?.cmeCreditsData?.[0]?.points;
+    const points2 = spanroute?.checkoutSpan?.cmeCreditsData?.[1]?.points || spanroute?.inpersonSpanrole?.cmeCreditsData?.[1]?.points;
+    const name1 = spanroute?.checkoutSpan?.cmeCreditsData?.[0]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData?.[0]?.name;
+    const name2 = spanroute?.checkoutSpan?.cmeCreditsData?.[1]?.name || spanroute?.inpersonSpanrole?.cmeCreditsData?.[1]?.name;
     const activeConference = spanroute?.checkoutSpan || spanroute?.inpersonSpanrole || {};
     const conferenceStartDate =
         activeConference?.startdate ||
@@ -210,6 +225,11 @@ const handleSoftDelete = (index) => {
         console.log("Total Quantity: main", totalQuantity);
         setTotalcount(totalQuantity); // Update state with totalQuantity
     }, [spanroute]);
+    useEffect(() => {
+        if (spanroute?.inPersonTicket?.tickets) {
+            setDisplayedTickets(spanroute.inPersonTicket.tickets);
+        }
+    }, [spanroute?.inPersonTicket?.tickets]);
     useEffect(() => {
                 /**
  * Parses date.
@@ -287,7 +307,7 @@ function formatPrice(price) {
     const isValidWhatsappNo = couponapp?.length > 0 && codesave == "Successfully applied.";
     console.log(couponapp?.length, codesave, "codesave=======", isValidWhatsappNo)
     return (
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: normalize(70) }}>
+        <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true} contentContainerStyle={{ paddingBottom: normalize(70) }}>
             {spanroute?.cartData && allPickersAreFalse ? <View style={{
                 backgroundColor: Colorpath.Pagebg
             }}>

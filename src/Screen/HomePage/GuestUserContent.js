@@ -280,9 +280,10 @@ const GuestUserContent = ({ guest }) => {
                 onAction={() =>
                   navigation.navigate('Globalresult', {
                     trig: {
-                      trig: 'webinar',
+                      trig: 'in-person',
                       rqstType: 'typebasedconferences',
                       mainKey: 'conference_type',
+                      conference_type_text: ['In-Person Event'],
                       Realback: 'cont',
                     },
                   })

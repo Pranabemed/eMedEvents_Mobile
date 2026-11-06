@@ -3,7 +3,7 @@
  */
 
 import { View, Text, StyleSheet, Dimensions, Platform, Linking, Alert, Image, Pressable, InteractionManager } from 'react-native'
-import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react'
 import Colorpath from '../Themes/Colorpath';
 import Fonts from '../Themes/Fonts';
 import normalize from '../Utils/Helpers/Dimen';
@@ -58,6 +58,7 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
         AuthReducer?.directloginResponse?.user?.accreditation_user === true;
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
+    const [allProfession, setAllProfession] = useState(null);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const [CMEcard, setCMECard] = useState(false)
@@ -81,6 +82,12 @@ const Carouselcarditem = ({ setStateCount, fetcheddt, item, navigation, renewal,
     const allProfTake = typeof resolvedAllProfTake === 'boolean'
         ? resolvedAllProfTake
         : validHandles.has(profFromDashboard);
+    const isDental = useMemo(() => {
+        const cleanProf = String(dashboardProfession || allProfession?.profession || '').toLowerCase();
+        const cleanType = String(dashboardProfessionType || allProfession?.profession_type || '').toLowerCase();
+        const board = String(item?.board_name || '').toLowerCase();
+        return cleanProf.includes('dentist') || ['rdh', 'dds', 'rda', 'dentist'].includes(cleanType) || board.includes('dental');
+    }, [dashboardProfession, dashboardProfessionType, allProfession?.profession, allProfession?.profession_type, item?.board_name]);
     useEffect(() => {
                 /**
  * Token handle vault utility.
@@ -109,7 +116,6 @@ const token_handle_vault = () => {
     useEffect(() => {
         status = "";
     }, [isFocus]);
-    const [allProfession, setAllProfession] = useState(null);
 
         /**
  * Clean number utility.
@@ -245,7 +251,7 @@ const isZeroDate = (value) =>
             shadowRadius: 4,
             elevation: 4,
             overflow: 'hidden',
-            paddingVertical: normalize(10)
+            paddingTop: normalize(10)
         },
         infoRow: {
             flexDirection: 'row',
@@ -301,7 +307,7 @@ const isZeroDate = (value) =>
             borderBottomLeftRadius: normalize(12),
             borderBottomRightRadius: normalize(12),
             borderTopEndRadius: normalize(12),
-            top: normalize(10)
+            marginTop: normalize(10)
         },
         cmeText: {
             color: '#264092',
@@ -487,7 +493,7 @@ const handleOpenRenewalLink = (renewallink) => {
             <View style={styles.container}>
                 <View style={styles.infoRow}>
                     <View>
-                        <Text style={styles.sectionLabel}>{allProfTake ? "State Medical Board" : "State Nursing Board"}</Text>
+                        <Text style={styles.sectionLabel}>{isDental ? "State Dental Board" : allProfTake ? "State Medical Board" : "State Nursing Board"}</Text>
                         <Text style={styles.stateName}>{item?.state_name}</Text>
                     </View>
                     <Image
@@ -512,7 +518,7 @@ const handleOpenRenewalLink = (renewallink) => {
                         </View>
                     </Pressable>}
                 </View>
-                {isExpiringSoon ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                {isExpiringSoon ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(2) }}>
                     <View style={styles.updateRenew}>
                         <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: item, Back: "TabNav" } } }] }))}>
                             <Text style={styles.update}>{"Update"}</Text>
@@ -524,7 +530,7 @@ const handleOpenRenewalLink = (renewallink) => {
                             </View>
                         </Pressable>}
                     </View>
-                </View> : <View style={{ justifyContent: "center", alignItems: "center", top: normalize(9) }}>
+                </View> : <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(2) }}>
                     <View style={styles.activebody}>
                         <Text style={styles.renew}>{"License Status"}</Text>
                         <Text style={styles.active}>{"Active"}</Text>
@@ -567,7 +573,7 @@ const handleOpenRenewalLink = (renewallink) => {
                         <View style={{ marginTop: normalize(5) }}>
                             <View style={{ height: Platform.OS === "ios" ? 1 : 0.4, width: normalize(280), backgroundColor: Colorpath.ButtonColr }} />
                         </View>
-                        {!isMissingLicenseData && allProfTake ? <View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
+                        {!isMissingLicenseData ? <View style={{ marginTop: normalize(5), justifyContent: "center", alignItems: "center", flexWrap: 'nowrap' }}>
                             <Text style={stylesmodal.content}>
                                 {"Your state license has expired. To maintain access and meet state board credit requirements, please update your license. "}
                                 <Text

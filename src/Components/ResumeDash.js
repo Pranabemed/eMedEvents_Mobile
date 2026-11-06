@@ -153,7 +153,7 @@ const cmehit = () => {
                     <Text
                         numberOfLines={1}
                         style={{
-                            fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666666", fontWeight: "bold"
+                            fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#333333", fontWeight: "600"
                         }}
                     >
                         {item?.display_cme}
@@ -169,9 +169,9 @@ const cmehit = () => {
                                 numberOfLines={3}
                                 style={{
                                     fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 12,
-                                    color: "#666666",
-                                    fontWeight: "bold",
+                                    fontSize: 13,
+                                    color: "#333333",
+                                    fontWeight: "600",
                                 }}
                             >
                                 {`${parseFloat(d?.points) || 0} ${d?.name &&
@@ -194,10 +194,9 @@ const cmehit = () => {
                                 <Text
                                     numberOfLines={1}
                                     style={{
-                                        fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666666",
+                                        fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#333333",
                                         paddingVertical: normalize(0),
-                                        width: normalize(120),
-                                        fontWeight: "bold"
+                                        fontWeight: "600"
                                     }}
                                 >
                                     {`${parseFloat(d?.points)} ${d?.name}`}
@@ -215,10 +214,9 @@ const cmehit = () => {
                     <Text
                         numberOfLines={1}
                         style={{
-                            fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666666",
+                            fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#333333",
                             paddingVertical: normalize(0),
-                            fontWeight: "bold",
-                            // width: normalize(120)
+                            fontWeight: "600",
                         }}
                     >
                         {item?.display_cme}
@@ -230,30 +228,34 @@ const cmehit = () => {
     };
     return (
         <View>
-            <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
+            <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(8) }}>
                 <View
                     style={{
                         flexDirection: "column",
-                        width: normalize(300),
-                        borderRadius: normalize(10),
+                        width: normalize(295),
+                        borderRadius: normalize(12),
                         backgroundColor: "#FFFFFF",
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(10),
+                        paddingHorizontal: normalize(14),
+                        paddingVertical: normalize(14),
                         alignItems: "flex-start",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
                     }}
                 >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2), paddingHorizontal: normalize(0) }}>
-                        <TouchableOpacity onPress={() => { titlhandleUrl(item); }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", width: '100%' }}>
+                        <TouchableOpacity style={{ flex: 1, marginRight: (item?.certificate?.certificate || item?.needReview) ? normalize(6) : 0 }} onPress={() => { titlhandleUrl(item); }}>
                             <Text
                                 numberOfLines={2}
+                                ellipsizeMode="tail"
                                 style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 16,
+                                    fontFamily: Fonts.InterBold,
+                                    fontSize: 15,
                                     color: "#000000",
                                     fontWeight: "bold",
-                                    flexShrink: 1,
-                                    flexWrap: 'wrap',
-                                    width: normalize(210)
+                                    lineHeight: 21,
                                 }}
                             >
                                 {item?.title}
@@ -266,58 +268,57 @@ const cmehit = () => {
                                 setOnlineName(item);
                                 setCertificate(item?.certificate?.certificate);
                             }}>
-                                <IconDot name="dots-three-vertical" size={25} color={"#848484"} />
+                                <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
                             </TouchableOpacity>
                         ) : null}
                     </View>
 
-                    <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
+                    <View style={{ marginTop: normalize(12), marginBottom: normalize(10), height: 1, width: '100%', backgroundColor: "#EEEEEE" }} />
 
-                    <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(5), alignSelf: 'flex-start', top: 5 }}>
-                        {/* <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666666" }}>
-                            {item?.display_cme}
-                        </Text> */}
+                    <View style={{ paddingHorizontal: normalize(0), alignSelf: 'flex-start', marginBottom: normalize(10) }}>
                         {cmehit()}
                     </View>
 
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", paddingVertical: normalize(5), width: '100%' }}>
-                        <View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
-                            <View style={{ flexDirection: "column", paddingHorizontal: normalize(0), gap: normalize(8) }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 11, color: "#000000", fontWeight: "bold" }}>{`${item?.completed_percentage || 0}% Completed`}</Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
+                        <View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1, marginRight: normalize(10) }}>
+                            <View style={{ flexDirection: "column", paddingHorizontal: normalize(0), gap: normalize(6) }}>
+                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#000000", fontWeight: "600" }}>{`${item?.completed_percentage || 0}% Completed`}</Text>
                                 <ProgressBarLine progress={item?.completed_percentage || 0} height={6} fillColor={Colorpath.green} />
                             </View>
                         </View>
 
-                        {item?.button_display_text ? <TouchableOpacity
+                        {(item?.button_display_text || item?.buttonText) ? <TouchableOpacity
                             onPress={() => {
-                                setStatepush(addit);
-                                if (item?.buttonText === "Revise Course") {
-                                    setStatepush(addit);
+                                setStatepush?.(addit);
+                                if (item?.button_display_text === "Revise Course" || item?.buttonText === "Revise Course") {
+                                    setStatepush?.(addit);
                                     navigation.navigate("VideoComponent", { RoleData: item });
                                 } else {
-                                    setStatepush(addit);
+                                    setStatepush?.(addit);
                                     fullAction(item);
                                 }
                             }}
                             style={{
-                                height: normalize(30),
-                                width: normalize(120),
-                                borderRadius: normalize(5),
+                                height: normalize(34),
+                                minWidth: normalize(115),
+                                paddingHorizontal: normalize(14),
+                                borderRadius: normalize(6),
                                 justifyContent: "center",
                                 alignItems: "center",
-                                borderColor: Colorpath.ButtonColr,
-                                borderWidth: 0.5,
+                                borderColor: "#2C4DB9",
+                                borderWidth: 1,
+                                backgroundColor: "#FFFFFF",
                             }}
                         >
                             <Text
                                 style={{
                                     fontFamily: Fonts.InterMedium,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                     color: "#2C4DB9",
-                                    fontWeight: "bold"
+                                    fontWeight: "600"
                                 }}
                             >
-                                {item?.button_display_text}
+                                {item?.button_display_text || item?.buttonText}
                             </Text>
                         </TouchableOpacity> : null}
                     </View>

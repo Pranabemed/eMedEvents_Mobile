@@ -6,7 +6,7 @@ import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpe
  */
 
 import { TouchableOpacity, Text, View, Image, Platform, KeyboardAvoidingView, ActivityIndicator, Alert, StyleSheet, BackHandler, Keyboard } from 'react-native'
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -41,6 +41,7 @@ import Fonts from '../../Themes/Fonts';
 import Modal from 'react-native-modal'
 import { searchStateLicNamePraticeFunction } from './LicStateTake';
 import LicStateTakeShow from './LicStateShowDt';
+import { isMedicalLicenseStateCustomField } from './CheckoutInputbox';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment';
 import CellModalPayemnt from '../../Components/PayemntModal';
@@ -125,7 +126,17 @@ const Checkout = (props) => {
     const [cityshow, setCityshow] = useState([]);
     const [searchcity, setSearchcity] = useState('');
     const [cityPicker, setCityPicker] = useState(false);
-    const [ticketSave, setTicketSave] = useState(null);
+    const getInitialTicketSave = () => {
+        const checkoutSpan = props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket;
+        return checkoutSpan?.finalTicket ||
+            checkoutSpan?.inPersonTicket ||
+            checkoutSpan?.user_billing_address ||
+            checkoutSpan?.billing_address ||
+            checkoutSpan?.inPersonTicket?.user_billing_address ||
+            checkoutSpan?.inPersonTicket?.billing_address ||
+            null;
+    };
+    const [ticketSave, setTicketSave] = useState(getInitialTicketSave);
     const [formData, setFormData] = useState([]);
     const appliedProfileAddress = useRef(null);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
@@ -173,6 +184,24 @@ const Checkout = (props) => {
     // const isInitialLoad = useRef(false); 
     console.log(ticketSave, props?.route?.params, "1cheochg", props?.route?.params?.inPersonTicket?.inpersonSpanrole?.conferenceTypeId == "2", formData, "checkoutSpan=============");
     const isInitialLoad = useRef(true);
+
+    const [initialDataTimedOut, setInitialDataTimedOut] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setInitialDataTimedOut(true);
+        }, 3500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const hasRouteData = Boolean(
+        props?.route?.params?.checkoutSpan ||
+        props?.route?.params?.inPersonTicket
+    );
+    const isDataReady = !hasRouteData || initialDataTimedOut || Boolean(
+        (ticketSave || props?.route?.params?.checkoutSpan?.cartData) &&
+        formData &&
+        formData.length > 0
+    );
 
     const [loaderVisible, setLoaderVisible] = useState(false);
     const network = useNetInfo();
@@ -432,7 +461,14 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
 * Checkout clear utility.
 * @returns {void}
 */
-    const checkoutClear = () => {
+    const isNavigatingBackRef = useRef(false);
+    const checkoutClear = useCallback(() => {
+        if (isNavigatingBackRef.current) return;
+        isNavigatingBackRef.current = true;
+        setTimeout(() => {
+            isNavigatingBackRef.current = false;
+        }, 1000);
+
         if (navigation.canGoBack()) {
             navigation.goBack();
             return;
@@ -442,7 +478,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         } else {
             navigation.navigate("Statewebcast", guestCheckoutRouteParams || undefined);
         }
-    }
+    }, [navigation, props?.route?.params?.checkoutSpan?.cartData, guestCheckoutRouteParams]);
     const [finalverifyvault, setFinalverifyvault] = useState(null);
     const [finalProfession, setFinalProfession] = useState(null);
     console.log(country_id, "country_id=======");
@@ -656,7 +692,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         });
     }
     useEffect(() => {
-        if (!isfocus) return;
+        if (!isfocus) return undefined;
         /**
 * On back press utility.
 * @returns {boolean}
@@ -687,7 +723,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         );
 
         return () => backHandler.remove();
-    });
+    }, [isfocus, countrypickerprof, statepicker, countrypicker, pratice, licstatepratice, cityPicker, checkoutClear]);
     useEffect(() => {
         /**
 * Load guest registration flow utility.
@@ -1466,7 +1502,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         // Loop through each item in detectField
         detectField.forEach(item => {
             // Check if the item has a field_name property
-            if (item.required == 1) {
+            if (item.required == 1 && !isMedicalLicenseStateCustomField(item)) {
                 // Add the field_name value to the requiredFields array
                 baseRequiredFields.push(item.field_name);
             }
@@ -1797,10 +1833,17 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
 
                         if (fieldData?.[fieldName] !== undefined) {
                             mergedItem[fieldId] = fieldData[fieldName];
+                        } else if (isMedicalLicenseStateCustomField(field)) {
+                            const stateVal = formData?.[index]?.medicallics || formData?.[index]?.license_state_id;
+                            if (stateVal) {
+                                mergedItem[fieldId] = stateVal;
+                            }
                         }
 
                         if (fieldLabelData?.[fieldName] !== undefined) {
                             customFieldsLabelsMerged.push({ [fieldId]: fieldLabelData[fieldName] });
+                        } else if (isMedicalLicenseStateCustomField(field) && (formData?.[index]?.medicallics || formData?.[index]?.license_state_id)) {
+                            customFieldsLabelsMerged.push({ [fieldId]: field?.field_label || 'Medical License State' });
                         }
                     });
                 }
@@ -2226,6 +2269,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
 * @returns {void}
 */
     const handleLicStateshows = (lictid, indexsattelic) => {
+        const duplicateCustomField = (detectField || []).find(isMedicalLicenseStateCustomField);
         if (Number(indexsattelic) === 0) {
             setLicense_state_id(lictid?.id || null);
             setMedicallics(lictid?.name || '');
@@ -2236,11 +2280,30 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
                 ...updatedFormData[indexsattelic],
                 professionReset: false,
                 medicallics: lictid?.name,
-                license_state_id: lictid?.id
+                license_state_id: lictid?.id,
+                ...(duplicateCustomField ? { [duplicateCustomField.field_name]: lictid?.name } : {})
             };
 
             return updatedFormData; // Return the updated form data
         });
+        if (duplicateCustomField) {
+            setCustomFields((prev) => {
+                const next = Array.isArray(prev) ? [...prev] : [];
+                next[indexsattelic] = {
+                    ...(next[indexsattelic] || {}),
+                    [duplicateCustomField.field_name]: lictid?.name
+                };
+                return next;
+            });
+            setCustomFieldsLabels((prev) => {
+                const next = Array.isArray(prev) ? [...prev] : [];
+                next[indexsattelic] = {
+                    ...(next[indexsattelic] || {}),
+                    [duplicateCustomField.field_name]: duplicateCustomField.field_label || ''
+                };
+                return next;
+            });
+        }
     }
     /**
 * Handles lic date.
@@ -2367,7 +2430,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
                             </View>
                         )
                     )}
-                    <Loader visible={loaderVisible && !isOffline} />
+                    <Loader visible={(!isDataReady || loaderVisible) && !isOffline} />
                     <View style={{ flex: 1, display: allPickersAreFalse ? 'flex' : 'none' }}>
                         <CheckoutMain
                             markPersonalizationEdited={markPersonalizationEdited}

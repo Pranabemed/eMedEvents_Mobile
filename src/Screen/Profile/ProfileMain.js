@@ -2,7 +2,7 @@
  * Profile main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: ProfileMain, checkPrimeSkipped, read, getDisplayName, getDisplayProfession, token_error, profileBack, token_handle_vault, profileItem, handleRot, stylesd.
  */
 
-import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar, BackHandler } from 'react-native'
+import { View, Text, Platform, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, StatusBar, BackHandler, Keyboard } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
@@ -657,6 +657,7 @@ const ProfileMain = (props) => {
                     } else if (item?.id == 4) {
                         props.navigation.navigate("EmpInfo", { EmpData: allHandle });
                     } else if (item?.id == 5) {
+                        Keyboard.dismiss();
                         props.navigation.navigate("ChangePassword");
                     }
 

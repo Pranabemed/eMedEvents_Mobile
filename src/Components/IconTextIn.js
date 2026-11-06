@@ -2,7 +2,7 @@
  * Icon text in reusable component module. Provides a React Native UI building block used across screens. Exported members: CustomInputTouchable, styles.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -44,18 +44,18 @@ const CustomInputTouchable = ({
     newstyle,
     newFont
 }) => {
-    const [isFocused, setIsFocused] = useState(false);
-    const animated = useRef(new Animated.Value(value ? 1 : 0)).current;
+    const hasValue = Boolean(value);
+    const animated = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
 
     useEffect(() => {
         if (standardized) return;
         Animated.timing(animated, {
-            toValue: isFocused || value ? 1 : 0,
+            toValue: hasValue ? 1 : 0,
             duration: 100,
             easing: Easing.out(Easing.ease),
             useNativeDriver: true,
         }).start();
-    }, [animated, isFocused, value, standardized]);
+    }, [animated, hasValue, standardized]);
 
     const labelAnimatedStyle = {
         position: 'absolute',
@@ -106,16 +106,13 @@ const CustomInputTouchable = ({
     }
 
     const isDisabled = Boolean(disabled);
-    const isDropdown = /down/i.test(rightIcon?.props?.name || '');
-    const requiredMark = showRequiredMark ? '*' : '';
-    const displayLabel = isDropdown
-        ? `${value || isFocused ? dropdownFieldName(label) : dropdownPlaceholder(label)}${requiredMark}`
-        : label;
-    const displayText = value ? value : (isFocused || !label ? (isDropdown ? dropdownPlaceholder(label) : placeholder) : '');
+    const requiredMark = (showRequiredMark && !String(label || '').includes('*')) ? '*' : '';
+    const displayLabel = label ? `${label}${requiredMark}` : '';
+    const displayText = value ? value : (label ? '' : (placeholder || ''));
 
     return (
         <View style={[styles.inputGroup, containerStyle]}>
-            <Animated.Text style={[labelAnimatedStyle, labelStyle]}>
+            <Animated.Text style={[labelAnimatedStyle, labelStyle]} pointerEvents="none">
                 {displayLabel}
             </Animated.Text>
 
@@ -142,7 +139,6 @@ const CustomInputTouchable = ({
                     onPress={() => {
                         if (isDisabled) return;
                         onPress && onPress();
-                        setIsFocused(true);
                     }}
                     disabled={isDisabled}
                 >
@@ -169,7 +165,6 @@ const CustomInputTouchable = ({
                         onPress={() => {
                             if (isDisabled) return;
                             onIconpres ? onIconpres() : (onPress && onPress());
-                            setIsFocused(true);
                         }}
                         activeOpacity={0.7}
                     >

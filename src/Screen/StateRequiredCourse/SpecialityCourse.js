@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, TouchableOpacity, Image, FlatList, ScrollView, ImageBackground, Alert, BackHandler } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import PageHeader from '../../Components/PageHeader'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -73,13 +73,27 @@ const SpecialityCourseSlide = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
+    const filtermodalRef = useRef(filtermodal);
+    const visibleRef = useRef(visible);
+
+    useEffect(() => {
+        filtermodalRef.current = filtermodal;
+    }, [filtermodal]);
+
+    useEffect(() => {
+        visibleRef.current = visible;
+    }, [visible]);
+
         /**
  * Open filter modal utility.
  * @returns {void}
  */
 const openFilterModal = () => {
-        setFiltermodal(!filtermodal);
+        setFiltermodal(true);
         setViewmore(false);
+    }
+const closeFilterModal = () => {
+        setFiltermodal(false);
     }
         /**
  * Toggle drawer modal utility.
@@ -102,6 +116,19 @@ const addCreditBack = () => {
             toggleDrawerModal();
         }
     }
+
+    const handleBackPress = () => {
+        if (filtermodalRef.current) {
+            setFiltermodal(false);
+            return;
+        }
+        if (visibleRef.current) {
+            setVisible(false);
+            setNodata("drawerclose");
+            return;
+        }
+        addCreditBack();
+    };
     useEffect(() => {
         connectionrequest()
             .then(() => {
@@ -191,6 +218,15 @@ const toggleSpecial = () => {
  * @returns {boolean}
  */
 const onBackPress = () => {
+            if (filtermodalRef.current) {
+                setFiltermodal(false);
+                return true;
+            }
+            if (visibleRef.current) {
+                setVisible(false);
+                setNodata("drawerclose");
+                return true;
+            }
             addCreditBack();
             return true;
         };
@@ -410,11 +446,11 @@ const getActualPrice = (percent, discountPrice) => {
 
                 {Platform.OS === 'ios' ? <PageHeader
                     title="Specialty Courses"
-                    onBackPress={addCreditBack}
+                    onBackPress={handleBackPress}
                 /> : <View>
                     <PageHeader
                         title="Specialty Courses"
-                        onBackPress={addCreditBack}
+                        onBackPress={handleBackPress}
                     />
                 </View>}
                 {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
@@ -546,7 +582,7 @@ const getActualPrice = (percent, discountPrice) => {
                     </Tooltip>
                     <FilterModal
                         isfilterVisible={filtermodal}
-                        onfilterFalse={openFilterModal}
+                        onfilterFalse={closeFilterModal}
                         filterName={filterName}
                         setFilterName={setFilterName}
                         setStateid={setStateid}

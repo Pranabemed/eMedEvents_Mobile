@@ -40,7 +40,7 @@ const weekFilterProfessionLic = ({ item}) => {
         <View style={{justifyContent:"center",alignItems:"center"}}>
         <DropdownOption onPress={()=>{
             handleLicStateshows(item,activeIndexslic);
-            setLicstatepratice(!licstatepratice);
+            setLicstatepratice(false);
             setSearchpraticelic("");
         }}
 
@@ -61,7 +61,7 @@ const weekFilterProfessionLic = ({ item}) => {
  * @returns {void}
  */
 const handleBackPress = () => {
-        setLicstatepratice(!licstatepratice);
+        setLicstatepratice(false);
         setSearchpraticelic("");
 };
     return (

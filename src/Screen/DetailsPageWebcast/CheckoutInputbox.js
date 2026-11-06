@@ -7,7 +7,7 @@ import { formatUsPhone, isUsCallingCode } from '../../Utils/Helpers/UsPhone';
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, Image, View, Text, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Button, TextInput, Alert, StyleSheet, Pressable, Animated, Easing } from 'react-native';
+import { ScrollView, Image, View, Text, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Button, TextInput, Alert, StyleSheet, Pressable, Animated, Easing, Keyboard } from 'react-native';
 import TextFieldIn from '../../Components/Textfield';
 import CustomTextField from '../../Components/CustomTextfiled';
 import Colorpath from '../../Themes/Colorpath';
@@ -36,6 +36,29 @@ import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/File
  */
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 import moment from 'moment';
+
+/**
+ * Detects whether a custom field represents a medical license state selection to prevent duplicate rendering.
+ * @param {Object} field - Custom field definition.
+ * @returns {boolean}
+ */
+export const isMedicalLicenseStateCustomField = (field) => {
+  const label = String(field?.field_label || '').trim().toLowerCase();
+  const name = String(field?.field_name || '').trim().toLowerCase();
+  return (
+    label.includes('medical license state') ||
+    label.includes('selct medical license state') ||
+    label.includes('select medical license state') ||
+    (label.includes('medical') && label.includes('license') && label.includes('state')) ||
+    (label.includes('medical') && label.includes('state') && label.includes('licens')) ||
+    (label.includes('licensure') && label.includes('state')) ||
+    name.includes('medical_license_state') ||
+    name.includes('medicallicensestate') ||
+    name === 'medical_license_state_id' ||
+    name === 'license_state' ||
+    name === 'licensestate'
+  );
+};
 
 /**
  * Reusable CheckoutInputbox component.
@@ -108,6 +131,33 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   setActiveIndexct, city_id, state_id, country_id, countrypicker, spanroute, ticketSave, speciality_id, setSpeciality, setSpeciality_id, activeIndex, removeSpeciality, selectedSpecialities, setSelectedSpecialities, slist, searchStateName, searchState, setSearchState, statepicker, handleSpecialitySelect, formData, setFormData, setActiveIndex, totalQuantity, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
   console.log(speciality, "totalQuantity122", slist, totalQuantity, spanroute)
   const editedPhoneIndexes = useRef(new Set());
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const checkoutScrollRef = useRef(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToBottomInputs = () => {
+    setTimeout(() => {
+      checkoutScrollRef.current?.scrollToEnd({ animated: true });
+    }, 250);
+  };
   useEffect(() => {
     if (totalQuantity) {
       countryReq();
@@ -886,7 +936,10 @@ const handleCheckboxChange = (index, fieldName, value) => {
 const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input) : String(input ?? '').replace(/[^0-9]/g, '').slice(0, 10);
   console.log(ticketSave, "ticketime-----")
 
-  const custom_fieldsTake = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields
+  const rawCustomFields = spanroute?.inPersonTicket?.custom_fields || ticketSave?.custom_fields;
+  const custom_fieldsTake = Array.isArray(rawCustomFields)
+    ? rawCustomFields.filter(field => !isMedicalLicenseStateCustomField(field))
+    : [];
     /**
  * Render forms utility.
  * @returns {*}
@@ -1259,7 +1312,7 @@ const renderForms = () => {
                           label={field.required === "1" ? `${field?.field_label}*` : field?.field_label}
                           value={formData[index]?.[field.field_name]
                             ? new Date(formData[index][field.field_name]).toLocaleDateString()
-                            : (field.required === "1" ? `${field.field_label}*` : field.field_label)}
+                            : ''}
                           placeholder={""}
                           placeholderTextColor="#949494"
                           rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
@@ -1559,6 +1612,7 @@ onBlur: () => handleBlur(index),
                   label='Zipcode*'
                   value={formData[index]?.zipcode || ''}
                   onChangeText={(val) => handleInputChange(index, 'zipcode', val)}
+                  onFocus={scrollToBottomInputs}
                   placeholder=''
                   placeholderTextColor="#949494"
                   keyboardType="default"
@@ -1584,6 +1638,7 @@ onBlur: () => handleBlur(index),
                     handleInputChange(index, 'cellno', formattedVal);
                     handleInputChanged(index, 'cellno', formattedVal);
                   }}
+                  onFocus={scrollToBottomInputs}
                   placeholder=""
                   placeholderTextColor="#949494"
                   keyboardType="phone-pad"
@@ -1610,7 +1665,7 @@ onBlur: () => handleBlur(index),
                   label={'Date of Birth*'}
                   value={formData[index]?.dateofbirth && moment(formData[index]?.dateofbirth, "YYYY-MM-DD", true).isValid()
                     ? moment(formData[index]?.dateofbirth).format("MM-DD-YYYY")
-                    : "" || ''}
+                    : ''}
                   placeholder={''}
                   placeholderTextColor="#949494"
                   rightIcon={<CalenderIcon name="calendar" size={25} color="#949494" />}
@@ -1858,6 +1913,7 @@ onBlur: () => handleBlur(index),
                   label='Zipcode*'
                   value={formData[index]?.zipcode || ''}
                   onChangeText={(val) => handleInputChange(index, 'zipcode', val)}
+                  onFocus={scrollToBottomInputs}
                   placeholder=''
                   placeholderTextColor="#949494"
                   keyboardType="default"
@@ -1883,6 +1939,7 @@ onBlur: () => handleBlur(index),
                     handleInputChange(index, 'cellno', formattedVal);
                     handleInputChanged(index, 'cellno', formattedVal);
                   }}
+                  onFocus={scrollToBottomInputs}
                   placeholder=""
                   placeholderTextColor="#949494"
                   keyboardType="phone-pad"
@@ -1902,16 +1959,26 @@ onBlur: () => handleBlur(index),
       </View>
     ));
   };
-  return (<>
-    <ScrollView keyboardShouldPersistTaps="handled">
-      {spanroute?.cartData ? <View style={{ paddingBottom: normalize(10) }}>
-        {billingForms()}
-      </View> : <View style={{ paddingBottom: normalize(10) }}>
-        {renderForms()}
-      </View>}
+  return (
+    <ScrollView
+      ref={checkoutScrollRef}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled={true}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingBottom: keyboardHeight > 0 ? keyboardHeight + normalize(80) : normalize(30),
+      }}
+    >
+      {spanroute?.cartData ? (
+        <View style={{ paddingBottom: normalize(10) }}>
+          {billingForms()}
+        </View>
+      ) : (
+        <View style={{ paddingBottom: normalize(10) }}>
+          {renderForms()}
+        </View>
+      )}
     </ScrollView>
-  </>
-
   );
 };
 

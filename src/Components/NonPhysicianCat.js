@@ -2,7 +2,7 @@
  * Non physician cat reusable component module. Provides a React Native UI building block used across screens. Exported members: normalizeProfessionHandle, status, getCurrentItem, tokenHandle, dashBoarData, restOfProfession, getFirstTruthyProfession, stateTake, handleRot, cleanNumber, styles.
  */
 
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import {
     View,
     Platform,
@@ -71,6 +71,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const CMEReducer = useSelector(state => state.CMEReducer);
+    const ProfileReducer = useSelector(state => state.ProfileReducer);
     const navigation = useNavigation();
     const [val, setval] = useState(0);
     const [detailsmodal, setDetailsmodal] = useState(false);
@@ -87,14 +88,50 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
     const dashboardFetchInFlightRef = useRef(false);
+
+    const effectiveDashboardLicensures = useMemo(() => {
+        if (Array.isArray(fulldashbaord) && fulldashbaord.length > 0) {
+            return fulldashbaord;
+        }
+        const candidateLicenses =
+            DashboardReducer?.dashboardResponse?.data?.licensures ||
+            DashboardReducer?.dashMbResponse?.data?.licensures ||
+            DashboardReducer?.dashPerResponse?.data?.licensures ||
+            ProfileReducer?.stateLicenseListResponse?.licensures ||
+            DashboardReducer?.mainprofileResponse?.licensures;
+        if (Array.isArray(candidateLicenses) && candidateLicenses.length > 0) {
+            return candidateLicenses.filter((state, index, self) =>
+                index === self.findIndex((s) =>
+                    (s.state_id ?? s.id) === (state.state_id ?? state.id) &&
+                    (s.board_id ?? '') === (state.board_id ?? '')
+                )
+            );
+        }
+        return [];
+    }, [
+        fulldashbaord,
+        DashboardReducer?.dashboardResponse?.data?.licensures,
+        DashboardReducer?.dashMbResponse?.data?.licensures,
+        DashboardReducer?.dashPerResponse?.data?.licensures,
+        ProfileReducer?.stateLicenseListResponse?.licensures,
+        DashboardReducer?.mainprofileResponse?.licensures,
+    ]);
+
+    useEffect(() => {
+        if (effectiveDashboardLicensures.length > 0 && (!Array.isArray(fulldashbaord) || fulldashbaord.length === 0)) {
+            setFulldashbaord(effectiveDashboardLicensures);
+        }
+    }, [effectiveDashboardLicensures, fulldashbaord, setFulldashbaord]);
+
     // Get the current item without scrolling
     /**
 * Returns current item.
 * @returns {*}
 */
     const getCurrentItem = () => {
-        if (!fulldashbaord?.length) return null;
-        return fulldashbaord[currentIndex]; // <-- Uses state-tracked index
+        const list = effectiveDashboardLicensures.length ? effectiveDashboardLicensures : fulldashbaord;
+        if (!list?.length) return null;
+        return list[currentIndex]; // <-- Uses state-tracked index
     };
     const isFocus = useIsFocused();
     useEffect(() => {
@@ -201,7 +238,6 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
             });
     }
     /**
@@ -224,25 +260,28 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             });
     }
     const validHandles = new Set(["physician-md", "physician-do", "physician-dpm"]);
-    const otherRestrict = new Set(["nursing-aprn", "nursing-cna", "nursing-lpn", "nursing-rn", "dentist-dds", "dentist-rda", "dentist-rdh"]);
-    const authProfession =
-        AuthReducer?.loginResponse?.user?.profession && AuthReducer?.loginResponse?.user?.profession_type
-            ? `${AuthReducer?.loginResponse?.user?.profession} - ${AuthReducer?.loginResponse?.user?.profession_type}`
-            : AuthReducer?.againloginsiginResponse?.user?.profession && AuthReducer?.againloginsiginResponse?.user?.profession_type
-                ? `${AuthReducer?.againloginsiginResponse?.user?.profession} - ${AuthReducer?.againloginsiginResponse?.user?.profession_type}`
-                : AuthReducer?.signupResponse?.user?.profession && AuthReducer?.signupResponse?.user?.profession_type
-                    ? `${AuthReducer?.signupResponse?.user?.profession} - ${AuthReducer?.signupResponse?.user?.profession_type}`
-                    : finalProfessionmain?.profession && finalProfessionmain?.profession_type
-                        ? `${finalProfessionmain?.profession} - ${finalProfessionmain?.profession_type}`
-                        : null;
-    const profFromDashboard =
-        DashboardReducer?.mainprofileResponse?.professional_information?.profession != null &&
-            DashboardReducer?.mainprofileResponse?.professional_information?.profession_type != null
-            ? `${DashboardReducer?.mainprofileResponse?.professional_information?.profession} - ${DashboardReducer?.mainprofileResponse?.professional_information?.profession_type}`
-            : null;
-    const resolvedProfessionHandle = normalizeProfessionHandle(profFromDashboard || authProfession);
+    const otherRestrict = new Set(["nursing-aprn", "nursing-cna", "nursing-lpn", "nursing-rn", "dentist-dds", "dentist-rda", "dentist-rdh", "dentist"]);
+    const rawProfession =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession ||
+        AuthReducer?.loginResponse?.user?.profession ||
+        AuthReducer?.againloginsiginResponse?.user?.profession ||
+        AuthReducer?.signupResponse?.user?.profession ||
+        finalProfessionmain?.profession ||
+        '';
+    const rawType =
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession_type ||
+        AuthReducer?.loginResponse?.user?.profession_type ||
+        AuthReducer?.againloginsiginResponse?.user?.profession_type ||
+        AuthReducer?.signupResponse?.user?.profession_type ||
+        finalProfessionmain?.profession_type ||
+        '';
+    const combinedProf = rawType && !String(rawProfession).toLowerCase().includes(String(rawType).toLowerCase())
+        ? `${rawProfession} - ${rawType}`
+        : rawProfession;
+    const resolvedProfessionHandle = normalizeProfessionHandle(combinedProf);
     const allProfTake = validHandles.has(resolvedProfessionHandle);
-    const allNoDetData = otherRestrict.has(resolvedProfessionHandle);
+    const isDentalProf = resolvedProfessionHandle.includes('dentist') || String(rawProfession).toLowerCase().includes('dentist') || ['rdh', 'dds', 'rda', 'dentist'].includes(String(rawType).toLowerCase());
+    const allNoDetData = otherRestrict.has(resolvedProfessionHandle) || isDentalProf || resolvedProfessionHandle.includes('nursing');
     if (status == '' || DashboardReducer.status != status) {
         switch (DashboardReducer.status) {
             case 'Dashboard/dashboardRequest':
@@ -361,7 +400,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         }
         return 0;
     };
-    const getDtaa = fulldashbaord?.[0];
+    const getDtaa = effectiveDashboardLicensures?.[0] || fulldashbaord?.[0];
     const topicEarned = cleanNumber(
         addit?.credits_data?.topic_earned_credits !== undefined && addit?.credits_data?.topic_earned_credits !== null
             ? (addit.credits_data.topic_earned_credits == "0.00" ? 0 : addit.credits_data.topic_earned_credits)
@@ -393,10 +432,10 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
         AuthReducer?.signupResponse?.user?.lastname ||
         DashboardReducer?.dashboardResponse?.data?.user_information?.lastname ||
         DashboardReducer?.dashPerResponse?.data?.user_information?.lastname;
-    const hasLicensureCards = Array.isArray(fulldashbaord) && fulldashbaord.length > 0;
+    const hasLicensureCards = effectiveDashboardLicensures.length > 0;
     const hasResolvedDashboard =
-        fulldashbaord == 0 ||
-        Array.isArray(fulldashbaord) ||
+        effectiveDashboardLicensures.length === 0 ||
+        hasLicensureCards ||
         DashboardReducer.status == 'Dashboard/dashboardFailure';
 
     return (
@@ -407,25 +446,25 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10) }}>{`Hey, ${lastData || ''}`}</Text>
                 </View>}
                 {hasLicensureCards ?
-                    <View key={`dashboard-${fulldashbaord.length}`}>
-                        <View style={{ height: allProfTake ? normalize(260) : bothNoRequirement ? normalize(210) : expireDate && !allProfTake ? normalize(250) : normalize(255), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
+                    <View key={`dashboard-${effectiveDashboardLicensures.length}`}>
+                        <View style={{ paddingBottom: normalize(10), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
                             <Carousel
                                 ref={carouselRef}
                                 layout={'default'}
-                                data={fulldashbaord}
+                                data={effectiveDashboardLicensures}
                                 marginTop={normalize(10)}
                                 sliderWidth={windowWidth}
                                 itemWidth={
                                     Platform.OS === 'ios' ? windowWidth - normalize(20) : windowWidth - normalize(20)
                                 }
-                                itemHeight={windowHeight * 0.9}
-                                sliderHeight={windowHeight * 0.9}
+                                containerCustomStyle={{ flexGrow: 0 }}
+                                contentContainerCustomStyle={{ alignItems: 'flex-start' }}
                                 renderItem={({ item, index }) => <Carouselcarditem allProfTake={allProfTake} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} />}
                                 firstItem={0}
                                 onSnapToItem={(index) => {
                                     setval(index);
                                     setCurrentIndex(index);
-                                    const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
+                                    const getDtaa = effectiveDashboardLicensures?.[index] || effectiveDashboardLicensures?.[0];
                                     if (getDtaa) {
                                         const nextStateId = getDtaa.state_id;
                                         if (lastStateSyncRef.current !== nextStateId) {
@@ -447,7 +486,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                                 }}
                             />
                             <View style={styles.paginationContainer}>
-                                {fulldashbaord && fulldashbaord?.length >= 2 && fulldashbaord?.map((_, index) => (
+                                {effectiveDashboardLicensures && effectiveDashboardLicensures?.length >= 2 && effectiveDashboardLicensures?.map((_, index) => (
                                     <View
                                         key={index}
                                         style={[

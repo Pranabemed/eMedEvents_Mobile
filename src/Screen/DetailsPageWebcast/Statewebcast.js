@@ -262,7 +262,14 @@ const Statewebcast = props => {
         }
     }, [goBackToGuestUser, guestFallbackUrl, isGuestWebcastFlow]);
 
+    const isBoardCastNavigatingRef = useRef(false);
     const boardCast = useCallback(() => {
+        if (isBoardCastNavigatingRef.current) return;
+        isBoardCastNavigatingRef.current = true;
+        setTimeout(() => {
+            isBoardCastNavigatingRef.current = false;
+        }, 1000);
+
         const navigationState = props.navigation.getState();
         const previousRoute = navigationState.routes[navigationState.index - 1];
         const isRecentlyViewed = previousRoute?.name === 'NonMain' && previousRoute?.params?.myact?.recnt;
@@ -286,6 +293,12 @@ const Statewebcast = props => {
             props.navigation.navigate("InterestCard", { invoiceTxt: { invoiceTxt: props?.route?.params?.webCastURL?.backDat } });
         } else if (props?.route?.params?.webCastURL?.Realback === "cont") {
             props.navigation.goBack();
+        } else if (props?.route?.params?.webCastURL?.Realback === "mytasks" || previousRoute?.name === "Mytasks") {
+            if (props.navigation.canGoBack?.()) {
+                props.navigation.goBack();
+                return;
+            }
+            resetToHome();
         } else if (allProfTake) {
             setGtprof(true);
             setAddit(statepush);
@@ -340,8 +353,18 @@ const scrollToReviews = () => {
     }, [props?.route?.params?.webCastURL?.creditData?.creditID])
     console.log("webcastuser=====", webcastdeatils?.conferenceTypeText == "Webcast", viewmore);
     const requestedConferenceUrl = props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast || "";
+    const lastFetchedConferenceUrlRef = useRef("");
+    const openGuestFallbackRef = useRef(openGuestFallbackInBrowser);
+    useEffect(() => {
+        openGuestFallbackRef.current = openGuestFallbackInBrowser;
+    }, [openGuestFallbackInBrowser]);
+
     useEffect(() => {
         if (!requestedConferenceUrl) return;
+        if (lastFetchedConferenceUrlRef.current === requestedConferenceUrl && webcastdeatils) {
+            return;
+        }
+        lastFetchedConferenceUrlRef.current = requestedConferenceUrl;
         setLoading(true);
         setWebcastdeatils(null);
         let obj = {
@@ -360,13 +383,13 @@ const scrollToReviews = () => {
             })
             .catch((err) => {
                 if (isGuestWebcastFlow) {
-                    openGuestFallbackInBrowser();
+                    openGuestFallbackRef.current?.();
                     return;
                 }
                 setLoading(false);
                 showErrorAlert("Please connect to internet", err)
             });
-    }, [dispatch, isGuestWebcastFlow, openGuestFallbackInBrowser, requestedConferenceUrl]);
+    }, [dispatch, isGuestWebcastFlow, requestedConferenceUrl]);
     useEffect(() => {
         if (requestedConferenceUrl) return;
         const cachedDetails = getValidatedWebcastPayload(WebcastReducer?.webcastDeatilsResponse);
