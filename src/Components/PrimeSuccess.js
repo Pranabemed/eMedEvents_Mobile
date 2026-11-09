@@ -124,7 +124,7 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
                     (async () => {
                         try {
                             await AsyncStorage.setItem('activeProfile', 'PrimeCard');
-                            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+                            await AsyncStorage.removeItem('ExploreTrialClicked');
                             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
                             await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
                             await AsyncStorage.removeItem('SessionPrimeSkipped');
@@ -135,7 +135,7 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
                     })();
                     nav.dispatch(CommonActions.reset({
                         index: 0, routes: [
-                            { name: "PrimeCard", params: { exploreTrialClicked: true, subscriptionDataExists: true } }
+                            { name: "TabNav", params: { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true } }
                         ]
                     }));
                     setPrimesc(false);

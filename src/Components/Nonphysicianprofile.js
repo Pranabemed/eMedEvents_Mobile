@@ -116,28 +116,30 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
                 }}
                     style={{
                         flexDirection: "row",
-                        height: normalize(95),
+                        height: normalize(105),
                         width: normalize(300),
-                        borderRadius: normalize(10),
-                        backgroundColor: "#FFFFFF",
-                        paddingHorizontal: normalize(10),
-                        // paddingVertical: normalize(10),
+                        borderRadius: normalize(5),
+                        borderWidth: 1,
+                        borderColor: Colorpath.bordercolor,
+                        backgroundColor: Colorpath.white,
+                        justifyContent: "center",
                         alignItems: "center",
-                        borderWidth: 0.5,
-                        borderColor: "#DADADA"
+                        marginTop: normalize(10)
                     }}
                 >
-                    <View style={{ flex: 1, justifyContent: "center" }}>
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#000000",
-                                fontWeight: "bold",
-                            }}
-                        >
-                            {"Your recently viewed courses are listed below for easy access and continued learning."}
-                        </Text>
+                    <View style={{ justifyContent: "center", alignItems: "center" }}>
+                        <View style={{ width: normalize(270) }}>
+                            <Text
+                                style={{
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 13,
+                                    color: Colorpath.Gray,
+                                    textAlign: "center"
+                                }}
+                            >
+                                {"Your recently viewed courses are listed below for easy access and continued learning."}
+                            </Text>
+                        </View>
                         <View style={{ marginTop: normalize(10) }}>
                             <Buttons
                                 onPress={() => {
@@ -183,28 +185,30 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
                     }}
                         style={{
                             flexDirection: "row",
-                            height: normalize(95),
+                            height: normalize(105),
                             width: normalize(300),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            // paddingVertical: normalize(10),
+                            borderRadius: normalize(5),
+                            borderWidth: 1,
+                            borderColor: Colorpath.bordercolor,
+                            backgroundColor: Colorpath.white,
+                            justifyContent: "center",
                             alignItems: "center",
-                            borderWidth: 0.5,
-                            borderColor: "#DADADA"
+                            marginTop: normalize(10)
                         }}
                     >
-                        <View style={{ flex: 1, justifyContent: "center" }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    fontWeight: "bold",
-                                }}
-                            >
-                                {"Recommendations are based on your profession, primary area of practice and state requirements."}
-                            </Text>
+                        <View style={{ justifyContent: "center", alignItems: "center" }}>
+                            <View style={{ width: normalize(270) }}>
+                                <Text
+                                    style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 13,
+                                        color: Colorpath.Gray,
+                                        textAlign: "center"
+                                    }}
+                                >
+                                    {"Recommendations are based on your profession, primary area of practice and state requirements."}
+                                </Text>
+                            </View>
                             <View style={{ marginTop: normalize(10) }}>
                                 <Buttons
                                     onPress={() => {

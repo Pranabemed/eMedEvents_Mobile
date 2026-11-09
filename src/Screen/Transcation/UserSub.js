@@ -13,6 +13,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { subRenewalRequest, userSubRequest } from '../../Redux/Reducers/TransReducer';
 import moment from 'moment';
+import { computeNonOverlappingSubscriptions } from '../../Utils/Helpers/primeSubscription';
 /**
  * Status string constant.
  * @returns {string}
@@ -157,10 +158,18 @@ const fullDataRefresh = () => {
                         if (item?.created_date) {
                             const dateString = item?.created_date;
                             const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+                            let monthYear = '';
                             if (monthYearMatch) {
                                 const month = monthYearMatch[1];
                                 const year = monthYearMatch[2];
-                                const monthYear = `${month} ${year}`;
+                                monthYear = `${month} ${year}`;
+                            } else {
+                                const parsed = moment(dateString, ['DD-MMM-YYYY', 'MMM DD, YYYY', 'MMMM DD, YYYY', 'YYYY-MM-DD']);
+                                if (parsed.isValid()) {
+                                    monthYear = parsed.format('MMM YYYY');
+                                }
+                            }
+                            if (monthYear) {
                                 if (!updatedStoreData[monthYear]) {
                                     updatedStoreData[monthYear] = [];
                                 }
@@ -209,12 +218,25 @@ const fullDataRefresh = () => {
     }
     useEffect(() => {
         if (storeAlldatas) {
+            const allItems = Object.values(storeAlldatas).flat();
+            const chainedItems = computeNonOverlappingSubscriptions(allItems);
+            const chainedMap = new Map();
+            chainedItems.forEach((cItem) => {
+                if (cItem?.id != null) {
+                    chainedMap.set(cItem.id, cItem);
+                }
+            });
+
             const storetakeAll = Object.keys(storeAlldatas).map((monthYear) => {
                 const data = storeAlldatas[monthYear];
-                const updatedData = data.map((item) => ({
-                    ...item,
-                    dataLength: data.length,
-                }));
+                const updatedData = data.map((item) => {
+                    const chained = (item?.id != null && chainedMap.get(item.id)) || item;
+                    return {
+                        ...item,
+                        ...chained,
+                        dataLength: data.length,
+                    };
+                });
                 return {
                     monthYear,
                     data: updatedData,
@@ -228,12 +250,15 @@ const fullDataRefresh = () => {
           const result = {};
           final && final.forEach(monthGroup => {
             monthGroup.data.forEach(item => {
-              if (!item?.expiry_date) {
+              const expDateVal = item?.effectiveExpiryDate || item?.expiry_date;
+              if (!expDateVal) {
                 result[item.id] = false;
                 return;
               }
               try {
-                const endDate = new Date(moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD"));
+                const endDate = item?.effectiveExpiryDate
+                  ? new Date(item.effectiveExpiryDate)
+                  : new Date(moment(item?.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD"));
                 const currentDate = new Date();
                 endDate.setHours(0, 0, 0, 0);
                 currentDate.setHours(0, 0, 0, 0);
@@ -260,6 +285,11 @@ const renderItem = ({ item, index }) => {
         const isSwitchOn = switchStates[index] ?? (item?.can_cancel === 1);
         const isItemExpired = expiredItems[item.id] || false;
         console.log(isItemExpired, "isItemExpired--------")
+
+        const startDisplay = item?.displayStartDate || (item?.start_date ? moment(item.start_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : (item?.created_date ? moment(item?.created_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : ""));
+        const expiryDisplay = item?.displayExpiryDate || (item?.expiry_date ? moment(item.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : "");
+        const periodDisplay = item?.periodString || (startDisplay && expiryDisplay ? `${startDisplay} to ${expiryDisplay}` : '');
+
         return (
             <View>
                 <View style={{ justifyContent: "center", alignSelf: "center", marginTop: normalize(0), backgroundColor: "#FFFFFF" }}>
@@ -301,7 +331,7 @@ const renderItem = ({ item, index }) => {
                                 width: normalize(50),
                                 borderRadius: normalize(15),
                                 borderWidth: 1,
-                                borderColor: "green",
+                                borderColor: isItemExpired ? "red" : "green",
                                 justifyContent: "center",
                                 alignItems: "center"
                             }}>
@@ -309,14 +339,36 @@ const renderItem = ({ item, index }) => {
                                     style={{
                                         fontFamily: Fonts.InterSemiBold,
                                         fontSize: 10,
-                                        color: "green",
+                                        color: isItemExpired ? "red" : "green",
                                         alignSelf: "center"
                                     }}
                                 >
-                                    {item?.subscription_status}
+                                    {isItemExpired ? "Expired" : item?.subscription_status}
                                 </Text>
                             </View>}
                         </View> : null}
+                        {periodDisplay ? (
+                            <View
+                                style={{
+                                    paddingHorizontal: normalize(10),
+                                    paddingBottom: normalize(4),
+                                    width: "100%",
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center"
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 11,
+                                        color: "#333333",
+                                    }}
+                                >
+                                    {`Subscription: ${periodDisplay}`}
+                                </Text>
+                            </View>
+                        ) : null}
                         <View
                             style={{
                                 paddingHorizontal: normalize(10),
@@ -331,7 +383,7 @@ const renderItem = ({ item, index }) => {
                                     color: "#AAA",
                                 }}
                             >
-                                {`Trans Date: ${moment(item?.created_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`}
+                                {`Trans Date: ${moment(item?.created_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`}
                             </Text>
                             <Text
                                 style={{
@@ -341,8 +393,8 @@ const renderItem = ({ item, index }) => {
                                 }}
                             >
                                 {isItemExpired
-                                    ? `Plan Expired on : ${moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`
-                                    : `Plan Expires on : ${moment(item?.expiry_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`
+                                    ? `Plan Expired on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`
+                                    : `Plan Expires on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`
                                 }
                             </Text>
                         </View>

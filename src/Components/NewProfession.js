@@ -17,6 +17,7 @@ import { staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import RestProfession from './RestProfession';
+import { filterValidLicensures } from '../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable NewProfession component.
@@ -173,12 +174,8 @@ const stateTake = (toklen, anoth) => {
                 } else {
                     setWholeNo(false);
                 }
-                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
+                const rawLicensures = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+                const uniqueStates = filterValidLicensures(rawLicensures);
                 const mainDataCheck = DashboardReducer?.dashboardResponse?.data?.board_certifications;
                 if (mainDataCheck) {
                     const uniqueMainDatacheck = mainDataCheck.filter(

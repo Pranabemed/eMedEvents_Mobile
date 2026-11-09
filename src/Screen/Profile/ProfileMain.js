@@ -30,7 +30,7 @@ import StackNav from '../../Navigator/StackNav.js';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow.js';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry.js';
-import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable ProfileMain component.
@@ -52,6 +52,7 @@ const ProfileMain = (props) => {
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const AuthReducer = useSelector(state => state.AuthReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const ProfileReducer = useSelector(state => state.ProfileReducer);
     const lastFocusedMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
     const profileAtRequestStartRef = useRef(null);
     const currentMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
@@ -510,16 +511,12 @@ const ProfileMain = (props) => {
     }, [allProfTake])
     useEffect(() => {
         if (DashboardReducer?.dashPerResponse?.data) {
-            const uniqueStates = DashboardReducer?.dashPerResponse?.data?.licensures?.filter((state, index, self) => {
-                return index === self.findIndex((s) =>
-                    s.state_id === state.state_id &&
-                    s.board_id === state.board_id
-                );
-            });
+            const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
+            const uniqueStates = filterValidLicensures(DashboardReducer?.dashPerResponse?.data?.licensures, profileLicensures);
             setFulldashbaord(uniqueStates);
         }
 
-    }, [DashboardReducer?.dashPerResponse])
+    }, [DashboardReducer?.dashPerResponse, ProfileReducer?.stateLicenseListResponse])
     useEffect(() => {
         if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
         let active = true;

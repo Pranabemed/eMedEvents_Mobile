@@ -12,6 +12,7 @@ import Fonts from '../../Themes/Fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { boardListDeleteRequest, boardListProfileRequest, stateLicenseDeleteRequest, stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
+import { dashboardRequest, dashPerRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 
 /**
@@ -61,6 +62,8 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
             showErrorAlert('Licensure information deleted successfully.');
             onDeleteSuccess?.(detectdata);
             dispatch(stateLicenseListRequest({}));
+            dispatch(dashboardRequest({}));
+            dispatch(dashPerRequest({}));
             setTicktry?.(currentValue => !currentValue);
             setProfiletakeshow(false);
         } else if (

@@ -36,7 +36,7 @@ import {
 import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 
@@ -328,11 +328,7 @@ const restore = async () => {
 
         if (DashboardReducer.status === 'Dashboard/dashMbSuccess') {
             const wholeLN = DashboardReducer.dashMbResponse?.data?.licensures;
-            const uniqueStates = wholeLN?.filter((state, index, self) =>
-                index === self.findIndex(s =>
-                    s.state_id === state.state_id && s.board_id === state.board_id
-                )
-            );
+            const uniqueStates = filterValidLicensures(wholeLN);
 
             setFulldashbaord(uniqueStates);
 

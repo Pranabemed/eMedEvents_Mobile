@@ -219,6 +219,7 @@ export default function DrawerModal(props) {
     (hasActivePrimeCheck && !isPrimeCheckTrial && !isPrimeTrialActive)
   );
   const membershipEndDate =
+    WebcastReducer?.PrimePaymentResponse?.auto_renew_date ||
     primeCheckSubscription?.end_date ||
     membershipSources
       .map(source => {
@@ -1042,8 +1043,13 @@ export default function DrawerModal(props) {
                       alignSelf: 'flex-start', // Let content determine width
                       marginTop: normalize(8),
                     }}
-                    disabled={isNonSubscribedNoSubscription ? false : (primeit ? !primeit : !primeits)}
-                    onPress={() => setSubit(true)}
+                    disabled={isPaidPrimeMember && !isMembershipExpired}
+                    onPress={() => {
+                      if (isPaidPrimeMember && !isMembershipExpired) {
+                        return;
+                      }
+                      setSubit(true);
+                    }}
                   >
                     <View
                       style={{

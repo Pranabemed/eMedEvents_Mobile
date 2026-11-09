@@ -10,7 +10,8 @@ import {
     TouchableOpacity,
     Image,
     Text,
-    StyleSheet
+    StyleSheet,
+    ActivityIndicator
 } from 'react-native';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
@@ -28,11 +29,13 @@ import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
 import Dashboardmain from './Dashboardmain';
 import RestProfession from './RestProfession';
+import HomeShimmer from './DashBoardShimmer';
 import { licesensRequest, staticdataRequest } from '../Redux/Reducers/AuthReducer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import { cmeCourseRequest } from '../Redux/Reducers/CMEReducer';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
+import { filterValidLicensures, isValidStateLicense } from '../Utils/Helpers/primeSubscription';
 import Buttons from './Button';
 import moment from 'moment';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
@@ -409,12 +412,17 @@ const stateTake = (toklen, anoth) => {
     const greetingText = isPhysicianGreeting
         ? `Hello Dr.${displayLastName ? ` ${displayLastName}` : ''}`
         : `Hey, ${displayLastName}`;
+
+    const effectiveFulldashbaord = useMemo(() => {
+        return filterValidLicensures(fulldashbaord, ProfileReducer?.stateLicenseListResponse?.licensures);
+    }, [fulldashbaord, ProfileReducer?.stateLicenseListResponse?.licensures]);
+
     const derivedRemainingStates = useMemo(() => {
         const licensureStates = AuthReducer?.licesensResponse?.licensure_states;
         if (!Array.isArray(licensureStates) || !licensureStates.length) return [];
 
         const existingStateIds = new Set(
-            Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
+            effectiveFulldashbaord.map((dash) => dash?.state_id).filter(id => id != null)
         );
         const stateMap = new Map();
         licensureStates.forEach((state) => {
@@ -423,7 +431,7 @@ const stateTake = (toklen, anoth) => {
             }
         });
         return Array.from(stateMap.values()).filter((state) => !existingStateIds.has(state.id));
-    }, [AuthReducer?.licesensResponse?.licensure_states, fulldashbaord]);
+    }, [AuthReducer?.licesensResponse?.licensure_states, effectiveFulldashbaord]);
 
     const canAddLicenses =
         profileType !== 'SkipProfile' &&
@@ -436,7 +444,7 @@ const stateTake = (toklen, anoth) => {
             if (!licensureLoaded && !chooseStateLoaded) return false;
 
             const existingStateIds = new Set(
-                Array.isArray(fulldashbaord) ? fulldashbaord.map((dash) => dash?.state_id) : []
+                effectiveFulldashbaord.map((dash) => dash?.state_id).filter(id => id != null)
             );
 
             const licensureHasRemaining = licensureLoaded && derivedRemainingStates.length > 0;
@@ -482,12 +490,9 @@ const stateTake = (toklen, anoth) => {
                 } else {
                     setWholeNo(false);
                 }
-                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
+                const rawLicensures = DashboardReducer?.dashboardResponse?.data?.licensures || [];
+                const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
+                const uniqueStates = filterValidLicensures(rawLicensures, profileLicensures);
                 const mainDataCheck = DashboardReducer?.dashboardResponse?.data?.board_certifications;
                 if (mainDataCheck) {
                     const uniqueMainDatacheck = mainDataCheck.filter(
@@ -735,6 +740,36 @@ const renderAddLicenseCard = () => (
             </View>
         </View>
     );
+    const [licenseLoadTimedOut, setLicenseLoadTimedOut] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLicenseLoadTimedOut(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const isStateLicenseLoading =
+        !licenseLoadTimedOut &&
+        (DashboardReducer.status === 'Dashboard/dashboardRequest' ||
+         dashboardFetchInFlightRef.current ||
+         (fulldashbaord === null && !DashboardReducer?.dashboardResponse?.data));
+
+    if (isStateLicenseLoading) {
+        return (
+            <View>
+                <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10), fontWeight: "bold" }}>
+                        {greetingText}
+                    </Text>
+                </View>
+                <View style={{ alignItems: 'center', marginBottom: normalize(8) }}>
+                    <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
+                </View>
+                <HomeShimmer />
+            </View>
+        );
+    }
+
     return (
         <>
 
@@ -785,7 +820,7 @@ const renderAddLicenseCard = () => (
                             <Carousel
                                 ref={carouselRef}
                                 layout={'default'}
-                                data={fulldashbaord}
+                                data={effectiveFulldashbaord}
                                 marginTop={normalize(0)}
                                 sliderWidth={windowWidth}
                                 itemWidth={
@@ -795,7 +830,7 @@ const renderAddLicenseCard = () => (
                                 contentContainerCustomStyle={{ alignItems: 'flex-start' }}
                                 scrollAnimationDuration={1000}
                                 renderItem={({ item, index }) => <Carouselcarditem allProfTake={allProfTake} hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} onCloseExpiredModal={() => {
-                                    if (fulldashbaord?.length > 1 && index < fulldashbaord.length - 1) {
+                                    if (effectiveFulldashbaord?.length > 1 && index < effectiveFulldashbaord.length - 1) {
                                         carouselRef.current?.snapToItem(index + 1);
                                     }
                                 }} />}
@@ -804,8 +839,8 @@ const renderAddLicenseCard = () => (
                                     handleAllIndex(index);
                                 }}
                             />
-                            {fulldashbaord?.length >= 2 && <View style={styles.paginationContainer}>
-                                {fulldashbaord.map((_, index) => (
+                            {effectiveFulldashbaord?.length >= 2 && <View style={styles.paginationContainer}>
+                                {effectiveFulldashbaord.map((_, index) => (
                                     <View
                                         key={index}
                                         style={[

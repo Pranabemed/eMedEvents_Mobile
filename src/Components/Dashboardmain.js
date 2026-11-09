@@ -14,6 +14,7 @@ import Carousel, { Pagination } from 'react-native-snap-carousel';
 import ResumeDash from './ResumeDash';
 import StateRequireditem from './StateRequired';
 import HomeShimmer from './DashBoardShimmer';
+import DashboardMainShimmer from './DashboardMainShimmer';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 
 /**
@@ -37,6 +38,21 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, setAddit, ad
     const isDataLoaded = DashboardReducer?.dashboardResponse?.data?.licensures !== undefined;
     const finalDstat = statepush?.state_name || statepush?.creditID?.state_name || addit?.state_name || fulldashbaord?.[0]?.state_name;
     const hasCourseStats = useMemo(() => (completedCount + pendingCount) > 0, [completedCount, pendingCount]);
+
+    const isStateDetailsLoading =
+        DashboardReducer?.status === 'Dashboard/stateDashboardRequest' ||
+        (!finddata && DashboardReducer?.status !== 'Dashboard/stateDashboardFailure' && DashboardReducer?.status !== 'Dashboard/stateDashboardSuccess');
+
+    if (isStateDetailsLoading) {
+        return (
+            <View style={{ paddingVertical: normalize(15) }}>
+                <View style={{ alignItems: 'center', marginBottom: normalize(10) }}>
+                    <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
+                </View>
+                <DashboardMainShimmer />
+            </View>
+        );
+    }
 
     return (
         <>

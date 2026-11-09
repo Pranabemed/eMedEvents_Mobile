@@ -34,7 +34,7 @@ import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
-import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable normalizeProfessionHandle component.
@@ -370,6 +370,7 @@ const Main = (props) => {
     return () => clearTimeout(timeout);
   }, [isFocus]);
   const endDateStringMain =
+    WebcastReducer?.PrimePaymentResponse?.auto_renew_date ||
     WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ||
     DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.end_date ||
     AuthReducer?.primeTrailResponse?.subscription?.end_date ||
@@ -378,6 +379,7 @@ const Main = (props) => {
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.end_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.end_date ||
     finalProfessionmain?.subscriptions?.[0]?.end_date;
   const startDateStringMain =
+    WebcastReducer?.PrimePaymentResponse?.prime_start_date ||
     WebcastReducer?.PrimeCheckResponse?.subscription?.start_date ||
     DashboardReducer?.mainprofileResponse?.subscriptions?.[0]?.start_date ||
     AuthReducer?.loginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.againloginsiginResponse?.user?.subscriptions?.[0]?.start_date || AuthReducer?.loginsiginResponse?.user?.subscriptions?.[0]?.start_date ||
@@ -414,9 +416,12 @@ const Main = (props) => {
   ) || subscriptionSources.some(source =>
     Array.isArray(source?.subscriptions) && source.subscriptions.length > 0
   );
-  const hasSubscribedStatus = subscriptionSources.some(source =>
-    String(source?.subscription_user || '').trim().toLowerCase() === 'subscribed'
-  );
+  const hasSubscribedStatus = subscriptionSources.some(source => {
+    const subUser = String(source?.subscription_user || '').trim().toLowerCase();
+    return ['subscribed', 'premium'].includes(subUser) ||
+      [true, 1, '1'].includes(source?.is_prime) ||
+      [true, 1, '1'].includes(source?.is_prime_user);
+  });
   const hasTrialOrNonSubscribedStatus = subscriptionSources.some(source =>
     ['free', 'non-subscribed'].includes(
       String(source?.subscription_user || '').trim().toLowerCase()
@@ -698,6 +703,10 @@ const Main = (props) => {
         !Array.isArray(AuthReducer?.licesensResponse?.licensure_states) &&
         !Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) &&
         AuthReducer?.licesensLoading !== false) ||
+      (isPhysicianFlow && currentProfile !== 'SkipProfile' &&
+        fulldashbaord === null &&
+        !dashboardLicenses.length &&
+        DashboardReducer.status === 'Dashboard/dashboardRequest') ||
       (DashboardReducer.mainProfileLoading &&
         !Object.keys(DashboardReducer.mainprofileResponse || {}).length));
   useEffect(() => {
@@ -849,7 +858,10 @@ const Main = (props) => {
   }, [isFocus]);
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton;
-  const normalizedFulldashbaord = Array.isArray(fulldashbaord) ? fulldashbaord : [];
+  const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
+  const normalizedFulldashbaord = useMemo(() => {
+    return filterValidLicensures(fulldashbaord, profileLicensures);
+  }, [fulldashbaord, profileLicensures]);
   const hasNoLicensuresMain = normalizedFulldashbaord.length === 0;
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
 
@@ -1632,29 +1644,58 @@ const Main = (props) => {
     AuthReducer?.loginsiginResponse?.user?.subscription_user,
     finalverifyvaultmain?.subscription_user
   ];
-  const hasPaidSubscription = Boolean(
-    isPrimePaymentSuccess ||
-    hasSubscribedStatus ||
-    _subUserStates.includes("subscribed") ||
-    subscriptionSources.some(source =>
-      String(source?.subscription_user || '').trim().toLowerCase() === 'subscribed'
+
+  const daysDifferenceCalc = useMemo(() => {
+    if (!endDateStringMain) return 0;
+    try {
+      const endDate = new Date(endDateStringMain);
+      const currentDate = new Date();
+      const normalizedEndDate = new Date(endDate.setHours(0, 0, 0, 0));
+      const normalizedCurrentDate = new Date(currentDate.setHours(0, 0, 0, 0));
+      return (normalizedEndDate - normalizedCurrentDate) / (1000 * 60 * 60 * 24);
+    } catch (e) {
+      return 0;
+    }
+  }, [endDateStringMain]);
+
+  const hasExplicitTrialStatus =
+    !isPrimePaymentSuccess &&
+    daysDifferenceCalc <= 35 &&
+    (
+      exploreTrialClicked ||
+      AuthReducer?.status === 'Auth/primeTrailSuccess' ||
+      (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0 && AuthReducer?.primeTrailResponse?.success !== false) ||
+      _subUserStates.includes("free") ||
+      subscriptionSources.some(source =>
+        String(source?.subscription_user || '').trim().toLowerCase() === 'free'
+      )
+    );
+
+  // A user is a paid 1-year Prime member only if they paid, have subscribed/premium status, or have a non-trial annual subscription (>35 days)
+  const isPaidOneYearPrime = Boolean(
+    !isSubscriptionExpiredSync &&
+    (
+      isPrimePaymentSuccess ||
+      hasSubscribedStatus ||
+      _subUserStates.some(val => ['subscribed', 'premium'].includes(String(val || '').trim().toLowerCase())) ||
+      (daysDifferenceCalc > 35 && (isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse) || Boolean(WebcastReducer?.PrimePaymentResponse?.auto_renew_date)))
     )
   );
-  const isPrimeTrial = !hasPaidSubscription && (
-    exploreTrialClicked ||
-    AuthReducer?.status === 'Auth/primeTrailSuccess' ||
-    (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0 && AuthReducer?.primeTrailResponse?.success !== false) ||
-    _subUserStates.includes("free") ||
-    subscriptionSources.some(source =>
-      String(source?.subscription_user || '').trim().toLowerCase() === 'free'
-    )
+
+  const hasPaidSubscription = isPaidOneYearPrime;
+  const isPrimeTrial = !isPaidOneYearPrime && (
+    hasExplicitTrialStatus ||
+    Boolean(endDateStringMain && daysDifferenceCalc > 0 && daysDifferenceCalc <= 35)
   );
 
   const takeSub = isPrimeTrial;
   const hsdSub = isPrimeTrial;
   const { freeTrail, daysleft } = useMemo(() => {
+    if (isPaidOneYearPrime) {
+      return { freeTrail: false, daysleft: false };
+    }
     if (!endDateStringMain) {
-      if (isPrimeTrial) {
+      if (hasExplicitTrialStatus || isPrimeTrial) {
         return { freeTrail: true, daysleft: 30 };
       }
       return { freeTrail: false, daysleft: false };
@@ -1669,17 +1710,18 @@ const Main = (props) => {
 
       const timeDifference = normalizedEndDate - normalizedCurrentDate;
       const daysDifference = timeDifference / (1000 * 60 * 60 * 24);
-      if (daysDifference > 0) {
-        return { freeTrail: true, daysleft: daysDiff };
+
+      if (daysDifference > 35) {
+        return { freeTrail: false, daysleft: false };
       }
-      if (isPrimeTrial && daysDiff > 0) {
+      if (daysDifference > 0) {
         return { freeTrail: true, daysleft: daysDiff };
       }
       return { freeTrail: false, daysleft: false };
     } catch (e) {
-      return { freeTrail: isPrimeTrial, daysleft: isPrimeTrial ? 30 : false };
+      return { freeTrail: hasExplicitTrialStatus, daysleft: hasExplicitTrialStatus ? 30 : false };
     }
-  }, [endDateStringMain, isPrimeTrial]);
+  }, [endDateStringMain, isPaidOneYearPrime, hasExplicitTrialStatus, isPrimeTrial]);
   const primeTrialMessage = useMemo(() => {
     return freeTrail && daysleft == 30
       ? 'Thank you for exploring Prime Membership.\nClick Subscribe now to join.'
@@ -2056,7 +2098,7 @@ const Main = (props) => {
             )}
           </View>
 
-          {(isPrimeLocationEligible && ((((enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake)) || shouldShowPrimeStrip) && !freeTrail)) ? <View style={{
+          {(!isPaidOneYearPrime && !freeTrail && isPrimeLocationEligible && ((((enables || hasEnables || isSubscriptionExpiredSync) && (allProfTake || hasAllProfTake)) || shouldShowPrimeStrip))) ? <View style={{
             position: 'absolute',
             height: normalize(56),
             bottom: 0,
@@ -2137,6 +2179,9 @@ const Main = (props) => {
           </View>
             : null}
           {(() => {
+            if (isPaidOneYearPrime) {
+              return null;
+            }
             const userForSubCheck =
               AuthReducer?.dircetloginResponse?.user ||
               AuthReducer?.dircetloginResponse ||
@@ -2186,10 +2231,10 @@ const Main = (props) => {
 
             const subUserCheck = String(userForSubCheck?.subscription_user || finalProfessionmain?.subscription_user || '').trim().toLowerCase();
             const isEligibleToRenderPrimeCard = (subUserCheck === "free" || subUserCheck === "non-subscribed" || subUserCheck === "" || !subUserCheck) && (subUserCheck !== "subscribed");
-            const isPrimeTrialActive = Boolean(freeTrail);
+            const isPrimeTrialActive = Boolean(typeof freeTrail !== 'undefined' ? freeTrail : false);
             const shouldShowOnlyGetMembership = isPrimeTrialActive || isSubscriptionExpiredSync;
 
-            return ((freeTrail || isSubscriptionExpiredSync || (isPrimeMembershipResolved && !hasActivePrimeMembership)) && !isAccreditationUser && isPrimeLocationEligible && (freeTrail || isSubscriptionExpiredSync || isEligibleToRenderPrimeCard) && (allProfTake || isPhysicianFlow || hasAllProfTake || isNonUsaUser || freeTrail) && primeadd && !isDrawerVisible) && <PrimeCard
+            return (((typeof freeTrail !== 'undefined' ? freeTrail : false) || isSubscriptionExpiredSync || (isPrimeMembershipResolved && !hasActivePrimeMembership)) && !isAccreditationUser && isPrimeLocationEligible && ((typeof freeTrail !== 'undefined' ? freeTrail : false) || isSubscriptionExpiredSync || isEligibleToRenderPrimeCard) && (allProfTake || isPhysicianFlow || hasAllProfTake || isNonUsaUser || (typeof freeTrail !== 'undefined' ? freeTrail : false)) && primeadd && !isDrawerVisible) && <PrimeCard
               primeadd={primeadd}
               setPrimeadd={setPrimeadd}
               onDismiss={handlePrimeCardDismiss}

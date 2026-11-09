@@ -20,6 +20,7 @@ import TokenManager from '../../Utils/Helpers/TokenManager';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { loginSuccess, signupSuccess, tokenSuccess } from '../../Redux/Reducers/AuthReducer';
+import { filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable Splash component.
@@ -538,12 +539,7 @@ const token_handle = () => {
     if (data?.licensures?.length > 0) {
       const wholeLN = data.licensures;
       const finalPush = wholeLN.map((l) => l?.license_number);
-      const uniqueStates = data.licensures.filter((state, index, self) => {
-        return index === self.findIndex((s) =>
-          s.state_id === state.state_id &&
-          s.board_id === state.board_id
-        );
-      });
+      const uniqueStates = filterValidLicensures(data.licensures);
       setFulldashbaord(uniqueStates);
       setDashboard(finalPush);
       setLoadingDashboard(false);

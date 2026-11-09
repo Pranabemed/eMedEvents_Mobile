@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Internet from './Internet';
 import { useSelector } from 'react-redux';
+import { filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable AppProvider component.
@@ -69,6 +70,9 @@ const AppProvider = ({ children }) => {
   const dashMbLicensures = useSelector(
     state => state?.DashboardReducer?.dashMbResponse?.data?.licensures
   );
+  const profileLicensures = useSelector(
+    state => state?.ProfileReducer?.stateLicenseListResponse?.licensures
+  );
   const dashboardStatus = useSelector(state => state?.DashboardReducer?.status);
   const prevAuthTokenRef = useRef(authToken);
 
@@ -119,12 +123,7 @@ const resetSessionContext = () => {
 
     if (!resolvedLicensures) return;
 
-    const uniqueStates = resolvedLicensures.filter((state, index, self) => {
-      return index === self.findIndex((s) =>
-        s.state_id === state.state_id &&
-        s.board_id === state.board_id
-      );
-    });
+    const uniqueStates = filterValidLicensures(resolvedLicensures, profileLicensures);
     setFulldashbaord(current => {
       if (!isLicensureSuccessStatus && Array.isArray(current)) {
         return current;
@@ -134,7 +133,7 @@ const resetSessionContext = () => {
       }
       return uniqueStates;
     });
-  }, [dashboardStatus, dashPerLicensures, dashMbLicensures, dashboardLicensures]);
+  }, [dashboardStatus, dashPerLicensures, dashMbLicensures, dashboardLicensures, profileLicensures]);
 
   useEffect(() => {
     if (authStatus === 'Auth/logoutSuccess') resetSessionContext();

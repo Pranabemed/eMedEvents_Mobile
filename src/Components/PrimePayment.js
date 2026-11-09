@@ -27,7 +27,9 @@ import MaskField from './Mask';
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../Utils/Helpers/IntOff';
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isPrimeSubscriptionActive } from '../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable PrimePayment component.
@@ -63,6 +65,53 @@ const PrimePayment = (props) => {
     const [primesc, setPrimesc] = useState(false);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    const AuthReducer = useSelector(state => state.AuthReducer);
+
+    const primeCheckSubscription = WebcastReducer?.PrimeCheckResponse?.subscription;
+    const primeCheckSubscriptionType = String(
+        primeCheckSubscription?.type || primeCheckSubscription?.subscription_type || primeCheckSubscription?.plan_type || ''
+    ).trim().toLowerCase();
+    const isPrimeCheckTrial =
+        primeCheckSubscriptionType.includes('trial') ||
+        primeCheckSubscriptionType.includes('free');
+    const hasActivePrimeCheck = isPrimeSubscriptionActive(WebcastReducer?.PrimeCheckResponse);
+
+    const subscriptionSources = [
+        DashboardReducer?.mainprofileResponse,
+        AuthReducer?.dircetloginResponse?.user || AuthReducer?.dircetloginResponse,
+        AuthReducer?.directloginResponse?.user || AuthReducer?.directloginResponse,
+        AuthReducer?.loginResponse?.user,
+        AuthReducer?.againloginsiginResponse?.user,
+        AuthReducer?.loginsiginResponse?.user,
+    ];
+
+    const hasSubscribedStatus = subscriptionSources.some(source => {
+        const user = source?.user || source;
+        const subUser = String(user?.subscription_user || '').trim().toLowerCase();
+        return ['subscribed', 'premium'].includes(subUser) ||
+            [true, 1, '1'].includes(user?.is_prime) ||
+            [true, 1, '1'].includes(user?.is_prime_user);
+    });
+
+    const activeEndDate =
+        primeCheckSubscription?.end_date ||
+        subscriptionSources
+            .map(source => {
+                const user = source?.user || source;
+                return Array.isArray(user?.subscriptions) ? user.subscriptions[0]?.end_date : null;
+            })
+            .find(Boolean);
+
+    const isSubscriptionValid = Boolean(
+        activeEndDate &&
+        new Date(activeEndDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0)
+    );
+
+    const isAlreadyActivePaidPrime = Boolean(
+        (hasActivePrimeCheck && !isPrimeCheckTrial && isSubscriptionValid) ||
+        (hasSubscribedStatus && isSubscriptionValid)
+    );
+
     const [conn, setConn] = useState("")
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
@@ -187,14 +236,29 @@ const PrimePayment = (props) => {
             "card_expiry": finalex || finalex,
             "referral_code": ""
         };
+
+        if (isAlreadyActivePaidPrime && activeEndDate) {
+            const nextStartMoment = moment(activeEndDate);
+            const nextEndMoment = moment(activeEndDate).add(1, 'year').add(1, 'day');
+            obj.start_date = nextStartMoment.format('YYYY-MM-DD');
+            obj.end_date = nextEndMoment.format('YYYY-MM-DD');
+            obj.renew_from = nextStartMoment.format('YYYY-MM-DD');
+            obj.is_renewal = 1;
+        }
+
         console.log('obj', obj);
-        connectionrequest()
-            .then(() => {
-                dispatch(PrimePaymentRequest(obj))
-            })
-            .catch(() => {
-                showErrorAlert(errors.noInternet);
-            });
+
+        const executePayment = () => {
+            connectionrequest()
+                .then(() => {
+                    dispatch(PrimePaymentRequest(obj));
+                })
+                .catch(() => {
+                    showErrorAlert(errors.noInternet);
+                });
+        };
+
+        executePayment();
     }
     if (status1 == '' || WebcastReducer.status != status1) {
         switch (WebcastReducer.status) {
@@ -460,7 +524,24 @@ const PrimePayment = (props) => {
                         }}
                     />
                 </View>
-                {primesc && <PrimeSuccess email={DashboardReducer?.mainprofileResponse?.personal_information?.email} endDate={WebcastReducer?.PrimePaymentResponse?.auto_renew_date} startDate={WebcastReducer?.PrimePaymentResponse?.prime_start_date} primesc={primesc} setPrimesc={setPrimesc} nav={navigate} />}
+                {primesc && (
+                    <PrimeSuccess
+                        email={DashboardReducer?.mainprofileResponse?.personal_information?.email}
+                        endDate={
+                            (isAlreadyActivePaidPrime && activeEndDate)
+                                ? moment(activeEndDate).add(1, 'year').add(1, 'day').format('DD-MMM-YYYY')
+                                : (WebcastReducer?.PrimePaymentResponse?.auto_renew_date || moment().add(1, 'year').add(1, 'day').format('DD-MMM-YYYY'))
+                        }
+                        startDate={
+                            (isAlreadyActivePaidPrime && activeEndDate)
+                                ? moment(activeEndDate).format('DD-MMM-YYYY')
+                                : (WebcastReducer?.PrimePaymentResponse?.prime_start_date || moment().format('DD-MMM-YYYY'))
+                        }
+                        primesc={primesc}
+                        setPrimesc={setPrimesc}
+                        nav={navigate}
+                    />
+                )}
             </SafeAreaView>}
         </>
     )

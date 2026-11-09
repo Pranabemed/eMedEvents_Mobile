@@ -57,7 +57,8 @@ const StateProfile = (props) => {
     const {
         stateCount,
         pushnew,
-        isConnected
+        isConnected,
+        setFulldashbaord,
       } = useContext(AppContext);
         /**
  * Search back component.
@@ -103,15 +104,24 @@ const SearchBack = () => {
     const [ticktry, setTicktry] = useState(false);
     const handleDeleteSuccess = useCallback((deletedItem) => {
         const deletedId = deletedItem?.id;
+        const deletedStateId = deletedItem?.state_id;
         setWebcastviewpr(currentData =>
             Array.isArray(currentData) ? currentData.filter(item => String(item.id) !== String(deletedId)) : []
         );
         setPaginatedDatapr(currentData =>
             currentData.filter(item => String(item.id) !== String(deletedId))
         );
+        setFulldashbaord(current => {
+            if (!Array.isArray(current)) return current;
+            return current.filter(item => {
+                if (deletedId != null && String(item?.id ?? '') === String(deletedId)) return false;
+                if (deletedStateId != null && String(item?.state_id ?? '') === String(deletedStateId)) return false;
+                return true;
+            });
+        });
         setDetectdata("");
         setPage(1);
-    }, []);
+    }, [setFulldashbaord]);
     useEffect(() => {
         connectionrequest()
             .then(() => {

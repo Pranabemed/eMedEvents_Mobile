@@ -31,6 +31,7 @@ import Buttons from './Button';
 import Fonts from '../Themes/Fonts';
 import NetInfo from '@react-native-community/netinfo';
 import RestProfession from './RestProfession';
+import { filterValidLicensures } from '../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable NonPhysicianCat component.
@@ -99,8 +100,9 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             DashboardReducer?.dashPerResponse?.data?.licensures ||
             ProfileReducer?.stateLicenseListResponse?.licensures ||
             DashboardReducer?.mainprofileResponse?.licensures;
-        if (Array.isArray(candidateLicenses) && candidateLicenses.length > 0) {
-            return candidateLicenses.filter((state, index, self) =>
+        const validCandidates = filterValidLicensures(candidateLicenses, ProfileReducer?.stateLicenseListResponse?.licensures);
+        if (Array.isArray(validCandidates) && validCandidates.length > 0) {
+            return validCandidates.filter((state, index, self) =>
                 index === self.findIndex((s) =>
                     (s.state_id ?? s.id) === (state.state_id ?? state.id) &&
                     (s.board_id ?? '') === (state.board_id ?? '')
@@ -294,12 +296,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
                 } else {
                     setWholeNo(false);
                 }
-                const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
+                const uniqueStates = filterValidLicensures(DashboardReducer?.dashboardResponse?.data?.licensures, ProfileReducer?.stateLicenseListResponse?.licensures);
                 const mainDataCheck = DashboardReducer?.dashboardResponse?.data?.board_certifications;
                 if (mainDataCheck) {
                     const uniqueMainDatacheck = mainDataCheck.filter(

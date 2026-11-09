@@ -40,6 +40,7 @@ import { chooseStatecardRequest, licesensRequest, tokenRequest, verifyRequest } 
 import { AppContext } from '../Screen/GlobalSupport/AppContext';
 import StackNav from './StackNav';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState, isUsaCountryCode } from '../Utils/Helpers/nonUsaFlow';
+import { filterValidLicensures } from '../Utils/Helpers/primeSubscription';
 /**
  * Status1 string constant.
  * @returns {string}
@@ -250,12 +251,8 @@ function TabScreen() {
   useEffect(() => {
     const licensures = DashboardReducer?.dashPerResponse?.data?.licensures;
     if (!licensures?.length) return;
-    const uniqueStates = licensures.filter((state, index, self) => {
-      return index === self.findIndex((s) =>
-        s.state_id === state.state_id &&
-        s.board_id === state.board_id
-      );
-    });
+    const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
+    const uniqueStates = filterValidLicensures(licensures, profileLicensures);
     setFulldashbaord(uniqueStates);
     if (uniqueStates?.length > 0) {
       const firstState = uniqueStates[0];

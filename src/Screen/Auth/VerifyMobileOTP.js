@@ -28,7 +28,7 @@ import { AppContext } from '../GlobalSupport/AppContext';
 import { PrimeCheckRequest, walletCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
-import { isPrimeSubscriptionMissing } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 
 /**
@@ -530,12 +530,7 @@ const VerifyMobileOTP = (props) => {
                     DashboardReducer?.dashMbResponse?.data?.licensures?.[0] ||
                     {};
                 const hasValidLicenseInfo = hasValidLicenseRecord(firstLicense);
-                const uniqueStates = DashboardReducer?.dashMbResponse?.data?.licensures?.filter((state, index, self) => {
-                    return index === self.findIndex((s) =>
-                        s.state_id === state.state_id &&
-                        s.board_id === state.board_id
-                    );
-                });
+                const uniqueStates = filterValidLicensures(DashboardReducer?.dashMbResponse?.data?.licensures);
                 if (hasValidLicenseInfo) {
                     setNoload(false);
                     setGtprof(false);
@@ -559,12 +554,7 @@ const VerifyMobileOTP = (props) => {
         if (DashboardReducer.status === 'Dashboard/dashMbSuccess') {
             const wholeLN = DashboardReducer.dashMbResponse.data?.licensures;
             const finalPush = wholeLN?.length > 0 ? wholeLN.map((l) => l?.license_number) : [];
-            const uniqueStates = DashboardReducer?.dashMbResponse?.data?.licensures?.filter((state, index, self) => {
-                return index === self.findIndex((s) =>
-                    s.state_id === state.state_id &&
-                    s.board_id === state.board_id
-                );
-            });
+            const uniqueStates = filterValidLicensures(DashboardReducer?.dashMbResponse?.data?.licensures);
             const firstLicense =
                 DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
                 wholeLN?.[0] ||
