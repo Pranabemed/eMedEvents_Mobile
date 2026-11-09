@@ -380,7 +380,7 @@ const CheckMembership = (props) => {
     const handlePrimeMembership = () => {
         (async () => {
             await AsyncStorage.setItem('activeProfile', 'PrimeCard');
-            await AsyncStorage.setItem('ExploreTrialClicked', 'true');
+            await AsyncStorage.removeItem('ExploreTrialClicked');
             await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
             await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
             await AsyncStorage.removeItem('SessionPrimeSkipped');
@@ -390,7 +390,7 @@ const CheckMembership = (props) => {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
-                    routes: [{ name: "PrimePayment" }],
+                    routes: [{ name: "PrimeCheckout" }],
                 })
             );
         })().catch(error => {
@@ -411,6 +411,7 @@ const CheckMembership = (props) => {
             await AsyncStorage.setItem('SessionPrimeSkipped', 'true');
             await AsyncStorage.setItem(CHECK_MEMBERSHIP_FORCE_NEW_PROFESSION_KEY, '1');
             await AsyncStorage.setItem('activeProfile', 'SkipProfile');
+            await AsyncStorage.removeItem('ExploreTrialClicked');
             require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'SkipProfile');
             await clearNonUsaFlowState();
         } catch (error) {

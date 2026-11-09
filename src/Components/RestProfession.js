@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Image, FlatList, TouchableOpacity, ScrollView, Pressable, StyleSheet, Dimensions, Platform } from 'react-native'
-import React, { useContext, useEffect, useState, useRef } from 'react'
+import React, { useContext, useEffect, useState, useRef, useCallback } from 'react'
 import moment from 'moment';
 import Imagepath from '../Themes/Imagepath';
 import Fonts from '../Themes/Fonts';
@@ -34,11 +34,35 @@ import ResumeDash from './ResumeDash';
  */
 
 const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimeadd, enables, addit, takestate, completedCount, pendingCount, DashboardReducer, profileType, hideGreeting = false }) => {
-    const [storeAlldata, setStoreAlldata] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const getResolvedActivities = useCallback(() => {
+        const responses = [
+            DashboardReducer?.dashPerResponse,
+            DashboardReducer?.dashMbResponse,
+            DashboardReducer?.dashboardResponse,
+        ];
+        const activities = responses
+            .map(response => response?.data?.my_activities)
+            .find(Array.isArray) || [];
+        return activities.filter(
+            (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
+        );
+    }, [
+        DashboardReducer?.dashPerResponse,
+        DashboardReducer?.dashMbResponse,
+        DashboardReducer?.dashboardResponse,
+    ]);
+
+    const initialActivities = getResolvedActivities();
+    const recentlyViewedCourses =
+        DashboardReducer?.dashboardResponse?.data?.my_recently_viewed ||
+        DashboardReducer?.dashPerResponse?.data?.my_recently_viewed ||
+        DashboardReducer?.dashMbResponse?.data?.my_recently_viewed ||
+        [];
+    const [storeAlldata, setStoreAlldata] = useState(initialActivities);
+    const [loading, setLoading] = useState(initialActivities.length === 0);
     const [wholeDa, setWholeDa] = useState("");
     // Tracks whether the list can render its result or empty state.
-    const hasReceivedResponse = React.useRef(false);
+    const hasReceivedResponse = React.useRef(initialActivities.length > 0);
     const DASHBOARD_LOADING_TIMEOUT_MS = 10000;
     const AuthReducer = useSelector(state => state.AuthReducer);
     const dispatch = useDispatch();
@@ -97,71 +121,49 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         return () => unsubscribe();
     }
     useEffect(() => {
-        switch (DashboardReducer?.status) {
-            case 'Dashboard/dashPerRequest':
-            case 'Dashboard/dashMbRequest':
-            case 'Dashboard/dashboardRequest':
-                hasReceivedResponse.current = false;
-                setLoading(true);
-                setStoreAlldata([]);
-                break;
-            case 'Dashboard/dashPerSuccess':
-            case 'Dashboard/dashMbSuccess':
-            case 'Dashboard/dashboardSuccess': {
-                hasReceivedResponse.current = true;
-                setLoading(false);
-                const activities =
-                    DashboardReducer?.dashPerResponse?.data?.my_activities ||
-                    DashboardReducer?.dashMbResponse?.data?.my_activities ||
-                    DashboardReducer?.dashboardResponse?.data?.my_activities ||
-                    [];
-                const uniqueActivities = activities.filter(
-                    (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
-                );
-                setStoreAlldata(uniqueActivities);
-                break;
-            }
-            case 'Dashboard/dashPerFailure':
-            case 'Dashboard/dashMbFailure':
-            case 'Dashboard/dashboardFailure':
-                hasReceivedResponse.current = true;
-                setLoading(false);
-                setStoreAlldata([]);
-                break;
-            default:
-                break;
+        const activities = getResolvedActivities();
+        if (activities.length > 0) {
+            setStoreAlldata(activities);
+            hasReceivedResponse.current = true;
+            setLoading(false);
+        } else if (
+            DashboardReducer?.status === 'Dashboard/dashPerSuccess' ||
+            DashboardReducer?.status === 'Dashboard/dashMbSuccess' ||
+            DashboardReducer?.status === 'Dashboard/dashboardSuccess'
+        ) {
+            hasReceivedResponse.current = true;
+            setLoading(false);
+            setStoreAlldata([]);
+        } else if (
+            DashboardReducer?.status === 'Dashboard/dashPerFailure' ||
+            DashboardReducer?.status === 'Dashboard/dashMbFailure' ||
+            DashboardReducer?.status === 'Dashboard/dashboardFailure'
+        ) {
+            hasReceivedResponse.current = true;
+            setLoading(false);
         }
     }, [
+        getResolvedActivities,
         DashboardReducer?.status,
-        DashboardReducer?.dashPerResponse?.data?.my_activities,
-        DashboardReducer?.dashMbResponse?.data?.my_activities,
-        DashboardReducer?.dashboardResponse?.data?.my_activities,
     ]);
-    useEffect(() => {
-        const responses = [
-            DashboardReducer?.dashPerResponse,
-            DashboardReducer?.dashMbResponse,
-            DashboardReducer?.dashboardResponse,
-        ];
-        const hasResolvedResponse = responses.some(response =>
-            response && Object.prototype.hasOwnProperty.call(response, 'data')
-        );
-        if (!hasResolvedResponse) return;
 
-        const activities = responses
-            .map(response => response?.data?.my_activities)
-            .find(Array.isArray) || [];
-        const uniqueActivities = activities.filter(
-            (value, index, self) => index === self.findIndex(item => item?.id === value?.id),
-        );
-        setStoreAlldata(uniqueActivities);
-        hasReceivedResponse.current = true;
-        setLoading(false);
-    }, [
-        DashboardReducer?.dashPerResponse,
-        DashboardReducer?.dashMbResponse,
-        DashboardReducer?.dashboardResponse,
-    ]);
+    // Keep existing activities displayed during background refetches so tab switching does not clear them
+    useEffect(() => {
+        if (
+            DashboardReducer?.status === 'Dashboard/dashPerRequest' ||
+            DashboardReducer?.status === 'Dashboard/dashMbRequest' ||
+            DashboardReducer?.status === 'Dashboard/dashboardRequest'
+        ) {
+            const activities = getResolvedActivities();
+            if (activities.length > 0) {
+                setStoreAlldata(activities);
+                hasReceivedResponse.current = true;
+                setLoading(false);
+            } else {
+                setLoading(true);
+            }
+        }
+    }, [DashboardReducer?.status, getResolvedActivities]);
 
     // Dashboard endpoints are requested in parallel and share a single Redux
     // status field. If another request overwrites that status, or an endpoint
@@ -490,7 +492,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                             </TouchableOpacity>
                         </View>
                     )}
-                    {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && (
+                    {recentlyViewedCourses?.length > 0 && (
                         <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                             <TouchableOpacity
                                 onPress={() => {
@@ -503,7 +505,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                                     name: "NonMain",
                                                     params: {
                                                         myact: {
-                                                            realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                            realdata: recentlyViewedCourses,
                                                             creditData: creditData,
                                                             recnt: "recnt"
                                                         }
@@ -551,7 +553,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                                                 name: "NonMain",
                                                                 params: {
                                                                     myact: {
-                                                                        realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed,
+                                                                        realdata: recentlyViewedCourses,
                                                                         creditData: creditData,
                                                                         recnt: "recnt"
                                                                     }

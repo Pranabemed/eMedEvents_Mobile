@@ -249,7 +249,16 @@ function TabScreen() {
     }
   }, []);
   useEffect(() => {
-    const licensures = DashboardReducer?.dashPerResponse?.data?.licensures;
+    const licensures =
+      DashboardReducer?.dashPerResponse?.data?.licensures?.length
+        ? DashboardReducer.dashPerResponse.data.licensures
+        : DashboardReducer?.dashMbResponse?.data?.licensures?.length
+          ? DashboardReducer.dashMbResponse.data.licensures
+          : DashboardReducer?.dashboardResponse?.data?.licensures?.length
+            ? DashboardReducer.dashboardResponse.data.licensures
+            : Array.isArray(fulldashbaord) && fulldashbaord.length > 0
+              ? fulldashbaord
+              : [];
     if (!licensures?.length) return;
     const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
     const uniqueStates = filterValidLicensures(licensures, profileLicensures);

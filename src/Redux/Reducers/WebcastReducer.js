@@ -64,6 +64,9 @@ const initialState = {
   cartdetailsWebcastResponse: {},
   cartdeleteWebcastResponse: {},
   couponWebcastResponse: {},
+  primepromoResponse: null,
+  primepromoError: null,
+  primepromoStatus: '',
   cancelcouponResponse: {},
   cartCheckoutResponse: {},
   cartPaymentResponse: {},
@@ -75,6 +78,8 @@ const initialState = {
   PaymentCheckResponse: {},
   PrimePaymentResponse: {},
   PrimeCheckResponse: {},
+  primetrialCheckResponse: {},
+  saveUserSubscriptionResponse: {},
   RegisterIntResponse: {},
   saveTicketCartResponse: {},
   saveTicketAddResponse: {},
@@ -91,6 +96,21 @@ const WebCastSlice = createSlice({
   name: 'WebCast',
   initialState,
   reducers: {
+    primepromoRequest(state, action) {
+      state.primepromoStatus = action.type;
+      state.primepromoResponse = null;
+      state.primepromoError = null;
+    },
+    primepromotSuccess(state, action) {
+      state.primepromoStatus = action.type;
+      state.primepromoResponse = action.payload;
+      state.primepromoError = null;
+    },
+    primepromoFailure(state, action) {
+      state.primepromoStatus = action.type;
+      state.primepromoResponse = null;
+      state.primepromoError = action.payload;
+    },
         /**
  * Reducer logic for webcast deatils request state.
  * @param {*} state - Input value.
@@ -787,7 +807,67 @@ PrimeCheckFailure(state, action) {
       state.status = action.type;
       state.error = action.error;
     },
-        /**
+    /**
+     * Reducer logic for primetrialCheck request state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    primetrialCheckRequest(state, action) {
+      state.status = action.type;
+    },
+    /**
+     * Reducer logic for primetrialCheck success state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    primetrialCheckSuccess(state, action) {
+      state.primetrialCheckResponse = action.payload;
+      state.saveUserSubscriptionResponse = action.payload;
+      state.status = action.type;
+    },
+    /**
+     * Reducer logic for primetrialCheck failure state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    primetrialCheckFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+    /**
+     * Reducer logic for saveUserSubscription request state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    saveUserSubscriptionRequest(state, action) {
+      state.status = action.type;
+    },
+    /**
+     * Reducer logic for saveUserSubscription success state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    saveUserSubscriptionSuccess(state, action) {
+      state.saveUserSubscriptionResponse = action.payload;
+      state.primetrialCheckResponse = action.payload;
+      state.status = action.type;
+    },
+    /**
+     * Reducer logic for saveUserSubscription failure state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    saveUserSubscriptionFailure(state, action) {
+      state.status = action.type;
+      state.error = action.error;
+    },
+    /**
  * Register int request component.
  * @param {*} state - Input value.
  * @param {*} action - Input value.
@@ -936,6 +1016,9 @@ refIDFailure(state, action) {
 });
 
 export const {
+  primepromoRequest,
+  primepromotSuccess,
+  primepromoFailure,
   webcastDeatilsRequest,
   webcastDeatilsFailure,
   webcastDeatilsSuccess,
@@ -1008,6 +1091,12 @@ export const {
   PrimeCheckFailure,
   PrimeCheckRequest,
   PrimeCheckSuccess,
+  primetrialCheckFailure,
+  primetrialCheckRequest,
+  primetrialCheckSuccess,
+  saveUserSubscriptionFailure,
+  saveUserSubscriptionRequest,
+  saveUserSubscriptionSuccess,
   RegisterIntFailure,
   RegisterIntRequest,
   RegisterIntSuccess,

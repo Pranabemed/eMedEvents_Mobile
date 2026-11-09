@@ -139,5 +139,40 @@ describe('Paid 1-Year Prime Subscriber Dashboard Strip Logic', () => {
     expect(result.shouldShowGetPrimeMembershipStrip).toBe(true);
     expect(result.shouldShowSubscribeNowStrip).toBe(false);
   });
+
+  test('User navigating CheckMembership -> PrimeCheckout and backing out without 30-day trial: trial message hidden, Prime strip shown', () => {
+    // When user chooses "Get Prime Membership" (purchase) instead of 30-day trial, ExploreTrialClicked is NOT set
+    const result = calculateMembershipState({
+      endDateStringMain: null,
+      isPrimePaymentSuccess: false,
+      hasSubscribedStatus: false,
+      _subUserStates: [],
+      isPrimeSubscriptionActiveCheck: false,
+      exploreTrialClicked: false, // cleared / removed
+      isSubscriptionExpiredSync: false,
+    });
+
+    expect(result.freeTrail).toBe(false);
+    expect(result.daysleft).toBe(false);
+    expect(result.shouldShowSubscribeNowStrip).toBe(false);
+    expect(result.shouldShowGetPrimeMembershipStrip).toBe(true);
+  });
+
+  test('User choosing 30-day free trial (Explore Free Trial 30 Days): trial message shown, standard strip hidden', () => {
+    const result = calculateMembershipState({
+      endDateStringMain: null,
+      isPrimePaymentSuccess: false,
+      hasSubscribedStatus: false,
+      _subUserStates: [],
+      isPrimeSubscriptionActiveCheck: false,
+      exploreTrialClicked: true, // clicked 30-days trial
+      isSubscriptionExpiredSync: false,
+    });
+
+    expect(result.freeTrail).toBe(true);
+    expect(result.daysleft).toBe(30);
+    expect(result.shouldShowSubscribeNowStrip).toBe(true);
+    expect(result.shouldShowGetPrimeMembershipStrip).toBe(false);
+  });
 });
 

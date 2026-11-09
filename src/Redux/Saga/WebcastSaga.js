@@ -4,7 +4,7 @@
 
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
+import { primepromotSuccess, primepromoFailure, FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, primetrialCheckFailure, primetrialCheckRequest, primetrialCheckSuccess, saveUserSubscriptionFailure, saveUserSubscriptionRequest, saveUserSubscriptionSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -467,6 +467,21 @@ export function* cartdeleteWebcastSaga(action) {
  * @param {Object} action - Saga action payload.
  * @returns {Generator}
  */
+export function* primepromoSaga(action) {
+  const auth = yield select(getItem);
+  const header = { Accept: 'application/json', contenttype: 'application/json', authorization: auth.token };
+  try {
+    const response = yield call(postApi, 'UserSubscription/checkValidPromoCode', action.payload, header);
+    if (response?.status === 200) {
+      yield put(primepromotSuccess(response.data));
+    } else {
+      yield put(primepromoFailure(response?.data || { message: 'Unable to validate promo code.' }));
+    }
+  } catch (error) {
+    yield put(primepromoFailure(error?.response?.data || { message: error?.message || 'Unable to validate promo code.' }));
+  }
+}
+
 export function* couponapplySaga(action) {
   let items = yield select(getItem);
   let header = {
@@ -710,6 +725,44 @@ export function* PrimeCheckSaga(action) {
     yield put(PrimeCheckFailure(error));
   }
 }
+
+/**
+ * Executes the saveUserSubscriptionSaga saga.
+ * Calls UserSubscription/saveUser endpoint.
+ *
+ * @function saveUserSubscriptionSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
+export function* saveUserSubscriptionSaga(action) {
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items?.token || action?.payload?.token,
+  };
+  try {
+    let response = yield call(postApi, 'UserSubscription/saveUser', action.payload, header);
+    if (
+      response?.status == 200 ||
+      response?.status == 201 ||
+      response?.data?.status == true ||
+      response?.data?.status == 200 ||
+      response?.data?.status == '200' ||
+      response?.data?.success == true ||
+      response?.data?.statusCode == 200
+    ) {
+      yield put(saveUserSubscriptionSuccess(response?.data));
+      yield put(primetrialCheckSuccess(response?.data));
+    } else {
+      yield put(saveUserSubscriptionFailure(response?.data));
+      yield put(primetrialCheckFailure(response?.data));
+    }
+  } catch (error) {
+    yield put(saveUserSubscriptionFailure(error));
+    yield put(primetrialCheckFailure(error));
+  }
+}
 /**
  * Executes the RegisterIntPrSaga saga.
  *
@@ -816,6 +869,7 @@ const watchFunction = [
     yield takeLatest('WebCast/cartdeleteWebcastRequest', cartdeleteWebcastSaga);
   })(),
   (function* () {
+    yield takeLatest('WebCast/primepromoRequest', primepromoSaga);
     yield takeLatest('WebCast/couponWebcastRequest', couponapplySaga);
   })(),
   (function* () {
@@ -850,6 +904,12 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('WebCast/PrimeCheckRequest', PrimeCheckSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/saveUserSubscriptionRequest', saveUserSubscriptionSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/primetrialCheckRequest', saveUserSubscriptionSaga);
   })(),
   (function* () {
     yield takeLatest('WebCast/RegisterIntRequest', RegisterIntPrSaga);

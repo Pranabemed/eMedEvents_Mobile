@@ -135,7 +135,7 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
                     })();
                     nav.dispatch(CommonActions.reset({
                         index: 0, routes: [
-                            { name: "TabNav", params: { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true } }
+                            { name: "TabNav", params: { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true, detectmain: "newadd" } }
                         ]
                     }));
                     setPrimesc(false);

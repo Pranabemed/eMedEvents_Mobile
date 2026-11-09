@@ -414,8 +414,26 @@ const stateTake = (toklen, anoth) => {
         : `Hey, ${displayLastName}`;
 
     const effectiveFulldashbaord = useMemo(() => {
-        return filterValidLicensures(fulldashbaord, ProfileReducer?.stateLicenseListResponse?.licensures);
-    }, [fulldashbaord, ProfileReducer?.stateLicenseListResponse?.licensures]);
+        const sourceLicensures =
+            (Array.isArray(fulldashbaord) && fulldashbaord.length > 0)
+                ? fulldashbaord
+                : (Array.isArray(fetcheddt) && fetcheddt.length > 0)
+                    ? fetcheddt
+                    : DashboardReducer?.dashMbResponse?.data?.licensures?.length
+                        ? DashboardReducer.dashMbResponse.data.licensures
+                        : DashboardReducer?.dashboardResponse?.data?.licensures?.length
+                            ? DashboardReducer.dashboardResponse.data.licensures
+                            : DashboardReducer?.dashPerResponse?.data?.licensures?.length
+                                ? DashboardReducer.dashPerResponse.data.licensures
+                                : [];
+        return filterValidLicensures(sourceLicensures, ProfileReducer?.stateLicenseListResponse?.licensures);
+    }, [fulldashbaord, fetcheddt, DashboardReducer?.dashMbResponse, DashboardReducer?.dashboardResponse, DashboardReducer?.dashPerResponse, ProfileReducer?.stateLicenseListResponse?.licensures]);
+
+    useEffect(() => {
+        if ((!fulldashbaord || fulldashbaord.length === 0) && effectiveFulldashbaord.length > 0) {
+            setFulldashbaord?.(effectiveFulldashbaord);
+        }
+    }, [fulldashbaord, effectiveFulldashbaord, setFulldashbaord]);
 
     const derivedRemainingStates = useMemo(() => {
         const licensureStates = AuthReducer?.licesensResponse?.licensure_states;
@@ -440,8 +458,8 @@ const stateTake = (toklen, anoth) => {
             const licensureLoaded = Array.isArray(AuthReducer?.licesensResponse?.licensure_states);
             const chooseStateLoaded = Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures);
 
-            // Never advertise Add License until availability is confirmed.
-            if (!licensureLoaded && !chooseStateLoaded) return false;
+            // If neither has loaded yet, default to true for physician flow so button is visible
+            if (!licensureLoaded && !chooseStateLoaded) return true;
 
             const existingStateIds = new Set(
                 effectiveFulldashbaord.map((dash) => dash?.state_id).filter(id => id != null)
@@ -623,7 +641,8 @@ const cleanNumber = (value) => {
  * @returns {void}
  */
 const handleAllIndex = (index) => {
-        const getDtaa = fulldashbaord?.[index] || fulldashbaord?.[0];
+        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+        const getDtaa = list?.[index] || list?.[0];
         if (getDtaa) {
             const nextStateId = getDtaa.state_id;
             const hasStateChanged = lastStateSyncRef.current !== nextStateId;
@@ -650,7 +669,7 @@ const handleAllIndex = (index) => {
 
     const matchedIndex =
         resolvedStateId != null
-            ? fulldashbaord?.findIndex(item => item.state_id == resolvedStateId)
+            ? (effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord)?.findIndex(item => item.state_id == resolvedStateId)
             : -1;
 
     const initialIndex = matchedIndex >= 0 ? matchedIndex : 0;
@@ -661,7 +680,8 @@ const handleAllIndex = (index) => {
         }
     }, [matchedIndex]);
     useEffect(() => {
-        if (!fulldashbaord?.length) {
+        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+        if (!list?.length) {
             initialSyncDoneRef.current = false;
             lastStateSyncRef.current = null;
             return;
@@ -669,7 +689,7 @@ const handleAllIndex = (index) => {
         if (initialSyncDoneRef.current) return;
         initialSyncDoneRef.current = true;
         handleAllIndex(initialIndex);
-    }, [fulldashbaord?.length, initialIndex]);
+    }, [effectiveFulldashbaord?.length, fulldashbaord?.length, initialIndex]);
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
     const shouldShowAddLicenseCard =
@@ -777,8 +797,8 @@ const renderAddLicenseCard = () => (
                 <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, marginTop: normalize(10), fontWeight: "bold" }}>{greetingText}</Text>
                 </View>
-                {fulldashbaord?.length > 0 ?
-                    <View key={`dashboard-${fulldashbaord.length}`}>
+                {(effectiveFulldashbaord?.length > 0 || fulldashbaord?.length > 0) ?
+                    <View key={`dashboard-${effectiveFulldashbaord?.length || fulldashbaord?.length}`}>
                         <View style={{ paddingBottom: normalize(10), width: normalize(320), alignSelf: "center", backgroundColor: Colorpath.ButtonColr }}>
                             {canAddLicenses ? (
                                 <View style={{ minHeight: normalize(32), justifyContent: 'center' }}>

@@ -103,6 +103,7 @@ import FullscreenMapScreen from '../Screen/DetailsPageWebcast/MapFull';
 import VoiceSearchBar from '../Screen/GlobalSupport/Voice';
 import NativeVoice from '../Screen/GlobalSupport/NativeVoice';
 import PrimePayment from '../Components/PrimePayment';
+import PrimeCheckout from '../Screen/DetailsPageWebcast/PrimeCheckout';
 import Speaker from '../Screen/GlobalSupport/Speaker';
 import Internet from '../Screen/GlobalSupport/Internet';
 import SpeakerProfile from '../Screen/GlobalSupport/SpeakerProfile';
@@ -413,6 +414,7 @@ const StackNav = props => {
     VoiceSearchBar: VoiceSearchBar,
     NativeVoice: NativeVoice,
     PrimePayment: PrimePayment,
+    PrimeCheckout: PrimeCheckout,
     Speaker: Speaker,
     Internet: Internet,
     SpeakerProfile: SpeakerProfile,

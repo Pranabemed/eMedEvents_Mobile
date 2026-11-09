@@ -51,7 +51,7 @@ const PrimeCard = ({
       return;
     }
     setPrimeadd(false);
-    navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimePayment" }] }))
+    navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimeCheckout" }] }))
   };
   /**
 * Handles secondary action.
@@ -63,7 +63,7 @@ const PrimeCard = ({
       return;
     }
     setPrimeadd(false);
-    navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimePayment" }] }))
+    navigate.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "PrimeCheckout" }] }))
   };
   return (
     <Modal

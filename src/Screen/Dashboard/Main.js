@@ -20,7 +20,7 @@ import PrimeCard from '../../Components/PrimeCard';
 import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer';
 import { mainprofileRequest, dashPerRequest, dashboardRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
 import { stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
-import { licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
+import { chooseStatecardRequest, licesensRequest, verifyRequest, primeTrailRequest } from '../../Redux/Reducers/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import Snackbar from 'react-native-snackbar';
@@ -791,6 +791,7 @@ const Main = (props) => {
         dispatch(dashboardRequest({}));
         dispatch(stateMandatoryRequest({}));
         dispatch(stateLicenseListRequest({}));
+        dispatch(chooseStatecardRequest({}));
       })
       .catch((err) => showErrorAlert("Please connect to internet", err));
   }, [detectmain, isFocus]);
@@ -860,8 +861,25 @@ const Main = (props) => {
   const shouldRenderDashboardContent = !shouldHoldSkeleton;
   const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
   const normalizedFulldashbaord = useMemo(() => {
-    return filterValidLicensures(fulldashbaord, profileLicensures);
-  }, [fulldashbaord, profileLicensures]);
+    const rawLicensures =
+      (Array.isArray(fulldashbaord) && fulldashbaord.length > 0)
+        ? fulldashbaord
+        : DashboardReducer?.dashMbResponse?.data?.licensures?.length
+          ? DashboardReducer.dashMbResponse.data.licensures
+          : DashboardReducer?.dashboardResponse?.data?.licensures?.length
+            ? DashboardReducer.dashboardResponse.data.licensures
+            : DashboardReducer?.dashPerResponse?.data?.licensures?.length
+              ? DashboardReducer.dashPerResponse.data.licensures
+              : [];
+    return filterValidLicensures(rawLicensures, profileLicensures);
+  }, [fulldashbaord, DashboardReducer?.dashMbResponse, DashboardReducer?.dashboardResponse, DashboardReducer?.dashPerResponse, profileLicensures]);
+
+  useEffect(() => {
+    if (Array.isArray(fulldashbaord) && fulldashbaord.length > 0) return;
+    if (normalizedFulldashbaord.length > 0) {
+      setFulldashbaord(normalizedFulldashbaord);
+    }
+  }, [fulldashbaord, normalizedFulldashbaord, setFulldashbaord]);
   const hasNoLicensuresMain = normalizedFulldashbaord.length === 0;
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
 
@@ -1323,7 +1341,7 @@ const Main = (props) => {
     props.navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: 'PrimePayment' }],
+        routes: [{ name: 'PrimeCheckout' }],
       })
     );
   };
@@ -1626,9 +1644,10 @@ const Main = (props) => {
     return () => { verificationEffectActive = false; };
   }, [isFocus, suppressAutomaticPrimePrompt, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
   const isPrimeLocationEligible = true;
-  const shouldShowPrimeStrip = isPrimeMembershipResolved && isPrimeLocationEligible &&
-    (allProfTake || hasAllProfTake) &&
-    !hasActivePrimeMembership;
+  const shouldShowPrimeStrip = isPrimeLocationEligible &&
+    (allProfTake || hasAllProfTake || isPhysicianFlow) &&
+    !hasActivePrimeMembership &&
+    !isPaidOneYearPrime;
   useEffect(() => {
     if (hasActivePrimeMembership && !freeTrail) {
       setPrimeadd(false);
@@ -2062,9 +2081,13 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
-                    {shouldPreferTrialStateLicense
+                    {shouldPreferTrialStateLicense && !isNonUsaUser
                       ? <StateLicense activePhysicianTrial={true} propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : currentProfile === 'SkipProfile'
+                      : isNonUsaUser
+                        ? (isNursingFlow
+                          ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
+                          : <NewProfession profileType={currentProfile === 'SkipProfile' ? 'SkipProfile' : undefined} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
+                      : (currentProfile === 'SkipProfile' && !hasActivePrimeMembership && !isPaidOneYearPrime)
                       ? (isPhysicianFlow
                         ? <StateLicense profileType="SkipProfile" propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                         : isNursingFlow
@@ -2072,7 +2095,7 @@ const Main = (props) => {
                           : <NewProfession profileType="SkipProfile" finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)
                       : shouldRenderNewProfession
                         ? <NewProfession finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                        : props?.route?.name === 'PrimeCard' || isGuestPrimeUser
+                        : ((props?.route?.name === 'PrimeCard' || isGuestPrimeUser) && !hasActivePrimeMembership && !isPaidOneYearPrime)
                           ? (isPhysicianFlow
                             ? ((exploreTrialClicked && currentProfile !== 'SkipProfile')
                               ? <StateLicense propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
