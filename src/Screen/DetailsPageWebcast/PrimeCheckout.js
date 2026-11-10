@@ -19,7 +19,7 @@ import {
     BackHandler,
     TextInput,
 } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +31,17 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment';
+
+import { getPrimePromoPricing } from '../../Utils/Helpers/PrimePromoPricing';
+
+import { stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer';
+import {
+    mainprofileRequest,
+    dashboardRequest,
+    dashPerRequest,
+} from '../../Redux/Reducers/DashboardReducer';
+import { userSubRequest } from '../../Redux/Reducers/TransReducer';
+import PrimeSuccess from '../../Components/PrimeSuccess';
 
 import PageHeader from '../../Components/PageHeader';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -63,6 +74,8 @@ import {
     primepromoRequest,
     primetrialCheckRequest,
     saveUserSubscriptionRequest,
+    couponapplyRequest,
+    PrimeCheckRequest,
 } from '../../Redux/Reducers/WebcastReducer';
 import ProfessionInPerson from './InPersonProfession';
 import CheckoutModalone from './CheckoutModalone';
@@ -83,6 +96,18 @@ const formatNumberWithCommas = (value) => {
 
 const GOOGLE_API_KEY = 'AIzaSyBDnBivN-fdP6JxOcQFIyvhxIJSArru6Nk';
 
+const normalizePrimeNpi = value => {
+    const text = String(value ?? '').trim();
+    return /^\d{10}$/.test(text) && !/^0+$/.test(text) ? text : '';
+};
+
+const normalizeLicenseExpiry = license => {
+    const value = license?.to_date ?? license?.expiry_date ?? license?.license_expiry_date;
+    if (!value || String(value).startsWith('0000-00-00')) return '';
+    const date = moment(value, ['YYYY-MM-DD', 'MM-DD-YYYY', 'DD-MM-YYYY', 'MM/DD/YYYY', moment.ISO_8601], true);
+    return date.isValid() ? date.format('YYYY-MM-DD') : '';
+};
+
 const BASE_PRIME_PRICE = 99;
 const PRIME_PROFESSIONS = ['Physician - DO', 'Physician - DPM', 'Physician - MD'];
 
@@ -93,6 +118,15 @@ const PrimeCheckout = () => {
     const AuthReducer = useSelector(state => state.AuthReducer);
     const DashboardReducer = useSelector(state => state.DashboardReducer);
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const ProfileReducer = useSelector(state => state.ProfileReducer);
+    const [profileVisit, setProfileVisit] = useState(0);
+    const currentLicenseList = ProfileReducer?.stateLicenseListResponse?.licensures;
+    const hasLicenseList = Array.isArray(currentLicenseList);
+    const [primesc, setPrimesc] = useState(false);
+    const [offlineSuccessData, setOfflineSuccessData] = useState(null);
+    const isOfflineFlowRef = useRef(false);
+    const offlineDiscountIdRef = useRef(null);
+    const offlineHandledRef = useRef(false);
 
     // Profile fallback resolution
     const userProfile =
@@ -112,11 +146,12 @@ const PrimeCheckout = () => {
         userProfile?.contact_information ||
         {};
     const contactInfo = userProfile?.user_address || userProfile?.contact_information || userProfile;
-    const userLicensure =
+    const userLicensure = hasLicenseList ? (currentLicenseList[0] || {}) :
         userProfile?.licensures?.[0] ||
         DashboardReducer?.mainprofileResponse?.licensures?.[0] ||
         DashboardReducer?.dashMbResponse?.data?.licensures?.[0] ||
         DashboardReducer?.dashboardResponse?.data?.licensures?.[0] ||
+        DashboardReducer?.dashPerResponse?.data?.licensures?.[0] ||
         {};
 
     // Primary Registrant / Subscriber Form state
@@ -181,19 +216,19 @@ const PrimeCheckout = () => {
         contactInfo?.city_id || userAddress?.city_id || userProfile?.city_id || ''
     );
     const [zipcode, setZipcode] = useState(
-        contactInfo?.zipcode || userAddress?.zipcode || userProfile?.zipcode || ''
+        String(contactInfo?.zipcode ?? userAddress?.zipcode ?? userProfile?.zipcode ?? '')
     );
 
     const pendingAddressLocation = useRef(null);
     const [addressFocused, setAddressFocused] = useState(false);
 
-    const [npiNumber, setNpiNumber] = useState(String(professionalInfo?.npi_number || userProfile?.npi_number || ''));
+    const [npiNumber, setNpiNumber] = useState(normalizePrimeNpi(professionalInfo?.npi_number ?? userProfile?.npi_number));
     const [address2, setAddress2] = useState(contactInfo?.address2 || userAddress?.address2 || '');
     const licenseStateEdited = useRef(false);
     const [licenseStateId, setLicenseStateId] = useState('');
     const [licenseState, setLicenseState] = useState('');
-    const [licenseNumber, setLicenseNumber] = useState(String(userLicensure?.license_number || professionalInfo?.license_number || userProfile?.license_number || ''));
-    const [licenseExpiry, setLicenseExpiry] = useState(userLicensure?.expiry_date || userLicensure?.license_expiry_date || professionalInfo?.license_expiry_date || userProfile?.license_expiry_date || '');
+    const [licenseNumber, setLicenseNumber] = useState(String(userLicensure?.license_number ?? ''));
+    const [licenseExpiry, setLicenseExpiry] = useState(normalizeLicenseExpiry(userLicensure));
     const [licensePicker, setLicensePicker] = useState(false);
     const [licenseSearch, setLicenseSearch] = useState('');
     const [expiryPicker, setExpiryPicker] = useState(false);
@@ -206,11 +241,15 @@ const PrimeCheckout = () => {
         dispatch(checkstateRequest('1'));
     }, [dispatch]);
 
-    const dashboardLicense = DashboardReducer?.dashMbResponse?.data?.licensures?.[0] ||
-        DashboardReducer?.dashboardResponse?.data?.licensures?.[0] ||
-        DashboardReducer?.dashPerResponse?.data?.licensures?.[0] || userLicensure;
-    const savedLicenseStateId = dashboardLicense?.license_state_id || dashboardLicense?.state_id || '';
-    const savedLicenseStateName = dashboardLicense?.state_name || dashboardLicense?.license_state_name || '';
+    const savedLicenseStateId = userLicensure?.license_state_id ?? userLicensure?.state_id ?? '';
+    const savedLicenseStateName = userLicensure?.state_name ?? userLicensure?.license_state_name ?? userLicensure?.state ?? '';
+    const savedLicenseNumber = String(userLicensure?.license_number ?? '');
+    const savedLicenseExpiry = normalizeLicenseExpiry(userLicensure);
+
+    useEffect(() => {
+        setLicenseNumber(savedLicenseNumber);
+        setLicenseExpiry(savedLicenseExpiry);
+    }, [savedLicenseNumber, savedLicenseExpiry, profileVisit]);
 
     useEffect(() => {
         if (licenseStateEdited.current) return;
@@ -221,11 +260,11 @@ const PrimeCheckout = () => {
         if (match) {
             setLicenseStateId(match.id);
             setLicenseState(match.name);
-        } else if (savedLicenseStateName) {
+        } else {
             setLicenseState(savedLicenseStateName);
             setLicenseStateId(savedLicenseStateId);
         }
-    }, [savedLicenseStateId, savedLicenseStateName, AuthReducer?.checkstateResponse?.states]);
+    }, [savedLicenseStateId, savedLicenseStateName, AuthReducer?.checkstateResponse?.states, profileVisit]);
 
     const openLicensePicker = () => {
         clearTimeout(focusTimer.current);
@@ -337,15 +376,6 @@ const PrimeCheckout = () => {
             const rawPhone = contactInfo?.mobile || userProfile?.mobile || contactInfo?.phone || userProfile?.phone;
             setCellno(isUsCallingCode(dialcode) ? formatUsPhone(rawPhone) : rawPhone);
         }
-        if (!professionad && PRIME_PROFESSIONS.includes(professionalInfo?.profession_name || userProfile?.profession)) {
-            setProfessionad(professionalInfo?.profession_name || userProfile?.profession);
-        }
-        if (!speciality && (professionalInfo?.specialty_name || userProfile?.speciality)) {
-            const specVal =
-                professionalInfo?.specialty_name ||
-                (Array.isArray(userProfile?.speciality) ? userProfile.speciality.join(', ') : userProfile?.speciality);
-            setSpeciality(specVal);
-        }
         if (!address && (contactInfo?.address || userProfile?.address)) {
             setAddress(contactInfo?.address || userProfile?.address);
         }
@@ -357,10 +387,123 @@ const PrimeCheckout = () => {
             setCity(contactInfo?.city || userProfile?.city);
             setCity_id(contactInfo?.city_id || userProfile?.city_id || '');
         }
-        if (!zipcode && (contactInfo?.zipcode || userProfile?.zipcode)) {
-            setZipcode(contactInfo?.zipcode || userProfile?.zipcode);
-        }
     }, [userProfile]);
+
+    // Compare saved values, so unchanged responses do not replace local edits.
+    const savedAutofillSnapshots = useRef({});
+    useFocusEffect(useCallback(() => {
+        let active = true;
+        // A new visit should hydrate from the latest saved profile, not local cache.
+        savedAutofillSnapshots.current = {};
+        licenseStateEdited.current = false;
+        setProfileVisit(visit => visit + 1);
+        connectionrequest().then(() => {
+            if (active) {
+                dispatch(mainprofileRequest({}));
+                dispatch(stateLicenseListRequest({}));
+            }
+        }).catch(() => {
+            if (active) showErrorAlert('Please connect to Internet to refresh your profile');
+        });
+        return () => { active = false; };
+    }, [dispatch]));
+    useEffect(() => {
+        const freshProfile = DashboardReducer?.mainprofileResponse;
+        const hasProfile = freshProfile && Object.keys(freshProfile).some(key =>
+            ['personal_information', 'professional_information', 'user_address', 'contact_information', 'licensures', 'specialities'].includes(key));
+        const sources = hasProfile ? { profile: freshProfile } : {
+            auth: AuthReducer?.loginResponse?.user || AuthReducer?.dircetloginResponse?.user || AuthReducer?.directloginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.loginsiginResponse?.user,
+            dashboard: DashboardReducer?.dashboardResponse?.data,
+            personalDashboard: DashboardReducer?.dashPerResponse?.data,
+            memberDashboard: DashboardReducer?.dashMbResponse?.data,
+            profile: DashboardReducer?.mainprofileResponse,
+        };
+        Object.entries(sources).forEach(([key, source]) => {
+            if (!source || !Object.keys(source).length) return;
+            const personal = source.personal_information || source;
+            const professional = source.professional_information || source;
+            const contact = source.user_address || source.contact_information || source;
+            const profession = professional.profession ?? professional.profession_name ?? source.profession;
+            const professionType = professional.profession_type ?? source.profession_type;
+            const savedSpecialities = professional.specialities ?? source.specialities;
+            const specialtyMap = savedSpecialities && typeof savedSpecialities === 'object' && !Array.isArray(savedSpecialities)
+                ? savedSpecialities : null;
+            const savedCountry = contact.country_name ?? contact.country ?? source.country_name ?? source.country;
+            const savedCountryId = contact.country_id ?? source.country_id;
+            const savedState = contact.state_name ?? contact.state ?? source.state_name ?? source.state;
+            const savedStateId = contact.state_id ?? source.state_id;
+            const savedCity = contact.city_name ?? contact.city ?? source.city_name ?? source.city;
+            const savedCityId = contact.city_id ?? source.city_id;
+            const savedPhone = contact.contact_no ?? contact.mobile ?? contact.phone ?? personal.mobile ?? personal.phone ?? source.mobile ?? source.phone;
+            const savedDialCode = contact.dialcode ?? contact.calling_code ?? contact.callingCode ?? source.dialcode ?? source.calling_code;
+            const phoneCountry = { country: savedCountry, country_id: savedCountryId };
+            const values = {
+                address: contact.address ?? source.address,
+                firstname: personal.firstname ?? personal.first_name ?? source.firstname ?? source.first_name,
+                lastname: personal.lastname ?? personal.last_name ?? source.lastname ?? source.last_name,
+                country: savedCountry !== undefined || savedCountryId !== undefined ? { name: savedCountry, id: savedCountryId } : undefined,
+                state: savedState !== undefined || savedStateId !== undefined ? { name: savedState, id: savedStateId } : undefined,
+                city: savedCity !== undefined || savedCityId !== undefined ? { name: savedCity, id: savedCityId } : undefined,
+                phone: savedPhone !== undefined || savedDialCode !== undefined ? {
+                    number: savedPhone, dialcode: savedDialCode ?? getCountryDialCode(phoneCountry),
+                    country: phoneCountry,
+                } : undefined,
+                profession: profession && professionType && !profession.endsWith(` - ${professionType}`) ? `${profession} - ${professionType}` : profession,
+                specialty: specialtyMap ? Object.values(specialtyMap).join(', ') : professional.specialty_name ?? source.speciality,
+                specialtyIds: specialtyMap ? Object.keys(specialtyMap) : professional.specialty_ids ?? source.speciality_id ?? source.speciality_ids,
+                npi: professional.npi_number ?? source.npi_number,
+                zipcode: contact.zipcode ?? source.zipcode,
+            };
+            const previous = savedAutofillSnapshots.current[key] || {};
+            Object.entries(values).forEach(([field, value]) => {
+                if (value === undefined || JSON.stringify(value) === JSON.stringify(previous[field])) return;
+                if (field === 'address') setAddress(String(value ?? ''));
+                if (field === 'firstname') setFirstname(String(value ?? ''));
+                if (field === 'lastname') setLastname(String(value ?? ''));
+                if (field === 'country') {
+                    pendingAddressLocation.current = null;
+                    setCountry(String(value.name ?? ''));
+                    setCountry_id(value.id ?? '');
+                    dispatch(stateSuccess({ states: [] }));
+                    if (value.id) dispatch(stateRequest(value.id));
+                }
+                if (field === 'state') {
+                    pendingAddressLocation.current = null;
+                    setState(String(value.name ?? ''));
+                    setState_id(value.id ?? '');
+                    dispatch(citySuccess({ cities: [] }));
+                    if (value.id) dispatch(cityRequest(value.id));
+                }
+                if (field === 'city') {
+                    setCity(String(value.name ?? ''));
+                    setCity_id(value.id ?? '');
+                }
+                if (field === 'phone') {
+                    setDialcode(value.dialcode ? `+${String(value.dialcode).replace(/^\+/, '')}` : '');
+                    if (value.number !== undefined) {
+                        const phone = String(value.number ?? '');
+                        setCellno(isUsCountry(value.country) ? formatUsPhone(phone) : phone);
+                    }
+                }
+                if (field === 'profession') {
+                    const next = PRIME_PROFESSIONS.includes(value) ? value : '';
+                    setProfessionad(next);
+                    if (next) dispatch(specializationRequest(next.split(' - ')[0]));
+                }
+                if (field === 'specialty') setSpeciality(Array.isArray(value) ? value.join(', ') : String(value ?? ''));
+                if (field === 'specialtyIds') {
+                    setSpeciality_id(Array.isArray(value) ? value : []);
+                    setSelectedSpecialities([]);
+                }
+                if (field === 'npi') setNpiNumber(normalizePrimeNpi(value));
+                if (field === 'zipcode') setZipcode(String(value ?? ''));
+            });
+            savedAutofillSnapshots.current[key] = values;
+        });
+    }, [AuthReducer?.loginResponse, AuthReducer?.dircetloginResponse, AuthReducer?.directloginResponse,
+        AuthReducer?.againloginsiginResponse, AuthReducer?.loginsiginResponse, DashboardReducer?.mainprofileResponse,
+        DashboardReducer?.dashboardResponse, DashboardReducer?.dashPerResponse, DashboardReducer?.dashMbResponse,
+        currentLicenseList, profileVisit, dispatch]);
 
     // Initial API requests for dropdowns
     useEffect(() => {
@@ -430,6 +573,149 @@ const PrimeCheckout = () => {
         }
     }, [AuthReducer?.cityResponse?.cities]);
 
+    // Form Validation Logic
+    const validateForm = () => {
+        const newErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Primary Registrant validations
+        if (!firstname.trim()) newErrors.firstname = 'Please enter First Name';
+        if (!lastname.trim()) newErrors.lastname = 'Please enter Last Name';
+        if (!emailad.trim()) {
+            newErrors.emailad = 'Please enter Email ID';
+        } else if (!emailRegex.test(emailad.trim())) {
+            newErrors.emailad = 'Please enter a valid Email ID';
+        }
+
+        const isUSA = isUsCountry({ country, country_id });
+        const cleanPhone = String(cellno || '').replace(/[^0-9]/g, '');
+        if (!cellno.trim()) {
+            newErrors.cellno = 'Please enter Cell Phone';
+        } else if (isUSA && !isValidUsPhone(cellno)) {
+            newErrors.cellno = 'Please enter a valid 10-digit Cell Phone';
+        } else if (!isUSA && (cleanPhone.length < 7 || cleanPhone.length > 15)) {
+            newErrors.cellno = 'Please enter a valid Cell Phone';
+        }
+
+        if (!PRIME_PROFESSIONS.includes(professionad)) newErrors.profession = 'Please select Physician - DO, DPM or MD';
+        if (!speciality.trim() || !Array.isArray(speciality_id) || !speciality_id.length) newErrors.specialty = 'Please select Specialty';
+        if (!address.trim()) newErrors.address = 'Please enter Your Address';
+        if (!country.trim() || !country_id) newErrors.country = 'Please select Country';
+        if (!state.trim() || !state_id) newErrors.state = 'Please select State';
+        if (!city.trim() || !city_id) newErrors.city = 'Please select City';
+        if (!zipcode.trim()) {
+            newErrors.zipcode = 'Please enter Zipcode';
+        } else if (!/^[A-Za-z0-9][A-Za-z0-9 -]{1,8}[A-Za-z0-9]$/.test(zipcode.trim())) {
+            newErrors.zipcode = 'Please enter a valid 3 to 10-character ZIP code';
+        }
+
+        if (npiNumber.trim() && !/^\d{10}$/.test(npiNumber.trim())) {
+            newErrors.npiNumber = 'Please enter a 10-digit NPI Number';
+        }
+        if (licenseRequired || licenseStateId || licenseNumber.trim() || licenseExpiry) {
+            if (!licenseStateId) newErrors.licenseState = 'Please select Medical License State';
+            if (!licenseNumber.trim()) newErrors.licenseNumber = 'Please enter License Number';
+            const expiry = moment(licenseExpiry, [moment.ISO_8601, 'YYYY-MM-DD'], true);
+            if (!licenseExpiry) newErrors.licenseExpiry = 'Please select License Expiry Date';
+            else if (!expiry.isValid() || expiry.isBefore(moment(), 'day')) {
+                newErrors.licenseExpiry = 'Please select a valid, unexpired license date';
+            }
+        }
+        setErrors(newErrors);
+
+        if (Object.keys(newErrors).length > 0) {
+            const firstErrorMessage = Object.values(newErrors)[0];
+            showErrorAlert(firstErrorMessage);
+            return false;
+        }
+        return true;
+    };
+
+    const buildSaveUserPayload = () => {
+        const formattedPhone = isUsCountry({ country, country_id }) ? formatUsPhone(cellno) : cellno.trim();
+        const resolvedSpecialties = (Array.isArray(speciality_id) ? speciality_id : [])
+            .map(item => (typeof item === 'object' && item !== null ? item.id : item))
+            .filter(Boolean)
+            .map(String);
+
+        return {
+            first_name: firstname.trim(),
+            last_name: lastname.trim(),
+            email: emailad.trim(),
+            profession: professionad,
+            speciality: resolvedSpecialties,
+            npi_number: npiNumber.trim() || null,
+            phone: formattedPhone,
+            license_state_id: String(licenseStateId || ''),
+            license_number: licenseNumber.trim(),
+            license_expiry_date: licenseExpiry ? moment(licenseExpiry).toISOString() : '',
+            address: address.trim(),
+            address2: address2.trim(),
+            country: String(country_id || ''),
+            state: String(state_id || ''),
+            city: String(city_id || ''),
+            zipcode: zipcode.trim(),
+            bill_address: address.trim(),
+            bill_address2: address2.trim(),
+            bill_country: String(country_id || ''),
+            bill_state: String(state_id || ''),
+            bill_city: String(city_id || ''),
+            bill_zipcode: zipcode.trim(),
+            deviceType: Platform.OS === 'web' ? 'web_chrome' : Platform.OS === 'ios' ? 'iOS' : 'Android',
+            deviceToken: deviceToken || '',
+            ...(couponapp ? { promo_code: couponapp.trim() } : {}),
+        };
+    };
+
+    // Apply coupon API utility
+    const applyCoupon = () => {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(effectivePromoEmail.trim())) {
+            setCodesave('Please enter a valid Email ID');
+            return;
+        }
+        if (!couponapp?.trim()) {
+            showErrorAlert('Please enter a valid coupon');
+            return;
+        }
+        setCodesave('');
+        setSavefull(null);
+        setNotadded(false);
+        setPromoAttempted(true);
+        const obj = {
+            email: effectivePromoEmail.trim(),
+            promo_code: couponapp.trim().toUpperCase(),
+        };
+        connectionrequest()
+            .then(() => {
+                couponPending.current = true;
+                dispatch(primepromoRequest(obj));
+            })
+            .catch(err => {
+                showErrorAlert('Please connect to internet', err);
+            });
+    };
+
+    const resetPromoResult = () => {
+        couponPending.current = false;
+        setPromoAttempted(false);
+        setCodesave('');
+        setSavefull(null);
+        setNotadded(false);
+        isOfflineFlowRef.current = false;
+        offlineDiscountIdRef.current = null;
+        offlineHandledRef.current = false;
+    };
+
+    const removeCoupon = () => {
+        setCouponapp('');
+        resetPromoResult();
+    };
+
+    const handlePromoCodeChange = value => {
+        setCouponapp(value.toUpperCase());
+        resetPromoResult();
+    };
+
     // A completed HTTP request alone does not confirm a valid promo code.
     useEffect(() => {
         const status = WebcastReducer?.primepromoStatus;
@@ -445,8 +731,30 @@ const PrimeCheckout = () => {
             result?.status === 'success' || /^(successfully applied|valid promo code|promo code is valid)[.!]?$/i.test(message.trim())
         );
         setCodesave(accepted ? message || 'Successfully applied.' : message || 'Unable to validate promo code.');
-        setSavefull(accepted ? (result?.data || result) : null);
+        setSavefull(accepted ? result : null);
         setNotadded(accepted);
+
+        if (accepted) {
+            const promoDetails = result?.promoDetails || result?.data || result;
+            const is100PercentDiscount =
+                String(promoDetails?.value) === '100' ||
+                promoDetails?.discount_offline === 'full-pay' ||
+                Number(promoDetails?.amount) === 0 ||
+                Number(result?.discount_value) === 100 ||
+                Number(result?.total_value) === 0;
+
+            if (is100PercentDiscount) {
+                const discountId = promoDetails?.id || result?.discount_id || promoDetails?.discount_id || '';
+                offlineDiscountIdRef.current = String(discountId);
+                isOfflineFlowRef.current = true;
+            } else {
+                offlineDiscountIdRef.current = null;
+                isOfflineFlowRef.current = false;
+            }
+        } else {
+            offlineDiscountIdRef.current = null;
+            isOfflineFlowRef.current = false;
+        }
     }, [WebcastReducer?.primepromoStatus, WebcastReducer?.primepromoResponse, WebcastReducer?.primepromoError]);
 
     // Handle UserSubscription/saveUser response: "Success then moved Primepaymet"
@@ -455,16 +763,43 @@ const PrimeCheckout = () => {
             WebcastReducer?.status === 'WebCast/primetrialCheckSuccess' ||
             WebcastReducer?.status === 'WebCast/saveUserSubscriptionSuccess'
         ) {
+            const response = WebcastReducer?.status === 'WebCast/saveUserSubscriptionSuccess'
+                ? WebcastReducer.saveUserSubscriptionResponse : WebcastReducer.primetrialCheckResponse;
+            if (response?.success === false || response?.status === false) {
+                pendingPaymentParamsRef.current = null;
+                isOfflineFlowRef.current = false;
+                showErrorAlert(response?.msg || response?.message || 'Unable to save subscription.');
+                return;
+            }
+
+            if (isOfflineFlowRef.current && offlineDiscountIdRef.current) {
+                const discountId = String(offlineDiscountIdRef.current);
+                offlineHandledRef.current = false;
+                connectionrequest()
+                    .then(() => {
+                        dispatch(couponapplyRequest({ discount_id: discountId }));
+                    })
+                    .catch(err => {
+                        showErrorAlert('Please connect to internet', err);
+                    });
+                return;
+            }
+
             if (pendingPaymentParamsRef.current) {
                 const params = pendingPaymentParamsRef.current;
                 pendingPaymentParamsRef.current = null;
-                navigation.navigate('PrimePayment', params);
+                if (params.totalAmount === 0) {
+                    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] }));
+                } else {
+                    navigation.navigate('PrimePayment', params);
+                }
             }
         } else if (
             WebcastReducer?.status === 'WebCast/primetrialCheckFailure' ||
             WebcastReducer?.status === 'WebCast/saveUserSubscriptionFailure'
         ) {
             pendingPaymentParamsRef.current = null;
+            isOfflineFlowRef.current = false;
             const errMsg =
                 WebcastReducer?.primetrialCheckResponse?.message ||
                 WebcastReducer?.saveUserSubscriptionResponse?.message ||
@@ -473,6 +808,65 @@ const PrimeCheckout = () => {
             showErrorAlert(errMsg);
         }
     }, [WebcastReducer?.status]);
+
+    // Handle offlinePayment (couponapply) response
+    useEffect(() => {
+        const res = WebcastReducer?.couponapplyResponse;
+        const status = WebcastReducer?.couponapplyStatus || WebcastReducer?.status;
+        const isOfflineSuccess =
+            status === 'WebCast/couponapplySuccess' ||
+            WebcastReducer?.couponapplyStatus === 'WebCast/couponapplySuccess' ||
+            WebcastReducer?.status === 'WebCast/couponapplySuccess' ||
+            WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' ||
+            (res?.success === true && (res?.msg === 'You are now enrolled for subscription successfully.' || res?.type === 'payment'));
+
+        if (isOfflineSuccess && res?.success === true && !offlineHandledRef.current) {
+            offlineHandledRef.current = true;
+            isOfflineFlowRef.current = false;
+
+            const startDate = res?.prime_start_date || moment().format('MMM DD, YYYY');
+            const endDate = res?.auto_renew_date || moment().add(1, 'year').format('MMM DD, YYYY');
+            const email = emailad || DashboardReducer?.mainprofileResponse?.personal_information?.email || '';
+
+            setOfflineSuccessData({
+                startDate,
+                endDate,
+                email,
+            });
+            setPrimesc(true);
+
+            (async () => {
+                try {
+                    await AsyncStorage.setItem('activeProfile', 'PrimeCard');
+                    await AsyncStorage.removeItem('ExploreTrialClicked');
+                    await AsyncStorage.setItem('PrimeCardFlowComplete', 'true');
+                    await AsyncStorage.setItem('PrimeMembershipSkipped', 'false');
+                    await AsyncStorage.removeItem('SessionPrimeSkipped');
+                    require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', 'PrimeCard');
+                } catch (e) {
+                    console.log('AsyncStorage update error:', e);
+                }
+            })();
+
+            dispatch(PrimeCheckRequest({}));
+            dispatch(mainprofileRequest({}));
+            dispatch(dashboardRequest({}));
+            dispatch(dashPerRequest({}));
+            dispatch(userSubRequest({ limit: 10, page: 0, fromDate: '', toDate: '', keyword: '' }));
+        } else if (
+            (status === 'WebCast/couponapplyFailure' || WebcastReducer?.couponapplyStatus === 'WebCast/couponapplyFailure') &&
+            !offlineHandledRef.current
+        ) {
+            offlineHandledRef.current = true;
+            isOfflineFlowRef.current = false;
+            const errMsg =
+                WebcastReducer?.couponapplyResponse?.msg ||
+                WebcastReducer?.couponapplyResponse?.message ||
+                WebcastReducer?.couponapplyError?.message ||
+                'Offline subscription failed. Please try again.';
+            showErrorAlert(errMsg);
+        }
+    }, [WebcastReducer?.status, WebcastReducer?.couponapplyStatus, WebcastReducer?.couponapplyResponse, WebcastReducer?.couponapplyError]);
 
     // Ensure paid Prime checkout does not inherit free trial flags
     useEffect(() => {
@@ -522,6 +916,18 @@ const PrimeCheckout = () => {
 
     const searchCountryNameProfession = (text) => {
         setSearchtext(text);
+    };
+
+    const openSpecialtyPicker = () => {
+        if (!professionad) return;
+        clearTimeout(focusTimer.current);
+        focusedInputRef.current = null;
+        Keyboard.dismiss();
+        setSearchState('');
+        setstatepicker(true);
+        connectionrequest().then(() => {
+            dispatch(specializationRequest(professionad.split(' - ')[0]));
+        }).catch(() => showErrorAlert('Please connect to Internet'));
     };
 
     // Specialty selection
@@ -634,125 +1040,39 @@ const PrimeCheckout = () => {
         searchCityNameFunction(text, cityshow, setCityAll, setSearchcity, () => { });
     };
 
-    // Apply coupon API utility
-    const applyCoupon = () => {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(effectivePromoEmail.trim())) {
-            setCodesave('Please enter a valid Email ID');
-            return;
-        }
-        if (!couponapp?.trim()) {
-            showErrorAlert('Please enter a valid coupon');
-            return;
-        }
-        setCodesave('');
-        setSavefull(null);
-        setNotadded(false);
-        setPromoAttempted(true);
-        const obj = {
-            email: effectivePromoEmail.trim(),
-            promo_code: couponapp.trim().toUpperCase(),
-        };
-        connectionrequest()
-            .then(() => {
-                couponPending.current = true;
-                dispatch(primepromoRequest(obj));
-            })
-            .catch(err => {
-                showErrorAlert('Please connect to internet', err);
-            });
-    };
-
-    const resetPromoResult = () => {
-        couponPending.current = false;
-        setPromoAttempted(false);
-        setCodesave('');
-        setSavefull(null);
-        setNotadded(false);
-    };
-
-    const removeCoupon = () => {
-        setCouponapp('');
-        resetPromoResult();
-    };
-
-    const handlePromoCodeChange = value => {
-        setCouponapp(value.toUpperCase());
-        resetPromoResult();
-    };
-
-    // Form Validation Logic
-    const validateForm = () => {
-        const newErrors = {};
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        // Primary Registrant validations
-        if (!firstname.trim()) newErrors.firstname = 'Please enter First Name';
-        if (!lastname.trim()) newErrors.lastname = 'Please enter Last Name';
-        if (!emailad.trim()) {
-            newErrors.emailad = 'Please enter Email ID';
-        } else if (!emailRegex.test(emailad.trim())) {
-            newErrors.emailad = 'Please enter a valid Email ID';
-        }
-
-        const isUSA = isUsCountry({ country, country_id });
-        const cleanPhone = String(cellno || '').replace(/[^0-9]/g, '');
-        if (!cellno.trim()) {
-            newErrors.cellno = 'Please enter Cell Phone';
-        } else if (isUSA && !isValidUsPhone(cellno)) {
-            newErrors.cellno = 'Please enter a valid 10-digit Cell Phone';
-        } else if (!isUSA && (cleanPhone.length < 7 || cleanPhone.length > 15)) {
-            newErrors.cellno = 'Please enter a valid Cell Phone';
-        }
-
-        if (!PRIME_PROFESSIONS.includes(professionad)) newErrors.profession = 'Please select Physician - DO, DPM or MD';
-        if (!speciality.trim() || !Array.isArray(speciality_id) || !speciality_id.length) newErrors.specialty = 'Please select Specialty';
-        if (!address.trim()) newErrors.address = 'Please enter Contact Address';
-        if (!country.trim() || !country_id) newErrors.country = 'Please select Country';
-        if (!state.trim() || !state_id) newErrors.state = 'Please select State';
-        if (!city.trim() || !city_id) newErrors.city = 'Please select City';
-        if (!zipcode.trim()) {
-            newErrors.zipcode = 'Please enter Zipcode';
-        } else if (isUSA && !/^(\d{5,6}|\d{5}-\d{4})$/.test(zipcode.trim())) {
-            newErrors.zipcode = 'Please enter a 5 or 6-digit ZIP code, or ZIP+4';
-        }
-
-        if (npiNumber.trim() && !/^\d{10}$/.test(npiNumber.trim())) {
-            newErrors.npiNumber = 'Please enter a 10-digit NPI Number';
-        }
-        if (licenseRequired || licenseStateId || licenseNumber.trim() || licenseExpiry) {
-            if (!licenseStateId) newErrors.licenseState = 'Please select Medical License State';
-            if (!licenseNumber.trim()) newErrors.licenseNumber = 'Please enter License Number';
-            const expiry = moment(licenseExpiry, [moment.ISO_8601, 'YYYY-MM-DD'], true);
-            if (!licenseExpiry) newErrors.licenseExpiry = 'Please select License Expiry Date';
-            else if (!expiry.isValid() || expiry.isBefore(moment(), 'day')) {
-                newErrors.licenseExpiry = 'Please select a valid, unexpired license date';
-            }
-        }
-        setErrors(newErrors);
-
-        if (Object.keys(newErrors).length > 0) {
-            const firstErrorMessage = Object.values(newErrors)[0];
-            showErrorAlert(firstErrorMessage);
-            return false;
-        }
-        return true;
-    };
-
     // Calculate dynamic pricing
-    const grossPrice = BASE_PRIME_PRICE;
-    const discountAmount = Number(savefull?.discount_value || 0);
-    const finalTotalAmount =
-        savefull?.total_value != null
-            ? Number(savefull.total_value)
-            : Math.max(0, grossPrice - discountAmount);
+    const { grossPrice, discountAmount, finalTotalAmount } = getPrimePromoPricing(
+        BASE_PRIME_PRICE, notadded ? savefull : null
+    );
 
     // Proceed to Payment handler
     const handleProceedToPayment = () => {
+        if (isCouponLoading || isSaveUserLoading || isOfflineLoading) return;
         if (!validateForm()) {
             return;
         }
 
         const formattedPhone = isUsCountry({ country, country_id }) ? formatUsPhone(cellno) : cellno.trim();
+
+        // 100% discount offline flow
+        if (finalTotalAmount === 0 || isOfflineFlowRef.current) {
+            isOfflineFlowRef.current = true;
+            offlineHandledRef.current = false;
+            if (!offlineDiscountIdRef.current) {
+                const promoDetails = savefull?.promoDetails || savefull?.data || savefull;
+                const discountId = promoDetails?.id || savefull?.discount_id || promoDetails?.discount_id || '';
+                offlineDiscountIdRef.current = String(discountId);
+            }
+            const saveUserPayload = buildSaveUserPayload();
+            connectionrequest()
+                .then(() => {
+                    dispatch(primetrialCheckRequest(saveUserPayload));
+                })
+                .catch(err => {
+                    showErrorAlert('Please connect to internet', err);
+                });
+            return;
+        }
 
         const subscriberData = {
             firstname: firstname.trim(),
@@ -793,6 +1113,8 @@ const PrimeCheckout = () => {
 
         const couponData = savefull ? {
             couponcode: couponapp.trim(),
+            promo_code: couponapp.trim(),
+            email: effectivePromoEmail.trim(),
             discount: discountAmount,
             total: finalTotalAmount,
         } : null;
@@ -805,38 +1127,7 @@ const PrimeCheckout = () => {
             totalAmount: finalTotalAmount,
         };
 
-        const resolvedSpecialties = (Array.isArray(speciality_id) ? speciality_id : [])
-            .map(item => (typeof item === 'object' && item !== null ? item.id : item))
-            .filter(Boolean)
-            .map(String);
-
-        // Construct exact UserSubscription/saveUser API payload
-        const saveUserPayload = {
-            first_name: firstname.trim(),
-            last_name: lastname.trim(),
-            email: emailad.trim(),
-            profession: professionad,
-            speciality: resolvedSpecialties,
-            npi_number: npiNumber.trim() || null,
-            phone: formattedPhone,
-            license_state_id: String(licenseStateId || ''),
-            license_number: licenseNumber.trim(),
-            license_expiry_date: licenseExpiry ? moment(licenseExpiry).toISOString() : '',
-            address: address.trim(),
-            address2: address2.trim(),
-            country: String(country_id || ''),
-            state: String(state_id || ''),
-            city: String(city_id || ''),
-            zipcode: zipcode.trim(),
-            bill_address: address.trim(),
-            bill_address2: address2.trim(),
-            bill_country: String(country_id || ''),
-            bill_state: String(state_id || ''),
-            bill_city: String(city_id || ''),
-            bill_zipcode: zipcode.trim(),
-            deviceType: Platform.OS === 'web' ? 'web_chrome' : Platform.OS === 'ios' ? 'iOS' : 'Android',
-            deviceToken: deviceToken || '',
-        };
+        const saveUserPayload = buildSaveUserPayload();
 
         console.log('UserSubscription/saveUser payload:', saveUserPayload);
 
@@ -864,6 +1155,7 @@ const PrimeCheckout = () => {
     const isSaveUserLoading =
         WebcastReducer?.status === 'WebCast/primetrialCheckRequest' ||
         WebcastReducer?.status === 'WebCast/saveUserSubscriptionRequest';
+    const isOfflineLoading = WebcastReducer?.status === 'WebCast/couponapplyRequest';
 
     return (
         <>
@@ -883,7 +1175,7 @@ const PrimeCheckout = () => {
                         />
                     )}
 
-                    <Loader visible={isCouponLoading || isSaveUserLoading} />
+                    <Loader visible={isCouponLoading || isSaveUserLoading || isOfflineLoading} />
 
                     <ScrollView
                         ref={checkoutScrollRef}
@@ -1031,6 +1323,7 @@ const PrimeCheckout = () => {
                             <View style={styles.fieldWrapper}>
                                 <InputField onFocus={handleInputFocus} label="NPI Number" value={npiNumber}
                                     onChangeText={val => { setNpiNumber(val); setErrors(prev => ({ ...prev, npiNumber: undefined })); }}
+                                    onBlur={() => setNpiNumber(normalizePrimeNpi(npiNumber))}
                                     placeholder="" showCountryCode={false} keyboardType="number-pad" maxlength={10} />
                                 {errors.npiNumber && <Text style={styles.errorText}>{errors.npiNumber}</Text>}
                             </View>
@@ -1062,8 +1355,8 @@ const PrimeCheckout = () => {
                                     placeholder=""
                                     placeholderTextColor="#949494"
                                     rightIcon={<DropdownIcon name="chevron-small-down" size={25} color="#949494" />}
-                                    onPress={() => setstatepicker(true)}
-                                    onIconpres={() => setstatepicker(true)}
+                                    onPress={openSpecialtyPicker}
+                                    onIconpres={openSpecialtyPicker}
                                     chipData={0}
                                     index={0}
                                     formData={dummyFormData}
@@ -1346,7 +1639,7 @@ const PrimeCheckout = () => {
                                 width={normalize(300)}
                                 backgroundColor={Colorpath.ButtonColr}
                                 borderRadius={normalize(9)}
-                                text="Proceed to Payment"
+                                text={finalTotalAmount === 0 ? "Complete Subscription" : "Proceed to Payment"}
                                 color={Colorpath.white}
                                 fontSize={18}
                                 fontFamily={Fonts.InterSemiBold}
@@ -1397,7 +1690,7 @@ const PrimeCheckout = () => {
                             setSearchState={setSearchState}
                             searchState={searchState}
                             searchStateName={handleSearchSpeciality}
-                            slist={slist}
+                            slist={slist.filter(item => item.name?.toLowerCase().includes(searchState.trim().toLowerCase()))}
                             handleSpecialitySelect={handleSpecialitySelect}
                             handleSpecialityChange={handleSpecialityChange}
                             selectedSpecialities={selectedSpecialities}
@@ -1453,6 +1746,17 @@ const PrimeCheckout = () => {
                         />
                     )}
                 </KeyboardAvoidingView>
+
+                {primesc && (
+                    <PrimeSuccess
+                        primesc={primesc}
+                        setPrimesc={setPrimesc}
+                        nav={navigation}
+                        startDate={offlineSuccessData?.startDate}
+                        endDate={offlineSuccessData?.endDate}
+                        email={offlineSuccessData?.email || emailad}
+                    />
+                )}
             </SafeAreaView>
         </>
     );

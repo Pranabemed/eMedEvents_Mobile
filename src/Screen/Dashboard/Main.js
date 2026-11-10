@@ -34,7 +34,7 @@ import DashboardMainShimmer from '../../Components/DashboardMainShimmer';
 import Modal from 'react-native-modal';
 import { getPublicIP, getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, writeNonUsaFlowState, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
-import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/Helpers/primeSubscription';
+import { isPrimeSubscriptionActive, isPrimeSubscriptionMissing, filterValidLicensures, hasUsaPrimeProfile } from '../../Utils/Helpers/primeSubscription';
 
 /**
  * Reusable normalizeProfessionHandle component.
@@ -505,14 +505,118 @@ const Main = (props) => {
     directUserAddr?.country_name === 'USA'
   );
 
+  const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
+  const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
+
+  const hasAnyLicenseNumber = Boolean(
+    (DashboardReducer?.mainprofileResponse?.license_number && String(DashboardReducer.mainprofileResponse.license_number).trim() !== '' && String(DashboardReducer.mainprofileResponse.license_number).trim().toLowerCase() !== 'null') ||
+    (finalverifyvaultmain?.license_number && String(finalverifyvaultmain.license_number).trim() !== '' && String(finalverifyvaultmain.license_number).trim().toLowerCase() !== 'null') ||
+    (finalProfessionmain?.license_number && String(finalProfessionmain.license_number).trim() !== '' && String(finalProfessionmain.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.loginResponse?.user?.license_number && String(AuthReducer.loginResponse.user.license_number).trim() !== '' && String(AuthReducer.loginResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.againloginsiginResponse?.user?.license_number && String(AuthReducer.againloginsiginResponse.user.license_number).trim() !== '' && String(AuthReducer.againloginsiginResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.loginsiginResponse?.user?.license_number && String(AuthReducer.loginsiginResponse.user.license_number).trim() !== '' && String(AuthReducer.loginsiginResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.dircetloginResponse?.user?.license_number && String(AuthReducer.dircetloginResponse.user.license_number).trim() !== '' && String(AuthReducer.dircetloginResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.directloginResponse?.user?.license_number && String(AuthReducer.directloginResponse.user.license_number).trim() !== '' && String(AuthReducer.directloginResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    (AuthReducer?.verifymobileResponse?.user?.license_number && String(AuthReducer.verifymobileResponse.user.license_number).trim() !== '' && String(AuthReducer.verifymobileResponse.user.license_number).trim().toLowerCase() !== 'null') ||
+    DashboardReducer?.mainprofileResponse?.licensures?.some(lic => lic?.license_number && String(lic.license_number).trim() !== '' && String(lic.license_number).trim().toLowerCase() !== 'null') ||
+    dashboardLicenses.some(lic => lic?.license_number && String(lic.license_number).trim() !== '' && String(lic.license_number).trim().toLowerCase() !== 'null') ||
+    (Array.isArray(fulldashbaord) && fulldashbaord.some(lic => lic?.license_number && String(lic.license_number).trim() !== '' && String(lic.license_number).trim().toLowerCase() !== 'null')) ||
+    (Array.isArray(profileLicensures) && profileLicensures.some(lic => lic?.license_number && String(lic.license_number).trim() !== '' && String(lic.license_number).trim().toLowerCase() !== 'null')) ||
+    (Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) && AuthReducer.chooseStatecardResponse.state_licensures.some(lic => lic?.license_number && String(lic.license_number).trim() !== '' && String(lic.license_number).trim().toLowerCase() !== 'null'))
+  );
+
+  const hasAnyStateData = Boolean(
+    (Array.isArray(fulldashbaord) && fulldashbaord.length > 0) ||
+    dashboardLicenses.length > 0 ||
+    (Array.isArray(profileLicensures) && profileLicensures.length > 0) ||
+    (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer.mainprofileResponse.licensures.length > 0) ||
+    (Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) && AuthReducer.chooseStatecardResponse.state_licensures.length > 0) ||
+    DashboardReducer?.mainprofileResponse?.state_id ||
+    DashboardReducer?.mainprofileResponse?.state ||
+    DashboardReducer?.mainprofileResponse?.license_state_id ||
+    finalverifyvaultmain?.state ||
+    finalverifyvaultmain?.state_id ||
+    finalverifyvaultmain?.state_code ||
+    finalProfessionmain?.state ||
+    finalProfessionmain?.state_id ||
+    finalProfessionmain?.state_code ||
+    AuthReducer?.loginResponse?.user?.state_id ||
+    AuthReducer?.loginResponse?.user?.state ||
+    AuthReducer?.againloginsiginResponse?.user?.state_id ||
+    AuthReducer?.againloginsiginResponse?.user?.state ||
+    AuthReducer?.dircetloginResponse?.user?.state_id ||
+    AuthReducer?.directloginResponse?.user?.state_id ||
+    AuthReducer?.verifymobileResponse?.user?.state_id
+  );
+
+  const hasAnyLicenseData = Boolean(
+    dashboardLicenses.length > 0 ||
+    (Array.isArray(fulldashbaord) && fulldashbaord.length > 0) ||
+    (Array.isArray(profileLicensures) && profileLicensures.length > 0) ||
+    (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer.mainprofileResponse.licensures.length > 0) ||
+    (Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) && AuthReducer.chooseStatecardResponse.state_licensures.length > 0) ||
+    hasAnyLicenseNumber
+  );
+
+  const hasLicenseNumberAndState = Boolean(
+    (Array.isArray(fulldashbaord) && fulldashbaord.length > 0) ||
+    dashboardLicenses.length > 0 ||
+    (Array.isArray(profileLicensures) && profileLicensures.length > 0) ||
+    (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer.mainprofileResponse.licensures.length > 0) ||
+    (Array.isArray(AuthReducer?.chooseStatecardResponse?.state_licensures) && AuthReducer.chooseStatecardResponse.state_licensures.length > 0) ||
+    (hasAnyLicenseNumber && hasAnyStateData)
+  );
+
   const isNonUsaUser = useMemo(() => {
+    // 1. If user has state licenses or both license number and state, they are practicing under US state licensure
+    if (hasLicenseNumberAndState || hasAnyLicenseData || (Array.isArray(fulldashbaord) && fulldashbaord.length > 0)) {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
+    }
+
+    const primeSources = [
+      DashboardReducer?.mainprofileResponse,
+      AuthReducer?.dircetloginResponse?.user || AuthReducer?.dircetloginResponse,
+      AuthReducer?.directloginResponse?.user || AuthReducer?.directloginResponse,
+      AuthReducer?.loginResponse?.user,
+      AuthReducer?.againloginsiginResponse?.user,
+      AuthReducer?.loginsiginResponse?.user,
+      AuthReducer?.verifymobileResponse?.user,
+      finalProfessionmain,
+      finalverifyvaultmain,
+    ];
+
+    // 2. If user profile has confirmed USA address or USA prime profile, they are a USA user regardless of transient travel/IP
+    if (hasUsaPrimeProfile(...primeSources) || isAddressUsa) {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
+    }
+
     const userObj =
       DashboardReducer?.mainprofileResponse ||
       AuthReducer?.dircetloginResponse?.user ||
       AuthReducer?.dircetloginResponse ||
       AuthReducer?.directloginResponse?.user ||
       AuthReducer?.directloginResponse ||
-      AuthReducer?.loginResponse?.user;
+      AuthReducer?.loginResponse?.user ||
+      AuthReducer?.againloginsiginResponse?.user ||
+      AuthReducer?.loginsiginResponse?.user ||
+      AuthReducer?.verifymobileResponse?.user;
+
+    // 3. Check explicit usa_user flag on profile
+    if (userObj?.usa_user === true || userObj?.usa_user === 1 || userObj?.usa_user === '1') {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
+    }
 
     const userCountryName = String(
       userObj?.user_address?.country_name ||
@@ -534,35 +638,42 @@ const Main = (props) => {
       ''
     ).trim();
 
-    const ipCountry = String(resolvedIpCountryCode || nonUsaFlowState?.ipCountryCode || '').trim().toUpperCase();
-
-    // 1. Check if IP Country is India or Non-USA
-    if (ipCountry === 'IN' || ipCountry === 'INDIA' || (ipCountry !== '' && !isUsaCountryCode(ipCountry))) {
-      return true;
-    }
-
-    // 2. Check if User Profile Country is India or non-USA ID (not 1 and not 233)
-    if (userCountryName === 'INDIA' || userCountryName === 'IN' || userCountryCode === 'IN' || (userCountryId && userCountryId !== '1' && userCountryId !== '233' && userCountryId !== '0')) {
-      return true;
-    }
-
-    // 3. Check explicit non-USA user flags
-    if (userObj?.is_non_usa === true || userObj?.is_non_usa === 1 || userObj?.is_non_usa === '1' || nonUsaFlowState?.isNonUsa === true) {
-      return true;
-    }
-
-    // 4. Check if USA location is positively confirmed
-    const isUsaLocation = isUsaCountryCode(ipCountry) || isUsaCountryCode(userCountryName) || isUsaCountryCode(userCountryCode) || userCountryId === '1' || userCountryId === '233' || userObj?.usa_user === true || userObj?.usa_user === 1 || userObj?.usa_user === '1' || (ipCountry === '' && isAddressUsa && nonUsaFlowState?.isNonUsa !== true);
-
-    if (isUsaLocation) {
+    // 4. Check if USA location is positively confirmed in profile
+    if (isUsaCountryCode(userCountryName) || isUsaCountryCode(userCountryCode) || userCountryId === '1' || userCountryId === '233') {
       if (nonUsaFlowState?.isNonUsa) {
         clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
         setNonUsaFlowState(null);
       }
       return false;
     }
+
+    // 5. Check explicit non-USA user flags
+    if (userObj?.is_non_usa === true || userObj?.is_non_usa === 1 || userObj?.is_non_usa === '1' || nonUsaFlowState?.isNonUsa === true) {
+      return true;
+    }
+
+    // 6. Check if User Profile Country is explicitly India or non-USA ID (not 1 and not 233 and not 0)
+    if (userCountryName === 'INDIA' || userCountryName === 'IN' || userCountryCode === 'IN' || (userCountryId && userCountryId !== '1' && userCountryId !== '233' && userCountryId !== '0')) {
+      return true;
+    }
+
+    const ipCountry = String(resolvedIpCountryCode || nonUsaFlowState?.ipCountryCode || '').trim().toUpperCase();
+
+    // 7. For unprofiled/guest users without confirmed USA data, check IP Country
+    if (ipCountry === 'IN' || ipCountry === 'INDIA' || (ipCountry !== '' && !isUsaCountryCode(ipCountry))) {
+      return true;
+    }
+
+    if (isUsaCountryCode(ipCountry)) {
+      if (nonUsaFlowState?.isNonUsa) {
+        clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
+        setNonUsaFlowState(null);
+      }
+      return false;
+    }
+
     return true;
-  }, [resolvedIpCountryCode, nonUsaFlowState, isAddressUsa, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
+  }, [hasLicenseNumberAndState, hasAnyLicenseData, fulldashbaord, resolvedIpCountryCode, nonUsaFlowState, isAddressUsa, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse, AuthReducer?.directloginResponse, AuthReducer?.loginResponse, AuthReducer?.againloginsiginResponse, AuthReducer?.loginsiginResponse, AuthReducer?.verifymobileResponse, finalProfessionmain, finalverifyvaultmain]);
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
     const sub = emitter.addListener('DRAWER_MODAL_VISIBILITY', (visible) => {
@@ -712,13 +823,6 @@ const Main = (props) => {
   useEffect(() => {
     if (!shouldHoldSkeleton) setHasRenderedDashboard(true);
   }, [shouldHoldSkeleton]);
-  const dashboardLicenses = DashboardReducer?.dashMbResponse?.data?.licensures || DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashPerResponse?.data?.licensures || [];
-  const hasAnyLicenseData = dashboardLicenses.length > 0 || Boolean(
-    DashboardReducer?.mainprofileResponse?.licensures?.length ||
-    DashboardReducer?.mainprofileResponse?.license_number ||
-    finalverifyvaultmain?.license_number ||
-    finalProfessionmain?.license_number
-  );
   const shouldShowMainAddLicenseCard =
     nonUsaPermanentFlags?.stateLicenseFlowCompleted === true &&
     !hasAnyLicenseData;
@@ -859,7 +963,6 @@ const Main = (props) => {
   }, [isFocus]);
   const [freeze, setFreeze] = useState(false);
   const shouldRenderDashboardContent = !shouldHoldSkeleton;
-  const profileLicensures = ProfileReducer?.stateLicenseListResponse?.licensures;
   const normalizedFulldashbaord = useMemo(() => {
     const rawLicensures =
       (Array.isArray(fulldashbaord) && fulldashbaord.length > 0)
@@ -884,7 +987,7 @@ const Main = (props) => {
   const hasNonUsaStateDataMain = Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
 
   const shouldRenderNewProfession =
-    (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || (hasNoLicensuresMain && (hasNonUsaStateDataMain || isNonUsaUser));
+    (!isPhysicianFlow && !isNursingFlow) || forceNewProfession || ((hasNoLicensuresMain && !hasLicenseNumberAndState && !hasAnyLicenseData) && (hasNonUsaStateDataMain || isNonUsaUser));
   /**
 * Render main add license card utility.
 * @returns {JSX.Element}
@@ -1115,7 +1218,7 @@ const Main = (props) => {
     if (primePromptVisibleRef.current || primeadd || showGuestPrimePrompt) {
       return;
     }
-    if (isFocus && hasDashboardData && user?.usa_user === true && isPhysicianFlow) {
+    if (isFocus && hasDashboardData && (user?.usa_user === true || user?.usa_user === 1 || user?.usa_user === '1' || hasLicenseNumberAndState || hasAnyLicenseData || isAddressUsa) && isPhysicianFlow) {
       const primeTrailSuccess = AuthReducer?.status === 'Auth/primeTrailSuccess' || (AuthReducer?.primeTrailResponse && Object.keys(AuthReducer.primeTrailResponse).length > 0);
       const PrimePaymentSuccess = WebcastReducer?.status === 'WebCast/PrimePaymentSuccess' || WebcastReducer?.PrimePaymentResponse?.msg === 'You are now enrolled for subscription successfully.';
       const primeCheckResponse = WebcastReducer?.PrimeCheckResponse;
@@ -1503,11 +1606,12 @@ const Main = (props) => {
           professionLabel.includes('PHYSICIAN - DO') ||
           professionLabel.includes('PHYSICIAN - DPM');
 
-        const isEligibleCountry = isUsaLocation;
+        const isEligibleCountry = isUsaLocation || hasUsaPrimeProfile(...subscriptionSources, user, professionData) || hasLicenseNumberAndState || hasAnyLicenseData || isAddressUsa;
         const isUsa =
           user?.usa_user === true ||
           user?.usa_user === 1 ||
-          user?.usa_user === '1';
+          user?.usa_user === '1' ||
+          isEligibleCountry;
 
         const loginUser =
           professionData ||
@@ -1554,7 +1658,7 @@ const Main = (props) => {
         const accountAlreadyVerified = Boolean(
           (!isAnyGuestFlow || hasFreshVerifyResponse) &&
           user &&
-          !requiresVerification(user, !isUsaLocation, currentVerifyResponse, verifyData)
+          !requiresVerification(user, !isUsaLocation && !isUsa, currentVerifyResponse, verifyData)
         );
         if (accountAlreadyVerified) {
           await Promise.all([
@@ -1573,7 +1677,7 @@ const Main = (props) => {
 
         const shouldRequireVerification = Boolean(
           user &&
-          requiresVerification(user, !isUsaLocation, currentVerifyResponse, verifyData)
+          requiresVerification(user, !isUsaLocation && !isUsa, currentVerifyResponse, verifyData)
         );
 
         if (suppressGuestPromptsOnce && !isAnyGuestFlow) {
@@ -1587,7 +1691,7 @@ const Main = (props) => {
           return;
         }
 
-        const isNonUsaGuest = !isUsaLocation;
+        const isNonUsaGuest = !isUsaLocation && !isUsa;
         const shouldCheckVerificationNow =
           !isVerificationPending &&
           !hasFreshVerifyResponse &&
@@ -1642,7 +1746,7 @@ const Main = (props) => {
     };
     loadGuestVerifyModal();
     return () => { verificationEffectActive = false; };
-  }, [isFocus, suppressAutomaticPrimePrompt, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse]);
+  }, [isFocus, suppressAutomaticPrimePrompt, hasActivePrimeMembership, allProfTake, dashboardProfessionType, dashboardProfessionInfo?.profession, authProfessionInfo?.profession, authProfessionInfo?.profession_type, resolvedIpCountryCode, AuthReducer?.status, AuthReducer?.verifyResponse, primeCardSessionSkipped, DashboardReducer?.mainprofileResponse, AuthReducer?.dircetloginResponse, hasLicenseNumberAndState, hasAnyLicenseData, isAddressUsa]);
   const isPrimeLocationEligible = true;
   const shouldShowPrimeStrip = isPrimeLocationEligible &&
     (allProfTake || hasAllProfTake || isPhysicianFlow) &&
@@ -1891,7 +1995,11 @@ const Main = (props) => {
     const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
     const isNonUsaUser = !(
       String(resolvedIpCountryCode || '').trim().toUpperCase() === 'US' ||
-      String(resolvedIpCountryCode || '').trim().toUpperCase() === 'USA'
+      String(resolvedIpCountryCode || '').trim().toUpperCase() === 'USA' ||
+      hasLicenseNumberAndState ||
+      hasAnyLicenseData ||
+      isAddressUsa ||
+      hasUsaPrimeProfile(DashboardReducer?.mainprofileResponse, verifyPayload, AuthReducer?.loginResponse?.user)
     );
     const phoneValue =
       verifyPayload?.phone ||
@@ -2081,9 +2189,9 @@ const Main = (props) => {
                 <View>
                   <View style={{ bottom: normalize(10) }}>
                     {/* {shouldShowMainAddLicenseCard ? renderMainAddLicenseCard() : null} */}
-                    {shouldPreferTrialStateLicense && !isNonUsaUser
+                    {shouldPreferTrialStateLicense && (!isNonUsaUser || hasLicenseNumberAndState || hasAnyLicenseData)
                       ? <StateLicense activePhysicianTrial={true} propsData={props?.route?.params} setRenewal={setRenewal} renewal={renewal} setStateid={setStateid} stateid={stateid} setTotalCred={setTotalCred} totalcard={totalcard} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
-                      : isNonUsaUser
+                      : (isNonUsaUser && !hasLicenseNumberAndState && !hasAnyLicenseData && normalizedFulldashbaord.length === 0)
                         ? (isNursingFlow
                           ? <NonPhysicianCat finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />
                           : <NewProfession profileType={currentProfile === 'SkipProfile' ? 'SkipProfile' : undefined} finalProfessionmain={finalProfessionmain} setPrimeadd={setPrimeadd} enables={enables || isSubscriptionExpiredSync || currentProfile === 'SkipProfile' || props?.route?.name === 'PrimeCard'} setStateCount={setStateCount} fetcheddt={normalizedFulldashbaord} stateCount={stateCount} setAddit={setAddit} addit={addit} takestate={takestate} setTakestate={setTakestate} cmecourse={cmecourse} fulldashbaord={normalizedFulldashbaord} setFulldashbaord={setFulldashbaord} />)

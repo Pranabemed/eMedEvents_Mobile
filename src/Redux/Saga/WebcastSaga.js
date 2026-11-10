@@ -4,7 +4,7 @@
 
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
-import { primepromotSuccess, primepromoFailure, FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, primetrialCheckFailure, primetrialCheckRequest, primetrialCheckSuccess, saveUserSubscriptionFailure, saveUserSubscriptionRequest, saveUserSubscriptionSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
+import { couponapplyFailure, couponapplyRequest, couponapplySuccess, primepromotSuccess, primepromoFailure, FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, primetrialCheckFailure, primetrialCheckRequest, primetrialCheckSuccess, saveUserSubscriptionFailure, saveUserSubscriptionRequest, saveUserSubscriptionSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { getPublicIP } from '../../Utils/Helpers/IPServer';
 
@@ -764,6 +764,42 @@ export function* saveUserSubscriptionSaga(action) {
   }
 }
 /**
+ * Executes the offlinePaymentSaga saga.
+ * Calls UserSubscription/offlinePayment endpoint for 100% discount coupon.
+ *
+ * @function offlinePaymentSaga
+ * @param {Object} action - Saga action payload.
+ * @returns {Generator}
+ */
+export function* offlinePaymentSaga(action) {
+  let items = yield select(getItem);
+  let header = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    authorization: items?.token || action?.payload?.token,
+  };
+  try {
+    let response = yield call(postApi, 'UserSubscription/offlinePayment', action.payload, header);
+    console.log('UserSubscription/offlinePayment response: ', response);
+    if (
+      response?.status === 200 ||
+      response?.status === 201 ||
+      response?.data?.status === true ||
+      response?.data?.status === 200 ||
+      response?.data?.status === '200' ||
+      response?.data?.success === true ||
+      response?.data?.msg === 'You are now enrolled for subscription successfully.'
+    ) {
+      yield put(couponapplySuccess(response?.data));
+    } else {
+      yield put(couponapplyFailure(response?.data));
+    }
+  } catch (error) {
+    console.log('offlinePayment error: ', error);
+    yield put(couponapplyFailure(error?.response?.data || error));
+  }
+}
+/**
  * Executes the RegisterIntPrSaga saga.
  *
  * @function RegisterIntPrSaga
@@ -916,6 +952,9 @@ const watchFunction = [
   })(),
   (function* () {
     yield takeLatest('WebCast/refIDRequest', refIDSaga);
+  })(),
+  (function* () {
+    yield takeLatest('WebCast/couponapplyRequest', offlinePaymentSaga);
   })()
 ];
 

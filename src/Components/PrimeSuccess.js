@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) => {
+const PrimeSuccess = ({ primesc, setPrimesc, nav, navigation, endDate, startDate, email, ...rest }) => {
     return (
         <Modal
             isVisible={primesc}
@@ -133,11 +133,16 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, endDate, startDate, email }) =
                             console.log(e);
                         }
                     })();
-                    nav.dispatch(CommonActions.reset({
-                        index: 0, routes: [
-                            { name: "TabNav", params: { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true, detectmain: "newadd" } }
-                        ]
-                    }));
+                    const targetNav = nav || navigation || rest?.navigation;
+                    if (targetNav?.dispatch) {
+                        targetNav.dispatch(CommonActions.reset({
+                            index: 0, routes: [
+                                { name: "TabNav", params: { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true, detectmain: "newadd" } }
+                            ]
+                        }));
+                    } else if (targetNav?.navigate) {
+                        targetNav.navigate("TabNav", { initialRoute: "Home", exploreTrialClicked: false, subscriptionDataExists: true, detectmain: "newadd" });
+                    }
                     setPrimesc(false);
                 }} style={styles.button}>
                     <Text style={styles.buttonText}>{"Go To Dashboard"}</Text>

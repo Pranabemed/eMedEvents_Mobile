@@ -85,6 +85,9 @@ const initialState = {
   saveTicketAddResponse: {},
   checkoutTicketResponse: {},
   refIDResponse: {},
+  couponapplyResponse: {},
+  couponapplyError: null,
+  couponapplyStatus: '',
 };
 
 /**
@@ -868,6 +871,41 @@ PrimeCheckFailure(state, action) {
       state.error = action.error;
     },
     /**
+     * Reducer logic for couponapply request state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    couponapplyRequest(state, action) {
+      state.status = action.type;
+      state.couponapplyStatus = action.type;
+      state.couponapplyError = null;
+    },
+    /**
+     * Reducer logic for couponapply success state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    couponapplySuccess(state, action) {
+      state.couponapplyResponse = action.payload;
+      state.PrimePaymentResponse = action.payload;
+      state.status = action.type;
+      state.couponapplyStatus = action.type;
+      state.couponapplyError = null;
+    },
+    /**
+     * Reducer logic for couponapply failure state.
+     * @param {*} state - Input value.
+     * @param {*} action - Input value.
+     * @returns {void}
+     */
+    couponapplyFailure(state, action) {
+      state.status = action.type;
+      state.couponapplyStatus = action.type;
+      state.couponapplyError = action.payload || action.error;
+    },
+    /**
  * Register int request component.
  * @param {*} state - Input value.
  * @param {*} action - Input value.
@@ -1112,6 +1150,9 @@ export const {
   refIDRequest,
   refIDSuccess,
   refIDFailure,
+  couponapplyRequest,
+  couponapplySuccess,
+  couponapplyFailure,
 } = WebCastSlice.actions;
 /**
  * Webcast reducer default export.

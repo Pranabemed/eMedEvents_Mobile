@@ -46,6 +46,10 @@ let status1 = "";
  * @returns {JSX.Element}
  */
 const PrimePayment = (props) => {
+    const checkoutAmount = props?.route?.params?.totalAmount;
+    const payableAmount = checkoutAmount != null && Number.isFinite(Number(checkoutAmount))
+        ? Math.max(0, Number(checkoutAmount)) : 99;
+    const checkoutPromoCode = props?.route?.params?.couponData?.promo_code;
     const {
         isConnected
     } = useContext(AppContext);
@@ -234,7 +238,8 @@ const PrimePayment = (props) => {
             "card_number": Number(res),
             "card_cvv": cvv,
             "card_expiry": finalex || finalex,
-            "referral_code": ""
+            "referral_code": "",
+            ...(checkoutPromoCode ? { promo_code: checkoutPromoCode } : {})
         };
 
         if (isAlreadyActivePaidPrime && activeEndDate) {
@@ -470,7 +475,7 @@ const PrimePayment = (props) => {
                                 color: '#333',
                                 marginLeft: normalize(1)
                             }}>
-                            {`US$99`}
+                            {`US$${payableAmount.toFixed(2)}`}
                         </Text>
                     </View>
                     <Buttons onPress={() => primepaymentHandle()}
