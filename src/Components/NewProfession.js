@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
+    DeviceEventEmitter,
 } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -108,8 +109,10 @@ const dashBoarData = () => {
  * Rest of profession utility.
  * @returns {void}
  */
-const restOfProfession = () => {
-        const handleProf = resolvedProfessionHandle;
+const restOfProfession = (overrideProf) => {
+        const handleProf = overrideProf
+            ? normalizeProfessionHandle(overrideProf)
+            : resolvedProfessionHandle;
         if (!handleProf) return;
         let obj =
         {
@@ -230,6 +233,16 @@ const stateTake = (toklen, anoth) => {
         lastRequestedProfessionRef.current = resolvedProfessionHandle;
         restOfProfession();
     }, [isFocus, resolvedProfessionHandle])
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', (payload) => {
+            lastRequestedProfessionRef.current = '';
+            if (payload && typeof payload === 'object' && payload.professionChanged) {
+                restOfProfession(payload.profession);
+            }
+        });
+        return () => sub.remove();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
         /**
  * State dashboard data utility.
  * @param {*} id - Input value.

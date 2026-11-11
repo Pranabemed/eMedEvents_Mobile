@@ -6,6 +6,8 @@ import Screen from '../src/Screen/Specialization/ChooseSpecailization';
 import reducer, {stateCourseRequest, stateCourseSuccess, stateCourseFailure} from '../src/Redux/Reducers/DashboardReducer';
 import {AppContext} from '../src/Screen/GlobalSupport/AppContext';
 
+jest.mock('@react-navigation/native', () => ({ ...jest.requireActual('@react-navigation/native'), useFocusEffect: callback => require('react').useEffect(callback, [callback]) }));
+
 jest.mock('../src/Screen/GlobalSupport/AppContext', () => ({AppContext: require('react').createContext({})}));
 jest.mock('@react-native-community/netinfo', () => ({addEventListener: cb => {cb({isConnected: true}); return () => {};}}));
 jest.mock('../src/Utils/Helpers/NetInfo', () => jest.fn(() => Promise.resolve(true)));

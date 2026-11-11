@@ -64,6 +64,35 @@ export /**
  * @returns {boolean}
  */
 const isNonUsaAccount = (user = {}, fallbackFlowState = null) => {
+  const addr = user?.user_address || user?.contact_information || {};
+  const addrCountryId = String(addr?.country_id || addr?.countryId || '').trim();
+  const addrCountryName = normalizeText(
+    addr?.country_name ||
+    addr?.countryName ||
+    addr?.country
+  );
+  const addrCountryCode = normalizeText(
+    addr?.country_code ||
+    addr?.countryCode
+  );
+  const hasExplicitAddressCountry = Boolean(
+    addrCountryName ||
+    addrCountryCode ||
+    (addrCountryId && addrCountryId !== '0')
+  );
+
+  if (hasExplicitAddressCountry) {
+    if (
+      isUsaCountryCode(addrCountryCode) ||
+      isUsaCountryCode(addrCountryName) ||
+      addrCountryName.includes('united states') ||
+      ['1', '233'].includes(addrCountryId)
+    ) {
+      return false;
+    }
+    return true;
+  }
+
   if (
     user?.usa_user === true ||
     user?.usa_user === 1 ||

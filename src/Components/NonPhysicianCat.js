@@ -9,7 +9,8 @@ import {
     Dimensions,
     TouchableOpacity,
     Text,
-    StyleSheet
+    StyleSheet,
+    DeviceEventEmitter
 } from 'react-native';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
@@ -169,6 +170,17 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
             dashboardFetchInFlightRef.current = false;
         }
     }, [DashboardReducer.status]);
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', (payload) => {
+            lastDashboardSyncRef.current = 0;
+            lastStateSyncRef.current = null;
+            if (payload && typeof payload === 'object' && payload.professionChanged) {
+                restOfProfession(payload.profession);
+            }
+        });
+        return () => sub.remove();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     /**
 * Dash boar data utility.
 * @returns {void}
@@ -190,7 +202,7 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
 * Rest of profession utility.
 * @returns {void}
 */
-    const restOfProfession = () => {
+    const restOfProfession = (overrideProf) => {
         /**
 * Returns first truthy profession.
 * @param {Array} sources - Input values.
@@ -201,6 +213,8 @@ export default function NonPhysicianCat({ finalProfessionmain, setPrimeadd, enab
 
         const handleProf = String(
             getFirstTruthyProfession(
+                overrideProf,
+                ProfileReducer?.latestProfessionInfo?.profession,
                 DashboardReducer?.mainprofileResponse?.professional_information?.profession,
                 AuthReducer?.signupResponse?.user?.profession,
                 AuthReducer?.loginResponse?.user?.profession,

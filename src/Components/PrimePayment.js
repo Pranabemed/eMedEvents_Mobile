@@ -49,6 +49,8 @@ const PrimePayment = (props) => {
     const checkoutAmount = props?.route?.params?.totalAmount;
     const payableAmount = checkoutAmount != null && Number.isFinite(Number(checkoutAmount))
         ? Math.max(0, Number(checkoutAmount)) : 99;
+    const commissionAmount = Number((payableAmount * 0.035).toFixed(2));
+    const finalPayableAmount = Number((payableAmount + commissionAmount).toFixed(2));
     const checkoutPromoCode = props?.route?.params?.couponData?.promo_code;
     const {
         isConnected
@@ -129,6 +131,14 @@ const PrimePayment = (props) => {
 * @returns {void}
 */
     const paymentPress = () => {
+        if (navigate?.canGoBack?.()) {
+            navigate.goBack();
+            return;
+        }
+        if (props?.navigation?.canGoBack?.()) {
+            props.navigation.goBack();
+            return;
+        }
         (async () => {
             try {
                 await AsyncStorage.setItem('activeProfile', 'PrimeCard');
@@ -252,7 +262,6 @@ const PrimePayment = (props) => {
         }
 
         console.log('obj', obj);
-
         const executePayment = () => {
             connectionrequest()
                 .then(() => {
@@ -454,38 +463,100 @@ const PrimePayment = (props) => {
                     </View>
                 </View>
                 <View style={{
-                    flexDirection: "row",
-                    justifyContent: "space-around",
-                    alignContent: "space-around",
-                    gap: normalize(20)
+                    marginHorizontal: normalize(17),
+                    marginTop: normalize(8),
+                    marginBottom: normalize(14),
+                    paddingHorizontal: normalize(14),
+                    paddingVertical: normalize(12),
+                    borderRadius: normalize(10),
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    // backgroundColor: Colorpath.white,
+                    // shadowColor: '#000',
+                    // shadowOffset: { width: 0, height: 1 },
+                    // shadowOpacity: 0.05,
+                    // shadowRadius: 4,
+                    // elevation: 2,
                 }}>
-                    <View style={{ flexDirection: "column" }}>
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: '#333',
-                            }}>
-                            {`Total Price`}
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingVertical: normalize(4),
+                    }}>
+                        <Text style={{
+                            fontFamily: Fonts.InterMedium,
+                            fontSize: 13.5,
+                            color: '#555555',
+                        }}>
+                            {'Price'}
                         </Text>
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterBold,
-                                fontSize: 18,
-                                color: '#333',
-                                marginLeft: normalize(1)
-                            }}>
+                        <Text style={{
+                            fontFamily: Fonts.InterSemiBold,
+                            fontSize: 13.5,
+                            color: '#222222',
+                        }}>
                             {`US$${payableAmount.toFixed(2)}`}
                         </Text>
                     </View>
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingVertical: normalize(4),
+                    }}>
+                        <Text
+                            numberOfLines={1}
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 13.5,
+                                color: '#555555',
+                            }}>
+                            {'Transaction Fee : 3.5%'}
+                        </Text>
+                        <Text style={{
+                            fontFamily: Fonts.InterSemiBold,
+                            fontSize: 13.5,
+                            color: '#222222',
+                        }}>
+                            {`US$${commissionAmount.toFixed(2)}`}
+                        </Text>
+                    </View>
+                    <View style={{ marginVertical: normalize(7), height: 1, width: '100%', backgroundColor: '#EAEAEA' }} />
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingVertical: normalize(2),
+                    }}>
+                        <Text style={{
+                            fontFamily: Fonts.InterBold,
+                            fontSize: 14.5,
+                            color: '#000000',
+                        }}>
+                            {'Total Amount'}
+                        </Text>
+                        <Text style={{
+                            fontFamily: Fonts.InterBold,
+                            fontSize: 15.5,
+                            color: Colorpath.ButtonColr,
+                        }}>
+                            {`US$${finalPayableAmount.toFixed(2)}`}
+                        </Text>
+                    </View>
+                </View>
+                <View style={{
+                    paddingHorizontal: normalize(17),
+                    alignItems: 'center',
+                }}>
                     <Buttons onPress={() => primepaymentHandle()}
                         height={normalize(45)}
-                        width={normalize(175)}
+                        width={normalize(286)}
                         backgroundColor={(checked || socheck) ? "#DADADA" : Colorpath.ButtonColr}
                         borderRadius={normalize(9)}
                         text="Submit"
                         color={Colorpath.white}
-                        fontSize={18}
+                        fontSize={16}
                         fontFamily={Fonts.InterSemiBold}
                         disabled={checked || socheck}
                     />

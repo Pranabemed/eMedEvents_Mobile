@@ -57,7 +57,17 @@ const ProfileMain = (props) => {
     const profileAtRequestStartRef = useRef(null);
     const currentMainProfileRef = useRef(DashboardReducer?.mainprofileResponse);
     const profileRequestWasLoadingRef = useRef(false);
+    const lastProfileUpdatedAtRef = useRef(0);
     currentMainProfileRef.current = DashboardReducer?.mainprofileResponse;
+    useEffect(() => {
+        const emitter = require('react-native').DeviceEventEmitter;
+        const sub = emitter.addListener('ACTIVE_PROFILE_CHANGED', (payload) => {
+            if (payload && typeof payload === 'object' && payload.source === 'PROFILE_UPDATED') {
+                lastProfileUpdatedAtRef.current = Date.now();
+            }
+        });
+        return () => sub.remove();
+    }, []);
     const skipRefreshForCurrentFocusRef = useRef(false);
     if (!isFoucs) {
         skipRefreshForCurrentFocusRef.current = false;
@@ -169,7 +179,10 @@ const ProfileMain = (props) => {
         return buildProfessionLabel(profession, professionType);
     };
     useEffect(() => {
-        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current || (Date.now() - lastProfileUpdatedAtRef.current) < 3000) {
+            setIsProfileDataLoading(false);
+            return undefined;
+        }
         let active = true;
         profileAtRequestStartRef.current = currentMainProfileRef.current;
         setIsProfileDataLoading(true);
@@ -518,7 +531,10 @@ const ProfileMain = (props) => {
 
     }, [DashboardReducer?.dashPerResponse, ProfileReducer?.stateLicenseListResponse])
     useEffect(() => {
-        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current || (Date.now() - lastProfileUpdatedAtRef.current) < 3000) {
+            setIsProfileDataLoading(false);
+            return undefined;
+        }
         let active = true;
         /**
 * Token handle vault utility.
@@ -548,7 +564,10 @@ const ProfileMain = (props) => {
         };
     }, [isFoucs]);
     useEffect(() => {
-        if (!isFoucs || skipRefreshForCurrentFocusRef.current) return undefined;
+        if (!isFoucs || skipRefreshForCurrentFocusRef.current || (Date.now() - lastProfileUpdatedAtRef.current) < 3000) {
+            setIsProfileDataLoading(false);
+            return undefined;
+        }
         let active = true;
         connectionrequest()
             .then(() => {

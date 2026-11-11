@@ -546,17 +546,21 @@ export default function DrawerModal(props) {
     currentProfileAddress?.country ||
     currentProfileAddress?.country_id
   );
+  const isExplicitNonUsaProfile = (hasMainAddr && !isMainAddrUsa) || (!hasMainAddr && hasFallbackAddr && !isFallbackAddrUsa);
+
   const isUsaPhysicianMDDODPM = isPrimePhysician &&
+    !isExplicitNonUsaProfile &&
     (hasUsaPrimeProfile(...primeProfileSources) || (!hasCurrentProfileCountry && isUsaIpAddress));
 
-  const isNonUsaUser = isProfileReady && currentProfile !== 'SkipProfile' && !isPhysicianUser;
+  const isNonUsaUser = isProfileReady && currentProfile !== 'SkipProfile' && (!isPhysicianUser || isExplicitNonUsaProfile);
 
   useEffect(() => {
-    if (isUsaIpAddress && nonUsaFlowState?.isNonUsa) {
+    const canClearByIp = (hasMainAddr && isMainAddrUsa) || (!hasMainAddr && hasFallbackAddr && isFallbackAddrUsa) || (!hasMainAddr && !hasFallbackAddr && isUsaIpAddress);
+    if (canClearByIp && nonUsaFlowState?.isNonUsa && typeof clearNonUsaFlowState === 'function') {
       clearNonUsaFlowState().catch(err => console.log('clearNonUsaFlowState error', err));
       setNonUsaFlowState(null);
     }
-  }, [isUsaIpAddress, nonUsaFlowState]);
+  }, [hasMainAddr, hasFallbackAddr, isMainAddrUsa, isFallbackAddrUsa, isUsaIpAddress, nonUsaFlowState]);
   const physicianMenuItems = [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
@@ -574,7 +578,7 @@ export default function DrawerModal(props) {
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
   ];
 
-  const modalKey = currentProfile === 'SkipProfile'
+  const modalKey = currentProfile === 'SkipProfile' || isExplicitNonUsaProfile
     ? otherMenuItems
     : isPhysicianUser && hasFullMenuAccess
       ? physicianMenuItems

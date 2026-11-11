@@ -11,7 +11,8 @@ import {
     Image,
     Text,
     StyleSheet,
-    ActivityIndicator
+    ActivityIndicator,
+    DeviceEventEmitter
 } from 'react-native';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
@@ -38,7 +39,7 @@ import Fonts from '../Themes/Fonts';
 import { filterValidLicensures, isValidStateLicense } from '../Utils/Helpers/primeSubscription';
 import Buttons from './Button';
 import moment from 'moment';
-import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
+import { isNonUsaAccount, isUsaCountryCode, readNonUsaFlowState, readNonUsaPermanentFlags } from '../Utils/Helpers/nonUsaFlow';
 
 /**
  * Reusable StateLicense component.
@@ -212,7 +213,23 @@ const cleanText = (val) => (typeof val == "string" ? val.trim() : "");
     if (nextLastName) stableNameRef.current.last = nextLastName;
     if (nextFirstName) stableNameRef.current.first = nextFirstName;
     const userObj = DashboardReducer?.mainprofileResponse || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalProfessionmain || {};
-    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState);
+    const liveAddr = DashboardReducer?.mainprofileResponse?.user_address;
+    const hasLiveAddrCountry = Boolean(
+        liveAddr?.country_code ||
+        liveAddr?.country_name ||
+        liveAddr?.country ||
+        liveAddr?.country_id
+    );
+    const isLiveAddrUsa = Boolean(
+        liveAddr && (
+            isUsaCountryCode(liveAddr?.country_code) ||
+            isUsaCountryCode(liveAddr?.country_name || liveAddr?.country) ||
+            String(liveAddr?.country_id || '').trim() === '1' ||
+            String(liveAddr?.country_id || '').trim() === '233'
+        )
+    );
+    const hasExplicitNonUsaAddr = hasLiveAddrCountry && !isLiveAddrUsa;
+    const isNonUsaUser = nonUsaFlowState?.isNonUsa === true || hasExplicitNonUsaAddr || isNonUsaAccount(userObj || {}, nonUsaFlowState);
     const isFocus = useIsFocused();
     useEffect(() => {
         let mounted = true;
@@ -303,7 +320,7 @@ const dashBoarData = () => {
  * Rest of profession utility.
  * @returns {void}
  */
-const restOfProfession = () => {
+const restOfProfession = (overrideProf) => {
                 /**
  * Returns first truthy profession.
  * @param {Array} sources - Input values.
@@ -314,6 +331,8 @@ const getFirstTruthyProfession = (...sources) =>
 
         const handleProf = String(
             getFirstTruthyProfession(
+                overrideProf,
+                ProfileReducer?.latestProfessionInfo?.profession,
                 DashboardReducer?.mainprofileResponse?.professional_information?.profession,
                 AuthReducer?.signupResponse?.user?.profession,
                 AuthReducer?.loginResponse?.user?.profession,
@@ -568,6 +587,29 @@ const stateTake = (toklen, anoth) => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [profileType, isFocus, resolvedProfessionHandle]);
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', (payload) => {
+            lastDashboardSyncRef.current = 0;
+            lastStateSyncRef.current = null;
+            if (payload && typeof payload === 'object' && typeof payload.isNowUSA === 'boolean') {
+                setNonUsaFlowState(payload.isNowUSA ? null : { userType: 'non_usa', isNonUsa: true });
+            } else {
+                readNonUsaFlowState().then(state => setNonUsaFlowState(state)).catch(() => {});
+            }
+            readNonUsaPermanentFlags().then(flags => setNonUsaPermanentFlags(flags)).catch(() => {});
+            if (payload && typeof payload === 'object' && payload.professionChanged) {
+                restOfProfession(payload.profession);
+                const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+                const activeStateId = addit?.state_id || list?.[currentIndex]?.state_id || list?.[0]?.state_id;
+                if (activeStateId) {
+                    dispatch(stateDashboardRequest({ state_id: activeStateId }));
+                    dispatch(stateReportingRequest({ state_id: activeStateId }));
+                }
+            }
+        });
+        return () => sub.remove();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch, addit?.state_id, currentIndex]);
         /**
  * Custom hook that manages activity counts.
  * @returns {unknown}
@@ -692,13 +734,15 @@ const handleAllIndex = (index) => {
     }, [effectiveFulldashbaord?.length, fulldashbaord?.length, initialIndex]);
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
+    const hasAnyResolvedLicensure = (fulldashbaord?.length > 0) || (effectiveFulldashbaord?.length > 0);
     const shouldShowAddLicenseCard =
-        !fulldashbaord?.length &&
-        (activePhysicianTrial || (
-            (profileType === 'SkipProfile' || nonUsaPermanentFlags?.stateLicenseFlowCompleted === true || allProfTake) &&
-            !isNonUsaUser &&
-            canAddLicenses
-        ));
+        !hasAnyResolvedLicensure &&
+        !isNonUsaUser &&
+        canAddLicenses &&
+        (activePhysicianTrial ||
+            profileType === 'SkipProfile' ||
+            nonUsaPermanentFlags?.stateLicenseFlowCompleted === true ||
+            allProfTake);
         /**
  * Render add license card utility.
  * @returns {JSX.Element}

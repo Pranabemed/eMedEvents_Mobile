@@ -2,8 +2,8 @@
  * Choose specailization screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, ChooseSpecailization, handleBackPress, onBackPress, cleanNumber, renderData.
  */
 
-import { View, Text, TouchableOpacity, FlatList, ScrollView, Platform, BackHandler, Alert } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, FlatList, ScrollView, Platform, BackHandler, StyleSheet } from 'react-native'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
@@ -15,7 +15,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { nanoid } from '@reduxjs/toolkit';
 import { stateCourseRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import Loader from '../../Utils/Helpers/Loader';
 import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
@@ -50,7 +50,7 @@ const ChooseSpecailization = (props) => {
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useLayoutEffect(() => {
+    useFocusEffect(useCallback(() => {
         let active = true;
         const nextRequest = {id: nanoid(), stateId: selectedStateId};
         setRequest(nextRequest);
@@ -66,7 +66,7 @@ const ChooseSpecailization = (props) => {
                 showErrorAlert("Please connect to internet", err);
             });
         return () => { active = false; };
-    }, [dispatch, selectedStateId]);
+    }, [dispatch, selectedStateId]));
     const ownsResponse = request?.stateId === selectedStateId &&
         request?.id === DashboardReducer.stateCourseRequestId;
     const isLoading = !connectionFailed && (!ownsResponse || DashboardReducer.stateCourseLoading);
@@ -119,64 +119,47 @@ const cleanNumber = (value) => {
  * @returns {JSX.Element}
  */
 const renderData = ({ item, index }) => {
-        console.log(item, "itemgetingn---------", cleanNumber(item?.earned_credits), cleanNumber(item?.credits))
+        const totalCourses = (item?.registered_cources?.length || 0) + (item?.suggested_cources?.length || 0);
+        const earned = cleanNumber(item?.earned_credits);
+        const required = cleanNumber(item?.credits);
+        const isCreditsComplete = earned === required && required > 0;
+        const showCourseCount = Boolean(item?.registered_cources || item?.registered_cource || item?.suggested_cources) && totalCourses >= 0;
+
         return (
-            <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: { fullData: item, addCreds: CMEData?.state_data } }) }}>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            // height: normalize(83),
-                            width: normalize(290),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "center",
-                        }}
-                    >
-                        <View style={{ flex: 1, justifyContent: "center" }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 16,
-                                    color: "#000000",
-                                    fontWeight: "bold",
-                                    paddingVertical: 10,  // Adjust the vertical padding as needed
-                                    paddingHorizontal: 0
-                                }}
-                            >
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => { props.navigation.navigate("StateSpecification", { complianceStateId: selectedStateId, fullData: { fullData: item, addCreds: CMEData?.state_data } }) }}
+            >
+                <View style={styles.cardWrapper}>
+                    <View style={styles.topicCard}>
+                        <View style={styles.cardBody}>
+                            <Text numberOfLines={2} ellipsizeMode="tail" style={styles.cardTitle}>
                                 {item?.name}
                             </Text>
 
-                            <View style={{ flexDirection: "row", marginTop: normalize(10), gap: normalize(5) }}>
-                                {(item?.registered_cource || item?.suggested_cources) && <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 14,
-                                        color: "#999",
-                                        // fontWeight: "bold",
-                                        paddingHorizontal: normalize(1),
-                                        paddingVertical: normalize(3)
-                                    }}
-                                >
-                                    {`${item?.registered_cources?.length + item?.suggested_cources?.length} Courses`}
-                                </Text>}
-                                {(item?.earned_credits || item?.credits) && <View style={{ paddingHorizontal: normalize(10), borderRadius: normalize(20), backgroundColor: cleanNumber(item?.earned_credits) == cleanNumber(item?.credits) ? "#D6F9E2" : "#FFF2E0", justifyContent: "center", alignItems: "center" }}>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666" }}>
-                                        {`${item?.earned_credits} / ${item?.credits} Credits Earned`}
+                            <View style={styles.cardMetaRow}>
+                                {showCourseCount && (
+                                    <Text style={styles.coursesCountText}>
+                                        {`${totalCourses} Course${totalCourses !== 1 ? 's' : ''}`}
                                     </Text>
-                                </View>}
-
+                                )}
+                                {(item?.earned_credits || item?.credits) && (
+                                    <View style={[
+                                        styles.creditsBadge,
+                                        { backgroundColor: isCreditsComplete ? "#D6F9E2" : "#FFF2E0" },
+                                    ]}>
+                                        <Text style={styles.creditsBadgeText}>
+                                            {`${item?.earned_credits} / ${item?.credits} Credits Earned`}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
                         </View>
-                        {/* <TouchableOpacity onPress={() => { props.navigation.navigate("StateSpecification", { fullData: {fullData:item,addCreds:CMEData?.state_data} }) }}> */}
                         <ArrowIcons
                             name="keyboard-arrow-right"
-                            size={30}
+                            size={28}
                             color={Colorpath.ButtonColr}
                         />
-                        {/* </TouchableOpacity> */}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -208,16 +191,18 @@ const renderData = ({ item, index }) => {
                 <Loader visible={Boolean(isLoading) && conn !== false} />
                 {conn === false ? <IntOff /> : isLoading ? null : !CMEData ? (
                     <Text style={{padding: normalize(20)}}>Unable to load compliance data. Please go back and try again.</Text>
-                ) : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
-                    <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: "#000000", fontWeight: "bold" }}>
-                            {props?.route?.params?.stateID?.state_name}
-                        </Text>
-                    </View>
+                ) : <ScrollView contentContainerStyle={{ paddingBottom: normalize(30) }}>
+                    {props?.route?.params?.stateID?.state_name ? (
+                        <View style={styles.stateHeaderContainer}>
+                            <Text style={styles.stateHeaderTitle}>
+                                {props?.route?.params?.stateID?.state_name}
+                            </Text>
+                        </View>
+                    ) : null}
                     {CMEData?.state_data?.topics?.length > 0 ? (
                         <>
-                            <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(10) }}>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>
+                            <View style={styles.sectionBanner}>
+                                <Text style={styles.sectionTitle}>
                                     {"State Mandatory Topics"}
                                 </Text>
                             </View>
@@ -226,46 +211,21 @@ const renderData = ({ item, index }) => {
                                     <FlatList
                                         data={CMEData?.state_data?.topics}
                                         renderItem={renderData}
+                                        scrollEnabled={false}
                                         keyExtractor={(item, index) => index.toString()}
                                         ListEmptyComponent={
-                                            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                                                <Text
-                                                    style={{
-                                                        color: Colorpath.grey,
-                                                        fontWeight: 'bold',
-                                                        fontFamily: Fonts.InterMedium,
-                                                        fontSize: normalize(20),
-                                                        paddingTop: normalize(30),
-                                                    }}>
+                                            <View style={styles.emptyWrap}>
+                                                <Text style={styles.emptyText}>
                                                     {"No data found"}
                                                 </Text>
                                             </View>
                                         }
                                     />
                                 ) : (
-                                    <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(5) }}>
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                width: normalize(290),
-                                                borderRadius: normalize(10),
-                                                backgroundColor: "#FFFFFF",
-                                                paddingHorizontal: normalize(10),
-                                                paddingVertical: normalize(10),
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <View style={{ flex: 1, justifyContent: "center" }}>
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterSemiBold,
-                                                        fontSize: 16,
-                                                        color: "#000000",
-                                                        fontWeight: "bold",
-                                                        paddingVertical: 10,
-                                                        paddingHorizontal: 0
-                                                    }}
-                                                >
+                                    <View style={styles.cardWrapper}>
+                                        <View style={styles.topicCard}>
+                                            <View style={styles.cardBody}>
+                                                <Text style={styles.cardTitle}>
                                                     {"Your state board does not have any mandatory credit requirements."}
                                                 </Text>
                                             </View>
@@ -275,66 +235,37 @@ const renderData = ({ item, index }) => {
                             </View>
                         </>
                     ) : null}
-                    <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>
+                    <View style={styles.sectionBanner}>
+                        <Text style={styles.sectionTitle}>
                             {"General Credits"}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={() => { props.navigation.navigate("CourseRelevant", { mainData: CMEData }) }}>
-                        <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(0) }}>
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    // height: normalize(79),
-                                    width: normalize(290),
-                                    borderRadius: normalize(10),
-                                    backgroundColor: "#FFFFFF",
-                                    paddingHorizontal: normalize(10),
-                                    paddingVertical: normalize(10),
-                                    alignItems: "center",
-                                }}
-                            >
-                                <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 16,
-                                            color: "#000000",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => { props.navigation.navigate("CourseRelevant", { complianceStateId: selectedStateId, mainData: CMEData }) }}>
+                        <View style={styles.cardWrapper}>
+                            <View style={styles.topicCard}>
+                                <View style={styles.cardBody}>
+                                    <Text numberOfLines={2} ellipsizeMode="tail" style={styles.cardTitle}>
                                         {"Relevant to your primary area \nof practice or specialty"}
                                     </Text>
-                                    <View style={{ flexDirection: "row", marginTop: normalize(10), gap: normalize(5) }}>
+                                    <View style={styles.cardMetaRow}>
                                         {(() => {
                                             const registered = CMEData?.speciality_cources?.registered_cources || [];
                                             const suggested = CMEData?.speciality_cources?.suggested_cources || [];
                                             const total = registered.length + suggested.length;
 
                                             return total > 0 && (
-                                                <Text
-                                                    style={{
-                                                        fontFamily: Fonts.InterMedium,
-                                                        fontSize: 14,
-                                                        color: "#999",
-                                                        paddingHorizontal: normalize(1),
-                                                        paddingVertical: normalize(3)
-                                                    }}
-                                                >
+                                                <Text style={styles.coursesCountText}>
                                                     {`${total} Course${total !== 1 ? 's' : ''}`}
                                                 </Text>
                                             );
                                         })()}
                                         {(genralErndCrd === 0 && genTotalCrd === 0) ? null : (
                                             (genralErndCrd || genTotalCrd) ? (
-                                                <View style={{
-                                                    paddingHorizontal: normalize(10),
-                                                    borderRadius: normalize(20),
-                                                    backgroundColor: genralErndCrd === genTotalCrd ? "#D6F9E2" : "#FFF2E0",
-                                                    justifyContent: "center",
-                                                    alignItems: "center"
-                                                }}>
-                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666" }}>
+                                                <View style={[
+                                                    styles.creditsBadge,
+                                                    { backgroundColor: genralErndCrd === genTotalCrd ? "#D6F9E2" : "#FFF2E0" },
+                                                ]}>
+                                                    <Text style={styles.creditsBadgeText}>
                                                         {`${genralErndCrd} / ${genTotalCrd} Credits Earned`}
                                                     </Text>
                                                 </View>
@@ -345,7 +276,7 @@ const renderData = ({ item, index }) => {
 
                                 <ArrowIcons
                                     name="keyboard-arrow-right"
-                                    size={30}
+                                    size={28}
                                     color={Colorpath.ButtonColr}
                                 />
                             </View>
@@ -356,6 +287,102 @@ const renderData = ({ item, index }) => {
         </>
     )
 }
+
+const styles = StyleSheet.create({
+    stateHeaderContainer: {
+        width: normalize(290),
+        alignSelf: 'center',
+        paddingTop: normalize(10),
+        paddingBottom: normalize(4),
+    },
+    stateHeaderTitle: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 17,
+        color: '#142B5B',
+        fontWeight: 'bold',
+    },
+    sectionBanner: {
+        width: normalize(290),
+        alignSelf: 'center',
+        marginTop: normalize(8),
+        marginBottom: normalize(4),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        borderRadius: normalize(8),
+        backgroundColor: '#142B5B',
+    },
+    sectionTitle: {
+        fontFamily: Fonts.InterBold,
+        fontWeight: 'bold',
+        fontSize: 15,
+        lineHeight: 21,
+        color: '#FFD08A',
+    },
+    cardWrapper: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: normalize(5),
+    },
+    topicCard: {
+        flexDirection: 'row',
+        width: normalize(290),
+        minHeight: normalize(78),
+        borderRadius: normalize(10),
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(11),
+        alignItems: 'center',
+    },
+    cardBody: {
+        flex: 1,
+        justifyContent: 'center',
+        marginRight: normalize(6),
+    },
+    cardTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15,
+        lineHeight: 20,
+        color: '#000000',
+        fontWeight: 'bold',
+    },
+    cardMetaRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        marginTop: normalize(8),
+        gap: normalize(6),
+    },
+    coursesCountText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13.5,
+        color: '#666666',
+        fontWeight: '600',
+    },
+    creditsBadge: {
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(3),
+        borderRadius: normalize(20),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    creditsBadgeText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12.5,
+        color: '#333333',
+        fontWeight: 'bold',
+    },
+    emptyWrap: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyText: {
+        color: Colorpath.grey,
+        fontWeight: 'bold',
+        fontFamily: Fonts.InterMedium,
+        fontSize: normalize(20),
+        paddingTop: normalize(30),
+    },
+});
 
 /**
  * Choose specailization default export.

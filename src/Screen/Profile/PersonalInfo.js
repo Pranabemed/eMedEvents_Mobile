@@ -26,10 +26,11 @@ import { searchStateNameFunction } from '../DetailsPageWebcast/SearchStatename'
 import ProfileSpeciality from './ProfileSpecialty';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ProfessionComponent from '../Specialization/ProfessionComponent'
-import { professionInfoRequest } from '../../Redux/Reducers/ProfileReducer'
+import { professionInfoRequest, stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer'
 import { chooseStatecardRequest } from '../../Redux/Reducers/AuthReducer'
 import Loader from '../../Utils/Helpers/Loader'
-import { dashboardRequest, dashMbRequest, dashPerRequest, mainprofileRequest, mainprofileSuccess } from '../../Redux/Reducers/DashboardReducer'
+import { dashboardRequest, dashMbRequest, dashPerRequest, mainprofileRequest, mainprofileSuccess, stateDashboardRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer'
+import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer'
 import { AppContext } from '../GlobalSupport/AppContext'
 import InputField from '../../Components/CellInput'
 import DropdownIcon from 'react-native-vector-icons/Entypo';
@@ -378,9 +379,38 @@ const PersonalInfo = (props) => {
                     };
                     dispatch(mainprofileSuccess(updatedMainProfile));
 
+                    const activeStateIdForDash =
+                        DashboardReducer?.dashboardResponse?.data?.licensures?.[0]?.state_id ||
+                        DashboardReducer?.mainprofileResponse?.licensures?.[0]?.state_id ||
+                        DashboardReducer?.mainprofileResponse?.state_id;
+
+                    // Start server refreshes and notify mounted Home/Drawer/Vault screens immediately on save.
+                    dispatch(licesensRequest(fullProf || selectedProfession));
+                    dispatch(mainprofileRequest({}));
+                    dispatch(dashboardRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(dashPerRequest({}));
+                    dispatch(stateMandatoryRequest({}));
+                    dispatch(stateLicenseListRequest({}));
+                    dispatch(chooseStatecardRequest({}));
+                    dispatch(PrimeCheckRequest({}));
+                    if (activeStateIdForDash) {
+                        dispatch(stateDashboardRequest({ state_id: activeStateIdForDash }));
+                    }
+                    require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', {
+                        source: 'PROFILE_UPDATED',
+                        professionChanged: true,
+                        profession: fullProf,
+                        profession_type: profType,
+                        specialities: specialitiesMap,
+                    });
+
                     (async () => {
                         try {
-                            const storedProf = await AsyncStorage.getItem(constants.PROFESSION);
+                            const [storedProf, rawAuth] = await Promise.all([
+                                AsyncStorage.getItem(constants.PROFESSION),
+                                AsyncStorage.getItem(constants.AUTH_USER_DATA),
+                            ]);
                             const parsedProf = storedProf ? JSON.parse(storedProf) : {};
                             const merged = {
                                 ...parsedProf,
@@ -391,7 +421,30 @@ const PersonalInfo = (props) => {
                                 npi_number: take,
                                 dea_registered: isNonUsaUser ? "0" : selectedOption,
                             };
-                            await AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(merged));
+                            const writes = [AsyncStorage.setItem(constants.PROFESSION, JSON.stringify(merged))];
+                            if (rawAuth) {
+                                const parsedAuth = JSON.parse(rawAuth);
+                                const patchedAuth = parsedAuth?.user
+                                    ? {
+                                        ...parsedAuth,
+                                        user: {
+                                            ...parsedAuth.user,
+                                            profession: fullProf,
+                                            profession_type: profType,
+                                            designation: profType,
+                                            specialities: specialitiesMap,
+                                        },
+                                    }
+                                    : {
+                                        ...parsedAuth,
+                                        profession: fullProf,
+                                        profession_type: profType,
+                                        designation: profType,
+                                        specialities: specialitiesMap,
+                                    };
+                                writes.push(AsyncStorage.setItem(constants.AUTH_USER_DATA, JSON.stringify(patchedAuth)));
+                            }
+                            await Promise.all(writes);
                         } catch (e) {
                             console.log('Error updating PROFESSION storage:', e);
                         }

@@ -213,6 +213,28 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         .toLowerCase()
         .trim()
         .replace(/\s+/g, '-');
+    const resolvedActivityCounts = React.useMemo(() => {
+        const passedCompleted = Number(completedCount) || 0;
+        const passedPending = Number(pendingCount) || 0;
+        if (passedCompleted > 0 || passedPending > 0) {
+            return { completed: passedCompleted, pending: passedPending };
+        }
+        const activities = Array.isArray(storeAlldata) && storeAlldata.length > 0
+            ? storeAlldata
+            : getResolvedActivities();
+        let total = 0;
+        let completed = 0;
+        activities.forEach((d) => {
+            if (!d) return;
+            total++;
+            if (Number(d?.completed_percentage) === 100) {
+                completed++;
+            }
+        });
+        return { completed, pending: Math.max(0, total - completed) };
+    }, [completedCount, pendingCount, storeAlldata, getResolvedActivities]);
+    const displayCompletedCount = resolvedActivityCounts.completed;
+    const displayPendingCount = resolvedActivityCounts.pending;
     return (
         <View style={{ paddingHorizontal: normalize(10), paddingVertical: profileType === 'SkipProfile' ? 0 : normalize(10) }}>
             {profileType !== 'SkipProfile' && !hideGreeting && (
@@ -220,7 +242,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
                 </View>
             )}
-            {(completedCount > 0 || pendingCount > 0 || completedCount == 1) ? (
+            {(displayCompletedCount > 0 || displayPendingCount > 0 || displayCompletedCount == 1) ? (
                 <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), paddingHorizontal: normalize(10) }}>
                     <TouchableOpacity
                         onPress={() => {
@@ -309,7 +331,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     alignItems: "center",
                                 }}>
                                     <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(completedCount + pendingCount).padStart(2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", alignSelf: "center", fontWeight: "bold" }}>{String(displayCompletedCount + displayPendingCount).padStart(2, '0')}</Text>
                                         <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000", alignSelf: "center" }}>{"Registered"}</Text>
                                     </View>
                                 </View>
@@ -324,7 +346,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     alignItems: "center",
                                 }}>
                                     <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(completedCount).padStart(completedCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(displayCompletedCount).padStart(displayCompletedCount == 0 ? 1 : 2, '0')}</Text>
                                         <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Completed"}</Text>
                                     </View>
                                 </View>
@@ -339,7 +361,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     alignItems: "center",
                                 }}>
                                     <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginBottom: normalize(3) }}>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(pendingCount).padStart(pendingCount == 0 ? 1 : 2, '0')}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#000", fontWeight: "bold" }}>{String(displayPendingCount).padStart(displayPendingCount == 0 ? 1 : 2, '0')}</Text>
                                         <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 12, color: "#000" }}>{"Pending"}</Text>
                                     </View>
                                 </View>

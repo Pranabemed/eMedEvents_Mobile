@@ -26,7 +26,7 @@ import CMEExDashboard from '../Screen/CMEExpense.js/CMEExDashboard';
 import Menu from '../Screen/Auth/Menu';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../Utils/Helpers/NetInfo';
-import { dashPerRequest, mainprofileRequest, stateDashboardRequest, stateMandatoryRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
+import { dashMbRequest, dashPerRequest, dashboardRequest, mainprofileRequest, stateDashboardRequest, stateMandatoryRequest, stateReportingRequest } from '../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import VoiceSearchBar from '../Screen/GlobalSupport/Voice';
 import NativeVoice from '../Screen/GlobalSupport/NativeVoice';
@@ -197,7 +197,18 @@ function TabScreen() {
     }
   }, [lastActiveTab]);
   useEffect(() => {
-    const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', () => {
+    const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', (payload) => {
+      if (payload && typeof payload === 'object' && typeof payload.isNowUSA === 'boolean') {
+        setNonUsaFlowState(payload.isNowUSA ? null : { userType: 'non_usa', isNonUsa: true });
+      } else {
+        readNonUsaFlowState().then(state => {
+          setNonUsaFlowState(state);
+        }).catch(() => {});
+      }
+      if (payload && typeof payload === 'object' && payload.source === 'PROFILE_UPDATED') {
+        hydratedStateIdRef.current = null;
+        return;
+      }
       AsyncStorage.getItem(constants.TOKEN).then((loginHandleProccess) => {
         if (!loginHandleProccess) return;
         hydratedStateIdRef.current = null;
@@ -206,9 +217,13 @@ function TabScreen() {
           .then(() => {
             dispatch(tokenRequest(objToken));
             dispatch(mainprofileRequest(objToken));
+            dispatch(dashboardRequest({}));
+            dispatch(dashMbRequest({}));
             dispatch(dashPerRequest(objToken));
+            dispatch(stateMandatoryRequest({}));
             dispatch(chooseStatecardRequest(objToken));
             dispatch(verifyRequest(objToken));
+            dispatch(PrimeCheckRequest({}));
           })
           .catch((err) => showErrorAlert("Please connect to internet", err));
       });
@@ -520,7 +535,10 @@ function TabScreen() {
       return false;
     }
   }, [WebcastReducer?.PrimeCheckResponse, AuthReducer, DashboardReducer?.mainprofileResponse, finalProfessiontab]);
-  const userObj = AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab || DashboardReducer?.mainprofileResponse;
+  const liveMainProfile = (DashboardReducer?.mainprofileResponse && Object.keys(DashboardReducer.mainprofileResponse).length > 0)
+    ? DashboardReducer.mainprofileResponse
+    : null;
+  const userObj = liveMainProfile || AuthReducer?.signupResponse?.user || AuthReducer?.loginResponse?.user || AuthReducer?.againloginsiginResponse?.user || AuthReducer?.verifymobileResponse?.user || finalverifyvaulttab || finalProfessiontab;
 
   const countryName = String(
     userObj?.user_address?.country_name ||
@@ -529,17 +547,37 @@ function TabScreen() {
     userObj?.country ||
     ''
   ).trim().toUpperCase();
+  const countryCode = String(
+    userObj?.user_address?.country_code ||
+    userObj?.country_code ||
+    ''
+  ).trim().toUpperCase();
+  const countryId = String(
+    userObj?.user_address?.country_id ||
+    userObj?.country_id ||
+    ''
+  ).trim();
 
-  const isUsaCountry = countryName === 'UNITED STATES' || countryName === 'US' || countryName === 'USA' || isUsaCountryCode(countryName);
+  const isUsaCountry =
+    countryName === 'UNITED STATES' ||
+    countryName === 'US' ||
+    countryName === 'USA' ||
+    isUsaCountryCode(countryName) ||
+    isUsaCountryCode(countryCode) ||
+    ['1', '233'].includes(countryId);
 
-  const isUsaProfile =
-    isUsaCountry ||
-    userObj?.usa_user === true ||
-    userObj?.usa_user === 1 ||
-    userObj?.usa_user === '1' ||
-    userObj?.is_non_usa === false ||
-    userObj?.is_non_usa === 0 ||
-    userObj?.is_non_usa === '0';
+  const hasExplicitCountry = Boolean(countryName || countryCode || (countryId && countryId !== '0'));
+
+  const isUsaProfile = hasExplicitCountry
+    ? isUsaCountry
+    : (
+        userObj?.usa_user === true ||
+        userObj?.usa_user === 1 ||
+        userObj?.usa_user === '1' ||
+        userObj?.is_non_usa === false ||
+        userObj?.is_non_usa === 0 ||
+        userObj?.is_non_usa === '0'
+      );
 
   const dashboardLicenses = DashboardReducer?.dashboardResponse?.data?.licensures || DashboardReducer?.dashMbResponse?.data?.licensures || [];
   const hasLicensures = Array.isArray(dashboardLicenses) && dashboardLicenses.length > 0;
@@ -588,12 +626,19 @@ function TabScreen() {
 
     return () => unsubscribe();
   }, [isConnected]);
-  return ((allProfTake && fulldashbaord?.length !== 0) ? <>
+  const resolvedHomeComponent = nettrue == false ? MainInt : Main;
+  const useVaultDashboard = Boolean(allProfTake && fulldashbaord?.length !== 0);
+  const resolvedContactComponent = useVaultDashboard ? DashoardVault : creditVaultComponent;
+  const resolvedContactInitialParams = useVaultDashboard
+    ? { detectmain: "newadd" }
+    : { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } };
+
+  return (<>
     <Tab.Navigator
       initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
       screenOptions={{
         unmountOnBlur: false,
-        freezeOnBlur: true,
+        freezeOnBlur: false,
         keyboardHidesTabBar: true,
         tabBarShowLabel: false,
         headerShown: false,
@@ -640,16 +685,18 @@ function TabScreen() {
       })}
     >
       {[
-        { name: "Home", component: nettrue == false ? MainInt : Main, icon: Imagepath.Home, label: "Home" },
+        { name: "Home", component: resolvedHomeComponent, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: DashoardVault, icon: Imagepath.DocVault, label: "CVault" },
+        { name: "Contact", component: resolvedContactComponent, icon: Imagepath.DocVault, label: "CVault" },
       ]
-        .map((item, index) => (
+        .map((item) => (
           <Tab.Screen
-            key={index}
+            key={item.name}
             name={item.name}
             component={item.component}
-            initialParams={{ detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
+            initialParams={item.name === "Contact"
+              ? resolvedContactInitialParams
+              : { detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
             options={{
               /**
 * Navigation helper that exposes tab bar icon behavior.
@@ -772,380 +819,7 @@ function TabScreen() {
       interestedNav={closeDrawerModal}
       drawerPress={closeDrawerModal}
     />
-  </> : nettrue == false ? <>
-    <Tab.Navigator
-      initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
-      screenOptions={{
-        unmountOnBlur: false,
-        freezeOnBlur: true,
-        keyboardHidesTabBar: true,
-        tabBarShowLabel: false,
-        headerShown: false,
-        sceneStyle: {
-          backgroundColor: Colorpath.Pagebg,
-        },
-        tabBarStyle: sharedTabBarStyle,
-      }}
-      screenListeners={({ route }) => ({
-        /**
-* Navigation helper that exposes tab press behavior.
-* @param {*} e - Input value.
-* @returns {void}
-*/
-        tabPress: (e) => {
-          if (route.name == "Volts") {
-            e.preventDefault();
-            toggleDrawerModal();
-            return;
-          }
-          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            e.preventDefault();
-            setTabmodal(true);
-            return;
-          }
-          handleTabPress(route.name);
-        },
-        /**
-* Navigation helper that exposes focus behavior.
-* @param {*} e - Input value.
-* @returns {void}
-*/
-        focus: (e) => {
-          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            if (typeof e?.preventDefault === 'function') {
-              e.preventDefault();
-            }
-            setTabmodal(true);
-            navigation.navigate("Home");
-            return;
-          }
-          handleTabPress(route.name);
-        },
-      })}
-    >
-      {[
-        { name: "Home", component: MainInt, icon: Imagepath.Home, label: "Home" },
-        { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault" },
-      ].map((item, index) => (
-        <Tab.Screen
-          key={index}
-          name={item.name}
-          component={item.component}
-          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
-          options={{
-            /**
-* Navigation helper that exposes tab bar icon behavior.
-* @param {Object} props - Input object.
-* @param {*} props.focused - Nested property value.
-* @returns {JSX.Element}
-*/
-            tabBarIcon: ({ focused }) => {
-              if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
-                return (
-                  <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
-                    <Image
-                      source={item.icon}
-                      style={{
-                        height: normalize(23),
-                        width: normalize(25),
-                        tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                        resizeMode: "contain",
-                        top: normalize(7)
-                      }}
-                    />
-                    <Text
-                      style={{
-                        color: focused ? Colorpath.ButtonColr : "#999999",
-                        marginTop: normalize(7),
-                        fontSize: 10,
-                        fontFamily: Fonts.InterSemiBold,
-                        textAlign: "center",
-                        width: normalize(80)
-                      }}
-                    >
-                      {item?.label}
-                    </Text>
-                  </Pressable>
-                );
-              }
-              return (
-                <>
-                  <Image
-                    source={item.icon}
-                    style={{
-                      height: normalize(23),
-                      width: normalize(25),
-                      tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                      resizeMode: "contain",
-                      top: normalize(7)
-                    }}
-                  />
-                  <Text
-                    style={{
-                      color: focused ? Colorpath.ButtonColr : "#999999",
-                      marginTop: normalize(7),
-                      fontSize: 10,
-                      fontFamily: Fonts.InterSemiBold,
-                      textAlign: "center",
-                      width: normalize(80)
-                    }}
-                  >
-                    {item?.label}
-                  </Text>
-                </>
-              );
-            },
-          }}
-        />
-      ))}
-
-      {/* Menu Button */}
-      <Tab.Screen
-        name="Volts"
-        component={Menu}
-        options={{
-          /**
-* Navigation helper that exposes tab bar icon behavior.
-* @param {Object} props - Input object.
-* @param {*} props.focused - Nested property value.
-* @returns {JSX.Element}
-*/
-          tabBarIcon: ({ focused }) => (
-            <>
-              <Image
-                source={Imagepath.Menubar}
-                style={{
-                  height: normalize(22),
-                  width: normalize(19),
-                  resizeMode: "contain",
-                  tintColor: visible ? Colorpath.ButtonColr : "#999999",
-                  top: normalize(7)
-                }}
-              />
-              <Text
-                style={{
-                  color: visible ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(7),
-                  fontSize: 10,
-                  fontFamily: Fonts.InterSemiBold,
-                  textAlign: "center",
-                  width: normalize(80)
-                }}
-              >
-                {"Menu"}
-              </Text>
-            </>
-          ),
-        }}
-      />
-    </Tab.Navigator>
-    {tabmodal && <PrimeCard primeadd={tabmodal} setPrimeadd={setTabmodal} />}
-    {/* Drawer Modal */}
-    <DrawerModal
-      lastActiveTab={lastActiveTab}
-      handel={tabtooltip}
-      isVisible={visible}
-      onBackdropPress={closeDrawerModal}
-      onRequestClose={closeDrawerModal}
-      backButton={closeDrawerModal}
-      rentalNavigate={closeDrawerModal}
-      watchlistNavigate={closeDrawerModal}
-      subscribeNavigate={closeDrawerModal}
-      rewardNavigate={closeDrawerModal}
-      homeNavigate={closeDrawerModal}
-      expensesNav={closeDrawerModal}
-      interestedNav={closeDrawerModal}
-      drawerPress={closeDrawerModal}
-    />
-  </> : <>
-    <Tab.Navigator
-      initialRouteName={(initialRoute === "Contact" && (tabsub || isSubscriptionExpiredSync)) ? "Home" : (initialRoute || lastActiveTab || "Home")}
-      screenOptions={{
-        unmountOnBlur: false,
-        freezeOnBlur: true,
-        keyboardHidesTabBar: true,
-        tabBarShowLabel: false,
-        headerShown: false,
-        sceneStyle: {
-          backgroundColor: Colorpath.Pagebg,
-        },
-        tabBarStyle: sharedTabBarStyle,
-      }}
-      screenListeners={({ route }) => ({
-        /**
-* Navigation helper that exposes tab press behavior.
-* @param {*} e - Input value.
-* @returns {void}
-*/
-        tabPress: (e) => {
-          if (route.name == "Volts") {
-            e.preventDefault();
-            toggleDrawerModal();
-            return;
-          }
-          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            e.preventDefault();
-            setTabmodal(true);
-            return;
-          }
-          handleTabPress(route.name);
-        },
-        /**
-* Navigation helper that exposes focus behavior.
-* @param {*} e - Input value.
-* @returns {void}
-*/
-        focus: (e) => {
-          if (route.name == "Contact" && (tabsub || isSubscriptionExpiredSync)) {
-            if (typeof e?.preventDefault === 'function') {
-              e.preventDefault();
-            }
-            setTabmodal(true);
-            navigation.navigate("Home");
-            return;
-          }
-          handleTabPress(route.name);
-        },
-      })}
-    >
-      {[
-        { name: "Home", component: Main, icon: Imagepath.Home, label: "Home" },
-        { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: creditVaultComponent, icon: Imagepath.DocVault, label: "CVault" },
-      ].map((item, index) => (
-        <Tab.Screen
-          key={index}
-          name={item.name}
-          component={item.component}
-          initialParams={item.name === "Contact" ? { detectmain: "newadd", isNonUsaUser: isNonUsaZeroLicenseUser, boardID: { state_id: '-1' } } : { detectmain: "newadd", suppressAutomaticPrimePrompt: item.name === "Home" && suppressAutomaticPrimePrompt }}
-          options={{
-            /**
-* Navigation helper that exposes tab bar icon behavior.
-* @param {Object} props - Input object.
-* @param {*} props.focused - Nested property value.
-* @returns {JSX.Element}
-*/
-            tabBarIcon: ({ focused }) => {
-              if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
-                return (
-                  <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
-                    <Image
-                      source={item.icon}
-                      style={{
-                        height: normalize(23),
-                        width: normalize(25),
-                        tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                        resizeMode: "contain",
-                        top: normalize(7)
-                      }}
-                    />
-                    <Text
-                      style={{
-                        color: focused ? Colorpath.ButtonColr : "#999999",
-                        marginTop: normalize(7),
-                        fontSize: 10,
-                        fontFamily: Fonts.InterSemiBold,
-                        textAlign: "center",
-                        width: normalize(80)
-                      }}
-                    >
-                      {item?.label}
-                    </Text>
-                  </Pressable>
-                );
-              }
-              return (
-                <>
-                  <Image
-                    source={item.icon}
-                    style={{
-                      height: normalize(23),
-                      width: normalize(25),
-                      tintColor: focused ? Colorpath.ButtonColr : "#999999",
-                      resizeMode: "contain",
-                      top: normalize(7)
-                    }}
-                  />
-                  <Text
-                    style={{
-                      color: focused ? Colorpath.ButtonColr : "#999999",
-                      marginTop: normalize(7),
-                      fontSize: 10,
-                      fontFamily: Fonts.InterSemiBold,
-                      textAlign: "center",
-                      width: normalize(80)
-                    }}
-                  >
-                    {item?.label}
-                  </Text>
-                </>
-              );
-            },
-          }}
-        />
-      ))}
-
-      {/* Menu Button */}
-      <Tab.Screen
-        name="Volts"
-        component={Menu}
-        options={{
-          /**
-* Navigation helper that exposes tab bar icon behavior.
-* @param {Object} props - Input object.
-* @param {*} props.focused - Nested property value.
-* @returns {JSX.Element}
-*/
-          tabBarIcon: ({ focused }) => (
-            <>
-              <Image
-                source={Imagepath.Menubar}
-                style={{
-                  height: normalize(22),
-                  width: normalize(19),
-                  resizeMode: "contain",
-                  tintColor: visible ? Colorpath.ButtonColr : "#999999",
-                  top: normalize(7)
-                }}
-              />
-              <Text
-                style={{
-                  color: visible ? Colorpath.ButtonColr : "#999999",
-                  marginTop: normalize(7),
-                  fontSize: 10,
-                  fontFamily: Fonts.InterSemiBold,
-                  textAlign: "center",
-                  width: normalize(80),
-                }}
-              >
-                {"Menu"}
-              </Text>
-            </>
-          ),
-        }}
-      />
-    </Tab.Navigator>
-    {tabmodal && <PrimeCard primeadd={tabmodal} setPrimeadd={setTabmodal} />}
-    {/* Drawer Modal */}
-    <DrawerModal
-      lastActiveTab={lastActiveTab}
-      handel={tabtooltip}
-      isVisible={visible}
-      onBackdropPress={closeDrawerModal}
-      onRequestClose={closeDrawerModal}
-      backButton={closeDrawerModal}
-      rentalNavigate={closeDrawerModal}
-      watchlistNavigate={closeDrawerModal}
-      subscribeNavigate={closeDrawerModal}
-      rewardNavigate={closeDrawerModal}
-      homeNavigate={closeDrawerModal}
-      expensesNav={closeDrawerModal}
-      interestedNav={closeDrawerModal}
-      drawerPress={closeDrawerModal}
-    />
   </>
-
   );
 }
 

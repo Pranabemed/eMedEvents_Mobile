@@ -1404,8 +1404,8 @@ const PrimeCheckout = () => {
                                 {errors.licenseExpiry && <Text style={styles.errorText}>{errors.licenseExpiry}</Text>}
                             </View>
                         </View>
-                        <View style={[styles.formContainer, styles.contactSection]}>
-                            <Text style={styles.sectionHeader}>Contact Address</Text>
+                        <View style={styles.subscriberCard}>
+                            <Text style={styles.subscriberCardTitle}>Contact Address</Text>
 
                             {/* Contact Address */}
                             <View style={styles.fieldWrapper}>
@@ -1524,7 +1524,7 @@ const PrimeCheckout = () => {
                             <Text
                                 style={{
                                     fontFamily: Fonts.InterMedium,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     color: '#333',
                                     fontWeight: 'bold',
                                 }}
@@ -1549,7 +1549,7 @@ const PrimeCheckout = () => {
                                     <TickMark name="checkmark" color={Colorpath.white} size={15} />
                                 </View>
                                 <View style={{ flex: 1, paddingLeft: normalize(6) }}>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: '#000000' }}>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: '#000000' }}>
                                         {'Same as contact address'}
                                     </Text>
                                 </View>
@@ -1613,9 +1613,9 @@ const PrimeCheckout = () => {
 
                                 {discountAmount > 0 && (
                                     <View style={styles.priceRow}>
-                                        <Text style={styles.priceItemName}>Discount (-)</Text>
+                                        <Text style={styles.priceItemName}>Discount</Text>
                                         <Text style={styles.priceDiscountAmount}>
-                                            {`US$${formatNumberWithCommas(discountAmount)}`}
+                                            {`-US$${formatNumberWithCommas(discountAmount)}`}
                                         </Text>
                                     </View>
                                 )}
@@ -1641,7 +1641,7 @@ const PrimeCheckout = () => {
                                 borderRadius={normalize(9)}
                                 text={finalTotalAmount === 0 ? "Complete Subscription" : "Proceed to Payment"}
                                 color={Colorpath.white}
-                                fontSize={18}
+                                fontSize={15}
                                 fontFamily={Fonts.InterSemiBold}
                             />
                         </View>
@@ -1802,7 +1802,7 @@ const styles = StyleSheet.create({
     },
     primeCardTitle: {
         fontFamily: Fonts.InterBold,
-        fontSize: normalize(17),
+        fontSize: 14,
         color: '#FF773D',
         marginBottom: normalize(4),
     },
@@ -1813,12 +1813,12 @@ const styles = StyleSheet.create({
     },
     detailLabel: {
         fontFamily: Fonts.InterMedium,
-        fontSize: normalize(14),
+        fontSize: 12,
         color: '#000000',
     },
     detailValue: {
         fontFamily: Fonts.InterBold,
-        fontSize: normalize(14),
+        fontSize: 12,
         color: '#FF773D',
     },
     stepperContainer: {
@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
     },
     subscriberCardTitle: {
         fontFamily: Fonts.InterBold,
-        fontSize: 16,
+        fontSize: 14,
         color: '#333333',
         fontWeight: 'bold',
         marginBottom: normalize(12),
@@ -1917,7 +1917,7 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 16,
+        fontSize: 14,
         color: '#000000',
         textAlign: 'left',
         paddingVertical: normalize(10),
@@ -1932,13 +1932,13 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         fontFamily: Fonts.InterRegular,
-        fontSize: 14,
+        fontSize: 12,
         color: '#999999',
     },
     addressTextInput: {
         paddingHorizontal: 0,
         fontFamily: Fonts.InterRegular,
-        fontSize: 15,
+        fontSize: 13,
         color: '#000000',
         height: 'auto',
         minHeight: normalize(30),
@@ -1948,7 +1948,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontFamily: Fonts.InterRegular,
-        fontSize: normalize(11),
+        fontSize: 11,
         color: '#FF0000',
         bottom: normalize(10),
     },
@@ -1969,7 +1969,7 @@ const styles = StyleSheet.create({
         maxWidth: '100%',
     },
     chipText: {
-        fontSize: normalize(12),
+        fontSize: 11,
         color: '#000',
         marginRight: normalize(5),
         flexShrink: 1,
@@ -1989,7 +1989,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: normalize(10),
         marginBottom: normalize(5),
         fontFamily: Fonts.InterRegular,
-        fontSize: 14,
+        fontSize: 13,
         color: '#333333',
     },
     promoApply: {
@@ -2002,7 +2002,7 @@ const styles = StyleSheet.create({
     },
     couponSectionTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(14),
+        fontSize: 13,
         color: '#666666',
         marginBottom: normalize(8),
     },
@@ -2021,7 +2021,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: normalize(12),
         color: '#000000',
         fontFamily: Fonts.InterMedium,
-        fontSize: normalize(15),
+        fontSize: 13,
     },
     couponActionBtn: {
         height: normalize(45),
@@ -2031,7 +2031,7 @@ const styles = StyleSheet.create({
     },
     couponBtnText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(15),
+        fontSize: 13,
         color: '#FFFFFF',
     },
     couponMsgContainer: {
@@ -2039,7 +2039,7 @@ const styles = StyleSheet.create({
     },
     couponMsgText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(13),
+        fontSize: 12,
     },
     pricingContainer: {
         marginTop: normalize(14),
@@ -2055,19 +2055,19 @@ const styles = StyleSheet.create({
     },
     priceItemName: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(14),
+        fontSize: 13,
         color: Colorpath.black,
         fontWeight: 'bold',
     },
     priceItemAmount: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(14),
+        fontSize: 13,
         color: Colorpath.black,
         fontWeight: 'bold',
     },
     priceDiscountAmount: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(14),
+        fontSize: 13,
         color: '#009E38',
         fontWeight: 'bold',
     },
@@ -2079,13 +2079,13 @@ const styles = StyleSheet.create({
     },
     totalAmountLabel: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(18),
+        fontSize: 15,
         color: Colorpath.black,
         fontWeight: 'bold',
     },
     totalAmountValue: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: normalize(18),
+        fontSize: 15,
         color: Colorpath.black,
         fontWeight: 'bold',
     },

@@ -273,7 +273,7 @@ const Statewebcast = props => {
         const navigationState = props.navigation.getState();
         const previousRoute = navigationState.routes[navigationState.index - 1];
         const isRecentlyViewed = previousRoute?.name === 'NonMain' && previousRoute?.params?.myact?.recnt;
-        if ((previousRoute?.name === 'Globalresult' || isRecentlyViewed) && props.navigation.canGoBack()) {
+        if ((previousRoute?.name === 'Globalresult' || previousRoute?.name === 'StateSpecification' || previousRoute?.name === 'CourseRelevant' || previousRoute?.name === 'StateCourse' || previousRoute?.name === 'SpecialityCourseSlide' || previousRoute?.name === 'BoardCourseSlide' || isRecentlyViewed) && props.navigation.canGoBack()) {
             props.navigation.goBack();
             return;
         }

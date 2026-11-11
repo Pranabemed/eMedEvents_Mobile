@@ -524,9 +524,26 @@ const DashoardVault = (props) => {
         const sub = emitter.addListener('ACTIVE_PROFILE_CHANGED', (profile) => {
             setCurrentProfile(profile);
             setIsProfileReady(true);
+            Promise.all([
+                readNonUsaFlowState(),
+                readNonUsaPermanentFlags(),
+                AsyncStorage.getItem(constants.AUTH_USER_DATA),
+            ]).then(([state, flags, auth_user]) => {
+                setNonUsaFlowState(state);
+                setNonUsaPermanentFlags(flags);
+                setStoredAuthUser(auth_user ? JSON.parse(auth_user) : null);
+            }).catch(() => {});
+            connectionrequest()
+                .then(() => {
+                    dispatch(mainprofileRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(stateMandatoryRequest({}));
+                    dispatch(PrimeCheckRequest({}));
+                })
+                .catch(() => {});
         });
         return () => sub.remove();
-    }, []);
+    }, [dispatch]);
 
     const hasActiveSession =
         AuthReducer?.dircetloginResponse?.user ||
@@ -564,17 +581,37 @@ const DashoardVault = (props) => {
         userObj?.country ||
         ''
     ).trim().toUpperCase();
+    const countryCode = String(
+        userObj?.user_address?.country_code ||
+        userObj?.country_code ||
+        ''
+    ).trim().toUpperCase();
+    const countryId = String(
+        userObj?.user_address?.country_id ||
+        userObj?.country_id ||
+        ''
+    ).trim();
 
-    const isUsaCountry = countryName === 'UNITED STATES' || countryName === 'US' || countryName === 'USA' || isUsaCountryCode(countryName);
+    const isUsaCountry =
+        countryName === 'UNITED STATES' ||
+        countryName === 'US' ||
+        countryName === 'USA' ||
+        isUsaCountryCode(countryName) ||
+        isUsaCountryCode(countryCode) ||
+        ['1', '233'].includes(countryId);
 
-    const isUsaProfile =
-        isUsaCountry ||
-        userObj?.usa_user === true ||
-        userObj?.usa_user === 1 ||
-        userObj?.usa_user === '1' ||
-        userObj?.is_non_usa === false ||
-        userObj?.is_non_usa === 0 ||
-        userObj?.is_non_usa === '0';
+    const hasExplicitCountry = Boolean(countryName || countryCode || (countryId && countryId !== '0'));
+
+    const isUsaProfile = hasExplicitCountry
+        ? isUsaCountry
+        : (
+            userObj?.usa_user === true ||
+            userObj?.usa_user === 1 ||
+            userObj?.usa_user === '1' ||
+            userObj?.is_non_usa === false ||
+            userObj?.is_non_usa === 0 ||
+            userObj?.is_non_usa === '0'
+        );
 
     const validHandles = new Set(["Physician - MD", "Physician - DO", "Physician - DPM"]);
     /**

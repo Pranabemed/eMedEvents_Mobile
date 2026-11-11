@@ -21,7 +21,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import ChecktwoCountry from '../DetailsPageWebcast/CheckoutModaltwo'
 import CheckThreeCity from '../DetailsPageWebcast/CheckoutModalFourth'
 import { useDispatch, useSelector } from 'react-redux';
-import { cityRequest, citySuccess, countryRequest, stateRequest, stateSuccess } from '../../Redux/Reducers/AuthReducer'
+import { chooseStatecardRequest, cityRequest, citySuccess, countryRequest, stateRequest, stateSuccess } from '../../Redux/Reducers/AuthReducer'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast'
 import { searchCountryNameFunction } from '../DetailsPageWebcast/SearchCountryname'
@@ -30,14 +30,33 @@ import { searchCityNameFunction } from '../DetailsPageWebcast/SearchCityName'
 import CheckStateShowCont from './StateContact';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment'
-import { contactInfoRequest, personalInfoRequest } from '../../Redux/Reducers/ProfileReducer'
+import { contactInfoRequest, personalInfoRequest, stateLicenseListRequest } from '../../Redux/Reducers/ProfileReducer'
+import {
+    dashMbRequest,
+    dashPerRequest,
+    dashboardRequest,
+    mainprofileRequest,
+    mainprofileSuccess,
+    stateMandatoryRequest,
+} from '../../Redux/Reducers/DashboardReducer'
+import { PrimeCheckRequest } from '../../Redux/Reducers/WebcastReducer'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import constants from '../../Utils/Helpers/constants'
 import Loader from '../../Utils/Helpers/Loader'
 import InputField from '../../Components/CellInput'
 import CustomInputTouchable from '../../Components/IconTextIn'
 import AddressInput from '../../Components/AutoData'
 import AddressField from '../../Components/AutoData';
 import DropdownIcon from 'react-native-vector-icons/Entypo';
-import { isNonUsaAccount, isUsaCountryCode, markNonUsaProfessionUpdateRequired, readNonUsaPermanentFlags, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
+import {
+    clearNonUsaFlowState,
+    isNonUsaAccount,
+    isUsaCountryCode,
+    markNonUsaProfessionUpdateRequired,
+    readNonUsaPermanentFlags,
+    readNonUsaFlowState,
+    writeNonUsaFlowState,
+} from '../../Utils/Helpers/nonUsaFlow';
 import { getCountryAndDialCode } from '../../Utils/Helpers/IPServer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -319,11 +338,84 @@ const ContactProfile = (props) => {
             const res = ProfileReducer?.contactInfoResponse;
             const successMsg = res?.msg || res?.message || "Contact information updated successfully!";
             showErrorAlert(successMsg);
+
+            const wasUSA = isUsCountry({ country: initialCountryRef.current || '' });
+            const isNowUSA = isUsCountry({ country, country_id });
+            const movedToUSA = !wasUSA && isNowUSA;
+
+            const updatedAddress = {
+                ...(DashboardReducer?.mainprofileResponse?.user_address || {}),
+                address,
+                country_id,
+                country_name: country,
+                country,
+                country_code: isNowUSA ? 'US' : '',
+                state_id,
+                state_name: state,
+                city_id,
+                city_name: city,
+                zipcode,
+            };
+
+            dispatch(mainprofileSuccess({
+                ...(DashboardReducer?.mainprofileResponse || {}),
+                usa_user: isNowUSA ? 1 : 0,
+                is_non_usa: isNowUSA ? 0 : 1,
+                user_address: updatedAddress,
+            }));
+
+            // Kick off server refreshes and notify mounted tabs/drawer synchronously before AsyncStorage writes complete.
+            dispatch(mainprofileRequest({}));
+            dispatch(dashboardRequest({}));
+            dispatch(dashMbRequest({}));
+            dispatch(dashPerRequest({}));
+            dispatch(stateMandatoryRequest({}));
+            dispatch(stateLicenseListRequest({}));
+            dispatch(chooseStatecardRequest({}));
+            dispatch(PrimeCheckRequest({}));
+            require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', {
+                source: 'PROFILE_UPDATED',
+                isNowUSA,
+                country,
+            });
+
             (async () => {
                 try {
-                    const { clearNonUsaFlowState } = require('../../Utils/Helpers/nonUsaFlow');
-                    await clearNonUsaFlowState();
-                    require('react-native').DeviceEventEmitter.emit('ACTIVE_PROFILE_CHANGED', '');
+                    if (isNowUSA) {
+                        await clearNonUsaFlowState();
+                    } else {
+                        await writeNonUsaFlowState({
+                            userType: 'non_usa',
+                            isNonUsa: true,
+                        });
+                    }
+                    const rawAuth = await AsyncStorage.getItem(constants.AUTH_USER_DATA);
+                    if (rawAuth) {
+                        const parsedAuth = JSON.parse(rawAuth);
+                        const patchedAuth = parsedAuth?.user
+                            ? {
+                                ...parsedAuth,
+                                user: {
+                                    ...parsedAuth.user,
+                                    usa_user: isNowUSA ? 1 : 0,
+                                    is_non_usa: isNowUSA ? 0 : 1,
+                                    user_address: {
+                                        ...(parsedAuth.user.user_address || {}),
+                                        ...updatedAddress,
+                                    },
+                                },
+                            }
+                            : {
+                                ...parsedAuth,
+                                usa_user: isNowUSA ? 1 : 0,
+                                is_non_usa: isNowUSA ? 0 : 1,
+                                user_address: {
+                                    ...(parsedAuth?.user_address || {}),
+                                    ...updatedAddress,
+                                },
+                            };
+                        await AsyncStorage.setItem(constants.AUTH_USER_DATA, JSON.stringify(patchedAuth));
+                    }
                 } catch (e) {
                     console.log(e);
                 }
@@ -333,10 +425,6 @@ const ContactProfile = (props) => {
                 props?.route?.params?.wholedata ||
                 {};
             setPendingPersonal(nextPersonal);
-
-            const wasUSA = isUsCountry({ country: initialCountryRef.current || '' });
-            const isNowUSA = isUsCountry({ country, country_id });
-            const movedToUSA = !wasUSA && isNowUSA;
 
             if (movedToUSA) {
                 markNonUsaProfessionUpdateRequired();
