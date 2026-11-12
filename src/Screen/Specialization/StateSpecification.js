@@ -231,6 +231,9 @@ const openFileViewerst = async () => {
         const formattedPct = Number(statePercentage.toFixed(1));
         const statePrice = getStatePrice(statePercentage / 100, item?.display_price);
         const numericDisplayPrice = Number(String(item?.display_price ?? '').replace(/,/g, ''));
+        const displayPrice = String(item?.display_price ?? '').trim();
+        const isFreeCourse = /^free$/i.test(displayPrice) ||
+            (displayPrice !== '' && numericDisplayPrice === 0);
         const currencyCode = item?.display_currency_code || '';
 
         return (
@@ -250,25 +253,31 @@ const openFileViewerst = async () => {
                     </View>
                     <View style={styles.cardBottomRow}>
                         <View style={styles.priceColumn}>
-                            <View style={styles.primeOfferRow}>
-                                <Image source={Imagepath.TickMark} style={styles.tickIcon} />
-                                <Text numberOfLines={1} style={styles.primeOfferText}>
-                                    {statePercentage > 0 ? `Prime Offer · ${formattedPct}% OFF` : 'Prime Offer'}
-                                </Text>
-                            </View>
-                            <View style={styles.priceValueRow}>
-                                {statePercentage > 0 ? (
-                                    <Text style={styles.discountPctText}>{`-${formattedPct}%`}</Text>
-                                ) : null}
-                                <Text style={styles.priceText}>
-                                    {`${currencyCode}${item?.display_price ?? ''}`}
-                                </Text>
-                                {statePrice !== null && (!Number.isFinite(numericDisplayPrice) || statePrice > numericDisplayPrice) ? (
-                                    <Text style={styles.strikePriceText}>
-                                        {`${currencyCode}${statePrice}`}
-                                    </Text>
-                                ) : null}
-                            </View>
+                            {isFreeCourse ? (
+                                <Text style={[styles.priceText, styles.freePriceText]}>Free</Text>
+                            ) : (
+                                <>
+                                    <View style={styles.primeOfferRow}>
+                                        <Image source={Imagepath.TickMark} style={styles.tickIcon} />
+                                        <Text numberOfLines={1} style={styles.primeOfferText}>
+                                            {'Prime Offer'}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.priceValueRow}>
+                                        {statePercentage > 0 ? (
+                                            <Text style={styles.discountPctText}>{`-${formattedPct}%`}</Text>
+                                        ) : null}
+                                        <Text style={styles.priceText}>
+                                            {`${currencyCode}${item?.display_price ?? ''}`}
+                                        </Text>
+                                        {statePrice !== null && (!Number.isFinite(numericDisplayPrice) || statePrice > numericDisplayPrice) ? (
+                                            <Text style={styles.strikePriceText}>
+                                                {`${currencyCode}${statePrice}`}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                </>
+                            )}
                         </View>
                         {item?.buttonType ? (
                             <TouchableOpacity onPress={() => { handleUrlPage(item) }} style={styles.cardActionBtn}>
@@ -458,7 +467,7 @@ const cleanNumber = (value) => {
                                     </Text>
                                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(8) }}>
                                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(2), borderRadius: normalize(20), backgroundColor: cleanNumber(props?.route?.params?.fullData?.fullData?.earned_credits) == cleanNumber(props?.route?.params?.fullData?.fullData?.credits) ? "#D6F9E2" : "#FFF2E0", justifyContent: "center", alignItems: "center" }}>
+                                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(2), borderRadius: normalize(20), backgroundColor: cleanNumber(props?.route?.params?.fullData?.fullData?.earned_credits) >= cleanNumber(props?.route?.params?.fullData?.fullData?.credits) ? "#D6F9E2" : "#FFF2E0", justifyContent: "center", alignItems: "center" }}>
                                                 <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, fontWeight: "bold", color: "#000000" }}>
                                                     {`${props?.route?.params?.fullData?.fullData?.earned_credits} / ${props?.route?.params?.fullData?.fullData?.credits}`}
                                                 </Text>
@@ -813,6 +822,10 @@ const styles = StyleSheet.create({
         fontSize: 13.5,
         color: '#000000',
         fontWeight: 'bold',
+    },
+    freePriceText: {
+        color: '#FF5D18',
+        fontSize: 14,
     },
     strikePriceText: {
         fontFamily: Fonts.InterRegular,

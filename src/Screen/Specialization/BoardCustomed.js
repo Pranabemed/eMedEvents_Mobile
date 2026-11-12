@@ -44,7 +44,7 @@ const weekFilterProfession = ({ item, index }) => {
             }}
 
         >
-            <Text numberOfLines={1}
+            <Text
                 style={dropdownStyles.optionText}
             >
                 {item?.name}

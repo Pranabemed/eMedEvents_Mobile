@@ -155,6 +155,9 @@ const handleUrl = (did) => {
         const formattedPct = Number(discountPercentage.toFixed(1));
         const actualPrice = getActualPrice(discountPercentage / 100, item?.display_price);
         const numericDisplayPrice = Number(String(item?.display_price ?? '').replace(/,/g, ''));
+        const displayPrice = String(item?.display_price ?? '').trim();
+        const isFreeCourse = /^free$/i.test(displayPrice) ||
+            (displayPrice !== '' && numericDisplayPrice === 0);
         const currencyCode = item?.display_currency_code || '';
 
         return (
@@ -174,12 +177,14 @@ const handleUrl = (did) => {
                     </View>
                     <View style={styles.cardBottomRow}>
                         <View style={styles.priceColumn}>
-                            {item?.display_price !== 0 ? (
+                            {isFreeCourse ? (
+                                <Text style={[styles.priceText, styles.freePriceText]}>Free</Text>
+                            ) : (
                                 <>
                                     <View style={styles.primeOfferRow}>
                                         <Image source={Imagepath.TickMark} style={styles.tickIcon} />
                                         <Text numberOfLines={1} style={styles.primeOfferText}>
-                                            {discountPercentage > 0 ? `Prime Offer · ${formattedPct}% OFF` : 'Prime Offer'}
+                                            {'Prime Offer'}
                                         </Text>
                                     </View>
                                     <View style={styles.priceValueRow}>
@@ -196,7 +201,7 @@ const handleUrl = (did) => {
                                         ) : null}
                                     </View>
                                 </>
-                            ) : null}
+                            )}
                         </View>
                         {item?.buttonText ? (
                             <TouchableOpacity onPress={() => { handleUrl(item); }} style={styles.cardActionBtn}>
@@ -376,7 +381,7 @@ const cleanNumber = (value) => {
                                                         paddingHorizontal: normalize(10),
                                                         paddingVertical: normalize(2),
                                                         borderRadius: normalize(20),
-                                                        backgroundColor: earnedCredits === totalCredits ? "#D6F9E2" : "#FFF2E0",
+                                                        backgroundColor: earnedCredits >= totalCredits ? "#D6F9E2" : "#FFF2E0",
                                                         justifyContent: "center",
                                                         alignItems: "center"
                                                     }}>
@@ -666,6 +671,10 @@ const styles = StyleSheet.create({
         fontSize: 13.5,
         color: '#000000',
         fontWeight: 'bold',
+    },
+    freePriceText: {
+        color: '#FF5D18',
+        fontSize: 16,
     },
     strikePriceText: {
         fontFamily: Fonts.InterRegular,

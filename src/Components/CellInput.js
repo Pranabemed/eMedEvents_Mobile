@@ -267,7 +267,17 @@ const floatingLabelNode = (text) => (
 
     // ── Input WITH leftIcon ───────────────────────────────────────────────────
     // Build the TextInput node once; used in both branches below.
-    const textInputNode = (
+    const textInputNode = !editable && multiline && onwholePress && !(icondisable && bgv) && displayValue ? (
+        <Text
+            style={[
+                staticStyles.input,
+                addnewtyle,
+                onlyfor && { width: '100%' },
+            ]}
+        >
+            {displayValue}
+        </Text>
+    ) : (
         <TextInput
             ref={ref}
             style={[

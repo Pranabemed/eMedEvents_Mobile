@@ -28,6 +28,7 @@ import showErrorAlert from '../Utils/Helpers/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../Utils/Helpers/constants';
 import Carouselcarditem from './Carouselcarditem';
+import { syncTasksDataWithLicense } from '../Utils/Helpers/LicenseTaskHelper';
 import Dashboardmain from './Dashboardmain';
 import RestProfession from './RestProfession';
 import HomeShimmer from './DashBoardShimmer';
@@ -294,6 +295,19 @@ const tokenHandle = async () => {
             lastDashboardSyncRef.current = Date.now();
         }
     }, [DashboardReducer?.dashboardResponse?.data]);
+    useEffect(() => {
+        if (!propsData?.refreshLicensesAt) return;
+        lastDashboardSyncRef.current = 0;
+        lastStateSyncRef.current = null;
+        dashBoarData();
+        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+        const activeStateId = addit?.state_id || list?.[currentIndex]?.state_id || list?.[0]?.state_id;
+        if (activeStateId) {
+            dispatch(stateDashboardRequest({ state_id: activeStateId }));
+            dispatch(stateReportingRequest({ state_id: activeStateId }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [propsData?.refreshLicensesAt]);
     useEffect(() => {
         if (DashboardReducer.status === 'Dashboard/dashboardSuccess' || DashboardReducer.status === 'Dashboard/dashboardFailure') {
             dashboardFetchInFlightRef.current = false;
@@ -631,7 +645,17 @@ const useActivityCounts = () => {
         }, [responseData]); // Only changes when whole response updates 280
     };
     const [completedCount, pendingCount] = useActivityCounts();
-    const tasksData = DashboardReducer?.stateDashboardResponse?.data?.tasks_data;
+    const activeLicenseForTasks = useMemo(() => {
+        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+        if (Array.isArray(list) && list.length > 0) {
+            return list[currentIndex] || list[0];
+        }
+        return addit || statepush || null;
+    }, [effectiveFulldashbaord, fulldashbaord, addit, statepush, currentIndex]);
+    const tasksData = useMemo(
+        () => syncTasksDataWithLicense(DashboardReducer?.stateDashboardResponse?.data?.tasks_data, activeLicenseForTasks),
+        [DashboardReducer?.stateDashboardResponse?.data?.tasks_data, activeLicenseForTasks]
+    );
     const hasTasks = useMemo(() => (
         tasksData?.due_in_30_days?.length > 0 ||
         tasksData?.due_in_60_days?.length > 0 ||

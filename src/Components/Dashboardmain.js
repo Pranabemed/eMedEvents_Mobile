@@ -196,10 +196,10 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, setAddit, ad
                     </View>
                 </View> : null}
                 {hasTasks ? (
-                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: enables ? normalize(10) : normalize(10), marginLeft: normalize(18) }}>
+                    <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
                         <View
                             style={{
-                                height: normalize(60),
+                                minHeight: normalize(74),
                                 width: normalize(320),
                             }}
                         >
@@ -227,10 +227,10 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, setAddit, ad
                                 keyExtractor={(item, index) => index.toString()}
                                 horizontal
                                 contentContainerStyle={{
-                                    paddingHorizontal: 0,
-                                    paddingRight: normalize(18)
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(2),
                                 }}
-                                ItemSeparatorComponent={() => <View style={{ width: normalize(0) }} />}
+                                ItemSeparatorComponent={() => <View style={{ width: normalize(2) }} />}
                                 showsHorizontalScrollIndicator={false}
                             />
                         </View>

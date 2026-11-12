@@ -2,7 +2,7 @@
  * Mytasks screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Mytasks, resolveLicenseStateName, resolveLicenseExpiryDate, taskPress, taskHandle, taskAction, mytasktitleUrl, mytaskparticularData, formatDatetask, formatDateEndtask, onBackPress.
  */
 
-import { View, Text, Platform, FlatList, TouchableOpacity, ScrollView, BackHandler } from 'react-native'
+import { View, Text, Platform, FlatList, TouchableOpacity, BackHandler, StyleSheet } from 'react-native'
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath';
 import MyStatusBar from '../../Utils/MyStatusBar';
@@ -21,6 +21,7 @@ import { stateDashboardRequest, stateDashboardSuccess } from '../../Redux/Reduce
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch } from 'react-redux';
+import { syncBucketTasksWithLicense } from '../../Utils/Helpers/LicenseTaskHelper';
 
 /**
  * Reusable Mytasks component.
@@ -33,7 +34,7 @@ const Mytasks = (props) => {
     console.log(props?.route?.params?.taskData, "props?.route?.params?.taskData?.taskData", props?.route?.params?.backget?.taskData)
     const { isConnected, fulldashbaord, setAddit, statepush } = useContext(AppContext);
     const dispatch = useDispatch();
-    const activeCreditID = useMemo(() => {
+    const routeCreditID = useMemo(() => {
         return (
             props?.route?.params?.taskData?.creditID ||
             props?.route?.params?.backget?.taskData?.creditID ||
@@ -43,6 +44,19 @@ const Mytasks = (props) => {
             null
         );
     }, [props?.route?.params?.taskData, props?.route?.params?.backget, statepush]);
+
+    const activeCreditID = useMemo(() => {
+        if (Array.isArray(fulldashbaord) && fulldashbaord.length > 0 && routeCreditID) {
+            const targetStateId = routeCreditID?.state_id;
+            const targetId = routeCreditID?.id;
+            const liveLicense = fulldashbaord.find(item =>
+                (targetStateId != null && String(item?.state_id) === String(targetStateId)) ||
+                (targetId != null && String(item?.id) === String(targetId))
+            );
+            if (liveLicense) return liveLicense;
+        }
+        return routeCreditID;
+    }, [fulldashbaord, routeCreditID]);
 
     /**
 * Resolve license state name utility.
@@ -56,46 +70,6 @@ const Mytasks = (props) => {
         props?.route?.params?.backget?.creditID?.state_name ||
         ""
     ), [activeCreditID, props?.route?.params]);
-    /**
-* Resolve license expiry date utility.
-* @returns {*}
-*/
-    const resolveLicenseExpiryDate = useCallback(() => (
-        activeCreditID?.to_date ||
-        activeCreditID?.expiry_date ||
-        activeCreditID?.license_expiry_date ||
-        activeCreditID?.licence_expiry_date ||
-        props?.route?.params?.taskData?.creditID?.to_date ||
-        props?.route?.params?.taskData?.creditID?.expiry_date ||
-        props?.route?.params?.taskData?.creditID?.license_expiry_date ||
-        props?.route?.params?.backget?.taskData?.creditID?.to_date ||
-        props?.route?.params?.backget?.taskData?.creditID?.expiry_date ||
-        props?.route?.params?.backget?.taskData?.creditID?.license_expiry_date ||
-        props?.route?.params?.backget?.creditID?.to_date ||
-        props?.route?.params?.backget?.creditID?.expiry_date ||
-        props?.route?.params?.backget?.creditID?.license_expiry_date ||
-        statepush?.to_date ||
-        statepush?.expiry_date ||
-        statepush?.license_expiry_date ||
-        ""
-    ), [activeCreditID, props?.route?.params, statepush]);
-    const isLicenseExpired = useMemo(() => {
-        const expiryValue = resolveLicenseExpiryDate();
-        if (!expiryValue) return false;
-
-        const parsedExpiry = moment(expiryValue, [
-            moment.ISO_8601,
-            "YYYY-MM-DD",
-            "MM-DD-YYYY",
-            "DD-MM-YYYY",
-            "MMM DD, YYYY",
-            "MMM D, YYYY",
-        ], true);
-
-        if (!parsedExpiry.isValid()) return false;
-
-        return moment().startOf("day").isAfter(parsedExpiry.startOf("day"));
-    }, [resolveLicenseExpiryDate]);
     /**
 * Task press utility.
 * @returns {void}
@@ -139,7 +113,7 @@ const Mytasks = (props) => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(true)
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -153,6 +127,11 @@ const Mytasks = (props) => {
     }, [isfocused]);
     const [tasks, setTasks] = useState(false);
 
+    const bucketKey =
+        props?.route?.params?.taskData?.tasksKey ||
+        props?.route?.params?.backget?.taskData?.tasksKey ||
+        null;
+
     const rawTasks = useMemo(() => {
         const t1 = props?.route?.params?.taskData?.taskData;
         if (Array.isArray(t1) && t1.length > 0) return t1;
@@ -164,15 +143,8 @@ const Mytasks = (props) => {
     }, [props?.route?.params?.taskData, props?.route?.params?.backget]);
 
     const finalTask = useMemo(() => {
-        if (!rawTasks || rawTasks.length === 0) return [];
-        if (isLicenseExpired) {
-            const hasUpdate = rawTasks.some(t => t?.button_display_text === "Update");
-            if (!hasUpdate) {
-                return [...rawTasks, { title: resolveLicenseStateName(), button_display_text: "Update" }];
-            }
-        }
-        return rawTasks;
-    }, [rawTasks, isLicenseExpired, resolveLicenseStateName]);
+        return syncBucketTasksWithLicense(rawTasks, activeCreditID, resolveLicenseStateName(), bucketKey);
+    }, [rawTasks, activeCreditID, resolveLicenseStateName, bucketKey]);
 
     /**
 * Task action utility.
@@ -218,93 +190,64 @@ const Mytasks = (props) => {
 * @returns {JSX.Element}
 */
     const mytaskparticularData = ({ item, index }) => {
-        console.log(item, "item?.completed_percentage======")
-        /**
-* Formats datetask.
-* @param {*} taskrole - Input value.
-* @returns {*}
-*/
-        const formatDatetask = (taskrole) => {
-            const date = moment(taskrole, "DD MMM'YY");
-            return date.format("MMM D").replace(' ', '');
-        };
-        const finalDataTasking = formatDatetask(item?.startdate);
-        /**
-* Formats date endtask.
-* @param {*} taskrole - Input value.
-* @returns {*}
-*/
-        const formatDateEndtask = (taskrole) => {
-            const date = moment(taskrole, "DD MMM'YY");
-            return date.format("MMM D, YY").replace('', '');
-        };
-        const finalEndDateTasking = formatDateEndtask(item?.enddate);
+        const isUpdateCard = item?.button_display_text === "Update";
+        const rawPct = item?.completed_percentage !== undefined && item?.completed_percentage !== null
+            ? Number(item.completed_percentage)
+            : null;
+        const safeProgress = rawPct !== null && Number.isFinite(rawPct)
+            ? Math.max(0, Math.min(100, Math.round(rawPct)))
+            : null;
+
         return (
-            <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                        }}
-                    >
-                        {item?.organization_name && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), marginLeft: normalize(5), borderRadius: normalize(20), backgroundColor: "#FFF2E0" }}>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#666" }}>
+            <View style={styles.cardOuter}>
+                <View style={styles.card}>
+                    {isUpdateCard ? (
+                        <View style={[styles.orgBadge, styles.renewalBadge]}>
+                            <Text style={[styles.orgBadgeText, styles.renewalBadgeText]}>
+                                {"License Renewal"}
+                            </Text>
+                        </View>
+                    ) : item?.organization_name ? (
+                        <View style={styles.orgBadge}>
+                            <Text numberOfLines={1} style={styles.orgBadgeText}>
                                 {item?.organization_name}
                             </Text>
-                        </View>}
-                        <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(8), flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                            <TouchableOpacity onPress={() => {
-                                if (item?.button_display_text !== "Update") {
-                                    mytasktitleUrl(item);
-                                }
-                            }}>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
-                                        color: "#000000",
-                                        fontWeight: "bold",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                    }}
-                                >
-                                    {item?.button_display_text == "Update" ? `Renew ${resolveLicenseStateName()} State License` : item?.title}
-                                </Text>
-                            </TouchableOpacity>
                         </View>
-                        {(item?.startdate || item?.enddate) && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(5), flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: "#848484",
-                                }}
-                            >
-                                {`Exp: ${FormatDateZone(item?.startdate, item?.enddate)}`}
-                            </Text>
-                        </View>}
-                        {item?.display_cme && <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(5), flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                            <Text
+                    ) : null}
 
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 12,
-                                    color: "#848484",
-                                }}
-                            >
-                                {item?.display_cme}
-                            </Text>
-                        </View>}
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
-                        {item?.button_display_text == "Update" ? <View style={{ flexDirection: "row", justifyContent: "center", alignContent: "center", marginTop: normalize(10), width: "100%" }}>
+                    <TouchableOpacity
+                        activeOpacity={isUpdateCard ? 1 : 0.75}
+                        disabled={isUpdateCard}
+                        onPress={() => {
+                            if (!isUpdateCard) {
+                                mytasktitleUrl(item);
+                            }
+                        }}
+                        style={styles.titleWrap}
+                    >
+                        <Text numberOfLines={2} style={styles.cardTitle}>
+                            {isUpdateCard ? `Renew ${resolveLicenseStateName()} State License` : item?.title}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {(item?.startdate || item?.enddate) ? (
+                        <Text style={styles.metaText}>
+                            {`Exp: ${FormatDateZone(item?.startdate, item?.enddate)}`}
+                        </Text>
+                    ) : null}
+
+                    {item?.display_cme ? (
+                        <Text style={styles.cmeMetaText}>
+                            {item?.display_cme}
+                        </Text>
+                    ) : null}
+
+                    <View style={styles.cardDivider} />
+
+                    {isUpdateCard ? (
+                        <View style={styles.updateFooterRow}>
                             <TouchableOpacity
+                                activeOpacity={0.8}
                                 onPress={() => {
                                     props.navigation.dispatch(CommonActions.reset({
                                         index: 0,
@@ -321,33 +264,28 @@ const Mytasks = (props) => {
                                         }]
                                     }));
                                 }}
-                                style={{
-                                    height: normalize(30),
-                                    width: normalize(180),
-                                    borderRadius: normalize(5),
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderColor: Colorpath.ButtonColr,
-                                    borderWidth: 0.5
-                                }}
+                                style={styles.updateButton}
                             >
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 16,
-                                        color: "#2C4DB9",
-                                    }}
-                                >
+                                <Text style={styles.actionButtonText}>
                                     {item?.button_display_text}
                                 </Text>
                             </TouchableOpacity>
-                        </View> : <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
-                            <View>
-                                {item?.completed_percentage === undefined ? <></> : <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
-                                    <ProgressBarLine tasks={tasks} progress={item?.completed_percentage} height={6} fillColor={"#2C4DB9"} />
-                                </View>}
+                        </View>
+                    ) : (
+                        <View style={styles.courseFooterRow}>
+                            <View style={styles.progressCol}>
+                                {safeProgress !== null ? (
+                                    <ProgressBarLine
+                                        tasks={tasks}
+                                        textadd="yes"
+                                        progress={safeProgress}
+                                        height={6}
+                                        fillColor={"#2C4DB9"}
+                                    />
+                                ) : null}
                             </View>
                             <TouchableOpacity
+                                activeOpacity={0.8}
                                 onPress={() => {
                                     if (item?.buttonText === "Revise Course") {
                                         props.navigation.navigate("VideoComponent", { RoleData: item });
@@ -355,31 +293,16 @@ const Mytasks = (props) => {
                                         taskAction(item);
                                     }
                                 }}
-                                style={{
-                                    height: normalize(30),
-                                    width: normalize(120),
-                                    borderRadius: normalize(5),
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderColor: Colorpath.ButtonColr,
-                                    borderWidth: 0.5
-                                }}
+                                style={styles.courseActionButton}
                             >
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 16,
-                                        color: "#2C4DB9",
-                                    }}
-                                >
+                                <Text numberOfLines={1} style={styles.actionButtonText}>
                                     {item?.button_display_text}
                                 </Text>
                             </TouchableOpacity>
-                        </View>}
-                    </View>
+                        </View>
+                    )}
                 </View>
             </View>
-
         );
     };
     useEffect(() => {
@@ -422,7 +345,7 @@ const Mytasks = (props) => {
                         />
                     </View>
                 )}
-                {conn == false ? <IntOff /> : <View>
+                {conn === false ? <IntOff /> : <View style={{ flex: 1 }}>
                     <FlatList
                         data={finalTask}
                         renderItem={mytaskparticularData}
@@ -450,6 +373,120 @@ const Mytasks = (props) => {
 
     )
 }
+
+const styles = StyleSheet.create({
+    cardOuter: {
+        width: '100%',
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(7),
+    },
+    card: {
+        width: '100%',
+        borderRadius: normalize(12),
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(14),
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    orgBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(4),
+        borderRadius: normalize(16),
+        backgroundColor: '#FFF2E0',
+        marginBottom: normalize(8),
+    },
+    orgBadgeText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12.5,
+        color: '#9A3412',
+    },
+    renewalBadge: {
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    renewalBadgeText: {
+        color: Colorpath.ButtonColr,
+    },
+    titleWrap: {
+        width: '100%',
+        marginBottom: normalize(6),
+    },
+    cardTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15.5,
+        lineHeight: 22,
+        color: '#0F172A',
+        fontWeight: 'bold',
+    },
+    metaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        color: '#64748B',
+        marginBottom: normalize(3),
+    },
+    cmeMetaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 12,
+        color: '#64748B',
+    },
+    cardDivider: {
+        marginTop: normalize(10),
+        marginBottom: normalize(10),
+        height: 1,
+        width: '100%',
+        backgroundColor: '#F1F5F9',
+    },
+    updateFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        width: '100%',
+    },
+    updateButton: {
+        height: normalize(34),
+        width: normalize(180),
+        borderRadius: normalize(8),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderColor: Colorpath.ButtonColr,
+        borderWidth: 1,
+        backgroundColor: '#EFF6FF',
+    },
+    courseFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    progressCol: {
+        flex: 1,
+        paddingRight: normalize(10),
+        justifyContent: 'center',
+    },
+    courseActionButton: {
+        height: normalize(34),
+        minWidth: normalize(112),
+        paddingHorizontal: normalize(12),
+        borderRadius: normalize(8),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderColor: Colorpath.ButtonColr,
+        borderWidth: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    actionButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#2C4DB9',
+    },
+});
 
 /**
  * Mytasks default export.

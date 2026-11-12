@@ -209,7 +209,8 @@ test.each([false, true])('multi-ticket cart carries the same total through Check
   }
   const subtotalAmount = coupon ? 200 : 250;
   const totalTicketPrice = subtotalAmount + 10;
-  expect(cart.tree.root.findAll(node => node.props.children === `US$${totalTicketPrice}`).length).toBeGreaterThan(0);
+  expect(cart.tree.root.findAll(node => node.props.children === `US$${subtotalAmount}`).length).toBeGreaterThan(0);
+  expect(cart.tree.root.findAll(node => node.props.children === `US$${totalTicketPrice}`).length).toBe(0);
   await act(async () => cart.tree.root.findAllByType('../../Components/Button').find(n => n.props.text === 'Proceed').props.onPress());
   const checkoutRoute = props.navigation.push.mock.calls[0][1];
   expect(checkoutRoute.checkoutSpan).toMatchObject({subtotalAmount, processingFeeAmount: 10, totalTicketPrice});

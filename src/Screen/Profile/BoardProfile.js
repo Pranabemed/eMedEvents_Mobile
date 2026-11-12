@@ -98,7 +98,7 @@ const SearchBack = () => {
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err)
             })
-    }, [props?.route?.params?.board, isFocus])
+    }, [props?.route?.params?.board, isFocus, DashboardReducer?.mainprofileResponse?.specialities, DashboardReducer?.mainprofileResponse?.professional_information?.specialities])
     useEffect(() => {
         const certifications = ProfileReducer?.boardListProfileResponse?.board_certifications;
         if (!Array.isArray(certifications)) return;
@@ -124,7 +124,13 @@ const SearchBack = () => {
  * @returns {void}
  */
 const boardCheck = () => {
-        const takeSpecial = Object.keys(DashboardReducer?.mainprofileResponse?.specialities).join(", ");
+        const specSource =
+            (DashboardReducer?.mainprofileResponse?.professional_information?.specialities &&
+                Object.keys(DashboardReducer?.mainprofileResponse?.professional_information?.specialities).length > 0 &&
+                DashboardReducer?.mainprofileResponse?.professional_information?.specialities) ||
+            DashboardReducer?.mainprofileResponse?.specialities ||
+            {};
+        const takeSpecial = Object.keys(specSource).join(", ");
         let obj = {
             "profession": DashboardReducer?.mainprofileResponse?.professional_information?.profession,
             "specilityid": takeSpecial

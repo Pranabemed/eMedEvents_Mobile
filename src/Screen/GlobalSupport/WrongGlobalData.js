@@ -9,6 +9,7 @@ import Fonts from '../../Themes/Fonts';
 import Imagepath from '../../Themes/Imagepath';
 import Buttons from '../../Components/Button';
 import Colorpath from '../../Themes/Colorpath';
+import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
 import { AppContext } from './AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import StackNav from '../../Navigator/StackNav';
@@ -26,94 +27,88 @@ const wrongRenderData = (title, data, onPressHandler, creditDataAll, nav, setPla
 
     return (
         data && data.length > 0 && (
-            <View style={{ marginBottom: normalize(20) }}>
-                <View style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                }}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 20,
-                            color: "#000000"
-                        }}>
+            <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                    <View style={styles.sectionHeaderTitleWrap}>
+                        <Text numberOfLines={1} style={styles.sectionHeaderTitle}>
                             {title}
                         </Text>
                     </View>
-                    <View>
-                        <Buttons
-                            onPress={() => {
-                                if (title == "State mandatory courses") {
-                                    setPlaceholderIndex(0);
-                                    nav.navigate("ExploreCastCourse", { creditData: creditDataAll })
-                                } else {
-                                    setPlaceholderIndex(0);
-                                    nav.navigate("BrowseScreen", { creditData: creditDataAll });
-                                }
-                            }}
-                            height={normalize(30)}
-                            width={normalize(100)}
-                            borderRadius={normalize(5)}
-                            text="Browse All"
-                            color={Colorpath.ButtonColr}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                        />
-                    </View>
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (title == "State mandatory courses") {
+                                setPlaceholderIndex(0);
+                                nav.navigate("ExploreCastCourse", { creditData: creditDataAll });
+                            } else {
+                                setPlaceholderIndex(0);
+                                nav.navigate("BrowseScreen", { creditData: creditDataAll });
+                            }
+                        }}
+                        style={styles.browseAllPill}
+                    >
+                        <Text style={styles.browseAllText}>{"Browse All"}</Text>
+                    </TouchableOpacity>
                 </View>
-                {data.map((item, index) => {
-                    // Determine event_type dynamically
-                    const eventType =
-                        item?.dynamicmatchKeyword?.length > 0
-                            ? item.dynamicmatchKeyword[0]?.matchKeyword
-                            : item?.event_type;
 
-                    return (
-                        <TouchableOpacity
-                            key={item.id || index}
-                            onPress={() => {
-                                if (title == "State mandatory courses") {
-                                    onPressHandler(item);
-                                } else {
-                                    const formattedText = item.toLowerCase().replace(/\s+/g, '-');
-                                    nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", creditData: creditDataAll, Realback: "cont" } });
-                                }
-                            }
-                            }
-                            style={styles.touchableContainer}
-                        >
-                            <View style={styles.row}>
-                                <Image
-                                    source={
-                                        eventType === "Text-Based CME"
-                                            ? Imagepath.Textbased
-                                            : eventType === "In-Person Event"
-                                                ? Imagepath.InPerson
-                                                : eventType === "Hybrid Event"
-                                                    ? Imagepath.Hybrid
-                                                    : eventType === "Webcast"
-                                                        ? Imagepath.VideoCam
-                                                        : eventType === "Journal CME"
-                                                            ? Imagepath.Journal
-                                                            : eventType === "Podcast"
-                                                                ? Imagepath.PodCast
-                                                                : eventType === "Live Webinar"
-                                                                    ? Imagepath.LiveWebinar
-                                                                    : Imagepath.WrongArrw
+                <View style={styles.listCard}>
+                    {data.map((item, index) => {
+                        // Determine event_type dynamically
+                        const eventType =
+                            item?.dynamicmatchKeyword?.length > 0
+                                ? item.dynamicmatchKeyword[0]?.matchKeyword
+                                : item?.event_type;
+                        const isLast = index === data.length - 1;
+
+                        return (
+                            <TouchableOpacity
+                                key={item.id || index}
+                                activeOpacity={0.75}
+                                onPress={() => {
+                                    if (title == "State mandatory courses") {
+                                        onPressHandler(item);
+                                    } else {
+                                        const formattedText = item.toLowerCase().replace(/\s+/g, '-');
+                                        nav.navigate("Globalresult", { trig: { trig: formattedText, rqstType: "specialityconferences", mainKey: "conference_specialitiy", creditData: creditDataAll, Realback: "cont" } });
                                     }
-                                    style={eventType ? styles.eventtypeicon : styles.icon}
-                                />
-                                <Text
-                                    numberOfLines={2}
-                                    style={styles.text}
-                                >
-                                    {item.label || item}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
+                                }}
+                                style={[styles.touchableContainer, isLast && styles.touchableContainerLast]}
+                            >
+                                <View style={styles.row}>
+                                    <View style={styles.rowIconBadge}>
+                                        <Image
+                                            source={
+                                                eventType === "Text-Based CME"
+                                                    ? Imagepath.Textbased
+                                                    : eventType === "In-Person Event"
+                                                        ? Imagepath.InPerson
+                                                        : eventType === "Hybrid Event"
+                                                            ? Imagepath.Hybrid
+                                                            : eventType === "Webcast"
+                                                                ? Imagepath.VideoCam
+                                                                : eventType === "Journal CME"
+                                                                    ? Imagepath.Journal
+                                                                    : eventType === "Podcast"
+                                                                        ? Imagepath.PodCast
+                                                                        : eventType === "Live Webinar"
+                                                                            ? Imagepath.LiveWebinar
+                                                                            : Imagepath.WrongArrw
+                                            }
+                                            style={eventType ? styles.eventtypeicon : styles.icon}
+                                        />
+                                    </View>
+                                    <Text
+                                        numberOfLines={2}
+                                        style={styles.text}
+                                    >
+                                        {item.label || item}
+                                    </Text>
+                                    <ArrowIcons name="chevron-right" size={20} color="#94A3B8" />
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
             </View>
         )
     );
@@ -345,7 +340,7 @@ const WrongGlobalData = ({ wrongData, handleUrl, creditDataAll, nav, setPlacehol
         );
     }
     return hasDataWrong ? (
-        <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{ padding: normalize(10), paddingBottom: normalize(70) }}>
+        <ScrollView style={{ width: '100%' }} keyboardShouldPersistTaps="always" contentContainerStyle={{ paddingHorizontal: normalize(12), paddingTop: normalize(4), paddingBottom: normalize(70) }}>
             {wrongData?.popularSpecialties?.length > 0 && wrongRenderData('Popular specialities', wrongData?.popularSpecialties, handleUrl, creditDataAll, nav, setPlaceholderIndex)}
         </ScrollView>
     ) : (
@@ -446,36 +441,90 @@ const styles = StyleSheet.create({
         color: '#444',
         marginBottom: normalize(10),
     },
-    touchableContainer: {
+    sectionBlock: {
+        marginBottom: normalize(20),
+        width: '100%',
+    },
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: normalize(10),
+    },
+    sectionHeaderTitleWrap: {
+        flex: 1,
+        paddingRight: normalize(8),
+    },
+    sectionHeaderTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 16,
+        color: '#0F172A',
+    },
+    browseAllPill: {
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+        borderRadius: normalize(20),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(5),
         justifyContent: 'center',
-        alignSelf: 'center',
-        paddingVertical: normalize(10),
+        alignItems: 'center',
+    },
+    browseAllText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12.5,
+        color: Colorpath.ButtonColr,
+    },
+    listCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(10),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        overflow: 'hidden',
+    },
+    touchableContainer: {
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(11),
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    touchableContainerLast: {
+        borderBottomWidth: 0,
     },
     row: {
         flexDirection: 'row',
-        width: normalize(290),
+        width: '100%',
         alignItems: 'center',
+    },
+    rowIconBadge: {
+        width: normalize(28),
+        height: normalize(28),
+        borderRadius: normalize(7),
+        backgroundColor: '#F1F5F9',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: normalize(10),
     },
     icon: {
         height: normalize(12),
         width: normalize(12),
-        tintColor: '#999999',
+        tintColor: Colorpath.ButtonColr,
         resizeMode: 'contain',
-        marginRight: normalize(10),
     },
     eventtypeicon: {
-        height: normalize(18),
-        width: normalize(18),
-        tintColor: '#999999',
+        height: normalize(16),
+        width: normalize(16),
+        tintColor: Colorpath.ButtonColr,
         resizeMode: 'contain',
-        marginRight: normalize(10),
     },
     text: {
-        fontFamily: Fonts.InterRegular,
-        fontSize: 16,
-        color: '#333333',
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: '#1E293B',
         flex: 1,
         flexWrap: 'wrap',
+        marginRight: normalize(8),
     },
     container: {
         position: 'absolute',

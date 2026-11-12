@@ -142,40 +142,50 @@ const CONTENT_PADDING = normalize(14);
 const styles = StyleSheet.create({
     /* ── Top blue-ish card ── */
     topSection: {
-        backgroundColor: '#EEF4FB',
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: CONTENT_PADDING,
+        marginTop: normalize(12),
+        borderRadius: normalize(16),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
         paddingHorizontal: CONTENT_PADDING,
-        paddingTop: normalize(14),
-        paddingBottom: normalize(20),
+        paddingTop: normalize(16),
+        paddingBottom: normalize(18),
     },
     badge: {
         width: normalize(110),
         height: normalize(24),
-        borderRadius: normalize(5),
+        borderRadius: normalize(6),
     },
     titleLine: {
         height: normalize(22),
-        borderRadius: 5,
+        borderRadius: 6,
     },
     subLine: {
         height: normalize(15),
-        borderRadius: 4,
+        borderRadius: 5,
     },
     priceLine: {
         width: normalize(100),
         height: normalize(28),
-        borderRadius: 5,
+        borderRadius: 6,
     },
     registerBtn: {
         width: '100%',
-        height: normalize(46),
-        borderRadius: normalize(9),
+        height: normalize(44),
+        borderRadius: normalize(10),
     },
 
     /* ── White content sections ── */
     whiteSection: {
         backgroundColor: '#FFFFFF',
+        marginHorizontal: CONTENT_PADDING,
+        marginTop: normalize(12),
+        borderRadius: normalize(14),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
         paddingHorizontal: CONTENT_PADDING,
-        paddingVertical: normalize(18),
+        paddingVertical: normalize(16),
     },
     sectionTitle: {
         height: normalize(20),

@@ -1,0 +1,24 @@
+import React from 'react';
+import {render,act} from '@testing-library/react-native';
+import {Provider} from 'react-redux';
+import {configureStore} from '@reduxjs/toolkit';
+import Screen from '../src/Screen/StateRequiredCourse/BoardCourse';
+import {AppContext} from '../src/Screen/GlobalSupport/AppContext';
+jest.mock('../src/Screen/GlobalSupport/AppContext',()=>({AppContext:require('react').createContext({})}));
+jest.mock('@react-navigation/native',()=>({useNavigation:()=>({dispatch:jest.fn()}),CommonActions:{reset:jest.fn()}}));
+jest.mock('@react-native-community/netinfo',()=>({addEventListener:cb=>{cb({isConnected:true});return ()=>{};}}));
+jest.mock('../src/Utils/Helpers/NetInfo',()=>jest.fn(()=>Promise.resolve()));
+jest.mock('../src/Utils/Helpers/Toast',()=>jest.fn());
+jest.mock('../src/Components/DrawerModal',()=> 'Drawer');
+jest.mock('../src/Components/PageHeader',()=> 'Header');
+jest.mock('../src/Utils/MyStatusBar',()=> 'StatusBar');
+jest.mock('../src/Utils/Helpers/Loader',()=> 'Loader');
+jest.mock('../src/Utils/Helpers/IntOff',()=> 'Offline');
+jest.mock('react-native-walkthrough-tooltip',()=> 'Tooltip');
+jest.mock('react-native-star-rating-widget',()=> 'Stars');
+jest.mock('react-native-safe-area-context',()=>({SafeAreaView:require('react-native').View}));
+it.each([{}, {'1':'Internal Medicine'}])('launches with boards %j',async boards=>{
+ const store=configureStore({reducer:{DashboardReducer:(s={status:'',dashboardResponse:{data:{boards}}})=>s,AuthReducer:(s={loginResponse:{user:{profession:'Physician',profession_type:'MD'}}})=>s}});
+ render(<Provider store={store}><AppContext.Provider value={{setAddit:jest.fn()}}><Screen navigation={{setOptions:jest.fn(),navigate:jest.fn()}} route={{params:{}}}/></AppContext.Provider></Provider>);
+ await act(async()=>{await Promise.resolve();});
+});

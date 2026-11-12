@@ -2,13 +2,11 @@
  * Statewebcast checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, StatewebcastCheckout, fullAction, formatPrice, formatNumberWithCommas.
  */
 
-import { View, Text, Linking, useWindowDimensions, Alert } from 'react-native'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import Fonts from '../../Themes/Fonts'
+import { View, Text, Linking, useWindowDimensions, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
-import Buttons from '../../Components/Button';
-import InPersonStatewebcast from '../InPersonWebcast/InPersonStatewebcast';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import RenderHTML from 'react-native-render-html';
@@ -23,6 +21,53 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
+/**
+ * Derives bottom checkout/cart CTA flags so the parent screen can avoid rendering a duplicate Add To Cart button.
+ * @param {Object} webcastdeatils - Conference/webcast details payload.
+ * @param {string|number} takePrice - Calculated ticket price.
+ * @returns {{isCheckoutCta: boolean, hasCartActionButton: boolean, ticketPriceAmount: number, hasBottomCart: boolean}}
+ */
+export const getCheckoutCtaFlags = (webcastdeatils, takePrice) => {
+  const buttonTypeLower = webcastdeatils?.buttonType?.toLowerCase();
+  const ticketPriceAmount = parseFloat(takePrice || "0") || 0;
+  const isCheckoutCta = (
+    webcastdeatils?.conferenceTypeText == "Webcast" ||
+    webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
+    webcastdeatils?.conferenceTypeText == "Journal CME" ||
+    webcastdeatils?.conferenceTypeText == "Podcast"
+  ) &&
+    webcastdeatils?.registrationTickets?.length == 1 &&
+    webcastdeatils?.conferenceTypeId != "1" &&
+    webcastdeatils?.conferenceTypeId != "6" &&
+    webcastdeatils?.conferenceTypeId != "34";
+  const hasCartActionButton = Boolean(
+    webcastdeatils?.buttonType &&
+    buttonTypeLower !== "interest" &&
+    webcastdeatils?.is_cart_applicable == 1 &&
+    webcastdeatils?.isHavingActivity !== 1
+  );
+  const hasStandardBottomCart =
+    webcastdeatils?.conference_active !== 0 &&
+    buttonTypeLower === "register" &&
+    webcastdeatils?.registered_allow === 1 &&
+    isCheckoutCta &&
+    webcastdeatils?.registrationTickets?.length > 0 &&
+    ticketPriceAmount > 0 &&
+    hasCartActionButton;
+  const hasBundleBottomCart =
+    webcastdeatils?.conference_active == 0 &&
+    webcastdeatils?.button_redirect_text !== "revise_activity" &&
+    Boolean(webcastdeatils?.bundle_conf_taken_msg) &&
+    webcastdeatils?.bundle_add_cart == "1";
+
+  return {
+    isCheckoutCta,
+    hasCartActionButton,
+    ticketPriceAmount,
+    hasBottomCart: Boolean(hasStandardBottomCart || hasBundleBottomCart),
+  };
+};
+
 let status = "";
 /**
  * Statewebcast checkout component.
@@ -40,9 +85,8 @@ let status = "";
  * @param {*} props.guestOrigin - Nested property value.
  * @returns {JSX.Element}
  */
-const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, guestOrigin }) => {
+const StatewebcastCheckout = memo(({ refID, takePrice, urlneed, creditData, setAddtocartload, isBundleAddToCart, bundle_conference_id, conferenceIDs, webcastdeatils, navigation, guestOrigin }) => {
   let expiry_date = webcastdeatils && webcastdeatils?.endDate ? webcastdeatils?.endDate : null;
-  const AuthReducer = useSelector(state => state.AuthReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
   const [finalcheck, setFinalcheck] = useState("");
   const checkoutRequestStartedRef = useRef(false);
@@ -76,20 +120,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
       activityData: mergedActivityData,
     };
   }, [webcastdeatils]);
-  const isCheckoutCta = (
-    webcastdeatils?.conferenceTypeText == "Webcast" ||
-    webcastdeatils?.conferenceTypeText == "Text-Based CME" ||
-    webcastdeatils?.conferenceTypeText == "Journal CME" ||
-    webcastdeatils?.conferenceTypeText == "Podcast"
-  ) &&
-    webcastdeatils?.registrationTickets?.length == 1 &&
-    webcastdeatils?.conferenceTypeId != "1" &&
-    webcastdeatils?.conferenceTypeId != "6" &&
-    webcastdeatils?.conferenceTypeId != "34";
-  const showCartAction = webcastdeatils?.buttonType &&
-    webcastdeatils?.buttonType.toLowerCase() !== "interest" &&
-    webcastdeatils?.is_cart_applicable == 1 &&
-    webcastdeatils?.isHavingActivity !== 1;
+  const { isCheckoutCta, hasCartActionButton, ticketPriceAmount } = getCheckoutCtaFlags(webcastdeatils, takePrice);
   console.log(webcastdeatils, creditData, "webcastdeatils=====11", urlneed);
   const { width } = useWindowDimensions();
   const dispatch = useDispatch();
@@ -121,17 +152,13 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
 
     return truncated % 1 == 0 ? truncated.toString() : truncated.toFixed(2);
   }
-  const ticketPriceAmount = parseFloat(takePrice || "0") || 0;
-  const hasCartActionButton = Boolean(
-    webcastdeatils?.buttonType &&
-    webcastdeatils.buttonType.toLowerCase() !== "interest" &&
-    webcastdeatils?.is_cart_applicable == 1 &&
-    webcastdeatils?.isHavingActivity !== 1
-  );
   const handleAddtoCart = useCallback(() => {
     let obj = {
       "bundle_conference_id": bundle_conference_id,
       "conference_ids": conferenceIDs
+    }
+    if (refID) {
+      obj["refer_params"] = refID;
     }
     connectionrequest()
       .then(() => {
@@ -140,7 +167,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
       .catch((err) => {
         showErrorAlert("Please connect to internet")
       })
-  }, [bundle_conference_id, conferenceIDs, dispatch]);
+  }, [bundle_conference_id, conferenceIDs, dispatch, refID]);
   /**
 * Formats number with commas.
 * @param {*} value - Input value.
@@ -163,6 +190,9 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
           "quantity": 1
         }))
       };
+      if (refID) {
+        obj["refer_params"] = refID;
+      }
       connectionrequest()
         .then(() => {
           dispatch(addtoCartWebcastRequest(obj));
@@ -171,7 +201,7 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
           showErrorAlert("Please connect to internet", err)
         })
     }
-  }, [webcastdeatils, dispatch]);
+  }, [webcastdeatils, dispatch, refID]);
   const handleTicketsCheckout = useCallback(() => {
     if (checkoutRequestStartedRef.current) return;
     if (webcastdeatils?.registrationTickets?.length > 0) {
@@ -294,378 +324,397 @@ const StatewebcastCheckout = ({ refID, takePrice, urlneed, creditData, setAddtoc
     }
   }, [WebcastReducer.status, WebcastReducer?.addtoCartWebcastResponse, WebcastReducer?.checkoutTicketResponse, setAddtocartload, navigation, webcastdeatils, urlneed, finalcheck]);
 
-  return (
-    <View>
-      {webcastdeatils?.conference_active !== 0 ? (
-        <View style={{ width: "100%", backgroundColor: "#FFFFFF" }}>
-          <View style={{
-            width: "100%",
-            position: 'absolute',
-            height: isCheckoutCta
-              ? normalize(108)
-              : normalize(108),
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: Colorpath.white,
-            // borderColor: "#DDDDDD",
-            // borderWidth: 1,
-            paddingHorizontal: normalize(16),
-            paddingTop: normalize(14),
-            paddingBottom: normalize(16),
-            // zIndex:1
-          }}>
-            {webcastdeatils?.buttonType &&
-              webcastdeatils?.buttonType?.toLowerCase() === "register" &&
-              webcastdeatils?.registered_allow === 1 ? (
-              <View style={{ flex: 1, justifyContent: isCheckoutCta ? "flex-start" : "center", alignItems: "center" }}>
-                {isCheckoutCta && webcastdeatils?.registrationTickets?.length > 0 && ticketPriceAmount > 0 ? (
-                  <>
-                    <View style={{ width: "100%" }}>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
-                          {"Price"}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                          {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
-                        </Text>
-                      </View>
-                      <View style={{ marginTop: normalize(0), borderBottomColor: "#D7D7D7", borderBottomWidth: 1, borderStyle: "dashed" }} />
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: normalize(10), gap: normalize(8) }}>
-                        <View style={{ flexShrink: 1 }}>
-                          <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
-                            {"Total"}
-                          </Text>
-                          <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                            {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
-                          </Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(5) }}>
-                          {hasCartActionButton ? (
-                            <Buttons
-                              onPress={() => {
-                                handleTicketsCheckout();
-                                setFinalcheck(webcastdeatils?.already_in_cart === 1 ? "doublecart" : "singlecart");
-                              }}
-                              height={normalize(48)}
-                              width={normalize(100)}
-                              backgroundColor={Colorpath.ButtonColr}
-                              borderRadius={normalize(5)}
-                              text={webcastdeatils?.already_in_cart === 1 ? "Already in cart" : "ADD TO CART"}
-                              color={Colorpath.white}
-                              fontSize={14}
-                              fontFamily={Fonts.InterSemiBold} />
-                          ) : null}
-                          <Buttons
-                            onPress={() => {
-                              if (isCheckoutCta) {
-                                handleTicketsCheckout();
-                                setFinalcheck("checkout")
-                              } else {
-                                handleTicketsCheckout();
-                                setFinalcheck("inperson");
-                              }
-                            }}
-                            height={normalize(48)}
-                            width={showCartAction ? normalize(100) : normalize(160)}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            text={"Checkout"}
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold} />
-                        </View>
-                      </View>
-                    </View>
-                  </>
-                ) : (
-                  <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
-                    <View>
-                      <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#333" }}>
-                        {"Total"}
-                      </Text>
-                      <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#333" }}>
-                        {`${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formatPrice(ticketPriceAmount))}`}
-                      </Text>
-                    </View>
-                    <Buttons
-                      onPress={() => {
-                        handleTicketsCheckout();
-                        setFinalcheck("inperson");
-                      }}
-                      height={normalize(48)}
-                      width={showCartAction ? normalize(122) : normalize(160)}
-                      backgroundColor={Colorpath.ButtonColr}
-                      borderRadius={normalize(5)}
-                      text={"Register"}
-                      color={Colorpath.white}
-                      fontSize={16}
-                      fontFamily={Fonts.InterSemiBold} />
-                  </View>
+  const formattedPriceAmount = formatPrice(ticketPriceAmount);
+  const isFreePrice = Number(formattedPriceAmount) <= 0;
+  const formattedTotalPrice = isFreePrice
+    ? "Free"
+    : `${webcastdeatils?.currency_code || "US$"}${formatNumberWithCommas(formattedPriceAmount)}`;
+
+  const renderPrimaryButton = (label, onPress, disabled = false, extraStyle = null) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.85}
+      style={[
+        styles.primaryButton,
+        disabled && styles.disabledButton,
+        extraStyle,
+      ]}
+    >
+      <Text style={styles.primaryButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderFooterContent = () => {
+    if (webcastdeatils?.conference_active !== 0) {
+      const buttonTypeLower = webcastdeatils?.buttonType?.toLowerCase();
+
+      if (buttonTypeLower === "register" && webcastdeatils?.registered_allow === 1) {
+        if (isCheckoutCta && webcastdeatils?.registrationTickets?.length > 0 && ticketPriceAmount > 0) {
+          return (
+            <View style={styles.checkoutActionRow}>
+              <View style={styles.totalCol}>
+                <Text style={styles.totalLabel}>{"Total"}</Text>
+                <Text style={styles.totalValue}>{formattedTotalPrice}</Text>
+              </View>
+              <View style={styles.actionButtonsGroup}>
+                {hasCartActionButton ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleTicketsCheckout();
+                      setFinalcheck(webcastdeatils?.already_in_cart === 1 ? "doublecart" : "singlecart");
+                    }}
+                    activeOpacity={0.85}
+                    style={styles.secondaryButton}
+                  >
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                      {webcastdeatils?.already_in_cart === 1 ? "Already in cart" : "Add to Cart"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+                {renderPrimaryButton(
+                  "Checkout",
+                  () => {
+                    if (isCheckoutCta) {
+                      handleTicketsCheckout();
+                      setFinalcheck("checkout");
+                    } else {
+                      handleTicketsCheckout();
+                      setFinalcheck("inperson");
+                    }
+                  },
+                  false,
+                  hasCartActionButton ? styles.rowCtaFlex : styles.singleCtaFlex,
                 )}
               </View>
-            ) : null}
-          </View>
-          <View>
-            {
+            </View>
+          );
+        }
 
-              dayjs().isBefore(dayjs(expiry_date)) ? (
-                <></>
-              )
-                : webcastdeatils?.buttonType &&
-                  webcastdeatils?.buttonType.toLowerCase() === "register" &&
-                  webcastdeatils?.registered_allow === 1 ? (
-                  <></>
-                )
-                  : webcastdeatils &&
-                    webcastdeatils.buttonType &&
-                    webcastdeatils.buttonType.toLowerCase() === "interest" &&
-                    webcastdeatils.interested_allow === 1 && webcastdeatils?.organizerName == 'IV Pro' && webcastdeatils?.conferenceId == '288600' ? (
-                    <>
-                      <Buttons
-                        onPress={() => {
-                          Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{
-                            text: "Close",                           /**
- * On press utility.
- * @returns {void}
- */
-                            onPress: () => { "demi" }, style: "default"
-                          }])
-                        }}
-                        height={normalize(45)}
-                        width={normalize(140)}
-                        backgroundColor={Colorpath.ButtonColr}
-                        borderRadius={normalize(5)}
-                        text={"ENROLL NOW"}
-                        color={Colorpath.white}
-                        fontSize={16}
-                        fontFamily={Fonts.InterSemiBold}
-                      />
-                    </>
-                  )
-                    : webcastdeatils &&
-                      webcastdeatils.buttonType &&
-                      webcastdeatils.buttonType.toLowerCase() === "interest" &&
-                      webcastdeatils.interested_allow === 1 && AuthReducer?.loginResponse?.user && (AuthReducer?.loginResponse?.user?.subscription_user == "premium" || AuthReducer?.loginResponse?.user?.subscription_user == 'free') ? (
-                      <>
-                        <Buttons
-                          onPress={() => {
-                            if (webcastdeatils?.registrationTickets?.length > 0 && webcastdeatils?.registered_allow == 1) {
-                              handleTicketsCheckout();
-                            } else {
-                              registerCheck();
-                            }
-                            setFinalcheck("textproceed");
-                          }}
-                          height={normalize(45)}
-                          width={normalize(140)}
-                          backgroundColor={Colorpath.ButtonColr}
-                          borderRadius={normalize(5)}
-                          text={"PROCEED TO REGISTER"}
-                          color={Colorpath.white}
-                          fontSize={16}
-                          fontFamily={Fonts.InterSemiBold}
-                          marginBottom={normalize(10)}
-                        />
-                      </>
-                    )
-                      : webcastdeatils &&
-                        webcastdeatils.buttonType &&
-                        webcastdeatils.buttonType.toLowerCase() === "interest" &&
-                        webcastdeatils.interested_allow === 1 ? (
-                        <>
-                          <Buttons
-                            onPress={() => {
-                              if (webcastdeatils?.registrationTickets?.length > 0 && webcastdeatils?.registered_allow == 1) {
-                                handleTicketsCheckout();
-                              } else {
-                                registerCheck();
-                              }
-                              setFinalcheck("textproceed");
-                            }}
-                            height={normalize(45)}
-                            width={normalize(140)}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            text={"PROCEED TO REGISTER"}
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginBottom={normalize(10)}
-                          />
-                        </>
-                      )
-                        : webcastdeatils &&
-                          webcastdeatils.buttonType &&
-                          webcastdeatils.buttonType.toLowerCase() === "interest" &&
-                          webcastdeatils.interested_allow === 0 ? (
-                          <Buttons
-                            onPress={() => {
-                              Alert.alert('eMedEvents', 'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features', [{
-                                text: "Cancel",                               /**
- * On press utility.
- * @returns {void}
- */
-                                onPress: () => { "demi" }, style: "default"
-                              }])
-                            }}
-                            height={normalize(45)}
-                            width={normalize(140)}
-                            backgroundColor={"#DADADA"}
-                            borderRadius={normalize(5)}
-                            marginBottom={normalize(10)}
-                            text={"SHOWN INTEREST"}
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                            disabled={true}
-                          />
-                        ) : webcastdeatils?.button_display_text == "Revise Course" &&
-                          webcastdeatils.button_redirect_text == "revise_activity" ? (
-                          <View style={{ gap: 5 }}>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, color: "#000000", fontSize: 14, alignSelf: "center" }}>
-                              {"You have already registered"}
-                            </Text>
-                            <Buttons
-                              onPress={() => {
-                                if (webcastdeatils?.current_activity_api == "activitysession") {
-                                  navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
-                                } else if (webcastdeatils?.current_activity_api == "introduction") {
-                                  navigation.navigate("StartTest", { conference: webcastdeatils?.conferenceId })
-                                } else if (webcastdeatils?.current_activity_api == "startTest") {
-                                  navigation.navigate("PreTest", { activityID: { activityID: webcastdeatils?.current_activity_id, conference_id: webcastdeatils?.conferenceId, webcastdeatils: webcastdeatils } })
-                                }
-                              }}
-                              height={normalize(45)}
-                              width={normalize(140)}
-                              backgroundColor={Colorpath.ButtonColr}
-                              borderRadius={normalize(5)}
-                              text={webcastdeatils?.button_display_text}
-                              color={Colorpath.white}
-                              fontSize={16}
-                              fontFamily={Fonts.InterSemiBold}
-                              marginBottom={normalize(10)}
-                            />
-                          </View>
-                        ) : webcastdeatils?.dkbmed_link ? (
-                          <View>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, color: "#000000", fontSize: 14 }}>
-                              {"You have already registered"}
-                            </Text>
-                            <Buttons
-                              onPress={() => {
-                                Linking.openURL(webcastdeatils?.dkbmed_link)
-                                console.log("hrelll");
-                              }}
-                              height={normalize(45)}
-                              width={normalize(140)}
-                              backgroundColor={Colorpath.ButtonColr}
-                              borderRadius={normalize(5)}
-                              text={webcastdeatils?.buttonText}
-                              color={Colorpath.white}
-                              fontSize={16}
-                              fontFamily={Fonts.InterSemiBold}
-                            />
-                          </View>
-                        ) : webcastdeatils?.button_redirect_text == "redirect_creditvault" ? (
-                          <Buttons
-                            onPress={() => {
-                              navigation.navigate("AddCredits", { mainAdd: creditData })
-                            }}
-                            height={normalize(45)}
-                            width={normalize(140)}
-                            backgroundColor={Colorpath.ButtonColr}
-                            borderRadius={normalize(5)}
-                            marginBottom={normalize(10)}
-                            text={"Add Credits"}
-                            color={Colorpath.white}
-                            fontSize={16}
-                            fontFamily={Fonts.InterSemiBold}
-                          />
-                        ) : webcastdeatils ? (
-                          <View>
-                            <Text style={{ alignSelf: "center", fontFamily: Fonts.InterSemiBold, color: "#000000", fontSize: 14, marginBottom: normalize(10) }}>
-                              {"You have already registered"}
-                            </Text>
-                            <Buttons
-                              onPress={() => {
-                                fullAction(webcastdeatils);
-                              }}
-                              height={normalize(45)}
-                              width={normalize(140)}
-                              backgroundColor={Colorpath.ButtonColr}
-                              borderRadius={normalize(5)}
-                              text={webcastdeatils?.buttonText}
-                              color={Colorpath.white}
-                              marginBottom={normalize(10)}
-                              fontSize={16}
-                              fontFamily={Fonts.InterSemiBold}
-                            />
-                          </View>
-                        ) : (
-                          ""
-                        )}
-            {null}
+        return (
+          <View style={styles.registerRow}>
+            <View style={styles.totalCol}>
+              {!isFreePrice ? <Text style={styles.totalLabel}>{"Total"}</Text> : null}
+              <Text style={styles.totalValue}>{formattedTotalPrice}</Text>
+            </View>
+            {renderPrimaryButton(
+              "Register",
+              () => {
+                handleTicketsCheckout();
+                setFinalcheck("inperson");
+              },
+              false,
+              styles.registerButton,
+            )}
           </View>
-        </View>
-      ) : webcastdeatils?.conference_active == 0 &&
-        webcastdeatils?.button_redirect_text == "revise_activity" ? (
-        <View style={{ backgroundColor: "#FFFFFF" }}>
-          <Buttons
-            onPress={() => {
-              navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
-            }}
-            height={normalize(45)}
-            width={normalize(140)}
-            backgroundColor={Colorpath.ButtonColr}
-            borderRadius={normalize(5)}
-            text={"Revise Activity"}
-            color={Colorpath.white}
-            fontSize={14}
-            fontFamily={Fonts.InterSemiBold}
-            marginBottom={normalize(10)}
-          />
-        </View>
-      ) : webcastdeatils?.conference_active == 0 && webcastdeatils?.bundle_conf_taken_msg ? (
-        <>
+        );
+      }
 
+      if (expiry_date && dayjs().isBefore(dayjs(expiry_date))) {
+        return null;
+      }
+
+      if (
+        buttonTypeLower === "interest" &&
+        webcastdeatils?.interested_allow === 1 &&
+        webcastdeatils?.organizerName == 'IV Pro' &&
+        webcastdeatils?.conferenceId == '288600'
+      ) {
+        return renderPrimaryButton(
+          "ENROLL NOW",
+          () => {
+            Alert.alert(
+              'eMedEvents',
+              'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features',
+              [{
+                text: "Close",
+                /**
+                 * On press utility.
+                 * @returns {void}
+                 */
+                onPress: () => { "demi"; },
+                style: "default",
+              }],
+            );
+          },
+        );
+      }
+
+      if (buttonTypeLower === "interest" && webcastdeatils?.interested_allow === 1) {
+        return renderPrimaryButton(
+          "PROCEED TO REGISTER",
+          () => {
+            if (webcastdeatils?.registrationTickets?.length > 0 && webcastdeatils?.registered_allow == 1) {
+              handleTicketsCheckout();
+            } else {
+              registerCheck();
+            }
+            setFinalcheck("textproceed");
+          },
+        );
+      }
+
+      if (buttonTypeLower === "interest" && webcastdeatils?.interested_allow === 0) {
+        return renderPrimaryButton(
+          "SHOWN INTEREST",
+          () => {
+            Alert.alert(
+              'eMedEvents',
+              'The Recommended In-Person Conferences Online Courses Medical Conference,and Interested Conference sections are not available in the mobile version. Please visit our website to access these features',
+              [{
+                text: "Cancel",
+                /**
+                 * On press utility.
+                 * @returns {void}
+                 */
+                onPress: () => { "demi"; },
+                style: "default",
+              }],
+            );
+          },
+          true,
+        );
+      }
+
+      if (
+        webcastdeatils?.button_display_text == "Revise Course" &&
+        webcastdeatils?.button_redirect_text == "revise_activity"
+      ) {
+        return (
+          <View style={styles.registeredStack}>
+            <Text style={styles.registeredNote}>{"You have already registered"}</Text>
+            {renderPrimaryButton(
+              webcastdeatils?.button_display_text,
+              () => {
+                if (webcastdeatils?.current_activity_api == "activitysession") {
+                  navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
+                } else if (webcastdeatils?.current_activity_api == "introduction") {
+                  navigation.navigate("StartTest", { conference: webcastdeatils?.conferenceId });
+                } else if (webcastdeatils?.current_activity_api == "startTest") {
+                  navigation.navigate("PreTest", {
+                    activityID: {
+                      activityID: webcastdeatils?.current_activity_id,
+                      conference_id: webcastdeatils?.conferenceId,
+                      webcastdeatils: webcastdeatils,
+                    },
+                  });
+                }
+              },
+            )}
+          </View>
+        );
+      }
+
+      if (webcastdeatils?.dkbmed_link) {
+        return (
+          <View style={styles.registeredStack}>
+            <Text style={styles.registeredNote}>{"You have already registered"}</Text>
+            {renderPrimaryButton(
+              webcastdeatils?.buttonText || "Continue",
+              () => {
+                Linking.openURL(webcastdeatils?.dkbmed_link);
+              },
+            )}
+          </View>
+        );
+      }
+
+      if (webcastdeatils?.button_redirect_text == "redirect_creditvault") {
+        return renderPrimaryButton(
+          "Add Credits",
+          () => {
+            navigation.navigate("AddCredits", { mainAdd: creditData });
+          },
+        );
+      }
+
+      if (webcastdeatils) {
+        return (
+          <View style={styles.registeredStack}>
+            <Text style={styles.registeredNote}>{"You have already registered"}</Text>
+            {renderPrimaryButton(
+              webcastdeatils?.buttonText || "Continue",
+              () => {
+                fullAction(webcastdeatils);
+              },
+            )}
+          </View>
+        );
+      }
+
+      return null;
+    }
+
+    if (
+      webcastdeatils?.conference_active == 0 &&
+      webcastdeatils?.button_redirect_text == "revise_activity"
+    ) {
+      return renderPrimaryButton(
+        "Revise Activity",
+        () => {
+          navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
+        },
+      );
+    }
+
+    if (webcastdeatils?.conference_active == 0 && webcastdeatils?.bundle_conf_taken_msg) {
+      return (
+        <View style={styles.bundleBlock}>
           <RenderHTML
-            contentWidth={width}
+            contentWidth={Math.max(width - normalize(32), 220)}
             source={{ html: webcastdeatils?.bundle_conf_taken_msg }}
             tagsStyles={{
-              p: { marginLeft: normalize(5), fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }
+              p: styles.bundleMsgText,
             }}
           />
-
-          {webcastdeatils?.bundle_add_cart == "1" && (<Buttons
-            onPress={() => {
+          {webcastdeatils?.bundle_add_cart == "1" ? renderPrimaryButton(
+            webcastdeatils?.already_in_cart == 1 ? "Already in cart" : "ADD TO CART",
+            () => {
               handleTicketsCheckout();
-              setFinalcheck("freshcart");
-            }}
-            height={normalize(45)}
-            width={normalize(140)}
-            backgroundColor={Colorpath.ButtonColr}
-            borderRadius={normalize(5)}
-            text={"ADD TO CART"}
-            color={Colorpath.white}
-            fontSize={14}
-            marginBottom={10}
-          />)}
-        </>
+              setFinalcheck(webcastdeatils?.already_in_cart == 1 ? "doublecart" : "freshcart");
+            },
+          ) : null}
+        </View>
+      );
+    }
 
-      ) : (
-        ""
-      )}
+    return null;
+  };
 
+  const footerContent = renderFooterContent();
+  if (!footerContent) {
+    return null;
+  }
 
-
+  return (
+    <View style={styles.footerContainer}>
+      {footerContent}
     </View>
-  )
-}
+  );
+});
+
+const styles = StyleSheet.create({
+  footerContainer: {
+    width: '100%',
+    flexShrink: 0,
+    backgroundColor: '#EAF4FF',
+    borderTopWidth: 1,
+    borderTopColor: '#C7E0FC',
+    paddingHorizontal: normalize(12),
+    paddingTop: normalize(10),
+    paddingBottom: normalize(14),
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  checkoutActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: normalize(8),
+  },
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: normalize(12),
+  },
+  totalCol: {
+    flexShrink: 1,
+  },
+  totalLabel: {
+    fontFamily: Fonts.InterMedium,
+    fontSize: 12.5,
+    color: '#64748B',
+  },
+  totalValue: {
+    fontFamily: Fonts.InterBold,
+    fontSize: 18,
+    color: '#0F172A',
+  },
+  actionButtonsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-end',
+    gap: normalize(8),
+  },
+  primaryButton: {
+    height: normalize(44),
+    width: '100%',
+    backgroundColor: Colorpath.ButtonColr,
+    borderRadius: normalize(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: normalize(14),
+  },
+  rowCtaFlex: {
+    flex: 1,
+    width: undefined,
+    paddingHorizontal: normalize(10),
+  },
+  singleCtaFlex: {
+    flex: 0,
+    width: undefined,
+    minWidth: normalize(160),
+  },
+  registerButton: {
+    flex: 0,
+    width: undefined,
+    minWidth: normalize(150),
+  },
+  disabledButton: {
+    backgroundColor: '#CBD5E1',
+  },
+  primaryButtonText: {
+    color: Colorpath.white,
+    fontSize: 14.5,
+    fontFamily: Fonts.InterSemiBold,
+  },
+  secondaryButton: {
+    height: normalize(44),
+    flex: 1.3,
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: Colorpath.ButtonColr,
+    borderRadius: normalize(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: normalize(8),
+  },
+  secondaryButtonText: {
+    color: Colorpath.ButtonColr,
+    fontSize: 13,
+    fontFamily: Fonts.InterSemiBold,
+  },
+  registeredStack: {
+    width: '100%',
+    gap: normalize(8),
+  },
+  registeredNote: {
+    fontFamily: Fonts.InterSemiBold,
+    color: '#0F172A',
+    fontSize: 13.5,
+    textAlign: 'center',
+  },
+  bundleBlock: {
+    gap: normalize(8),
+  },
+  bundleMsgText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 13.5,
+    color: '#0F172A',
+    marginVertical: 0,
+  },
+});
 
 /**
  * Statewebcast checkout default export.
  *
  * @returns {*}
  */
-export default StatewebcastCheckout
+export default StatewebcastCheckout;

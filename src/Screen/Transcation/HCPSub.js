@@ -2,18 +2,16 @@
  * Hcpsub screen module. Renders a React Native screen or a screen-scoped support component. Exported members: HCPSub, toggleDrawerModal, HCPBack, handleLinearTextChange, onBackPress.
  */
 
-import { View, Text, Platform, TouchableOpacity, Alert, BackHandler } from 'react-native'
+import { View, Text, TouchableOpacity, BackHandler, StyleSheet } from 'react-native'
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import PageHeader from '../../Components/PageHeader'
 import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import GradientButton from '../../Components/LinearButton';
 import Fonts from '../../Themes/Fonts';
 import HcpContent from './HcpContent';
 import UserSub from './UserSub';
 import DrawerModal from '../../Components/DrawerModal';
-import { object } from 'prop-types';
 import NetInfo from '@react-native-community/netinfo';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
@@ -33,56 +31,44 @@ const HCPSub = (props) => {
     const [visible, setVisible] = useState(false);
     const [nodata, setNodata] = useState("drawerclose");
     const [idget, setIdget] = useState("6");
-    const [storeAlldata, setStoreAlldata] = useState([]);
-    const [storeAlldatas, setStoreAlldatas] = useState([]);
+    const [storeAlldata, setStoreAlldata] = useState({});
+    const [storeAlldatas, setStoreAlldatas] = useState({});
     const [valuttext, setValuttext] = useState(false);
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(true);
+
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
     }, [isConnected]);
-        /**
- * Toggle drawer modal utility.
- * @returns {void}
- */
-const toggleDrawerModal = () => {
+
+    const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
-        /**
- * Hcpback component.
- * @returns {void}
- */
-const HCPBack = () => {
+
+    const HCPBack = () => {
         props.navigation.dispatch(
             CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
         );
-    }
+    };
+
+    const handleLinearTextChange = (isOnline) => {
+        setLinearText(isOnline);
+    };
+
     useEffect(() => {
-        if (Object.keys(storeAlldatas)?.length > 0) {
+        if (storeAlldatas && Object.keys(storeAlldatas)?.length > 0) {
             handleLinearTextChange(true);
         } else {
             handleLinearTextChange(false);
         }
-    }, [storeAlldata])
-        /**
- * Handles linear text change.
- * @param {boolean} isOnline - Input value.
- * @returns {void}
- */
-const handleLinearTextChange = (isOnline) => {
-        setLinearText(isOnline);
-    };
+    }, [storeAlldata, storeAlldatas]);
+
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        const onBackPress = () => {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -98,126 +84,66 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
-    console.log(storeAlldatas, "storeAlldata-----hcp", Object.keys(storeAlldatas).length);
+    }, [props.navigation]);
+
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+
     return (
         <>
-            <MyStatusBar
-                barStyle={'light-content'}
-                backgroundColor={Colorpath.Pagebg}
-            />
-            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
-                    {Platform.OS === "ios" ? (
-                        <PageHeader
-                            title="My Subscriptions"
-                            onBackPress={HCPBack}
-                        />
-                    ) : (
-                        <PageHeader
-                            title="My Subscriptions"
-                            onBackPress={HCPBack}
-                        />
+            <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            {conn == false ? <IntOff /> : (
+                <SafeAreaView style={localStyles.container}>
+                    <PageHeader
+                        title="My Subscriptions"
+                        onBackPress={HCPBack}
+                    />
+                    <View style={localStyles.segmentWrapper}>
+                        <View style={localStyles.segmentBar}>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                style={[
+                                    localStyles.segmentTab,
+                                    valuttext && localStyles.segmentTabActive
+                                ]}
+                                onPress={() => setValuttext(true)}
+                            >
+                                <Text style={[
+                                    localStyles.segmentText,
+                                    valuttext && localStyles.segmentTextActive
+                                ]}>
+                                    {"HCP"}
+                                </Text>
+                            </TouchableOpacity>
 
-                    )}
-                </View>
-                <View style={{ marginTop: normalize(10) }}>
-                    <View style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between", // Changed from space-evenly to space-between
-                        width: normalize(300),
-                        height: normalize(48),
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: normalize(5),
-                        paddingHorizontal: normalize(2), // Added padding to prevent overflow
-                        alignSelf: 'center',
-                    }}>
-                        <TouchableOpacity
-                            style={[
-                                {
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    flex: 1,
-                                    height: normalize(41),
-                                    borderRadius: normalize(5),
-                                    marginTop: normalize(3),
-                                    marginHorizontal: normalize(2),
-                                },
-                                valuttext && {
-                                    backgroundColor: "#DCE4FF"
-                                }
-                            ]}
-                            onPress={() => { setValuttext(true); }}
-                        >
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: valuttext ? Colorpath.ButtonColr : "#000000"
-                            }}>
-                                {"HCP"}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                {
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    flex: 1,
-                                    height: normalize(41),
-                                    borderRadius: normalize(5),
-                                    marginTop: normalize(3),
-                                    marginHorizontal: normalize(-1),
-                                },
-                                !valuttext && {
-                                    backgroundColor: "#DCE4FF"
-                                }
-                            ]}
-                            onPress={() => { setValuttext(false) }}
-                        >
-                            <Text style={{
-                                fontFamily: Fonts.InterSemiBold,
-                                fontSize: 16,
-                                color: !valuttext ? Colorpath.ButtonColr : "#000000"
-                            }}>
-                                {"User"}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                {/* <View style={{ flexDirection: "row", justifyContent: "space-evenly", paddingVertical: normalize(5) }}>
-                    { <TouchableOpacity onPress={() => { handleLinearTextChange(true); }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: linearText ? "#2C4DB9" : "#555555" }}>
-                            {"HCP"}
-                        </Text>
-                    </TouchableOpacity>}
-                    <TouchableOpacity onPress={() => { handleLinearTextChange(false) }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: !linearText ? "#2C4DB9" : "#555555" }}>
-                            {"User"}
-                        </Text>
-                    </TouchableOpacity>
-                </View> */}
-
-                <View>
-                    {/* <View style={{ zIndex: 999, position: "relative", top: 1, flexDirection: "row", justifyContent: "space-evenly", marginRight: linearText ? normalize(39) : undefined, marginLeft: !linearText ? normalize(60) : undefined }}>
-                        {Object.keys(storeAlldatas)?.length > 0  &&<View>
-                            {linearText && <GradientButton width={60} />}
-                        </View>}
-                        <View style={{marginRight:Object.keys(storeAlldatas)?.length > 0 ? 0 :normalize(50)}}>
-                            {!linearText && <GradientButton width={60} />}
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                style={[
+                                    localStyles.segmentTab,
+                                    !valuttext && localStyles.segmentTabActive
+                                ]}
+                                onPress={() => setValuttext(false)}
+                            >
+                                <Text style={[
+                                    localStyles.segmentText,
+                                    !valuttext && localStyles.segmentTextActive
+                                ]}>
+                                    {"User"}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-                    </View> */}
-                    <View style={{ bottom: normalize(10) }}>
-                        {valuttext && <HcpContent storeAlldata={storeAlldata} setStoreAlldata={setStoreAlldata} />}
                     </View>
-                    <View style={{ bottom: normalize(10) }}>
-                        {!valuttext && <UserSub storeAlldatas={storeAlldatas} setStoreAlldatas={setStoreAlldatas} />}
+
+                    <View style={localStyles.contentContainer}>
+                        {valuttext ? (
+                            <HcpContent storeAlldata={storeAlldata} setStoreAlldata={setStoreAlldata} />
+                        ) : (
+                            <UserSub storeAlldatas={storeAlldatas} setStoreAlldatas={setStoreAlldatas} />
+                        )}
                     </View>
-                </View>
-            </SafeAreaView>}
+                </SafeAreaView>
+            )}
             <DrawerModal
                 expandId={idget}
                 handel={nodata}
@@ -238,9 +164,46 @@ const onBackPress = () => {
     )
 }
 
-/**
- * Hcpsub default export.
- *
- * @returns {*}
- */
+const localStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#EEF5FF',
+    },
+    segmentWrapper: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(10),
+        paddingBottom: normalize(4),
+    },
+    segmentBar: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#D6E4FF',
+        padding: normalize(4),
+    },
+    segmentTab: {
+        flex: 1,
+        height: normalize(36),
+        borderRadius: normalize(9),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    segmentTabActive: {
+        backgroundColor: Colorpath.ButtonColr,
+    },
+    segmentText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 14,
+        color: '#475569',
+    },
+    segmentTextActive: {
+        fontFamily: Fonts.InterSemiBold,
+        color: '#FFFFFF',
+    },
+    contentContainer: {
+        flex: 1,
+    },
+});
+
 export default HCPSub

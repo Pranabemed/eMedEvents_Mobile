@@ -11,7 +11,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts'
 import Imagepath from '../../Themes/Imagepath';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
-import FilterModal from '../../Components/Filter';
+import {CourseFilterField, CourseFilterPicker, useCoursePagination} from './CourseListControls';
 import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native'
 import StarRating from 'react-native-star-rating-widget';
 import { useDispatch, useSelector } from 'react-redux'
@@ -30,7 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * Status string constant.
  * @returns {string}
  */
-let status = "";
+
 // import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 /**
@@ -58,10 +58,15 @@ const SpecialityCourseSlide = (props) => {
     console.log(DashboardReducer, "finaltake------------------", takestate, addit);
     const [filterstate, setFilterstate] = useState(null);
     const [finalData, setFinalData] = useState("");
+    const courseScrollRef = useRef(null);
+    const pagination = useCoursePagination(finalData, filterName);
     const [stateid, setStateid] = useState("");
     const [handle, setHandle] = useState(null);
-    const [viewmore, setViewmore] = useState(false);
+
     const [servetextsp, setServetextsp] = useState(false);
+    const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+    const profilePending = useRef(false);
+    const coursesPending = useRef(false);
     const isFocus = useIsFocused();
     console.log(filterstate, "handle=======", filterstate?.length);
     const [conn, setConn] = useState("")
@@ -89,7 +94,6 @@ const SpecialityCourseSlide = (props) => {
  */
 const openFilterModal = () => {
         setFiltermodal(true);
-        setViewmore(false);
     }
 const closeFilterModal = () => {
         setFiltermodal(false);
@@ -129,11 +133,15 @@ const addCreditBack = () => {
         addCreditBack();
     };
     useEffect(() => {
+        if (!isFocus) return;
+        setIsLoadingCourses(true);
         connectionrequest()
             .then(() => {
+                profilePending.current = true;
                 dispatch(mainprofileRequest({}))
             })
             .catch((err) => {
+                setIsLoadingCourses(false);
                 showErrorAlert("Please connect to internet", err)
             })
     }, [isFocus])
@@ -177,40 +185,53 @@ const titlhandleUrl = (make) => {
  * @returns {void}
  */
 const stateDashboardData = () => {
+        setIsLoadingCourses(true);
+        setServetextsp(false);
         let obj = {
             "speciality": filterName
         }
         connectionrequest()
             .then(() => {
+                coursesPending.current = true;
                 dispatch(specailtyRequest(obj));
             })
-            .catch(err => { showErrorAlert("Please connect to internet", err) })
+            .catch(err => { setIsLoadingCourses(false); showErrorAlert("Please connect to internet", err); })
     }
         /**
  * Toggle special utility.
  * @returns {void}
  */
-const toggleSpecial = () => {
-        setViewmore(!viewmore)
-    }
-    if (status == '' || DashboardReducer.status != status) {
-        switch (DashboardReducer.status) {
-            case 'Dashboard/specailtyRequest':
-                status = DashboardReducer.status;
-                setServetextsp(false);
-                break;
-            case 'Dashboard/specailtySuccess':
-                status = DashboardReducer.status;
+
+    useEffect(() => {
+        const status = DashboardReducer?.status;
+        if (profilePending.current && status === 'Dashboard/mainprofileSuccess') {
+            profilePending.current = false;
+            const specialties = DashboardReducer?.mainprofileResponse?.specialities;
+            if (!specialties || !Object.keys(specialties).length) {
+                setFilterstate([]);
+                setFinalData([]);
                 setServetextsp(true);
-                setFinalData(DashboardReducer?.specailtyResponse?.data?.specialty_courses);
-                console.log(DashboardReducer?.specailtyResponse?.data?.specialty_courses, "mainprofileRespons===========")
-                break;
-            case 'Dashboard/mainprofileFailure':
-                status = DashboardReducer.status;
-                setServetextsp(true);
-                break;
+                setIsLoadingCourses(false);
+            } else if (stateid && Object.prototype.hasOwnProperty.call(specialties, stateid)) {
+                // Refresh the existing selection as well as the first selection.
+                coursesPending.current = true;
+                dispatch(specailtyRequest({ speciality: specialties[stateid] }));
+            }
+        } else if (profilePending.current && status === 'Dashboard/mainprofileFailure') {
+            profilePending.current = false;
+            setIsLoadingCourses(coursesPending.current);
         }
-    }
+        if (coursesPending.current && status === 'Dashboard/specailtySuccess') {
+            coursesPending.current = false;
+            setFinalData(DashboardReducer?.specailtyResponse?.data?.specialty_courses || []);
+            setServetextsp(true);
+            setIsLoadingCourses(profilePending.current);
+        } else if (coursesPending.current && status === 'Dashboard/specailtyFailure') {
+            coursesPending.current = false;
+            setServetextsp(true);
+            setIsLoadingCourses(profilePending.current);
+        }
+    }, [DashboardReducer?.status, DashboardReducer?.mainprofileResponse, DashboardReducer?.specailtyResponse, stateid, dispatch]);
     useEffect(() => {
                 /**
  * On back press utility.
@@ -378,7 +399,7 @@ const RequiredCourses = ({ item, index }) => {
                 backgroundColor={Colorpath.Pagebg}
             />
             <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <Loader visible={DashboardReducer?.status == 'Dashboard/specailtyRequest'} />
+                <Loader visible={isFocus && conn !== false && isLoadingCourses} />
 
                 {Platform.OS === 'ios' ? <PageHeader
                     title=""
@@ -389,40 +410,9 @@ const RequiredCourses = ({ item, index }) => {
                         onBackPress={handleBackPress}
                     />
                 </View>}
-                {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(30) }}>
-                    {filterstate?.length > 0 && (
-                        <View style={styles.filterBar}>
-                            {!filterName ? (
-                                <Text style={styles.filterPlaceholderText}>
-                                    {"Filters"}
-                                </Text>
-                            ) : (
-                                <TouchableOpacity
-                                    activeOpacity={filterstate?.length > 1 ? 0.75 : 1}
-                                    disabled={filterstate?.length <= 1}
-                                    onPress={openFilterModal}
-                                    style={styles.selectedStatePill}
-                                >
-                                    <Text numberOfLines={1} style={styles.selectedStatePillText}>
-                                        {filterName}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                            {filterstate?.length > 1 && (
-                                <TouchableOpacity
-                                    onPress={openFilterModal}
-                                    style={styles.dropdownTriggerBtn}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                    <ArrowIcons
-                                        name={filtermodal ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                                        size={24}
-                                        color="#000000"
-                                    />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    )}
+                {conn == false ? <IntOff /> : <ScrollView ref={courseScrollRef} onScroll={pagination.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: normalize(30) }}>
+                    {filterstate?.length > 0 && <CourseFilterField label="Specialty" value={filterName}
+                        disabled={filterstate.length <= 1} onPress={openFilterModal}/>}
                     <View style={styles.sectionDivider} />
                     {finalData?.length > 0 && (
                         <View style={styles.sectionHeaderWrap}>
@@ -434,7 +424,7 @@ const RequiredCourses = ({ item, index }) => {
                     <View>
                         <FlatList
                             scrollEnabled={false}
-                            data={finalData?.slice(0, 3)}
+                            data={pagination.items}
                             renderItem={RequiredCourses}
                             keyExtractor={(item, index) => index.toString()}
                             ListEmptyComponent={servetextsp &&
@@ -470,31 +460,7 @@ const RequiredCourses = ({ item, index }) => {
                             }
                             showsHorizontalScrollIndicator={false}
                         />
-                        {finalData?.length > 3 && <FlatList
-                            scrollEnabled={false}
-                            data={viewmore ? finalData?.slice(3) : []}
-                            renderItem={RequiredCourses}
-                            keyExtractor={(item, index) => index.toString()}
-                            showsVerticalScrollIndicator={false}
-                            ListFooterComponent={
-                                <TouchableOpacity onPress={toggleSpecial}>
-                                    <View style={{
-                                        justifyContent: "flex-end",
-                                        alignItems: "flex-end",
-                                        width: "95%"
-                                    }}>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: Colorpath.ButtonColr,
-                                            }}>
-                                            {viewmore ? "View less" : "View more"}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            }
-                        />}
+
                     </View>
                     <Tooltip
                         isVisible={tooltip}
@@ -520,27 +486,12 @@ const RequiredCourses = ({ item, index }) => {
                         onClose={() => setTootip(false)}
                     >
                     </Tooltip>
-                    <FilterModal
-                        isfilterVisible={filtermodal}
-                        onfilterFalse={closeFilterModal}
-                        filterName={filterName}
-                        setFilterName={setFilterName}
-                        setStateid={setStateid}
-                        stateid={stateid}
-                        setAcivityformat={setAcivityformat}
-                        acivityformat={acivityformat}
-                        setFiltermonth={setFiltermonth}
-                        filtermonth={filtermonth}
-                        stateFiltered={stateFiltered}
-                        setStateFiltered={setStateFiltered}
-                        activity={activity}
-                        setActivity={setActivity}
-                        month={month}
-                        setMonth={setMonth}
-                        onSave={handleSave}
-                        filterState={filterstate}
-                        specaility={"text"}
-                    />
+                    <CourseFilterPicker label="Specialty" visible={filtermodal} onClose={() => setFiltermodal(false)}
+                        options={filterstate} selectedId={stateid} onSelect={(item, close) => {
+                            setFilterName(item.name);
+                            setStateid(item.id);
+                            if (close) setFiltermodal(false);
+                        }}/>
                 </ScrollView>}
             </SafeAreaView>
             <DrawerModal

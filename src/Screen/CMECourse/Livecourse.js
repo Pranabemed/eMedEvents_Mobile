@@ -2,7 +2,7 @@
  * Livecourse screen module. Renders a React Native screen or a screen-scoped support component. Exported members: Livecourse, fullActionlive, titlhandleUrllive, handleLinkst, showPDF, openFileViewerst, fetchHandle, fullDataRefresh, courserenderData, formatDate, formatDateEnd, handlePress, styles.
  */
 
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Animated } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState, useRef, useMemo } from 'react'
 import Fonts from '../../Themes/Fonts'
 import IconDot from 'react-native-vector-icons/Entypo';
@@ -10,6 +10,7 @@ import Colorpath from '../../Themes/Colorpath';
 import Imagepath from '../../Themes/Imagepath';
 import Calender from 'react-native-vector-icons/EvilIcons';
 import { useDispatch, useSelector } from 'react-redux';
+import { nanoid } from '@reduxjs/toolkit';
 import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native';
 import { cmeCourseRequest, clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
@@ -30,6 +31,58 @@ import { FormatDateZone } from '../../Utils/Helpers/Timezone';
  * @returns {JSX.Element}
  */
 
+const LiveCourseListSkeleton = ({ count = 4 }) => {
+    const pulseAnim = useRef(new Animated.Value(0.45)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 0.9,
+                    duration: 750,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.45,
+                    duration: 750,
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [pulseAnim]);
+
+    return (
+        <View style={{ paddingTop: normalize(10), paddingHorizontal: normalize(10) }}>
+            {Array.from({ length: count }).map((_, index) => (
+                <Animated.View
+                    key={`live-skeleton-${index}`}
+                    style={{
+                        opacity: pulseAnim,
+                        backgroundColor: Colorpath.white,
+                        borderRadius: normalize(8),
+                        borderWidth: 1,
+                        borderColor: '#E5ECF6',
+                        paddingHorizontal: normalize(12),
+                        paddingVertical: normalize(12),
+                        marginBottom: normalize(10),
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ height: 14, width: '78%', borderRadius: 6, backgroundColor: '#E8EEF5' }} />
+                        <View style={{ height: 18, width: 10, borderRadius: 4, backgroundColor: '#EEF2F7' }} />
+                    </View>
+                    <View style={{ height: 12, width: '58%', borderRadius: 6, backgroundColor: '#EEF2F7', marginTop: 10 }} />
+                    <View style={{ marginTop: 12, height: 1, width: '100%', backgroundColor: '#F1F5F9' }} />
+                    <View style={{ height: 11, width: '44%', borderRadius: 5, backgroundColor: '#EEF2F7', marginTop: 10 }} />
+                    <View style={{ height: normalize(28), width: '100%', borderRadius: normalize(5), backgroundColor: '#E8EEF5', marginTop: 12 }} />
+                </Animated.View>
+            ))}
+        </View>
+    );
+};
+
 const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadingdownstlv }) => {
     const {
         statepush,
@@ -40,10 +93,14 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const statusRef = useRef("");
+    const requestIdRef = useRef(null);
     const hasMoreRef = useRef(true);
     const isFetchingMoreRef = useRef(false);
     const onEndReachedCalledDuringMomentum = useRef(true);
+    const pendingResetRef = useRef(false);
+    const requestedPageRef = useRef(0);
     const [storeAlldata, setStoreAlldata] = useState([]);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [apiReq, setApiReq] = useState(false);
     const [loading, setLoading] = useState(false);
     const [pageNum, setPageNum] = useState(0);
@@ -62,15 +119,15 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
             (needReviewlive == 0 && certificatelive) ? duplicateDatalive : null;
     useEffect(() => {
         if (isFocus) {
-            dispatch(clearCmeCourseData());
             statusRef.current = "";
             hasMoreRef.current = true;
             isFetchingMoreRef.current = false;
             onEndReachedCalledDuringMomentum.current = true;
-            setStoreAlldata([]);
+            pendingResetRef.current = true;
             setPageNum(0);
             fetchHandle(0);
         }
+        return () => { requestIdRef.current = null; };
     }, [isFocus, dispatch]);
         /**
  * Full actionlive utility.
@@ -178,6 +235,14 @@ const openFileViewerst = async () => {
  * @returns {void}
  */
 const fetchHandle = (page = pageNum) => {
+        const requestId = nanoid();
+        requestIdRef.current = requestId;
+        statusRef.current = "";
+        requestedPageRef.current = page;
+        if (page === 0) {
+            setInitialLoading(true);
+            setStoreAlldata([]);
+        }
         let obj = {
             "pageno": page,
             "limit": limit,
@@ -187,11 +252,19 @@ const fetchHandle = (page = pageNum) => {
         setLoading(true);
         connectionrequest()
             .then(() => {
-                dispatch(cmeCourseRequest(obj));
+                if (requestIdRef.current !== requestId) return;
+                dispatch({
+                    ...cmeCourseRequest(obj),
+                    meta: { globalResultRequestId: requestId },
+                });
             })
             .catch((err) => {
+                if (requestIdRef.current !== requestId) return;
                 showErrorAlert("Please connect to internet", err);
                 setLoading(false);
+                setInitialLoading(false);
+                setRefreshing(false);
+                pendingResetRef.current = false;
                 isFetchingMoreRef.current = false;
             });
     };
@@ -206,6 +279,7 @@ const fetchHandle = (page = pageNum) => {
             return;
         }
         isFetchingMoreRef.current = true;
+        pendingResetRef.current = false;
         const nextPage = pageNum + 1;
         setPageNum(nextPage);
         fetchHandle(nextPage);
@@ -219,13 +293,15 @@ const fullDataRefresh = () => {
         hasMoreRef.current = true;
         isFetchingMoreRef.current = false;
         onEndReachedCalledDuringMomentum.current = true;
-        setStoreAlldata([]);
+        pendingResetRef.current = true;
+        setRefreshing(true);
         setPageNum(0);
-        setRefreshing(false);
         fetchHandle(0);
     };
 
     useEffect(() => {
+        if (!isFocus || !requestIdRef.current ||
+            CMEReducer.cmeCourseRequestId !== requestIdRef.current) return;
         if (CMEReducer.status && CMEReducer.status !== statusRef.current) {
             statusRef.current = CMEReducer.status;
             if (CMEReducer.status === 'CME/cmeCourseRequest') {
@@ -233,6 +309,8 @@ const fullDataRefresh = () => {
                 setLoading(true);
             } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
+                setInitialLoading(false);
+                setRefreshing(false);
                 setLoading(false);
                 isFetchingMoreRef.current = false;
                 const conferences = CMEReducer?.cmeCourseResponse?.conferences;
@@ -242,7 +320,9 @@ const fullDataRefresh = () => {
                 } else {
                     hasMoreRef.current = true;
                 }
-                if (pageNum === 0) {
+                const shouldReplace = requestedPageRef.current === 0 || pendingResetRef.current;
+                pendingResetRef.current = false;
+                if (shouldReplace) {
                     setStoreAlldata(newData);
                 } else {
                     setStoreAlldata(prevData => {
@@ -255,6 +335,9 @@ const fullDataRefresh = () => {
                 }
             } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
+                setInitialLoading(false);
+                setRefreshing(false);
+                pendingResetRef.current = false;
                 setLoading(false);
                 isFetchingMoreRef.current = false;
                 hasMoreRef.current = false;
@@ -262,7 +345,7 @@ const fullDataRefresh = () => {
         } else if (CMEReducer.status === '') {
             statusRef.current = '';
         }
-    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit]);
+    }, [isFocus, CMEReducer.cmeCourseRequestId, CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit]);
 
     const filteredItems = useMemo(() => {
         return storeAlldata?.filter(item => {
@@ -317,31 +400,37 @@ const formatDateEnd = (dateStr) => {
             return date.format("MMM D, YYYY").replace('', '');
         };
         const formattedDateend = formatDateEnd(item?.enddate);
+        const hasCompletionPct = item?.completed_percentage != null;
+        const rawLivePct = Number(item?.completed_percentage ?? 0);
+        const liveProgressPct = Number.isFinite(rawLivePct)
+            ? Math.min(100, Math.max(0, Math.round(rawLivePct)))
+            : 0;
+        const isLiveCompleted = liveProgressPct === 100;
+
         return (
             <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
+                <View style={{ justifyContent: "center", alignSelf: "center", paddingTop: normalize(8), paddingBottom: normalize(2) }}>
                     <View
                         style={{
                             flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(10),
+                            width: normalize(296),
+                            borderRadius: normalize(8),
                             backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
+                            borderWidth: 1,
+                            borderColor: "#E5ECF6",
+                            paddingHorizontal: normalize(12),
                             paddingVertical: normalize(10),
                             alignItems: "flex-start",
                         }}
                     >
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2), paddingHorizontal: normalize(2) }}>
-                            <TouchableOpacity onPress={() => { titlhandleUrllive(item) }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2) }}>
+                            <TouchableOpacity style={{ flex: 1, paddingRight: normalize(8) }} onPress={() => { titlhandleUrllive(item) }}>
                                 <Text numberOfLines={2}
                                     style={{
                                         fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                         color: "#000000",
                                         fontWeight: "bold",
-                                        flex: 1,
-                                        flexWrap: 'wrap',
-                                        width: normalize(210)
                                     }}
                                 >
                                     {item?.title}
@@ -354,27 +443,26 @@ const formatDateEnd = (dateStr) => {
                                     setOnlineNamelive(item);
                                     setCertificatelive(item?.certificate?.certificate)
                                 }}>
-                                    <IconDot name="dots-three-vertical" size={25} color={"#848484"} />
+                                    <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
                                 </TouchableOpacity>
                             ) : <></>}
                         </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: normalize(0), paddingVertical: normalize(8) }}>
-                            <Calender name="calendar" size={25} color={"#000000"} />
-                            {/* <Image source={item.id === 3 ?Imagepath.Pending: Imagepath.Complt} style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }} /> */}
+                        <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: normalize(6) }}>
+                            <Calender name="calendar" size={22} color={"#000000"} />
                             <Text
                                 style={{
                                     fontFamily: Fonts.InterSemiBold,
                                     fontSize: 12,
                                     color: "#666",
                                     fontWeight: "bold",
-                                    marginLeft: normalize(10),
+                                    marginLeft: normalize(8),
                                 }}
                             >
                                 {`${formattedDate} - ${formattedDateend}`}
                             </Text>
                         </View>
-                        <View style={{ marginTop: normalize(10), height: 1, width: normalize(270), backgroundColor: "#DDD" }} />
-                        {item?.display_cme ? <View style={{ alignSelf: 'flex-start', top: 10 }}>
+                        <View style={{ marginTop: normalize(6), height: 1, width: '100%', backgroundColor: "#EEF2F7" }} />
+                        {item?.display_cme ? <View style={{ alignSelf: 'flex-start', marginTop: normalize(8) }}>
                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666" }}>
                                 {`${item?.display_cme
                                     ? item?.display_cme?.toLowerCase()?.includes("contact hour")
@@ -384,12 +472,27 @@ const formatDateEnd = (dateStr) => {
                                     }`}
                             </Text>
                         </View> : null}
-                        {item?.location && <View style={{ alignSelf: 'flex-start', top: 10 }}>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666" }}>
+                        {item?.location && <View style={{ alignSelf: 'flex-start', marginTop: normalize(4) }}>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#666" }}>
                                 {item?.location}
                             </Text>
                         </View>}
-                        {item?.button_display_text ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(15), width: '100%' }}>
+                        {hasCompletionPct ? (
+                            <View style={{ width: '100%', marginTop: normalize(8) }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(4), marginBottom: normalize(4) }}>
+                                    {isLiveCompleted ? (
+                                        <Image source={Imagepath.Complt} style={{ height: normalize(12), width: normalize(12), resizeMode: "contain" }} />
+                                    ) : null}
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: isLiveCompleted ? "#16A34A" : "#475569" }}>
+                                        {isLiveCompleted ? "Completed" : `${liveProgressPct}% Completed`}
+                                    </Text>
+                                </View>
+                                <View style={{ width: '100%', height: 6, borderRadius: 3, backgroundColor: "#E2E8F0", overflow: "hidden" }}>
+                                    <View style={{ width: `${liveProgressPct}%`, height: '100%', borderRadius: 3, backgroundColor: isLiveCompleted ? "#16A34A" : Colorpath.ButtonColr }} />
+                                </View>
+                            </View>
+                        ) : null}
+                        {item?.button_display_text ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
                             <TouchableOpacity onPress={() => {
                                 setStatepush(creditwholelive);
                                 if (item?.buttonText === "Revise Course") {
@@ -397,11 +500,11 @@ const formatDateEnd = (dateStr) => {
                                 } else {
                                     fullActionlive(item);
                                 }
-                            }} style={{ height: normalize(30), width: normalize(270), borderRadius: normalize(5), justifyContent: "center", alignItems: "center", borderColor: Colorpath.ButtonColr, borderWidth: 0.5 }}>
+                            }} style={{ height: normalize(28), width: '100%', borderRadius: normalize(5), justifyContent: "center", alignItems: "center", borderColor: Colorpath.ButtonColr, borderWidth: 0.8 }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterMedium,
-                                        fontSize: 15,
+                                        fontSize: 13,
                                         color: "#2C4DB9",
                                     }}
                                 >
@@ -415,54 +518,58 @@ const formatDateEnd = (dateStr) => {
         )
     }
     return (
-        <View>
-            <FlatList
-                data={dataAll}
-                renderItem={courserenderData}
-                keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
-                onMomentumScrollBegin={() => {
-                    onEndReachedCalledDuringMomentum.current = false;
-                }}
-                onEndReached={() => {
-                    if (!onEndReachedCalledDuringMomentum.current) {
-                        fetchMore();
-                        onEndReachedCalledDuringMomentum.current = true;
+        <View style={{ flex: 1 }}>
+            {initialLoading && storeAlldata.length === 0 ? (
+                <LiveCourseListSkeleton count={4} />
+            ) : (
+                <FlatList
+                    data={dataAll}
+                    renderItem={courserenderData}
+                    keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
+                    onMomentumScrollBegin={() => {
+                        onEndReachedCalledDuringMomentum.current = false;
+                    }}
+                    onEndReached={() => {
+                        if (!onEndReachedCalledDuringMomentum.current) {
+                            fetchMore();
+                            onEndReachedCalledDuringMomentum.current = true;
+                        }
+                    }}
+                    onEndReachedThreshold={0.5}
+                    contentContainerStyle={{ paddingBottom: normalize(140) }}
+                    scrollEventThrottle={16}
+                    ListFooterComponent={
+                        loading && pageNum > 0 ? (
+                            <ActivityIndicator color={Colorpath.ButtonColr} size="small" style={{ marginVertical: normalize(15) }} />
+                        ) : null
                     }
-                }}
-                onEndReachedThreshold={0.5}
-                contentContainerStyle={{ paddingBottom: normalize(270) }}
-                scrollEventThrottle={16}
-                ListFooterComponent={
-                    loading && pageNum > 0 ? (
-                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginVertical: normalize(15) }} />
-                    ) : null
-                }
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={fullDataRefresh}
-                    />
-                }
-                ListEmptyComponent={
-                    loading && pageNum === 0 ? (
-                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginTop: normalize(30) }} />
-                    ) : !loading && (
-                        <Text
-                            style={{
-                                alignContent: 'center',
-                                alignItems: 'center',
-                                alignSelf: 'center',
-                                color: Colorpath.grey,
-                                fontWeight: 'bold',
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: normalize(20),
-                                paddingTop: normalize(30),
-                            }}>
-                            No data found
-                        </Text>
-                    )
-                }
-            />
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={fullDataRefresh}
+                            tintColor={Colorpath.ButtonColr}
+                            colors={[Colorpath.ButtonColr]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        !initialLoading && !loading && !apiReq ? (
+                            <Text
+                                style={{
+                                    alignContent: 'center',
+                                    alignItems: 'center',
+                                    alignSelf: 'center',
+                                    color: Colorpath.grey,
+                                    fontWeight: 'bold',
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 16,
+                                    paddingTop: normalize(30),
+                                }}>
+                                No data found
+                            </Text>
+                        ) : null
+                    }
+                />
+            )}
             <Modal
                 animationIn={'slideInUp'}
                 animationOut={'slideOutDown'}

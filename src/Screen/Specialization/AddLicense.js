@@ -20,7 +20,7 @@ import { licesensRequest } from '../../Redux/Reducers/AuthReducer'
 import { useDispatch, useSelector } from 'react-redux'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import { dashboardRequest, stateLicesenseRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
+import { dashboardRequest, stateDashboardRequest, stateLicesenseRequest, stateReportingRequest } from '../../Redux/Reducers/DashboardReducer';
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
 import { FILE_SIZE_ERROR, isUploadFileSizeValid } from '../../Utils/Helpers/FileUploadValidation';
@@ -550,6 +550,9 @@ const handleToDateConfirm = (val) => {
                 console.log('clearNonUsaStateLicenseFlowCompleted error', err);
             });
             dispatch(dashboardRequest({}));
+            if (specialidpratice) {
+                dispatch(stateDashboardRequest({ state_id: specialidpratice }));
+            }
             if (props?.route?.params?.profile === "text" || props?.route?.params?.profiledet) {
                 dispatch(stateLicenseListRequest({}));
             }
@@ -563,7 +566,10 @@ const handleToDateConfirm = (val) => {
                 );
             });
             setFulldashbaord(uniqueStates || []);
-            setAddit(uniqueStates?.[0] ?? null);
+            const matchedState = specialidpratice
+                ? uniqueStates?.find(s => String(s.state_id) === String(specialidpratice))
+                : null;
+            setAddit(matchedState || uniqueStates?.[0] || null);
         }
     }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord, isSaving]);
         /**

@@ -2,7 +2,7 @@
  * Online course screen module. Renders a React Native screen or a screen-scoped support component. Exported members: OnlineCourse, openFilterModal, handleSave, handleUrl, titlhandleUrl, fullAction, fetchHandle, fullDataRefresh, handleLinkst, showPDF, openFileViewerst, courserenderData, handlePress, styles.
  */
 
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl, StyleSheet, Platform, Alert, Animated } from 'react-native';
 import React, { useEffect, useState, useCallback, useContext, useRef, useMemo } from 'react';
 import Fonts from '../../Themes/Fonts';
 import IconDot from 'react-native-vector-icons/Entypo';
@@ -10,6 +10,7 @@ import Colorpath from '../../Themes/Colorpath';
 import Imagepath from '../../Themes/Imagepath';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
+import { nanoid } from '@reduxjs/toolkit';
 import { CommonActions, useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { cmeCourseRequest, clearCmeCourseData } from '../../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
@@ -30,6 +31,64 @@ import normalize from '../../Utils/Helpers/Dimen';
  * @returns {JSX.Element}
  */
 
+const CourseListSkeleton = ({ count = 4 }) => {
+    const pulseAnim = useRef(new Animated.Value(0.45)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 0.9,
+                    duration: 750,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.45,
+                    duration: 750,
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [pulseAnim]);
+
+    return (
+        <View style={{ paddingTop: normalize(10), paddingHorizontal: normalize(10) }}>
+            {Array.from({ length: count }).map((_, index) => (
+                <Animated.View
+                    key={`course-skeleton-${index}`}
+                    style={{
+                        opacity: pulseAnim,
+                        backgroundColor: Colorpath.white,
+                        borderRadius: normalize(8),
+                        borderWidth: 1,
+                        borderColor: '#E5ECF6',
+                        paddingHorizontal: normalize(12),
+                        paddingVertical: normalize(12),
+                        marginBottom: normalize(10),
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ height: 14, width: '78%', borderRadius: 6, backgroundColor: '#E8EEF5' }} />
+                        <View style={{ height: 18, width: 10, borderRadius: 4, backgroundColor: '#EEF2F7' }} />
+                    </View>
+                    <View style={{ height: 12, width: '52%', borderRadius: 6, backgroundColor: '#EEF2F7', marginTop: 8 }} />
+                    <View style={{ marginTop: 12, height: 1, width: '100%', backgroundColor: '#F1F5F9' }} />
+                    <View style={{ height: 11, width: '40%', borderRadius: 5, backgroundColor: '#EEF2F7', marginTop: 10 }} />
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                        <View style={{ flex: 1, marginRight: normalize(12) }}>
+                            <View style={{ height: 11, width: '55%', borderRadius: 5, backgroundColor: '#E8EEF5' }} />
+                            <View style={{ height: 6, width: '100%', borderRadius: 3, backgroundColor: '#E8EEF5', marginTop: 8 }} />
+                        </View>
+                        <View style={{ height: normalize(28), width: normalize(105), borderRadius: normalize(5), backgroundColor: '#E8EEF5' }} />
+                    </View>
+                </Animated.View>
+            ))}
+        </View>
+    );
+};
+
 const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdownst, setLoadingdownst, filteredItems, setFilteredItems, setPendingall, pendingall, setCompltall, compltall, dataAll, setDataAll }) => {
     const {
         statepush,
@@ -40,10 +99,14 @@ const OnlineCourse = ({ loading, setLoading, fetchname, crediwhole, loadingdowns
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const statusRef = useRef("");
+    const requestIdRef = useRef(null);
     const hasMoreRef = useRef(true);
     const isFetchingMoreRef = useRef(false);
     const onEndReachedCalledDuringMomentum = useRef(true);
+    const pendingResetRef = useRef(false);
+    const requestedPageRef = useRef(0);
     const [storeAlldata, setStoreAlldata] = useState([]);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [apiReq, setApiReq] = useState(false);
     const [pageNum, setPageNum] = useState(0);
     const [limit, setLimit] = useState(9);
@@ -136,6 +199,14 @@ const fullAction = (dataItem) => {
  * @returns {void}
  */
 const fetchHandle = (page = pageNum) => {
+        const requestId = nanoid();
+        requestIdRef.current = requestId;
+        statusRef.current = "";
+        requestedPageRef.current = page;
+        if (page === 0) {
+            setInitialLoading(true);
+            setStoreAlldata([]);
+        }
         let obj = {
             "pageno": page,
             "limit": limit,
@@ -147,26 +218,34 @@ const fetchHandle = (page = pageNum) => {
         }
         connectionrequest()
             .then(() => {
-                dispatch(cmeCourseRequest(obj));
+                if (requestIdRef.current !== requestId) return;
+                dispatch({
+                    ...cmeCourseRequest(obj),
+                    meta: { globalResultRequestId: requestId },
+                });
             })
             .catch((err) => {
+                if (requestIdRef.current !== requestId) return;
                 showErrorAlert("Please connect to internet", err);
                 if (typeof setLoading === 'function') {
                     setLoading(false);
                 }
+                setInitialLoading(false);
+                setRefreshing(false);
+                pendingResetRef.current = false;
                 isFetchingMoreRef.current = false;
             });
     };
     useFocusEffect(
         useCallback(() => {
-            dispatch(clearCmeCourseData());
             statusRef.current = "";
             hasMoreRef.current = true;
             isFetchingMoreRef.current = false;
             onEndReachedCalledDuringMomentum.current = true;
-            setStoreAlldata([]); // Reset stored data on focus
-            setPageNum(0); // Reset pagination
-            fetchHandle(0); // Fetch fresh data specifically for page 0
+            pendingResetRef.current = true;
+            setPageNum(0);
+            fetchHandle(0);
+            return () => { requestIdRef.current = null; };
         }, [dispatch])
     );
     const fetchMore = useCallback(() => {
@@ -179,6 +258,7 @@ const fetchHandle = (page = pageNum) => {
             return;
         }
         isFetchingMoreRef.current = true;
+        pendingResetRef.current = false;
         const nextPage = pageNum + 1;
         setPageNum(nextPage);
         fetchHandle(nextPage);
@@ -192,13 +272,15 @@ const fullDataRefresh = () => {
         hasMoreRef.current = true;
         isFetchingMoreRef.current = false;
         onEndReachedCalledDuringMomentum.current = true;
-        setStoreAlldata([]);
+        pendingResetRef.current = true;
+        setRefreshing(true);
         setPageNum(0);
-        setRefreshing(false);
         fetchHandle(0);
     };
 
     useEffect(() => {
+        if (!isFocus || !requestIdRef.current ||
+            CMEReducer.cmeCourseRequestId !== requestIdRef.current) return;
         if (CMEReducer.status && CMEReducer.status !== statusRef.current) {
             statusRef.current = CMEReducer.status;
             if (CMEReducer.status === 'CME/cmeCourseRequest') {
@@ -208,6 +290,8 @@ const fullDataRefresh = () => {
                 }
             } else if (CMEReducer.status === 'CME/cmeCourseSuccess') {
                 setApiReq(false);
+                setInitialLoading(false);
+                setRefreshing(false);
                 if (typeof setLoading === 'function') {
                     setLoading(false);
                 }
@@ -219,7 +303,9 @@ const fullDataRefresh = () => {
                 } else {
                     hasMoreRef.current = true;
                 }
-                if (pageNum === 0) {
+                const shouldReplace = requestedPageRef.current === 0 || pendingResetRef.current;
+                pendingResetRef.current = false;
+                if (shouldReplace) {
                     setStoreAlldata(newData);
                 } else {
                     setStoreAlldata(prevData => {
@@ -232,6 +318,9 @@ const fullDataRefresh = () => {
                 }
             } else if (CMEReducer.status === 'CME/cmeCourseFailure') {
                 setApiReq(false);
+                setInitialLoading(false);
+                setRefreshing(false);
+                pendingResetRef.current = false;
                 if (typeof setLoading === 'function') {
                     setLoading(false);
                 }
@@ -241,7 +330,7 @@ const fullDataRefresh = () => {
         } else if (CMEReducer.status === '') {
             statusRef.current = '';
         }
-    }, [CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit, setLoading]);
+    }, [isFocus, CMEReducer.cmeCourseRequestId, CMEReducer.status, CMEReducer.cmeCourseResponse, pageNum, limit, setLoading]);
 
     const memoFilteredItems = useMemo(() => {
         return storeAlldata?.filter(item => {
@@ -348,32 +437,37 @@ const openFileViewerst = async () => {
  * @returns {JSX.Element}
  */
 const courserenderData = ({ item, index }) => {
+        const rawPercent = Number(item?.completed_percentage ?? 0);
+        const progressPercent = Number.isFinite(rawPercent)
+            ? Math.min(100, Math.max(0, Math.round(rawPercent)))
+            : 0;
+        const isCourseCompleted = progressPercent === 100;
+
         return (
             <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(10) }}>
+                <View style={{ justifyContent: "center", alignSelf: "center", paddingTop: normalize(8), paddingBottom: normalize(2) }}>
                     <View
                         style={{
                             flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(10),
+                            width: normalize(296),
+                            borderRadius: normalize(8),
                             backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
+                            borderWidth: 1,
+                            borderColor: "#E5ECF6",
+                            paddingHorizontal: normalize(12),
                             paddingVertical: normalize(10),
                             alignItems: "flex-start",
                         }}
                     >
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2), paddingHorizontal: normalize(0) }}>
-                            <TouchableOpacity onPress={() => { titlhandleUrl(item); }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(2) }}>
+                            <TouchableOpacity style={{ flex: 1, paddingRight: normalize(8) }} onPress={() => { titlhandleUrl(item); }}>
                                 <Text
                                     numberOfLines={2}
                                     style={{
                                         fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                         color: "#000000",
                                         fontWeight: "bold",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                        width: normalize(210)
                                     }}
                                 >
                                     {item?.title}
@@ -386,14 +480,14 @@ const courserenderData = ({ item, index }) => {
                                     setOnlineName(item);
                                     setCertificate(item?.certificate?.certificate);
                                 }}>
-                                    <IconDot name="dots-three-vertical" size={25} color={"#848484"} />
+                                    <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
                                 </TouchableOpacity>
                             ) : null}
                         </View>
 
-                        <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
+                        <View style={{ marginTop: normalize(8), height: 1, width: '100%', backgroundColor: "#EEF2F7" }} />
 
-                        {item?.display_cme ? <View style={{ paddingHorizontal: normalize(0), marginTop: normalize(5), alignSelf: 'flex-start', top: 5 }}>
+                        {item?.display_cme ? <View style={{ marginTop: normalize(6), alignSelf: 'flex-start' }}>
                             <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 12, color: "#666666" }}>
                                 {`${item?.display_cme
                                     ? item?.display_cme?.toLowerCase()?.includes("contact hour")
@@ -404,20 +498,21 @@ const courserenderData = ({ item, index }) => {
                             </Text>
                         </View> : null}
 
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: normalize(5), width: '100%' }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: normalize(8), width: '100%', gap: normalize(10) }}>
                             <View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
-                                <View style={{ flexDirection: "row", paddingHorizontal: normalize(0), gap: normalize(8) }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: '100%', marginBottom: normalize(5) }}>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(4) }}>
-                                        <Image source={item?.completed_percentage === 100 ? Imagepath.Complt : Imagepath.Pending} style={{ height: normalize(13), width: normalize(13), resizeMode: "contain" }} />
+                                        {isCourseCompleted ? (
+                                            <Image source={Imagepath.Complt} style={{ height: normalize(12), width: normalize(12), resizeMode: "contain" }} />
+                                        ) : null}
                                         <Text
                                             style={{
                                                 fontFamily: Fonts.InterSemiBold,
                                                 fontSize: 12,
-                                                color: "#666666",
-                                                // fontWeight: "bold",
+                                                color: isCourseCompleted ? "#16A34A" : "#475569",
                                             }}
                                         >
-                                            {item?.completed_percentage === 100 ? "Completed" : `${item?.completed_percentage != null ? item?.completed_percentage : 0}% Completed`}
+                                            {isCourseCompleted ? "Completed" : `${progressPercent}% Completed`}
                                         </Text>
                                     </View>
                                     {item?.average_rating ? <View style={{
@@ -431,26 +526,41 @@ const courserenderData = ({ item, index }) => {
                                                 height: normalize(10),
                                                 width: normalize(10),
                                                 resizeMode: "contain",
-                                                // Adjust vertical position if needed:
-                                                top: -1 // Fine-tune if necessary
+                                                top: -1
                                             }}
                                         />
                                         <Text
                                             style={{
                                                 fontFamily: Fonts.InterBold,
-                                                fontSize: 14,
+                                                fontSize: 13,
                                                 color: "#666666",
-                                                // fontWeight: "bold",
-                                                // Better vertical alignment for text:
-                                                lineHeight: normalize(15), // Match star height
-                                                height: normalize(15), // Explicit height
-                                                textAlignVertical: "center", // Android
+                                                lineHeight: normalize(14),
+                                                height: normalize(14),
+                                                textAlignVertical: "center",
                                                 includeFontPadding: false
                                             }}
                                         >
                                             {item?.average_rating}
                                         </Text>
                                     </View> : null}
+                                </View>
+                                <View
+                                    style={{
+                                        width: '100%',
+                                        height: 6,
+                                        borderRadius: 3,
+                                        backgroundColor: "#E2E8F0",
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <View
+                                        style={{
+                                            width: `${progressPercent}%`,
+                                            height: '100%',
+                                            borderRadius: 3,
+                                            backgroundColor: isCourseCompleted ? "#16A34A" : Colorpath.ButtonColr,
+                                        }}
+                                    />
                                 </View>
                             </View>
 
@@ -466,19 +576,20 @@ const courserenderData = ({ item, index }) => {
                                     }
                                 }}
                                 style={{
-                                    height: normalize(30),
-                                    width: normalize(120),
+                                    height: normalize(28),
+                                    minWidth: normalize(110),
+                                    paddingHorizontal: normalize(10),
                                     borderRadius: normalize(5),
                                     justifyContent: "center",
                                     alignItems: "center",
                                     borderColor: Colorpath.ButtonColr,
-                                    borderWidth: 0.5
+                                    borderWidth: 0.8
                                 }}
                             >
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterMedium,
-                                        fontSize: 15,
+                                        fontSize: 13,
                                         color: "#2C4DB9",
                                     }}
                                 >
@@ -486,30 +597,6 @@ const courserenderData = ({ item, index }) => {
                                 </Text>
                             </TouchableOpacity> : null}
                         </View>
-
-                        {/* <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10), width: '100%' }}>
-                            <TouchableOpacity onPress={openFilterModal}
-                                style={{
-                                    height: normalize(30),
-                                    width: normalize(220),
-                                    borderRadius: normalize(5),
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderColor: Colorpath.ButtonColr,
-                                    borderWidth: 0.5
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 16,
-                                        color: "#2C4DB9",
-                                    }}
-                                >
-                                    {"Schedule a Course"}
-                                </Text>
-                            </TouchableOpacity>
-                        </View> */}
                     </View>
                 </View>
             </View>
@@ -517,52 +604,58 @@ const courserenderData = ({ item, index }) => {
         );
     };
     return (
-        <View>
-            <FlatList
-                data={memoDataAll}
-                renderItem={courserenderData}
-                keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
-                onMomentumScrollBegin={() => {
-                    onEndReachedCalledDuringMomentum.current = false;
-                }}
-                onEndReached={() => {
-                    if (!onEndReachedCalledDuringMomentum.current) {
-                        fetchMore();
-                        onEndReachedCalledDuringMomentum.current = true;
+        <View style={{ flex: 1 }}>
+            {initialLoading && storeAlldata.length === 0 ? (
+                <CourseListSkeleton count={4} />
+            ) : (
+                <FlatList
+                    data={memoDataAll}
+                    renderItem={courserenderData}
+                    keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
+                    onMomentumScrollBegin={() => {
+                        onEndReachedCalledDuringMomentum.current = false;
+                    }}
+                    onEndReached={() => {
+                        if (!onEndReachedCalledDuringMomentum.current) {
+                            fetchMore();
+                            onEndReachedCalledDuringMomentum.current = true;
+                        }
+                    }}
+                    onEndReachedThreshold={0.5}
+                    contentContainerStyle={{ paddingBottom: normalize(140) }}
+                    scrollEventThrottle={16}
+                    ListFooterComponent={
+                        loading && pageNum > 0 ? (
+                            <ActivityIndicator color={Colorpath.ButtonColr} size="small" style={{ marginVertical: normalize(15) }} />
+                        ) : null
                     }
-                }}
-                onEndReachedThreshold={0.5}
-                contentContainerStyle={{ paddingBottom: normalize(280) }}
-                scrollEventThrottle={16}
-                ListFooterComponent={
-                    loading && pageNum > 0 ? (
-                        <ActivityIndicator color={Colorpath.ButtonColr} size="large" style={{ marginVertical: normalize(15) }} />
-                    ) : null
-                }
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={fullDataRefresh}
-                    />
-                }
-                ListEmptyComponent={
-                    !loading && (
-                        <Text
-                            style={{
-                                alignContent: 'center',
-                                alignItems: 'center',
-                                alignSelf: 'center',
-                                color: Colorpath.grey,
-                                fontWeight: 'bold',
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: normalize(20),
-                                paddingTop: normalize(30),
-                            }}>
-                            No data found
-                        </Text>
-                    )
-                }
-            />
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={fullDataRefresh}
+                            tintColor={Colorpath.ButtonColr}
+                            colors={[Colorpath.ButtonColr]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        !initialLoading && !loading && !apiReq ? (
+                            <Text
+                                style={{
+                                    alignContent: 'center',
+                                    alignItems: 'center',
+                                    alignSelf: 'center',
+                                    color: Colorpath.grey,
+                                    fontWeight: 'bold',
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 16,
+                                    paddingTop: normalize(30),
+                                }}>
+                                No data found
+                            </Text>
+                        ) : null
+                    }
+                />
+            )}
             {/* {This code for Schedule a course button,please don't remove} */}
             {/* <View style={{
                 position: "absolute",

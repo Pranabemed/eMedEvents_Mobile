@@ -152,7 +152,7 @@ const Globalresult = (props) => {
     const {
         isConnected
     } = useContext(AppContext);
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(true)
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             console.log('Connection State:', state.isConnected);
@@ -506,11 +506,13 @@ const Globalresult = (props) => {
             connectionrequest()
                 .then(() => {
                     if (activeResultsRequest.current !== request) return;
-                    dispatch({ ...HomelistRequest({
-                        ...props.route.params.homeListPayload,
-                        pageno: pageNum,
-                        limit: limit
-                    }), meta: { globalResultRequestId: request.id } });
+                    dispatch({
+                        ...HomelistRequest({
+                            ...props.route.params.homeListPayload,
+                            pageno: pageNum,
+                            limit: limit
+                        }), meta: { globalResultRequestId: request.id }
+                    });
                 })
                 .catch((err) => {
                     if (activeResultsRequest.current !== request) return;
@@ -959,91 +961,33 @@ const Globalresult = (props) => {
         const priceLabel = getResultPriceLabel(item);
         const guestCreditLabel = getResultCreditLabel(item);
         const guestTypeLabel = getResultTypeLabel(item);
-        const guestPrimaryLabel = guestCreditLabel;
-        const guestSecondaryLabel = guestTypeLabel;
         const hasBottomRow = Boolean(buttonLabel || priceLabel);
-        /**
-* Formats date.
-* @param {*} dateStr - Input value.
-* @returns {*}
-*/
-        const formatDate = (dateStr) => {
-            const date = moment(dateStr, "DD MMM'YY");
-            return date.format("MMM  D").replace(' ', '');
-        };
-        const formattedDate = formatDate(item?.startdate);
-        /**
-* Formats date end.
-* @param {*} dateStr - Input value.
-* @returns {*}
-*/
-        const formatDateEnd = (dateStr) => {
-            const date = moment(dateStr, "DD MMM'YY");
-            return date.format("MMM D, YYYY").replace('', '');
-        };
-        const formattedDateend = formatDateEnd(item?.enddate);
-        /**
-* Render location and dates utility.
-* @returns {*}
-*/
+        const isFreePrice = priceLabel?.toUpperCase() === 'FREE';
+
         const renderLocationAndDates = () => {
             if (item?.startdate && item?.enddate && item?.location) {
                 return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.WrongCal}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                bottom: normalize(1),
-                                marginLeft: normalize(5),
-                                width: normalize(220),
-                                lineHeight: normalize(15)
-                            }}
-                        >
+                    <View style={styles.metaRow}>
+                        <Image source={Imagepath.WrongCal} style={styles.metaIcon} />
+                        <Text numberOfLines={2} style={styles.metaText}>
                             {`${FormatDateZone(item?.startdate, item?.enddate)} | ${item?.location}`}
                         </Text>
                     </View>
                 );
             } else if (item?.startdate && item?.enddate) {
                 return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.CalImg}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                marginLeft: normalize(5),
-                                lineHeight: normalize(15)
-                            }}
-                        >
+                    <View style={styles.metaRow}>
+                        <Image source={Imagepath.CalImg} style={styles.metaIcon} />
+                        <Text numberOfLines={1} style={styles.metaText}>
                             {`${FormatDateZone(item?.startdate, item?.enddate)}`}
                         </Text>
                     </View>
                 );
             } else if (item?.location) {
                 return (
-                    <View style={{ flexDirection: "row" }}>
-                        <Image
-                            source={Imagepath.MapPin}
-                            style={{ height: normalize(15), width: normalize(15), resizeMode: "contain" }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 14,
-                                color: "#333",
-                                lineHeight: normalize(15)
-                            }}
-                        >
+                    <View style={styles.metaRow}>
+                        <Image source={Imagepath.MapPin} style={styles.metaIcon} />
+                        <Text numberOfLines={2} style={styles.metaText}>
                             {item?.location}
                         </Text>
                     </View>
@@ -1051,100 +995,88 @@ const Globalresult = (props) => {
             }
             return null;
         };
+
         return (
-            <View>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(isGuestFlow ? 8 : 10) }}>
-                    <TouchableOpacity onPress={() => { handleUrl(item) }}>
-                        <View
-                            style={isGuestFlow ? styles.guestResultCard : {
-                                flexDirection: "column",
-                                width: normalize(290),
-                                borderRadius: normalize(10),
-                                backgroundColor: "#FFFFFF",
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(5),
-                                borderColor: "#DADADA",
-                                borderWidth: 0.8
-                            }}
-                        >
-                            <View style={{ flex: 1 }}>
-                                <View style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    width: isGuestFlow ? '100%' : '106%'
-                                }}>
-                                    <View style={{ flex: 1, marginRight: 10 }}>
-                                        <View>
-                                            <Text
-                                                style={isGuestFlow ? styles.guestResultTitle : {
-                                                    fontFamily: Fonts.InterSemiBold,
-                                                    fontSize: 16,
-                                                    color: "#000000",
-                                                    fontWeight: "bold",
-                                                    flexWrap: 'wrap',
-                                                    lineHeight: 20,
-                                                }}
-                                                numberOfLines={2}
-                                                ellipsizeMode="tail"
-                                            >
-                                                {item?.title}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            </View>
-                            <View style={{ justifyContent: "flex-start", alignItems: "flex-start", paddingVertical: normalize(4) }}>
-                                <Text style={isGuestFlow ? styles.guestResultOrg : { fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{item?.organization_name}</Text>
-                            </View>
-                            {(item?.startdate || item?.enddate || item?.location) && (<View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", paddingVertical: normalize(4) }}>
-                                {renderLocationAndDates()}
-                            </View>)}
-                            {(guestCreditLabel || guestTypeLabel) ? (
-                                <View style={{ paddingVertical: normalize(4) }}>
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        fontWeight: 'bold',
-                                        color: '#666666',
-                                        lineHeight: 20
-                                    }}>
+            <View style={styles.resultCardOuter}>
+                <TouchableOpacity
+                    activeOpacity={0.82}
+                    onPress={() => { handleUrl(item); }}
+                    style={styles.resultCard}
+                >
+                    <Text
+                        style={styles.resultTitle}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                    >
+                        {item?.title}
+                    </Text>
+
+                    {item?.organization_name ? (
+                        <Text numberOfLines={1} style={styles.resultOrg}>
+                            {item?.organization_name}
+                        </Text>
+                    ) : null}
+
+                    {(item?.startdate || item?.enddate || item?.location) ? (
+                        <View style={styles.metaRowWrap}>
+                            {renderLocationAndDates()}
+                        </View>
+                    ) : null}
+
+                    {(guestCreditLabel || guestTypeLabel) ? (
+                        <View style={styles.badgeInfoWrap}>
+                            {guestCreditLabel ? (
+                                <View style={styles.creditPill}>
+                                    <Text numberOfLines={1} style={styles.creditPillText}>
                                         {guestCreditLabel}
-                                        {guestCreditLabel && guestTypeLabel ? '  |  ' : ''}
+                                    </Text>
+                                </View>
+                            ) : null}
+                            {guestTypeLabel ? (
+                                <View style={styles.typePill}>
+                                    <Text numberOfLines={1} style={styles.typePillText}>
                                         {guestTypeLabel}
                                     </Text>
                                 </View>
                             ) : null}
-                            {hasBottomRow && <View style={isGuestFlow ? styles.guestResultDivider : { height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />}
-                            {!hasBottomRow ? null : <View style={isGuestFlow ? styles.guestResultPriceRow : { flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", alignItems: "center", marginTop: normalize(3) }}>
-                                <View style={isGuestFlow ? styles.guestResultPrimaryWrap : { flex: 1, justifyContent: 'center' }}>
+                        </View>
+                    ) : null}
+
+                    {hasBottomRow ? (
+                        <>
+                            <View style={styles.resultDivider} />
+                            <View style={styles.resultPriceRow}>
+                                <View style={styles.resultPrimaryWrap}>
                                     {buttonLabel ? (
-                                        <Text
-                                            numberOfLines={1}
-                                            style={isGuestFlow ? styles.guestResultButtonText : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", fontWeight: "bold" }}
-                                        >
+                                        <Text numberOfLines={1} style={styles.resultButtonText}>
                                             {buttonLabel}
                                         </Text>
                                     ) : null}
                                 </View>
                                 {(buttonLabel && priceLabel) ? (
-                                    <Text style={isGuestFlow ? styles.guestResultPipe : { marginHorizontal: normalize(10), fontFamily: Fonts.InterBold, fontSize: 16, color: "#9CA3AF", fontWeight: "bold", textAlign: "center" }}>
-                                        |
-                                    </Text>
+                                    <Text style={styles.resultPipe}>|</Text>
                                 ) : null}
-                                <View style={isGuestFlow ? styles.guestResultSecondaryWrap : { flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                                <View style={styles.resultSecondaryWrap}>
                                     {priceLabel ? (
-                                        <Text numberOfLines={1} style={isGuestFlow ? styles.guestResultPrice : { fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr, fontWeight: "bold" }}>
-                                            {priceLabel}
-                                        </Text>
+                                        isFreePrice ? (
+                                            <View style={styles.freeBadge}>
+                                                <Text numberOfLines={1} style={styles.freeBadgeText}>
+                                                    {priceLabel}
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            <Text numberOfLines={1} style={styles.resultPrice}>
+                                                {priceLabel}
+                                            </Text>
+                                        )
                                     ) : null}
                                 </View>
-                            </View>}
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                            </View>
+                        </>
+                    ) : null}
+                </TouchableOpacity>
             </View>
-        )
+        );
     };
     /**
 * Handles guest profession select.
@@ -1206,7 +1138,7 @@ const Globalresult = (props) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: isGuestFlow ? '#DCEBFA' : Colorpath.Pagebg }}>
+            {conn === false ? <IntOff /> : <SafeAreaView style={{ flex: 1, backgroundColor: isGuestFlow ? '#DCEBFA' : Colorpath.Pagebg }}>
                 <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
@@ -1221,7 +1153,7 @@ const Globalresult = (props) => {
 
                     )}
                 </View>
-                <Loader visible={isRouteRefreshing || !hasFetchedResults || (loading && storeAlldata?.length === 0) || shouldOpenCmeChecklist} />
+                <Loader visible={isRouteRefreshing || !hasFetchedResults || (loading && pageNum === 0) || shouldOpenCmeChecklist} />
                 {isGuestCmeFlow && (
                     <View style={styles.guestTopSection}>
                         <View style={styles.guestSelectorCard}>
@@ -1258,54 +1190,39 @@ const Globalresult = (props) => {
                     </View>
                 )}
                 {!isRouteRefreshing && hasFetchedResults && storeAlldata?.length > 0 && (
-                    <>
+                    <View style={styles.summarySection}>
                         {isMostPopularConferences ? (
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                            displayTitle ? (
+                                <Text style={styles.displayTitleText}>
+                                    {displayTitle}
+                                </Text>
+                            ) : null
+                        ) : (
+                            <>
+                                <View style={styles.summaryBarRow}>
+                                    <Text numberOfLines={1} style={styles.summaryCountText}>
+                                        {`Showing (${totalResults || ""}) Results for`}
+                                    </Text>
+                                    <TouchableOpacity
+                                        activeOpacity={0.78}
+                                        onPress={() => {
+                                            setPageNum(0);
+                                            setSortedFall(!sortedFall);
+                                        }}
+                                        style={styles.sortPillBtn}
+                                    >
+                                        <Text style={styles.sortPillText}>{"Sort By"}</Text>
+                                        <Image source={Imagepath.SortedPng} style={styles.sortPillIcon} />
+                                    </TouchableOpacity>
+                                </View>
                                 {displayTitle ? (
-                                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
+                                    <Text style={styles.displayTitleText}>
                                         {displayTitle}
                                     </Text>
                                 ) : null}
-                            </View>
-                        ) : (
-                            <>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setPageNum(0);
-                                        setSortedFall(!sortedFall);
-                                    }}
-                                    style={isGuestFlow ? styles.guestSummaryWrap : { paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}
-                                >
-                                    <View style={{ justifyContent: "space-between", flexDirection: "row", alignItems: 'center' }}>
-                                        <Text style={[
-                                            isGuestFlow ? styles.guestSummaryText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" },
-                                            { marginBottom: 0 }
-                                        ]}>
-                                            {`Showing (${totalResults || ""}) Results for`}
-                                        </Text>
-                                        <View style={[styles.guestSortWrap, { paddingTop: 0, alignItems: 'center' }]}>
-                                            <Text style={isGuestFlow ? styles.guestSortText : { fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>Sort By</Text>
-                                            <Image source={Imagepath.SortedPng} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", marginLeft: normalize(8) }} />
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                                {isGuestFlow && displayTitle ? (
-                                    <View style={{ paddingHorizontal: normalize(14), marginTop: normalize(-4), marginBottom: normalize(8) }}>
-                                        <Text style={styles.guestSummaryTitle}>
-                                            {displayTitle}
-                                        </Text>
-                                    </View>
-                                ) : null}
-                                {!isGuestFlow && displayTitle ? (
-                                    <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
-                                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>
-                                            {displayTitle}
-                                        </Text>
-                                    </View>
-                                ) : null}
                             </>
                         )}
-                    </>
+                    </View>
                 )}
                 <View style={{ flex: 1 }}>
                     {(() => {
@@ -1626,105 +1543,190 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.InterSemiBold,
         marginRight: normalize(4),
     },
-    guestSummaryWrap: {
+    summarySection: {
         paddingHorizontal: normalize(14),
         paddingTop: normalize(12),
         paddingBottom: normalize(8),
     },
-    guestSummaryText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 15,
-        color: '#333333',
-        marginBottom: normalize(4),
-    },
-    guestSummaryTitle: {
-        fontFamily: Fonts.InterBold,
-        fontSize: 22,
-        color: Colorpath.ButtonColr,
-    },
-    guestSortWrap: {
+    summaryBarRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingTop: normalize(6),
+        justifyContent: 'space-between',
+        gap: normalize(10),
     },
-    guestSortText: {
+    summaryCountText: {
+        flex: 1,
         fontFamily: Fonts.InterMedium,
-        fontSize: 16,
-        color: '#333333',
+        fontSize: 14,
+        color: '#475569',
+    },
+    sortPillBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: normalize(20),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(6),
+    },
+    sortPillText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: '#1E293B',
+    },
+    sortPillIcon: {
+        height: normalize(15),
+        width: normalize(15),
+        resizeMode: 'contain',
+        marginLeft: normalize(6),
+    },
+    displayTitleText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 20,
+        lineHeight: 26,
+        color: Colorpath.ButtonColr,
+        marginTop: normalize(6),
     },
     guestListContent: {
         paddingHorizontal: normalize(14),
         paddingBottom: normalize(200),
         alignItems: 'center',
     },
-    guestResultCard: {
-        flexDirection: 'column',
-        width: Dimensions.get('window').width - normalize(28),
-        borderRadius: normalize(12),
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: normalize(14),
-        paddingVertical: normalize(8),
-        borderColor: '#DADADA',
-        borderWidth: 0.8,
-    },
-    guestResultTitle: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 16,
-        color: "#111111",
-        fontWeight: "bold",
-        flexWrap: 'wrap',
-        lineHeight: 22,
-    },
-    guestResultOrg: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 14,
-        color: "#999999",
-    },
-    guestResultDivider: {
-        height: 1,
+    resultCardOuter: {
         width: '100%',
-        backgroundColor: "#DADADA",
+        alignItems: 'center',
+        paddingVertical: normalize(4),
+    },
+    resultCard: {
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        width: Dimensions.get('window').width - normalize(28),
+        minHeight: normalize(142),
+        borderRadius: normalize(10),
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        borderColor: '#E5ECF6',
+        borderWidth: 1,
+    },
+    resultTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15.5,
+        lineHeight: 22,
+        minHeight: 44,
+        color: '#0F172A',
+    },
+    resultOrg: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        lineHeight: 18,
+        color: '#64748B',
+        marginTop: normalize(3),
+    },
+    metaRowWrap: {
+        marginTop: normalize(5),
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    metaIcon: {
+        height: normalize(14),
+        width: normalize(14),
+        resizeMode: 'contain',
+        tintColor: '#64748B',
+        marginRight: normalize(6),
+    },
+    metaText: {
+        flex: 1,
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        lineHeight: 18,
+        color: '#334155',
+    },
+    badgeInfoWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: normalize(6),
         marginTop: normalize(6),
     },
-    guestResultPriceRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginTop: normalize(10),
+    creditPill: {
+        backgroundColor: '#EFF6FF',
+        borderRadius: normalize(6),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(4),
+        maxWidth: '100%',
     },
-    guestResultPrimaryWrap: {
+    creditPillText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: Colorpath.ButtonColr,
+    },
+    typePill: {
+        backgroundColor: '#F1F5F9',
+        borderRadius: normalize(6),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(4),
+    },
+    typePillText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: '#475569',
+    },
+    resultDivider: {
+        height: 1,
+        width: '100%',
+        backgroundColor: '#F1F5F9',
+        marginTop: normalize(8),
+        marginBottom: normalize(8),
+    },
+    resultPriceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    resultPrimaryWrap: {
         flex: 1,
         justifyContent: 'center',
         minWidth: 0,
     },
-    guestResultSecondaryWrap: {
+    resultSecondaryWrap: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'flex-end',
         minWidth: 0,
     },
-    guestResultPrice: {
+    resultPrice: {
         fontFamily: Fonts.InterBold,
         fontSize: 15,
         color: Colorpath.ButtonColr,
         flexShrink: 1,
         textAlign: 'right',
     },
-    guestResultPipe: {
-        marginHorizontal: normalize(8),
-        fontFamily: Fonts.InterBold,
-        fontSize: 18,
-        color: '#9CA3AF',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        lineHeight: normalize(20),
+    freeBadge: {
+        backgroundColor: '#DCFCE7',
+        borderRadius: normalize(6),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(3),
     },
-    guestResultButtonText: {
-        marginRight: normalize(8),
+    freeBadgeText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 12.5,
+        color: '#15803D',
+    },
+    resultPipe: {
+        marginHorizontal: normalize(8),
+        fontFamily: Fonts.InterMedium,
+        fontSize: 16,
+        color: '#CBD5E1',
+        textAlign: 'center',
+    },
+    resultButtonText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 15,
-        color: '#111827',
-        fontWeight: 'bold',
+        fontSize: 14.5,
+        color: '#0F172A',
         flexShrink: 1,
     },
     centerModal: {

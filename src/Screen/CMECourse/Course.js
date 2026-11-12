@@ -112,7 +112,6 @@ const onBackPress = () => {
                         onBackPress={CMEPress}
                     />
                 </View>}
-                <Loader visible={dataAll?.length == 0 && linearText && fetchname == "All" && loading} />
                 <View style={{ marginTop: normalize(10) }}>
                     <View style={{
                         flexDirection: "row",
@@ -135,7 +134,7 @@ const onBackPress = () => {
                         </TouchableOpacity>
                     </View>
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                     <View style={styles.statusRow}>
                         {cmecourseData.map(item => {
                             const selectedStatus = linearText ? fetchname : fetchnamechnage;
@@ -159,11 +158,12 @@ const onBackPress = () => {
                             );
                         })}
                     </View>
-                    <View style={{ bottom: normalize(10) }}>
-                        {linearText && <OnlineCourse loading={loading} setLoading={setLoading} filteredItems={filteredItems} setFilteredItems={setFilteredItems} setPendingall={setPendingall} pendingall={pendingall} setCompltall={setCompltall} compltall={compltall} dataAll={dataAll} setDataAll={setDataAll} setLoadingdownst={setLoadingdownst} loadingdownst={loadingdownst} crediwhole={props?.route?.params?.taskData} fetchname={fetchname} />}
-                    </View>
-                    <View style={{ bottom: normalize(10) }}>
-                        {!linearText && <Livecourse setLoadingdownstlv={setLoadingdownstlv} loadingdownstlv={loadingdownstlv} creditwholelive={props?.route?.params?.taskData} fetchnamelive={fetchnamechnage} />}
+                    <View style={{ flex: 1 }}>
+                        {linearText ? (
+                            <OnlineCourse loading={loading} setLoading={setLoading} filteredItems={filteredItems} setFilteredItems={setFilteredItems} setPendingall={setPendingall} pendingall={pendingall} setCompltall={setCompltall} compltall={compltall} dataAll={dataAll} setDataAll={setDataAll} setLoadingdownst={setLoadingdownst} loadingdownst={loadingdownst} crediwhole={props?.route?.params?.taskData} fetchname={fetchname} />
+                        ) : (
+                            <Livecourse setLoadingdownstlv={setLoadingdownstlv} loadingdownstlv={loadingdownstlv} creditwholelive={props?.route?.params?.taskData} fetchnamelive={fetchnamechnage} />
+                        )}
                     </View>
                 </View>
             </SafeAreaView>}

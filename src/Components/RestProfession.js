@@ -13,6 +13,7 @@ import { CommonActions } from '@react-navigation/native';
 import ArrowIconsAnt from 'react-native-vector-icons/AntDesign';
 import { useDispatch, useSelector } from 'react-redux';
 import Buttons from './Button';
+import DashboardActionCard from './DashboardActionCard';
 import { ConfActRequest, clearCmeCourseData } from '../Redux/Reducers/CMEReducer';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import ProfessionCourseShimmer from './ProfessionCourseShimmer';
@@ -452,8 +453,12 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                     ) : null}
                     {/* Browse Courses button */}
                     {(!loading || hasReceivedResponse.current) && (
-                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(10) }}>
-                            <TouchableOpacity onPress={() => {
+                        <DashboardActionCard
+                            title="Recommended Courses"
+                            description="Recommendations are based on your profession, primary area of practice and state requirements."
+                            buttonText="Browse Courses"
+                            iconName="book-open"
+                            onCardPress={() => {
                                 dispatch(clearCmeCourseData());
                                 navigation.dispatch(
                                     CommonActions.reset({
@@ -467,57 +472,30 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                     })
                                 );
                             }}
-                                style={{
-                                    flexDirection: "row",
-                                    height: normalize(105),
-                                    width: normalize(300),
-                                    borderRadius: normalize(5),
-                                    borderWidth: 1,
-                                    borderColor: Colorpath.bordercolor,
-                                    backgroundColor: Colorpath.white,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    marginTop: normalize(10)
-                                }}
-                            >
-                                <View style={{ justifyContent: "center", alignItems: "center" }}>
-                                    <View style={{ width: normalize(270) }}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 13, color: Colorpath.Gray, textAlign: "center" }}>{"Recommendations are based on your profession, primary area of practice and state requirements."}</Text>
-                                    </View>
-                                    <View style={{ marginTop: normalize(10) }}>
-                                        <Buttons
-                                            onPress={() => {
-                                                dispatch(clearCmeCourseData());
-                                                navigation.dispatch(
-                                                    CommonActions.reset({
-                                                        index: 0,
-                                                        routes: [
-                                                            {
-                                                                name: "Globalresult",
-                                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null, backProps: "yes" } },
-                                                            }
-                                                        ]
-                                                    })
-                                                );
-                                            }}
-                                            height={normalize(40)}
-                                            width={normalize(270)}
-                                            backgroundColor={Colorpath.ButtonColr}
-                                            borderRadius={normalize(5)}
-                                            text="Browse Courses"
-                                            color={Colorpath.white}
-                                            fontSize={16}
-                                            fontFamily={Fonts.InterSemiBold}
-                                        />
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
+                            onButtonPress={() => {
+                                dispatch(clearCmeCourseData());
+                                navigation.dispatch(
+                                    CommonActions.reset({
+                                        index: 0,
+                                        routes: [
+                                            {
+                                                name: "Globalresult",
+                                                params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null, backProps: "yes" } },
+                                            }
+                                        ]
+                                    })
+                                );
+                            }}
+                        />
                     )}
                     {recentlyViewedCourses?.length > 0 && (
-                        <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
-                            <TouchableOpacity
-                                onPress={() => {
+                        <View style={{ paddingBottom: normalize(10) }}>
+                            <DashboardActionCard
+                                title="Recently Viewed"
+                                description="Your recently viewed courses are listed below for easy access and continued learning."
+                                buttonText="Recently viewed"
+                                iconName="clock"
+                                onCardPress={() => {
                                     const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
                                     navigation.dispatch(
                                         CommonActions.reset({
@@ -537,66 +515,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
                                         })
                                     );
                                 }}
-                                style={{
-                                    flexDirection: "row",
-                                    height: normalize(105),
-                                    width: normalize(300),
-                                    borderRadius: normalize(5),
-                                    backgroundColor: Colorpath.white,
-                                    borderWidth: 1,
-                                    borderColor: Colorpath.bordercolor,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    marginTop: normalize(10)
-                                }}
-                            >
-                                <View style={{ justifyContent: "center", alignItems: "center" }}>
-                                    <View style={{ width: normalize(270) }}>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterMedium,
-                                                fontSize: 13,
-                                                color: Colorpath.Gray,
-                                                textAlign: "center"
-                                            }}
-                                        >
-                                            {"Your recently viewed courses are listed below for easy access and continued learning."}
-                                        </Text>
-                                    </View>
-                                    <View style={{ marginTop: normalize(10) }}>
-                                        <Buttons
-                                            onPress={() => {
-                                                const creditData = addit || DashboardReducer?.mainprofileResponse?.licensures?.[0] || null;
-                                                navigation.dispatch(
-                                                    CommonActions.reset({
-                                                        index: 0,
-                                                        routes: [
-                                                            {
-                                                                name: "NonMain",
-                                                                params: {
-                                                                    myact: {
-                                                                        realdata: recentlyViewedCourses,
-                                                                        creditData: creditData,
-                                                                        recnt: "recnt"
-                                                                    }
-                                                                },
-                                                            }
-                                                        ]
-                                                    })
-                                                );
-                                            }}
-                                            height={normalize(40)}
-                                            width={normalize(270)}
-                                            backgroundColor={Colorpath.ButtonColr}
-                                            borderRadius={normalize(5)}
-                                            text="Recently viewed"
-                                            color={Colorpath.white}
-                                            fontSize={16}
-                                            fontFamily={Fonts.InterSemiBold}
-                                        />
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
+                            />
                         </View>
                     )}
                     {nettrue === false ?

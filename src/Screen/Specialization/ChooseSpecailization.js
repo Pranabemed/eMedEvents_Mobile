@@ -122,7 +122,7 @@ const renderData = ({ item, index }) => {
         const totalCourses = (item?.registered_cources?.length || 0) + (item?.suggested_cources?.length || 0);
         const earned = cleanNumber(item?.earned_credits);
         const required = cleanNumber(item?.credits);
-        const isCreditsComplete = earned === required && required > 0;
+        const isCreditsComplete = earned >= required && required > 0;
         const showCourseCount = Boolean(item?.registered_cources || item?.registered_cource || item?.suggested_cources) && totalCourses >= 0;
 
         return (
@@ -263,7 +263,7 @@ const renderData = ({ item, index }) => {
                                             (genralErndCrd || genTotalCrd) ? (
                                                 <View style={[
                                                     styles.creditsBadge,
-                                                    { backgroundColor: genralErndCrd === genTotalCrd ? "#D6F9E2" : "#FFF2E0" },
+                                                    { backgroundColor: genralErndCrd >= genTotalCrd ? "#D6F9E2" : "#FFF2E0" },
                                                 ]}>
                                                     <Text style={styles.creditsBadgeText}>
                                                         {`${genralErndCrd} / ${genTotalCrd} Credits Earned`}

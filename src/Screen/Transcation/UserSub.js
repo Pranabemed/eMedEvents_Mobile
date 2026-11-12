@@ -2,8 +2,8 @@
  * User sub screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, UserSub, handleSwitchToggle, fetchuserSub, fullDataRefresh, renderItem, renderMonthItem.
  */
 
-import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Switch, Alert, StyleSheet } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
@@ -14,12 +14,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { subRenewalRequest, userSubRequest } from '../../Redux/Reducers/TransReducer';
 import moment from 'moment';
 import { computeNonOverlappingSubscriptions } from '../../Utils/Helpers/primeSubscription';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { TransactionEmptyState, TransactionListSkeleton } from './TransactionUiHelpers';
 
 /**
  * Reusable UserSub component.
@@ -29,32 +24,22 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const UserSub = ({ storeAlldatas, setStoreAlldatas }) => {
-    const windowWidth = Dimensions.get('window').width;
     const TransReducer = useSelector(state => state.TransReducer);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const navigation = useNavigation();
-    // const [storeAlldatas, setStoreAlldatas] = useState([]);
+    const handledStatusRef = useRef(TransReducer.status);
+    const pendingResetRef = useRef(true);
     const [apiReq, setApiReq] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [pageNum, setPageNum] = useState(0);
-    const [limit, setLimit] = useState(10);
-    const [final, setFinal] = useState([])
+    const limit = 10;
+    const [final, setFinal] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [isEnable, setIsEnable] = useState(0);
-    const [exdate, setExdate] = useState(false);
-    useEffect(() => {
-        fetchuserSub();
-        setIsEnable(1);
-    }, [isFocus]);
     const [switchStates, setSwitchStates] = useState({});
-        /**
- * Handles switch toggle.
- * @param {number} index - Input value.
- * @param {*} get - Input value.
- * @returns {void}
- */
-const handleSwitchToggle = (index, get) => {
+
+    const handleSwitchToggle = (index, get) => {
         Alert.alert(
             "eMedEvents",
             "Are you sure you want to cancel this subscription ?",
@@ -65,32 +50,28 @@ const handleSwitchToggle = (index, get) => {
                 },
                 {
                     text: "Yes",
-                                        /**
- * On press utility.
- * @returns {void}
- */
-onPress: () => {
+                    onPress: () => {
                         setSwitchStates((prevStates) => ({
                             ...prevStates,
                             [index]: !prevStates[index],
                         }));
-                        let obj = {
+                        const obj = {
                             "subscription_id": get?.id
-                        }
+                        };
                         dispatch(subRenewalRequest(obj));
                     },
                 },
             ]
         );
     };
-        /**
- * Fetchuser sub utility.
- * @returns {void}
- */
-const fetchuserSub = () => {
-        let obj = {
+
+    const fetchuserSub = useCallback((targetPage = 0, isReset = false) => {
+        if (isReset) {
+            pendingResetRef.current = true;
+        }
+        const obj = {
             "limit": limit,
-            "page": pageNum,
+            "page": targetPage,
             "fromDate": "",
             "toDate": "",
             "keyword": ""
@@ -98,71 +79,73 @@ const fetchuserSub = () => {
         connectionrequest()
             .then(() => {
                 dispatch(userSubRequest(obj));
-
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
+                setApiReq(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
             });
-    };
+    }, [dispatch]);
+
     useFocusEffect(
         useCallback(() => {
-            setStoreAlldatas([]);
             setPageNum(0);
-            fetchuserSub();
-        }, [])
+            fetchuserSub(0, true);
+        }, [fetchuserSub])
     );
+
     const fetchMore = useCallback(() => {
         const totalCount = TransReducer?.userSubResponse?.subscription_count || 0;
         const totalDataLength = final?.reduce((acc, item) => acc + item.data.length, 0) || 0;
-        console.log(totalDataLength, "totalDataLength-------", final);
-        if (totalDataLength >= totalCount) {
-            setApiReq(false);
-            setLoading(false);
+        if (totalDataLength >= totalCount || apiReq || loadingMore || initialLoading) {
             return;
         }
-        if (!apiReq) {
-            const hasuserSubData = TransReducer?.userSubResponse?.subscription_data?.length > 0;
-            if (hasuserSubData) {
-                setPageNum(prevPage => prevPage + 1); // Increment pageNum
-                fetchuserSub(); // Trigger fetch
-            }
+        if (TransReducer?.userSubResponse?.subscription_data?.length > 0) {
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            setLoadingMore(true);
+            fetchuserSub(nextPage, false);
         }
-    }, [apiReq, final, TransReducer]);
-        /**
- * Full data refresh utility.
- * @returns {void}
- */
-const fullDataRefresh = () => {
-        setStoreAlldatas([]);
+    }, [apiReq, loadingMore, initialLoading, final, TransReducer, pageNum, fetchuserSub]);
+
+    const fullDataRefresh = () => {
+        setRefreshing(true);
         setPageNum(0);
-        setRefreshing(false);
-        fetchuserSub();
+        fetchuserSub(0, true);
     };
-    if (status === '' || TransReducer.status !== status) {
+
+    useEffect(() => {
+        if (!isFocus) return;
+        if (handledStatusRef.current === TransReducer.status) return;
+        handledStatusRef.current = TransReducer.status;
+
         switch (TransReducer.status) {
             case 'Transaction/userSubRequest':
-                status = TransReducer.status;
                 setApiReq(true);
-                setLoading(true);
                 break;
-            case 'Transaction/userSubSuccess':
-                status = TransReducer.status;
+            case 'Transaction/userSubSuccess': {
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 const newData = TransReducer?.userSubResponse?.subscription_data || [];
-                const totalCount = TransReducer?.userSubResponse?.subscription_count || 0;
-                if (newData.length > 0) {
-                    const updatedStoreData = { ...storeAlldatas };
+                const shouldReset = pendingResetRef.current;
+                pendingResetRef.current = false;
+
+                setStoreAlldatas(prev => {
+                    const updatedStoreData = shouldReset ? {} : { ...(prev || {}) };
+                    Object.keys(updatedStoreData).forEach(k => {
+                        updatedStoreData[k] = [...updatedStoreData[k]];
+                    });
                     newData.forEach(item => {
                         if (item?.created_date) {
-                            const dateString = item?.created_date;
+                            const dateString = item.created_date;
                             const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
                             let monthYear = '';
                             if (monthYearMatch) {
-                                const month = monthYearMatch[1];
-                                const year = monthYearMatch[2];
-                                monthYear = `${month} ${year}`;
+                                monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
                             } else {
                                 const parsed = moment(dateString, ['DD-MMM-YYYY', 'MMM DD, YYYY', 'MMMM DD, YYYY', 'YYYY-MM-DD']);
                                 if (parsed.isValid()) {
@@ -173,51 +156,40 @@ const fullDataRefresh = () => {
                                 if (!updatedStoreData[monthYear]) {
                                     updatedStoreData[monthYear] = [];
                                 }
-                                const isDuplicate = updatedStoreData[monthYear].some(existingItem => {
-                                    return (
-                                        existingItem.id === item.id 
-                                    );
-                                });
+                                const isDuplicate = updatedStoreData[monthYear].some(
+                                    existingItem => existingItem.id === item.id
+                                );
                                 if (!isDuplicate) {
                                     updatedStoreData[monthYear].push(item);
                                 }
-                            } else {
-                                console.warn(`Invalid created_date format for item:`, item);
                             }
                         }
                     });
-                    setStoreAlldatas(updatedStoreData);
-                    const totalItemsFetched = Object.values(updatedStoreData).flat().length;
-                    console.log(totalItemsFetched, "totalItemsFetched")
-                    if (totalItemsFetched >= totalCount) {
-                        console.log("All data fetched. Stopping API calls.");
-                        setApiReq(false);
-                        setLoading(false);
-                    }
-                }
+                    return updatedStoreData;
+                });
                 break;
+            }
             case 'Transaction/userSubFailure':
-                status = TransReducer.status;
+                pendingResetRef.current = false;
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 break;
             case 'Transaction/subRenewalRequest':
-                status = TransReducer.status;
                 break;
             case 'Transaction/subRenewalSuccess':
-                status = TransReducer.status;
-                setStoreAlldatas([]);
                 setPageNum(0);
                 setRefreshing(false);
-                fetchuserSub();
+                fetchuserSub(0, true);
                 break;
             case 'Transaction/subRenewalFailure':
-                status = TransReducer.status;
                 break;
         }
-    }
+    }, [TransReducer.status, TransReducer?.userSubResponse, isFocus, setStoreAlldatas, fetchuserSub]);
+
     useEffect(() => {
-        if (storeAlldatas) {
+        if (storeAlldatas && !Array.isArray(storeAlldatas)) {
             const allItems = Object.values(storeAlldatas).flat();
             const chainedItems = computeNonOverlappingSubscriptions(allItems);
             const chainedMap = new Map();
@@ -228,7 +200,7 @@ const fullDataRefresh = () => {
             });
 
             const storetakeAll = Object.keys(storeAlldatas).map((monthYear) => {
-                const data = storeAlldatas[monthYear];
+                const data = storeAlldatas[monthYear] || [];
                 const updatedData = data.map((item) => {
                     const chained = (item?.id != null && chainedMap.get(item.id)) || item;
                     return {
@@ -243,288 +215,333 @@ const fullDataRefresh = () => {
                 };
             });
             setFinal(storetakeAll);
-            console.log(storetakeAll, "storetakeAl", final);
         }
     }, [storeAlldatas]);
-        const expiredItems = useMemo(() => {
-          const result = {};
-          final && final.forEach(monthGroup => {
+
+    const expiredItems = useMemo(() => {
+        const result = {};
+        final && final.forEach(monthGroup => {
             monthGroup.data.forEach(item => {
-              const expDateVal = item?.effectiveExpiryDate || item?.expiry_date;
-              if (!expDateVal) {
-                result[item.id] = false;
-                return;
-              }
-              try {
-                const endDate = item?.effectiveExpiryDate
-                  ? new Date(item.effectiveExpiryDate)
-                  : new Date(moment(item?.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD"));
-                const currentDate = new Date();
-                endDate.setHours(0, 0, 0, 0);
-                currentDate.setHours(0, 0, 0, 0);
-                result[item.id] = currentDate > endDate;
-              } catch (error) {
-                result[item.id] = false;
-              }
+                const expDateVal = item?.effectiveExpiryDate || item?.expiry_date;
+                if (!expDateVal) {
+                    result[item.id] = false;
+                    return;
+                }
+                try {
+                    const endDate = item?.effectiveExpiryDate
+                        ? new Date(item.effectiveExpiryDate)
+                        : new Date(moment(item?.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD"));
+                    const currentDate = new Date();
+                    endDate.setHours(0, 0, 0, 0);
+                    currentDate.setHours(0, 0, 0, 0);
+                    result[item.id] = currentDate > endDate;
+                } catch (error) {
+                    result[item.id] = false;
+                }
             });
-          });
-          return result;
-        }, [final]);
-    console.log(final, "exdate=========")
-        /**
- * Render item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderItem = ({ item, index }) => {
-        // detectExDate(index, item?.id, item?.start_date);
-        console.log(item, "item-----------")
-        const isLastItem = index === item?.dataLength - 1;
+        });
+        return result;
+    }, [final]);
+
+    const renderSubscriptionCard = (item, index) => {
         const isSwitchOn = switchStates[index] ?? (item?.can_cancel === 1);
         const isItemExpired = expiredItems[item.id] || false;
-        console.log(isItemExpired, "isItemExpired--------")
 
-        const startDisplay = item?.displayStartDate || (item?.start_date ? moment(item.start_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : (item?.created_date ? moment(item?.created_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : ""));
-        const expiryDisplay = item?.displayExpiryDate || (item?.expiry_date ? moment(item.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : "");
+        const startDisplay = item?.displayStartDate || (item?.start_date
+            ? moment(item.start_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY")
+            : (item?.created_date ? moment(item?.created_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY") : ""));
+        const expiryDisplay = item?.displayExpiryDate || (item?.expiry_date
+            ? moment(item.expiry_date, ["DD-MMM-YYYY", "MMM DD, YYYY", "YYYY-MM-DD"]).format("DD-MMM-YYYY")
+            : "");
         const periodDisplay = item?.periodString || (startDisplay && expiryDisplay ? `${startDisplay} to ${expiryDisplay}` : '');
+        const hasFooterActions = item?.can_cancel == 1 || item?.can_update == 1;
+
+        const isActive = String(item?.subscription_status || '').toLowerCase() === 'active';
 
         return (
-            <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", marginTop: normalize(0), backgroundColor: "#FFFFFF" }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(5),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                        }}
-                    >
-                        {item?.subscription_type ? <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(8),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                            }}
-                        >
-                            <Text
-                                numberOfLines={2}
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    flexShrink: 1,
-                                    flexWrap: "wrap",
-                                }}
-                            >
-                                {"Premium"}
-                            </Text>
-                            {item?.subscription_status && <View style={{
-                                height: normalize(20),
-                                width: normalize(50),
-                                borderRadius: normalize(15),
-                                borderWidth: 1,
-                                borderColor: isItemExpired ? "red" : "green",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}>
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 10,
-                                        color: isItemExpired ? "red" : "green",
-                                        alignSelf: "center"
-                                    }}
-                                >
+            <View
+                key={String(item?.id || index)}
+                style={[
+                    localStyles.card,
+                    isActive ? localStyles.cardActive : localStyles.cardInactive
+                ]}
+            >
+                {item?.subscription_type ? (
+                    <View style={localStyles.cardTopRow}>
+                        <Text numberOfLines={2} style={localStyles.titleText}>
+                            {"Premium"}
+                        </Text>
+                        {item?.subscription_status ? (
+                            <View style={[
+                                localStyles.statusPill,
+                                isItemExpired ? localStyles.statusPillExpired : localStyles.statusPillActive
+                            ]}>
+                                <Text style={[
+                                    localStyles.statusText,
+                                    { color: isItemExpired ? '#DC2626' : '#15803D' }
+                                ]}>
                                     {isItemExpired ? "Expired" : item?.subscription_status}
-                                </Text>
-                            </View>}
-                        </View> : null}
-                        {periodDisplay ? (
-                            <View
-                                style={{
-                                    paddingHorizontal: normalize(10),
-                                    paddingBottom: normalize(4),
-                                    width: "100%",
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center"
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 11,
-                                        color: "#333333",
-                                    }}
-                                >
-                                    {`Subscription: ${periodDisplay}`}
                                 </Text>
                             </View>
                         ) : null}
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                width: "100%",
-                                flexDirection: "row", justifyContent: "space-between", alignContent: "space-between"
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 10,
-                                    color: "#AAA",
-                                }}
-                            >
-                                {`Trans Date: ${moment(item?.created_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`}
-                            </Text>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 10,
-                                    color: isItemExpired ? "red" : "#AAA",
-                                }}
-                            >
-                                {isItemExpired
-                                    ? `Plan Expired on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`
-                                    : `Plan Expires on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`
-                                }
-                            </Text>
-                        </View>
                     </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
-                        {item?.can_cancel == 1 && <View style={{ paddingHorizontal: normalize(0), flexDirection: "row", gap: normalize(10) }}>
+                ) : null}
 
-                            <Switch
-                                trackColor={{
-                                    false: "#999999",
-                                    true: "#008000",
-                                }}
-                                thumbColor={"#FFFFFF"}
-                                onValueChange={() => handleSwitchToggle(index, item)}
-                                style={{ marginBottom: normalize(10), marginLeft: normalize(10) }}
-                                value={isSwitchOn}
-                            />
-                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", marginTop: normalize(5) }}>{"Auto Renew"}</Text>
-                        </View>}
-                        {item?.can_update == 1 && <View style={{ marginRight: normalize(10) }}>
-                            <TouchableOpacity onPress={() => {
-                                navigation.navigate("PaymentSub", { takeid: item?.id });
-                            }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000", textDecorationLine: "underline" }}>{"Update Payment Details"}</Text>
-                            </TouchableOpacity>
-                        </View>}
+                {periodDisplay ? (
+                    <View style={localStyles.periodBadge}>
+                        <Text style={localStyles.periodText}>
+                            {`Subscription: ${periodDisplay}`}
+                        </Text>
                     </View>
-                    {!isLastItem && <View style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 5,
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(5)
-                    }}>
-                        {Array.from({ length: 24 }).map((_, index) => (
-                            <View key={index} style={{
-                                height: 2,
-                                width: (windowWidth * 0.4 - 20) / 16,
-                                backgroundColor: "#DDDDDD"
-                            }} />
-                        ))}
-                    </View>}
+                ) : null}
+
+                <View style={localStyles.metaRow}>
+                    <Text style={localStyles.metaText}>
+                        {`Trans Date: ${moment(item?.created_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`}
+                    </Text>
+                    <Text style={[
+                        localStyles.metaText,
+                        isItemExpired && localStyles.expiredDateText
+                    ]}>
+                        {isItemExpired
+                            ? `Plan Expired on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`
+                            : `Plan Expires on : ${expiryDisplay || moment(item?.expiry_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`}
+                    </Text>
                 </View>
-            </View>
-        );
-    }
-        /**
- * Render month item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @returns {JSX.Element}
- */
-const renderMonthItem = ({ item }) => {
-        return (
-            <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
-                <Text
-                    style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        color: '#333',
-                        marginBottom: normalize(10)
-                    }}
-                >
-                    {item.monthYear} {/* Display month and year */}
-                </Text>
 
-                <FlatList
-                    data={item?.data}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => index.toString()}
-                />
+                {hasFooterActions ? (
+                    <>
+                        <View style={localStyles.divider} />
+                        <View style={localStyles.actionsRow}>
+                            {item?.can_cancel == 1 ? (
+                                <View style={localStyles.switchRow}>
+                                    <Switch
+                                        trackColor={{
+                                            false: "#CBD5E1",
+                                            true: "#16A34A",
+                                        }}
+                                        thumbColor="#FFFFFF"
+                                        onValueChange={() => handleSwitchToggle(index, item)}
+                                        value={isSwitchOn}
+                                    />
+                                    <Text style={localStyles.autoRenewText}>{"Auto Renew"}</Text>
+                                </View>
+                            ) : <View />}
+
+                            {item?.can_update == 1 ? (
+                                <TouchableOpacity
+                                    activeOpacity={0.75}
+                                    style={localStyles.updatePaymentBtn}
+                                    onPress={() => navigation.navigate("PaymentSub", { takeid: item?.id })}
+                                >
+                                    <Text style={localStyles.updatePaymentText}>
+                                        {"Update Payment Details"}
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : null}
+                        </View>
+                    </>
+                ) : null}
             </View>
         );
-    }
-const [showLoader, setShowLoader] = useState(true);
-          useEffect(() => {
-              // Simulate 2-second loading time
-              const timeout = setTimeout(() => {
-                  setShowLoader(false);
-              }, 2000);
-      
-              return () => clearTimeout(timeout);
-          }, []);
+    };
+
+    const renderMonthItem = ({ item }) => {
+        return (
+            <View key={item.monthYear} style={localStyles.monthSection}>
+                <View style={localStyles.monthHeaderRow}>
+                    <View style={localStyles.monthPill}>
+                        <Text style={localStyles.monthTitle}>{item.monthYear}</Text>
+                    </View>
+                </View>
+                {(item?.data || []).map((entry, idx) => renderSubscriptionCard(entry, idx))}
+            </View>
+        );
+    };
+
     return (
-        <>
-            <View style={{ paddingVertical: normalize(10) }}>
+        <View style={localStyles.container}>
+            {initialLoading && final.length === 0 ? (
+                <TransactionListSkeleton count={4} />
+            ) : (
                 <FlatList
                     data={final}
                     renderItem={renderMonthItem}
-                    contentContainerStyle={{ paddingBottom: normalize(120) }}
-                    keyExtractor={(item, index) => index.toString()}
+                    contentContainerStyle={localStyles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={(item, index) => `${item?.monthYear || 'month'}_${index}`}
                     onEndReached={fetchMore}
                     onEndReachedThreshold={0.5}
                     scrollEventThrottle={16}
                     ListFooterComponent={
-                        loading && !showLoader ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                        loadingMore ? (
+                            <View style={localStyles.footerLoader}>
+                                <ActivityIndicator color={Colorpath.ButtonColr} size="small" />
+                            </View>
+                        ) : null
                     }
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={fullDataRefresh}
+                            colors={[Colorpath.ButtonColr]}
+                            tintColor={Colorpath.ButtonColr}
                         />
                     }
-                    ListEmptyComponent={showLoader ? <View style={{justifyContent:"center",alignItems:"center",paddingTop:normalize(30)}}>
-                        <ActivityIndicator color={"green"} size="small" />
-                    </View>  :
-                        <Text
-                            style={{
-                                alignContent: 'center',
-                                alignItems: 'center',
-                                alignSelf: 'center',
-                                color: Colorpath.grey,
-                                fontWeight: 'bold',
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: normalize(20),
-                                paddingTop: normalize(30),
-                            }}>
-                            No data found
-                        </Text>
-                    }
+                    ListEmptyComponent={<TransactionEmptyState message="No data found" />}
                 />
-            </View>
-        </>
+            )}
+        </View>
     )
 }
 
-/**
- * User sub default export.
- *
- * @returns {*}
- */
+const localStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    listContent: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(8),
+        paddingBottom: normalize(32),
+    },
+    monthSection: {
+        marginBottom: normalize(12),
+    },
+    monthHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: normalize(8),
+        paddingHorizontal: normalize(2),
+    },
+    monthPill: {
+        backgroundColor: '#E0ECFF',
+        borderRadius: normalize(14),
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(4),
+    },
+    monthTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: Colorpath.ButtonColr,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#DCE7FB',
+        borderLeftWidth: 4,
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        marginBottom: normalize(10),
+    },
+    cardActive: {
+        borderLeftColor: '#16A34A',
+        backgroundColor: '#FFFFFF',
+    },
+    cardInactive: {
+        borderLeftColor: '#EF4444',
+        backgroundColor: '#FFFFFF',
+    },
+    cardTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: normalize(6),
+    },
+    titleText: {
+        flex: 1,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
+        marginRight: normalize(8),
+    },
+    statusPill: {
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(3),
+        borderRadius: normalize(12),
+        borderWidth: 1,
+    },
+    statusPillActive: {
+        backgroundColor: '#F0FDF4',
+        borderColor: '#BBF7D0',
+    },
+    statusPillExpired: {
+        backgroundColor: '#FEF2F2',
+        borderColor: '#FECACA',
+    },
+    statusText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 11,
+    },
+    periodBadge: {
+        backgroundColor: '#F3E8FF',
+        borderWidth: 1,
+        borderColor: '#E9D5FF',
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(4),
+        marginBottom: normalize(7),
+        alignSelf: 'flex-start',
+    },
+    periodText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: '#6B21A8',
+    },
+    metaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: normalize(4),
+    },
+    metaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: '#64748B',
+    },
+    expiredDateText: {
+        color: '#DC2626',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: normalize(8),
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: normalize(8),
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(8),
+    },
+    autoRenewText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        color: '#0F172A',
+    },
+    updatePaymentBtn: {
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(5),
+    },
+    updatePaymentText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: Colorpath.ButtonColr,
+    },
+    footerLoader: {
+        paddingVertical: normalize(14),
+        alignItems: 'center',
+    },
+});
+
 export default UserSub

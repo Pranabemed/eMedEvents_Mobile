@@ -2,22 +2,17 @@
  * Header search screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, HeaderSearch, checkoutClear, handleUrl, SearchCont, onBackPress.
  */
 
-import { View, Text, Platform, TouchableOpacity, FlatList, ScrollView, Image, KeyboardAvoidingView, Alert, BackHandler } from 'react-native'
-import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
-import PageHeader from '../../Components/PageHeader'
+import { View, Platform, TouchableOpacity, TextInput, KeyboardAvoidingView, BackHandler, StyleSheet } from 'react-native'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import { CommonActions, useIsFocused, useNavigation } from '@react-navigation/native';
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 import Fonts from '../../Themes/Fonts';
 import { useDispatch, useSelector } from 'react-redux';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { webcastsearchRequest } from '../../Redux/Reducers/WebcastReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
-import Buttons from '../../Components/Button';
-import Loader from '../../Utils/Helpers/Loader';
-import Imagepath from '../../Themes/Imagepath';
-import TextFieldIn from '../../Components/Textfield';
 import GlobalSearchAll from '../GlobalSupport/GlobalSearchAll';
 import WrongGlobalData from '../GlobalSupport/WrongGlobalData';
 import { BrowseSpecialtyRequest } from '../../Redux/Reducers/BrowsReducer';
@@ -37,7 +32,7 @@ import { trackScreen } from '../../Utils/Helpers/Analytics';
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-let status = "";
+const SEARCH_DEBOUNCE_MS = 280;
 /**
  * Header search component.
  * @param {*} props - Input value.
@@ -48,41 +43,58 @@ const HeaderSearch = (props) => {
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const [webcast, setWebcast] = useState(null);
-    const [searchText, setSearchText] = useState("")
+    const [searchText, setSearchText] = useState("");
     const [searchEn, setSearchEn] = useState(false);
     const [searchkey, setSearchkey] = useState("");
     const [hadtr, setHadtr] = useState(true);
-    console.log(props?.route?.params?.taskData, "fdmlsdklmg------1233344", searchText, WebcastReducer?.webcastsearchResponse)
+    const [isInputFocused, setIsInputFocused] = useState(false);
+    const inputRef = useRef(null);
+    const statusRef = useRef("");
+    const searchDebounceRef = useRef(null);
+    const searchTextRef = useRef("");
+    searchTextRef.current = searchText;
+
+    const dispatchWebcastSearch = useCallback((payload) => {
+        setHadtr(true);
+        connectionrequest()
+            .then(() => {
+                dispatch(webcastsearchRequest(payload));
+            })
+            .catch((err) => {
+                setHadtr(false);
+                showErrorAlert("Please connect to internet", err);
+            });
+    }, [dispatch]);
+
     const placeholders = useMemo(() => [
         "Search for CME/CE courses",
-        "Search for your state required ... ",
-        "Search for topic",
-        "Search for specialty",
-        "Search for medical conferences",
-        "Search for conferences by location "
+        "Search state-required courses",
+        "Search by topic",
+        "Search by specialty",
+        "Search medical conferences",
+        "Search conferences by location"
     ], []);
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
     useEffect(() => {
+        if (searchText || searchEn) return;
         const interval = setInterval(() => {
             setPlaceholderIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [placeholders]);
+    }, [placeholders, searchText, searchEn]);
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
     useEffect(() => {
         if (searchText == "") {
-            setHadtr(true);
-            setWebcast(null);
-            connectionrequest()
-                .then(() => {
-                    dispatch(webcastsearchRequest({}));
-                })
-                .catch((err) => {
-                    setHadtr(false);
-                    showErrorAlert("Please connect to internet", err);
-                });
+            dispatchWebcastSearch({});
         }
-    }, [searchText]);
+    }, [searchText, dispatchWebcastSearch]);
 
         /**
  * Checkout clear utility.
@@ -153,70 +165,57 @@ const handleUrl = (data) => {
  * @param {*} text - Input value.
  * @returns {void}
  */
-const SearchCont = text => {
-        if (text) {
-            let textObj = {
-                "searchKeyword": text
-            };
-            setHadtr(true);
-            setWebcast(null);
-            connectionrequest()
-                .then(() => {
-                    dispatch(webcastsearchRequest(textObj));
-                })
-                .catch((err) => {
-                    setHadtr(false);
-                    showErrorAlert("Please connect to internet", err);
-                });
-            setSearchText(text);
+const SearchCont = (text, immediate = false) => {
+        const nextText = typeof text === 'string' ? text : '';
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = null;
+        }
+        if (nextText) {
+            const textObj = { searchKeyword: nextText };
+            searchTextRef.current = nextText;
+            setSearchText(nextText);
+            if (immediate) {
+                dispatchWebcastSearch(textObj);
+            } else {
+                searchDebounceRef.current = setTimeout(() => {
+                    dispatchWebcastSearch(textObj);
+                }, SEARCH_DEBOUNCE_MS);
+            }
         } else {
-            let textObjtc = {
-                "searchKeyword": searchText,
-                "searchRequestType": "insertSearchKeyword"
-            };
-            setHadtr(true);
-            setWebcast(null);
-            connectionrequest()
-                .then(() => {
-                    dispatch(webcastsearchRequest(textObjtc));
-                })
-                .catch((err) => {
-                    setHadtr(false);
-                    showErrorAlert("Please connect to internet", err);
-                });
+            const prevKeyword = searchTextRef.current;
+            searchTextRef.current = "";
             setSearchText("");
+            if (prevKeyword) {
+                dispatchWebcastSearch({
+                    searchKeyword: prevKeyword,
+                    searchRequestType: "insertSearchKeyword"
+                });
+            }
         }
     };
     useEffect(() => {
         if (WebcastReducer?.webcastsearchResponse) {
-            const updatedCourses = WebcastReducer?.webcastsearchResponse;
-            setWebcast(updatedCourses);
+            setWebcast(WebcastReducer.webcastsearchResponse);
         }
-    }, [WebcastReducer?.webcastsearchResponse])
-    if (status !== WebcastReducer.status) {
-        switch (WebcastReducer.status) {
-            case 'WebCast/webcastsearchRequest':
-                status = WebcastReducer.status;
-                setHadtr(true);
-                console.log("gfghgghh")
-                break;
-            case 'WebCast/webcastsearchSuccess':
-                status = WebcastReducer.status;
-                setHadtr(false);
-                if (searchText == "") {
-                    const updatedCourses = WebcastReducer?.webcastsearchResponse;
-                    setWebcast(updatedCourses);
-                } else {
-                    const updatedCourses = WebcastReducer?.webcastsearchResponse;
-                    setWebcast(updatedCourses);
-                }
-                break;
-            case 'WebCast/webcastsearchFailure':
-                status = WebcastReducer.status;
-                setHadtr(false);
-                break;
+    }, [WebcastReducer?.webcastsearchResponse]);
+    useEffect(() => {
+        if (statusRef.current !== WebcastReducer.status) {
+            statusRef.current = WebcastReducer.status;
+            switch (WebcastReducer.status) {
+                case 'WebCast/webcastsearchRequest':
+                    setHadtr(true);
+                    break;
+                case 'WebCast/webcastsearchSuccess':
+                    setHadtr(false);
+                    setWebcast(WebcastReducer?.webcastsearchResponse);
+                    break;
+                case 'WebCast/webcastsearchFailure':
+                    setHadtr(false);
+                    break;
+            }
         }
-    }
+    }, [WebcastReducer?.status, WebcastReducer?.webcastsearchResponse]);
 
     useEffect(() => {
                 /**
@@ -257,83 +256,69 @@ const onBackPress = () => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {searchEn ? <VoiceSearchBar SearchCont={SearchCont} searchEn={searchEn} setSearchEn={setSearchEn} searchText={searchkey} setSearchText={setSearchkey} /> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <KeyboardAvoidingView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }} behavior={Platform.OS === 'ios' ? "height" : undefined}>
-                    {Platform.OS === 'ios' ? (
-                        <View style={{ paddingHorizontal: normalize(10), flexDirection: "row" }}>
-                            <View style={{ alignItems: 'center' }}>
-                                <View
-                                    style={{
-                                        borderBottomColor: '#000000',
-                                        borderBottomWidth: 0.5,
-                                        marginTop: normalize(2)
-                                    }}>
-                                    <TextFieldIn
-                                        value={searchText}
-                                        onChangeText={SearchCont}
-                                        height={normalize(40)}
-                                        width={normalize(275)}
-                                        backgroundColor={Colorpath.Pagebg}
-                                        color={"#000000"}
-                                        placeholder={placeholders[placeholderIndex]}
-                                        placeholderTextColor="#AAAAAA"
-                                        fontSize={16}
-                                        fontFamily={Fonts.InterRegular}
-                                        searchIcon={true}
-                                        leftIcon={VoiceIcn}
-                                        leftIconName="keyboard-arrow-left"
-                                        leftIconSize={35}
-                                        leftIconColor="#63748b"
-                                        leftIconStyle={{ marginLeft: normalize(-4), top: normalize(7) }}
-                                        onPressLeftIcon={() => { checkoutClear() }}
-                                    />
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={() => {
-                                setSearchText("");
-                                setSearchEn(true);
-                            }} style={{ justifyContent: "center", alignContent: "center", marginTop: normalize(10), height: normalize(30), width: normalize(30), borderRadius: normalize(30), backgroundColor: "rgba(0,0,0,0.5)", }}>
-                                <VoiceIcn style={{ alignSelf: "center" }} name="keyboard-voice" size={24} color={"#fff"} />
+            {searchEn ? <VoiceSearchBar SearchCont={SearchCont} searchEn={searchEn} setSearchEn={setSearchEn} searchText={searchkey} setSearchText={setSearchkey} /> : <SafeAreaView style={styles.safeArea}>
+                <KeyboardAvoidingView style={styles.flexContainer} behavior={Platform.OS === 'ios' ? "height" : undefined}>
+                    <View style={styles.searchHeaderRow}>
+                        <View style={[styles.searchInputBar, isInputFocused && styles.searchInputBarFocused]}>
+                            <TouchableOpacity
+                                onPress={() => checkoutClear()}
+                                activeOpacity={0.65}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}
+                                style={styles.backButton}
+                                accessibilityRole="button"
+                                accessibilityLabel="Go back"
+                            >
+                                <VoiceIcn name="keyboard-arrow-left" size={30} color="#63748b" />
                             </TouchableOpacity>
+                            <TextInput
+                                ref={inputRef}
+                                value={searchText}
+                                onChangeText={(text) => SearchCont(text)}
+                                onFocus={() => setIsInputFocused(true)}
+                                onBlur={() => setIsInputFocused(false)}
+                                onSubmitEditing={() => SearchCont(searchText, true)}
+                                placeholder={placeholders[placeholderIndex]}
+                                placeholderTextColor="#94A3B8"
+                                multiline={false}
+                                numberOfLines={1}
+                                returnKeyType="search"
+                                autoCorrect={false}
+                                autoCapitalize="none"
+                                allowFontScaling={false}
+                                underlineColorAndroid="transparent"
+                                selectionColor="#475569"
+                                style={styles.searchInput}
+                            />
+                            {searchText.length > 0 && (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        SearchCont("", true);
+                                        inputRef.current?.focus?.();
+                                    }}
+                                    activeOpacity={0.65}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    style={styles.clearButton}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Clear search"
+                                >
+                                    <VoiceIcn name="close" size={16} color="#475569" />
+                                </TouchableOpacity>
+                            )}
                         </View>
-                    ) : (
-                        <View style={{ marginTop: normalize(0), paddingHorizontal: normalize(3), flexDirection: "row", gap: 10 }}>
-                            <View style={{ alignItems: 'center' }}>
-                                <View
-                                    style={{
-                                        borderBottomColor: '#000000',
-                                        borderBottomWidth: 0.5,
-                                        marginTop: normalize(2)
-                                    }}>
-                                    <TextFieldIn
-                                        value={searchText}
-                                        onChangeText={SearchCont}
-                                        height={normalize(40)}
-                                        width={normalize(275)}
-                                        backgroundColor={Colorpath.Pagebg}
-                                        color={"#000000"}
-                                        placeholder={placeholders[placeholderIndex]}
-                                        placeholderTextColor="#AAAAAA"
-                                        fontSize={16}
-                                        fontFamily={Fonts.InterRegular}
-                                        searchIcon={true}
-                                        leftIcon={VoiceIcn}
-                                        leftIconName="keyboard-arrow-left"
-                                        leftIconSize={35}
-                                        leftIconColor="#63748b"
-                                        leftIconStyle={{ marginLeft: normalize(0), top: normalize(5) }}
-                                        onPressLeftIcon={() => { checkoutClear() }}
-                                    />
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={() => {
-                                setSearchText("");
+                        <TouchableOpacity
+                            onPress={() => {
+                                SearchCont("");
                                 setSearchEn(true);
-                            }} style={{ justifyContent: "center", alignContent: "center", marginTop: normalize(10), height: normalize(30), width: normalize(30), borderRadius: normalize(30), backgroundColor: "rgba(0,0,0,0.5)", }}>
-                                <VoiceIcn style={{ alignSelf: "center" }} name="keyboard-voice" size={24} color={"#fff"} />
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                            }}
+                            activeOpacity={0.75}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={styles.voiceButton}
+                            accessibilityRole="button"
+                            accessibilityLabel="Voice search"
+                        >
+                            <VoiceIcn name="keyboard-voice" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </View>
                     {/* <Loader
                         visible={hadtr} /> */}
                     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: normalize(15) }}>
@@ -346,6 +331,70 @@ const onBackPress = () => {
         </>
     )
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: Colorpath.Pagebg,
+    },
+    flexContainer: {
+        flex: 1,
+        backgroundColor: Colorpath.Pagebg,
+    },
+    searchHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: normalize(12),
+        paddingTop: Platform.OS === 'ios' ? normalize(4) : normalize(8),
+        paddingBottom: normalize(4),
+        gap: normalize(10),
+    },
+    searchInputBar: {
+        flex: 1,
+        height: normalize(42),
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#CBD5E1',
+        paddingRight: normalize(4),
+    },
+    searchInputBarFocused: {
+        borderBottomColor: '#334155',
+        borderBottomWidth: 1.5,
+    },
+    backButton: {
+        width: normalize(30),
+        height: normalize(36),
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+    },
+    searchInput: {
+        flex: 1,
+        height: normalize(40),
+        fontSize: 14.5,
+        fontFamily: Fonts.InterRegular,
+        color: '#000000',
+        paddingVertical: 0,
+        paddingHorizontal: normalize(2),
+    },
+    clearButton: {
+        width: normalize(24),
+        height: normalize(24),
+        borderRadius: normalize(12),
+        backgroundColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: normalize(4),
+    },
+    voiceButton: {
+        height: normalize(34),
+        width: normalize(34),
+        borderRadius: normalize(17),
+        backgroundColor: '#64748B',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});
 /**
  * Header search default export.
  *

@@ -9,6 +9,7 @@ import Colorpath from '../Themes/Colorpath';
 import normalize from '../Utils/Helpers/Dimen';
 import { CommonActions } from '@react-navigation/native';
 import Buttons from './Button';
+import DashboardActionCard from './DashboardActionCard';
 import StateRequireditem from './StateRequired';
 import ResumeDash from './ResumeDash';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
@@ -100,77 +101,47 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
                     contentContainerStyle={{ paddingHorizontal: normalize(9) }}
                 />
             </View> : null}
-            {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
-                <TouchableOpacity onPress={() => {
-                    navigation.dispatch(
-                        CommonActions.reset({
-                            index: 0,
-                            routes: [
-                                {
-                                    name: "NonMain",
-                                    params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed, creditData: handleButtonPress } },
-                                }
-                            ]
-                        })
-                    );
-                }}
-                    style={{
-                        flexDirection: "row",
-                        height: normalize(105),
-                        width: normalize(300),
-                        borderRadius: normalize(5),
-                        borderWidth: 1,
-                        borderColor: Colorpath.bordercolor,
-                        backgroundColor: Colorpath.white,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginTop: normalize(10)
+            {DashboardReducer?.dashboardResponse?.data?.my_recently_viewed?.length > 0 && (
+                <DashboardActionCard
+                    title="Recently Viewed"
+                    description="Your recently viewed courses are listed below for easy access and continued learning."
+                    buttonText="Recently viewed"
+                    iconName="clock"
+                    onCardPress={() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [
+                                    {
+                                        name: "NonMain",
+                                        params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed, creditData: handleButtonPress, recnt: "recnt" } },
+                                    }
+                                ]
+                            })
+                        );
                     }}
-                >
-                    <View style={{ justifyContent: "center", alignItems: "center" }}>
-                        <View style={{ width: normalize(270) }}>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 13,
-                                    color: Colorpath.Gray,
-                                    textAlign: "center"
-                                }}
-                            >
-                                {"Your recently viewed courses are listed below for easy access and continued learning."}
-                            </Text>
-                        </View>
-                        <View style={{ marginTop: normalize(10) }}>
-                            <Buttons
-                                onPress={() => {
-                                    navigation.dispatch(
-                                        CommonActions.reset({
-                                            index: 0,
-                                            routes: [
-                                                {
-                                                    name: "NonMain",
-                                                    params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed, creditData: handleButtonPress, recnt: "recnt" } },
-                                                }
-                                            ]
-                                        })
-                                    );
-                                }}
-                                height={normalize(40)}
-                                width={normalize(270)}
-                                backgroundColor={Colorpath.ButtonColr}
-                                borderRadius={normalize(5)}
-                                text="Recently viewed"
-                                color={Colorpath.white}
-                                fontSize={16}
-                                fontFamily={Fonts.InterSemiBold}
-                            />
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </View>}
-            {finalData &&
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(0) }}>
-                    <TouchableOpacity onPress={() => {
+                    onButtonPress={() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [
+                                    {
+                                        name: "NonMain",
+                                        params: { myact: { realdata: DashboardReducer?.dashboardResponse?.data?.my_recently_viewed, creditData: handleButtonPress, recnt: "recnt" } },
+                                    }
+                                ]
+                            })
+                        );
+                    }}
+                />
+            )}
+            {finalData && (
+                <DashboardActionCard
+                    title="Recommended Courses"
+                    description="Recommendations are based on your profession, primary area of practice and state requirements."
+                    buttonText="Browse Courses"
+                    iconName="book-open"
+                    onCardPress={() => {
                         navigation.dispatch(
                             CommonActions.reset({
                                 index: 0,
@@ -183,60 +154,21 @@ const Nonphysicianprofile = ({ allNoDetData, addit, finddata, handleButtonPress,
                             })
                         );
                     }}
-                        style={{
-                            flexDirection: "row",
-                            height: normalize(105),
-                            width: normalize(300),
-                            borderRadius: normalize(5),
-                            borderWidth: 1,
-                            borderColor: Colorpath.bordercolor,
-                            backgroundColor: Colorpath.white,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            marginTop: normalize(10)
-                        }}
-                    >
-                        <View style={{ justifyContent: "center", alignItems: "center" }}>
-                            <View style={{ width: normalize(270) }}>
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 13,
-                                        color: Colorpath.Gray,
-                                        textAlign: "center"
-                                    }}
-                                >
-                                    {"Recommendations are based on your profession, primary area of practice and state requirements."}
-                                </Text>
-                            </View>
-                            <View style={{ marginTop: normalize(10) }}>
-                                <Buttons
-                                    onPress={() => {
-                                        navigation.dispatch(
-                                            CommonActions.reset({
-                                                index: 0,
-                                                routes: [
-                                                    {
-                                                        name: "Globalresult",
-                                                        params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: handleButtonPress, backProps: "yes" } },
-                                                    }
-                                                ]
-                                            })
-                                        );
-                                    }}
-                                    height={normalize(40)}
-                                    width={normalize(270)}
-                                    backgroundColor={Colorpath.ButtonColr}
-                                    borderRadius={normalize(5)}
-                                    text="Browse Courses"
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterSemiBold}
-                                />
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>}
+                    onButtonPress={() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [
+                                    {
+                                        name: "Globalresult",
+                                        params: { trig: { rqstType: "normallist", mainKey: "listby_type", beforetake: "recommended", creditData: handleButtonPress, backProps: "yes" } },
+                                    }
+                                ]
+                            })
+                        );
+                    }}
+                />
+            )}
         </View>
     )
 }

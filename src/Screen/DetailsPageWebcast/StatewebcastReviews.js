@@ -2,211 +2,255 @@
  * Statewebcast reviews screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastReviews, reviewsShows.
  */
 
-import { View, Text, Image, TouchableOpacity, FlatList } from 'react-native'
-import React from 'react'
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { memo, useMemo } from 'react';
+import Feather from 'react-native-vector-icons/Feather';
 import Imagepath from '../../Themes/Imagepath';
-import Fonts from '../../Themes/Fonts'
+import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import StarRating from 'react-native-star-rating-widget';
 
 /**
  * Reusable StatewebcastReviews component.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const StatewebcastReviews = ({ webcastdeatils, setReviewsPosition, ratingsall, reviewpost, expandreview, reviewChange }) => {
-    console.log(reviewpost, "expandreview-------")
-        /**
- * Reviews shows utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const reviewsShows = ({ item, index }) => {
-        return (
-            <View
-                style={{
-                    marginBottom: normalize(10),
-                    marginLeft: normalize(6)
-                }}
-            >
-                <View
-                    style={{
-                        paddingVertical: normalize(5),
-                        paddingHorizontal: normalize(9),
-                    }}>
-                    <Text
-                        style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 16,
-                            color: "#000000",
-                            textTransform: "capitalize",
-                        }}>
-                        {item?.userName}
-                    </Text>
-                </View>
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        paddingHorizontal: normalize(6),
-                        paddingVertical: normalize(0),
-                    }}>
-                    <View pointerEvents="none">
-                        <StarRating
-                            rating={Number(item?.averageRating) || 0}
-                            onChange={() => { }}
-                            starSize={15}
-                            color="#FF773D"
-                            starStyle={{ marginHorizontal: 1 }}
-                        />
-                    </View>
-                    {/* <Text
-                        style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 12,
-                            color: '#999',
-                            fontWeight: 'bold',
-                            marginLeft: normalize(10),
-                        }}>
-                        {"2 days ago"}
-                    </Text> */}
-                </View>
-                <View
-                    style={{
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(0),
-                    }}>
-                    <Text
-                        style={{
-                            fontFamily: Fonts.InterRegular,
-                            fontSize: 16,
-                            color: '#333',
-                        }}>
-                        {item?.comment}
-                    </Text>
-                </View>
-            </View>
-        );
-    };
+const StatewebcastReviews = memo(({ webcastdeatils, ratingsall, reviewpost, expandreview, reviewChange }) => {
+    const reviewsList = useMemo(() => {
+        if (Array.isArray(reviewpost) && reviewpost.length > 0) return reviewpost;
+        if (Array.isArray(webcastdeatils?.userReviews)) return webcastdeatils.userReviews;
+        return [];
+    }, [reviewpost, webcastdeatils?.userReviews]);
+
+    const initialVisibleCount = Math.ceil(reviewsList.length / 2);
+    const remainingCount = Math.max(reviewsList.length - initialVisibleCount, 0);
+
+    const visibleReviews = useMemo(() => {
+        if (expandreview || remainingCount === 0) {
+            return reviewsList;
+        }
+        return reviewsList.slice(0, initialVisibleCount);
+    }, [expandreview, initialVisibleCount, remainingCount, reviewsList]);
+
+    if (reviewsList.length === 0) {
+        return null;
+    }
+
+    const avgRating = (Number(ratingsall?.totalAverageRating) || 0).toFixed(1);
+    const totalCount = Number(ratingsall?.totalRatingsCount) || 0;
 
     return (
-        <View>
-            {webcastdeatils?.userReviews?.length > 0 ? (<>
-                <View onLayout={(event) => {
-                    const layout = event.nativeEvent.layout;
-                    setReviewsPosition(layout.y);
-                }}
-                    style={{
-                        paddingHorizontal: normalize(15),
-                        paddingVertical: normalize(5),
-                    }}>
-                    <Text
-                        style={{
-                            fontFamily: Fonts.InterBold,
-                            fontWeight: "bold",
-                            fontSize: 18,
-                            color: '#000000',
-                        }}>
-                        {"Reviews"}
-                    </Text>
+        <View style={styles.sectionCard}>
+            <View style={styles.headerRow}>
+                <View style={styles.headerTitleGroup}>
+                    <View style={styles.sectionAccent} />
+                    <Text style={styles.sectionHeading}>{"Reviews"}</Text>
                 </View>
+                <View style={styles.summaryPill}>
+                    <Image source={Imagepath.Star} style={styles.starIcon} />
+                    <Text style={styles.ratingValue}>{avgRating}</Text>
+                    <Text style={styles.ratingCount}>{`(${totalCount} ${totalCount === 1 ? 'rating' : 'ratings'})`}</Text>
+                </View>
+            </View>
 
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        paddingHorizontal: normalize(15),
-                        paddingVertical: normalize(0),
-                    }}>
-                    <Image
-                        source={Imagepath.Star}
-                        style={{
-                            height: normalize(15),
-                            width: normalize(15),
-                            resizeMode: 'contain',
-                        }}
+            <View style={styles.reviewsList}>
+                {visibleReviews.map((item, index) => {
+                    const userName = String(item?.userName || 'Anonymous').trim();
+                    const initial = userName ? userName.charAt(0).toUpperCase() : 'A';
+                    return (
+                        <View
+                            key={`${userName}-${index}`}
+                            style={[
+                                styles.reviewItem,
+                                index < visibleReviews.length - 1 && styles.reviewDivider,
+                            ]}
+                        >
+                            <View style={styles.reviewerRow}>
+                                <View style={styles.avatarCircle}>
+                                    <Text style={styles.avatarText}>{initial}</Text>
+                                </View>
+                                <View style={styles.reviewerMeta}>
+                                    <Text style={styles.reviewerName} numberOfLines={1}>
+                                        {userName}
+                                    </Text>
+                                    <View pointerEvents="none" style={styles.starsWrap}>
+                                        <StarRating
+                                            rating={Number(item?.averageRating) || 0}
+                                            onChange={() => { }}
+                                            starSize={14}
+                                            color="#FF773D"
+                                            starStyle={styles.starItem}
+                                        />
+                                    </View>
+                                </View>
+                            </View>
+                            {item?.comment ? (
+                                <Text style={styles.commentText}>{item.comment}</Text>
+                            ) : null}
+                        </View>
+                    );
+                })}
+            </View>
+
+            {remainingCount > 0 ? (
+                <TouchableOpacity
+                    onPress={reviewChange}
+                    activeOpacity={0.75}
+                    style={styles.toggleButton}
+                >
+                    <Text style={styles.toggleButtonText}>
+                        {expandreview ? "View less" : `View more (${remainingCount} more)`}
+                    </Text>
+                    <Feather
+                        name={expandreview ? 'chevron-up' : 'chevron-down'}
+                        size={15}
+                        color={Colorpath.ButtonColr}
                     />
-                    <Text
-                        style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 18,
-                            color: '#333',
-                            fontWeight: 'bold',
-                            marginLeft: normalize(10),
-                        }}>
-                        {`${ratingsall?.totalAverageRating.toFixed(1)}`}
-                    </Text>
-                    <Text
-                        style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 16,
-                            color: Colorpath.ButtonColr,
-                            fontWeight: 'bold',
-                            marginLeft: normalize(5),
-                            top: 1,
-                        }}>
-                        ({(`${ratingsall?.totalRatingsCount} ratings`)})
-                    </Text>
-                </View>
-                <View style={{ height: 1, width: normalize(285), backgroundColor: "#DDDDDD", marginLeft: normalize(15), marginTop: normalize(5) }} />
-                <View>
-                    {reviewpost?.length > 2 ? (
-                        <>
-                            <FlatList
-                                scrollEnabled={false}
-                                data={reviewpost?.slice(0, 1)}
-                                renderItem={reviewsShows}
-                                keyExtractor={(item, index) => index.toString()}
-                            />
-                            <FlatList
-                                scrollEnabled={false}
-                                data={expandreview ? reviewpost?.slice(1) : []}
-                                renderItem={reviewsShows}
-                                keyExtractor={(item, index) => index.toString()}
-                                ListFooterComponent={
-                                    <TouchableOpacity onPress={reviewChange}>
-                                        <View
-                                            style={{
-                                                paddingHorizontal: normalize(10),
-                                                paddingVertical: normalize(10),
-                                                width: "100%",
-                                            }}
-                                        >
-                                            <Text
-                                                style={{
-                                                    fontFamily: Fonts.InterSemiBold,
-                                                    fontSize: 16,
-                                                    color: Colorpath.ButtonColr,
-                                                }}
-                                            >
-                                                {expandreview ? "See less" : "See more reviews"}
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                }
-                            />
-                        </>
-                    ) : (
-                        <FlatList
-                            data={reviewpost}
-                            renderItem={reviewsShows}
-                            keyExtractor={(item, index) => index.toString()}
-                        />
-                    )}
-                </View>
-
-
-            </>) : null}
+                </TouchableOpacity>
+            ) : null}
         </View>
-    )
-}
+    );
+});
+
+const styles = StyleSheet.create({
+    sectionCard: {
+        backgroundColor: Colorpath.white,
+        borderRadius: normalize(14),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        marginHorizontal: normalize(12),
+        marginTop: normalize(12),
+        padding: normalize(14),
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: normalize(8),
+        marginBottom: normalize(10),
+        paddingBottom: normalize(10),
+        borderBottomWidth: 1,
+        borderBottomColor: '#E6EEF8',
+    },
+    headerTitleGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    sectionAccent: {
+        width: normalize(3.5),
+        height: normalize(16),
+        borderRadius: normalize(2),
+        backgroundColor: Colorpath.ButtonColr,
+        marginRight: normalize(8),
+    },
+    sectionHeading: {
+        fontFamily: Fonts.InterBold,
+        fontWeight: '700',
+        fontSize: 16,
+        color: '#0F172A',
+    },
+    summaryPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF7ED',
+        borderWidth: 1,
+        borderColor: '#FED7AA',
+        borderRadius: normalize(16),
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(4),
+        gap: normalize(4),
+    },
+    starIcon: {
+        height: normalize(13),
+        width: normalize(13),
+        resizeMode: 'contain',
+    },
+    ratingValue: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 13.5,
+        color: '#9A3412',
+    },
+    ratingCount: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 12,
+        color: '#C2410C',
+    },
+    reviewsList: {
+        gap: normalize(10),
+    },
+    reviewItem: {
+        paddingBottom: normalize(10),
+    },
+    reviewDivider: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    reviewerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: normalize(6),
+    },
+    avatarCircle: {
+        width: normalize(34),
+        height: normalize(34),
+        borderRadius: normalize(17),
+        backgroundColor: '#EAF1FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: normalize(10),
+    },
+    avatarText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 14,
+        color: Colorpath.ButtonColr,
+    },
+    reviewerMeta: {
+        flex: 1,
+    },
+    reviewerName: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14.5,
+        color: '#0F172A',
+        textTransform: 'capitalize',
+        marginBottom: normalize(2),
+    },
+    starsWrap: {
+        alignSelf: 'flex-start',
+    },
+    starItem: {
+        marginHorizontal: 1,
+    },
+    commentText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 13.5,
+        lineHeight: 20,
+        color: '#334155',
+    },
+    toggleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        marginTop: normalize(8),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(6),
+        borderRadius: normalize(20),
+        backgroundColor: '#EEF4FF',
+        gap: normalize(4),
+    },
+    toggleButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: Colorpath.ButtonColr,
+    },
+});
 
 /**
  * Statewebcast reviews default export.
  *
  * @returns {*}
  */
-export default StatewebcastReviews
+export default StatewebcastReviews;

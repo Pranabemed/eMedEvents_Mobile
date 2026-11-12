@@ -2,7 +2,7 @@
  * Add certificate screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, AddCertificate, addCretBack, toggleModalcert, directUploadBoard, handleBoardname, token_handle_vault, transformDataSpecial, transformData, boardSpecialty, searchBoardNameFinal, boardCertificateAdd, onBackPress, styles.
  */
 
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Keyboard, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image, Platform, ScrollView, KeyboardAvoidingView, Keyboard, Alert, FlatList, Animated, Easing, TextInput, BackHandler, Pressable, DeviceEventEmitter } from 'react-native'
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
@@ -24,7 +24,7 @@ import ScanIcon from 'react-native-vector-icons/AntDesign';
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux'
 import connectionrequest from '../../Utils/Helpers/NetInfo'
-import { boardSpecialityRequest, boardcertificateRequest, dashboardRequest } from '../../Redux/Reducers/DashboardReducer'
+import { boardSpecialityRequest, boardcertificateRequest, dashboardRequest, mainprofileRequest } from '../../Redux/Reducers/DashboardReducer'
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import Loader from '../../Utils/Helpers/Loader';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -322,7 +322,25 @@ const token_handle_vault = () => {
         };
 
         token_handle_vault();
+        if (isFocus) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(mainprofileRequest({}));
+                })
+                .catch(() => {});
+        }
     }, [isFocus]);
+
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('ACTIVE_PROFILE_CHANGED', () => {
+            connectionrequest()
+                .then(() => {
+                    dispatch(mainprofileRequest({}));
+                })
+                .catch(() => {});
+        });
+        return () => sub?.remove?.();
+    }, [dispatch]);
 
         /**
  * Transform data special utility.
@@ -389,10 +407,15 @@ const transformData = (data) => {
             }));
         };
 
-        const allBoardData = DashboardReducer?.mainprofileResponse?.specialities || AuthReducer?.loginResponse?.user?.specialities ||
-            AuthReducer?.againloginsiginResponse?.user?.specialities ||
-            AuthReducer?.verifymobileResponse?.user?.specialities || finalverifyboard?.specialities || finalProfession?.specialities
-            ;
+        const hasSpecEntries = (val) => val && typeof val === 'object' && Object.keys(val).length > 0;
+        const allBoardData =
+            (hasSpecEntries(DashboardReducer?.mainprofileResponse?.professional_information?.specialities) && DashboardReducer?.mainprofileResponse?.professional_information?.specialities) ||
+            (hasSpecEntries(DashboardReducer?.mainprofileResponse?.specialities) && DashboardReducer?.mainprofileResponse?.specialities) ||
+            (hasSpecEntries(AuthReducer?.loginResponse?.user?.specialities) && AuthReducer?.loginResponse?.user?.specialities) ||
+            (hasSpecEntries(AuthReducer?.againloginsiginResponse?.user?.specialities) && AuthReducer?.againloginsiginResponse?.user?.specialities) ||
+            (hasSpecEntries(AuthReducer?.verifymobileResponse?.user?.specialities) && AuthReducer?.verifymobileResponse?.user?.specialities) ||
+            (hasSpecEntries(finalverifyboard?.specialities) && finalverifyboard?.specialities) ||
+            (hasSpecEntries(finalProfession?.specialities) && finalProfession?.specialities);
 
         if (allBoardData) {
             const dynamicData = transformData(allBoardData);
@@ -402,12 +425,14 @@ const transformData = (data) => {
             }
         }
     }, [
+        DashboardReducer?.mainprofileResponse?.professional_information?.specialities,
         DashboardReducer?.mainprofileResponse?.specialities,
         AuthReducer?.loginResponse?.user?.specialities,
         AuthReducer?.againloginsiginResponse?.user?.specialities,
         AuthReducer?.verifymobileResponse?.user?.specialities,
         finalverifyboard?.specialities,
-        finalProfession?.specialities
+        finalProfession?.specialities,
+        isFocus
     ]);
 
     useEffect(() => {
@@ -437,8 +462,14 @@ const boardSpecialty = () => {
             }
         };
 
-        boardSpecialty();
+        if (isFocus) {
+            boardSpecialty();
+        }
     }, [
+        isFocus,
+        DashboardReducer?.mainprofileResponse?.professional_information?.profession,
+        DashboardReducer?.mainprofileResponse?.professional_information?.specialities,
+        DashboardReducer?.mainprofileResponse?.specialities,
         AuthReducer?.loginResponse?.user?.specialities,
         AuthReducer?.againloginsiginResponse?.user?.specialities,
         AuthReducer?.verifymobileResponse?.user?.specialities,
@@ -658,7 +689,10 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                             icondisable={props?.route?.params?.profiledet ? true : false}
                                             wrapperStyle={props?.route?.params?.profiledet ? { backgroundColor: '#F0F0F0', borderBottomColor: '#B8B8B8', borderRadius: normalize(6), width: '100%', paddingHorizontal: 0 } : undefined}
                                             labelStyle={props?.route?.params?.profiledet ? { left: 0 } : undefined}
-                                            addnewtyle={props?.route?.params?.profiledet ? { color: '#7A7A7A' } : undefined}
+                                            addnewtyle={[
+                                                props?.route?.params?.profiledet ? { color: '#7A7A7A' } : null,
+                                                { paddingRight: normalize(28) }
+                                            ]}
                                             label={"Select Certification Board*"}
                                             value={certificateboard}
                                             placeholder=""
@@ -670,6 +704,7 @@ onPress: () => setBoardPic(""), onCancel: "default" }])
                                             onLeftIconPress={openCertificationBoard}
                                             marginleft={normalize(270)}
                                             multiline={true}
+                                            scrollEnabled={false}
                                             onwholePress={openCertificationBoard}
                                             spaceneeded={true}
                                         />

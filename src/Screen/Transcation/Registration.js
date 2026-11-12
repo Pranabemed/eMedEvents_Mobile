@@ -2,8 +2,8 @@
  * Registration screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Registration, toggleDrawerModal, registBaack, titlhandleUrl, fetchHandle, fullDataRefresh, onBackPress, openPDF, renderItem, renderMonthItem.
  */
 
-import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Alert, BackHandler } from 'react-native'
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, RefreshControl, BackHandler, StyleSheet } from 'react-native'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -22,11 +22,12 @@ import IconDot from 'react-native-vector-icons/Entypo';
 import RNFS from "react-native-fs";
 import FileViewer from "react-native-file-viewer";
 import Loader from '../../Utils/Helpers/Loader';
-import { styles } from '../Specialization/SpecialStyle';
+import { styles as specialStyles } from '../Specialization/SpecialStyle';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { TransactionEmptyState, TransactionListSkeleton } from './TransactionUiHelpers';
 
 /**
  * Reusable Registration component.
@@ -35,147 +36,112 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-let status = "";
-/**
- * Registration component.
- * @param {*} props - Input value.
- * @returns {JSX.Element}
- */
 const Registration = (props) => {
-    const { takestate, addit, isConnected } = useContext(AppContext);
-    console.log(props?.route?.params?.name, "dddddd------", takestate, addit);
+    const { addit, isConnected } = useContext(AppContext);
     const [visible, setVisible] = useState(false);
     const [nodata, setNodata] = useState("drawerclose");
     const [idget, setIdget] = useState("6");
-    const [loadingg, setLoadingg] = useState(false);
     const DownData = [{ id: 0, name: "Download Payment Receipt" }]
     const [modalShow, setModalShow] = useState(false);
     const [showLoad, setShowLoad] = useState(false);
     const [save, setSave] = useState();
-        /**
- * Toggle drawer modal utility.
- * @returns {void}
- */
-const toggleDrawerModal = () => {
+
+    const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
-    const windowWidth = Dimensions.get('window').width;
-        /**
- * Regist baack utility.
- * @returns {void}
- */
-const registBaack = () => {
+
+    const registBaack = () => {
         props.navigation.dispatch(
             CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
         );
-    }
+    };
+
     const TransReducer = useSelector(state => state.TransReducer);
-    const AuthReducer = useSelector(state => state.AuthReducer);
-        /**
- * Titlhandle url utility.
- * @param {*} make - Input value.
- * @returns {void}
- */
-const titlhandleUrl = (make) => {
+
+    const titlhandleUrl = (make) => {
         const urltitle = make?.conferenceURL;
-        const resulttitle = urltitle.split('/').pop();
-        console.log(resulttitle, "webcast url=======", make);
+        const resulttitle = urltitle?.split('/').pop();
         if (resulttitle) {
             props.navigation.navigate("Statewebcast", { webCastURL: { webCastURL: resulttitle, creditData: addit } })
         }
-    }
+    };
+
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
-    const [storeAlldata, setStoreAlldata] = useState([]);
+    const handledStatusRef = useRef(TransReducer.status);
+    const pendingResetRef = useRef(true);
+    const [storeAlldata, setStoreAlldata] = useState({});
     const [apiReq, setApiReq] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [pageNum, setPageNum] = useState(0);
-    const [limit, setLimit] = useState(10);
-    const [final, setFinal] = useState([])
+    const limit = 10;
+    const [final, setFinal] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(true);
+
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useEffect(() => {
-        fetchHandle();
-    }, [isFocus, props?.route?.params?.name]);
-        /**
- * Fetch handle utility.
- * @returns {void}
- */
-const fetchHandle = () => {
-        // let obj = {
-        //     "limit": limit,
-        //     "offset": pageNum,
-        //     "searchFromDate": "",
-        //     "searchToDate": ""
-        // };
-        let obj = {
-            "offset": limit * pageNum,
+
+    const fetchHandle = useCallback((targetPage = 0, isReset = false) => {
+        if (isReset) {
+            pendingResetRef.current = true;
+        }
+        const obj = {
+            "offset": limit * targetPage,
             "searchKeyword": "",
             "searchFromDate": "",
             "searchToDate": ""
-        }
+        };
         connectionrequest()
             .then(() => {
                 dispatch(registPaymentRequest(obj));
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
+                setApiReq(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
             });
-    };
+    }, [dispatch]);
+
     useFocusEffect(
         useCallback(() => {
-            if (props?.route?.params?.name == "Registrations") {
-                setStoreAlldata([]); // Reset stored data on focus
-                setPageNum(0); // Reset pagination
-                fetchHandle(); // Fetch fresh data
-            }
-        }, [])
+            setPageNum(0);
+            fetchHandle(0, true);
+        }, [fetchHandle])
     );
+
     const fetchMore = useCallback(() => {
         const totalCount = TransReducer?.registPaymentResponse?.count || 0;
         const totalDataLength = final?.reduce((acc, item) => acc + item.data.length, 0) || 0;
-        console.log(totalDataLength, "totalDataLength-------", final);
-        if (totalDataLength >= totalCount) {
-            setApiReq(false);
-            setLoading(false);
+        if (totalDataLength >= totalCount || apiReq || loadingMore || initialLoading) {
             return;
         }
-        if (!apiReq) {
-            const hasRegistPaymentData = TransReducer?.registPaymentResponse?.data?.length > 0;
-            if (hasRegistPaymentData) {
-                setPageNum(prevPage => prevPage + 1); // Increment pageNum
-                fetchHandle(); // Trigger fetch
-            }
+        const hasRegistPaymentData = TransReducer?.registPaymentResponse?.data?.length > 0;
+        if (hasRegistPaymentData) {
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            setLoadingMore(true);
+            fetchHandle(nextPage, false);
         }
-    }, [apiReq, final, TransReducer]);
-        /**
- * Full data refresh utility.
- * @returns {void}
- */
-const fullDataRefresh = () => {
-        if (props?.route?.params?.name == "Registrations") {
-            setStoreAlldata([]);
-            setPageNum(0);
-            setRefreshing(false);
-            fetchHandle();
-        }
+    }, [apiReq, loadingMore, initialLoading, final, TransReducer, pageNum, fetchHandle]);
+
+    const fullDataRefresh = () => {
+        setRefreshing(true);
+        setPageNum(0);
+        fetchHandle(0, true);
     };
+
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        const onBackPress = () => {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -191,71 +157,72 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
-    const [showLoader, setShowLoader] = useState(true);
-    useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 2000);
+    }, [props.navigation]);
 
-        return () => clearTimeout(timeout);
-    }, []);
-    if (status === '' || TransReducer.status !== status) {
+    useEffect(() => {
+        if (!isFocus) return;
+        if (handledStatusRef.current === TransReducer.status) return;
+        handledStatusRef.current = TransReducer.status;
+
         switch (TransReducer.status) {
             case 'Transaction/registPaymentRequest':
-                status = TransReducer.status;
                 setApiReq(true);
-                setLoading(true);
                 break;
-            case 'Transaction/registPaymentSuccess':
-                status = TransReducer.status;
+            case 'Transaction/registPaymentSuccess': {
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 const newData = TransReducer?.registPaymentResponse?.data || [];
-                const totalCount = TransReducer?.registPaymentResponse?.count || 0;
-                if (newData.length > 0) {
-                    const updatedStoreData = { ...storeAlldata };
+                const shouldReset = pendingResetRef.current;
+                pendingResetRef.current = false;
+
+                setStoreAlldata(prev => {
+                    const updatedStoreData = shouldReset ? {} : { ...(prev || {}) };
+                    Object.keys(updatedStoreData).forEach(k => {
+                        updatedStoreData[k] = [...updatedStoreData[k]];
+                    });
                     newData.forEach(item => {
                         if (item?.transactionDate) {
                             const dateString = item.transactionDate;
                             const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+                            let monthYear = '';
                             if (monthYearMatch) {
-                                const month = monthYearMatch[1];
-                                const year = monthYearMatch[2];
-                                const monthYear = `${month} ${year}`;
+                                monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
+                            } else {
+                                const parsed = moment(dateString, ["MMM DD, YYYY", "MMM D, YYYY", "MMMM DD, YYYY", "YYYY-MM-DD"]);
+                                if (parsed.isValid()) {
+                                    monthYear = parsed.format('MMM YYYY');
+                                }
+                            }
+                            if (monthYear) {
                                 if (!updatedStoreData[monthYear]) {
                                     updatedStoreData[monthYear] = [];
                                 }
                                 if (!updatedStoreData[monthYear].some(existingItem => existingItem.invoiceNumber === item.invoiceNumber)) {
                                     updatedStoreData[monthYear].push(item);
                                 }
-                            } else {
-                                console.warn(`Invalid transactionDate format for item:`, item);
                             }
                         }
                     });
-                    setStoreAlldata(updatedStoreData);
-                    const totalItemsFetched = Object.values(updatedStoreData).flat().length;
-                    console.log(totalItemsFetched, "totalItemsFetched")
-                    if (totalItemsFetched >= totalCount) {
-                        console.log("All data fetched. Stopping API calls.");
-                        setApiReq(false);
-                        setLoading(false);
-                    }
-                }
+                    return updatedStoreData;
+                });
                 break;
+            }
             case 'Transaction/registPaymentFailure':
-                status = TransReducer.status;
+                pendingResetRef.current = false;
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 break;
         }
-    }
+    }, [TransReducer.status, TransReducer?.registPaymentResponse, isFocus]);
+
     useEffect(() => {
-        if (storeAlldata) {
+        if (storeAlldata && !Array.isArray(storeAlldata)) {
             const storetakeAll = Object.keys(storeAlldata).map((monthYear) => {
-                const data = storeAlldata[monthYear];
+                const data = storeAlldata[monthYear] || [];
                 const updatedData = data.map((item) => ({
                     ...item,
                     dataLength: data.length,
@@ -266,336 +233,173 @@ const onBackPress = () => {
                 };
             });
             setFinal(storetakeAll);
-            console.log(storetakeAll, "storetakeAl", final);
         }
     }, [storeAlldata]);
 
-        /**
- * Open pdf utility.
- *
- * @async
- * @param {*} finalurl - Input value.
- * @returns {Promise<*>}
- */
-const openPDF = async (finalurl) => {
-        if (!finalurl) return;
+    const openPDF = async (finalurl) => {
+        if (!finalurl) {
+            setShowLoad(false);
+            return;
+        }
         try {
             const url = finalurl;
-            console.log(url, "url---------");
-            // Ensure valid filename
             let fileName = url.split("/").pop();
             if (!fileName || !fileName.includes(".")) {
-                fileName = "download.pdf";  // fallback
+                fileName = "download.pdf";
             }
             const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-            console.log('Downloading file from:', url);
-            console.log('Saving file to:', localFile);
-
-            // If file exists, skip downloading
             const exists = await RNFS.exists(localFile);
             if (!exists) {
                 const options = { fromUrl: url, toFile: localFile };
                 await RNFS.downloadFile(options).promise;
-                console.log("File downloaded.");
-            } else {
-                console.log("File already exists, skipping download.");
             }
-            console.log('Opening file viewer for:', localFile);
-            setTimeout(async () => {
-                setShowLoad(false);
-                setLoadingg(false);
-                await FileViewer.open(localFile);
-            }, 2000);
+            setShowLoad(false);
+            await FileViewer.open(localFile);
         } catch (error) {
             console.error('Error during file download or opening:', error);
-        } finally {
-            setLoadingg(false);
+            setShowLoad(false);
         }
     };
-        /**
- * Render item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderItem = ({ item, index }) => {
-        const isLastItem = index === item?.dataLength - 1;
+
+    const renderTransactionCard = (item, index) => {
+        const isFreeItem = item?.total_amount === 0 || item?.paidAmount == "US$0.00" || item?.paidAmount == "US$0";
+        const amountLabel = isFreeItem
+            ? "Free"
+            : item?.total_amount
+                ? `US$${item?.total_amount}`
+                : item?.paidAmount;
+        const hasPaymentMode = (item?.paymentMode && item?.paymentMode !== "-") ||
+            (item?.payment_method && item?.payment_method !== "-");
+
         return (
-            <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", marginTop: normalize(0), backgroundColor: "#FFFFFF" }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(5),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                        }}
-                    >
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                width: "100%",
-                            }}
-                        >
-                            {/* Payment Mode Tag */}
-                            {(item?.paymentMode && item?.paymentMode !== "-") ||
-                                (item?.payment_method && item?.payment_method !== "-") ? (
-                                <View
-                                    style={{
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(5),
-                                        marginLeft: normalize(5),
-                                        borderRadius: normalize(20),
-                                        backgroundColor: "#FFF2E0",
-                                    }}
-                                >
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            fontWeight: "bold",
-                                            color: "#666",
-                                        }}
-                                    >
-                                        {item?.paymentMode || item?.payment_method}
-                                    </Text>
-                                </View>
-                            ) : (
-                                <View /> // keeps spacing balanced
-                            )}
-
-                            {/* Middle Section (Image + Invoice Icon) */}
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                }}
-                            >
-                                {/* Image */}
-                                {item?.paymentMode && (
-                                    <Image
-                                        source={Imagepath.Complt}
-                                        style={{
-                                            height: normalize(20),
-                                            width: normalize(20),
-                                            resizeMode: "contain",
-                                            marginRight: item?.invoice ? normalize(10) : 0, // small gap before dots icon
-                                        }}
-                                    />
-                                )}
-
-                                {/* Dots Icon */}
-                                {item?.invoice && (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setModalShow(!modalShow);
-                                            setSave(item?.invoice);
-                                        }}
-                                    >
-                                        <IconDot
-                                            name="dots-three-vertical"
-                                            size={23}
-                                            color={"#848484"}
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-
-                        {item?.conferenceName ? <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(8),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "106%",
-                            }}
-                        >
-                            <TouchableOpacity onPress={() => { titlhandleUrl(item) }}>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: "#000000",
-                                        flexShrink: 1,
-                                        flexWrap: "wrap",
-                                    }}
-                                >
-                                    {item?.conferenceName}
-                                </Text>
-                            </TouchableOpacity>
-                        </View> : <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(8),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "106%",
-                            }}
-                        >
-                            <TouchableOpacity>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: "#000000",
-                                        flexShrink: 1,
-                                        flexWrap: "wrap",
-                                    }}
-                                >
-                                    {`Invoice #: ${item?.invoice_number}`}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>}
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 10,
-                                    color: "#AAA",
-                                }}
-                            >
-                                {item?.invoiceNumber ? `Trans Id: ${item?.invoiceNumber}` : `Trans Date: ${moment(item?.payment_date, "MMM DD,YYYY").format("DD-MM-YYYY")}`}
-                            </Text>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: item?.total_amount === 0 || item?.paidAmount == "US$0.00" ? "#fd7e14" : "#333"
-                                }}
-                            >
-                                {item?.total_amount === 0 || item?.paidAmount == "US$0.00" ? "Free" : item?.total_amount ? `US$${item?.total_amount}` : item?.paidAmount}
+            <View key={String(item?.invoiceNumber || item?.invoice_number || index)} style={localStyles.card}>
+                <View style={localStyles.cardTopRow}>
+                    {hasPaymentMode ? (
+                        <View style={localStyles.modePill}>
+                            <Text style={localStyles.modePillText}>
+                                {item?.paymentMode || item?.payment_method}
                             </Text>
                         </View>
+                    ) : <View />}
+
+                    <View style={localStyles.topRightGroup}>
+                        {item?.paymentMode ? (
+                            <Image
+                                source={Imagepath.Complt}
+                                style={[
+                                    localStyles.completedIcon,
+                                    { marginRight: item?.invoice ? normalize(8) : 0 }
+                                ]}
+                            />
+                        ) : null}
+                        {item?.invoice ? (
+                            <TouchableOpacity
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                onPress={() => {
+                                    setModalShow(true);
+                                    setSave(item?.invoice);
+                                }}
+                                style={localStyles.moreButton}
+                            >
+                                <IconDot
+                                    name="dots-three-vertical"
+                                    size={18}
+                                    color="#64748B"
+                                />
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
-                    {!isLastItem && <View style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 5,
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(5)
-                    }}>
-                        {Array.from({ length: 24 }).map((_, index) => (
-                            <View key={index} style={{
-                                height: 2,
-                                width: (windowWidth * 0.4 - 20) / 17,
-                                backgroundColor: "#DDDDDD"
-                            }} />
-                        ))}
-                    </View>}
+                </View>
+
+                {item?.conferenceName ? (
+                    <TouchableOpacity activeOpacity={0.75} onPress={() => titlhandleUrl(item)}>
+                        <Text numberOfLines={2} style={localStyles.titleText}>
+                            {item?.conferenceName}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <Text numberOfLines={2} style={localStyles.titleText}>
+                        {`Invoice #: ${item?.invoice_number}`}
+                    </Text>
+                )}
+
+                <View style={localStyles.divider} />
+
+                <View style={localStyles.cardFooterRow}>
+                    <Text style={localStyles.metaText}>
+                        {item?.invoiceNumber
+                            ? `Trans Id: ${item?.invoiceNumber}`
+                            : `Trans Date: ${moment(item?.payment_date, "MMM DD,YYYY").format("DD-MM-YYYY")}`}
+                    </Text>
+                    <Text style={[
+                        localStyles.amountText,
+                        { color: isFreeItem ? '#EA580C' : Colorpath.ButtonColr }
+                    ]}>
+                        {amountLabel}
+                    </Text>
                 </View>
             </View>
         );
-    }
+    };
 
-
-        /**
- * Render month item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @returns {JSX.Element}
- */
-const renderMonthItem = ({ item }) => {
+    const renderMonthItem = ({ item }) => {
         return (
-            <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
-                <Text
-                    style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        color: '#333',
-                        marginBottom: normalize(10)
-                    }}
-                >
-                    {item.monthYear} {/* Display month and year */}
-                </Text>
-
-                <FlatList
-                    data={item?.data}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => index.toString()}
-                />
+            <View key={item.monthYear} style={localStyles.monthSection}>
+                <View style={localStyles.monthHeaderRow}>
+                    <Text style={localStyles.monthTitle}>{item.monthYear}</Text>
+                </View>
+                {(item?.data || []).map((entry, idx) => renderTransactionCard(entry, idx))}
             </View>
         );
-    }
+    };
+
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+
     return (
         <>
-            <MyStatusBar barStyle={'light-content'}
-                backgroundColor={Colorpath.Pagebg} />
-            <SafeAreaView style={{ backgroundColor: Colorpath.Pagebg, flex: 1 }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
-                    {Platform.OS === "ios" ? (
-                        <PageHeader
-                            title={props?.route?.params?.name ? props?.route?.params?.name : props?.route?.params?.name}
-                            onBackPress={registBaack}
-                        />
-                    ) : (
-                        <PageHeader
-                            title={props?.route?.params?.name ? props?.route?.params?.name : props?.route?.params?.name}
-                            onBackPress={registBaack}
-                        />
-
-                    )}
-                </View>
+            <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            <SafeAreaView style={localStyles.container}>
+                <PageHeader
+                    title={props?.route?.params?.name || "Registrations"}
+                    onBackPress={registBaack}
+                />
                 <Loader visible={showLoad} />
-                {conn == false ? <IntOff /> : <View style={{ paddingVertical: normalize(10) }}>
-                    <FlatList
-                        data={final}
-                        renderItem={renderMonthItem}
-                        contentContainerStyle={{ paddingBottom: normalize(120) }}
-                        keyExtractor={(item, index) => index.toString()}
-                        onEndReached={fetchMore}
-                        onEndReachedThreshold={0.5}
-                        // onScroll={()=>{console.log("hello")}}
-                        scrollEventThrottle={16}
-                        ListFooterComponent={
-                            loading && !showLoader ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
-                        }
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={fullDataRefresh}
+                {conn == false ? <IntOff /> : (
+                    <View style={localStyles.listContainer}>
+                        {initialLoading && final.length === 0 ? (
+                            <TransactionListSkeleton count={4} />
+                        ) : (
+                            <FlatList
+                                data={final}
+                                renderItem={renderMonthItem}
+                                contentContainerStyle={localStyles.listContent}
+                                showsVerticalScrollIndicator={false}
+                                keyExtractor={(item, index) => `${item?.monthYear || 'month'}_${index}`}
+                                onEndReached={fetchMore}
+                                onEndReachedThreshold={0.5}
+                                scrollEventThrottle={16}
+                                ListFooterComponent={
+                                    loadingMore ? (
+                                        <View style={localStyles.footerLoader}>
+                                            <ActivityIndicator color={Colorpath.ButtonColr} size="small" />
+                                        </View>
+                                    ) : null
+                                }
+                                refreshControl={
+                                    <RefreshControl
+                                        refreshing={refreshing}
+                                        onRefresh={fullDataRefresh}
+                                        colors={[Colorpath.ButtonColr]}
+                                        tintColor={Colorpath.ButtonColr}
+                                    />
+                                }
+                                ListEmptyComponent={<TransactionEmptyState message="No data found" />}
                             />
-                        }
-                        ListEmptyComponent={
-                            showLoader ? <ActivityIndicator size={"small"} color={"green"} /> :
-                                <Text
-                                    style={{
-                                        alignContent: 'center',
-                                        alignItems: 'center',
-                                        alignSelf: 'center',
-                                        color: Colorpath.grey,
-                                        fontWeight: 'bold',
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: normalize(20),
-                                        paddingTop: normalize(30),
-                                    }}>
-                                    No data found
-                                </Text>
-                        }
-                    />
-                </View>}
+                        )}
+                    </View>
+                )}
             </SafeAreaView>
             <Modal
                 animationIn={'slideInUp'}
@@ -611,40 +415,35 @@ const renderMonthItem = ({ item }) => {
                 <TouchableOpacity
                     style={{ flex: 1 }}
                     onPress={() => setModalShow(false)}>
-
                     <View
                         style={{
-                            borderRadius: normalize(7),
-                            height: Platform.OS === 'ios' ? normalize(100) : normalize(100),
+                            borderTopLeftRadius: normalize(14),
+                            borderTopRightRadius: normalize(14),
+                            height: normalize(90),
                             position: 'absolute',
                             bottom: 0,
                             width: '100%',
                             backgroundColor: '#fff',
+                            paddingTop: normalize(10),
                         }}>
                         <FlatList
-                            contentContainerStyle={{
-                                // paddingBottom: normalize(70),
-                                paddingTop: normalize(7),
-                            }}
                             showsVerticalScrollIndicator={false}
-                            keyExtractor={item => item.id}
+                            keyExtractor={item => String(item.id)}
                             data={DownData}
                             renderItem={({ item, index }) => {
                                 return (
                                     <TouchableOpacity
                                         key={index}
                                         onPress={() => {
-                                            setModalShow(!modalShow);
-                                            openPDF(save);
+                                            setModalShow(false);
                                             setShowLoad(true);
+                                            openPDF(save);
                                         }}
-                                        style={[styles.dropDownItem]}>
+                                        style={[specialStyles.dropDownItem]}>
                                         <Text style={{
-                                            fontSize: 16,
-                                            lineHeight: normalize(14),
+                                            fontSize: 15,
                                             textAlign: 'center',
                                             color: Colorpath.black,
-                                            // textTransform: 'capitalize',
                                             fontFamily: Fonts.InterMedium
                                         }}>
                                             {item?.name}
@@ -676,9 +475,116 @@ const renderMonthItem = ({ item }) => {
     )
 }
 
-/**
- * Registration default export.
- *
- * @returns {*}
- */
+const localStyles = StyleSheet.create({
+    container: {
+        backgroundColor: '#F4F7FC',
+        flex: 1,
+    },
+    listContainer: {
+        flex: 1,
+    },
+    listContent: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(10),
+        paddingBottom: normalize(32),
+    },
+    monthSection: {
+        marginBottom: normalize(12),
+    },
+    monthHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: normalize(8),
+        paddingHorizontal: normalize(2),
+    },
+    monthTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
+    },
+    monthCountBadge: {
+        backgroundColor: '#E0ECFF',
+        borderRadius: normalize(12),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(2),
+    },
+    monthCountText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 11,
+        color: Colorpath.ButtonColr,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(10),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        marginBottom: normalize(8),
+    },
+    cardTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: normalize(6),
+    },
+    modePill: {
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(3),
+        borderRadius: normalize(12),
+        backgroundColor: '#FFF4E5',
+        borderWidth: 1,
+        borderColor: '#FDE6C4',
+    },
+    modePillText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 11,
+        color: '#B45309',
+    },
+    topRightGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    completedIcon: {
+        height: normalize(18),
+        width: normalize(18),
+        resizeMode: 'contain',
+    },
+    moreButton: {
+        padding: normalize(2),
+    },
+    titleText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        lineHeight: 19,
+        color: '#0F172A',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: normalize(8),
+    },
+    cardFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    metaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: '#64748B',
+        flex: 1,
+        marginRight: normalize(8),
+    },
+    amountText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+    },
+    footerLoader: {
+        paddingVertical: normalize(14),
+        alignItems: 'center',
+    },
+});
+
 export default Registration

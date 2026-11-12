@@ -2,15 +2,15 @@
  * Statewebcast add tocart screen module. Renders a React Native screen or a screen-scoped support component. Exported members: StatewebcastAddTocart, getButtonWidth.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text } from 'react-native';
-import Buttons from '../../Components/Button';
-import Fonts from '../../Themes/Fonts'
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import Fonts from '../../Themes/Fonts';
 import normalize from '../../Utils/Helpers/Dimen';
 import Colorpath from '../../Themes/Colorpath';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { addtoCartWebcastRequest, saveTicketAddRequest } from '../../Redux/Reducers/WebcastReducer';
+import Feather from 'react-native-vector-icons/Feather';
 
 /**
  * Reusable StatewebcastAddTocart component.
@@ -19,24 +19,25 @@ import { addtoCartWebcastRequest, saveTicketAddRequest } from '../../Redux/Reduc
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-const StatewebcastAddTocart = ({ 
+const StatewebcastAddTocart = ({
   refID,
-  urlneed, 
-  downlinkdt, 
-  setDownlinkdt, 
-  webcastdeatils, 
-  setAddtocartload, 
-  status, 
-  WebcastReducer, 
-  dispatch, 
-  bundle_conference_id, 
-  conferenceIDs, 
-  shouldRenderAddToCartAndDownload, 
-  nav, 
-  isBundleAddToCart 
+  urlneed,
+  downlinkdt,
+  setDownlinkdt,
+  webcastdeatils,
+  setAddtocartload,
+  status,
+  WebcastReducer,
+  dispatch,
+  bundle_conference_id,
+  conferenceIDs,
+  shouldRenderAddToCartAndDownload,
+  nav,
+  isBundleAddToCart,
+  hideAddToCart = false,
 }) => {
   const [trackFlow, setTrackFlow] = useState("");
-  
+
   // Create memoized callbacks for event handlers
   const handleTicketsCart = useCallback(() => {
     if (webcastdeatils?.registrationTickets?.length > 0) {
@@ -109,186 +110,122 @@ const StatewebcastAddTocart = ({
 
   // Use useEffect to handle side effects instead of putting them in render
   useEffect(() => {
-    if (WebcastReducer.status == 'WebCast/saveTicketAddSuccess') {
+    if (WebcastReducer?.status == 'WebCast/saveTicketAddSuccess') {
       if (trackFlow == "singlecart") {
         singleAddtoCart();
       } else if (trackFlow == "doublecart") {
         handleAddtoCart();
       }
     }
-  }, [WebcastReducer.status, trackFlow, singleAddtoCart, handleAddtoCart]);
+  }, [WebcastReducer?.status, trackFlow, singleAddtoCart, handleAddtoCart]);
 
   useEffect(() => {
-    if (WebcastReducer.status == 'WebCast/addtoCartWebcastRequest') {
+    if (WebcastReducer?.status == 'WebCast/addtoCartWebcastRequest') {
       setAddtocartload(true);
     }
-  }, [WebcastReducer.status, setAddtocartload]);
+  }, [WebcastReducer?.status, setAddtocartload]);
 
   useEffect(() => {
-    if (WebcastReducer.status == 'WebCast/addtoCartWebcastSuccess') {
+    if (!trackFlow) return;
+    if (WebcastReducer?.status == 'WebCast/addtoCartWebcastSuccess') {
       if (WebcastReducer?.addtoCartWebcastResponse?.success == true && WebcastReducer?.saveTicketAddResponse) {
         setAddtocartload(false);
         setTrackFlow("");
-        nav.navigate("AddToCart", { 
-          addtocart: { 
-            addtocart: "startcallapi", 
-            coupon: WebcastReducer?.saveTicketAddResponse, 
-            webcast: webcastdeatils, 
-            urlneedTake: urlneed 
-          } 
+        nav.navigate("AddToCart", {
+          addtocart: {
+            addtocart: "startcallapi",
+            coupon: WebcastReducer?.saveTicketAddResponse,
+            webcast: webcastdeatils,
+            urlneedTake: urlneed
+          }
         });
       }
     }
-    
-    if (WebcastReducer.status == 'WebCast/addtoCartWebcastFailure') {
+
+    if (WebcastReducer?.status == 'WebCast/addtoCartWebcastFailure') {
       setAddtocartload(false);
+      setTrackFlow("");
     }
-  }, [WebcastReducer.status, WebcastReducer?.addtoCartWebcastResponse, WebcastReducer?.saveTicketAddResponse, setAddtocartload, nav, webcastdeatils, urlneed]);
+  }, [WebcastReducer?.status, WebcastReducer?.addtoCartWebcastResponse, WebcastReducer?.saveTicketAddResponse, setAddtocartload, nav, webcastdeatils, urlneed, trackFlow]);
 
   // Determine if we should show the Download Catalog button
   const shouldShowDownloadCatalog = webcastdeatils?.organizerName == "eMedEd, Inc." ||
     webcastdeatils?.organizerName == "eMedEvents Corporation" ||
     webcastdeatils?.organizerName == "eMedEd";
 
-    /**
- * Returns button width.
- * @returns {*}
- */
-const getButtonWidth = () => {
+  /**
+* Returns button width.
+* @returns {*}
+*/
+  const getButtonWidth = () => {
     if (shouldRenderAddToCartAndDownload) {
-      return shouldShowDownloadCatalog ? normalize(290) : normalize(290);
+      return shouldShowDownloadCatalog ? '100%' : '100%';
     }
-    return normalize(286);
+    return '100%';
   };
 
-  return (
-    <>
-      {shouldRenderAddToCartAndDownload ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignContent: 'space-between',
-            paddingHorizontal: normalize(10),
-            paddingVertical: normalize(10),
-          }}>
-          <Buttons
-            onPress={() => {
-              handleTicketsCart();
-              setTrackFlow("singlecart");
-            }}
-            height={normalize(45)}
-            width={getButtonWidth()}
-            backgroundColor={Colorpath.white}
-            borderRadius={normalize(9)}
-            text="Add To Cart"
-            color={"#000000"}
-            fontSize={16}
-            fontFamily={Fonts.InterSemiBold}
-            borderWidth={0.5}
-            borderColor={"#000000"}
-          />
-          {shouldShowDownloadCatalog && shouldRenderAddToCartAndDownload && (
-            // Uncomment if you need the Download Catalog button
-            // <Buttons
-            //   onPress={() => {
-            //     setDownlinkdt(!downlinkdt);
-            //   }}
-            //   height={normalize(45)}
-            //   width={normalize(145)}
-            //   backgroundColor={Colorpath.white}
-            //   borderRadius={normalize(9)}
-            //   text="Download Catalog"
-            //   color={Colorpath.ButtonColr}
-            //   fontSize={16}
-            //   fontFamily={Fonts.InterSemiBold}
-            //   borderWidth={0.5}
-            //   borderColor={Colorpath.ButtonColr}
-            // />
-            <></>
-          )}
-        </View>
-      ) : !isBundleAddToCart && shouldShowDownloadCatalog ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignContent: 'space-between',
-            paddingHorizontal: normalize(10),
-            paddingVertical: normalize(10),
-          }}>
-          {/* Uncomment if you need the Download Catalog button */}
-          {/* <Buttons
-            onPress={() => {
-              setDownlinkdt(!downlinkdt);
-            }}
-            height={normalize(45)}
-            width={normalize(299)}
-            backgroundColor={Colorpath.white}
-            borderRadius={normalize(9)}
-            text="Download Catalog"
-            color={Colorpath.ButtonColr}
-            fontSize={16}
-            fontFamily={Fonts.InterSemiBold}
-            borderWidth={0.5}
-            borderColor={Colorpath.ButtonColr}
-          /> */}
-        </View>
-      ) : null}
+  if (hideAddToCart || (!shouldRenderAddToCartAndDownload && !isBundleAddToCart)) {
+    return null;
+  }
 
-      {isBundleAddToCart && (
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignContent: 'space-between',
-            paddingHorizontal: normalize(10),
-            paddingVertical: normalize(10),
-          }}>
-          <Buttons
-            onPress={() => {
-              handleTicketsCart();
-              setTrackFlow("doublecart");
-            }}
-            height={normalize(45)}
-            width={normalize(286)}
-            backgroundColor={Colorpath.white}
-            borderRadius={normalize(9)}
-            text="Add To Cart"
-            color={"#000000"}
-            fontSize={16}
-            fontFamily={Fonts.InterSemiBold}
-            borderWidth={0.5}
-            borderColor={"#000000"}
-          />
-          {shouldShowDownloadCatalog && (
-            // Uncomment if you need the Download Catalog button
-            // <Buttons
-            //   onPress={() => {
-            //     setDownlinkdt(!downlinkdt);
-            //   }}
-            //   height={normalize(45)}
-            //   width={normalize(145)}
-            //   backgroundColor={Colorpath.white}
-            //   borderRadius={normalize(9)}
-            //   text="Download Catalog"
-            //   color={Colorpath.ButtonColr}
-            //   fontSize={16}
-            //   fontFamily={Fonts.InterSemiBold}
-            //   borderWidth={0.5}
-            //   borderColor={Colorpath.ButtonColr}
-            // />
-            <></>
-          )}
-        </View>
-      )}
-    </>
+  const nextTrackFlow = isBundleAddToCart ? "doublecart" : "singlecart";
+  const isAlreadyInCart = webcastdeatils?.already_in_cart == 1;
+
+  return (
+    <View style={styles.ctaContainer}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => {
+          if (isAlreadyInCart) {
+            nav.navigate("AddToCart", {
+              addtocart: {
+                addtocart: "startcallapi",
+                coupon: WebcastReducer?.saveTicketAddResponse,
+                webcast: webcastdeatils,
+                urlneedTake: urlneed
+              }
+            });
+            return;
+          }
+          handleTicketsCart();
+          setTrackFlow(nextTrackFlow);
+        }}
+        style={[styles.addToCartBtn, !isBundleAddToCart && { width: getButtonWidth() }]}
+      >
+        <Feather name="shopping-cart" size={16} color={Colorpath.ButtonColr} />
+        <Text style={styles.addToCartText}>{isAlreadyInCart ? "Already in cart" : "Add To Cart"}</Text>
+      </TouchableOpacity>
+    </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  ctaContainer: {
+    marginTop: normalize(12),
+    width: '100%',
+  },
+  addToCartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: normalize(8),
+    height: normalize(44),
+    width: '100%',
+    backgroundColor: '#F4F8FF',
+    borderRadius: normalize(10),
+    borderWidth: 1,
+    borderColor: '#C5D8FA',
+  },
+  addToCartText: {
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: 15,
+    color: Colorpath.ButtonColr,
+  },
+});
 
 /**
  * Statewebcast add tocart default export.
  *
  * @returns {*}
  */
-export default StatewebcastAddTocart;
+export default memo(StatewebcastAddTocart);

@@ -1,10 +1,9 @@
-
 /**
  * Hcp content screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, HcpContent, handleSwitchToggle, fetchHCPSub, fullDataRefresh, renderItem, renderMonthItem.
  */
 
-import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Switch, Alert, StyleSheet } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
@@ -14,13 +13,7 @@ import showErrorAlert from '../../Utils/Helpers/Toast';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { HCPSubRequest, subRenewalRequest } from '../../Redux/Reducers/TransReducer';
 import moment from 'moment';
-import Loader from '../../Utils/Helpers/Loader';
-/**
- * Status string constant.
- * @returns {string}
- */
-let status = "";
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { TransactionEmptyState, TransactionListSkeleton } from './TransactionUiHelpers';
 
 /**
  * Reusable HcpContent component.
@@ -30,29 +23,21 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @returns {JSX.Element}
  */
 const HcpContent = ({ storeAlldata, setStoreAlldata }) => {
-    const windowWidth = Dimensions.get('window').width;
     const TransReducer = useSelector(state => state.TransReducer);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
-    // const [storeAlldata, setStoreAlldata] = useState([]);
+    const handledStatusRef = useRef(TransReducer.status);
+    const pendingResetRef = useRef(true);
     const [apiReq, setApiReq] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [pageNum, setPageNum] = useState(0);
-    const [limit, setLimit] = useState(10);
-    const [final, setFinal] = useState([])
+    const limit = 10;
+    const [final, setFinal] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    useEffect(() => {
-        fetchHCPSub();
-    }, [isFocus]);
-    console.log("dddddd------123", storeAlldata)
     const [switchStates, setSwitchStates] = useState({});
-        /**
- * Handles switch toggle.
- * @param {number} index - Input value.
- * @param {*} get - Input value.
- * @returns {void}
- */
-const handleSwitchToggle = (index, get) => {
+
+    const handleSwitchToggle = (index, get) => {
         Alert.alert(
             "eMedEvents",
             "Are you sure you want to cancel this subscription ?",
@@ -63,32 +48,28 @@ const handleSwitchToggle = (index, get) => {
                 },
                 {
                     text: "Yes",
-                                        /**
- * On press utility.
- * @returns {void}
- */
-onPress: () => {
+                    onPress: () => {
                         setSwitchStates((prevStates) => ({
                             ...prevStates,
                             [index]: !prevStates[index],
                         }));
-                        let obj = {
+                        const obj = {
                             "subscription_id": get?.subscription_id
-                        }
+                        };
                         dispatch(subRenewalRequest(obj));
                     },
                 },
             ]
         );
     };
-        /**
- * Fetch hcpsub utility.
- * @returns {void}
- */
-const fetchHCPSub = () => {
-        let obj = {
+
+    const fetchHCPSub = useCallback((targetPage = 0, isReset = false) => {
+        if (isReset) {
+            pendingResetRef.current = true;
+        }
+        const obj = {
             "limit": limit,
-            "page": pageNum,
+            "page": targetPage,
             "fromDate": "",
             "toDate": "",
             "keyword": ""
@@ -96,120 +77,119 @@ const fetchHCPSub = () => {
         connectionrequest()
             .then(() => {
                 dispatch(HCPSubRequest(obj));
-
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
+                setApiReq(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
             });
-    };
+    }, [dispatch]);
+
     useFocusEffect(
         useCallback(() => {
-            setStoreAlldata([]);
             setPageNum(0);
-            fetchHCPSub();
-        }, [])
+            fetchHCPSub(0, true);
+        }, [fetchHCPSub])
     );
+
     const fetchMore = useCallback(() => {
         const totalCount = TransReducer?.HCPSubResponse?.bundle_subscriptions || 0;
         const totalDataLength = final?.reduce((acc, item) => acc + item.data.length, 0) || 0;
-        console.log(totalDataLength, "totalDataLength-------", final);
-        if (totalDataLength >= totalCount) {
-            setApiReq(false);
-            setLoading(false);
+        if (totalDataLength >= totalCount || apiReq || loadingMore || initialLoading) {
             return;
         }
-        if (!apiReq) {
-            const hasHCPSubData = TransReducer?.HCPSubResponse?.subscriptions?.length > 0;
-            if (hasHCPSubData) {
-                setPageNum(prevPage => prevPage + 1); // Increment pageNum
-                fetchHCPSub(); // Trigger fetch
-            }
+        if (TransReducer?.HCPSubResponse?.subscriptions?.length > 0) {
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            setLoadingMore(true);
+            fetchHCPSub(nextPage, false);
         }
-    }, [apiReq, final, TransReducer]);
-        /**
- * Full data refresh utility.
- * @returns {void}
- */
-const fullDataRefresh = () => {
-        setStoreAlldata([]);
+    }, [apiReq, loadingMore, initialLoading, final, TransReducer, pageNum, fetchHCPSub]);
+
+    const fullDataRefresh = () => {
+        setRefreshing(true);
         setPageNum(0);
-        setRefreshing(false);
-        fetchHCPSub();
+        fetchHCPSub(0, true);
     };
-    if (status === '' || TransReducer.status !== status) {
+
+    useEffect(() => {
+        if (!isFocus) return;
+        if (handledStatusRef.current === TransReducer.status) return;
+        handledStatusRef.current = TransReducer.status;
+
         switch (TransReducer.status) {
             case 'Transaction/HCPSubRequest':
-                status = TransReducer.status;
                 setApiReq(true);
-                setLoading(true);
                 break;
-            case 'Transaction/HCPSubSuccess':
-                status = TransReducer.status;
+            case 'Transaction/HCPSubSuccess': {
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 const newData = TransReducer?.HCPSubResponse?.subscriptions || [];
-                const totalCount = TransReducer?.HCPSubResponse?.bundle_subscriptions || 0;
-                if (newData.length > 0) {
-                    const updatedStoreData = { ...storeAlldata };
+                const shouldReset = pendingResetRef.current;
+                pendingResetRef.current = false;
+
+                setStoreAlldata(prev => {
+                    const updatedStoreData = shouldReset ? {} : { ...(prev || {}) };
+                    Object.keys(updatedStoreData).forEach(k => {
+                        updatedStoreData[k] = [...updatedStoreData[k]];
+                    });
                     newData.forEach(item => {
                         if (item?.created_date) {
-                            const dateString = item?.created_date;
+                            const dateString = item.created_date;
                             const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+                            let monthYear = '';
                             if (monthYearMatch) {
-                                const month = monthYearMatch[1];
-                                const year = monthYearMatch[2];
-                                const monthYear = `${month} ${year}`;
+                                monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
+                            } else {
+                                const parsed = moment(dateString, ["MMM DD, YYYY", "MMM D, YYYY", "MMMM DD, YYYY", "YYYY-MM-DD"]);
+                                if (parsed.isValid()) {
+                                    monthYear = parsed.format('MMM YYYY');
+                                }
+                            }
+                            if (monthYear) {
                                 if (!updatedStoreData[monthYear]) {
                                     updatedStoreData[monthYear] = [];
                                 }
-                                const isDuplicate = updatedStoreData[monthYear].some(existingItem => {
-                                    return (
-                                        existingItem.subscription_id === item.subscription_id 
-                                    );
-                                });
+                                const isDuplicate = updatedStoreData[monthYear].some(
+                                    existingItem => existingItem.subscription_id === item.subscription_id
+                                );
                                 if (!isDuplicate) {
                                     updatedStoreData[monthYear].push(item);
                                 }
-                            } else {
-                                console.warn(`Invalid created_date format for item:`, item);
                             }
                         }
                     });
-                    setStoreAlldata(updatedStoreData);
-                    const totalItemsFetched = Object.values(updatedStoreData).flat().length;
-                    console.log(totalItemsFetched, "totalItemsFetched")
-                    if (totalItemsFetched >= totalCount) {
-                        console.log("All data fetched. Stopping API calls.");
-                        setApiReq(false);
-                        setLoading(false);
-                    }
-                }
+                    return updatedStoreData;
+                });
                 break;
+            }
             case 'Transaction/HCPSubFailure':
-                status = TransReducer.status;
+                pendingResetRef.current = false;
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 break;
             case 'Transaction/subRenewalRequest':
-                status = TransReducer.status;
                 break;
             case 'Transaction/subRenewalSuccess':
-                status = TransReducer.status;
-                setStoreAlldata(null);
                 setPageNum(0);
                 setRefreshing(false);
-                fetchHCPSub();
+                fetchHCPSub(0, true);
                 break;
             case 'Transaction/subRenewalFailure':
-                status = TransReducer.status;
                 break;
         }
-    }
+    }, [TransReducer.status, TransReducer?.HCPSubResponse, isFocus, setStoreAlldata, fetchHCPSub]);
+
     useEffect(() => {
-        if (storeAlldata) {
+        if (storeAlldata && !Array.isArray(storeAlldata)) {
             const storetakeAll = Object.keys(storeAlldata).map((monthYear) => {
-                const data = storeAlldata[monthYear];
+                const data = storeAlldata[monthYear] || [];
                 const updatedData = data.map((item) => ({
                     ...item,
                     dataLength: data.length,
@@ -220,231 +200,251 @@ const fullDataRefresh = () => {
                 };
             });
             setFinal(storetakeAll);
-            console.log(storetakeAll, "storetakeAl", final);
         }
     }, [storeAlldata]);
 
-
-        /**
- * Render item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderItem = ({ item, index }) => {
-        const isLastItem = index === item?.dataLength - 1;
+    const renderSubscriptionCard = (item, index) => {
         const isSwitchOn = switchStates[index] ?? (item?.can_cancel === 1);
-        return (
-            <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", marginTop: normalize(0), backgroundColor: "#FFFFFF" }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            width: normalize(290),
-                            borderRadius: normalize(5),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                        }}
-                    >
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(8),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                            }}
-                        >
-                            <Text
-                                numberOfLines={2}
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    flexShrink: 1,
-                                    flexWrap: "wrap",
-                                    width:normalize(180)
-                                }}
-                            >
-                                {item?.plan_name}
-                            </Text>
-                            {item?.subscription_status && <View style={{
-                                height: normalize(20),
-                                width: normalize(50),
-                                borderRadius: normalize(15),
-                                borderWidth: 1,
-                                borderColor: item?.subscription_status == "Active" ? "green" : "red",
-                                justifyContent: "center",
-                                alignItems: "center"
-                            }}>
-                                <Text
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 10,
-                                        color: item?.subscription_status == "Active" ? "green" : "red",
-                                        alignSelf: "center"
-                                    }}
-                                >
-                                    {item?.subscription_status}
-                                </Text>
-                            </View>}
-                        </View>
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(0),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 10,
-                                    color: "#AAA",
-                                }}
-                            >
-                                {`Trans Date: ${moment(item?.created_date, "MMM DD, YYYY").format("YYYY-MM-DD")}`}
-                            </Text>
-                            {item?.total_amount && <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: "#000000",
-                                    alignSelf: "center"
-                                }}
-                            >
-                                {`US$${item?.total_amount}`}
-                            </Text>}
-                        </View>
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
-                            {item?.can_cancel == 1 && <View style={{ paddingHorizontal: normalize(0), flexDirection: "row", gap: normalize(10) }}>
+        const isActive = String(item?.subscription_status || '').toLowerCase() === 'active';
 
+        return (
+            <View
+                key={String(item?.subscription_id || index)}
+                style={[
+                    localStyles.card,
+                    isActive ? localStyles.cardActive : localStyles.cardInactive
+                ]}
+            >
+                <View style={localStyles.cardTopRow}>
+                    <Text numberOfLines={2} style={localStyles.titleText}>
+                        {item?.plan_name}
+                    </Text>
+                    {item?.subscription_status ? (
+                        <View style={[
+                            localStyles.statusPill,
+                            isActive ? localStyles.statusPillActive : localStyles.statusPillInactive
+                        ]}>
+                            <Text style={[
+                                localStyles.statusText,
+                                { color: isActive ? '#15803D' : '#DC2626' }
+                            ]}>
+                                {item?.subscription_status}
+                            </Text>
+                        </View>
+                    ) : null}
+                </View>
+
+                <View style={localStyles.metaRow}>
+                    <Text style={localStyles.metaText}>
+                        {`Trans Date: ${moment(item?.created_date, ["MMM DD, YYYY", "YYYY-MM-DD", "DD-MMM-YYYY"]).format("YYYY-MM-DD")}`}
+                    </Text>
+                    {item?.total_amount ? (
+                        <View style={localStyles.amountPill}>
+                            <Text style={localStyles.amountText}>
+                                {`US$${item?.total_amount}`}
+                            </Text>
+                        </View>
+                    ) : null}
+                </View>
+
+                {item?.can_cancel == 1 ? (
+                    <>
+                        <View style={localStyles.divider} />
+                        <View style={localStyles.actionsRow}>
+                            <View style={localStyles.switchRow}>
                                 <Switch
                                     trackColor={{
-                                        false: "#999999",
-                                        true: "#008000",
+                                        false: "#CBD5E1",
+                                        true: "#16A34A",
                                     }}
-                                    thumbColor={"#FFFFFF"}
+                                    thumbColor="#FFFFFF"
                                     onValueChange={() => handleSwitchToggle(index, item)}
                                     value={isSwitchOn}
                                 />
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", marginTop: normalize(5) }}>{"Auto Renew"}</Text>
-                            </View>}
+                                <Text style={localStyles.autoRenewText}>{"Auto Renew"}</Text>
+                            </View>
                         </View>
-                    </View>
-                    {!isLastItem && <View style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 5,
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(5)
-                    }}>
-                        {Array.from({ length: 24 }).map((_, index) => (
-                            <View key={index} style={{
-                                height: 2,
-                                width: (windowWidth * 0.4 - 20) / 15,
-                                backgroundColor: "#DDDDDD"
-                            }} />
-                        ))}
-                    </View>}
-                </View>
+                    </>
+                ) : null}
             </View>
         );
-    }
+    };
 
-
-        /**
- * Render month item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @returns {JSX.Element}
- */
-const renderMonthItem = ({ item }) => {
+    const renderMonthItem = ({ item }) => {
         return (
-            <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
-                <Text
-                    style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        color: '#333',
-                        marginBottom: normalize(10)
-                    }}
-                >
-                    {item.monthYear} {/* Display month and year */}
-                </Text>
-
-                <FlatList
-                    data={item?.data}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => index.toString()}
-                />
+            <View key={item.monthYear} style={localStyles.monthSection}>
+                <View style={localStyles.monthHeaderRow}>
+                    <View style={localStyles.monthPill}>
+                        <Text style={localStyles.monthTitle}>{item.monthYear}</Text>
+                    </View>
+                </View>
+                {(item?.data || []).map((entry, idx) => renderSubscriptionCard(entry, idx))}
             </View>
         );
-    }
-const [showLoader, setShowLoader] = useState(true);
-          useEffect(() => {
-              // Simulate 2-second loading time
-              const timeout = setTimeout(() => {
-                  setShowLoader(false);
-              }, 2000);
-      
-              return () => clearTimeout(timeout);
-          }, []);
+    };
+
     return (
-        <>
-            <View style={{ paddingVertical: normalize(10) }}>
+        <View style={localStyles.container}>
+            {initialLoading && final.length === 0 ? (
+                <TransactionListSkeleton count={4} />
+            ) : (
                 <FlatList
                     data={final}
                     renderItem={renderMonthItem}
-                    contentContainerStyle={{ paddingBottom: normalize(120) }}
-                    keyExtractor={(item, index) => index.toString()}
+                    contentContainerStyle={localStyles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={(item, index) => `${item?.monthYear || 'month'}_${index}`}
                     onEndReached={fetchMore}
                     onEndReachedThreshold={0.5}
                     scrollEventThrottle={16}
                     ListFooterComponent={
-                        TransReducer?.status == 'Transaction/HCPSubRequest' && !showLoader ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                        loadingMore ? (
+                            <View style={localStyles.footerLoader}>
+                                <ActivityIndicator color={Colorpath.ButtonColr} size="small" />
+                            </View>
+                        ) : null
                     }
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={fullDataRefresh}
+                            colors={[Colorpath.ButtonColr]}
+                            tintColor={Colorpath.ButtonColr}
                         />
                     }
-                      ListEmptyComponent={
-                         showLoader ? <View style={{justifyContent:"center",alignItems:"center",paddingTop:normalize(30)}}>
-                        <ActivityIndicator color={"green"} size="small" />
-                    </View>  :
-                        <Text
-                            style={{
-                                alignContent: 'center',
-                                alignItems: 'center',
-                                alignSelf: 'center',
-                                color: Colorpath.grey,
-                                fontWeight: 'bold',
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: normalize(20),
-                                paddingTop: normalize(30),
-                            }}>
-                            No data found
-                        </Text>
-                        }
+                    ListEmptyComponent={<TransactionEmptyState message="No data found" />}
                 />
-            </View>
-        </>
+            )}
+        </View>
     )
 }
 
-/**
- * Hcp content default export.
- *
- * @returns {*}
- */
+const localStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    listContent: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(8),
+        paddingBottom: normalize(32),
+    },
+    monthSection: {
+        marginBottom: normalize(12),
+    },
+    monthHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: normalize(8),
+        paddingHorizontal: normalize(2),
+    },
+    monthPill: {
+        backgroundColor: '#E0ECFF',
+        borderRadius: normalize(14),
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(4),
+    },
+    monthTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: Colorpath.ButtonColr,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#DCE7FB',
+        borderLeftWidth: 4,
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        marginBottom: normalize(10),
+    },
+    cardActive: {
+        borderLeftColor: '#16A34A',
+        backgroundColor: '#FFFFFF',
+    },
+    cardInactive: {
+        borderLeftColor: '#EF4444',
+        backgroundColor: '#FFFFFF',
+    },
+    cardTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: normalize(6),
+    },
+    titleText: {
+        flex: 1,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        lineHeight: 19,
+        color: '#0F172A',
+        marginRight: normalize(8),
+    },
+    statusPill: {
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(3),
+        borderRadius: normalize(12),
+        borderWidth: 1,
+    },
+    statusPillActive: {
+        backgroundColor: '#F0FDF4',
+        borderColor: '#BBF7D0',
+    },
+    statusPillInactive: {
+        backgroundColor: '#FEF2F2',
+        borderColor: '#FECACA',
+    },
+    statusText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 11,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    metaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: '#64748B',
+    },
+    amountPill: {
+        backgroundColor: '#EFF6FF',
+        borderColor: '#DBEAFE',
+        borderWidth: 1,
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(3),
+    },
+    amountText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: Colorpath.ButtonColr,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: normalize(8),
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(8),
+    },
+    autoRenewText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        color: '#0F172A',
+    },
+    footerLoader: {
+        paddingVertical: normalize(14),
+        alignItems: 'center',
+    },
+});
+
 export default HcpContent

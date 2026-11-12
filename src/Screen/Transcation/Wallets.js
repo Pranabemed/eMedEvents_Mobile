@@ -2,8 +2,8 @@
  * Wallets screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Wallets, toggleDrawerModal, registBaack, walletsVal, fetchHandle, fullDataRefresh, onBackPress, searchTopicName, renderItem, renderMonthItem.
  */
 
-import { View, Text, Platform, TouchableOpacity, FlatList, Image, Dimensions, ActivityIndicator, RefreshControl, ImageBackground, TextInput, KeyboardAvoidingView, ScrollView, Keyboard, TouchableWithoutFeedback, Alert, BackHandler } from 'react-native'
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react'
+import { View, Text, Platform, TouchableOpacity, FlatList, Image, ActivityIndicator, RefreshControl, ImageBackground, TextInput, KeyboardAvoidingView, BackHandler, StyleSheet } from 'react-native'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import Colorpath from '../../Themes/Colorpath'
 import normalize from '../../Utils/Helpers/Dimen';
@@ -21,11 +21,64 @@ import CalenderIcon from 'react-native-vector-icons/Feather';
 import Buttons from '../../Components/Button';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import DrawerModal from '../../Components/DrawerModal';
-import Loader from '../../Utils/Helpers/Loader';
 import { AppContext } from '../GlobalSupport/AppContext';
 import IntOff from '../../Utils/Helpers/IntOff';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { TransactionEmptyState, TransactionListSkeleton } from './TransactionUiHelpers';
+
+const MONTH_ORDER = {
+    'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+    'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+};
+
+const groupWalletItemsByMonth = (items = []) => {
+    const updatedStoreData = {};
+    items.forEach(item => {
+        if (item?.transactionDate) {
+            const dateString = item.transactionDate;
+            const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+            let monthYear = '';
+            if (monthYearMatch) {
+                monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
+            } else {
+                const parsed = moment(dateString, ["MMM DD, YYYY", "MMM D, YYYY", "MMMM DD, YYYY", "YYYY-MM-DD"]);
+                if (parsed.isValid()) {
+                    monthYear = parsed.format('MMM YYYY');
+                }
+            }
+            if (monthYear) {
+                if (!updatedStoreData[monthYear]) {
+                    updatedStoreData[monthYear] = [];
+                }
+                const isDuplicate = updatedStoreData[monthYear].some(existingItem =>
+                    existingItem.conferenceName === item.conferenceName &&
+                    existingItem.transactionDate === item.transactionDate &&
+                    existingItem.walletAmount === item.walletAmount
+                );
+                if (!isDuplicate) {
+                    updatedStoreData[monthYear].push(item);
+                }
+            }
+        }
+    });
+    return Object.keys(updatedStoreData)
+        .map((monthYear) => {
+            const data = updatedStoreData[monthYear];
+            return {
+                monthYear,
+                data: data.map((item) => ({ ...item, dataLength: data.length })),
+            };
+        })
+        .sort((a, b) => {
+            const [aMonth, aYear] = a.monthYear.split(' ');
+            const [bMonth, bYear] = b.monthYear.split(' ');
+            if (aYear !== bYear) {
+                return parseInt(bYear, 10) - parseInt(aYear, 10);
+            }
+            return (MONTH_ORDER[bMonth] || 0) - (MONTH_ORDER[aMonth] || 0);
+        });
+};
 
 /**
  * Reusable Wallets component.
@@ -34,47 +87,38 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  * @param {Object} props - The component props.
  * @returns {JSX.Element}
  */
-let status = "";
-/**
- * Wallets component.
- * @param {*} props - Input value.
- * @returns {JSX.Element}
- */
 const Wallets = (props) => {
     const { isConnected } = useContext(AppContext);
     const [visible, setVisible] = useState(false);
     const [nodata, setNodata] = useState("drawerclose");
     const [idget, setIdget] = useState("6");
-        /**
- * Toggle drawer modal utility.
- * @returns {void}
- */
-const toggleDrawerModal = () => {
+
+    const toggleDrawerModal = () => {
         setVisible(!visible);
         setNodata("drawerclose");
         setIdget("6");
     };
-        /**
- * Regist baack utility.
- * @returns {void}
- */
-const registBaack = () => {
+
+    const registBaack = () => {
         props.navigation.dispatch(
             CommonActions.reset({ index: 0, routes: [{ name: 'TabNav', params: { initialRoute: 'Home' } }] })
         );
-    }
+    };
+
     const TransReducer = useSelector(state => state.TransReducer);
-    const windowWidth = Dimensions.get('window').width;
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
-    const [storeAlldata, setStoreAlldata] = useState([]);
+    const handledStatusRef = useRef(TransReducer.status);
+    const pendingResetRef = useRef(true);
+    const [storeAlldata, setStoreAlldata] = useState({});
     const [apiReq, setApiReq] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [walletLoading, setWalletLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [pageNum, setPageNum] = useState(0);
-    const [limit, setLimit] = useState(8);
-    const [final, setFinal] = useState([])
+    const limit = 8;
+    const [final, setFinal] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [showLine, setShowLine] = useState(false);
     const [provideName, setProvideName] = useState("");
     const [selectCountrytopic, setSelectCountrytopic] = useState([]);
     const [wallettake, setWallettake] = useState(false);
@@ -82,102 +126,88 @@ const registBaack = () => {
     const [walletndate, setWalletndate] = useState(false);
     const [sdate, setSdate] = useState("");
     const [ndate, setNdate] = useState("");
-    const [conn, setConn] = useState("")
+    const [conn, setConn] = useState(true);
+
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
-            console.log('Connection State:', state.isConnected);
             setConn(state.isConnected);
         });
         return () => unsubscribe();
     }, [isConnected]);
-    useEffect(() => {
-        if (props?.route?.params?.name == "Wallet Transactions") {
-            fetchHandle();
-            walletsVal();
-        }
-    }, [props?.route?.params?.name]);
-        /**
- * Wallets val utility.
- * @returns {void}
- */
-const walletsVal = () => {
-        let obj = {};
+
+    const walletsVal = useCallback(() => {
         connectionrequest()
             .then(() => {
-                dispatch(walletsgetRequest(obj))
+                dispatch(walletsgetRequest({}));
             })
             .catch((err) => {
-                showErrorAlert("Please connect to internet", err)
-            })
-    }
-        /**
- * Fetch handle utility.
- * @returns {void}
- */
-const fetchHandle = () => {
-        let obj = {
+                showErrorAlert("Please connect to internet", err);
+                setWalletLoading(false);
+            });
+    }, [dispatch]);
+
+    const fetchHandle = useCallback((targetPage = 0, fromDate = sdate, toDate = ndate, isReset = false) => {
+        if (isReset) {
+            pendingResetRef.current = true;
+        }
+        const obj = {
             "limit": limit,
-            "offset": pageNum,
+            "offset": targetPage,
             "searchFromDate": "",
             "searchKeyword": "",
             "searchToDate": ""
         };
-        let walletsobj = {
+        const walletsobj = {
             "offset": 0,
             "searchKeyword": "",
-            "searchFromDate": sdate,
-            "searchToDate": ndate
-        }
+            "searchFromDate": fromDate,
+            "searchToDate": toDate
+        };
         connectionrequest()
             .then(() => {
-                dispatch(walletsTransRequest(sdate && ndate ? walletsobj : obj));
+                dispatch(walletsTransRequest(fromDate && toDate ? walletsobj : obj));
             })
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
-                setLoading(false);
+                setApiReq(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
             });
-    };
+    }, [dispatch, sdate, ndate]);
+
     useFocusEffect(
         useCallback(() => {
-            setFinal([]);
-            setSelectCountrytopic([]);
-            setStoreAlldata([]); // Reset stored data on focus
-            setPageNum(0); // Reset pagination
-            fetchHandle(); // Fetch fresh data
-        }, [])
+            setPageNum(0);
+            fetchHandle(0, sdate, ndate, true);
+            walletsVal();
+        }, [fetchHandle, walletsVal])
     );
+
     const fetchMore = useCallback(() => {
+        if (sdate && ndate) return;
         const totalCount = TransReducer?.walletsTransResponse?.count || 0;
-        const totalDataLength = final?.reduce((acc, item) => acc + item?.data?.length, 0) || 0;
-        console.log(totalDataLength, "totalDataLength-------", final, totalCount);
-        if (totalDataLength >= totalCount) {
-            setApiReq(false);
-            setLoading(false);
+        const totalDataLength = final?.reduce((acc, item) => acc + (item?.data?.length || 0), 0) || 0;
+        if (totalDataLength >= totalCount || apiReq || loadingMore || initialLoading || provideName.trim() !== '') {
             return;
         }
-        if (!apiReq && TransReducer?.walletsTransResponse?.walletPayments?.length > 0) {
-            setPageNum(prevPage => prevPage + 1);
-            fetchHandle();
+        if (TransReducer?.walletsTransResponse?.walletPayments?.length > 0) {
+            const nextPage = pageNum + 1;
+            setPageNum(nextPage);
+            setLoadingMore(true);
+            fetchHandle(nextPage, sdate, ndate, false);
         }
-    }, [apiReq, final, TransReducer]);
-        /**
- * Full data refresh utility.
- * @returns {void}
- */
-const fullDataRefresh = () => {
-        setFinal([]);
-        setSelectCountrytopic([]);
-        setStoreAlldata([]);
+    }, [apiReq, loadingMore, initialLoading, final, TransReducer, pageNum, fetchHandle, sdate, ndate, provideName]);
+
+    const fullDataRefresh = () => {
+        setRefreshing(true);
         setPageNum(0);
-        setRefreshing(false);
-        fetchHandle();
+        fetchHandle(0, sdate, ndate, true);
+        walletsVal();
     };
+
     useEffect(() => {
-                /**
- * On back press utility.
- * @returns {boolean}
- */
-const onBackPress = () => {
+        const onBackPress = () => {
             props.navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -193,32 +223,45 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
-    if (status === '' || TransReducer.status !== status) {
+    }, [props.navigation]);
+
+    useEffect(() => {
+        if (!isFocus) return;
+        if (handledStatusRef.current === TransReducer.status) return;
+        handledStatusRef.current = TransReducer.status;
+
         switch (TransReducer.status) {
             case 'Transaction/walletsTransRequest':
-                status = TransReducer.status;
                 setApiReq(true);
-                setLoading(true);
                 break;
-            case 'Transaction/walletsTransSuccess':
-                status = TransReducer.status;
+            case 'Transaction/walletsTransSuccess': {
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 const newData = TransReducer?.walletsTransResponse?.walletPayments || [];
-                const totalCount = TransReducer?.walletsTransResponse?.count || 0;
+                const shouldReset = pendingResetRef.current;
+                pendingResetRef.current = false;
 
-                if (newData.length > 0) {
-                    const updatedStoreData = { ...storeAlldata };
-
+                setStoreAlldata(prev => {
+                    const updatedStoreData = shouldReset ? {} : { ...(prev || {}) };
+                    Object.keys(updatedStoreData).forEach(k => {
+                        updatedStoreData[k] = [...updatedStoreData[k]];
+                    });
                     newData.forEach(item => {
                         if (item?.transactionDate) {
                             const dateString = item.transactionDate;
                             const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
+                            let monthYear = '';
                             if (monthYearMatch) {
-                                const month = monthYearMatch[1];
-                                const year = monthYearMatch[2];
-                                const monthYear = `${month} ${year}`;
+                                monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
+                            } else {
+                                const parsed = moment(dateString, ["MMM DD, YYYY", "MMM D, YYYY", "MMMM DD, YYYY", "YYYY-MM-DD"]);
+                                if (parsed.isValid()) {
+                                    monthYear = parsed.format('MMM YYYY');
+                                }
+                            }
+                            if (monthYear) {
                                 if (!updatedStoreData[monthYear]) {
                                     updatedStoreData[monthYear] = [];
                                 }
@@ -230,51 +273,34 @@ const onBackPress = () => {
                                 if (!isDuplicate) {
                                     updatedStoreData[monthYear].push(item);
                                 }
-                            } else {
-                                console.warn(`Invalid transactionDate format for item:`, item);
                             }
                         }
                     });
-
-                    setStoreAlldata(updatedStoreData);
-
-                    const totalItemsFetched = Object.values(updatedStoreData).flat().length;
-                    console.log(totalItemsFetched, "totalItemsFetched");
-
-                    if (totalItemsFetched >= totalCount) {
-                        console.log("All data fetched. Stopping API calls.");
-                        setApiReq(false);
-                        setLoading(false);
-                    }
-                }
-
+                    return updatedStoreData;
+                });
                 break;
-
+            }
             case 'Transaction/walletsTransFailure':
-                status = TransReducer.status;
+                pendingResetRef.current = false;
                 setApiReq(false);
-                setLoading(false);
+                setInitialLoading(false);
+                setLoadingMore(false);
+                setRefreshing(false);
                 break;
             case 'Transaction/walletsgetRequest':
-                status = TransReducer.status;
                 break;
             case 'Transaction/walletsgetSuccess':
-                status = TransReducer.status;
-                break;
             case 'Transaction/walletsgetFailure':
-                status = TransReducer.status;
+                setWalletLoading(false);
                 break;
         }
-    }
+    }, [TransReducer.status, TransReducer?.walletsTransResponse, isFocus]);
+
     useEffect(() => {
-        if (storeAlldata) {
-            const monthOrder = {
-                'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-                'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-            };
+        if (storeAlldata && !Array.isArray(storeAlldata)) {
             const storetakeAll = Object.keys(storeAlldata)
                 .map((monthYear) => {
-                    const data = storeAlldata[monthYear];
+                    const data = storeAlldata[monthYear] || [];
                     const updatedData = data.map((item) => ({
                         ...item,
                         dataLength: data.length,
@@ -285,25 +311,21 @@ const onBackPress = () => {
                     const [aMonth, aYear] = a.monthYear.split(' ');
                     const [bMonth, bYear] = b.monthYear.split(' ');
                     if (aYear !== bYear) {
-                        return parseInt(bYear) - parseInt(aYear);
+                        return parseInt(bYear, 10) - parseInt(aYear, 10);
                     }
-                    return monthOrder[bMonth] - monthOrder[aMonth];
+                    return (MONTH_ORDER[bMonth] || 0) - (MONTH_ORDER[aMonth] || 0);
                 });
 
             setSelectCountrytopic(storetakeAll);
-            setFinal(storetakeAll);
-            console.log(storetakeAll, "storetakeAll", final);
+            if (!provideName.trim()) {
+                setFinal(storetakeAll);
+            }
         }
-    }, [storeAlldata]);
-        /**
- * Search topic name utility.
- * @param {*} text - Input value.
- * @returns {void}
- */
-const searchTopicName = (text) => {
-        console.log(text, 'Input Text');
+    }, [storeAlldata, provideName]);
+
+    const searchTopicName = (text) => {
         setProvideName(text);
-        if (text.trim() == '') {
+        if (text.trim() === '') {
             setFinal(selectCountrytopic);
             return;
         }
@@ -314,487 +336,566 @@ const searchTopicName = (text) => {
                 const textDataTopic = text.trim().toUpperCase();
                 return itemDataTopic.includes(textDataTopic);
             });
-        console.log(listAllData, 'Filtered List');
-        if (listAllData.length > 0) {
-            const updatedStoreData = {};
-            listAllData.forEach(item => {
-                if (item?.transactionDate) {
-                    const dateString = item.transactionDate;
-                    const monthYearMatch = dateString.match(/^([A-Za-z]+) \d{1,2}, (\d{4})$/);
-                    if (monthYearMatch) {
-                        const monthYear = `${monthYearMatch[1]} ${monthYearMatch[2]}`;
-                        if (!updatedStoreData[monthYear]) {
-                            updatedStoreData[monthYear] = [];
-                        }
-                        const isDuplicate = updatedStoreData[monthYear].some(existingItem =>
-                            existingItem.conferenceName === item.conferenceName &&
-                            existingItem.transactionDate === item.transactionDate &&
-                            existingItem.walletAmount === item.walletAmount
-                        );
-                        if (!isDuplicate) {
-                            updatedStoreData[monthYear].push(item);
-                        }
-                    } else {
-                        console.warn(`Invalid transactionDate format for item:`, item);
-                    }
-                }
-            });
-            console.log(updatedStoreData, 'Updated Store Data');
-            const storetakeAll = Object.keys(updatedStoreData).map(monthYear => {
-                const data = updatedStoreData[monthYear];
-                return {
-                    monthYear,
-                    data: data.map(item => ({ ...item, dataLength: data.length })),
-                };
-            });
-            console.log(storetakeAll, 'Final Data');
-            setFinal(storetakeAll);
+        if (listAllData?.length > 0) {
+            setFinal(groupWalletItemsByMonth(listAllData));
         } else {
             setFinal([]);
         }
     };
-        /**
- * Render item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @param {*} props.index - Nested property value.
- * @returns {JSX.Element}
- */
-const renderItem = ({ item, index }) => {
-        const isLastItem = index === item?.dataLength - 1;
+
+    const renderTransactionCard = (item, index) => {
         return (
-            <View>
-                <View style={{
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    marginTop: normalize(0),
-                    width: normalize(315),
-                    backgroundColor: "#FFFFFF",
-                }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            paddingHorizontal: normalize(10),
-                            // paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                            backgroundColor: "#FFFFFF",
-                            width: normalize(315),
-
-
-                        }}
-                    >
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(8),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "106%",
-                            }}
-                        >
-                            <TouchableOpacity>
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: "#000000",
-                                        flexShrink: 1,
-                                        flexWrap: "wrap",
-                                    }}
-                                >
-                                    {item?.conferenceName}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                            }}
-                        >
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 12,
-                                    color: "#AAA",
-                                }}
-                            >
-                                {`Trans Date: ${moment(item?.transactionDate, "MMM DD,YYYY").format("MM-DD-YYYY")}`}
-                            </Text>
-                            <Text
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: "#333",
-                                }}
-                            >
-                                {`${item?.currencyCode}${item?.walletAmount}`}
-                            </Text>
-                        </View>
-                    </View>
-                    {!isLastItem && <View style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 5,
-                        paddingHorizontal: normalize(10),
-                        paddingVertical: normalize(5)
-                    }}>
-                        {Array.from({ length: 24 }).map((_, index) => (
-                            <View key={index} style={{
-                                height: 2,
-                                width: (windowWidth * 0.4 - 25) / 13.5,
-                                backgroundColor: "#DDDDDD"
-                            }} />
-                        ))}
-                    </View>}
+            <View key={String(item?.conferenceName || '') + String(item?.transactionDate || '') + index} style={localStyles.card}>
+                <Text numberOfLines={2} style={localStyles.cardTitle}>
+                    {item?.conferenceName}
+                </Text>
+                <View style={localStyles.divider} />
+                <View style={localStyles.cardFooterRow}>
+                    <Text style={localStyles.metaText}>
+                        {`Trans Date: ${moment(item?.transactionDate, "MMM DD,YYYY").format("MM-DD-YYYY")}`}
+                    </Text>
+                    <Text style={localStyles.amountText}>
+                        {`${item?.currencyCode || ''}${item?.walletAmount ?? ''}`}
+                    </Text>
                 </View>
             </View>
         );
-    }
+    };
 
-
-        /**
- * Render month item utility.
- * @param {Object} props - Input object.
- * @param {*} props.item - Nested property value.
- * @returns {JSX.Element}
- */
-const renderMonthItem = ({ item }) => {
+    const renderMonthItem = ({ item }) => {
         return (
-            <View key={item.monthYear} style={{ paddingHorizontal: normalize(20), marginTop: normalize(10) }}>
-                <Text
-                    style={{
-                        fontFamily: Fonts.InterSemiBold,
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        color: '#000000',
-                        marginBottom: normalize(10),
-                    }}
-                >
-                    {item.monthYear} {/* Display month and year */}
-                </Text>
-
-                <FlatList
-                    data={item?.data}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => index.toString()}
-                />
+            <View key={item.monthYear} style={localStyles.monthSection}>
+                <View style={localStyles.monthHeaderRow}>
+                    <Text style={localStyles.monthTitle}>{item.monthYear}</Text>
+                </View>
+                {(item?.data || []).map((entry, idx) => renderTransactionCard(entry, idx))}
             </View>
         );
-    }
-    const [showLoader, setShowLoader] = useState(true);
-    useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 5000);
+    };
 
-        return () => clearTimeout(timeout);
-    }, []);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
+
+    const walletInfo = TransReducer?.walletsgetResponse || {};
+    const hasWalletData = walletInfo?.walletBalance !== undefined && walletInfo?.walletBalance !== null;
+    const isWalletCardLoading = walletLoading && !hasWalletData;
+
     return (
         <>
-            <MyStatusBar barStyle={'light-content'}
-                backgroundColor={Colorpath.Pagebg} />
-            <SafeAreaView style={{ backgroundColor: Colorpath.Pagebg, flex: 1 }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: normalize(0) }}>
-                    {Platform.OS === "ios" ? (
-                        <PageHeader
-                            title={props?.route?.params?.name ? props?.route?.params?.name : props?.route?.params?.name}
-                            onBackPress={registBaack}
-                        />
-                    ) : (
-                        <PageHeader
-                            title={props?.route?.params?.name ? props?.route?.params?.name : props?.route?.params?.name}
-                            onBackPress={registBaack}
-                        />
-
-                    )}
-                </View>
-                {/* <Loader visible={TransReducer.status == 'Transaction/walletsTransRequest'}/>  */}
-                {conn == false ? <IntOff /> : <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'height' : undefined}>
-                    <ScrollView refreshControl={<RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={fullDataRefresh}
-                    />} contentContainerStyle={{ paddingBottom: normalize(130) }}>
-                        <View styyle={{ flex: 1 }}>
-                            {showLoader ?
-                                <View style={{ justifyContent: "center", alignContent: "center" }}>
-                                    <ImageBackground source={Imagepath.HomeUser} style={{ height: normalize(170), width: normalize(300) }} imageStyle={{ borderRadius: 5 }} resizeMode="stretch">
-                                        <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(80) }}>
-                                            <ActivityIndicator color={"white"} size="small" />
-                                        </View>
-                                    </ImageBackground>
-                                </View>
-                                : !showLine && <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
-                                    <ImageBackground source={Imagepath.HomeUser} style={{ height: normalize(170), width: normalize(300) }} imageStyle={{ borderRadius: 5 }} resizeMode="stretch">
-                                        <View style={{ flexDirection: "column", paddingVertical: normalize(30), paddingLeft: normalize(20) }}>
-                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Available Balance"}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 24, color: "#FFFFFF" }}>{`${TransReducer?.walletsgetResponse?.currencyCode}${TransReducer?.walletsgetResponse?.walletBalance}`}</Text>
-                                        </View>
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                            <View style={{ flexDirection: "column", paddingLeft: normalize(20) }}>
-                                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Spent"}</Text>
-                                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#FFFFFF" }}>{`${TransReducer?.walletsgetResponse?.currencyCode}${TransReducer?.walletsgetResponse?.walletSpendAmount}`}</Text>
-                                            </View>
-                                            <View style={{ flexDirection: "column", paddingRight: normalize(20) }}>
-                                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#FFFFFF" }}>{"Expiry"}</Text>
-                                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#FFFFFF" }}>{TransReducer?.walletsgetResponse?.walletExpirydate ? `${moment(TransReducer?.walletsgetResponse?.walletExpirydate, "MMM DD, YYYY").format("DD/MM/YYYY")}` : "NA"}</Text>
-                                            </View>
-                                        </View>
-                                    </ImageBackground>
-                                </View>}
-                            <View style={{
-                                backgroundColor: "#FFFFFF",
-                                borderTopLeftRadius: 20,
-                                borderTopRightRadius: 20,
-                            }}>
-                                {!showLine && <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 20 }}>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{"Transaction"}</Text>
-                                    <TouchableOpacity onPress={() => { setWallettake(!wallettake) }}>
-                                        <Image source={Imagepath.Filter} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
-                                    </TouchableOpacity>
-                                </View>}
-                                <View style={{ justifyContent: "center", alignSelf: "center", width: normalize(290) }}>
-                                    <View
-                                        style={{
-                                            borderBottomColor: '#000000',
-                                            borderBottomWidth: 0.5,
-                                            // marginTop: normalize(5)
-                                        }}>
-                                        <TextInput
-                                            editable={true}
-                                            onChangeText={searchTopicName}
-                                            value={provideName}
-                                            style={{ height: normalize(35), width: normalize(290), fontSize: 16, color: "#000000", fontFamily: Fonts.InterRegular }}
-                                            placeholder="Search Transactions here"
-                                            placeholderTextColor={"#000000"}
-                                            keyboardType="default"
-                                        />
+            <MyStatusBar barStyle={'light-content'} backgroundColor={Colorpath.Pagebg} />
+            <SafeAreaView style={localStyles.container}>
+                <PageHeader
+                    title={props?.route?.params?.name || "Wallet Transactions"}
+                    onBackPress={registBaack}
+                />
+                {conn == false ? <IntOff /> : (
+                    <KeyboardAvoidingView style={localStyles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                        <View style={localStyles.heroWrapper}>
+                            <ImageBackground
+                                source={Imagepath.HomeUser}
+                                style={localStyles.heroBg}
+                                imageStyle={localStyles.heroBgImage}
+                                resizeMode="stretch"
+                            >
+                                {isWalletCardLoading ? (
+                                    <View style={localStyles.heroLoaderContainer}>
+                                        <ActivityIndicator color="#FFFFFF" size="small" />
                                     </View>
+                                ) : (
+                                    <View style={localStyles.heroContent}>
+                                        <View>
+                                            <Text style={localStyles.heroLabel}>{"Available Balance"}</Text>
+                                            <Text style={localStyles.heroBalance}>
+                                                {`${walletInfo?.currencyCode || 'US$'}${walletInfo?.walletBalance ?? 0}`}
+                                            </Text>
+                                        </View>
+                                        <View style={localStyles.heroStatsRow}>
+                                            <View>
+                                                <Text style={localStyles.heroLabel}>{"Spent"}</Text>
+                                                <Text style={localStyles.heroSubValue}>
+                                                    {`${walletInfo?.currencyCode || 'US$'}${walletInfo?.walletSpendAmount ?? 0}`}
+                                                </Text>
+                                            </View>
+                                            <View style={localStyles.heroRightStat}>
+                                                <Text style={localStyles.heroLabel}>{"Expiry"}</Text>
+                                                <Text style={localStyles.heroSubValue}>
+                                                    {walletInfo?.walletExpirydate
+                                                        ? `${moment(walletInfo?.walletExpirydate, "MMM DD, YYYY").format("DD/MM/YYYY")}`
+                                                        : "NA"}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+                            </ImageBackground>
+                        </View>
+
+                        <View style={localStyles.filterPanel}>
+                            <View style={localStyles.filterTopRow}>
+                                <Text style={localStyles.sectionTitle}>{"Transactions"}</Text>
+                                <View style={localStyles.filterActions}>
+                                    {sdate && ndate ? (
+                                        <View style={localStyles.activeDateChip}>
+                                            <Text style={localStyles.activeDateChipText}>
+                                                {`${sdate} to ${ndate}`}
+                                            </Text>
+                                        </View>
+                                    ) : null}
+                                    <TouchableOpacity
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        onPress={() => setWallettake(!wallettake)}
+                                        style={localStyles.filterButton}
+                                    >
+                                        <Image source={Imagepath.Filter} style={localStyles.filterIcon} />
+                                    </TouchableOpacity>
                                 </View>
+                            </View>
+
+                            <View style={localStyles.searchBox}>
+                                <TextInput
+                                    editable={true}
+                                    onChangeText={searchTopicName}
+                                    value={provideName}
+                                    style={localStyles.searchInput}
+                                    placeholder="Search transactions"
+                                    placeholderTextColor="#94A3B8"
+                                    keyboardType="default"
+                                />
+                                {provideName ? (
+                                    <TouchableOpacity onPress={() => searchTopicName('')}>
+                                        <Text style={localStyles.clearSearchText}>{"Clear"}</Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
+                        </View>
+
+                        <View style={localStyles.listContainer}>
+                            {initialLoading && final.length === 0 ? (
+                                <TransactionListSkeleton count={3} />
+                            ) : (
                                 <FlatList
                                     data={final}
                                     renderItem={renderMonthItem}
-                                    keyExtractor={(item, index) => index.toString()}
+                                    contentContainerStyle={localStyles.listContent}
+                                    showsVerticalScrollIndicator={false}
+                                    keyExtractor={(item, index) => `${item?.monthYear || 'month'}_${index}`}
                                     onEndReached={fetchMore}
                                     onEndReachedThreshold={0.5}
                                     scrollEventThrottle={16}
                                     ListFooterComponent={
-                                        loading && !showLoader ? <ActivityIndicator color={Colorpath.ButtonColr} size="large" /> : null
+                                        loadingMore ? (
+                                            <View style={localStyles.footerLoader}>
+                                                <ActivityIndicator color={Colorpath.ButtonColr} size="small" />
+                                            </View>
+                                        ) : null
                                     }
                                     refreshControl={
                                         <RefreshControl
                                             refreshing={refreshing}
                                             onRefresh={fullDataRefresh}
+                                            colors={[Colorpath.ButtonColr]}
+                                            tintColor={Colorpath.ButtonColr}
                                         />
                                     }
-                                    ListEmptyComponent={showLoader ? <ActivityIndicator color={"green"} size="small" /> :
-                                        <Text
-                                            style={{
-                                                alignContent: 'center',
-                                                alignItems: 'center',
-                                                alignSelf: 'center',
-                                                color: Colorpath.grey,
-                                                fontWeight: 'bold',
-                                                fontFamily: Fonts.InterMedium,
-                                                fontSize: normalize(20),
-                                                paddingTop: normalize(30),
-                                            }}>
-                                            No data found
-                                        </Text>
-                                    }
+                                    ListEmptyComponent={<TransactionEmptyState message="No data found" />}
                                 />
-                            </View>
+                            )}
                         </View>
-                    </ScrollView>
-                    <Modal
-                        animationIn={'slideInUp'}
-                        animationOut={'slideOutDown'}
-                        isVisible={wallettake}
-                        backdropColor={Colorpath.black}
-                        style={{
-                            width: '100%',
-                            alignSelf: 'center',
-                            margin: 0,
-                            justifyContent: "center",
-                            alignContent: "center"
-                        }}
-                        onBackdropPress={() => setWallettake(false)}>
-                        <View style={{
-                            width: normalize(300),
-                            backgroundColor: Colorpath.white,
-                            borderRadius: normalize(10),
-                            padding: normalize(30),
-                            justifyContent: "center",
-                            alignSelf: "center"
-                        }}>
-                            <View style={{ bottom: normalize(15) }}>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#999999" }}>{"Filter by Date"}</Text>
-                            </View>
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
-                                <View style={{ borderBottomColor: '#000000', borderBottomWidth: 0.5, width: "47%" }}>
-                                    <TouchableOpacity onPress={() => {
-                                        setWalletdate(!walletdate)
-                                    }}>
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 0 }}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingHorizontal: 2 }}>
-                                                {sdate ? sdate : "Select Date"}
-                                            </Text>
-                                            <View style={{ bottom: 4 }}>
-                                                <CalenderIcon name={'calendar'} size={25} color={"#000000"} />
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={{ borderBottomColor: '#000000', borderBottomWidth: 0.5, width: "47%" }}>
-                                    <TouchableOpacity onPress={() => {
-                                        setWalletndate(!walletndate)
-                                    }}>
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 0 }}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingHorizontal: 2 }}>
-                                                {ndate ? ndate : "Select Date"}
-                                            </Text>
-                                            <View style={{ bottom: 4 }}>
-                                                <CalenderIcon name={'calendar'} size={25} color={"#000000"} />
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            <View style={{ justifyContent: "flex-end", alignContent: "flex-end", flexDirection: "row", gap: normalize(10) }}>
-                                <Buttons
-                                    onPress={() => {
-                                        setWallettake(!wallettake);
-                                        setNdate("");
-                                        setSdate("");
-                                        setStoreAlldata([]);
-                                        setSelectCountrytopic([]);
-                                        setFinal([]);
-                                        // setShowLine(true);
-                                        fetchHandle();
-                                    }}
-                                    height={normalize(35)}
-                                    width={normalize(100)}
-                                    backgroundColor={Colorpath.white}
-                                    borderRadius={normalize(5)}
-                                    text="Cancel"
-                                    color={"#999999"}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterMedium}
-                                    marginTop={normalize(10)}
-                                    borderBottomWidth={0.8}
-                                    borderColor={"#999999"}
-                                    borderWidth={1}
-                                />
-                                <Buttons
-                                    onPress={() => {
-                                        if (!sdate) {
-                                            showErrorAlert("Please select From Date")
-                                        } else if (!ndate) {
-                                            showErrorAlert("Please select To Date")
-                                        } else {
-                                            fullDataRefresh();
-                                            setWallettake(!wallettake);
-                                            // setNdate("");
-                                            // setSdate("");
-                                            setStoreAlldata([]);
-                                            setSelectCountrytopic([]);
-                                            setFinal([]);
-                                            // setShowLine(true);
-                                            fetchHandle();
-                                        }
-                                    }}
-                                    height={normalize(35)}
-                                    width={normalize(100)}
-                                    backgroundColor={Colorpath.ButtonColr}
-                                    borderRadius={normalize(5)}
-                                    text="Submit"
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterMedium}
-                                    marginTop={normalize(10)}
-                                />
-                            </View>
-                        </View>
-                        <DateTimePickerModal
-                            isVisible={walletdate}
-                            mode="date"
-                            date={sdate ? new Date(sdate) : undefined}
-                            maximumDate={ndate ? new Date(ndate) : undefined}
-                            onConfirm={val => {
-                                setSdate(moment(val).format('YYYY-MM-DD'));
-                                setWalletdate(false);
+
+                        <Modal
+                            animationIn={'slideInUp'}
+                            animationOut={'slideOutDown'}
+                            isVisible={wallettake}
+                            backdropColor={Colorpath.black}
+                            style={{
+                                width: '100%',
+                                alignSelf: 'center',
+                                margin: 0,
+                                justifyContent: "center",
+                                alignContent: "center"
                             }}
-                            onCancel={() => setWalletdate(false)}
-                            textColor="black"
-                        />
-                        <DateTimePickerModal
-                            isVisible={walletndate}
-                            mode="date"
-                            // never allow selecting before sdate (if sdate exists)
-                            minimumDate={sdate ? moment(sdate, 'YYYY-MM-DD').toDate() : undefined}
-                            // open To picker with previously chosen ndate (if exists),
-                            // otherwise default to today.
-                            // Also ensure the initial date is not before minimumDate:
-                            date={
-                                (() => {
-                                    const today = new Date();
-                                    if (ndate) {
-                                        const picked = moment(ndate, 'YYYY-MM-DD').toDate();
-                                        // if picked is earlier than sdate (shouldn't happen normally), clamp to min
-                                        if (sdate && picked < moment(sdate, 'YYYY-MM-DD').toDate()) {
+                            onBackdropPress={() => setWallettake(false)}>
+                            <View style={localStyles.modalCard}>
+                                <Text style={localStyles.modalTitle}>{"Filter by Date"}</Text>
+                                <View style={localStyles.dateInputsRow}>
+                                    <View style={localStyles.dateField}>
+                                        <TouchableOpacity onPress={() => setWalletdate(!walletdate)}>
+                                            <View style={localStyles.dateFieldInner}>
+                                                <Text style={[localStyles.dateValueText, !sdate && localStyles.datePlaceholder]}>
+                                                    {sdate ? sdate : "From Date"}
+                                                </Text>
+                                                <CalenderIcon name={'calendar'} size={18} color="#475569" />
+                                            </View>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={localStyles.dateField}>
+                                        <TouchableOpacity onPress={() => setWalletndate(!walletndate)}>
+                                            <View style={localStyles.dateFieldInner}>
+                                                <Text style={[localStyles.dateValueText, !ndate && localStyles.datePlaceholder]}>
+                                                    {ndate ? ndate : "To Date"}
+                                                </Text>
+                                                <CalenderIcon name={'calendar'} size={18} color="#475569" />
+                                            </View>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                                <View style={localStyles.modalActionsRow}>
+                                    <Buttons
+                                        onPress={() => {
+                                            setWallettake(false);
+                                            setNdate("");
+                                            setSdate("");
+                                            setPageNum(0);
+                                            setInitialLoading(true);
+                                            setFinal([]);
+                                            fetchHandle(0, "", "", true);
+                                        }}
+                                        height={normalize(36)}
+                                        width={normalize(105)}
+                                        backgroundColor={Colorpath.white}
+                                        borderRadius={normalize(8)}
+                                        text="Cancel"
+                                        color="#64748B"
+                                        fontSize={14}
+                                        fontFamily={Fonts.InterMedium}
+                                        marginTop={normalize(14)}
+                                        borderBottomWidth={0.8}
+                                        borderColor="#CBD5E1"
+                                        borderWidth={1}
+                                    />
+                                    <Buttons
+                                        onPress={() => {
+                                            if (!sdate) {
+                                                showErrorAlert("Please select From Date")
+                                            } else if (!ndate) {
+                                                showErrorAlert("Please select To Date")
+                                            } else {
+                                                setWallettake(false);
+                                                setPageNum(0);
+                                                setInitialLoading(true);
+                                                setFinal([]);
+                                                fetchHandle(0, sdate, ndate, true);
+                                            }
+                                        }}
+                                        height={normalize(36)}
+                                        width={normalize(105)}
+                                        backgroundColor={Colorpath.ButtonColr}
+                                        borderRadius={normalize(8)}
+                                        text="Submit"
+                                        color={Colorpath.white}
+                                        fontSize={14}
+                                        fontFamily={Fonts.InterMedium}
+                                        marginTop={normalize(14)}
+                                    />
+                                </View>
+                            </View>
+                            <DateTimePickerModal
+                                isVisible={walletdate}
+                                mode="date"
+                                date={sdate ? new Date(sdate) : undefined}
+                                maximumDate={ndate ? new Date(ndate) : undefined}
+                                onConfirm={val => {
+                                    setSdate(moment(val).format('YYYY-MM-DD'));
+                                    setWalletdate(false);
+                                }}
+                                onCancel={() => setWalletdate(false)}
+                                textColor="black"
+                            />
+                            <DateTimePickerModal
+                                isVisible={walletndate}
+                                mode="date"
+                                minimumDate={sdate ? moment(sdate, 'YYYY-MM-DD').toDate() : undefined}
+                                date={
+                                    (() => {
+                                        const today = new Date();
+                                        if (ndate) {
+                                            const picked = moment(ndate, 'YYYY-MM-DD').toDate();
+                                            if (sdate && picked < moment(sdate, 'YYYY-MM-DD').toDate()) {
+                                                return moment(sdate, 'YYYY-MM-DD').toDate();
+                                            }
+                                            return picked;
+                                        }
+                                        if (sdate && today < moment(sdate, 'YYYY-MM-DD').toDate()) {
                                             return moment(sdate, 'YYYY-MM-DD').toDate();
                                         }
-                                        return picked;
-                                    }
-                                    // no previous ndate; default to today but clamp to sdate if needed
-                                    if (sdate && today < moment(sdate, 'YYYY-MM-DD').toDate()) {
-                                        return moment(sdate, 'YYYY-MM-DD').toDate();
-                                    }
-                                    return today;
-                                })()
-                            }
-                            onConfirm={val => {
-                                setNdate(moment(val).format('YYYY-MM-DD'));
-                                setWalletndate(false);
-                            }}
-                            onCancel={() => setWalletndate(false)}
-                            textColor="black"
+                                        return today;
+                                    })()
+                                }
+                                onConfirm={val => {
+                                    setNdate(moment(val).format('YYYY-MM-DD'));
+                                    setWalletndate(false);
+                                }}
+                                onCancel={() => setWalletndate(false)}
+                                textColor="black"
+                            />
+                        </Modal>
+                        <DrawerModal
+                            expandId={idget}
+                            handel={nodata}
+                            isVisible={visible}
+                            onBackdropPress={() => setVisible(!visible)}
+                            onRequestClose={() => setVisible(false)}
+                            backButton={() => setVisible(!visible)}
+                            rentalNavigate={() => setVisible(!visible)}
+                            watchlistNavigate={() => setVisible(!visible)}
+                            subscribeNavigate={() => setVisible(!visible)}
+                            rewardNavigate={() => setVisible(!visible)}
+                            homeNavigate={() => setVisible(!visible)}
+                            expensesNav={() => setVisible(!visible)}
+                            interestedNav={() => setVisible(!visible)}
+                            drawerPress={() => setVisible(!visible)}
                         />
-                    </Modal>
-                    <DrawerModal
-                        expandId={idget}
-                        handel={nodata}
-                        isVisible={visible}
-                        onBackdropPress={() => setVisible(!visible)}
-                        onRequestClose={() => setVisible(false)}
-                        backButton={() => setVisible(!visible)}
-                        rentalNavigate={() => setVisible(!visible)}
-                        watchlistNavigate={() => setVisible(!visible)}
-                        subscribeNavigate={() => setVisible(!visible)}
-                        rewardNavigate={() => setVisible(!visible)}
-                        homeNavigate={() => setVisible(!visible)}
-                        expensesNav={() => setVisible(!visible)}
-                        interestedNav={() => setVisible(!visible)}
-                        drawerPress={() => setVisible(!visible)}
-                    />
-                </KeyboardAvoidingView>}
+                    </KeyboardAvoidingView>
+                )}
             </SafeAreaView>
         </>
     )
 }
 
-/**
- * Wallets default export.
- *
- * @returns {*}
- */
+const localStyles = StyleSheet.create({
+    container: {
+        backgroundColor: '#F4F7FC',
+        flex: 1,
+    },
+    flex1: {
+        flex: 1,
+    },
+    heroWrapper: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(10),
+        paddingBottom: normalize(8),
+    },
+    heroBg: {
+        height: normalize(138),
+        width: '100%',
+        justifyContent: 'center',
+    },
+    heroBgImage: {
+        borderRadius: normalize(12),
+    },
+    heroLoaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    heroContent: {
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(16),
+    },
+    heroLabel: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.85)',
+    },
+    heroBalance: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 22,
+        color: '#FFFFFF',
+        marginTop: normalize(2),
+    },
+    heroStatsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+    },
+    heroRightStat: {
+        alignItems: 'flex-end',
+    },
+    heroSubValue: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#FFFFFF',
+        marginTop: normalize(2),
+    },
+    filterPanel: {
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: '#E5ECF6',
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(10),
+    },
+    filterTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: normalize(8),
+    },
+    sectionTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
+    },
+    filterActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: normalize(8),
+    },
+    activeDateChip: {
+        backgroundColor: '#EEF4FF',
+        borderRadius: normalize(12),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(3),
+    },
+    activeDateChipText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: Colorpath.ButtonColr,
+    },
+    filterButton: {
+        padding: normalize(4),
+    },
+    filterIcon: {
+        height: normalize(18),
+        width: normalize(18),
+        resizeMode: 'contain',
+    },
+    searchBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#D5E0EE',
+        borderRadius: normalize(8),
+        height: normalize(38),
+        paddingHorizontal: normalize(10),
+    },
+    searchInput: {
+        flex: 1,
+        height: '100%',
+        fontSize: 13,
+        color: '#0F172A',
+        fontFamily: Fonts.InterRegular,
+    },
+    clearSearchText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: Colorpath.ButtonColr,
+        paddingLeft: normalize(8),
+    },
+    listContainer: {
+        flex: 1,
+    },
+    listContent: {
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(10),
+        paddingBottom: normalize(28),
+    },
+    monthSection: {
+        marginBottom: normalize(12),
+    },
+    monthHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: normalize(8),
+        paddingHorizontal: normalize(2),
+    },
+    monthTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
+    },
+    monthCountBadge: {
+        backgroundColor: '#E0ECFF',
+        borderRadius: normalize(12),
+        paddingHorizontal: normalize(8),
+        paddingVertical: normalize(2),
+    },
+    monthCountText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 11,
+        color: Colorpath.ButtonColr,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(10),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+        marginBottom: normalize(8),
+    },
+    cardTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        lineHeight: 19,
+        color: '#0F172A',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: normalize(8),
+    },
+    cardFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    metaText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 11,
+        color: '#64748B',
+    },
+    amountText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: Colorpath.ButtonColr,
+    },
+    footerLoader: {
+        paddingVertical: normalize(14),
+        alignItems: 'center',
+    },
+    modalCard: {
+        width: normalize(296),
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#E5ECF6',
+        padding: normalize(18),
+        alignSelf: 'center',
+    },
+    modalTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
+        marginBottom: normalize(14),
+    },
+    dateInputsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: normalize(10),
+    },
+    dateField: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#D5E0EE',
+        borderRadius: normalize(8),
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(8),
+    },
+    dateFieldInner: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    dateValueText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 12,
+        color: '#0F172A',
+    },
+    datePlaceholder: {
+        color: '#94A3B8',
+    },
+    modalActionsRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: normalize(10),
+    },
+});
+
 export default Wallets

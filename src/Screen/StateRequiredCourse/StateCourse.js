@@ -11,7 +11,7 @@ import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts'
 import Imagepath from '../../Themes/Imagepath';
 import ArrowIcons from 'react-native-vector-icons/MaterialIcons';
-import FilterModal from '../../Components/Filter';
+import {CourseFilterField, CourseFilterPicker, useCoursePagination} from './CourseListControls';
 import { CommonActions, useNavigation } from '@react-navigation/native'
 import StarRating from 'react-native-star-rating-widget';
 import { useDispatch, useSelector } from 'react-redux'
@@ -57,6 +57,8 @@ const StateCourse = (props) => {
   console.log(DashboardReducer?.dashboardResponse?.data?.states, "finaltake------------------", props?.route?.params, takestate, addit);
   const [filterstate, setFilterstate] = useState(null);
   const [finalData, setFinalData] = useState("");
+    const courseScrollRef = useRef(null);
+    const pagination = useCoursePagination(finalData, filterName);
   const [stateid, setStateid] = useState("");
   const [servetext, setServetext] = useState(false);
   const [conn, setConn] = useState("")
@@ -356,41 +358,9 @@ const StateCourse = (props) => {
             onBackPress={handleBackPress}
           />
         </View>}
-        {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(30) }}>
-          {filterstate?.length > 0 && (
-            <View style={styles.filterBar}>
-              {!filterName ? (
-                <Text style={styles.filterPlaceholderText}>
-                  {"Filters"}
-                </Text>
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={filterstate?.length > 1 ? 0.75 : 1}
-                  disabled={filterstate?.length <= 1}
-                  onPress={openFilterModal}
-                  style={styles.selectedStatePill}
-                >
-                  <Text numberOfLines={1} style={styles.selectedStatePillText}>
-                    {filterName}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {filterstate?.length > 1 && (
-                <TouchableOpacity
-                  onPress={openFilterModal}
-                  style={styles.dropdownTriggerBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <ArrowIcons
-                    name={filtermodal ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                    size={24}
-                    color="#000000"
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+        {conn == false ? <IntOff /> : <ScrollView ref={courseScrollRef} onScroll={pagination.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: normalize(30) }}>
+          {filterstate?.length > 0 && <CourseFilterField label="State" value={filterName}
+                        disabled={filterstate.length <= 1} onPress={openFilterModal}/>}
           <View style={styles.sectionDivider} />
           {finalData?.length > 0 && (
             <View style={styles.sectionHeaderWrap}>
@@ -401,7 +371,7 @@ const StateCourse = (props) => {
           )}
           <View>
             <FlatList
-              data={finalData}
+              data={pagination.items}
               renderItem={RequiredCourses}
               scrollEnabled={false}
               keyExtractor={(item, index) => index.toString()}
@@ -437,26 +407,12 @@ const StateCourse = (props) => {
               } />
 
           </View>
-          <FilterModal
-            isfilterVisible={filtermodal}
-            onfilterFalse={closeFilterModal}
-            filterName={filterName}
-            setFilterName={setFilterName}
-            setStateid={setStateid}
-            stateid={stateid}
-            setAcivityformat={setAcivityformat}
-            acivityformat={acivityformat}
-            setFiltermonth={setFiltermonth}
-            filtermonth={filtermonth}
-            stateFiltered={stateFiltered}
-            setStateFiltered={setStateFiltered}
-            activity={activity}
-            setActivity={setActivity}
-            month={month}
-            setMonth={setMonth}
-            onSave={handleSave}
-            filterState={filterstate}
-          />
+          <CourseFilterPicker label="State" visible={filtermodal} onClose={() => setFiltermodal(false)}
+                        options={filterstate} selectedId={stateid} onSelect={(item, close) => {
+                            setFilterName(item.name);
+                            setStateid(item.id);
+                            if (close) setFiltermodal(false);
+                        }}/>
         </ScrollView>}
       </SafeAreaView>
       <DrawerModal
