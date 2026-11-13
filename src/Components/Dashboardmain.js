@@ -40,8 +40,11 @@ const Dashboardmain = ({ statepush, allProfTake, finddata, enables, setAddit, ad
     const hasCourseStats = useMemo(() => (completedCount + pendingCount) > 0, [completedCount, pendingCount]);
 
     const isStateDetailsLoading =
-        DashboardReducer?.status === 'Dashboard/stateDashboardRequest' ||
-        (!finddata && DashboardReducer?.status !== 'Dashboard/stateDashboardFailure' && DashboardReducer?.status !== 'Dashboard/stateDashboardSuccess');
+        !finddata && (
+            DashboardReducer?.status === 'Dashboard/stateDashboardRequest' ||
+            DashboardReducer?.stateDashboardPending ||
+            (DashboardReducer?.status !== 'Dashboard/stateDashboardFailure' && DashboardReducer?.status !== 'Dashboard/stateDashboardSuccess')
+        );
 
     if (isStateDetailsLoading) {
         return (

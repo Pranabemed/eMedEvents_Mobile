@@ -50,8 +50,9 @@ const Mytasks = (props) => {
             const targetStateId = routeCreditID?.state_id;
             const targetId = routeCreditID?.id;
             const liveLicense = fulldashbaord.find(item =>
-                (targetStateId != null && String(item?.state_id) === String(targetStateId)) ||
-                (targetId != null && String(item?.id) === String(targetId))
+                targetStateId != null
+                    ? String(item?.state_id) === String(targetStateId)
+                    : targetId != null && String(item?.id) === String(targetId)
             );
             if (liveLicense) return liveLicense;
         }
@@ -75,7 +76,7 @@ const Mytasks = (props) => {
 * @returns {void}
 */
     const taskPress = () => {
-        setAddit(statepush);
+        setAddit(activeCreditID);
         stateDashboardSuccess(null)
         if (props.navigation.canGoBack()) {
             props.navigation.goBack();
@@ -156,12 +157,32 @@ const Mytasks = (props) => {
         const result_final = url_webcast ? url_webcast.split('/').pop() : '';
         console.log(result_final, "webcast url=======");
         console.log(taskID, "taskID===============");
-        if (taskID?.current_activity_api == "activitysession") {
+        const btnText = String(taskID?.button_display_text || taskID?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(taskID?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(taskID?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            taskID?.is_course_started === 0 ||
+            taskID?.is_course_started === false ||
+            taskID?.is_started === 0;
+
+        if (isStartCourse || taskID?.current_activity_api == "startTest") {
+            props.navigation.navigate("StartTest", { conference: taskID?.id || taskID?.conferenceId, startCourse: taskID, webcastDetails: taskID });
+        } else if (taskID?.current_activity_api == "activitysession") {
             props.navigation.navigate("VideoComponent", { RoleData: taskID });
-        } else if (taskID?.current_activity_api == "introduction") {
-            props.navigation.navigate("StartTest", { conference: taskID?.id })
-        } else if (taskID?.current_activity_api == "startTest") {
-            props.navigation.navigate("PreTest", { activityID: { activityID: taskID?.current_activity_id, conference_id: taskID?.id } })
         } else if (taskID?.button_display_text == "Add Credits") {
             props.navigation.navigate("AddCredits", { mainAdd: props?.route?.params?.taskData || props?.route?.params?.backget?.taskData })
         } else if (result_final) {
@@ -191,12 +212,33 @@ const Mytasks = (props) => {
 */
     const mytaskparticularData = ({ item, index }) => {
         const isUpdateCard = item?.button_display_text === "Update";
+        const btnText = String(item?.button_display_text || item?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(item?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(item?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            item?.is_course_started === 0 ||
+            item?.is_course_started === false ||
+            item?.is_started === 0;
         const rawPct = item?.completed_percentage !== undefined && item?.completed_percentage !== null
             ? Number(item.completed_percentage)
-            : null;
-        const safeProgress = rawPct !== null && Number.isFinite(rawPct)
+            : 0;
+        const safeProgress = isStartCourse ? 0 : (rawPct !== null && Number.isFinite(rawPct)
             ? Math.max(0, Math.min(100, Math.round(rawPct)))
-            : null;
+            : 0);
 
         return (
             <View style={styles.cardOuter}>

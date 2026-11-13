@@ -92,15 +92,27 @@ const PreTest = (props) => {
     props?.route?.params?.FullID?.Wktext ||
     ''
   ).trim().toLowerCase();
+  const isPreTestFlow =
+    testFlowType === 'pre' || (testFlowType !== 'post' && (
+    routeActivityText.includes('pre') ||
+    String(headerText || '').toLowerCase().includes('pre') ||
+    String(CMEReducer?.cmedulicateResponse?.current_activity_text || '').toLowerCase().includes('pre') ||
+    String(props?.route?.params?.FullID?.Wktext || '').toLowerCase().includes('pre')));
   const isPostTestFlow =
-    testFlowType === 'post' ||
-    routeActivityText.includes('post') ||
-    String(props?.route?.params?.FullID?.wholedata?.next_activity_text || '').trim().toLowerCase().includes('post') ||
-    String(CMEReducer?.startTestResponse?.testData?.[0]?.title || '').trim().toLowerCase().includes('post');
+    !isPreTestFlow && (
+      testFlowType === 'post' ||
+      Boolean(props?.route?.params?.nodata) ||
+      routeActivityText.includes('post') ||
+      String(headerText || '').toLowerCase().includes('post') ||
+      String(CMEReducer?.cmedulicateResponse?.current_activity_text || '').toLowerCase().includes('post')
+    );
   const shouldOpenVideoFirst =
-    routeActivityText.includes('course') ||
-    routeActivityText.includes('video') ||
-    routeActivityText.includes('session');
+    !isPreTestFlow &&
+    !isPostTestFlow &&
+    props?.route?.params?.FullID?.startTest !== 'startTest' &&
+    (routeActivityText.includes('course') ||
+     routeActivityText.includes('video') ||
+     routeActivityText.includes('session'));
   const shouldHidePreTestView = shouldOpenVideoFirst && !redirectedToVideoRef.current;
 
   useEffect(() => {
@@ -209,6 +221,10 @@ const PreTest = (props) => {
       .catch((err) => { showErrorAlert("Please connect to internet", err) })
   }
 
+  const assessmentActivityId = props?.route?.params?.activityID?.activityID ||
+    props?.route?.params?.FullID?.FullID || props?.route?.params?.nodata?.activityId ||
+    (typeof props?.route?.params?.activityID !== 'object' ? props?.route?.params?.activityID : null);
+
   const awaitingNextAfterTestRef = useRef(false);
   const handledNextAfterTestRef = useRef(false);
 
@@ -250,12 +266,14 @@ const PreTest = (props) => {
     }
 
     const isSurveyOrAssessment =
-      nextActivityText === "Survey & Feedback" ||
-      nextActivityText === "Pre Assessment" ||
-      nextActivityText === "Post Assessment";
+      !isPreTestFlow && (
+        nextActivityText === "Survey & Feedback" ||
+        nextActivityText === "Pre Assessment" ||
+        nextActivityText === "Post Assessment"
+      );
 
     if (isSurveyOrAssessment) {
-      props.navigation.replace("PreTest", {
+      props.navigation.navigate("PreTest", {
         videoData: props?.route?.params?.videoData || props?.route?.params?.RoleData,
         activityID: {
           activityID: nextActivityId,
@@ -266,7 +284,7 @@ const PreTest = (props) => {
       return;
     }
 
-    props.navigation.replace("VideoComponent", {
+    props.navigation.navigate("VideoComponent", {
       ...(props?.route?.params || {}),
       webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       RoleData: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.videoContentData || props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
@@ -274,14 +292,14 @@ const PreTest = (props) => {
   };
 
   useEffect(() => {
-    if (!isFocus) return;
-    const obj = { "ActivityId": props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID };
+    if (!isFocus || !assessmentActivityId) return;
+    const obj = { "ActivityId": assessmentActivityId };
     connectionrequest()
       .then(() => {
         dispatch(startTestRequest(obj));
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err); });
-  }, [isFocus]);
+  }, [isFocus, assessmentActivityId]);
   console.log("props?.route?.params?.nodata", props?.route?.params)
   useEffect(() => {
     if (props?.route?.params?.nodata) {
@@ -291,17 +309,17 @@ const PreTest = (props) => {
     }
   }, [props?.route?.params?.nodata])
   useEffect(() => {
-    if (!isFocus) return;
+    if (!isFocus || !assessmentActivityId) return;
     let obj = {
-      "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.nodata?.conferenceId,
-      "ActivityId": props?.route?.params?.FullID?.wholedata?.next_activity_id || props?.route?.params?.nodata?.activityId || props?.route?.params?.activityID?.activityID || props?.route?.params?.FullID?.FullID || props?.route?.params?.activityID
+      "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.FullID?.conferenceId || props?.route?.params?.conference || props?.route?.params?.conferenceId || props?.route?.params?.nodata?.conferenceId,
+      "ActivityId": assessmentActivityId
     }
     connectionrequest()
       .then(() => {
         dispatch(cmedulicateRequest(obj));
       })
       .catch((err) => { showErrorAlert("Please connect to internet", err) })
-  }, [isFocus])
+  }, [isFocus, assessmentActivityId])
   useEffect(() => {
     if (CMEReducer?.startTestResponse) {
       setTestData(CMEReducer?.startTestResponse);
@@ -324,7 +342,7 @@ const PreTest = (props) => {
         ? nextResponse.courseModules
         : [];
     const nextIncompleteModule = courseModules.find(
-      (item) => Number(item?.completedSection) === 0 && !String(item?.name).toLowerCase().includes('section 1')
+      (item) => Number(item?.completedSection) === 0
     ) || null;
     const nextModuleActivityId =
       nextIncompleteModule?.activity_id ||
@@ -337,6 +355,47 @@ const PreTest = (props) => {
       nextResponse?.conferenceId ||
       nextResponse?.conference_id;
 
+    if (isPreTestFlow) {
+      props.navigation.navigate("VideoComponent", {
+        ...(props?.route?.params || {}),
+        webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+        activityID: {
+          ...(props?.route?.params?.activityID || {}),
+          activityID: nextModuleActivityId,
+          conference_id: nextModuleConferenceId,
+          text: nextIncompleteModule?.name || nextResponse?.next_activity_text || "Online Course",
+          courseModule: courseModules,
+        },
+        RoleData: {
+          ...props?.route?.params?.webcastDetails,
+          ...props?.route?.params?.maindata?.webcastDetails,
+          ...props?.route?.params?.videoContentData,
+          ...props?.route?.params?.RoleData,
+          ...props?.route?.params?.activityID?.webcastdeatils,
+          ...nextResponse,
+          current_activity_id: nextModuleActivityId,
+          conferenceId: nextModuleConferenceId,
+          next_activity_id: nextModuleActivityId,
+          next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text || "Online Course",
+          courseModule: courseModules,
+        },
+        FullID: {
+          ...nextResponse,
+          conferenceId: nextModuleConferenceId,
+          previous_activity_id: nextModuleActivityId,
+        },
+        postdata: {
+          ...nextResponse,
+          conferenceId: nextModuleConferenceId,
+          next_activity_id: nextModuleActivityId,
+          next_activity_text: nextIncompleteModule?.name || nextResponse?.next_activity_text || "Online Course",
+          courseModule: courseModules,
+        },
+        preserveVideoContent: false,
+      });
+      return;
+    }
+
     if (isPostTestFlow || props?.route?.params?.fromNotification) {
       props.navigation.navigate("PostTestFail", {
         ...(props?.route?.params || {}),
@@ -345,7 +404,7 @@ const PreTest = (props) => {
       return;
     }
 
-    props.navigation.replace("VideoComponent", {
+    props.navigation.navigate("VideoComponent", {
       ...(props?.route?.params || {}),
       webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       activityID: {
@@ -382,7 +441,7 @@ const PreTest = (props) => {
       },
       preserveVideoContent: false,
     });
-  }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params]);
+  }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params, isPreTestFlow, isPostTestFlow]);
   if (status === '' || CMEReducer.status !== status) {
     switch (CMEReducer.status) {
       case 'CME/startTestRequest':
@@ -400,7 +459,9 @@ const PreTest = (props) => {
         break;
       case 'CME/evaulateexamSuccess':
         status = CMEReducer.status;
-        if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
+        if (isPreTestFlow) {
+          goBackToVideoWithNextActivity();
+        } else if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
           props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
         } else if (isPostTestFlow || props?.route?.params?.fromNotification) {
           props.navigation.navigate("PostTestFail", { ...(props?.route?.params || {}), examID: CMEReducer?.evaulateexamResponse?.examId });
@@ -420,19 +481,7 @@ const PreTest = (props) => {
         setLengthCheck(0);
         setSelectedOptions({});
         setTimeflex(0);
-        if (props?.route?.params?.FullID?.startTest) {
-          let obj = {
-            "conference_id": CMEReducer?.cmedulicateResponse?.conferenceId,
-            "ActivityId": CMEReducer?.cmedulicateResponse?.next_activity_id,
-          };
-          connectionrequest()
-            .then(() => {
-              dispatch(nextactionagainRequest(obj));
-            })
-            .catch((err) => {
-              showErrorAlert("Please connect to internet", err);
-            });
-        }
+        break;
 
       case 'CME/cmedulicateFailure':
         status = CMEReducer.status;

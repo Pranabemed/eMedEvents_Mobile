@@ -107,6 +107,8 @@ dashboardFailure(state, action) {
  * @returns {void}
  */
 stateDashboardRequest(state, action) {
+      state.stateDashboardPending = true;
+      state.stateDashboardRequestedStateId = action.payload?.state_id ?? null;
       state.status = action.type;
     },
         /**
@@ -116,6 +118,8 @@ stateDashboardRequest(state, action) {
  * @returns {void}
  */
 stateDashboardSuccess(state, action) {
+      state.stateDashboardPending = false;
+      state.stateDashboardResponseStateId = action.meta?.stateId ?? null;
       state.stateDashboardResponse = action.payload;
       state.status = action.type;
     },
@@ -126,6 +130,8 @@ stateDashboardSuccess(state, action) {
  * @returns {void}
  */
 stateDashboardFailure(state, action) {
+      state.stateDashboardPending = false;
+      state.stateDashboardFailedStateId = action.meta?.stateId ?? null;
       state.status = action.type;
       state.error = action.error;
     },  

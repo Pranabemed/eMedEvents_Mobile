@@ -58,10 +58,13 @@ const courseRele = () => {
  */
 const stateActionCourse = (courserole) => {
         console.log(courserole, "courserole===============");
-        if (courserole?.current_activity_api == "activitysession") {
+        const btnText = String(courserole?.button_display_text || courserole?.buttonText || '').trim().toLowerCase();
+        const isStartCourse = btnText.includes("start course") || courserole?.current_activity_api == "introduction";
+
+        if (isStartCourse) {
+            props?.navigation.navigate("StartTest", { conference: courserole?.id || courserole?.conferenceId, startCourse: courserole, webcastDetails: courserole });
+        } else if (courserole?.current_activity_api == "activitysession") {
             props?.navigation.navigate("VideoComponent", { RoleData: courserole });
-        } else if (courserole?.current_activity_api == "introduction") {
-            props?.navigation.navigate("StartTest", { conference: courserole?.id })
         } else if (courserole?.current_activity_api == "startTest") {
             props?.navigation.navigate("PreTest", { activityID: { activityID: courserole?.current_activity_id, conference_id: courserole?.id } });
         } else if (courserole?.button_display_text == "Add Credits") {

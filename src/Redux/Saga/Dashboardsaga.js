@@ -178,14 +178,14 @@ export function* stateDashboardSaga(action) {
   try {
     let response = yield call(postApi, action?.payload?.board_id ? 'user/boardDashboard' : 'user/stateDashboard', action.payload, header);
     if (response?.data?.success == true) {
-      yield put(stateDashboardSuccess(response));
+      yield put({ ...stateDashboardSuccess(response), meta: { stateId: action.payload?.state_id ?? null } });
       //   showErrorAlert(response?.data?.msg);
     } else {
-      yield put(stateDashboardFailure(response));
+      yield put({ ...stateDashboardFailure(response), meta: { stateId: action.payload?.state_id ?? null } });
       //   showErrorAlert(response?.data?.msg);
     }
   } catch (error) {
-    yield put(stateDashboardFailure(error));
+    yield put({ ...stateDashboardFailure(error), meta: { stateId: action.payload?.state_id ?? null } });
     showErrorAlert("!Oops something went wrong ");
     // showErrorAlert(error?.response?.data?.message);
   }

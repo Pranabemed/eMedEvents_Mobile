@@ -275,13 +275,13 @@ export function* profileSpeakerSaga(action) {
     let response = yield call(postApi, action?.payload?.speak == '' ? 'Speaker/profile':'Organizer/profile', action.payload, header);
     console.log('Speaker/profile: ', response);
     if (response?.status == 200) {
-      yield put(speakerProfileSuccess(response?.data));
+      yield put({ ...speakerProfileSuccess(response?.data), meta: action.meta });
     } else {
-      yield put(speakerProfileFailure(response?.data));
+      yield put({ ...speakerProfileFailure(response?.data), meta: action.meta });
     }
   } catch (error) {
     console.log('Speaker/profile  error:', error);
-    yield put(speakerProfileFailure(error));
+    yield put({ ...speakerProfileFailure(error), meta: action.meta });
   }
 }
 /**

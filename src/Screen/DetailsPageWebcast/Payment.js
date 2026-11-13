@@ -1300,6 +1300,7 @@ const Payment = (props) => {
                         content={"Your payment has been \n successfully completed."}
                         navigation={props.navigation}
                         name={"TabNav"}
+                        onDashboardPress={() => props.navigation.reset({ index: 0, routes: [{ name: 'TabNav' }] })}
                         dataPayemnt={WebcastReducer?.PaymentCheckResponse}
                         maindata={props?.route?.params?.invoiceTxt ? props?.route?.params?.invoiceTxt?.webcastTake : props?.route?.params?.cartInvoice?.webcastTake}
                         cartData={props?.route?.params?.cartInvoice?.cartInvoice ? "hit" : null}
@@ -1311,7 +1312,9 @@ const Payment = (props) => {
                         setPaymentfd={setPaymentfd}
                         content={"Your payment has been \n successfully completed"}
                         navigation={props.navigation}
-                        name={"TabNav"} />
+                        name={"TabNav"}
+                        onDashboardPress={() => props.navigation.reset({ index: 0, routes: [{ name: 'TabNav' }] })}
+                    />
                 </ScrollView>
             </SafeAreaView>}
         </>

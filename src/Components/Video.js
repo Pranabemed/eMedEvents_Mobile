@@ -118,8 +118,45 @@ const extractVideoUrl = (htmlString) => {
  * @returns {*}
  */
 const getFirstIncompleteModule = (modules) => {
-    if (!Array.isArray(modules)) return null;
-    return modules.find((item) => Number(item?.completedSection) === 0) || null;
+    if (!modules) return null;
+    const list = Array.isArray(modules) ? modules : typeof modules === 'object' ? Object.values(modules) : [];
+    if (list.length === 0) return null;
+    const incomplete = list.find((item) => Number(item?.completedSection) === 0);
+    return incomplete || list[0] || null;
+};
+
+/**
+ * Returns course video module.
+ * @param {*} modules - Input value.
+ * @returns {*}
+ */
+const getCourseVideoModule = (modules) => {
+    if (!modules) return null;
+    const list = Array.isArray(modules) ? modules : typeof modules === 'object' ? Object.values(modules) : [];
+    if (list.length === 0) return null;
+    const videoMod = list.find((m) => {
+        const name = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+        return (
+            name.includes('course') ||
+            name.includes('video') ||
+            name.includes('session') ||
+            name.includes('section 1') ||
+            name.includes('webcast')
+        ) && !name.includes('post') && !name.includes('pre') && !name.includes('survey');
+    });
+    if (videoMod) return videoMod;
+    const contentMod = list.find((m) => {
+        const name = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+        return (
+            !name.includes('assessment') &&
+            !name.includes('test') &&
+            !name.includes('survey') &&
+            !name.includes('feedback') &&
+            !name.includes('certificate')
+        );
+    });
+    if (contentMod) return contentMod;
+    return list[0];
 };
 
 /**
@@ -153,7 +190,7 @@ const VideoComponent = (props) => {
     const [loading, setLoading] = useState(true);
     const [videoHeight, setVideoHeight] = useState(normalize(200));
     const [videoAspectRatio, setVideoAspectRatio] = useState(16 / 9);
-    const [videoDic, setVideoDic] = useState(props?.route?.params?.RoleData || []);
+    const [videoDic, setVideoDic] = useState(props?.route?.params?.videoContentData || props?.route?.params?.RoleData || []);
     const [videoUrl, setVideoUrl] = useState(null);
     const [externalVideoUrl, setExternalVideoUrl] = useState(null);
     const [loadingdown, setLoadingdown] = useState(false);
@@ -184,11 +221,22 @@ const VideoComponent = (props) => {
     const [isSeeking, setIsSeeking] = useState(false);
     const didSetInitialFullscreenRef = useRef(false);
     const [useBlackFullscreenTimer, setUseBlackFullscreenTimer] = useState(true);
+    const isRevise = props?.route?.params?.RoleData?.completed_percentage == 100 ||
+        props?.route?.params?.FullID?.percentage == 100 ||
+        Boolean(props?.route?.params?.isRevise) ||
+        Boolean(props?.route?.params?.retakeCourse) ||
+        props?.route?.params?.RoleData?.button_display_text === "Revise Course" ||
+        props?.route?.params?.RoleData?.buttonText === "Revise Course" ||
+        props?.route?.params?.button_display_text === "Revise Course" ||
+        props?.route?.params?.buttonText === "Revise Course" ||
+        props?.route?.params?.button_display_text === "Retake Course" ||
+        props?.route?.params?.buttonText === "Retake Course";
+    const hasRequestedActivityRef = useRef(false);
     const preserveVideoContent = !!props?.route?.params?.preserveVideoContent;
     const [apiInFlight, setApiInFlight] = useState(!preserveVideoContent);
 
     useEffect(() => {
-        if (CMEReducer?.status === 'CME/cmeactivitySuccess' || CMEReducer?.status === 'CME/cmeactivityFailure') {
+        if ((CMEReducer?.status === 'CME/cmeactivitySuccess' || CMEReducer?.status === 'CME/cmeactivityFailure') && hasRequestedActivityRef.current) {
             setApiInFlight(false);
         }
     }, [CMEReducer?.status]);
@@ -225,24 +273,43 @@ const VideoComponent = (props) => {
     }
     useEffect(() => {
         if (preserveVideoContent || !isFocus) return;
+        let ActivityId =
+            (isRevise ? (videoContentModule?.activity_id || videoContentModule?.current_activity_id || videoContentModule?.id) : null)
+            || activeCourseModuleId
+            || props?.route?.params?.activityID?.activityID
+            || props?.route?.params?.activityID?.activity_id
+            || props?.route?.params?.ActivityId
+            || props?.route?.params?.postdata?.next_activity_id
+            || props?.route?.params?.RoleData?.current_activity_id
+            || props?.route?.params?.activityID?.next_activity_id
+            || props?.route?.params?.FullID?.previous_activity_id;
+
+        const activeNextActionFallback = nextAction || props?.route?.params?.postdata || CMEReducer?.cmenextactionResponse;
+        const btnTextFallback = String(activeNextActionFallback?.next_activity_button_text || '').trim().toLowerCase();
+
+        if (btnTextFallback === 'proceed to section 1' && activeNextActionFallback?.next_activity_id) {
+            ActivityId = activeNextActionFallback.next_activity_id;
+        }
+
+        if (isRevise && !ActivityId && !props?.route?.params?.postdata?.next_activity_id) {
+            setApiInFlight(true);
+            setShowLoader(true);
+            return;
+        }
+
+        if (!ActivityId) {
+            setApiInFlight(true);
+            setShowLoader(true);
+            return;
+        }
+
+        hasRequestedActivityRef.current = true;
         setApiInFlight(true);
         setShowLoader(true);
         setVideoUrl(null);
         setExternalVideoUrl(null);
         setNonVideoContent(null);
         setLoading(true);
-        let ActivityId = activeCourseModuleId
-            || props?.route?.params?.postdata?.next_activity_id
-            || props?.route?.params?.RoleData?.current_activity_id
-            || props?.route?.params?.activityID?.next_activity_id
-            || props?.route?.params?.FullID?.previous_activity_id;
-
-        const activeNextActionFallback = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
-        const btnTextFallback = String(activeNextActionFallback?.next_activity_button_text || '').trim().toLowerCase();
-
-        if (btnTextFallback === 'proceed to section 1' && activeNextActionFallback?.next_activity_id) {
-            ActivityId = activeNextActionFallback.next_activity_id;
-        }
 
         let obj = {
             "ActivityId": ActivityId
@@ -256,21 +323,28 @@ const VideoComponent = (props) => {
                 setShowLoader(false);
                 showErrorAlert("Please connect to internet", err);
             })
-    }, [isFocus, activeCourseModuleId, preserveVideoContent])
+    }, [isFocus, activeCourseModuleId, preserveVideoContent, isRevise, videoContentModule])
     useEffect(() => {
         if (preserveVideoContent || !isFocus) return;
-        const reviseText = props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100
+        const reviseText = isRevise;
+        const targetActId =
+            (isRevise ? (videoContentModule?.activity_id || videoContentModule?.current_activity_id || videoContentModule?.id) : null)
+            || activeCourseModuleId
+            || props?.route?.params?.activityID?.activityID
+            || props?.route?.params?.activityID?.activity_id
+            || props?.route?.params?.ActivityId
+            || props?.route?.params?.RoleData?.current_activity_id
+            || props?.route?.params?.FullID?.previous_activity_id
+            || props?.route?.params?.postdata?.next_activity_id
+            || props?.route?.params?.activityID?.next_activity_id;
+
         let revisebj = {
             "conference_id": props?.route?.params?.RoleData?.id
                 || props?.route?.params?.RoleData?.conferenceId
                 || props?.route?.params?.FullID?.conferenceId
                 || props?.route?.params?.activityID?.conferenceId
                 || props?.route?.params?.postdata?.conferenceId,
-            "ActivityId": activeCourseModuleId
-                || props?.route?.params?.RoleData?.current_activity_id
-                || props?.route?.params?.FullID?.previous_activity_id
-                || props?.route?.params?.postdata?.next_activity_id
-                || props?.route?.params?.activityID?.next_activity_id,
+            ...(targetActId ? { "ActivityId": targetActId } : {}),
             "revise_activity": 1
         }
         let obj = {
@@ -279,18 +353,14 @@ const VideoComponent = (props) => {
                 || props?.route?.params?.FullID?.conferenceId
                 || props?.route?.params?.activityID?.conferenceId
                 || props?.route?.params?.postdata?.conferenceId,
-            "ActivityId": activeCourseModuleId
-                || props?.route?.params?.RoleData?.current_activity_id
-                || props?.route?.params?.FullID?.previous_activity_id
-                || props?.route?.params?.postdata?.next_activity_id
-                || props?.route?.params?.activityID?.next_activity_id,
+            ...(targetActId ? { "ActivityId": targetActId } : {}),
         }
         connectionrequest()
             .then(() => {
                 dispatch(cmenextactionRequest(reviseText ? revisebj : obj));
             })
             .catch((err) => { showErrorAlert("Please connect to internet", err) })
-    }, [isFocus, activeCourseModuleId, preserveVideoContent])
+    }, [isFocus, activeCourseModuleId, preserveVideoContent, isRevise])
     const videoRef = useRef(null);
     const { width, height } = Dimensions.get('window');
     useEffect(() => {
@@ -450,42 +520,44 @@ const VideoComponent = (props) => {
         },
         previewBubble: {
             position: 'absolute',
-            bottom: normalize(28),
-            width: normalize(120),
-            borderRadius: normalize(8),
-            backgroundColor: 'rgba(0, 0, 0, 0.88)',
-            padding: normalize(4),
-            overflow: 'hidden',
+            bottom: normalize(24),
+            width: normalize(54),
+            borderRadius: normalize(6),
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            paddingVertical: normalize(4),
+            paddingHorizontal: normalize(6),
+            alignItems: 'center',
+            justifyContent: 'center',
             zIndex: 2000,
+            elevation: 6,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3,
         },
         fullscreenPreviewBubble: {
-            bottom: normalize(32),
-            width: normalize(138),
+            bottom: normalize(28),
+            backgroundColor: 'rgba(0, 0, 0, 0.92)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.2)',
         },
         previewImage: {
-            width: '100%',
-            height: normalize(68),
-            borderRadius: normalize(6),
-            backgroundColor: '#222222',
+            width: 0,
+            height: 0,
         },
         previewCropWrap: {
-            width: '100%',
-            height: normalize(68),
-            borderRadius: normalize(6),
-            backgroundColor: '#222222',
-            overflow: 'hidden',
+            width: 0,
+            height: 0,
         },
         previewCropImage: {
-            position: 'absolute',
-            left: 0,
-            top: 0,
+            width: 0,
+            height: 0,
         },
         previewTimeText: {
-            marginTop: normalize(4),
             color: '#FFFFFF',
             textAlign: 'center',
             fontFamily: Fonts.InterSemiBold,
-            fontSize: 11,
+            fontSize: 12,
         },
         // controlsandroid: {
         //     width: "100%",
@@ -770,7 +842,11 @@ const VideoComponent = (props) => {
     const videoPress = () => {
         setAddit(statepush);
         takeCourseVideo();
-        props.navigation.goBack();
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+        } else {
+            props.navigation.navigate("TabNav");
+        }
     };
 
     /**
@@ -791,8 +867,41 @@ const VideoComponent = (props) => {
     useEffect(() => {
         if (CMEReducer?.cmenextactionResponse) {
             setNextAction(CMEReducer?.cmenextactionResponse);
+            const revisedModules = CMEReducer?.cmenextactionResponse?.courseModule || CMEReducer?.cmenextactionResponse?.courseModules;
+            const incompleteTarget = getFirstIncompleteModule(revisedModules);
+            const videoTarget = getCourseVideoModule(revisedModules);
+            const isAssessment = (mod) => {
+                const n = String(mod?.name || mod?.activity_text || mod?.current_activity_text || '').toLowerCase();
+                return n.includes('assessment') || n.includes('test') || n.includes('survey') || n.includes('quiz');
+            };
+            const targetModule = (isRevise || isAssessment(incompleteTarget))
+                ? (videoTarget || incompleteTarget)
+                : (incompleteTarget || videoTarget);
+
+            const resolvedActId =
+                (isRevise ? (videoTarget?.activity_id || videoTarget?.current_activity_id || videoTarget?.id) : null)
+                || targetModule?.activity_id
+                || targetModule?.current_activity_id
+                || targetModule?.id
+                || CMEReducer?.cmenextactionResponse?.current_activity_id
+                || CMEReducer?.cmenextactionResponse?.next_activity_id;
+
+            if (resolvedActId && (!videoUrl && !externalVideoUrl && !nonVideoContent)) {
+                hasRequestedActivityRef.current = true;
+                setApiInFlight(true);
+                setShowLoader(true);
+                connectionrequest()
+                    .then(() => {
+                        dispatch(cmeactivityRequest({ "ActivityId": resolvedActId }));
+                    })
+                    .catch((err) => {
+                        setApiInFlight(false);
+                        setShowLoader(false);
+                        showErrorAlert("Please connect to internet", err);
+                    });
+            }
         }
-    }, [CMEReducer?.cmenextactionResponse])
+    }, [CMEReducer?.cmenextactionResponse, isRevise]);
     if (status === '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/cmeactivityRequest':
@@ -1062,13 +1171,15 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
             ? videoDic
             : hasData(props?.route?.params?.RoleData)
                 ? props.route.params.RoleData
-                : hasData(props?.route?.params?.webcastDetails)
-                    ? props.route.params.webcastDetails
-                    : hasData(props?.route?.params?.maindata?.webcastDetails)
-                        ? props.route.params.maindata.webcastDetails
-                        : hasData(props?.route?.params?.startCourse)
-                            ? props.route.params.startCourse
-                            : null;
+                : hasData(props?.route?.params?.videoContentData)
+                    ? props.route.params.videoContentData
+                    : hasData(props?.route?.params?.webcastDetails)
+                        ? props.route.params.webcastDetails
+                        : hasData(props?.route?.params?.maindata?.webcastDetails)
+                            ? props.route.params.maindata.webcastDetails
+                            : hasData(props?.route?.params?.startCourse)
+                                ? props.route.params.startCourse
+                                : null;
 
         if (!activeDic) {
             setVideoUrl(null);
@@ -1077,7 +1188,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
             setThumbnailCues([]);
             setPreviewVideoReady(false);
             setInitialVideoThumbnail(null);
-            if (!apiInFlight) {
+            if (!apiInFlight && !isRevise) {
                 setShowLoader(false);
             }
             return;
@@ -1089,6 +1200,8 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
             || activeDic?.video_audio_details?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.activityData?.[0]?.youtube_video_id
             || props?.route?.params?.RoleData?.video_audio_details?.[0]?.youtube_video_id
+            || props?.route?.params?.videoContentData?.activityData?.[0]?.youtube_video_id
+            || props?.route?.params?.videoContentData?.video_audio_details?.[0]?.youtube_video_id
             || props?.route?.params?.webcastDetails?.activityData?.[0]?.youtube_video_id
             || props?.route?.params?.webcastDetails?.video_audio_details?.[0]?.youtube_video_id
             || props?.route?.params?.maindata?.webcastDetails?.activityData?.[0]?.youtube_video_id
@@ -1099,7 +1212,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
         const candidateSource = descriptionUrl || rawVideoId;
 
         if (!candidateSource && !activeDic?.activityData?.[0]?.flipbook) {
-            if (!apiInFlight) {
+            if (!apiInFlight && !isRevise) {
                 setShowLoader(false);
             }
         }
@@ -1236,9 +1349,22 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
             setShowThumb(true);
         }
     }, [hasVideoSource]);
-    const pdfAll = videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0
-        ? videoDic?.activityData[0]?.document
-        : null;
+    const pdfAll =
+        (videoDic && videoDic?.activityData && videoDic?.activityData?.length > 0 && (
+            videoDic?.activityData[0]?.document ||
+            videoDic?.activityData[0]?.document_file ||
+            videoDic?.activityData[0]?.handout ||
+            videoDic?.activityData[0]?.pdf
+        )) ||
+        videoDic?.video_audio_details?.[0]?.document ||
+        videoDic?.courseHandout ||
+        null;
+    const docFileLower = String(pdfAll || '').toLowerCase();
+    const isWordDoc = docFileLower.endsWith('.docx') || docFileLower.endsWith('.doc');
+    const docButtonLabel = isWordDoc
+        ? "Click here to view Document (DOCX)"
+        : "Click here to view the PDF Presentation";
+    const docIcon = isWordDoc ? Imagepath.Docment : Imagepath.PdfFile;
     const completedPercentage = props?.route?.params?.RoleData?.completed_percentage
     const fullIDPercentage = props?.route?.params?.FullID?.percentage;
     const postDataPer = props?.route?.params?.postdata?.completed_percentage;
@@ -1252,11 +1378,50 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
         : `${validPercentage ?? 0}% Pending`;
     const { RoleData, FullID, activityID } = props?.route?.params || {};
     const conferenceIdAll = RoleData?.id || FullID?.conferenceId || activityID?.conferenceId || props?.route?.params?.postdata?.conferenceId || nextAction?.conferenceId || CMEReducer?.cmenextactionResponse?.conferenceId;
-    const activeNextAction = props?.route?.params?.postdata || nextAction || CMEReducer?.cmenextactionResponse;
+    const activeNextAction = nextAction || props?.route?.params?.postdata || CMEReducer?.cmenextactionResponse;
+    const normalizeModules = (mods) => {
+        if (!mods) return [];
+        if (Array.isArray(mods)) return mods;
+        if (typeof mods === 'object') {
+            return Object.entries(mods).map(([key, val]) => ({
+                name: key,
+                activity_text: key,
+                ...(typeof val === 'object' && val !== null ? val : {})
+            }));
+        }
+        return [];
+    };
+
     const activeCourseModules = activeNextAction?.courseModule || activeNextAction?.courseModules || props?.route?.params?.RoleData?.courseModule || props?.route?.params?.postdata?.courseModule || [];
     const routeCourseModules = props?.route?.params?.activityID?.courseModule || [];
-    const activeCourseModule = getFirstIncompleteModule(activeCourseModules);
-    const routeCourseModule = getFirstIncompleteModule(routeCourseModules);
+    const rawModulesList = [
+        ...normalizeModules(CMEReducer?.cmenextactionResponse?.courseModule),
+        ...normalizeModules(CMEReducer?.cmenextactionResponse?.courseModules),
+        ...normalizeModules(CMEReducer?.activityfulfilmentResponse?.courseModules),
+        ...normalizeModules(activeCourseModules),
+        ...normalizeModules(routeCourseModules),
+        ...normalizeModules(props?.route?.params?.activityID?.courseModule),
+        ...normalizeModules(props?.route?.params?.RoleData?.courseModule),
+        ...normalizeModules(props?.route?.params?.FullID?.wholedata?.courseModule),
+        ...normalizeModules(props?.route?.params?.FullID?.courseModule),
+        ...normalizeModules(props?.route?.params?.postdata?.courseModule),
+    ];
+    const modulesList = Array.isArray(rawModulesList) ? rawModulesList : [];
+    const incompleteModule = getFirstIncompleteModule(activeCourseModules);
+    const incompleteRouteModule = getFirstIncompleteModule(routeCourseModules);
+    const videoContentModule = getCourseVideoModule(activeCourseModules) || getCourseVideoModule(routeCourseModules);
+
+    const isAssessmentModule = (mod) => {
+        const n = String(mod?.name || mod?.activity_text || mod?.current_activity_text || '').toLowerCase();
+        return n.includes('assessment') || n.includes('test') || n.includes('survey') || n.includes('quiz');
+    };
+
+    const activeCourseModule = (isRevise || isAssessmentModule(incompleteModule))
+        ? (videoContentModule || incompleteModule)
+        : (incompleteModule || videoContentModule);
+    const routeCourseModule = (isRevise || isAssessmentModule(incompleteRouteModule))
+        ? (videoContentModule || incompleteRouteModule)
+        : (incompleteRouteModule || videoContentModule);
     const rawModuleName = String(
         activeCourseModule?.name ||
         routeCourseModule?.name ||
@@ -1277,14 +1442,77 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
         activeNextAction?.current_activity_id ||
         activeNextAction?.next_activity_id ||
         activeNextAction?.id;
+    const activeCourseModuleNameLower = activeCourseModuleName.toLowerCase();
+
+    const evalResponse =
+        CMEReducer?.evaulatecalculateResponse?.evaluationStatus !== undefined
+            ? CMEReducer?.evaulatecalculateResponse
+            : props?.route?.params?.nodata?.evaluationStatus !== undefined
+                ? props?.route?.params?.nodata
+                : null;
+    const evalStatus = evalResponse ? evalResponse?.evaluationStatus : null;
+
+    const actualPostAssessmentModule = modulesList.find(m => {
+        const n = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+        return (
+            (n.includes('post') && (n.includes('assessment') || n.includes('test') || n.includes('exam'))) ||
+            n === 'post assessment' ||
+            n === 'post-assessment' ||
+            n === 'post test' ||
+            n === 'post-test'
+        );
+    }) || modulesList.find(m => {
+        const n = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+        return (n.includes('post') || n.includes('assessment') || n.includes('test') || n.includes('quiz')) &&
+            !n.includes('pre') && !n.includes('survey') && !n.includes('feedback') && !n.includes('evaluation');
+    });
+
+    const isPostTestSectionCompleted = Number(actualPostAssessmentModule?.completedSection ?? 0) === 1;
+    const isEvaluationStatusPassed = evalStatus !== null && Number(evalStatus) === 1;
+    const isEvaluationStatusFailed = (evalStatus !== null && Number(evalStatus) !== 1) || Boolean(props?.route?.params?.retakeCourse);
+
+    const isPostTestCleared = isEvaluationStatusPassed;
+
     let rawNextActivityButtonText = String(activeNextAction?.next_activity_button_text || '').trim();
     if (rawNextActivityButtonText.toLowerCase() === 'proceed to section 1' && activeCourseModule?.name) {
         rawNextActivityButtonText = `Proceed to ${activeCourseModule.name}`;
     }
-    const activeCourseModuleNameLower = activeCourseModuleName.toLowerCase();
-    if (activeCourseModuleNameLower.includes('post-assessment') || activeCourseModuleNameLower.includes('post assessment')) {
-        rawNextActivityButtonText = "Proceed to Post Test";
+
+    if (!isEvaluationStatusPassed) {
+        // User has NOT passed PostTest (either failed, pending, or normal flow).
+        // On VideoComponent, the next step is ALWAYS the Post Test.
+        // It must NEVER show "Course", "Proceed to Course", "Proceed to Feedback / Evaluation", or "Survey & Feedback".
+        rawNextActivityButtonText = "Post Test";
+    } else {
+        // User HAS passed PostTest (evaluationStatus == 1)
+        if (activeNextAction?.next_activity_text === "Certificate" || rawNextActivityButtonText.toLowerCase().includes('certificate')) {
+            rawNextActivityButtonText = "View Certificate";
+        } else if (
+            activeNextAction?.next_activity_text === "Survey & Feedback" ||
+            rawNextActivityButtonText.toLowerCase().includes('feedback') ||
+            rawNextActivityButtonText.toLowerCase().includes('evaluation') ||
+            rawNextActivityButtonText.toLowerCase().includes('survey')
+        ) {
+            rawNextActivityButtonText = "Proceed to Feedback / Evaluation";
+        } else if (
+            rawNextActivityButtonText.toLowerCase().includes('post') ||
+            rawNextActivityButtonText.toLowerCase().includes('test')
+        ) {
+            rawNextActivityButtonText = "Post Test";
+        } else {
+            rawNextActivityButtonText = rawNextActivityButtonText || "Next";
+        }
     }
+
+    // Safety fallback: On VideoComponent, forward button must never display "Course" or "Proceed to Course"
+    if (
+        rawNextActivityButtonText.toLowerCase() === 'course' ||
+        rawNextActivityButtonText.toLowerCase() === 'proceed to course' ||
+        rawNextActivityButtonText.toLowerCase().includes('course')
+    ) {
+        rawNextActivityButtonText = isEvaluationStatusPassed ? "Next" : "Post Test";
+    }
+
     const displayButtonText = rawNextActivityButtonText;
     const nextActivityButtonText = rawNextActivityButtonText.toLowerCase();
     const videoPageTitle = '';
@@ -1294,6 +1522,9 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
         !nonVideoContent &&
         !CMEReducer?.cmeactivityResponse?.activityData?.[0]?.flipbook &&
         (preserveVideoContent ||
+            isRevise ||
+            apiInFlight ||
+            showLoader ||
             activeCourseModuleNameLower.includes('section') ||
             activeCourseModuleNameLower.includes('course') ||
             nextActivityButtonText.includes('pre test') ||
@@ -1307,7 +1538,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
 * @returns {void}
 */
     const handleLink = (link, path) => {
-        if (link && path) {
+        if (path) {
             /**
 * Show pdf utility.
 *
@@ -1318,9 +1549,11 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                 setLoadingdown(true);
                 try {
                     // Remove any spaces from the link and path
-                    const cleanedLink = link.replace(/\s+/g, '');
-                    const cleanedPath = path.replace(/\s+/g, '');
-                    const url = `${cleanedLink}${cleanedPath}`;
+                    const cleanedLink = String(link || '').replace(/\s+/g, '');
+                    const cleanedPath = String(path || '').replace(/\s+/g, '');
+                    const url = /^https?:\/\//i.test(cleanedPath)
+                        ? cleanedPath
+                        : `${cleanedLink}${cleanedPath}`;
                     const fileName = url.split("/").pop();
                     const localFile = `${RNFS.DocumentDirectoryPath}/${fileName}`;
                     const options = {
@@ -1414,17 +1647,10 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
 * @returns {JSX.Element}
 */
     const renderThumbnailPreview = (isFullscreen = false) => {
-        if (!duration) return null;
+        if (!duration || !previewVisible) return null;
         const ratio = Math.max(0, Math.min(1, (duration > 0 ? previewTime / duration : 0)));
-        const previewWidth = isFullscreen ? normalize(138) : normalize(120);
+        const tooltipWidth = normalize(54);
         const left = ratio * 100;
-        const crop = previewFrame?.crop;
-        const spriteSize = previewFrame?.spriteSize;
-        const hasImageFrame = !!(previewFrame?.uri);
-        // Only use the video mini-player fallback when we have a valid playable URL
-        const shouldUseVideoFallback = !hasImageFrame && !!videoUrl && typeof videoUrl === 'string' && videoUrl.length > 0;
-
-        if (!hasImageFrame && !shouldUseVideoFallback) return null;
 
         return (
             <View
@@ -1434,64 +1660,10 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                     isFullscreen && styles.fullscreenPreviewBubble,
                     {
                         left: `${left}%`,
-                        marginLeft: -(previewWidth / 2),
-                        opacity: previewVisible ? 1 : 0,
+                        marginLeft: -(tooltipWidth / 2),
                     }
                 ]}
             >
-                {hasImageFrame && crop && spriteSize?.width && spriteSize?.height ? (
-                    <View style={styles.previewCropWrap}>
-                        <Image
-                            source={{ uri: previewFrame.uri }}
-                            style={[
-                                styles.previewCropImage,
-                                {
-                                    width: spriteSize.width,
-                                    height: spriteSize.height,
-                                    transform: [{ translateX: -(crop.x || 0) }, { translateY: -(crop.y || 0) }],
-                                }
-                            ]}
-                        />
-                    </View>
-                ) : hasImageFrame ? (
-                    <Image
-                        source={{ uri: previewFrame.uri }}
-                        style={styles.previewImage}
-                        resizeMode="cover"
-                        onError={() => { /* silently ignore broken VTT thumbnail images */ }}
-                    />
-                ) : shouldUseVideoFallback ? (
-                    <Video
-                        ref={previewVideoRef}
-                        source={{ uri: videoUrl }}
-                        style={styles.previewImage}
-                        paused={!isSeeking}
-                        muted={true}
-                        repeat={false}
-                        resizeMode="cover"
-                        onLoad={() => {
-                            setPreviewVideoReady(true);
-                            const target = pendingPreviewSeekRef.current;
-                            if (typeof target === 'number' && isFinite(target)) {
-                                try { previewVideoRef.current?.seek(target); } catch (_) { }
-                            }
-                        }}
-                        onReadyForDisplay={() => {
-                            setPreviewVideoReady(true);
-                            const target = pendingPreviewSeekRef.current;
-                            if (typeof target === 'number' && isFinite(target)) {
-                                try { previewVideoRef.current?.seek(target); } catch (_) { }
-                            }
-                        }}
-                        onError={() => {
-                            // Preview video failed; reset so we don't keep retrying
-                            setPreviewVideoReady(false);
-                        }}
-                        onProgress={() => {
-                            // Keep decoder warm while scrubbing.
-                        }}
-                    />
-                ) : null}
                 <Text style={styles.previewTimeText}>{formatTime(previewTime)}</Text>
             </View>
         );
@@ -1655,12 +1827,24 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                         onSlidingStart={handleSlidingStart}
                                         handleSlidingComplete={handleSlidingComplete}
                                         containerStyle={styles.sliderWrap}
+                                        minimumTrackTintColor={Colorpath.ButtonColr}
+                                        maximumTrackTintColor="#CBD5E1"
                                         thumbStyle={{
                                             height: 14,
                                             width: 14,
-                                            backgroundColor: '#1F1F1F',
-                                            borderWidth: 1,
-                                            borderColor: '#1F1F1F',
+                                            backgroundColor: Colorpath.ButtonColr,
+                                            borderRadius: 7,
+                                            borderWidth: 2,
+                                            borderColor: '#FFFFFF',
+                                            elevation: 3,
+                                            shadowColor: '#000000',
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.25,
+                                            shadowRadius: 2,
+                                        }}
+                                        trackStyle={{
+                                            height: 4,
+                                            borderRadius: 2,
                                         }}
                                     />
                                 </View>
@@ -1690,6 +1874,25 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                         handleSlidingComplete={handleSlidingComplete}
                                         fullscreen={true}
                                         containerStyle={styles.sliderWrap}
+                                        minimumTrackTintColor={Colorpath.ButtonColr}
+                                        maximumTrackTintColor="rgba(255, 255, 255, 0.4)"
+                                        thumbStyle={{
+                                            height: 16,
+                                            width: 16,
+                                            backgroundColor: Colorpath.ButtonColr,
+                                            borderRadius: 8,
+                                            borderWidth: 2,
+                                            borderColor: '#FFFFFF',
+                                            elevation: 4,
+                                            shadowColor: '#000000',
+                                            shadowOffset: { width: 0, height: 1.5 },
+                                            shadowOpacity: 0.35,
+                                            shadowRadius: 2.5,
+                                        }}
+                                        trackStyle={{
+                                            height: 4,
+                                            borderRadius: 2,
+                                        }}
                                     />
                                 </View>
                                 <Pressable onPress={() => setUseBlackFullscreenTimer((prev) => !prev)} hitSlop={8}>
@@ -1740,74 +1943,137 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                     setStatepush(statepush);
                                     takeCourseVideo();
                                     setPaused(true);
-                                    props.navigation.navigate("TabNav");
+                                    if (props.navigation.canGoBack()) {
+                                        props.navigation.goBack();
+                                    } else {
+                                        props.navigation.navigate("TabNav");
+                                    }
                                 }}
                                 height={normalize(45)}
                                 width={normalize(150)}
                                 backgroundColor={Colorpath.white}
                                 borderRadius={normalize(5)}
-                                text={activeNextAction?.next_activity_button_text ? "Continue Later" : "Course Revision Completed... "}
-                                color={activeNextAction?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.black}
+                                text={props?.route?.params?.retakeCourse || activeNextAction?.next_activity_button_text ? "Continue Later" : "Course Revision Completed... "}
+                                color={props?.route?.params?.retakeCourse || activeNextAction?.next_activity_button_text ? Colorpath.ButtonColr : Colorpath.black}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(-15)}
                                 borderWidth={0.5}
                                 borderColor={"#DDD"}
-                                disabled={activeNextAction?.next_activity_button_text ? false : true} />
+                                disabled={!props?.route?.params?.retakeCourse && !activeNextAction?.next_activity_button_text} />
                             <Buttons
                                 onPress={() => {
-                                    const shouldOpenPreTest =
-                                        nextActivityButtonText === 'proceed to post test' ||
-                                        nextActivityButtonText === 'proceed to feedback/evaluation' ||
-                                        nextActivityButtonText.includes('pre assessment') ||
-                                        nextActivityButtonText.includes('post assessment') ||
-                                        activeCourseModuleNameLower.includes('pre assessment') ||
-                                        activeCourseModuleNameLower.includes('post assessment') ||
-                                        activeNextAction?.next_activity_api === 'startTest';
+                                    takeCourseVideo();
+                                    setPaused(true);
 
-                                    if (shouldOpenPreTest || !nextActivityButtonText) {
-                                        if (shouldOpenPreTest) {
-                                            takeCourseVideo();
-                                            setPaused(true);
-                                            props.navigation.replace("PreTest", {
-                                                videoData: activeNextAction,
-                                                videoContentData: videoDic,
-                                                testFlowType: nextActivityButtonText.includes('post') || activeCourseModuleNameLower.includes('post') ? 'post' : 'pre',
-                                                activityID: {
-                                                    activityID: activeNextAction?.next_activity_id,
-                                                    conference_id: conferenceIdAll,
-                                                    text: activeNextAction?.next_activity_text || activeCourseModuleName
-                                                }
-                                            });
+                                    // If user has NOT passed PostTest (failed, pending, or normal flow), exact logic as PostTestFail:
+                                    // They MUST go to PreTest for Post Assessment / Post Test, NEVER Feedback / Evaluation / Certificate
+                                    if (!isEvaluationStatusPassed) {
+                                        const targetPostTestId =
+                                            actualPostAssessmentModule?.activity_id ||
+                                            actualPostAssessmentModule?.current_activity_id ||
+                                            actualPostAssessmentModule?.id ||
+                                            CMEReducer?.activityfulfilmentResponse?.courseModules?.["Post-Assessment"]?.activity_id ||
+                                            CMEReducer?.activityfulfilmentResponse?.courseModules?.["Post Assessment"]?.activity_id ||
+                                            CMEReducer?.activityfulfilmentResponse?.courseModules?.["Post-Test"]?.activity_id ||
+                                            CMEReducer?.activityfulfilmentResponse?.courseModules?.["Post Test"]?.activity_id ||
+                                            (isEvaluationStatusFailed ? evalResponse?.activityId : null) ||
+                                            (/post[\s-]*(assessment|test|exam)/i.test(activeNextAction?.next_activity_text || '')
+                                                ? activeNextAction?.next_activity_id : null);
+                                        if (!targetPostTestId) {
+                                            showErrorAlert('Post-test assessment is not available yet. Please try again.');
+                                            return;
+                                        }
+
+                                        props.navigation.navigate("PreTest", {
+                                            ...(props?.route?.params || {}),
+                                            nodata: evalResponse ? { ...evalResponse, activityId: targetPostTestId, conferenceId: conferenceIdAll } : undefined,
+                                            videoData: activeNextAction,
+                                            videoContentData: videoDic,
+                                            testFlowType: 'post',
+                                            FullID: {
+                                                FullID: targetPostTestId,
+                                                startTest: "startTest",
+                                                wholedata: {
+                                                    ...activeNextAction,
+                                                    conferenceId: conferenceIdAll,
+                                                    next_activity_id: targetPostTestId,
+                                                    next_activity_text: 'Post Assessment',
+                                                },
+                                                Wktext: "Post Assessment",
+                                                conferenceId: conferenceIdAll,
+                                            },
+                                            activityID: {
+                                                activityID: targetPostTestId,
+                                                conference_id: conferenceIdAll,
+                                                text: "Post Assessment",
+                                            }
+                                        });
+                                        return;
+                                    }
+
+                                    // User HAS cleared PostTest (evaluationStatus == 1) - exact logic from PostTestFail:
+                                    if (activeNextAction && activeNextAction?.next_activity_text == "Certificate") {
+                                        props.navigation.navigate("DownloadCertificate", {
+                                            examID: {
+                                                examID: props?.route?.params?.examID,
+                                                CertificateActivityId: activeNextAction
+                                            }
+                                        });
+                                    } else if (activeNextAction && (
+                                        activeNextAction?.next_activity_text == "Post Assessment" ||
+                                        activeNextAction?.next_activity_text == "Pre Assessment" ||
+                                        activeNextAction?.next_activity_text == "Survey & Feedback" ||
+                                        nextActivityButtonText.includes('feedback') ||
+                                        nextActivityButtonText.includes('evaluation') ||
+                                        nextActivityButtonText.includes('survey')
+                                    )) {
+                                        props.navigation.navigate("PreTest", {
+                                            ...(props?.route?.params || {}),
+                                            videoData: activeNextAction,
+                                            videoContentData: videoDic,
+                                            testFlowType: 'post',
+                                            activityID: {
+                                                activityID: activeNextAction?.next_activity_id,
+                                                conference_id: conferenceIdAll,
+                                                text: activeNextAction?.next_activity_text || "Survey & Feedback"
+                                            },
+                                            FullID: {
+                                                FullID: activeNextAction?.next_activity_id,
+                                                startTest: "startTest",
+                                                wholedata: activeNextAction,
+                                                Wktext: activeNextAction?.next_activity_text || "Survey & Feedback",
+                                                conferenceId: conferenceIdAll,
+                                            }
+                                        });
+                                    } else if (!nextActivityButtonText) {
+                                        setAddit(statepush);
+                                        setStatepush(statepush);
+                                        if (props.navigation.canGoBack()) {
+                                            props.navigation.goBack();
                                         } else {
-                                            setAddit(statepush);
-                                            setStatepush(statepush);
-                                            takeCourseVideo();
-                                            setPaused(true);
                                             props.navigation.navigate("TabNav");
                                         }
                                     } else {
-                                        takeCourseVideo();
-                                        setPaused(true);
                                         const reviseTextagain = activeNextAction?.percentage == 100 || props?.route?.params?.RoleData?.completed_percentage == 100 || props?.route?.params?.FullID?.percentage == 100;
                                         let obj = {
                                             "conference_id": activeNextAction?.conferenceId,
                                             "ActivityId": activeNextAction?.next_activity_id,
-                                        }
+                                        };
                                         let reviseobj = {
                                             "conference_id": activeNextAction?.conferenceId,
                                             "ActivityId": activeNextAction?.next_activity_id,
                                             "revise_activity": 1
-                                        }
+                                        };
                                         let objact = {
                                             "ActivityId": activeNextAction?.next_activity_id
-                                        }
+                                        };
                                         connectionrequest()
                                             .then(() => {
                                                 dispatch(cmenextactionRequest(reviseTextagain ? reviseobj : obj));
                                                 dispatch(cmeactivityRequest(objact));
                                             })
-                                            .catch((err) => { showErrorAlert("Please connect to internet", err) })
+                                            .catch((err) => { showErrorAlert("Please connect to internet", err) });
                                     }
                                 }}
                                 height={normalize(45)}
@@ -1823,7 +2089,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                     </View><View>
                             {pdfAll && <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
                                 <Pressable onPress={() => { handleLink(videoDic?.onlineDisplayPath, pdfAll) }} style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", width: '100%', gap: normalize(3) }}>
-                                    <Image source={Imagepath.PdfFile} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
+                                    <Image source={docIcon} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
                                     <Text
                                         style={{
                                             fontFamily: Fonts.InterMedium,
@@ -1832,7 +2098,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                             fontWeight: "bold",
                                         }}
                                     >
-                                        {"Click here to view the PDF Presentation"}
+                                        {docButtonLabel}
                                     </Text>
                                 </Pressable>
                             </View>}

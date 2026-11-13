@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, DeviceEventEmitter } from 'react-native';
 import Modal from 'react-native-modal';
 import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -32,6 +32,8 @@ const getMergedParams = (extraParams = {}) => {
         return {
             ...(route?.params || {}),
             ...extraParams,
+            refreshLicensesAt: Date.now(),
+            detectmain: 'checkoutDone_' + Date.now(),
             maindata: {
                 checkoutSpan: route?.params?.checkoutSpan?.checkoutSpan,
                 inpersonSpanrole: route?.params?.inPersonTicket?.inpersonSpanrole,
@@ -64,6 +66,7 @@ const getMergedParams = (extraParams = {}) => {
                     <Text style={styles.content}>{content}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
+                    DeviceEventEmitter.emit('CHECKOUT_COMPLETED', { timestamp: Date.now() });
                     navigation?.navigate(name, getMergedParams());
                     if (gocertificate) {
                         setGocertificate(!gocertificate);

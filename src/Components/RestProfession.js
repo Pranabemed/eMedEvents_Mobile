@@ -2,7 +2,7 @@
  * Rest profession reusable component module. Provides a React Native UI building block used across screens. Exported members: RestProfession, token_error, handleRot, handleUrl, searchGlobalitem, formatDate, formatDateEnd, renderLocationAndDates, getFullName, getFirstTruthyProfession.
  */
 
-import { View, Text, Image, FlatList, TouchableOpacity, ScrollView, Pressable, StyleSheet, Dimensions, Platform } from 'react-native'
+import { View, Text, Image, FlatList, TouchableOpacity, ScrollView, Pressable, StyleSheet, Dimensions, Platform, DeviceEventEmitter } from 'react-native'
 import React, { useContext, useEffect, useState, useRef, useCallback } from 'react'
 import moment from 'moment';
 import Imagepath from '../Themes/Imagepath';
@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Buttons from './Button';
 import DashboardActionCard from './DashboardActionCard';
 import { ConfActRequest, clearCmeCourseData } from '../Redux/Reducers/CMEReducer';
+import { dashboardRequest, dashPerRequest, dashMbRequest } from '../Redux/Reducers/DashboardReducer';
 import connectionrequest from '../Utils/Helpers/NetInfo';
 import ProfessionCourseShimmer from './ProfessionCourseShimmer';
 import showErrorAlert from '../Utils/Helpers/Toast';
@@ -41,9 +42,9 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
             DashboardReducer?.dashMbResponse,
             DashboardReducer?.dashboardResponse,
         ];
-        const activities = responses
-            .map(response => response?.data?.my_activities)
-            .find(Array.isArray) || [];
+        const mapped = responses.map(response => response?.data?.my_activities);
+        const activities = mapped.find(arr => Array.isArray(arr) && arr.length > 0) ||
+            mapped.find(Array.isArray) || [];
         return activities.filter(
             (value, index, self) => index === self.findIndex(t => t?.id === value?.id),
         );
@@ -55,6 +56,11 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
 
     const initialActivities = getResolvedActivities();
     const recentlyViewedCourses =
+        (Array.isArray(DashboardReducer?.dashboardResponse?.data?.my_recently_viewed) && DashboardReducer?.dashboardResponse?.data?.my_recently_viewed.length > 0
+            ? DashboardReducer?.dashboardResponse?.data?.my_recently_viewed
+            : Array.isArray(DashboardReducer?.dashPerResponse?.data?.my_recently_viewed) && DashboardReducer?.dashPerResponse?.data?.my_recently_viewed.length > 0
+                ? DashboardReducer?.dashPerResponse?.data?.my_recently_viewed
+                : DashboardReducer?.dashMbResponse?.data?.my_recently_viewed) ||
         DashboardReducer?.dashboardResponse?.data?.my_recently_viewed ||
         DashboardReducer?.dashPerResponse?.data?.my_recently_viewed ||
         DashboardReducer?.dashMbResponse?.data?.my_recently_viewed ||
@@ -121,6 +127,18 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
 
         return () => unsubscribe();
     }
+    useEffect(() => {
+        const sub = DeviceEventEmitter.addListener('CHECKOUT_COMPLETED', () => {
+            connectionrequest()
+                .then(() => {
+                    dispatch(dashPerRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(dashboardRequest({}));
+                })
+                .catch(() => {});
+        });
+        return () => sub.remove();
+    }, [dispatch]);
     useEffect(() => {
         const activities = getResolvedActivities();
         if (activities.length > 0) {

@@ -111,6 +111,7 @@ const isEmptyLike = (value) => value == null || (typeof value == "string" && val
     const [newtake, setNewtake] = useState("");
     const [targt, setTargt] = useState(null)
     const [isSaving, setIsSaving] = useState(false);
+    const awaitingSavedLicensesRef = useRef(false);
     const initialPrefillDone = useRef(false);
     const requestedLicenseProfessionRef = useRef("");
     const requestedReportingStateRef = useRef("");
@@ -545,6 +546,7 @@ const handleToDateConfirm = (val) => {
             setStateDateFetch(DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_date);
         }
         if (DashboardReducer.status == 'Dashboard/stateLicesenseSuccess' && isSaving) {
+            awaitingSavedLicensesRef.current = true;
             setIsSaving(false);
             clearNonUsaStateLicenseFlowCompleted().catch(err => {
                 console.log('clearNonUsaStateLicenseFlowCompleted error', err);
@@ -558,7 +560,8 @@ const handleToDateConfirm = (val) => {
             }
             setModalVisiblecred(true);
         }
-        if (DashboardReducer.status == 'Dashboard/dashboardSuccess') {
+        if (DashboardReducer.status == 'Dashboard/dashboardSuccess' && awaitingSavedLicensesRef.current) {
+            awaitingSavedLicensesRef.current = false;
             const uniqueStates = DashboardReducer?.dashboardResponse?.data?.licensures?.filter((state, index, self) => {
                 return index === self.findIndex((s) =>
                     s.state_id === state.state_id &&
@@ -569,7 +572,9 @@ const handleToDateConfirm = (val) => {
             const matchedState = specialidpratice
                 ? uniqueStates?.find(s => String(s.state_id) === String(specialidpratice))
                 : null;
-            setAddit(matchedState || uniqueStates?.[0] || null);
+            const updatedLicense = matchedState || uniqueStates?.[0] || null;
+            setAddit(updatedLicense);
+            setStatepush(updatedLicense);
         }
     }, [DashboardReducer.status, DashboardReducer?.stateReportingResponse, DashboardReducer?.dashboardResponse?.data?.licensures, dispatch, setAddit, setFulldashbaord, isSaving]);
         /**

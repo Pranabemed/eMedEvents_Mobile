@@ -82,10 +82,10 @@ export function* cmeActivitySaga(action) {
     if (response?.status == 200) {
       yield put(cmeactivitySuccess(response?.data));
     } else {
-      yield put(cmenextactionFailure(response?.data));
+      yield put(cmeactivityFailure(response?.data));
     }
   } catch (error) {
-    yield put(cmenextactionFailure(error));
+    yield put(cmeactivityFailure(error));
   }
 }
 /**
@@ -107,10 +107,10 @@ export function* cmeNextactionSaga(action) {
     if (response?.status == 200) {
       yield put(cmenextactionSuccess(response?.data));
     } else {
-      yield put(cmeactivityFailure(response?.data));
+      yield put(cmenextactionFailure(response?.data));
     }
   } catch (error) {
-    yield put(cmeactivityFailure(error));
+    yield put(cmenextactionFailure(error));
   }
 }
 /**

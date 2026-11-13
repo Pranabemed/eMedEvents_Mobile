@@ -12,7 +12,8 @@ import {
     Text,
     StyleSheet,
     ActivityIndicator,
-    DeviceEventEmitter
+    DeviceEventEmitter,
+    Pressable
 } from 'react-native';
 import Carousel, { Pagination } from 'react-native-snap-carousel';
 import Colorpath from '../Themes/Colorpath';
@@ -135,6 +136,10 @@ export default function StateLicense({ activePhysicianTrial = false, profileType
     const [cmemodal, setCmemodal] = useState(false);
     const [vaultModal, setVaultmodal] = useState(false);
     const carouselRef = useRef(null);
+    const stateDragRef = useRef(null);
+    const selectedCardRef = useRef(null);
+    const carouselFirstItemRef = useRef(null);
+    const stateDashboardCacheRef = useRef({});
     const initialSyncDoneRef = useRef(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [pageNum, setPageNum] = useState(0);
@@ -149,6 +154,7 @@ export default function StateLicense({ activePhysicianTrial = false, profileType
     const stableNameRef = useRef({ first: '', last: '' });
     const lastDashboardSyncRef = useRef(0);
     const lastStateSyncRef = useRef(null);
+    const lastCheckoutRefreshRef = useRef(0);
     const dashboardFetchInFlightRef = useRef(false);
     const lastLicensureProfessionRef = useRef('');
         /**
@@ -284,6 +290,11 @@ const tokenHandle = async () => {
                 if (!hasDashboardData || isStale) {
                     dashBoarData();
                 }
+                const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+                const activeStateId = addit?.state_id || list?.[currentIndex]?.state_id || list?.[0]?.state_id;
+                if (activeStateId) {
+                    dispatch(stateDashboardRequest({ state_id: activeStateId }));
+                }
             } catch (error) {
                 console.log(error);
             }
@@ -295,8 +306,10 @@ const tokenHandle = async () => {
             lastDashboardSyncRef.current = Date.now();
         }
     }, [DashboardReducer?.dashboardResponse?.data]);
-    useEffect(() => {
-        if (!propsData?.refreshLicensesAt) return;
+    const triggerCheckoutRefresh = () => {
+        const now = Date.now();
+        if (now - lastCheckoutRefreshRef.current < 2000) return;
+        lastCheckoutRefreshRef.current = now;
         lastDashboardSyncRef.current = 0;
         lastStateSyncRef.current = null;
         dashBoarData();
@@ -306,6 +319,10 @@ const tokenHandle = async () => {
             dispatch(stateDashboardRequest({ state_id: activeStateId }));
             dispatch(stateReportingRequest({ state_id: activeStateId }));
         }
+    };
+    useEffect(() => {
+        if (!propsData?.refreshLicensesAt) return;
+        triggerCheckoutRefresh();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [propsData?.refreshLicensesAt]);
     useEffect(() => {
@@ -586,9 +603,13 @@ const stateTake = (toklen, anoth) => {
     }
     useEffect(() => {
         if (DashboardReducer?.stateDashboardResponse?.data) {
+            const respStateId = DashboardReducer?.stateDashboardResponseStateId;
+            if (respStateId != null) {
+                stateDashboardCacheRef.current[String(respStateId)] = DashboardReducer.stateDashboardResponse.data;
+            }
             setFinddata(DashboardReducer?.stateDashboardResponse?.data);
         }
-    }, [DashboardReducer?.stateDashboardResponse])
+    }, [DashboardReducer?.stateDashboardResponse, DashboardReducer?.stateDashboardResponseStateId, setFinddata])
     useEffect(() => {
         if (fulldashbaord?.length == 0) {
             setWholeNo(true);
@@ -624,15 +645,47 @@ const stateTake = (toklen, anoth) => {
         return () => sub.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch, addit?.state_id, currentIndex]);
-        /**
- * Custom hook that manages activity counts.
- * @returns {unknown}
- */
-const useActivityCounts = () => {
-        const responseData = DashboardReducer?.stateDashboardResponse?.data;
+    useEffect(() => {
+        const checkoutSub = DeviceEventEmitter.addListener('CHECKOUT_COMPLETED', () => {
+            triggerCheckoutRefresh();
+        });
+        return () => checkoutSub.remove();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch, addit?.state_id, currentIndex, effectiveFulldashbaord, fulldashbaord]);
+    const activeLicenseForTasks = useMemo(() => {
+        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
+        if (Array.isArray(list) && list.length > 0) {
+            const selected = statepush?.creditID || statepush || addit;
+            const selectedStateId = selected?.state_id;
+            return list.find(item => selectedStateId != null && String(item.state_id) === String(selectedStateId)) ||
+                list[currentIndex] || list[0];
+        }
+        return addit || statepush || null;
+    }, [effectiveFulldashbaord, fulldashbaord, addit, statepush, currentIndex]);
+    const selectedDashboardStateId = activeLicenseForTasks?.state_id;
 
+    const resolvedFindData = useMemo(() => {
+        if (selectedDashboardStateId == null) return null;
+        const cached = stateDashboardCacheRef.current[String(selectedDashboardStateId)];
+        if (cached) return cached;
+        if (String(DashboardReducer?.stateDashboardResponseStateId) === String(selectedDashboardStateId)) {
+            return DashboardReducer?.stateDashboardResponse?.data || null;
+        }
+        return null;
+    }, [selectedDashboardStateId, DashboardReducer?.stateDashboardResponseStateId, DashboardReducer?.stateDashboardResponse?.data]);
+
+    const hasMatchingDashboard = Boolean(resolvedFindData) || (
+        selectedDashboardStateId != null &&
+        String(DashboardReducer?.stateDashboardResponseStateId) === String(selectedDashboardStateId) &&
+        !DashboardReducer?.stateDashboardPending
+    );
+    const dashboardLoadFailed = !resolvedFindData && selectedDashboardStateId != null &&
+        String(DashboardReducer?.stateDashboardFailedStateId) === String(selectedDashboardStateId) &&
+        !DashboardReducer?.stateDashboardPending;
+
+    const useActivityCounts = (data) => {
         return useMemo(() => {
-            const activities = responseData?.my_activities || [];
+            const activities = data?.my_activities || [];
             let completed = 0;
 
             // Pre-calculate length to avoid prototype lookup
@@ -642,19 +695,13 @@ const useActivityCounts = () => {
             }
 
             return [completed, len - completed];
-        }, [responseData]); // Only changes when whole response updates 280
+        }, [data]);
     };
-    const [completedCount, pendingCount] = useActivityCounts();
-    const activeLicenseForTasks = useMemo(() => {
-        const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
-        if (Array.isArray(list) && list.length > 0) {
-            return list[currentIndex] || list[0];
-        }
-        return addit || statepush || null;
-    }, [effectiveFulldashbaord, fulldashbaord, addit, statepush, currentIndex]);
+    const [completedCount, pendingCount] = useActivityCounts(resolvedFindData);
+
     const tasksData = useMemo(
-        () => syncTasksDataWithLicense(DashboardReducer?.stateDashboardResponse?.data?.tasks_data, activeLicenseForTasks),
-        [DashboardReducer?.stateDashboardResponse?.data?.tasks_data, activeLicenseForTasks]
+        () => syncTasksDataWithLicense(resolvedFindData?.tasks_data, activeLicenseForTasks),
+        [resolvedFindData?.tasks_data, activeLicenseForTasks]
     );
     const hasTasks = useMemo(() => (
         tasksData?.due_in_30_days?.length > 0 ||
@@ -710,6 +757,8 @@ const handleAllIndex = (index) => {
         const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
         const getDtaa = list?.[index] || list?.[0];
         if (getDtaa) {
+            if (selectedCardRef.current?.index === index && selectedCardRef.current?.license === getDtaa) return;
+            selectedCardRef.current = { index, license: getDtaa };
             const nextStateId = getDtaa.state_id;
             const hasStateChanged = lastStateSyncRef.current !== nextStateId;
             setval(index);
@@ -720,8 +769,6 @@ const handleAllIndex = (index) => {
                 lastStateSyncRef.current = nextStateId;
             }
             setStatepush(getDtaa);
-            const responseData = DashboardReducer?.stateDashboardResponse?.data;
-            setFinddata(responseData);
             setAddit(getDtaa);
             setTakedata(getDtaa);
             setTakestate(getDtaa.board_id);
@@ -739,12 +786,16 @@ const handleAllIndex = (index) => {
             : -1;
 
     const initialIndex = matchedIndex >= 0 ? matchedIndex : 0;
+    if (carouselFirstItemRef.current === null && effectiveFulldashbaord.length > 0) {
+        carouselFirstItemRef.current = initialIndex;
+    }
 
     useEffect(() => {
-        if (matchedIndex >= 0 && carouselRef?.current) {
-            carouselRef.current.snapToItem(matchedIndex, false);
+        if (!stateDragRef.current && matchedIndex >= 0 && matchedIndex !== currentIndex) {
+            setCurrentIndex(matchedIndex);
+            carouselRef.current?.snapToItem(matchedIndex, false);
         }
-    }, [matchedIndex]);
+    }, [matchedIndex, currentIndex]);
     useEffect(() => {
         const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
         if (!list?.length) {
@@ -916,14 +967,48 @@ const renderAddLicenseCard = () => (
                                 }
                                 containerCustomStyle={{ flexGrow: 0 }}
                                 contentContainerCustomStyle={{ alignItems: 'flex-start' }}
-                                scrollAnimationDuration={1000}
-                                renderItem={({ item, index }) => <Carouselcarditem allProfTake={allProfTake} hidetext={hidetext} setPrimeadd={setPrimeadd} enables={enables} setStateCount={setStateCount} fetcheddt={fetcheddt} stateCount={stateCount} renewal={renewal} val={val} index={index} item={item} stateid={stateid} navigation={navigation} onCloseExpiredModal={() => {
-                                    if (effectiveFulldashbaord?.length > 1 && index < effectiveFulldashbaord.length - 1) {
-                                        carouselRef.current?.snapToItem(index + 1);
-                                    }
-                                }} />}
-                                firstItem={initialIndex || 0}
+                                scrollAnimationDuration={300}
+                                renderItem={({ item, index }) => (
+                                    <Pressable
+                                        onPress={() => {
+                                            if (index !== currentIndex) {
+                                                carouselRef.current?.snapToItem(index);
+                                                handleAllIndex(index);
+                                            }
+                                        }}
+                                    >
+                                        <Carouselcarditem
+                                            allProfTake={allProfTake}
+                                            hidetext={hidetext}
+                                            setPrimeadd={setPrimeadd}
+                                            enables={enables}
+                                            setStateCount={setStateCount}
+                                            fetcheddt={fetcheddt}
+                                            stateCount={stateCount}
+                                            renewal={renewal}
+                                            val={val}
+                                            index={index}
+                                            item={item}
+                                            stateid={stateid}
+                                            navigation={navigation}
+                                            onCloseExpiredModal={() => {
+                                                if (effectiveFulldashbaord?.length > 1 && index < effectiveFulldashbaord.length - 1) {
+                                                    carouselRef.current?.snapToItem(index + 1);
+                                                }
+                                            }}
+                                        />
+                                    </Pressable>
+                                )}
+                                firstItem={carouselFirstItemRef.current ?? initialIndex}
+                                onScrollBeginDrag={() => {
+                                    stateDragRef.current = true;
+                                }}
+                                onScrollEndDrag={() => {
+                                    stateDragRef.current = null;
+                                }}
                                 onSnapToItem={(index) => {
+                                    stateDragRef.current = null;
+                                    setval(index);
                                     handleAllIndex(index);
                                 }}
                             />
@@ -1071,6 +1156,10 @@ const renderAddLicenseCard = () => (
                                     hideGreeting
                                 />
                             </View>
+                        ) : allProfTake && dashboardLoadFailed && !resolvedFindData ? (
+                            <View style={{ padding: normalize(24), alignItems: 'center' }}>
+                                <Text>Unable to load this state's details.</Text>
+                            </View>
                         ) : allProfTake ? (
                             <View
                                 style={{
@@ -1080,12 +1169,12 @@ const renderAddLicenseCard = () => (
                                 <Dashboardmain
                                     statepush={statepush}
                                     allProfTake={allProfTake}
-                                    finddata={finddata}
+                                    finddata={resolvedFindData}
                                     setPrimeadd={setPrimeadd}
                                     enables={enables}
                                     handleButtonPress={getCurrentItem()}
                                     setAddit={setAddit}
-                                    addit={addit}
+                                    addit={activeLicenseForTasks}
                                     setTakestate={setTakestate}
                                     takestate={takestate}
                                     cmecourse={cmecourse}

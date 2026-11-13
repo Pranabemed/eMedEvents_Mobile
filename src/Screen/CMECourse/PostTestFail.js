@@ -105,6 +105,110 @@ const takeCoursepost = () => {
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
         }
     }
+
+    const handleRetakeCourse = () => {
+        takeCoursepost();
+        const rawModules =
+            (Array.isArray(CMEReducer?.cmenextactionResponse?.courseModule) && CMEReducer?.cmenextactionResponse?.courseModule.length > 0 && CMEReducer?.cmenextactionResponse?.courseModule) ||
+            (Array.isArray(CMEReducer?.cmenextactionResponse?.courseModules) && CMEReducer?.cmenextactionResponse?.courseModules.length > 0 && CMEReducer?.cmenextactionResponse?.courseModules) ||
+            (Array.isArray(props?.route?.params?.activityID?.courseModule) && props?.route?.params?.activityID?.courseModule.length > 0 && props?.route?.params?.activityID?.courseModule) ||
+            (Array.isArray(props?.route?.params?.RoleData?.courseModule) && props?.route?.params?.RoleData?.courseModule.length > 0 && props?.route?.params?.RoleData?.courseModule) ||
+            (Array.isArray(props?.route?.params?.FullID?.wholedata?.courseModule) && props?.route?.params?.FullID?.wholedata?.courseModule.length > 0 && props?.route?.params?.FullID?.wholedata?.courseModule) ||
+            (Array.isArray(props?.route?.params?.FullID?.courseModule) && props?.route?.params?.FullID?.courseModule.length > 0 && props?.route?.params?.FullID?.courseModule) ||
+            (Array.isArray(props?.route?.params?.postdata?.courseModule) && props?.route?.params?.postdata?.courseModule.length > 0 && props?.route?.params?.postdata?.courseModule) ||
+            (typeof CMEReducer?.cmenextactionResponse?.courseModules === 'object' && Object.values(CMEReducer?.cmenextactionResponse?.courseModules || {})) ||
+            [];
+        const courseModules = Array.isArray(rawModules) ? rawModules : [];
+        const courseVideoModule =
+            courseModules.find((m) => {
+                const name = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+                return (
+                    name.includes('course') ||
+                    name.includes('video') ||
+                    name.includes('session') ||
+                    name.includes('section 1') ||
+                    name.includes('webcast')
+                ) && !name.includes('post') && !name.includes('pre') && !name.includes('survey');
+            }) ||
+            courseModules.find((m) => {
+                const name = String(m?.name || m?.activity_text || m?.current_activity_text || '').toLowerCase();
+                return (
+                    !name.includes('assessment') &&
+                    !name.includes('test') &&
+                    !name.includes('survey') &&
+                    !name.includes('feedback') &&
+                    !name.includes('certificate')
+                );
+            }) ||
+            courseModules[0] ||
+            null;
+
+        const confId =
+            CMEReducer?.evaulatecalculateResponse?.conferenceId ||
+            CMEReducer?.cmenextactionResponse?.conferenceId ||
+            props?.route?.params?.FullID?.conferenceId ||
+            props?.route?.params?.activityID?.conference_id ||
+            props?.route?.params?.conferenceId;
+
+        const videoActId =
+            courseVideoModule?.activity_id ||
+            courseVideoModule?.current_activity_id ||
+            courseVideoModule?.id ||
+            props?.route?.params?.videoContentData?.activityData?.[0]?.activity_id ||
+            props?.route?.params?.videoContentData?.activityData?.[0]?.id ||
+            props?.route?.params?.videoContentData?.activity_id ||
+            props?.route?.params?.RoleData?.activityData?.[0]?.activity_id ||
+            props?.route?.params?.RoleData?.current_activity_id ||
+            props?.route?.params?.FullID?.previous_activity_id;
+
+        props.navigation.navigate("VideoComponent", {
+            ...(props?.route?.params || {}),
+            ActivityId: videoActId,
+            webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
+            videoContentData: props?.route?.params?.videoContentData,
+            RoleData: {
+                ...(props?.route?.params?.webcastDetails || {}),
+                ...(props?.route?.params?.maindata?.webcastDetails || {}),
+                ...(props?.route?.params?.videoContentData || {}),
+                ...(props?.route?.params?.RoleData || {}),
+                ...(CMEReducer?.cmenextactionResponse || {}),
+                id: confId,
+                conferenceId: confId,
+                current_activity_id: videoActId,
+                next_activity_id: videoActId,
+                completed_percentage: 100,
+                button_display_text: "Revise Course",
+                buttonText: "Revise Course",
+                courseModule: courseModules,
+            },
+            activityID: {
+                ...(props?.route?.params?.activityID || {}),
+                activityID: videoActId,
+                conference_id: confId,
+                text: courseVideoModule?.name || "Online Course",
+                courseModule: courseModules,
+            },
+            FullID: {
+                ...(CMEReducer?.cmenextactionResponse || {}),
+                conferenceId: confId,
+                current_activity_id: videoActId,
+                next_activity_id: videoActId,
+                previous_activity_id: videoActId,
+                percentage: 100,
+                courseModule: courseModules,
+            },
+            postdata: {
+                ...(CMEReducer?.cmenextactionResponse || {}),
+                conferenceId: confId,
+                current_activity_id: videoActId,
+                next_activity_id: videoActId,
+                courseModule: courseModules,
+            },
+            isRevise: true,
+            retakeCourse: true,
+            preserveVideoContent: false,
+        });
+    };
     useEffect(()=>{
         if(CMEReducer?.evaulatecalculateResponse){
             setTestData(CMEReducer?.evaulatecalculateResponse);
@@ -370,8 +474,7 @@ const onBackPress = () => {
                                                 takeCoursepost();
                                                 props.navigation.navigate("TabNav");
                                             } else {
-                                                takeCoursepost();
-                                                props.navigation.navigate("VideoComponent", { FullID: CMEReducer?.cmenextactionResponse });
+                                                handleRetakeCourse();
                                             }
                                         }}
                                         height={normalize(45)}
@@ -391,8 +494,7 @@ const onBackPress = () => {
                                                 takeCoursepost()
                                                 props.navigation.navigate("DownloadCertificate", { examID: { examID: props?.route?.params?.examID, CertificateActivityId: CMEReducer?.cmenextactionResponse } })
                                             } else if (CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1 && CMEReducer?.cmenextactionResponse && CMEReducer?.cmenextactionResponse.next_activity_text == "Course") {
-                                                takeCoursepost();
-                                                props.navigation.navigate("VideoComponent", { FullID: CMEReducer?.cmenextactionResponse });
+                                                handleRetakeCourse();
                                             } else if (CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1 &&
                                                 (
                                                     CMEReducer?.cmenextactionResponse &&

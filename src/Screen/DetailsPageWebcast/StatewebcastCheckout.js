@@ -130,12 +130,31 @@ const StatewebcastCheckout = memo(({ refID, takePrice, urlneed, creditData, setA
 * @returns {void}
 */
   const fullAction = (dataItem) => {
-    if (dataItem?.current_activity_api == "activitysession") {
+    const btnText = String(dataItem?.buttonText || dataItem?.button_display_text || '').trim().toLowerCase();
+    const isStartCourse = btnText.includes("start course") || dataItem?.current_activity_api == "introduction";
+
+    if (isStartCourse) {
+      navigation.navigate("StartTest", {
+        conference: dataItem?.conferenceId || dataItem?.id,
+        startCourse: dataItem,
+        webcastDetails: dataItem,
+      });
+    } else if (dataItem?.current_activity_api == "activitysession") {
       navigation.navigate("VideoComponent", { RoleData: videoNavigationData(dataItem) });
-    } else if (dataItem?.current_activity_api == "introduction") {
-      navigation.navigate("StartTest", { conference: dataItem?.conferenceId })
     } else if (dataItem?.current_activity_api == "startTest") {
-      navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.conferenceId, webcastdeatils: dataItem } })
+      navigation.navigate("PreTest", {
+        activityID: {
+          activityID: dataItem?.current_activity_id,
+          conference_id: dataItem?.conferenceId || dataItem?.id,
+          webcastdeatils: dataItem,
+        },
+      });
+    } else {
+      navigation.navigate("StartTest", {
+        conference: dataItem?.conferenceId || dataItem?.id,
+        startCourse: dataItem,
+        webcastDetails: dataItem,
+      });
     }
   }
   /**
@@ -488,19 +507,7 @@ const StatewebcastCheckout = memo(({ refID, takePrice, urlneed, creditData, setA
             {renderPrimaryButton(
               webcastdeatils?.button_display_text,
               () => {
-                if (webcastdeatils?.current_activity_api == "activitysession") {
-                  navigation.navigate("VideoComponent", { RoleData: videoNavigationData(webcastdeatils) });
-                } else if (webcastdeatils?.current_activity_api == "introduction") {
-                  navigation.navigate("StartTest", { conference: webcastdeatils?.conferenceId });
-                } else if (webcastdeatils?.current_activity_api == "startTest") {
-                  navigation.navigate("PreTest", {
-                    activityID: {
-                      activityID: webcastdeatils?.current_activity_id,
-                      conference_id: webcastdeatils?.conferenceId,
-                      webcastdeatils: webcastdeatils,
-                    },
-                  });
-                }
+                fullAction(webcastdeatils);
               },
             )}
           </View>

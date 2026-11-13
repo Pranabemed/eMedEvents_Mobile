@@ -475,6 +475,7 @@ const Main = (props) => {
   const primeCardDelayRef = useRef(null);
   const primeStripAutoLaunchRef = useRef(false);
   const lastProfileUpdatedRef = useRef(0);
+  const lastCheckoutEventTimeRef = useRef(0);
 
   useEffect(() => {
     const emitter = require('react-native').DeviceEventEmitter;
@@ -765,6 +766,27 @@ const Main = (props) => {
     return () => sub.remove();
   }, []);
   useEffect(() => {
+    const emitter = require('react-native').DeviceEventEmitter;
+    const sub = emitter.addListener('CHECKOUT_COMPLETED', () => {
+      const now = Date.now();
+      if (now - lastCheckoutEventTimeRef.current < 2500) return;
+      lastCheckoutEventTimeRef.current = now;
+      connectionrequest()
+        .then(() => {
+          dispatch(PrimeCheckRequest({}));
+          dispatch(mainprofileRequest({}));
+          dispatch(dashPerRequest({}));
+          dispatch(dashMbRequest({}));
+          dispatch(dashboardRequest({}));
+          dispatch(stateMandatoryRequest({}));
+          dispatch(stateLicenseListRequest({}));
+          dispatch(chooseStatecardRequest({}));
+        })
+        .catch((err) => showErrorAlert("Please connect to internet", err));
+    });
+    return () => sub.remove();
+  }, [dispatch]);
+  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
     });
@@ -981,6 +1003,8 @@ const Main = (props) => {
   useEffect(() => {
     if (!isFocus) return;
     if ((Date.now() - lastProfileUpdatedRef.current) < 3000) return;
+    if ((Date.now() - lastCheckoutEventTimeRef.current) < 2500) return;
+    lastCheckoutEventTimeRef.current = Date.now();
     connectionrequest()
       .then(() => {
         dispatch(PrimeCheckRequest({}));

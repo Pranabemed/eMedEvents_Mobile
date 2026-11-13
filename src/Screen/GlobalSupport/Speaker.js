@@ -2,15 +2,15 @@
  * Speaker screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, Speaker, speakerItem, SearchBack, handleLoadMore.
  */
 
-import { View, Text, ImageBackground, ActivityIndicator, RefreshControl, Platform, Image, TouchableOpacity, FlatList, Alert } from 'react-native'
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import Colorpath from '../../Themes/Colorpath'
-import Imagepath from '../../Themes/Imagepath'
+import { View, Text, ActivityIndicator, Image, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import Feather from 'react-native-vector-icons/Feather';
+import Colorpath from '../../Themes/Colorpath';
+import Imagepath from '../../Themes/Imagepath';
 import normalize from '../../Utils/Helpers/Dimen';
 import Fonts from '../../Themes/Fonts';
 import PageHeader from '../../Components/PageHeader';
 import MyStatusBar from '../../Utils/MyStatusBar';
-import { CommonActions } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { searchSpeakerRequest } from '../../Redux/Reducers/TransReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
@@ -18,7 +18,7 @@ import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { AppContext } from './AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
  * Reusable Speaker component.
@@ -66,64 +66,73 @@ const Speaker = (props) => {
  * @returns {JSX.Element}
  */
 const speakerItem = ({ item, index }) => {
-        return (
-            <TouchableOpacity onPress={() => {
-                props.navigation.navigate("SpeakerProfile", { fullUrl: { hitDat: props?.route?.params?.highText?.highText, fullUrl: item?.user_url || item?.url, creditData: props?.route?.params?.highText?.CreditData, speaks: props?.route?.params?.highText?.organ ? "organ" : "speaker" } });
-                setSelectedIndex(selectedIndex === index ? null : index);
-            }} style={{
-                backgroundColor: Colorpath.white,
-                paddingHorizontal: normalize(10),
-                paddingVertical: normalize(10),
-                margin: normalize(10),
-                borderBottomRightRadius: normalize(10),
-                borderBottomLeftRadius: normalize(10),
-                borderTopStartRadius: normalize(10),
-                borderTopEndRadius: normalize(10),
-                borderWidth: 0.8,
-                borderColor: selectedIndex === index ? Colorpath.ButtonColr : "#DADADA"
-            }}>
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center'
-                }}>
-                    <View style={{
-                        height: normalize(70),
-                        width: normalize(70),
-                        backgroundColor: 'white',
-                        borderRadius: normalize(35),
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginRight: normalize(10),
-                    }}>
-                        <ImageBackground
-                            source={
-                                (() => {
-                                    const baseUrl = TransReducer?.searchSpeakerResponse?.ImagePath
-                                        ?? TransReducer?.searchSpeakerResponse?.imagePath;
+        const isOrganizer = props?.route?.params?.highText?.organ === "organ";
+        const displayName = String(item?.firstname || item?.label || item?.name || '').trim();
+        const initialChar = displayName ? displayName.charAt(0).toUpperCase() : (isOrganizer ? 'O' : 'S');
+        const baseUrl = TransReducer?.searchSpeakerResponse?.ImagePath
+            ?? TransReducer?.searchSpeakerResponse?.imagePath;
+        const imagePath = item?.image_path;
+        const imageUri = baseUrl && imagePath ? `${baseUrl}${imagePath}` : null;
+        const subtitle = item?.designation || item?.location || '';
+        const locationDetails = [item?.state_name, item?.country_code].filter(Boolean).join(', ');
+        const isSelected = selectedIndex === index;
 
-                                    const imagePath = item?.image_path;
-                                    if (baseUrl && imagePath) {
-                                        return { uri: `${baseUrl}${imagePath}` };
-                                    }
-                                    return Imagepath.HumanIcn;
-                                })()
-                            }
-                            style={{
-                                height: normalize(60),
-                                width: normalize(60),
-                            }}
-                            imageStyle={{ borderRadius: normalize(50) }}
-                        />
+        return (
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                    props.navigation.navigate("SpeakerProfile", {
+                        fullUrl: {
+                            hitDat: props?.route?.params?.highText?.highText,
+                            fullUrl: item?.user_url || item?.url,
+                            creditData: props?.route?.params?.highText?.CreditData,
+                            speaks: isOrganizer ? "organ" : "speaker",
+                        }
+                    });
+                    setSelectedIndex(isSelected ? null : index);
+                }}
+                style={[
+                    styles.card,
+                    isSelected && styles.cardSelected,
+                ]}
+            >
+                <View style={styles.cardInner}>
+                    <View style={styles.avatarWrap}>
+                        {imageUri ? (
+                            <Image
+                                source={{ uri: imageUri }}
+                                style={styles.avatarImage}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Text style={styles.avatarFallbackText}>{initialChar}</Text>
+                        )}
                     </View>
-                    <View style={{ flex: 1, justifyContent: 'center', flexDirection: "column" }}>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#000000", fontWeight: "bold" }}>{item?.firstname || item?.label}</Text>
-                        {(item?.designation || item?.location) && <Text style={{ paddingVertical: normalize(5), fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{item?.designation || item?.location}</Text>}
-                        {(item?.state_name || item?.country_code) && <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{item?.state_name + "," + item?.country_code}</Text>}
+                    <View style={styles.infoCol}>
+                        <Text style={styles.nameText} numberOfLines={2}>
+                            {displayName}
+                        </Text>
+                        {subtitle ? (
+                            <Text style={styles.designationText} numberOfLines={2}>
+                                {subtitle}
+                            </Text>
+                        ) : null}
+                        {locationDetails ? (
+                            <View style={styles.locationRow}>
+                                <Image source={Imagepath.MapPin} style={styles.locationPinIcon} />
+                                <Text style={styles.locationText} numberOfLines={1}>
+                                    {locationDetails}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </View>
+                    <View style={styles.chevronWrap}>
+                        <Feather name="chevron-right" size={16} color={Colorpath.ButtonColr} />
                     </View>
                 </View>
             </TouchableOpacity>
-        )
-    }
+        );
+    };
         /**
  * Search back component.
  * @returns {void}
@@ -217,89 +226,231 @@ const handleLoadMore = () => {
     useLayoutEffect(() => {
                 props.navigation.setOptions({ gestureEnabled: false });
             }, []);
+    const isOrganizer = props?.route?.params?.highText?.organ === "organ";
+    const headerTitle = isOrganizer ? "Search Organizers" : "Search Speakers";
+    const totalResults = TransReducer?.searchSpeakerResponse?.Speakercount || TransReducer?.searchSpeakerResponse?.organizerCount || (Array.isArray(wholeData) ? wholeData.length : 0);
+    const searchKeyword = props?.route?.params?.highText?.highText;
+
     return (
         <>
             <MyStatusBar
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn == false ? <IntOff/> :<SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
-                <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
-                    {Platform.OS === "ios" ? (
+            {conn == false ? <IntOff /> : (
+                <SafeAreaView style={styles.screen}>
+                    <View style={styles.headerWrapper}>
                         <PageHeader
-                            title={props?.route?.params?.highText?.organ == "organ" ? "Search Organizers" : "Search Speakers"}
+                            title={headerTitle}
                             onBackPress={SearchBack}
                         />
-                    ) : (
-                        <PageHeader
-                            title={props?.route?.params?.highText?.organ == "organ" ? "Search Organizers" : "Search Speakers"}
-                            onBackPress={SearchBack}
-                        />
-
-                    )}
-                </View>
-                <TouchableOpacity style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                    <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row" }}>
-                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#333" }}>{`Showing (${TransReducer?.searchSpeakerResponse?.Speakercount || TransReducer?.searchSpeakerResponse?.organizerCount}) Results for`}</Text>
                     </View>
-                </TouchableOpacity>
-                {props?.route?.params?.highText?.highText && <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(-10), paddingVertical: normalize(5) }}>
-                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{props?.route?.params?.highText?.highText}</Text>
-                </View>}
-                <View>
+                    <View style={styles.resultsBanner}>
+                        <View style={styles.resultsPill}>
+                            <Text style={styles.resultsPillText}>
+                                {`${totalResults} ${isOrganizer ? 'Organizers' : 'Speakers'}`}
+                            </Text>
+                        </View>
+                        {searchKeyword ? (
+                            <View style={styles.keywordRow}>
+                                <Text style={styles.resultsForLabel}>Results for: </Text>
+                                <Text style={styles.keywordText} numberOfLines={1}>
+                                    {`"${searchKeyword}"`}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </View>
                     <FlatList
                         data={wholeData}
                         renderItem={speakerItem}
-                        keyExtractor={(item, index) => item.id + index.toString()}
+                        keyExtractor={(item, index) => item.id ? `${item.id}_${index}` : index.toString()}
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.1}
                         onScroll={handleScroll}
                         ListFooterComponent={() =>
                             hasmore ? (
-                                <View style={{ paddingVertical: 20 }}>
+                                <View style={styles.footerLoader}>
                                     <ActivityIndicator size="small" color={Colorpath.ButtonColr} />
                                 </View>
                             ) : null
                         }
-                        contentContainerStyle={{ paddingBottom: normalize(170) }}
+                        contentContainerStyle={styles.listContent}
                         ListEmptyComponent={
-                            <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(25) }}>
-                                <View
-                                    style={{
-                                        flexDirection: "row",
-                                        // height: normalize(83),
-                                        width: normalize(290),
-                                        borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(10),
-                                        alignItems: "center",
-                                        borderStyle: 'dotted',
-                                        borderWidth: 1,
-                                    }}
-                                >
-                                    <View style={{ flex: 1, justifyContent: "center" }}>
-                                        <Text
-                                            style={{
-                                                fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: Colorpath.ButtonColr,
-                                                fontWeight: "bold",
-                                                alignSelf: "center"
-                                            }}
-                                        >
-                                            {"There are no matches available for your search criteria. Please change the criteria and try again."}
-                                        </Text>
-                                    </View>
+                            <View style={styles.emptyContainer}>
+                                <View style={styles.emptyCard}>
+                                    <Text style={styles.emptyText}>
+                                        There are no matches available for your search criteria. Please change the criteria and try again.
+                                    </Text>
                                 </View>
                             </View>
-                        } />
-                </View>
-            </SafeAreaView>}
+                        }
+                    />
+                </SafeAreaView>
+            )}
         </>
+    );
+};
 
-    )
-}
+const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+        backgroundColor: Colorpath.Pagebg,
+    },
+    headerWrapper: {
+        backgroundColor: '#FFFFFF',
+    },
+    resultsBanner: {
+        paddingHorizontal: normalize(14),
+        paddingTop: normalize(12),
+        paddingBottom: normalize(8),
+    },
+    resultsPill: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(4),
+        borderRadius: normalize(14),
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    resultsPillText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12.5,
+        color: Colorpath.ButtonColr,
+    },
+    keywordRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: normalize(6),
+    },
+    resultsForLabel: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 14,
+        color: '#64748B',
+    },
+    keywordText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 16,
+        color: '#0F172A',
+        flexShrink: 1,
+    },
+    listContent: {
+        paddingBottom: normalize(120),
+        paddingTop: normalize(4),
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: normalize(14),
+        marginVertical: normalize(5),
+        padding: normalize(12),
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        elevation: 2,
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+    },
+    cardSelected: {
+        borderColor: Colorpath.ButtonColr,
+    },
+    cardInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatarWrap: {
+        height: normalize(56),
+        width: normalize(56),
+        borderRadius: normalize(28),
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1.5,
+        borderColor: '#DBEAFE',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: normalize(12),
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        height: normalize(56),
+        width: normalize(56),
+        borderRadius: normalize(28),
+    },
+    avatarFallbackText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 20,
+        color: Colorpath.ButtonColr,
+    },
+    infoCol: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    nameText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 15.5,
+        color: '#0F172A',
+        lineHeight: 20,
+    },
+    designationText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 13,
+        color: '#475569',
+        marginTop: normalize(2),
+    },
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: normalize(4),
+        gap: normalize(4),
+    },
+    locationPinIcon: {
+        height: normalize(13),
+        width: normalize(13),
+        resizeMode: 'contain',
+        tintColor: '#64748B',
+    },
+    locationText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 12.5,
+        color: '#64748B',
+        flexShrink: 1,
+    },
+    chevronWrap: {
+        height: normalize(28),
+        width: normalize(28),
+        borderRadius: normalize(14),
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: normalize(8),
+    },
+    footerLoader: {
+        paddingVertical: normalize(20),
+    },
+    emptyContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: normalize(30),
+        paddingHorizontal: normalize(16),
+    },
+    emptyCard: {
+        width: '100%',
+        borderRadius: normalize(12),
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(20),
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    emptyText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 13.5,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+});
 
 /**
  * Speaker default export.

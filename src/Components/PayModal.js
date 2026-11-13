@@ -3,7 +3,7 @@
  */
 
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, AppState, DeviceEventEmitter } from 'react-native';
 import Modal from 'react-native-modal';
 import { useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -41,7 +41,7 @@ let subscription = null;
  * @param {*} props.gocertificate - Nested property value.
  * @returns {JSX.Element}
  */
-const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name, setGocertificate, gocertificate }) => {
+const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisible, setPaymentcard, content, navigation, name, onDashboardPress, setGocertificate, gocertificate }) => {
     const route = useRoute();
     const WebcastReducer = useSelector(state => state.WebcastReducer);
 
@@ -54,6 +54,8 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
         return {
             ...(route?.params || {}),
             ...extraParams,
+            refreshLicensesAt: Date.now(),
+            detectmain: 'checkoutDone_' + Date.now(),
             maindata: {
                 checkoutSpan: route?.params?.checkoutSpan?.checkoutSpan,
                 inpersonSpanrole: route?.params?.inPersonTicket?.inpersonSpanrole,
@@ -68,6 +70,18 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
             webcastDetails: WebcastReducer?.webcastDeatilsResponse,
             paymentResponse: WebcastReducer?.PaymentCheckResponse || WebcastReducer?.StatusPaymentResponse || WebcastReducer?.FreeCartResponse,
         };
+    };
+
+    const goToDashboard = () => {
+        DeviceEventEmitter.emit('CHECKOUT_COMPLETED', { timestamp: Date.now() });
+        setPaymentcard(false);
+        const fullDta = fulldashbaord?.[0];
+        setAddit(fullDta);
+        if (typeof onDashboardPress === 'function') {
+            onDashboardPress(getMergedParams());
+            return;
+        }
+        navigation?.navigate(name || "TabNav", getMergedParams());
     };
 
     console.log(maindata, "maindata======", dataPayemnt, dataPayemnt === undefined);
@@ -116,6 +130,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                     ) {
                         if (subscription?.remove) {
                             subscription.remove();
+                            DeviceEventEmitter.emit('CHECKOUT_COMPLETED', { timestamp: Date.now() });
                             navigation.navigate('TabNav', getMergedParams());
                         }
                     }
@@ -155,10 +170,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
     >
         <View style={styles.containercart}>
             <TouchableOpacity onPress={() => {
-                setPaymentcard(false);
-                navigation?.navigate(name, getMergedParams());
-                const fullDta = fulldashbaord?.[0];
-                setAddit(fullDta);
+                goToDashboard();
             }} style={styles.closeIcon}>
                 <CloseIcon name="close" size={24} color={Colorpath.white} />
             </TouchableOpacity>
@@ -170,10 +182,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                 <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                     <TouchableOpacity
                         onPress={() => {
-                            navigation?.navigate(name, getMergedParams());
-                            setPaymentcard(false);
-                            const fullDta = fulldashbaord?.[0];
-                            setAddit(fullDta);
+                            goToDashboard();
                         }}
                         style={styles.buttoncart}
                     >
@@ -207,10 +216,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
         >
             {dataPayemnt?.ButtonArr ? (<View style={styles.container}>
                 <TouchableOpacity onPress={() => {
-                    setPaymentcard(false);
-                    navigation?.navigate(name, getMergedParams());
-                    const fullDta = fulldashbaord?.[0];
-                    setAddit(fullDta);
+                    goToDashboard();
                 }} style={styles.closeIcon}>
                     <CloseIcon name="close" size={24} color={Colorpath.white} />
                 </TouchableOpacity>
@@ -242,10 +248,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                     <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                         <TouchableOpacity
                             onPress={() => {
-                                navigation?.navigate("TabNav", getMergedParams());
-                                setPaymentcard(false);
-                                const fullDta = fulldashbaord?.[0];
-                                setAddit(fullDta);
+                                goToDashboard();
                             }}
                             style={dataPayemnt?.invoice ? styles.button : styles.singlebutton}
                         >
@@ -280,10 +283,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                 <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
                     <TouchableOpacity
                         onPress={() => {
-                            navigation?.navigate(name, getMergedParams());
-                            setPaymentcard(false);
-                            const fullDta = fulldashbaord?.[0];
-                            setAddit(fullDta);
+                            goToDashboard();
                         }}
                         style={styles.button}
                     >
@@ -308,10 +308,7 @@ const PayModal = ({ setPrintgo, printgo, cartData, dataPayemnt, maindata, isVisi
                     <Text style={styles.content}>{content}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
-                    setPaymentcard(false);
-                    navigation?.navigate(name, getMergedParams());
-                    const fullDta = fulldashbaord?.[0];
-                    setAddit(fullDta);
+                    goToDashboard();
                     if (gocertificate) {
                         setGocertificate(!gocertificate);
                     }

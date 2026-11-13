@@ -1,0 +1,34 @@
+import React from 'react';
+import {render, act, fireEvent} from '@testing-library/react-native';
+import {Provider} from 'react-redux';
+import {configureStore} from '@reduxjs/toolkit';
+import Screen from '../src/Screen/GlobalSupport/SpeakerProfile';
+import reducer, {speakerProfileSuccess} from '../src/Redux/Reducers/TransReducer';
+jest.mock('../src/Screen/GlobalSupport/AppContext',()=>({AppContext:require('react').createContext({})}));
+jest.mock('@react-navigation/native',()=>({useFocusEffect: callback=>require('react').useEffect(callback,[callback])}));
+jest.mock('@react-native-community/netinfo',()=>({addEventListener:cb=>{cb({isConnected:true});return ()=>{};}}));
+jest.mock('../src/Utils/Helpers/NetInfo',()=>jest.fn(()=>Promise.resolve()));
+jest.mock('../src/Utils/Helpers/Toast',()=>jest.fn());
+jest.mock('../src/Utils/Helpers/Loader',()=> 'Loader');
+jest.mock('../src/Utils/MyStatusBar',()=> 'StatusBar');
+jest.mock('../src/Components/PageHeader',()=> 'Header');
+jest.mock('../src/Utils/Helpers/IntOff',()=> 'Offline');
+jest.mock('react-native-safe-area-context',()=>({SafeAreaView:require('react-native').View}));
+
+it('waits for its own response and returns to the previous screen',async()=>{
+ const store=configureStore({reducer:{TransReducer:reducer}});
+ store.dispatch(speakerProfileSuccess({name:'Cached speaker'}));
+ const navigation={setOptions:jest.fn(),canGoBack:()=>true,goBack:jest.fn(),navigate:jest.fn()};
+ const view=render(<Provider store={store}><Screen navigation={navigation} route={{params:{fullUrl:{fullUrl:'new-speaker',speaks:'speaker'}}}}/></Provider>);
+ expect(view.UNSAFE_getByType('Loader').props.visible).toBe(true);
+ expect(view.queryByText('Cached speaker')).toBeNull();
+ await act(async()=>{await Promise.resolve();});
+ const requestId=store.getState().TransReducer.speakerProfileRequestId;
+ act(()=>store.dispatch({...speakerProfileSuccess({name:'Other speaker'}),meta:{requestId:'old'}}));
+ expect(view.UNSAFE_getByType('Loader').props.visible).toBe(true);
+ act(()=>store.dispatch({...speakerProfileSuccess({name:'Current speaker'}),meta:{requestId}}));
+ expect(view.UNSAFE_getByType('Loader').props.visible).toBe(false);
+ fireEvent(view.UNSAFE_getByType('Header'),'backPress');
+ expect(navigation.goBack).toHaveBeenCalledTimes(1);
+ expect(navigation.navigate).not.toHaveBeenCalled();
+});

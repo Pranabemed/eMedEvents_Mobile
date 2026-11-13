@@ -24,6 +24,8 @@ import { AppContext } from '../Screen/GlobalSupport/AppContext';
  * @returns {JSX.Element}
  */
 const ResumeDash = ({ allProfTake, allNoDetData, item, index, addit }) => {
+    const rawProgress = Number(item?.completed_percentage ?? 0);
+    const courseProgress = Number.isFinite(rawProgress) ? Math.max(0, Math.min(100, rawProgress)) : 0;
     const {
         statepush,
         setStatepush
@@ -71,17 +73,55 @@ const titlhandleUrl = (make) => {
  */
 const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
-        const result = url.split('/').pop();
-        if (dataItem?.current_activity_api == "activitysession") {
+        const result = url ? url.split('/').pop() : '';
+        const btnText = String(dataItem?.button_display_text || dataItem?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(dataItem?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(dataItem?.current_activity_text || '').trim().toLowerCase();
+
+        const isStart =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            dataItem?.is_course_started === 0 ||
+            dataItem?.is_course_started === false ||
+            dataItem?.is_started === 0;
+
+        if (isStart || dataItem?.current_activity_api == "startTest") {
+            navigation.navigate("StartTest", {
+                conference: dataItem?.id || dataItem?.conferenceId,
+                startCourse: dataItem,
+                webcastDetails: dataItem,
+            });
+        } else if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
-        } else if (dataItem?.current_activity_api == "introduction") {
-            navigation.navigate("StartTest", { conference: dataItem?.id })
-        } else if (dataItem?.current_activity_api == "startTest") {
-            navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {
-            navigation.navigate("AddCredits", { mainAdd: addit })
+            navigation.navigate("AddCredits", { mainAdd: addit });
         } else if (result) {
-            navigation.navigate("Statewebcast", { webCastURL: { webCastURL: result, shareUrl: url, detailpage_url: url, creditData: addit } })
+            navigation.navigate("Statewebcast", {
+                webCastURL: {
+                    webCastURL: result,
+                    shareUrl: url,
+                    detailpage_url: url,
+                    creditData: addit,
+                },
+            });
+        } else {
+            navigation.navigate("StartTest", {
+                conference: dataItem?.id || dataItem?.conferenceId,
+                startCourse: dataItem,
+                webcastDetails: dataItem,
+            });
         }
     }
         /**
@@ -282,8 +322,8 @@ const cmehit = () => {
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
                         <View style={{ flexDirection: "column", alignItems: "flex-start", flex: 1, marginRight: normalize(10) }}>
                             <View style={{ flexDirection: "column", paddingHorizontal: normalize(0), gap: normalize(6) }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#000000", fontWeight: "600" }}>{`${item?.completed_percentage || 0}% Completed`}</Text>
-                                <ProgressBarLine progress={item?.completed_percentage || 0} height={6} fillColor={Colorpath.green} />
+                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 12, color: "#000000", fontWeight: "600" }}>{`${courseProgress}% Completed`}</Text>
+                                <ProgressBarLine progress={courseProgress} height={6} fillColor={Colorpath.green} />
                             </View>
                         </View>
 

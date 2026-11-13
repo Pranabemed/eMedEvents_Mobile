@@ -137,10 +137,13 @@ const Livecourse = ({ fetchnamelive, creditwholelive, setLoadingdownstlv, loadin
 const fullActionlive = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = typeof url === 'string' ? url.split('/').pop() : '';
-        if (dataItem?.current_activity_api == "activitysession") {
+        const btnText = String(dataItem?.button_display_text || dataItem?.buttonText || '').trim().toLowerCase();
+        const isStartCourse = btnText.includes("start course") || dataItem?.current_activity_api == "introduction";
+
+        if (isStartCourse) {
+            navigation.navigate("StartTest", { conference: dataItem?.id || dataItem?.conferenceId, startCourse: dataItem, webcastDetails: dataItem });
+        } else if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
-        } else if (dataItem?.current_activity_api == "introduction") {
-            navigation.navigate("StartTest", { conference: dataItem?.id })
         } else if (dataItem?.current_activity_api == "startTest") {
             navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {

@@ -54,14 +54,34 @@ const boardCourseHandle = () => {
  */
 const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
-        const result = url.split('/').pop();
+        const result = url ? url.split('/').pop() : '';
         console.log(result, "webcast url=======", dataItem);
-        if (dataItem?.current_activity_api == "activitysession") {
+        const btnText = String(dataItem?.button_display_text || dataItem?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(dataItem?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(dataItem?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            dataItem?.is_course_started === 0 ||
+            dataItem?.is_course_started === false ||
+            dataItem?.is_started === 0;
+
+        if (isStartCourse || dataItem?.current_activity_api == "startTest") {
+            props.navigation.navigate("StartTest", { conference: dataItem?.id || dataItem?.conferenceId, startCourse: dataItem, webcastDetails: dataItem });
+        } else if (dataItem?.current_activity_api == "activitysession") {
             props.navigation.navigate("VideoComponent", { RoleData: dataItem });
-        } else if (dataItem?.current_activity_api == "introduction") {
-            props.navigation.navigate("StartTest", { conference: dataItem?.id })
-        } else if (dataItem?.current_activity_api == "startTest") {
-            props.navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {
             props.navigation.navigate("AddCredits", { mainAdd: props?.route?.params?.FullData })
         } else if (result) {

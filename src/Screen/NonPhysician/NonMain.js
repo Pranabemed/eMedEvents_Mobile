@@ -144,14 +144,34 @@ const downCredit = () => {
  */
 const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
-        const result = url.split('/').pop();
+        const result = url ? url.split('/').pop() : '';
         console.log(result, "webcast url=======", dataItem);
-        if (dataItem?.current_activity_api == "activitysession") {
+        const btnText = String(dataItem?.button_display_text || dataItem?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(dataItem?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(dataItem?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            dataItem?.is_course_started === 0 ||
+            dataItem?.is_course_started === false ||
+            dataItem?.is_started === 0;
+
+        if (isStartCourse || dataItem?.current_activity_api == "startTest") {
+            navigation.navigate("StartTest", { conference: dataItem?.id || dataItem?.conferenceId, startCourse: dataItem, webcastDetails: dataItem });
+        } else if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
-        } else if (dataItem?.current_activity_api == "introduction") {
-            navigation.navigate("StartTest", { conference: dataItem?.id })
-        } else if (dataItem?.current_activity_api == "startTest") {
-            navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {
             navigation.navigate("AddCredits", { mainAdd: props?.route?.params?.myact?.creditData })
         } else if (result) {
@@ -293,10 +313,31 @@ const courserenderData = ({ item, index }) => {
             ? 'Free'
             : (priceText ? `${item?.display_currency_code || item?.currency_code || 'US$'}${priceText}` : '');
         const hasCompletedPct = item?.completed_percentage != null && item?.completed_percentage !== '';
+        const btnText = String(item?.button_display_text || item?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(item?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(item?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            item?.is_course_started === 0 ||
+            item?.is_course_started === false ||
+            item?.is_started === 0;
         const rawProgress = Number(item?.completed_percentage ?? 0);
-        const progressPercent = Number.isFinite(rawProgress)
+        const progressPercent = isStartCourse ? 0 : (Number.isFinite(rawProgress)
             ? Math.min(100, Math.max(0, Math.round(rawProgress)))
-            : 0;
+            : 0);
         const isCourseCompleted = progressPercent === 100;
         const cmeLabel = item?.display_cme
             ? (item.display_cme.toLowerCase().includes("contact hour")

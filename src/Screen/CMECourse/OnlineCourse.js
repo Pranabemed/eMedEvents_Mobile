@@ -169,12 +169,32 @@ const titlhandleUrl = (make) => {
 const fullAction = (dataItem) => {
         const url = dataItem?.detailpage_url;
         const result = typeof url === 'string' ? url.split('/').pop() : '';
-        if (dataItem?.current_activity_api == "activitysession") {
+        const btnText = String(dataItem?.button_display_text || dataItem?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(dataItem?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(dataItem?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            dataItem?.is_course_started === 0 ||
+            dataItem?.is_course_started === false ||
+            dataItem?.is_started === 0;
+
+        if (isStartCourse || dataItem?.current_activity_api == "startTest") {
+            navigation.navigate("StartTest", { conference: dataItem?.id || dataItem?.conferenceId, startCourse: dataItem, webcastDetails: dataItem });
+        } else if (dataItem?.current_activity_api == "activitysession") {
             navigation.navigate("VideoComponent", { RoleData: dataItem });
-        } else if (dataItem?.current_activity_api == "introduction") {
-            navigation.navigate("StartTest", { conference: dataItem?.id })
-        } else if (dataItem?.current_activity_api == "startTest") {
-            navigation.navigate("PreTest", { activityID: { activityID: dataItem?.current_activity_id, conference_id: dataItem?.id } })
         } else if (dataItem?.button_display_text == "Add Credits") {
             navigation.dispatch(
                 CommonActions.reset({
@@ -437,10 +457,31 @@ const openFileViewerst = async () => {
  * @returns {JSX.Element}
  */
 const courserenderData = ({ item, index }) => {
+        const btnText = String(item?.button_display_text || item?.buttonText || '').trim().toLowerCase();
+        const currentApi = String(item?.current_activity_api || '').trim().toLowerCase();
+        const currentActivityText = String(item?.current_activity_text || '').trim().toLowerCase();
+        const isStartCourse =
+            btnText.includes("start") ||
+            btnText.includes("pre test") ||
+            btnText.includes("pre-test") ||
+            btnText.includes("pre assessment") ||
+            btnText.includes("pre-assessment") ||
+            btnText.includes("introduction") ||
+            currentApi === "introduction" ||
+            currentApi === "starttest" ||
+            currentApi === "pretest" ||
+            currentActivityText.includes("pre test") ||
+            currentActivityText.includes("pre-test") ||
+            currentActivityText.includes("pre assessment") ||
+            currentActivityText.includes("pre-assessment") ||
+            currentActivityText.includes("introduction") ||
+            item?.is_course_started === 0 ||
+            item?.is_course_started === false ||
+            item?.is_started === 0;
         const rawPercent = Number(item?.completed_percentage ?? 0);
-        const progressPercent = Number.isFinite(rawPercent)
+        const progressPercent = isStartCourse ? 0 : (Number.isFinite(rawPercent)
             ? Math.min(100, Math.max(0, Math.round(rawPercent)))
-            : 0;
+            : 0);
         const isCourseCompleted = progressPercent === 100;
 
         return (

@@ -3,7 +3,7 @@
  */
 
 import { View, Text, Platform, ImageBackground, StyleSheet, TouchableOpacity, Image, ScrollView, useWindowDimensions, Alert, BackHandler, ActivityIndicator } from 'react-native'
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Colorpath from '../../Themes/Colorpath'
 import MyStatusBar from '../../Utils/MyStatusBar'
 import PageHeader from '../../Components/PageHeader'
@@ -66,7 +66,11 @@ const StartTest = (props) => {
         setAddit(statepush);
         // setFulldashbaord(addit)
         takeCourse();
-        props.navigation.goBack();
+        if (props.navigation.canGoBack()) {
+            props.navigation.goBack();
+        } else {
+            props.navigation.navigate("TabNav");
+        }
     }
     const [conn, setConn] = useState("")
     useEffect(() => {
@@ -81,6 +85,7 @@ const StartTest = (props) => {
     const [actvityData, setActvityData] = useState([]);
     const [actvityDatas, setActvityDatas] = useState([]);
     const [htmlContents, setHtmlContents] = useState("")
+    const [overviewExpanded, setOverviewExpanded] = useState(false);
     const [dataactivity, setDataactivity] = useState();
     const [dataactivitymain, setDataactivitymain] = useState();
     const CMEReducer = useSelector(state => state.CMEReducer);
@@ -89,6 +94,8 @@ const StartTest = (props) => {
     const { width } = useWindowDimensions();
     const isFocus = useIsFocused();
     const [loadingdownst, setLoadingdownst] = useState(false);
+    const [showLoader, setShowLoader] = useState(true);
+    const loadingRequestRef = useRef(null);
     const [pdfUrist, setPdfUrist] = useState("");
     /**
 * Returns first incomplete module.
@@ -125,19 +132,41 @@ const StartTest = (props) => {
     }
     // const activityId = actvityData?.courseModules["Pre-Assessment"]?.activity_id || null;
     console.log(actvityData?.courseHandout, props?.route?.params, statepush, "props?.route?.params?.conference=====================", dataactivity, dataactivitymain, props?.route?.params?.startCourse?.conferenceId);
+    const resolvedConferenceId = useMemo(() => {
+        const raw =
+            props?.route?.params?.conference ||
+            props?.route?.params?.conferenceId ||
+            props?.route?.params?.startCourse?.conferenceId ||
+            props?.route?.params?.startCourse?.id ||
+            props?.route?.params?.webcastDetails?.conferenceId ||
+            props?.route?.params?.webcastDetails?.id ||
+            props?.route?.params?.maindata?.conferenceId ||
+            props?.route?.params?.maindata?.id;
+        if (typeof raw === 'object' && raw !== null) {
+            return raw?.conferenceId || raw?.id || raw?.conference || null;
+        }
+        return raw || null;
+    }, [props?.route?.params]);
+
     useEffect(() => {
-        if (props?.route?.params?.conference || props?.route?.params?.startCourse?.conferenceId) {
+        setShowLoader(Boolean(resolvedConferenceId));
+        loadingRequestRef.current = null;
+        if (resolvedConferenceId) {
             let obj = {
-                "conference_id": props?.route?.params?.conference || props?.route?.params?.startCourse?.conferenceId
+                "conference_id": resolvedConferenceId
             }
             connectionrequest()
                 .then(() => {
+                    loadingRequestRef.current = {
+                        fulfilment: CMEReducer?.activityfulfilmentResponse,
+                        nextAction: CMEReducer?.cmenextactionResponse,
+                    };
                     dispatch(activityfulfilmentRequest(obj))
                     dispatch(actvityBreakupRequest(obj))
                 })
-                .catch((err) => { showErrorAlert("Please connect to internet", err) })
+                .catch((err) => { setShowLoader(false); showErrorAlert("Please connect to internet", err) })
         }
-    }, [props?.route?.params?.conference, props?.route?.params?.startCourse?.conferenceId])
+    }, [resolvedConferenceId])
     useEffect(() => {
         if (CMEReducer?.activityfulfilmentResponse?.courseModules) {
             const activityId = CMEReducer?.activityfulfilmentResponse?.courseModules["Pre-Assessment"]?.activity_id || null;
@@ -183,6 +212,11 @@ const StartTest = (props) => {
         const htmlContent = actvityData?.overView
         setHtmlContents(htmlContent);
     }, [actvityData]);
+
+    const plainOverviewText = useMemo(() => {
+        return String(htmlContents || '').replace(/<[^>]*>/g, '').trim();
+    }, [htmlContents]);
+    const isLongOverview = plainOverviewText.length > 250;
     const [speakerName, setSpeakerName] = useState('');
     const [speakerQualification, setSpeakerQualification] = useState('');
     const [speakerSpecialities, setSpeakerSpecialities] = useState('');
@@ -224,7 +258,7 @@ const StartTest = (props) => {
                     .then(() => {
                         dispatch(cmenextactionRequest(obj));
                     })
-                    .catch((err) => { showErrorAlert("Please connect to internet", err) })
+                    .catch((err) => { setShowLoader(false); showErrorAlert("Please connect to internet", err) })
                 console.log("activity fullfill ======>", CMEReducer?.actvityBreakupResponse, CMEReducer?.cmenextactionResponse)
                 break;
             case 'CME/actvityBreakupFailure':
@@ -338,15 +372,21 @@ const StartTest = (props) => {
     const acivityData =
         actvityDatas?.conferenceCmePoints &&
         actvityDatas?.conferenceCmePoints.replace(/\s/g, "") !== "-0";
-    const [showLoader, setShowLoader] = useState(true);
     useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
+        const request = loadingRequestRef.current;
+        if (!request) return;
+        const failed = [
+            'CME/activityfulfilmentFailure',
+            'CME/actvityBreakupFailure',
+            'CME/cmenextactionFailure',
+        ].includes(CMEReducer.status);
+        const receivedDetails = CMEReducer.activityfulfilmentResponse !== request.fulfilment;
+        const receivedNextAction = CMEReducer.cmenextactionResponse !== request.nextAction;
+        if (failed || (receivedDetails && receivedNextAction)) {
             setShowLoader(false);
-        }, 2000);
-
-        return () => clearTimeout(timeout);
-    }, []);
+            loadingRequestRef.current = null;
+        }
+    }, [CMEReducer.status, CMEReducer.activityfulfilmentResponse, CMEReducer.cmenextactionResponse]);
     console.log(mainData, "maindata--------", actvityData, actvityDatas, props?.route?.params);
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
@@ -368,318 +408,227 @@ const StartTest = (props) => {
                         onBackPress={startPress}
                     />
                 </View>}
-                {conn == false ? <IntOff /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
+                {conn == false ? <IntOff /> : showLoader ? null : <ScrollView contentContainerStyle={{ paddingBottom: normalize(60) }}>
                     <View>
                         <View style={styles.container}>
-                            <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>
+                            <View style={styles.imageBackground}>
                                 <View style={styles.contentContainer}>
                                     <View style={styles.header}>
                                         <Text style={styles.title}>
                                             {actvityData?.title || actvityDatas?.conferenceName}
                                         </Text>
                                     </View>
-                                    <View style={styles.subHeader}>
-                                        <Text style={styles.subText}>
-                                            {actvityData?.organizerName || actvityDatas?.organizationName}
-                                        </Text>
-                                    </View>
+                                    {(actvityData?.organizerName || actvityDatas?.organizationName) ? (
+                                        <View style={styles.subHeader}>
+                                            <Text style={styles.subText}>
+                                                {actvityData?.organizerName || actvityDatas?.organizationName}
+                                            </Text>
+                                        </View>
+                                    ) : null}
                                     <View style={styles.details}>
-                                        <View style={styles.column}>
-                                            <View style={styles.row}>
-                                                {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) ? <Text style={styles.detailText}>
-                                                    {actvityData?.conferenceDuration || actvityDatas?.conferenceDuration}
-                                                </Text> : null}
-                                                {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) ? <View style={styles.separator} /> : null}
-                                                <Text style={styles.detailText}>
-                                                    {mainData?.length > 0
-                                                        ? `${mainData?.[0]?.points || 0} ${mainData?.[0]?.name &&
-                                                            mainData?.[0]?.name?.toLowerCase() == "contact hour"
-                                                            ? "Contact Hour(s)"
-                                                            : mainData?.[0]?.name || ""
-                                                        }`
-                                                        : acivityData ? acivityData : "" || ""}
-                                                </Text>
-                                            </View>
+                                        <View style={styles.pillRow}>
+                                            {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) ? (
+                                                <View style={styles.durationBadge}>
+                                                    <TimeIcon name="time-outline" size={14} color="#2C4DB9" />
+                                                    <Text style={styles.durationText}>
+                                                        {actvityData?.conferenceDuration || actvityDatas?.conferenceDuration}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+                                            {mainData?.length > 0 || acivityData ? (
+                                                <View style={styles.cmeBadge}>
+                                                    <Text style={styles.cmeText}>
+                                                        {mainData?.length > 0
+                                                            ? `${mainData?.[0]?.points || 0} ${mainData?.[0]?.name &&
+                                                                mainData?.[0]?.name?.toLowerCase() == "contact hour"
+                                                                ? "Contact Hour(s)"
+                                                                : mainData?.[0]?.name || ""
+                                                            }`
+                                                            : acivityData || ""}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
                                         </View>
                                     </View>
-                                    {actvityData?.courseHandout && <View style={styles.divider} />}
+                                    {actvityData?.courseHandout ? (
+                                        <View style={styles.handoutRow}>
+                                            <View style={{ flex: 1, marginRight: normalize(10) }}>
+                                                <Text style={styles.handoutTitle}>
+                                                    {"Course Handout"}
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                onPress={() => handleLinkst(actvityData?.courseHandout)}
+                                                disabled={loadingdownst}
+                                                style={[styles.downloadButton, { opacity: loadingdownst ? 0.6 : 1 }]}
+                                                activeOpacity={0.7}
+                                            >
+                                                {loadingdownst ? (
+                                                    <ActivityIndicator
+                                                        style={{ marginRight: normalize(6) }}
+                                                        size="small"
+                                                        color={Colorpath.ButtonColr}
+                                                    />
+                                                ) : null}
+                                                <Text style={styles.downloadButtonText}>
+                                                    {loadingdownst ? "Downloading..." : "Download"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : null}
                                 </View>
-                                {actvityData?.courseHandout ? <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%", paddingHorizontal: normalize(0), marginTop: normalize(10) }}>
-                                    <View>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333" }}>
-                                            {"Course Handout"}
-                                        </Text>
-                                    </View>
-                                    <View style={{ minWidth: normalize(70) }}>
-                                        {loadingdownst ? (
-                                            <ActivityIndicator
-                                                style={{ marginRight: normalize(15) }}
-                                                size="small"
-                                                color={Colorpath.green}
-                                            />
-                                        ) : null}
-
-                                        <TouchableOpacity
-                                            onPress={() => handleLinkst(actvityData?.courseHandout)}
-                                            disabled={loadingdownst}
-                                            style={{ opacity: loadingdownst ? 0.5 : 1 }}
-                                        >
-                                            <Text style={{
-                                                fontFamily: Fonts.InterBold,
-                                                fontSize: 16,
-                                                color: loadingdownst ? Colorpath.disabled : Colorpath.ButtonColr
-                                            }}>
-                                                {"Download"}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View> : null}
-
-                            </ImageBackground>
+                            </View>
                         </View>
-                        {htmlContents ? <View style={{ width: "100%", paddingHorizontal: normalize(0), marginTop: normalize(10) }}>
-                            <View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                        {htmlContents ? (
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>
                                     {"Overview"}
                                 </Text>
-                            </View>
-                            <View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
-                                <RenderHTML
-                                    contentWidth={width}
-                                    source={{ html: htmlContents }}
-                                    tagsStyles={styles.tagsStyles}
-                                />
-                            </View>
-                        </View> : null}
-                        <View style={{ width: "100%" }}>
-                            <View style={{
-                                paddingVertical: normalize(10), paddingHorizontal: normalize(10)
-                            }}>
-                                <Buttons
-                                    onPress={() => {
-                                        const courseModuleList = Array.isArray(CMEReducer?.cmenextactionResponse?.courseModule)
-                                            ? CMEReducer?.cmenextactionResponse?.courseModule
-                                            : Array.isArray(CMEReducer?.cmenextactionResponse?.courseModules)
-                                                ? CMEReducer?.cmenextactionResponse?.courseModules
-                                                : [];
-                                        const nextIncompleteModule = getFirstIncompleteModule(courseModuleList);
-                                        const nextModuleId =
-                                            nextIncompleteModule?.activity_id ||
-                                            nextIncompleteModule?.current_activity_id ||
-                                            nextIncompleteModule?.next_activity_id ||
-                                            nextIncompleteModule?.id ||
-                                            CMEReducer?.cmenextactionResponse?.next_activity_id;
-                                        const nextModuleName = nextIncompleteModule?.name || CMEReducer?.cmenextactionResponse?.next_activity_text;
-                                        if (CMEReducer?.cmenextactionResponse?.next_activity_api == "activitysession" || nextModuleName?.toLowerCase()?.includes("section") || nextModuleName?.toLowerCase()?.includes("course")) {
-                                            takeCourse();
-                                            props.navigation.navigate("VideoComponent", {
-                                                ...(props?.route?.params || {}),
-                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                activityID: {
-                                                    ...CMEReducer?.cmenextactionResponse,
-                                                    current_activity_id: nextModuleId,
-                                                    next_activity_id: nextModuleId,
-                                                    next_activity_text: nextModuleName,
-                                                    courseModule: courseModuleList,
-                                                    webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                    webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                },
-                                                preserveVideoContent: false,
-                                            })
-                                        } else if (
-                                            CMEReducer?.cmenextactionResponse?.next_activity_api == "startTest" ||
-                                            CMEReducer?.cmenextactionResponse?.next_activity_api == "introduction" ||
-                                            CMEReducer?.actvityBreakupResponse?.current_activity_api == "introduction" ||
-                                            (typeof CMEReducer?.actvityBreakupResponse?.button_text === "string" &&
-                                                (CMEReducer?.actvityBreakupResponse?.button_text.toLowerCase().includes("start test") ||
-                                                    CMEReducer?.actvityBreakupResponse?.button_text.toLowerCase().includes("start course")))
-                                        ) {
-                                            takeCourse();
-                                            props.navigation.navigate("PreTest", { 
-                                                ...(props?.route?.params || {}),
-                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                testFlowType: "pre", 
-                                                videoContentData: CMEReducer?.cmenextactionResponse, 
-                                                FullID: { 
-                                                    FullID: CMEReducer?.cmenextactionResponse?.next_activity_id, 
-                                                    startTest: "startTest", 
-                                                    wholedata: CMEReducer?.cmenextactionResponse, 
-                                                    Wktext: CMEReducer?.actvityBreakupResponse?.current_activity_text,
-                                                    webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                    webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
-                                                } 
-                                            });
-                                        }
-                                    }}
-                                    height={normalize(45)}
-                                    width={normalize(300)}
-                                    backgroundColor={Colorpath.ButtonColr}
-                                    borderRadius={normalize(9)}
-                                    text={CMEReducer?.actvityBreakupResponse?.button_text}
-                                    color={Colorpath.white}
-                                    fontSize={16}
-                                    fontFamily={Fonts.InterBold}
-                                    // marginTop={normalize(30)}
-                                    fontWeight={"bold"}
-                                />
-                            </View>
-                            {/* <View style={{ paddingHorizontal: normalize(10), width: "100%" }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
-                                    {"Course Modules"}
-                                </Text>
-                            </View>
-                            <View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(6) }}>
-                                <View style={{
-                                    justifyContent: 'center',
-                                    alignSelf: 'center',
-                                    width: '99.99%',
-                                    borderWidth: 1,
-                                    borderColor: "#DDDDDD",
-                                    borderRadius: normalize(10),
-                                    paddingHorizontal: normalize(8), paddingVertical: normalize(2)
-                                }}>
-                                    <View style={styles.View}>
-                                        <View style={styles.contentContainer}>
-                                            {(actvityData?.title || actvityDatas?.conferenceName) ? <View style={styles.header}>
-                                                <Text numberOfLines={2} style={styles.title}>
-                                                    {actvityData?.title || actvityDatas?.conferenceName}
-                                                </Text>
-                                            </View> : null}
-                                            {(actvityData?.conferenceDuration || actvityDatas?.conferenceDuration) && <View style={{
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                width: '100%',
-                                                paddingVertical: normalize(5)
-                                            }}>
-                                                <TimeIcon name="time-outline" size={25} color={"#999999"} />
-                                                <Text style={[styles.subText, { marginLeft: normalize(5) }]}>
-                                                    {actvityData?.conferenceDuration || actvityDatas?.conferenceDuration}
-                                                </Text>
-                                            </View>}
-                                            {(actvityData?.courseModules || actvityDatas?.courseModule) && (
-                                                <View
-                                                    style={{
-                                                        width: normalize(280),
-                                                        paddingVertical: normalize(5),
-                                                        // backgroundColor:"red"
-                                                    }}
-                                                >
-                                                    <View style={styles.column}>
-                                                        {(() => {
-                                                            // ✅ STEP 1: Decide which dataset to use
-                                                            const hasCourseModulesData =
-                                                                actvityData?.courseModules &&
-                                                                Object.keys(actvityData?.courseModules).length > 0;
-
-                                                            // ✅ STEP 2: Prepare display list (no merge)
-                                                            const displayList = hasCourseModulesData
-                                                                ? Object.keys(actvityData?.courseModules || {})
-                                                                : (actvityDatas?.courseModule || []).map(item => item?.name).filter(Boolean);
-
-                                                            // ✅ STEP 3: Split into chunks of 3 for multi-line layout
-                                                            const rows = [];
-                                                            for (let i = 0; i < displayList.length; i += 3) {
-                                                                rows.push(displayList.slice(i, i + 3));
-                                                            }
-
-                                                            // ✅ STEP 4: Render rows
-                                                            return rows.map((rowItems, rowIndex) => (
-                                                                <View
-                                                                    key={`row-${rowIndex}`}
-                                                                    style={[styles.row, { marginBottom: rowIndex !== rows.length - 1 ? normalize(5) : 0 }]}
-                                                                >
-                                                                    {rowItems.map((label, index) => {
-                                                                        const cleanLabel = label
-                                                                            ?.replace(/-/g, ' ')
-                                                                            ?.replace(/&/g, 'and')
-                                                                            ?.replace(/\b\w/g, c => c.toUpperCase().trim());
-
-                                                                        return (
-                                                                            // <React.Fragment key={`${label}-${index}`}>
-                                                                            //     <Text numberOfLines={2} style={styles.detailText}>
-                                                                            //         {cleanLabel}
-                                                                            //     </Text>
-                                                                            //     {index !== rowItems.length - 1 && <View style={styles.separator} />}
-                                                                            // </React.Fragment>
-                                                                            <React.Fragment key={`${label}-${index}`}>
-                                                                                <View style={{ flexShrink: 1, flex: 1, minWidth: '30%' }}>
-                                                                                    <Text
-                                                                                        numberOfLines={3}
-                                                                                        style={[styles.detailText, { flexWrap: 'wrap' }]}
-                                                                                        ellipsizeMode="tail"
-                                                                                    >
-                                                                                        {cleanLabel}
-                                                                                    </Text>
-                                                                                </View>
-                                                                                {index !== rowItems.length - 1 && <View style={styles.separator} />}
-                                                                            </React.Fragment>
-                                                                        );
-                                                                    })}
-                                                                </View>
-                                                            ));
-                                                        })()}
-                                                    </View>
-                                                </View>
-                                            )}
-
-
-
-                                            <View>
-                                                {actvityDatas?.percentage === undefined ? <></> : <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
-                                                    <ProgressBarLine needwidth={"yes"} textadd={"yes"} progress={actvityDatas?.percentage} height={6} fillColor={Colorpath.green} />
-                                                </View>}
-                                            </View>
-                                        </View>
+                                <View style={styles.overviewCard}>
+                                    <View style={isLongOverview && !overviewExpanded ? { maxHeight: normalize(120), overflow: 'hidden' } : null}>
+                                        <RenderHTML
+                                            contentWidth={width - normalize(48)}
+                                            source={{ html: htmlContents }}
+                                            tagsStyles={styles.tagsStyles}
+                                        />
                                     </View>
+                                    {isLongOverview ? (
+                                        <TouchableOpacity
+                                            activeOpacity={0.7}
+                                            onPress={() => setOverviewExpanded(!overviewExpanded)}
+                                            style={styles.viewMoreButton}
+                                        >
+                                            <Text style={styles.viewMoreText}>
+                                                {overviewExpanded ? "View less" : "View more"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ) : null}
                                 </View>
-                            </View> */}
-                        </View>
-                        {actvityData?.speakers?.length > 0 ? <View style={{ width: "100%", paddingHorizontal: normalize(0), paddingVertical: normalize(0) }}>
-                            <View style={{ paddingHorizontal: normalize(8), width: "100%" }}>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                            </View>
+                        ) : null}
+
+
+                        {actvityData?.speakers?.length > 0 ? (
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>
                                     {"Faculty"}
                                 </Text>
-                            </View>
-                            <View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(6) }}>
-                                <View style={{
-                                    width: '100%',
-                                    borderWidth: 1,
-                                    borderColor: "#DDDDDD",
-                                    borderRadius: normalize(10),
-                                    paddingHorizontal: normalize(8),
-                                    paddingVertical: normalize(8),
-                                }}>
-                                    <View style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center'
-                                    }}>
-                                        <View style={{
-                                            height: normalize(70),
-                                            width: normalize(70),
-                                            backgroundColor: '#e9f5f9',
-                                            borderRadius: normalize(35),
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            marginRight: normalize(10),
-                                        }}>
-                                            <ImageBackground
+                                <View style={styles.facultyCard}>
+                                    <View style={styles.facultyAvatar}>
+                                        {speakerImage ? (
+                                            <Image
                                                 source={{ uri: speakerImage }}
                                                 style={{
-                                                    height: normalize(70),
-                                                    width: normalize(70),
+                                                    height: normalize(56),
+                                                    width: normalize(56),
+                                                    borderRadius: normalize(28),
                                                 }}
-                                                imageStyle={{ borderRadius: normalize(60) }}
                                             />
-                                        </View>
-                                        <View style={styles.textContainer}>
-                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#00000", fontWeight: "bold" }}>{speakerName}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{speakerQualification}</Text>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#333" }}>{speakerSpecialities}</Text>
-                                        </View>
+                                        ) : (
+                                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: '#0284C7' }}>
+                                                {speakerName ? speakerName.charAt(0) : "F"}
+                                            </Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.textContainer}>
+                                        <Text style={styles.facultyNameText}>{speakerName}</Text>
+                                        {speakerQualification ? (
+                                            <Text style={styles.facultyQualText}>{speakerQualification}</Text>
+                                        ) : null}
+                                        {speakerSpecialities ? (
+                                            <Text style={styles.facultySpecText}>{speakerSpecialities}</Text>
+                                        ) : null}
                                     </View>
                                 </View>
                             </View>
-                        </View> : null}
+                        ) : null}
+
+                        <View style={styles.actionButtonContainer}>
+                            <Buttons
+                                onPress={() => {
+                                    const courseModuleList = Array.isArray(CMEReducer?.cmenextactionResponse?.courseModule)
+                                        ? CMEReducer?.cmenextactionResponse?.courseModule
+                                        : Array.isArray(CMEReducer?.cmenextactionResponse?.courseModules)
+                                            ? CMEReducer?.cmenextactionResponse?.courseModules
+                                            : [];
+                                    const nextIncompleteModule = getFirstIncompleteModule(courseModuleList);
+                                    const nextModuleId =
+                                        nextIncompleteModule?.activity_id ||
+                                        nextIncompleteModule?.current_activity_id ||
+                                        nextIncompleteModule?.next_activity_id ||
+                                        nextIncompleteModule?.id ||
+                                        CMEReducer?.cmenextactionResponse?.next_activity_id;
+                                    const nextModuleName = nextIncompleteModule?.name || CMEReducer?.cmenextactionResponse?.next_activity_text;
+
+                                    const preAssessmentModule =
+                                        CMEReducer?.activityfulfilmentResponse?.courseModules?.["Pre-Assessment"] ||
+                                        CMEReducer?.activityfulfilmentResponse?.courseModules?.["Pre Assessment"] ||
+                                        CMEReducer?.activityfulfilmentResponse?.courseModules?.["Pre-Test"] ||
+                                        CMEReducer?.activityfulfilmentResponse?.courseModules?.["Pre Test"] ||
+                                        courseModuleList.find(m => {
+                                            const n = String(m?.name || '').toLowerCase();
+                                            return n.includes('pre assessment') || n.includes('pre-assessment') || n.includes('pre test') || n.includes('pre-test');
+                                        });
+                                    const isPreAssessmentPending = (dataactivitymain || preAssessmentModule) && Number(preAssessmentModule?.completedSection ?? 0) === 0;
+
+                                    if (!isPreAssessmentPending && (CMEReducer?.cmenextactionResponse?.next_activity_api === "activitysession" || nextModuleName?.toLowerCase()?.includes("section"))) {
+                                        takeCourse();
+                                        props.navigation.navigate("VideoComponent", {
+                                            ...(props?.route?.params || {}),
+                                            webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                            activityID: {
+                                                ...CMEReducer?.cmenextactionResponse,
+                                                current_activity_id: nextModuleId,
+                                                next_activity_id: nextModuleId,
+                                                next_activity_text: nextModuleName,
+                                                courseModule: courseModuleList,
+                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                                webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                            },
+                                            preserveVideoContent: false,
+                                        });
+                                    } else {
+                                        takeCourse();
+                                        const targetActivityId =
+                                            dataactivitymain ||
+                                            preAssessmentModule?.activity_id ||
+                                            nextModuleId ||
+                                            CMEReducer?.actvityBreakupResponse?.current_activity_id ||
+                                            CMEReducer?.cmenextactionResponse?.next_activity_id;
+                                        props.navigation.navigate("PreTest", { 
+                                            ...(props?.route?.params || {}),
+                                            webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                            testFlowType: "pre", 
+                                            videoContentData: CMEReducer?.cmenextactionResponse, 
+                                            activityID: {
+                                                activityID: targetActivityId,
+                                                conference_id: resolvedConferenceId,
+                                                text: "Pre Assessment",
+                                                courseModule: courseModuleList,
+                                            },
+                                            FullID: { 
+                                                FullID: targetActivityId, 
+                                                startTest: "startTest", 
+                                                wholedata: CMEReducer?.cmenextactionResponse || CMEReducer?.actvityBreakupResponse, 
+                                                Wktext: "Pre Assessment",
+                                                conferenceId: resolvedConferenceId,
+                                                webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                                webcastdeatils: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.startCourse,
+                                            } 
+                                        });
+                                    }
+                                }}
+                                height={normalize(46)}
+                                width={Math.min(width - normalize(32), 480)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(10)}
+                                text={CMEReducer?.actvityBreakupResponse?.button_text || actvityDatas?.buttonText || "Start Pre-Test"}
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                fontWeight={"600"}
+                            />
+                        </View>
                     </View>
                 </ScrollView>}
             </SafeAreaView>
@@ -699,135 +648,209 @@ export default StartTest
  */
 const styles = StyleSheet.create({
     container: {
-        justifyContent: 'center',
-        alignSelf: 'center',
-        // paddingVertical: normalize(10),
         width: '100%',
+        paddingHorizontal: normalize(12),
+        paddingTop: normalize(10),
     },
     imageBackground: {
-        paddingHorizontal: normalize(10),
-        paddingVertical: normalize(10),
-        alignItems: 'flex-start',
-        flexDirection: 'column',
-        width: normalize(330),
+        width: '100%',
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(14),
+        borderRadius: normalize(12),
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     contentContainer: {
         width: '100%',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         width: '100%',
-        marginRight: normalize(0)
-    },
-    tagsStyles: {
-        ul: {
-            marginVertical: normalize(5),
-            paddingLeft: 20,
-        },
-        li: {
-            marginBottom: 5,
-            fontSize: 16,
-            color: '#333',
-            top: Platform.OS === 'ios' ? 0 : -2,
-        },
     },
     title: {
         fontFamily: Fonts.InterBold,
-        fontSize: 20,
-        color: '#000000',
+        fontSize: 18,
+        color: '#0F172A',
         fontWeight: 'bold',
-        flex: 1,
-        flexWrap: 'wrap',
+        lineHeight: 24,
     },
     subHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         width: '100%',
-        paddingVertical: normalize(5),
+        paddingTop: normalize(4),
+        paddingBottom: normalize(6),
     },
     subText: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
-        color: '#666',
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        color: '#475569',
     },
     details: {
+        width: '100%',
+        paddingTop: normalize(4),
+    },
+    pillRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: normalize(6),
+    },
+    durationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EEF4FF',
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(4),
+        borderWidth: 1,
+        borderColor: '#D6E4FF',
+    },
+    durationText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: '#2C4DB9',
+        marginLeft: normalize(4),
+    },
+    cmeBadge: {
+        backgroundColor: '#ECFDF5',
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(9),
+        paddingVertical: normalize(4),
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+    },
+    cmeText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 12,
+        color: '#059669',
+    },
+    handoutRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        paddingVertical: normalize(5),
+        marginTop: normalize(12),
+        paddingTop: normalize(10),
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
     },
-    column: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
+    handoutTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: '#0F172A',
     },
-    row: {
+    downloadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(6),
+        borderRadius: normalize(8),
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+    },
+    downloadButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 13,
+        color: Colorpath.ButtonColr,
+    },
+    sectionCard: {
+        width: '100%',
+        paddingHorizontal: normalize(12),
+        marginTop: normalize(12),
+    },
+    sectionTitle: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 16,
+        color: '#0F172A',
+        fontWeight: 'bold',
+        marginBottom: normalize(8),
+    },
+    overviewCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: normalize(12),
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(10),
+    },
+    viewMoreButton: {
+        marginTop: normalize(8),
+        alignSelf: 'flex-start',
+        paddingVertical: normalize(4),
+    },
+    viewMoreText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: 14,
+        color: Colorpath.ButtonColr,
+        fontWeight: '600',
+    },
+    tagsStyles: {
+        p: {
+            fontSize: 14,
+            lineHeight: 21,
+            color: '#334155',
+            fontFamily: Fonts.InterRegular,
+            marginVertical: normalize(3),
+        },
+        ul: {
+            marginVertical: normalize(4),
+            paddingLeft: 18,
+        },
+        li: {
+            marginBottom: 4,
+            fontSize: 14,
+            lineHeight: 20,
+            color: '#334155',
+            fontFamily: Fonts.InterRegular,
+        },
+    },
+    facultyCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: normalize(12),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(12),
         flexDirection: 'row',
         alignItems: 'center',
     },
-    detailText: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
-        color: '#666',
+    facultyAvatar: {
+        height: normalize(56),
+        width: normalize(56),
+        borderRadius: normalize(28),
+        backgroundColor: '#E0F2FE',
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: normalize(12),
     },
-    separator: {
-        height: 15,
-        width: 2,
-        backgroundColor: '#DDD',
-        marginHorizontal: normalize(10),
+    facultyNameText: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 15,
+        color: '#0F172A',
+        fontWeight: 'bold',
     },
-    divider: {
-        marginTop: normalize(10),
-        height: 1,
-        width: '100%',
-        backgroundColor: '#DDD',
+    facultyQualText: {
+        fontFamily: Fonts.InterMedium,
+        fontSize: 13,
+        color: '#475569',
+        marginTop: normalize(2),
     },
-    coursedivider: {
-        marginTop: normalize(10),
-        height: 6,
-        width: '90%',
-        backgroundColor: 'red',
-        borderRadius: normalize(15)
+    facultySpecText: {
+        fontFamily: Fonts.InterRegular,
+        fontSize: 12,
+        color: '#64748B',
+        marginTop: normalize(2),
     },
     textContainer: {
         flex: 1,
         justifyContent: 'center',
     },
-    text: {
-        fontSize: normalize(14),
-        color: '#333',
-        marginBottom: normalize(5),
-    },
-    detailsd: {
-        paddingVertical: normalize(6),
-        paddingHorizontal: normalize(8),
-        borderWidth: 1,
-        borderColor: "#DADADA",
-        borderRadius: normalize(5),
-        backgroundColor: "#fff",
-        justifyContent: "center",
-    },
-    columnd: {
-        flexDirection: "column",
-    },
-    rowd: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-evenly",
-    },
-    detailTextd: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 14,
-        color: "#000000",
-        textAlign: "center",
-    },
-    separatord: {
-        height: normalize(18),
-        width: normalize(1),
-        backgroundColor: "#DADADA",
-        marginHorizontal: normalize(5),
+    actionButtonContainer: {
+        width: '100%',
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(16),
+        alignItems: 'center',
     },
 });

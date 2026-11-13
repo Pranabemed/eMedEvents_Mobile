@@ -323,6 +323,7 @@ searchSpeakerFailure(state, action) {
  * @returns {void}
  */
 speakerProfileRequest(state, action) {
+      state.speakerProfileRequestId = action.meta?.requestId ?? null;
       state.status = action.type;
     },
         /**
@@ -332,6 +333,7 @@ speakerProfileRequest(state, action) {
  * @returns {void}
  */
 speakerProfileSuccess(state, action) {
+      state.speakerProfileRequestId = action.meta?.requestId ?? null;
       state.speakerProfileResponse = action.payload;
       state.status = action.type;
     },
@@ -342,6 +344,7 @@ speakerProfileSuccess(state, action) {
  * @returns {void}
  */
 speakerProfileFailure(state, action) {
+      state.speakerProfileRequestId = action.meta?.requestId ?? null;
       state.status = action.type;
       state.error = action.error;
     },
