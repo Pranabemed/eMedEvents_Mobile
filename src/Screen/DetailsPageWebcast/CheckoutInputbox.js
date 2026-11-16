@@ -947,15 +947,15 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
 const renderForms = () => {
     return Array.from({ length: totalQuantity }, (_, index) => (
       <View key={index} style={{ flex: 1 }}>
-        {totalQuantity > 1 && <TouchableOpacity onPress={() => toggleExpand(index)} style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
-          <Text style={{ fontSize: 16, fontFamily: Fonts.InterMedium, color: "#000000", textAlign: 'center', paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+        {totalQuantity > 1 && <TouchableOpacity onPress={() => toggleExpand(index)} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: normalize(12), paddingVertical: normalize(10) }}>
+          <Text style={{ fontSize: 15, fontFamily: Fonts.InterSemiBold, color: "#0F172A" }}>
             {`Attendee ${index + 1} Information`}
           </Text>
-          <TouchableOpacity onPress={() => toggleExpand(index)} style={{ paddingVertical: normalize(10), marginRight: normalize(10) }}>
-            <ArrowIcon name={expandedSections[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"} color={"#000000"} size={30} />
-          </TouchableOpacity>
+          <View style={{ paddingVertical: normalize(4) }}>
+            <ArrowIcon name={expandedSections[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"} color={"#64748B"} size={26} />
+          </View>
         </TouchableOpacity>}
-        {totalQuantity > 1 && <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#999999", alignSelf: "center" }} />}
+        {totalQuantity > 1 && <View style={{ height: 1, width: '100%', backgroundColor: "#E2E8F0" }} />}
         {syncAnimatedValue(index)}
         {expandedSections[index] && <>
           <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
@@ -1709,15 +1709,12 @@ const billingForms = () => {
     const totalQuantity = 1
     return Array.from({ length: totalQuantity }, (_, index) => (
       <View key={index} style={{ flex: 1 }}>
-        <TouchableOpacity style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
-          <Text style={{ fontSize: 18, fontFamily: Fonts.InterSemiBold, color: "#000000", textAlign: 'center', paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: normalize(12), paddingVertical: normalize(10) }}>
+          <Text style={{ fontSize: 15, fontFamily: Fonts.InterSemiBold, color: "#0F172A" }}>
             {`Billing Information`}
           </Text>
-          {/* <TouchableOpacity onPress={() => toggleExpand(index)} style={{ paddingVertical: normalize(10), marginRight: normalize(10) }}>
-            <ArrowIcon name={expandedSections[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"} color={"#000000"} size={30} />
-          </TouchableOpacity> */}
-        </TouchableOpacity>
-        <View style={{ height: 0.8, width: normalize(300), backgroundColor: "#999999", alignSelf: "center" }} />
+        </View>
+        <View style={{ height: 1, width: '100%', backgroundColor: "#E2E8F0" }} />
         {expandedSections[index] && <>
           <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
             <View style={{

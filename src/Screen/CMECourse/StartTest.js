@@ -571,7 +571,16 @@ const StartTest = (props) => {
                                         });
                                     const isPreAssessmentPending = (dataactivitymain || preAssessmentModule) && Number(preAssessmentModule?.completedSection ?? 0) === 0;
 
-                                    if (!isPreAssessmentPending && (CMEReducer?.cmenextactionResponse?.next_activity_api === "activitysession" || nextModuleName?.toLowerCase()?.includes("section"))) {
+                                    const nextModuleNameLower = String(nextModuleName || '').toLowerCase();
+                                    const isVideoOrSectionNext =
+                                        CMEReducer?.cmenextactionResponse?.next_activity_api === "activitysession" ||
+                                        nextModuleNameLower.includes("section") ||
+                                        nextModuleNameLower.includes("course") ||
+                                        nextModuleNameLower.includes("video") ||
+                                        nextModuleNameLower.includes("session") ||
+                                        nextModuleNameLower.includes("webcast");
+
+                                    if (!isPreAssessmentPending && isVideoOrSectionNext) {
                                         takeCourse();
                                         props.navigation.navigate("VideoComponent", {
                                             ...(props?.route?.params || {}),

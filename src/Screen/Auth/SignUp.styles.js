@@ -28,13 +28,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: Platform.OS === 'ios' ? normalize(18) : normalize(24),
   },
-  logoContainerIos: {
-    top: normalize(10),
-  },
-  logoContainerAndroid: {
-    top: normalize(40),
-  },
+  logoContainerIos: {},
+  logoContainerAndroid: {},
   logoImage: {
     alignSelf: 'center',
     height: normalize(40),
@@ -44,24 +41,28 @@ const styles = StyleSheet.create({
   headerContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: Platform.OS === 'ios' ? normalize(40) : normalize(60),
+    marginTop: normalize(18),
+    marginBottom: normalize(4),
   },
   headerText: {
-    fontFamily: Fonts.InterSemiBold,
-    fontSize: 32,
+    fontFamily: Fonts.InterBold,
+    fontSize: normalize(20),
+    lineHeight: normalize(24),
     color: '#000000',
-    fontWeight: 'bold',
+    textAlign: 'center',
   },
   subHeaderText: {
-    paddingVertical: normalize(10),
-    color: '#666666',
-    fontSize: 18,
+    marginTop: normalize(6),
+    color: '#64748B',
+    fontSize: normalize(13),
+    lineHeight: normalize(18),
     fontFamily: Fonts.InterRegular,
     textAlign: 'center',
   },
   sectionContainer: {
     paddingHorizontal: normalize(20),
-    paddingVertical: normalize(10),
+    paddingTop: normalize(6),
+    paddingBottom: normalize(10),
   },
   inputRow: {
     flexDirection: 'row',
@@ -81,7 +82,8 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   termsContainer: {
-    paddingHorizontal: normalize(21),
+    paddingHorizontal: normalize(20),
+    marginTop: normalize(4),
   },
   termsRow: {
     flexDirection: 'row',
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
   },
   consentText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: 13,
+    fontSize: normalize(12),
     color: '#666666',
   },
   consentLinksRow: {
@@ -123,12 +125,12 @@ const styles = StyleSheet.create({
   },
   consentLinkText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: 14,
+    fontSize: normalize(12.5),
     color: Colorpath.ButtonColr,
   },
   consentBodyText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: 14,
+    fontSize: normalize(12.5),
     color: '#666666',
   },
   optInRow: {
@@ -137,26 +139,31 @@ const styles = StyleSheet.create({
   },
   optInText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: 14,
+    fontSize: normalize(12),
     color: '#666666',
   },
   optInTextContainer: {
     flexDirection: 'row',
   },
+  buttonWrapper: {
+    paddingHorizontal: normalize(20),
+    marginTop: normalize(10),
+  },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 1,
-    marginTop: normalize(10),
+    alignItems: 'center',
+    gap: 4,
+    marginTop: normalize(14),
   },
   footerText: {
     fontFamily: Fonts.InterMedium,
-    fontSize: 16,
-    color: '#000000',
+    fontSize: normalize(13.5),
+    color: '#334155',
   },
   footerLinkText: {
-    fontFamily: Fonts.InterMedium,
-    fontSize: 16,
+    fontFamily: Fonts.InterSemiBold,
+    fontSize: normalize(13.5),
     color: Colorpath.ButtonColr,
     fontWeight: 'bold',
   },

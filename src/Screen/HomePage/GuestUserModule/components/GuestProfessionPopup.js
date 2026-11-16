@@ -514,7 +514,7 @@ export /**
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               showsVerticalScrollIndicator={false}
             >
-              <View style={[styles.header, { paddingTop: Math.max(insets.top, normalize(12)) }]}>
+              <View style={[styles.header, { paddingTop: Math.max(insets.top, normalize(8)) }]}>
                 <Text style={styles.title}>Personalize Your CME/CE Journey</Text>
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -523,7 +523,7 @@ export /**
                   style={styles.closeButton}
                   activeOpacity={0.8}
                 >
-                  <Icon name="close" size={normalize(24)} color={Colorpath.black} />
+                  <Icon name="close" size={normalize(20)} color={Colorpath.black} />
                 </TouchableOpacity>
               </View>
 
@@ -553,7 +553,7 @@ export /**
                     </Text>
                     <Icon
                       name={professionOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={normalize(22)}
+                      size={normalize(18)}
                       color="#8B93A7"
                     />
                   </TouchableOpacity>
@@ -587,7 +587,7 @@ export /**
                                 activeOpacity={0.8}
                                 onPress={() => handleProfessionSelect(item)}
                               >
-                                <Text style={dropdownStyles.optionText}>
+                                <Text style={[dropdownStyles.optionText, styles.optionText]}>
                                   {item?.label}
                                 </Text>
                                 {isSelected ? (
@@ -628,7 +628,7 @@ export /**
                     </Text>
                     <Icon
                       name={specialtyOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={normalize(22)}
+                      size={normalize(18)}
                       color="#8B93A7"
                     />
                   </TouchableOpacity>
@@ -665,7 +665,7 @@ export /**
                                 activeOpacity={0.8}
                                 onPress={() => handleSpecialtySelect(item)}
                               >
-                                <Text style={dropdownStyles.optionText}>
+                                <Text style={[dropdownStyles.optionText, styles.optionText]}>
                                   {item?.label}
                                 </Text>
                                 {isSelected ? (
@@ -725,12 +725,12 @@ export /**
                     loading={isSubmitting}
                     disabled={!profession || !specialty || !trimmedEmail || !isEmailValid || isSubmitting}
                     onPress={handleSubmit}
-                    height={normalize(48)}
+                    height={normalize(40)}
                     width="100%"
-                    borderRadius={normalize(10)}
+                    borderRadius={normalize(8)}
                     backgroundColor={!isFormValid || isSubmitting ? '#8DA0E5' : Colorpath.ButtonColr}
                     color={Colorpath.white}
-                    fontSize={normalize(16)}
+                    fontSize={normalize(13.5)}
                     fontFamily={Fonts.InterBold}
                   />
 
@@ -774,61 +774,61 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    paddingHorizontal: normalize(18),
-    paddingBottom: normalize(14),
+    paddingHorizontal: normalize(16),
+    paddingBottom: normalize(10),
     borderBottomWidth: 1,
     borderBottomColor: '#E8ECF3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: normalize(12),
+    gap: normalize(10),
   },
   title: {
     flex: 1,
     color: Colorpath.ButtonColr,
     fontFamily: Fonts.InterBold,
-    fontSize: 20,
-    lineHeight: normalize(24),
+    fontSize: normalize(14.5),
+    lineHeight: normalize(20),
   },
   closeButton: {
-    width: normalize(34),
-    height: normalize(34),
-    borderRadius: normalize(17),
+    width: normalize(28),
+    height: normalize(28),
+    borderRadius: normalize(14),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F3F6FB',
   },
   body: {
     flex: 1,
-    paddingHorizontal: normalize(18),
-    paddingTop: normalize(18),
+    paddingHorizontal: normalize(16),
+    paddingTop: normalize(10),
   },
   description: {
     color: '#52607A',
     fontFamily: Fonts.InterRegular,
-    fontSize: 16,
-    lineHeight: normalize(22),
-    marginBottom: normalize(18),
+    fontSize: normalize(11.5),
+    lineHeight: normalize(16),
+    marginBottom: normalize(8),
   },
   fieldWrap: {
-    marginBottom: normalize(18),
+    marginBottom: normalize(10),
   },
   fieldLabel: {
     color: '#111827',
     fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(14),
-    marginBottom: normalize(8),
+    fontSize: normalize(12),
+    marginBottom: normalize(4),
   },
   required: {
     color: '#D11A2A',
   },
   selector: {
-    minHeight: normalize(52),
-    borderRadius: normalize(10),
+    minHeight: normalize(40),
+    borderRadius: normalize(8),
     borderWidth: 1,
     borderColor: '#D7DEEA',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: normalize(14),
+    paddingHorizontal: normalize(12),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -848,80 +848,80 @@ const styles = StyleSheet.create({
     borderColor: '#D11A2A',
   },
   emailWrap: {
-    minHeight: normalize(52),
-    borderRadius: normalize(10),
+    minHeight: normalize(40),
+    borderRadius: normalize(8),
     borderWidth: 1,
     borderColor: '#D7DEEA',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: normalize(14),
+    paddingHorizontal: normalize(12),
     justifyContent: 'center',
   },
   emailInput: {
     color: '#111827',
     fontFamily: Fonts.InterMedium,
-    fontSize: normalize(15),
+    fontSize: normalize(12.5),
     padding: 0,
-    minHeight: normalize(22),
+    minHeight: normalize(20),
   },
   selectorText: {
     flex: 1,
     color: '#111827',
     fontFamily: Fonts.InterMedium,
-    fontSize: normalize(15),
-    paddingRight: normalize(12),
+    fontSize: normalize(12.5),
+    paddingRight: normalize(10),
   },
   placeholderText: {
     color: '#8D97AA',
   },
   helperText: {
-    marginTop: normalize(6),
+    marginTop: normalize(3),
     color: '#6B7280',
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(12),
+    fontSize: normalize(11),
   },
   errorText: {
-    marginTop: normalize(6),
+    marginTop: normalize(3),
     color: '#D11A2A',
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(12),
+    fontSize: normalize(11),
   },
   dropdownShell: {
-    marginTop: normalize(10),
+    marginTop: normalize(8),
     borderWidth: 1,
     borderColor: '#E0E6F0',
-    borderRadius: normalize(12),
+    borderRadius: normalize(10),
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
   },
   dropdownList: {
-    maxHeight: normalize(210),
+    maxHeight: normalize(180),
   },
   dropdownContent: {
-    paddingVertical: normalize(6),
+    paddingVertical: normalize(4),
   },
   loaderWrap: {
-    minHeight: normalize(72),
+    minHeight: normalize(56),
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: normalize(10),
-    paddingHorizontal: normalize(12),
+    gap: normalize(8),
+    paddingHorizontal: normalize(10),
   },
   loaderText: {
     color: '#51607B',
     fontFamily: Fonts.InterMedium,
-    fontSize: normalize(13),
+    fontSize: normalize(11.5),
   },
   emptyText: {
-    paddingVertical: normalize(18),
+    paddingVertical: normalize(12),
     textAlign: 'center',
     color: '#6B7280',
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(13),
+    fontSize: normalize(11.5),
   },
   optionRow: {
-    minHeight: normalize(48),
-    paddingHorizontal: normalize(14),
+    minHeight: normalize(40),
+    paddingHorizontal: normalize(12),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -935,28 +935,28 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#111827',
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(14),
-    paddingRight: normalize(10),
+    fontSize: normalize(12),
+    paddingRight: normalize(8),
   },
   optionTextSelected: {
     fontFamily: Fonts.InterSemiBold,
     color: Colorpath.ButtonColr,
   },
   footer: {
-    marginTop: normalize(4),
-    paddingTop: normalize(12),
+    marginTop: normalize(2),
+    paddingTop: normalize(8),
     borderTopWidth: 1,
     borderTopColor: '#E8ECF3',
     backgroundColor: Colorpath.white,
   },
   skipButton: {
     alignSelf: 'center',
-    paddingVertical: normalize(12),
-    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(8),
+    paddingHorizontal: normalize(12),
   },
   skipText: {
     color: Colorpath.ButtonColr,
     fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(14),
+    fontSize: normalize(12),
   },
 });

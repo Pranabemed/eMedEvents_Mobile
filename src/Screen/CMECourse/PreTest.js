@@ -3,7 +3,8 @@
  */
 
 import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, TextInput, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, TextInput, BackHandler, ActivityIndicator } from 'react-native';
+import cleanHTML from './cleanAssessmentText';
 import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -86,20 +87,24 @@ const PreTest = (props) => {
   const [answers, setAnswers] = useState({});
   const isFocus = useIsFocused();
   const redirectedToVideoRef = useRef(false);
+  const pendingSubmissionRef = useRef(null);
   const testFlowType = String(props?.route?.params?.testFlowType || '').trim().toLowerCase();
   const routeActivityText = String(
     props?.route?.params?.activityID?.text ||
     props?.route?.params?.FullID?.Wktext ||
     ''
   ).trim().toLowerCase();
+  const isSurveyFlow = testFlowType === 'survey' || /survey|feedback|evaluation/.test(
+    routeActivityText || String(headerText || CMEReducer?.cmedulicateResponse?.current_activity_text || '').toLowerCase()
+  );
   const isPreTestFlow =
-    testFlowType === 'pre' || (testFlowType !== 'post' && (
+    !isSurveyFlow && (testFlowType === 'pre' || (testFlowType !== 'post' && (
     routeActivityText.includes('pre') ||
     String(headerText || '').toLowerCase().includes('pre') ||
     String(CMEReducer?.cmedulicateResponse?.current_activity_text || '').toLowerCase().includes('pre') ||
-    String(props?.route?.params?.FullID?.Wktext || '').toLowerCase().includes('pre')));
+    String(props?.route?.params?.FullID?.Wktext || '').toLowerCase().includes('pre'))));
   const isPostTestFlow =
-    !isPreTestFlow && (
+    !isSurveyFlow && !isPreTestFlow && (
       testFlowType === 'post' ||
       Boolean(props?.route?.params?.nodata) ||
       routeActivityText.includes('post') ||
@@ -194,6 +199,8 @@ const PreTest = (props) => {
 * @returns {void}
 */
   const allquestionHandle = () => {
+    if (!isFocus || pendingSubmissionRef.current) return;
+    pendingSubmissionRef.current = { response: CMEReducer.evaulateexamResponse };
     const normalizedExamAnswers = Object.fromEntries(
       Object.entries(selectedOptions || {}).map(([key, value]) => {
         // If the value is an array → keep it as is
@@ -218,7 +225,10 @@ const PreTest = (props) => {
       .then(() => {
         dispatch(evaulateexamRequest(obj));
       })
-      .catch((err) => { showErrorAlert("Please connect to internet", err) })
+      .catch((err) => {
+        pendingSubmissionRef.current = null;
+        showErrorAlert("Please connect to internet", err);
+      })
   }
 
   const assessmentActivityId = props?.route?.params?.activityID?.activityID ||
@@ -286,6 +296,7 @@ const PreTest = (props) => {
 
     props.navigation.navigate("VideoComponent", {
       ...(props?.route?.params || {}),
+      testFlowType: 'video',
       webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       RoleData: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails || props?.route?.params?.videoContentData || props?.route?.params?.RoleData || props?.route?.params?.activityID?.webcastdeatils,
     });
@@ -358,6 +369,7 @@ const PreTest = (props) => {
     if (isPreTestFlow) {
       props.navigation.navigate("VideoComponent", {
         ...(props?.route?.params || {}),
+        testFlowType: 'video',
         webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
         activityID: {
           ...(props?.route?.params?.activityID || {}),
@@ -399,6 +411,7 @@ const PreTest = (props) => {
     if (isPostTestFlow || props?.route?.params?.fromNotification) {
       props.navigation.navigate("PostTestFail", {
         ...(props?.route?.params || {}),
+        testFlowType: 'post',
         examID: CMEReducer?.evaulateexamResponse?.examId,
       });
       return;
@@ -406,6 +419,7 @@ const PreTest = (props) => {
 
     props.navigation.navigate("VideoComponent", {
       ...(props?.route?.params || {}),
+      testFlowType: 'video',
       webcastDetails: props?.route?.params?.webcastDetails || props?.route?.params?.maindata?.webcastDetails,
       activityID: {
         ...(props?.route?.params?.activityID || {}),
@@ -442,6 +456,38 @@ const PreTest = (props) => {
       preserveVideoContent: false,
     });
   }, [CMEReducer.status, CMEReducer.cmenextactionResponse, isFocus, props.navigation, props.route.params, isPreTestFlow, isPostTestFlow]);
+  // Only the focused screen that submitted this attempt may consume its result.
+  useEffect(() => {
+    if (!isFocus) {
+      pendingSubmissionRef.current = null;
+      return;
+    }
+    const pending = pendingSubmissionRef.current;
+    if (!pending) return;
+    if (CMEReducer.status === 'CME/evaulateexamFailure') {
+      pendingSubmissionRef.current = null;
+      return;
+    }
+    if (CMEReducer.evaulateexamResponse === pending.response) return;
+    pendingSubmissionRef.current = null;
+        if (isSurveyFlow) {
+          props.navigation.navigate("DownloadCertificate", {
+            examID: {
+              examID: CMEReducer?.evaulateexamResponse?.examId,
+              CertificateActivityId: CMEReducer?.cmedulicateResponse,
+            },
+          });
+        } else if (isPreTestFlow) {
+          goBackToVideoWithNextActivity();
+        } else if (isPostTestFlow || props?.route?.params?.fromNotification) {
+          props.navigation.navigate("PostTestFail", { ...(props?.route?.params || {}), testFlowType: 'post', examID: CMEReducer?.evaulateexamResponse?.examId });
+        } else if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
+          props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
+        } else {
+          goBackToVideoWithNextActivity();
+        }
+  }, [isFocus, CMEReducer.status, CMEReducer.evaulateexamResponse, isSurveyFlow, isPreTestFlow, isPostTestFlow]);
+
   if (status === '' || CMEReducer.status !== status) {
     switch (CMEReducer.status) {
       case 'CME/startTestRequest':
@@ -459,15 +505,7 @@ const PreTest = (props) => {
         break;
       case 'CME/evaulateexamSuccess':
         status = CMEReducer.status;
-        if (isPreTestFlow) {
-          goBackToVideoWithNextActivity();
-        } else if (CMEReducer?.cmedulicateResponse?.next_activity_text === "Certificate") {
-          props.navigation.navigate("DownloadCertificate", { examID: { examID: CMEReducer?.evaulateexamResponse?.examId, CertificateActivityId: CMEReducer?.cmedulicateResponse } })
-        } else if (isPostTestFlow || props?.route?.params?.fromNotification) {
-          props.navigation.navigate("PostTestFail", { ...(props?.route?.params || {}), examID: CMEReducer?.evaulateexamResponse?.examId });
-        } else {
-          goBackToVideoWithNextActivity();
-        }
+
         break;
       case 'CME/evaulateexamFailure':
         status = CMEReducer.status;
@@ -589,23 +627,6 @@ const PreTest = (props) => {
       setTimeflex(convertedVal);
     }
   }
-  /**
-* Clean html utility.
-* @param {*} htmlString - Input value.
-* @returns {*}
-*/
-  const cleanHTML = (htmlString) => {
-    if (!htmlString) return "";
-    htmlString = htmlString.replace(/<p[^>]*style="[^"]*margin-left:0px;"[^>]*>(.*?)<\/p>/g, "$1");
-    htmlString = htmlString.replace(/<\/?[^>]+(>|$)/g, "");
-    htmlString = htmlString.replace(/&nbsp;/g, " ");
-    htmlString = htmlString.replace(/&gt;/g, ">");
-    htmlString = htmlString.replace(/&lt;/g, "<");
-    htmlString = htmlString.replace(/&amp;/g, "&");
-    htmlString = htmlString.replace(/&quot;/g, '"');
-    htmlString = htmlString.replace(/&#39;|&#x27;|&apos;/g, "'");
-    return htmlString.trim();
-  };
   let questionCounter = 0;
   const totalQuestionsCount = testData && testData?.testData?.[0]?.total_questions || "";
   /**
@@ -631,7 +652,7 @@ const PreTest = (props) => {
                 fontWeight: '500',
               }}
             >
-              {item.heading}
+              {cleanHTML(item.heading)}
             </Text>
             <View
               style={{
@@ -1053,14 +1074,14 @@ const styles = StyleSheet.create({
   },
   groupSeparator: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     gap: 5,
     paddingHorizontal: normalize(10),
     paddingVertical: normalize(5)
   },
   dot: {
     height: 1,
-    width: (Dimensions.get('window').width * 0.4 - 60) / 17,
+    flex: 1,
     backgroundColor: '#DDDDDD',
   },
 });

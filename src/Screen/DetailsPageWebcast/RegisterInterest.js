@@ -848,84 +848,95 @@ const buildConferencePayload = () => {
                     }
                     <Loader
                         visible={WebcastReducer?.status == 'WebCast/RegisterIntRequest'} />
-                    <View style={{ backgroundColor: Colorpath.Pagebg, paddingBottom: normalize(5) }}>
-                        <View
+                    <View style={{
+                        backgroundColor: '#F0F7FF',
+                        borderRadius: normalize(12),
+                        borderWidth: 1,
+                        borderColor: '#BAE6FD',
+                        marginHorizontal: normalize(10),
+                        marginTop: normalize(8),
+                        marginBottom: normalize(8),
+                        padding: normalize(12),
+                    }}>
+                        <Text
                             style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(3),
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 16,
+                                lineHeight: 22,
+                                color: '#0F172A',
+                                textTransform: "capitalize"
                             }}>
-                            <Text numberOfLines={4}
-                                style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: '#000000',
-                                    fontWeight: 'bold',
-                                    textTransform: "capitalize"
-                                }}>
-                                {props?.route?.params?.checkoutSpan?.checkoutSpan?.title}
-                            </Text>
-                        </View>
+                            {props?.route?.params?.checkoutSpan?.checkoutSpan?.title}
+                        </Text>
 
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(0)
-                            }}>
+                        {props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName ? (
                             <Text numberOfLines={1}
                                 style={{
-                                    fontFamily: Fonts.InterRegular,
-                                    fontSize: 14,
-                                    color: '#000000',
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 13,
+                                    color: '#2563EB',
+                                    marginTop: normalize(4),
                                     textTransform: "capitalize"
                                 }}>
                                 {`${props?.route?.params?.checkoutSpan?.checkoutSpan?.organizerName}`}
                             </Text>
-                        </View>
-                        <View style={{ flexDirection: "column" }}>
-                            <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(2) }}>
-                                <Text numberOfLines={2} style={{
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 16,
-                                    color: '#000000',
-                                    width: normalize(120)
+                        ) : null}
+
+                        <View style={{ flexDirection: "row", flexWrap: 'wrap', gap: normalize(6), marginTop: normalize(8) }}>
+                            {props?.route?.params?.checkoutSpan?.checkoutSpan?.conferenceTypeText ? (
+                                <View style={{
+                                    backgroundColor: '#EFF6FF',
+                                    borderWidth: 1,
+                                    borderColor: '#BFDBFE',
+                                    borderRadius: normalize(6),
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(3),
                                 }}>
-                                    {props?.route?.params?.checkoutSpan?.checkoutSpan?.conferenceTypeText}
-                                </Text>
-                            </View>
-                            <View style={{
-                                flexDirection: "row",
-                                flexWrap: 'wrap',
-                                paddingHorizontal: normalize(11),
-                                paddingVertical: normalize(0),
-                                paddingBottom: normalize(5) // Added small padding to separate from the bottom gap
-                            }}>
-                                {props?.route?.params?.checkoutSpan?.checkoutSpan?.cmeCreditsData?.length > 0 ? (
-                                    props?.route?.params?.checkoutSpan?.checkoutSpan?.cmeCreditsData?.map((d, index, array) => {
-                                        const points = parseFloat(d?.points) || 0;
-                                        const name = d?.name || "";
+                                    <Text style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 12,
+                                        color: '#1D4ED8',
+                                    }}>
+                                        {props?.route?.params?.checkoutSpan?.checkoutSpan?.conferenceTypeText}
+                                    </Text>
+                                </View>
+                            ) : null}
+                            {props?.route?.params?.checkoutSpan?.checkoutSpan?.cmeCreditsData?.length > 0 ? (
+                                props?.route?.params?.checkoutSpan?.checkoutSpan?.cmeCreditsData?.map((d, index, array) => {
+                                    const points = parseFloat(d?.points) || 0;
+                                    const name = d?.name || "";
+                                    const displayName =
+                                        name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
 
-                                        // Special formatting for "Contact Hour"
-                                        const displayName =
-                                            name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
-
-                                        return (
-                                            <View key={index}>
-                                                <Text
-                                                    numberOfLines={5}
-                                                    style={{
-                                                        fontFamily: Fonts.InterMedium,
-                                                        fontSize: 16,
-                                                        color: "#000000",
-                                                        paddingVertical: normalize(0),
-                                                    }}
-                                                >
-                                                    {`${points} ${displayName}${index < array.length - 1 ? ', ' : ''}`}
+                                    return (
+                                        <View key={index} style={{
+                                            backgroundColor: '#ECFDF5',
+                                            borderWidth: 1,
+                                            borderColor: '#A7F3D0',
+                                            borderRadius: normalize(6),
+                                            paddingHorizontal: normalize(8),
+                                            paddingVertical: normalize(3),
+                                        }}>
+                                            <Text numberOfLines={1}>
+                                                <Text style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontSize: 13,
+                                                    color: '#059669',
+                                                }}>
+                                                    {`${points} `}
                                                 </Text>
-                                            </View>
-                                        );
-                                    })
-                                ) : null}
-                            </View>
+                                                <Text style={{
+                                                    fontFamily: Fonts.InterMedium,
+                                                    fontSize: 12,
+                                                    color: '#065F46',
+                                                }}>
+                                                    {displayName}
+                                                </Text>
+                                            </Text>
+                                        </View>
+                                    );
+                                })
+                            ) : null}
                         </View>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: normalize(50) }}>
@@ -933,35 +944,33 @@ const buildConferencePayload = () => {
                             <View style={{
                                 flexDirection: 'row',
                                 alignItems: 'center',
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(10)
+                                backgroundColor: '#F0F9FF',
+                                borderRadius: normalize(8),
+                                borderWidth: 1,
+                                borderColor: '#BAE6FD',
+                                paddingHorizontal: normalize(12),
+                                paddingVertical: normalize(10),
+                                marginHorizontal: normalize(10),
+                                marginTop: normalize(4),
+                                marginBottom: normalize(8),
                             }}>
-                                <TouchableOpacity onPress={() => { console.log("helo") }}>
-                                    <Image source={Imagepath.Info} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain" }} />
-                                </TouchableOpacity>
-                                <Text style={Platform.OS === "ios" ? {
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 12,
-                                    color: "#333",
-                                    marginLeft: normalize(5),
-                                    width: normalize(270)
-                                } : {
-                                    fontFamily: Fonts.InterMedium,
-                                    fontSize: 12,
-                                    color: "#333",
-                                    marginLeft: normalize(5),
-                                    width: normalize(290)
+                                <Image source={Imagepath.Info} style={{ height: normalize(16), width: normalize(16), resizeMode: "contain", marginRight: normalize(8) }} />
+                                <Text style={{
+                                    flex: 1,
+                                    fontFamily: Fonts.InterRegular,
+                                    fontSize: 12.5,
+                                    lineHeight: 18,
+                                    color: "#0369A1",
                                 }}>
                                     {"Please fill in the information below to receive an update once registration opens for this activity."}
                                 </Text>
                             </View>
-                            <View style={{ marginLeft: normalize(14) }}>
+                            <View style={{ paddingHorizontal: normalize(12), paddingTop: normalize(8), paddingBottom: normalize(4) }}>
                                 <Text
                                     style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 16,
-                                        color: '#333',
-                                        fontWeight: 'bold',
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 15,
+                                        color: '#0F172A',
                                     }}>
                                     {"Interested Participant Information"}
                                 </Text>
@@ -1277,19 +1286,20 @@ const buildConferencePayload = () => {
                                 </View>
                             ))}
                         </View>
-                        <Buttons
-                            onPress={interSubmit}
-                            height={normalize(45)}
-                            width={normalize(310)}
-                            backgroundColor={zerocm ? Colorpath.ButtonColr : "#DADADA"}
-                            borderRadius={normalize(9)}
-                            text="Submit"
-                            color={Colorpath.white}
-                            fontSize={18}
-                            fontFamily={Fonts.InterSemiBold}
-                            marginTop={normalize(10)}
-                            disabled={false}
-                        />
+                        <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(14), marginBottom: normalize(10) }}>
+                            <Buttons
+                                onPress={interSubmit}
+                                height={normalize(46)}
+                                width={'100%'}
+                                backgroundColor={zerocm ? Colorpath.ButtonColr : "#DADADA"}
+                                borderRadius={normalize(10)}
+                                text="Submit"
+                                color={Colorpath.white}
+                                fontSize={16}
+                                fontFamily={Fonts.InterSemiBold}
+                                disabled={false}
+                            />
+                        </View>
                     </ScrollView>
                 </KeyboardAvoidingView>}
                 {/* <DateTimePickerModal

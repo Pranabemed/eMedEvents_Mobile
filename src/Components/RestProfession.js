@@ -258,7 +258,7 @@ const RestProfession = ({ finalProfessionmain, CMEReducer, navigation, setPrimea
         <View style={{ paddingHorizontal: normalize(10), paddingVertical: profileType === 'SkipProfile' ? 0 : normalize(10) }}>
             {profileType !== 'SkipProfile' && !hideGreeting && (
                 <View style={{ marginTop: normalize(5) }}>
-                    <Text style={{ fontFamily: Fonts.InterBold, fontSize: 24, color: Colorpath.ButtonColr }}>{`Hey, ${nameShow}`}</Text>
+                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: Colorpath.ButtonColr, fontWeight: "bold" }}>{`Hey, ${nameShow}`}</Text>
                 </View>
             )}
             {(displayCompletedCount > 0 || displayPendingCount > 0 || displayCompletedCount == 1) ? (

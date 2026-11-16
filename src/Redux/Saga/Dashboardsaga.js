@@ -82,10 +82,14 @@ const dashboardCacheStore = async (data) => {
  */
 export function* dashboardSaga(action) {
   let items = yield select(getItem);
+  const token =
+    items?.token ||
+    action?.payload?.token ||
+    (yield call(AsyncStorage.getItem, constants.TOKEN));
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    authorization: items.token || action?.payload?.token,
+    authorization: token,
   };
   try {
     let response = yield call(postApi, 'user/dashboard', action?.payload?.key ? action?.payload?.key : action?.payload, header);
@@ -170,10 +174,14 @@ export function* dashPersonSaga(action) {
  */
 export function* stateDashboardSaga(action) {
   let items = yield select(getItem);
+  const token =
+    items?.token ||
+    action?.payload?.token ||
+    (yield call(AsyncStorage.getItem, constants.TOKEN));
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    authorization: items.token,
+    authorization: token,
   };
   try {
     let response = yield call(postApi, action?.payload?.board_id ? 'user/boardDashboard' : 'user/stateDashboard', action.payload, header);

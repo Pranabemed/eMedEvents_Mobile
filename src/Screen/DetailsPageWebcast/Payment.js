@@ -797,19 +797,49 @@ const Payment = (props) => {
                                     options={options}
                                     onSelect={handleSelect}
                                 />
-                                {selectedOption == 2 && <Text
-                                    style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 14,
-                                        color: Colorpath.black,
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet.`}
-                                </Text>}
+                                {selectedOption == 2 && (
+                                    <View
+                                        style={{
+                                            backgroundColor: '#E8F1FD',
+                                            borderRadius: normalize(8),
+                                            borderWidth: 1,
+                                            borderColor: '#CCE0FA',
+                                            paddingVertical: normalize(8),
+                                            paddingHorizontal: normalize(12),
+                                            width: normalize(295),
+                                            marginTop: normalize(8),
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                fontFamily: Fonts.InterMedium,
+                                                fontSize: normalize(13),
+                                                lineHeight: normalize(18),
+                                                color: '#1E293B',
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet.`}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
-                            {selectedOption == 1 && <View>
-                                <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(0) }}>
+                            {selectedOption == 1 && <View style={{
+                                backgroundColor: '#F0F7FF',
+                                borderRadius: normalize(12),
+                                borderWidth: 1,
+                                borderColor: '#BAE6FD',
+                                padding: normalize(14),
+                                marginHorizontal: normalize(12),
+                                marginTop: normalize(10),
+                                marginBottom: normalize(8),
+                            }}>
+                                <View style={{ marginBottom: normalize(8) }}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 15, color: "#0F172A" }}>{"Credit / Debit Card"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#64748B", marginTop: normalize(2) }}>{"Enter your card details for secure payment"}</Text>
+                                </View>
+                                <View>
+                                    <View style={{ paddingHorizontal: normalize(4), paddingVertical: normalize(0) }}>
                                     <View>
                                         <View>
                                             <MaskField
@@ -884,7 +914,8 @@ const Payment = (props) => {
                                         </View>
                                     </View>
                                 </View>
-                            </View>}
+                            </View>
+                        </View>}
                         </View>
                     ) : Number(isWalletOptionAvailable) && Number(walletBalance) < Number(baseAmount) ? (
                         // Scenario 2: Wallet balance is not enough, but still show wallet option with card option
@@ -904,21 +935,49 @@ const Payment = (props) => {
                                     options={options}
                                     onSelect={handleSelect}
                                 />
-                                <View style={{ paddingVertical: normalize(5) }}>
-                                    {selectedOption == 2 && <Text
+                                {selectedOption == 2 && (
+                                    <View
                                         style={{
-                                            fontFamily: Fonts.InterMedium,
-                                            fontSize: 14,
-                                            color: Colorpath.black,
-                                            textAlign: 'center',
+                                            backgroundColor: '#E8F1FD',
+                                            borderRadius: normalize(8),
+                                            borderWidth: 1,
+                                            borderColor: '#CCE0FA',
+                                            paddingVertical: normalize(8),
+                                            paddingHorizontal: normalize(12),
+                                            width: normalize(295),
+                                            marginTop: normalize(8),
                                         }}
                                     >
-                                        {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet and pay the balance amount of US$${formatNumberWithCommas(cutomPrice(finalAmnt))} using your credit card.`}
-                                    </Text>}
-                                </View>
+                                        <Text
+                                            style={{
+                                                fontFamily: Fonts.InterMedium,
+                                                fontSize: normalize(13),
+                                                lineHeight: normalize(18),
+                                                color: '#1E293B',
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            {`You can use US$${formatNumberWithCommas(cutomPrice(walletAppliedAmount))} from your wallet and pay the balance amount of US$${formatNumberWithCommas(cutomPrice(finalAmnt))} using your credit card.`}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
-                            <View>
-                                <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(0) }}>
+                            <View style={{
+                                backgroundColor: '#F0F7FF',
+                                borderRadius: normalize(12),
+                                borderWidth: 1,
+                                borderColor: '#BAE6FD',
+                                padding: normalize(14),
+                                marginHorizontal: normalize(12),
+                                marginTop: normalize(10),
+                                marginBottom: normalize(8),
+                            }}>
+                                <View style={{ marginBottom: normalize(8) }}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 15, color: "#0F172A" }}>{"Credit / Debit Card"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#64748B", marginTop: normalize(2) }}>{"Enter your card details for secure payment"}</Text>
+                                </View>
+                                <View>
+                                    <View style={{ paddingHorizontal: normalize(4), paddingVertical: normalize(0) }}>
                                     <View>
                                         <View>
                                             <MaskField
@@ -994,14 +1053,26 @@ const Payment = (props) => {
                                     </View>
                                 </View>
                             </View>
+                        </View>
                         </>
                     ) : Number(walletBalance) == 0 ? (
                         <>
-                            <View style={{ marginLeft: normalize(17), paddingVertical: normalize(10) }}>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>{"Please enter your credit/debit card information"}</Text>
-                            </View>
-                            <View>
-                                <View style={{ paddingHorizontal: normalize(20), paddingVertical: normalize(0) }}>
+                            <View style={{
+                                backgroundColor: '#F0F7FF',
+                                borderRadius: normalize(12),
+                                borderWidth: 1,
+                                borderColor: '#BAE6FD',
+                                padding: normalize(14),
+                                marginHorizontal: normalize(12),
+                                marginTop: normalize(10),
+                                marginBottom: normalize(8),
+                            }}>
+                                <View style={{ marginBottom: normalize(8) }}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 15, color: "#0F172A" }}>{"Credit / Debit Card"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#64748B", marginTop: normalize(2) }}>{"Enter your card details for secure payment"}</Text>
+                                </View>
+                                <View>
+                                    <View style={{ paddingHorizontal: normalize(4), paddingVertical: normalize(0) }}>
                                     <View>
                                         <View>
                                             <MaskField
@@ -1077,6 +1148,7 @@ const Payment = (props) => {
                                     </View>
                                 </View>
                             </View>
+                        </View>
                         </>
 
                     ) : (
@@ -1086,154 +1158,136 @@ const Payment = (props) => {
                     )}
 
 
-                    <View style={{ flexDirection: "column", justifyContent: "center", paddingHorizontal: normalize(17), paddingVertical: normalize(10) }}>
-                        <View style={{ flexDirection: "row", }}>
-                            <View style={{ flexDirection: "row", gap: normalize(10) }}>
-                                <TouchableOpacity onPress={() => { setChecked(!checked) }}>
-                                    {!checked ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
-                                        <TickMark name="checkmark" color={Colorpath.white} size={20} />
-                                    </View> :
-                                        <View style={{ borderColor: Colorpath.black, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
-                                    }
-                                </TouchableOpacity>
-                                <View style={{ flexDirection: "row", marginTop: normalize(8) }}>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#666666" }}>
-                                        {"I accept the"}
+                    <View style={{ flexDirection: "column", justifyContent: "center", paddingHorizontal: normalize(12), paddingVertical: normalize(8) }}>
+                        <View style={{ flexDirection: "row", alignItems: 'center' }}>
+                            <TouchableOpacity onPress={() => { setChecked(!checked) }} style={{ marginRight: normalize(10) }}>
+                                {!checked ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), borderWidth: normalize(0.5) }}>
+                                    <TickMark name="checkmark" color={Colorpath.white} size={16} />
+                                </View> :
+                                    <View style={{ borderColor: '#94A3B8', height: normalize(20), width: normalize(20), borderRadius: normalize(5), borderWidth: 1 }} />
+                                }
+                            </TouchableOpacity>
+                            <View style={{ flexDirection: "row", flexWrap: 'wrap', flex: 1, alignItems: 'center' }}>
+                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#475569" }}>
+                                    {"I accept the "}
+                                </Text>
+                                <TouchableOpacity onPress={(() => props.navigation.navigate("TermsAndConditions"))}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: Colorpath.ButtonColr }}>
+                                        {"Terms of Use"}
                                     </Text>
-                                    <View style={{ flexDirection: "row" }}>
-                                        <TouchableOpacity onPress={(() => props.navigation.navigate("TermsAndConditions"))}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
-                                                {" Terms of Use"}
-                                            </Text>
-                                        </TouchableOpacity>
-                                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
-                                            {" and"}
-                                        </Text>
-                                        <TouchableOpacity onPress={(() => props.navigation.navigate("PrivacyPolicy"))}>
-                                            <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: Colorpath.ButtonColr }}>
-                                                {" Privacy Policy"}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
+                                </TouchableOpacity>
+                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, color: "#475569" }}>
+                                    {" and "}
+                                </Text>
+                                <TouchableOpacity onPress={(() => props.navigation.navigate("PrivacyPolicy"))}>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: Colorpath.ButtonColr }}>
+                                        {"Privacy Policy"}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={{ flexDirection: "row", marginTop: normalize(15) }}>
-                            <View style={{ flexDirection: "row", gap: normalize(10) }}>
-                                <TouchableOpacity onPress={() => { setSocheck(!socheck) }} >
-                                    {!socheck ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
-                                        <TickMark name="checkmark" color={Colorpath.white} size={20} />
-                                    </View> :
-                                        <View style={{ height: normalize(20), width: normalize(20), borderColor: Colorpath.black, borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
-                                    }
-                                </TouchableOpacity>
-                                <View style={{ flexDirection: "row" }}>
-                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#666666" }}>
-                                        {"I agree to receive messages and OTPs for\nsecure account access from eMedEvents."}
-                                    </Text>
-                                </View>
-
+                        <View style={{ flexDirection: "row", marginTop: normalize(12), alignItems: 'flex-start' }}>
+                            <TouchableOpacity onPress={() => { setSocheck(!socheck) }} style={{ marginRight: normalize(10), marginTop: normalize(2) }}>
+                                {!socheck ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(20), width: normalize(20), borderRadius: normalize(5), borderWidth: normalize(0.5) }}>
+                                    <TickMark name="checkmark" color={Colorpath.white} size={16} />
+                                </View> :
+                                    <View style={{ height: normalize(20), width: normalize(20), borderColor: '#94A3B8', borderRadius: normalize(5), borderWidth: 1 }} />
+                                }
+                            </TouchableOpacity>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, lineHeight: 18, color: "#475569" }}>
+                                    {"I agree to receive messages and OTPs for secure account access from eMedEvents."}
+                                </Text>
                             </View>
                         </View>
                     </View>
-                    <View style={{ justifyContent: "center", alignItems: "center" }}>
-                        <View style={{ marginTop: normalize(10), height: 0.8, width: '89%', backgroundColor: "#DADADA" }} />
-                        <View style={{
-                            width: '89%',
-                            paddingTop: normalize(12),
-                            paddingBottom: normalize(6),
+                    <View style={{
+                        backgroundColor: '#F0F7FF',
+                        borderRadius: normalize(12),
+                        borderWidth: 1,
+                        borderColor: '#BAE6FD',
+                        padding: normalize(14),
+                        marginHorizontal: normalize(12),
+                        marginTop: normalize(10),
+                        marginBottom: normalize(12),
+                    }}>
+                        <Text style={{
+                            fontFamily: Fonts.InterSemiBold,
+                            fontSize: 15,
+                            color: "#0F172A",
+                            marginBottom: normalize(8),
                         }}>
-                            <View style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                paddingBottom: normalize(6),
+                            {"Payment Summary"}
+                        </Text>
+                        <View style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            paddingVertical: normalize(4),
+                        }}>
+                            <Text style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                color: "#64748B",
                             }}>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 13,
-                                    color: "#666666",
-                                }}>
-                                    {"Price"}
-                                </Text>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 13,
-                                    color: "#666666",
-                                }}>
-                                    {"Amount"}
-                                </Text>
-                            </View>
-                            <View style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                paddingVertical: normalize(4),
+                                {"Price"}
+                            </Text>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 14,
+                                color: "#0F172A",
                             }}>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: Colorpath.black,
-                                }}>
-                                    {"Price"}
-                                </Text>
-                                <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 14,
-                                    color: Colorpath.black,
-                                }}>
-                                    {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
-                                </Text>
-                            </View>
-                            {processingFeeAmount > 0 ? (
-                                <View style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    paddingVertical: normalize(4),
-                                }}>
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: Colorpath.black,
-                                    }}>
-                                        {"Transaction Fee : 3.5%"}
-                                    </Text>
-                                    <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: Colorpath.black,
-                                    }}>
-                                        {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
-                                    </Text>
-                                </View>
-                            ) : null}
-                            <View style={{ marginVertical: normalize(6), height: 0.8, width: '100%', backgroundColor: "#DADADA" }} />
+                                {`US$${formatNumberWithCommas(cutomPrice(subtotalAmount))}`}
+                            </Text>
+                        </View>
+                        {processingFeeAmount > 0 ? (
                             <View style={{
                                 flexDirection: "row",
+                                justifySpace: "space-between",
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 paddingVertical: normalize(4),
                             }}>
                                 <Text style={{
-                                    fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 16,
-                                    color: Colorpath.black
+                                    fontFamily: Fonts.InterMedium,
+                                    fontSize: 14,
+                                    color: "#64748B",
                                 }}>
-                                    {"Total Amount"}
+                                    {"Transaction Fee (3.5%)"}
                                 </Text>
                                 <Text style={{
                                     fontFamily: Fonts.InterSemiBold,
-                                    fontSize: 18,
-                                    color: Colorpath.black,
+                                    fontSize: 14,
+                                    color: "#0F172A",
                                 }}>
-                                    {`US$${formatNumberWithCommas(cutomPrice(summaryTotalAmount))}`}
+                                    {`US$${formatNumberWithCommas(cutomPrice(processingFeeAmount))}`}
                                 </Text>
                             </View>
+                        ) : null}
+                        <View style={{ marginVertical: normalize(8), height: 1, width: '100%', backgroundColor: "#F1F5F9" }} />
+                        <View style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            paddingVertical: normalize(2),
+                        }}>
+                            <Text style={{
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 16,
+                                color: "#0F172A"
+                            }}>
+                                {"Total Amount"}
+                            </Text>
+                            <Text style={{
+                                fontFamily: Fonts.InterBold,
+                                fontSize: 18,
+                                color: Colorpath.ButtonColr,
+                            }}>
+                                {`US$${formatNumberWithCommas(cutomPrice(summaryTotalAmount))}`}
+                            </Text>
                         </View>
                     </View>
-                    <View style={{ justifyContent: "center", alignItems: "center" }}>
+                    <View style={{ paddingHorizontal: normalize(12), marginTop: normalize(6), marginBottom: normalize(12) }}>
                         <Buttons
                             onPress={() => {
                                 if (isWalletOptionAvailable && selectedOption == 2 && Number(walletBalance) >= Number(totalPaidAmount)) {
@@ -1247,16 +1301,16 @@ const Payment = (props) => {
                                     paymentHandle();
                                 }
                             }}
-                            height={normalize(45)}
-                            width={normalize(300)}
+                            height={normalize(46)}
+                            width={'100%'}
                             backgroundColor={
                                 // Disable button if wallet balance is insufficient and wallet is selected
                                 (selectedOption == 2 && isOnlyCardOption) ? "#DADADA" : Colorpath.ButtonColr
                             }
-                            borderRadius={normalize(9)}
+                            borderRadius={normalize(10)}
                             text="Submit"
                             color={Colorpath.white}
-                            fontSize={18}
+                            fontSize={16}
                             fontFamily={Fonts.InterSemiBold}
                             disabled={
                                 // Disable button when wallet is selected, but balance is 0 or insufficient
@@ -1264,23 +1318,21 @@ const Payment = (props) => {
                             }
                         />
                     </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-
-                    </View>
                     <View style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        paddingHorizontal: normalize(17),
-                        paddingVertical: normalize(10)
+                        paddingHorizontal: normalize(14),
+                        paddingVertical: normalize(8)
                     }}>
                         <Text
                             style={{
                                 fontFamily: Fonts.InterRegular,
-                                fontSize: 14,
-                                color: "#CCC",
+                                fontSize: 12,
+                                lineHeight: 17,
+                                color: "#64748B",
                                 flex: 1,
-                                // backgroundColor:"red"
+                                paddingRight: normalize(10),
                             }}
                         >
                             {"We offer a secure online payment process that does not store or share your information with any third party companies."}
@@ -1288,8 +1340,8 @@ const Payment = (props) => {
                         <Image
                             source={Imagepath.Authorize}
                             style={{
-                                height: normalize(50),
-                                width: normalize(90),
+                                height: normalize(44),
+                                width: normalize(80),
                                 resizeMode: "contain"
                             }}
                         />

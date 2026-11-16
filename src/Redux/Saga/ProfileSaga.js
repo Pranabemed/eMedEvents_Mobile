@@ -153,10 +153,14 @@ export function* professionInfoSaga(action) {
 }
 export function* stateLicListSaga(action) {
   let items = yield select(getItem);
+  const token =
+    items?.token ||
+    action?.payload?.token ||
+    (yield call(AsyncStorage.getItem, constants.TOKEN));
   let header = {
     Accept: 'application/json',
     contenttype: 'application/json',
-    authorization: items.token,
+    authorization: token,
   };
   try {
     let response = yield call(postApi, 'user/licensureInformationList', action.payload, header);

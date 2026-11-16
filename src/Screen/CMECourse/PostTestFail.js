@@ -2,8 +2,9 @@
  * Post test fail screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, PostTestFail, PrePress, takeCoursepost, getCorrectOptionIds, renderGroup, renderItem, onBackPress, CustomRadioButton, styles.
  */
 
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, Image, Alert, BackHandler, ActivityIndicator, Dimensions } from 'react-native';
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, ScrollView, ImageBackground, Image, Alert, BackHandler, ActivityIndicator } from 'react-native';
+import cleanHTML from './cleanAssessmentText';
 import Colorpath from '../../Themes/Colorpath';
 import PageHeader from '../../Components/PageHeader';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -21,6 +22,7 @@ import { stateDashboardRequest } from '../../Redux/Reducers/DashboardReducer';
 import NetInfo from '@react-native-community/netinfo';
 import IntOff from '../../Utils/Helpers/IntOff';
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { CommonActions, useIsFocused } from '@react-navigation/native';
 
 /**
  * Reusable PostTestFail component.
@@ -73,14 +75,23 @@ const PrePress = () => {
         }
     };
     const [testData, setTestData] = useState([]);
+    const isFocus = useIsFocused();
+    const pendingResultRef = useRef(null);
     useEffect(() => {
+        if (!isFocus || !props?.route?.params?.examID) return;
+        let cancelled = false;
+        pendingResultRef.current = { response: CMEReducer.evaulatecalculateResponse };
         const obj = { "examId": props?.route?.params?.examID };
         connectionrequest()
             .then(() => {
-                dispatch(evaulatecalculateRequest(obj));
+                if (!cancelled) dispatch(evaulatecalculateRequest(obj));
             })
             .catch((err) => { showErrorAlert("Please connect to internet", err); });
-    }, [props?.route?.params?.examID]);
+        return () => {
+            cancelled = true;
+            pendingResultRef.current = null;
+        };
+    }, [isFocus, props?.route?.params?.examID]);
     useEffect(() => {
         if (statepush) {
             const takeIDST = statepush?.state_id || statepush?.creditID?.state_id;
@@ -206,11 +217,14 @@ const takeCoursepost = () => {
             },
             isRevise: true,
             retakeCourse: true,
+            testFlowType: 'video',
             preserveVideoContent: false,
         });
     };
     useEffect(()=>{
-        if(CMEReducer?.evaulatecalculateResponse){
+        const pending = pendingResultRef.current;
+        if (isFocus && pending && CMEReducer?.evaulatecalculateResponse !== pending.response) {
+            pendingResultRef.current = null;
             setTestData(CMEReducer?.evaulatecalculateResponse);
                 let obj = {
                     "ActivityId": CMEReducer?.evaulatecalculateResponse?.activityId,
@@ -218,7 +232,7 @@ const takeCoursepost = () => {
                 }
                 dispatch(cmenextactionRequest(obj))
         }
-    },[CMEReducer?.evaulatecalculateResponse])
+    },[isFocus, CMEReducer?.evaulatecalculateResponse])
     if (status === '' || CMEReducer.status !== status) {
         switch (CMEReducer.status) {
             case 'CME/evaulatecalculateRequest':
@@ -226,12 +240,7 @@ const takeCoursepost = () => {
                 break;
             case 'CME/evaulatecalculateSuccess':
                 status = CMEReducer.status;
-                setTestData(CMEReducer?.evaulatecalculateResponse);
-                let obj = {
-                    "ActivityId": CMEReducer?.evaulatecalculateResponse?.activityId,
-                    "conference_id": CMEReducer?.evaulatecalculateResponse?.conferenceId
-                }
-                dispatch(cmenextactionRequest(obj))
+
                 break;
             case 'CME/evaulatecalculateFailure':
                 status = CMEReducer.status;
@@ -294,7 +303,7 @@ const renderGroup = ({ item, index: groupIndex }) => (
                             marginLeft: normalize(10),
                             fontWeight: "500"
                         }}>
-                        {item.heading}
+                        {cleanHTML(item.heading)}
                     </Text>
                     <View style={{ height: 1, width: '90%', backgroundColor: "#DDDDDD", marginLeft: normalize(10) }} />
                 </>
@@ -344,7 +353,7 @@ const renderItem = ({ item, index }) => {
         return (
             <View style={styles.questionContainer}>
                 <Text style={styles.questionText}>
-                    {`${item?.questionNumber}. ${item?.statement?.replace(/<\/?[^>]+(>|$)/g, "")}`}
+                    {`${item?.questionNumber}. ${cleanHTML(item?.statement)}`}
                 </Text>
                 {item?.question_options?.map((option) => {
                     const userAnswers = Array.isArray(item?.answer) ? item?.answer : [item?.answer]; // Ensure answers are in an array
@@ -362,7 +371,7 @@ const renderItem = ({ item, index }) => {
                     return (
                         <View key={option.id} style={styles.optionContainer}>
                             <Text style={optionStyle}>
-                                {option?.statement?.replace(/<\/?[^>]+(>|$)/g, "")}
+                                {cleanHTML(option?.statement)}
                             </Text>
                         </View>
                     );
@@ -444,7 +453,7 @@ const onBackPress = () => {
                                 {showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : <View style={styles.headerRow}>
                                     <Image source={CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1 ? Imagepath.SucessThumb : Imagepath.Thumb} style={{ height: normalize(20), width: normalize(25), resizeMode: "contain" }} />
                                     <View style={styles.headerTextContainer}>
-                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#000000" }}>{CMEReducer?.evaulatecalculateResponse?.evaluationResult}</Text>
+                                        <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 18, color: "#000000" }}>{cleanHTML(CMEReducer?.evaulatecalculateResponse?.evaluationResult)}</Text>
                                     </View>
                                     <View style={styles.scoreColumnContainer}>
                                         <View>
@@ -472,7 +481,36 @@ const onBackPress = () => {
                                         onPress={() => {
                                             if (CMEReducer?.evaulatecalculateResponse?.evaluationStatus == 1) {
                                                 takeCoursepost();
-                                                props.navigation.navigate("TabNav");
+                                                const navigationState = props.navigation.getState ? props.navigation.getState() : null;
+                                                const courseIndex = navigationState?.routes
+                                                    ? navigationState.routes.map(route => route.name).lastIndexOf('Course')
+                                                    : -1;
+                                                if (courseIndex >= 0) {
+                                                    const routes = navigationState.routes.slice(0, courseIndex + 1);
+                                                    props.navigation.dispatch(
+                                                        CommonActions.reset({
+                                                            ...navigationState,
+                                                            routes,
+                                                            index: routes.length - 1,
+                                                        })
+                                                    );
+                                                } else {
+                                                    const tabNavIndex = navigationState?.routes
+                                                        ? navigationState.routes.map(route => route.name).lastIndexOf('TabNav')
+                                                        : -1;
+                                                    if (tabNavIndex >= 0) {
+                                                        const routes = navigationState.routes.slice(0, tabNavIndex + 1);
+                                                        props.navigation.dispatch(
+                                                            CommonActions.reset({
+                                                                ...navigationState,
+                                                                routes,
+                                                                index: routes.length - 1,
+                                                            })
+                                                        );
+                                                    } else {
+                                                        props.navigation.navigate("TabNav");
+                                                    }
+                                                }
                                             } else {
                                                 handleRetakeCourse();
                                             }
@@ -506,11 +544,29 @@ const onBackPress = () => {
                                                 )) {
                                                 takeCoursepost();
                                                 props.navigation.navigate("PreTest", {
+                                                    ...(props?.route?.params || {}),
+                                                    testFlowType: CMEReducer?.cmenextactionResponse?.next_activity_text == "Post Assessment" ? 'post' : 'pre',
                                                     activityID: { activityID: CMEReducer?.cmenextactionResponse?.next_activity_id, conference_id: CMEReducer?.evaulatecalculateResponse?.conferenceId, text: CMEReducer?.cmenextactionResponse?.next_activity_text }
                                                 });
                                             } else {
                                                 takeCoursepost();
-                                                props.navigation.navigate("PreTest", { nodata: CMEReducer?.evaulatecalculateResponse })
+                                                props.navigation.navigate("PreTest", {
+                                                    ...(props?.route?.params || {}),
+                                                    testFlowType: 'post',
+                                                    nodata: CMEReducer?.evaulatecalculateResponse,
+                                                    activityID: {
+                                                        activityID: CMEReducer?.evaulatecalculateResponse?.activityId || props?.route?.params?.activityID?.activityID,
+                                                        conference_id: CMEReducer?.evaulatecalculateResponse?.conferenceId || props?.route?.params?.activityID?.conference_id,
+                                                        text: "Post Assessment",
+                                                        courseModule: props?.route?.params?.activityID?.courseModule,
+                                                    },
+                                                    FullID: {
+                                                        FullID: CMEReducer?.evaulatecalculateResponse?.activityId || props?.route?.params?.FullID?.FullID,
+                                                        startTest: "startTest",
+                                                        Wktext: "Post Assessment",
+                                                        conferenceId: CMEReducer?.evaulatecalculateResponse?.conferenceId || props?.route?.params?.FullID?.conferenceId,
+                                                    },
+                                                });
                                             }
                                         }}
                                         height={normalize(45)}
@@ -695,14 +751,14 @@ const styles = StyleSheet.create({
     },
     groupSeparator: {
         flexDirection: "row",
-        flexWrap: "wrap",
+        flexWrap: "nowrap",
         gap: 5,
         paddingHorizontal: normalize(10),
         paddingVertical: normalize(5)
     },
     dot: {
         height: 1,
-        width: (Dimensions.get('window').width * 0.4 - 60) / 17,
+        flex: 1,
         backgroundColor: '#DDDDDD',
     },
 });

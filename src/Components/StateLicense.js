@@ -105,16 +105,11 @@ const buildProfessionLabel = (profession, professionType) => {
  * Status string constant.
  * @returns {string}
  */
-let status = "";
-/**
- * State license default export.
- *
- * @returns {*}
- */
 export default function StateLicense({ activePhysicianTrial = false, profileType, propsData, setRenewal, renewal, setStateid, stateid, setTotalCred, totalcard, finalProfessionmain, setPrimeadd, enables, setStateCount, fetcheddt, stateCount, fulldashbaord, setFulldashbaord, cmecourse, setTakestate, takestate, setAddit, addit }) {
     const DASHBOARD_REFRESH_MS = 60000;
     const isSkipProfile = profileType === 'SkipProfile';
     const dispatch = useDispatch();
+    const prevStatusRef = useRef("");
     const {
         setTakedata,
         expireDate,
@@ -546,13 +541,12 @@ const stateTake = (toklen, anoth) => {
     console.log(canAddLicenses, "canAddLicenses-=====", AuthReducer?.chooseStatecardResponse?.state_licensures, AuthReducer?.licesensResponse?.licensure_states);
 
 
-    if (status == '' || DashboardReducer.status != status) {
+    useEffect(() => {
+        if (!DashboardReducer.status || DashboardReducer.status === prevStatusRef.current) return;
+        prevStatusRef.current = DashboardReducer.status;
+
         switch (DashboardReducer.status) {
-            case 'Dashboard/dashboardRequest':
-                status = DashboardReducer.status;
-                break;
             case 'Dashboard/dashboardSuccess':
-                status = DashboardReducer.status;
                 if (DashboardReducer?.dashboardResponse?.data?.licensures == 0) {
                     setWholeNo(true);
                 } else {
@@ -570,37 +564,19 @@ const stateTake = (toklen, anoth) => {
                         stateTake(uniqueStates, uniqueMainDatacheck);
                     }
                 }
-                setFulldashbaord(uniqueStates);
-                break;
-            case 'Dashboard/dashboardFailure':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateDashboardRequest':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateDashboardSuccess':
-                status = DashboardReducer.status;
-                // setFinddata(DashboardReducer?.stateDashboardResponse?.data);
-                break;
-            case 'Dashboard/stateDashboardFailure':
-                status = DashboardReducer.status;
-                break;
-            case 'Dashboard/stateReportingRequest':
-                status = DashboardReducer.status;
+                if (uniqueStates?.length > 0) {
+                    setFulldashbaord(uniqueStates);
+                }
                 break;
             case 'Dashboard/stateReportingSuccess':
-                status = DashboardReducer.status;
                 if (DashboardReducer?.stateReportingResponse?.renewal_report?.renewal_link) {
                     setRenewal(DashboardReducer.stateReportingResponse.renewal_report.renewal_link);
                 } else {
                     setRenewal(null);
                 }
                 break;
-            case 'Dashboard/stateReportingFailure':
-                status = DashboardReducer.status;
-                break;
         }
-    }
+    }, [DashboardReducer.status, DashboardReducer?.dashboardResponse?.data, ProfileReducer?.stateLicenseListResponse?.licensures, DashboardReducer?.stateReportingResponse]);
     useEffect(() => {
         if (DashboardReducer?.stateDashboardResponse?.data) {
             const respStateId = DashboardReducer?.stateDashboardResponseStateId;
@@ -673,6 +649,26 @@ const stateTake = (toklen, anoth) => {
         }
         return null;
     }, [selectedDashboardStateId, DashboardReducer?.stateDashboardResponseStateId, DashboardReducer?.stateDashboardResponse?.data]);
+
+    useEffect(() => {
+        if (!isFocus || selectedDashboardStateId == null) return;
+        const stateKey = String(selectedDashboardStateId);
+        const hasCached = Boolean(stateDashboardCacheRef.current[stateKey]);
+        const hasDataInRedux = String(DashboardReducer?.stateDashboardResponseStateId) === stateKey && Boolean(DashboardReducer?.stateDashboardResponse?.data);
+        const isPending = DashboardReducer?.stateDashboardPending;
+        const hasFailed = String(DashboardReducer?.stateDashboardFailedStateId) === stateKey;
+
+        if (!hasCached && !hasDataInRedux && !isPending && !hasFailed) {
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateDashboardRequest({ state_id: selectedDashboardStateId }));
+                    dispatch(stateReportingRequest({ state_id: selectedDashboardStateId }));
+                })
+                .catch(err => {
+                    console.log('stateDashboard auto-fetch error', err);
+                });
+        }
+    }, [isFocus, selectedDashboardStateId, DashboardReducer?.stateDashboardResponseStateId, DashboardReducer?.stateDashboardResponse?.data, DashboardReducer?.stateDashboardPending, DashboardReducer?.stateDashboardFailedStateId, dispatch]);
 
     const hasMatchingDashboard = Boolean(resolvedFindData) || (
         selectedDashboardStateId != null &&

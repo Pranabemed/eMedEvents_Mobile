@@ -996,20 +996,22 @@ const onBackPress = () => {
                   </TouchableOpacity>
                 </View> : <></>}
               </View>
-              <Buttons
-                onPress={handleLogin}
-                height={normalize(45)}
-                width={normalize(290)}
-                backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#CCC"}
-                borderRadius={normalize(9)}
-                text={(isPasswordFieldVisible || isNonUsaFlow) ? "Sign In" : "Proceed"}
-                color={Colorpath.white}
-                fontSize={18}
-                fontFamily={Fonts.InterSemiBold}
-                marginTop={normalize(0)}
-                disabled={!isButtonEnabled || isLoginSubmitting}
-                loading={isLoginSubmitting || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest'}
-              />
+              <View style={styles.buttonWrapper}>
+                <Buttons
+                  onPress={handleLogin}
+                  height={normalize(45)}
+                  width="100%"
+                  backgroundColor={isButtonEnabled ? Colorpath.ButtonColr : "#CCC"}
+                  borderRadius={normalize(9)}
+                  text={(isPasswordFieldVisible || isNonUsaFlow) ? "Sign In" : "Proceed"}
+                  color={Colorpath.white}
+                  fontSize={normalize(15)}
+                  fontFamily={Fonts.InterSemiBold}
+                  marginTop={normalize(0)}
+                  disabled={!isButtonEnabled || isLoginSubmitting}
+                  loading={isLoginSubmitting || AuthReducer?.status == 'Auth/loginRequest' || AuthReducer?.status == 'Auth/loginsiginRequest'}
+                />
+              </View>
             </View>
             <View style={styles.footerRow}>
               <View>

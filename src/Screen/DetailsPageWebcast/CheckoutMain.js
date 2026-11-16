@@ -309,96 +309,99 @@ function formatPrice(price) {
     return (
         <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true} contentContainerStyle={{ paddingBottom: normalize(70) }}>
             {spanroute?.cartData && allPickersAreFalse ? <View style={{
-                backgroundColor: Colorpath.Pagebg
+                backgroundColor: '#F0F7FF',
+                borderRadius: normalize(12),
+                borderWidth: 1,
+                borderColor: '#BAE6FD',
+                padding: normalize(14),
+                marginHorizontal: normalize(10),
+                marginTop: normalize(10),
+                marginBottom: normalize(8),
             }}>
                 <View style={{
                     flexDirection: 'row',
                     alignItems: 'center'
                 }}>
                     <View style={{
-                        height: normalize(70),
-                        width: normalize(70),
-                        backgroundColor: '#e9f5f9',
-                        borderRadius: normalize(35),
+                        height: normalize(52),
+                        width: normalize(52),
+                        backgroundColor: '#EFF6FF',
+                        borderRadius: normalize(26),
                         justifyContent: 'center',
                         alignItems: 'center',
-                        marginRight: normalize(10),
+                        marginRight: normalize(12),
                     }}>
                         <Image
                             source={Imagepath.CartPng}
                             style={{
-                                height: normalize(40),
-                                width: normalize(40),
+                                height: normalize(28),
+                                width: normalize(28),
                                 resizeMode: "contain"
                             }}
 
                         />
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 18, color: "#FF773D", fontWeight: "bold" }}>{`Total Fee: US$${spanroute?.cartData?.subtotal_amount || spanroute?.cartData?.total_paid_amount || 0}`}</Text>
-                        <View style={{ flexDirection: "row" }}>
-                            <Text style={{ paddingHorizontal: normalize(3), paddingVertical: normalize(5), fontFamily: Fonts.InterBold, fontSize: 14, color: "#333" }}>{`Total Courses: `}</Text>
-                            <Text style={{ paddingVertical: normalize(5), fontFamily: Fonts.InterBold, fontSize: 14, color: "#FF773D" }}>{`${spanroute?.cartData?.total_qty}`}</Text>
+                        <Text style={{ fontFamily: Fonts.InterBold, fontSize: 16, color: Colorpath.ButtonColr }}>{`Total Fee: US$${spanroute?.cartData?.subtotal_amount || spanroute?.cartData?.total_paid_amount || 0}`}</Text>
+                        <View style={{ flexDirection: "row", marginTop: normalize(2) }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 13, color: "#64748B" }}>{`Total Courses: `}</Text>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 13, color: "#0F172A" }}>{`${spanroute?.cartData?.total_qty}`}</Text>
                         </View>
                     </View>
                 </View>
             </View> : null}
-            {(spanroute?.checkoutSpan || spanroute?.inpersonSpanrole) && allPickersAreFalse ? <View style={{ backgroundColor: Colorpath.Pagebg }}>
-                <View
-                    style={{
-                        paddingHorizontal: normalize(7),
-                        paddingVertical: normalize(3),
-                    }}>
-                    <Text numberOfLines={2}
+            {(spanroute?.checkoutSpan || spanroute?.inpersonSpanrole) && allPickersAreFalse ? <View style={{
+                backgroundColor: '#F0F7FF',
+                borderRadius: normalize(12),
+                borderWidth: 1,
+                borderColor: '#BAE6FD',
+                padding: normalize(14),
+                marginHorizontal: normalize(10),
+                marginTop: normalize(10),
+                marginBottom: normalize(8),
+            }}>
+                <View style={{ paddingVertical: normalize(2) }}>
+                    <Text
                         style={{
                             fontFamily: Fonts.InterSemiBold,
-                            fontSize: 18,
-                            color: '#000000',
-                            fontWeight: 'bold',
+                            fontSize: 16,
+                            lineHeight: 22,
+                            color: '#0F172A',
                             textTransform: "capitalize"
                         }}>
                         {spanroute?.checkoutSpan?.title || spanroute?.inpersonSpanrole?.title}
                     </Text>
                 </View>
 
-                <View
-                    style={{
-                        paddingHorizontal: normalize(7), paddingVertical: normalize(5)
-                    }}>
-                    <Text numberOfLines={1}
-                        style={{
-                            fontFamily: Fonts.InterRegular,
-                            fontSize: 14,
-                            color: '#000000',
-                            textTransform: "capitalize"
-                        }}>
-                        {`${spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName}`}
-                    </Text>
-                </View>
-                {conferenceDateLabel ? <View
-                    style={{
-                        paddingVertical: normalize(3)
-                    }}>
+                {(spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName) ? (
+                    <View style={{ paddingVertical: normalize(2) }}>
+                        <Text numberOfLines={1}
+                            style={{
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 13,
+                                color: '#2563EB',
+                                textTransform: "capitalize"
+                            }}>
+                            {`${spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName}`}
+                        </Text>
+                    </View>
+                ) : null}
+                {conferenceDateLabel ? <View style={{ paddingVertical: normalize(2) }}>
                     <Text numberOfLines={1}
                         style={{
                             fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: '#000000',
-                            paddingHorizontal: normalize(7),
+                            fontSize: 13,
+                            color: '#475569',
                         }}>
                         {conferenceDateLabel}
                     </Text>
                 </View> : null}
-                {spanroute?.inpersonSpanrole?.location ? <View
-                    style={{
-                        paddingVertical: normalize(5)
-                    }}>
+                {spanroute?.inpersonSpanrole?.location ? <View style={{ paddingVertical: normalize(2) }}>
                     <Text numberOfLines={1}
                         style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: '#000000',
-                            paddingHorizontal: normalize(7),
+                            fontFamily: Fonts.InterRegular,
+                            fontSize: 13,
+                            color: '#64748B',
                         }}>
                         {`${spanroute?.inpersonSpanrole?.location}`}
                     </Text>
@@ -406,125 +409,194 @@ function formatPrice(price) {
 
                 {((conferenceTypeText || points1 || points2) && conferenceTypeText !== "Webcast" && conferenceTypeText !== "Text-Based CME") ?
                     (
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text numberOfLines={1} style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 16,
-                                color: '#000000',
-                                paddingHorizontal: normalize(7),
-                            }}>
-                                {points1 ? `${+(points1)} ${name1}` : null}
-                            </Text>
-                        </View>
-                    ) : (
-                        <>
-                            <View style={{ flexDirection: "column" }}>
-                                <View style={{ paddingHorizontal: normalize(7), paddingVertical: normalize(3) }}>
-                                    <Text numberOfLines={2} style={{
-                                        fontFamily: Fonts.InterMedium,
-                                        fontSize: 16,
-                                        color: '#000000',
-                                        width: normalize(120)
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: normalize(6), marginTop: normalize(6) }}>
+                            {conferenceTypeText ? (
+                                <View style={{
+                                    backgroundColor: '#EFF6FF',
+                                    borderWidth: 1,
+                                    borderColor: '#BFDBFE',
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(3),
+                                    borderRadius: normalize(6),
+                                }}>
+                                    <Text numberOfLines={1} style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 12,
+                                        color: '#1D4ED8',
                                     }}>
-                                        {conferenceTypeText ? `${conferenceTypeText}  ` : null}
+                                        {conferenceTypeText}
                                     </Text>
                                 </View>
+                            ) : null}
+                            {points1 ? (
                                 <View style={{
-                                    flexDirection: "row",
-                                    flexWrap: 'wrap',
-                                    paddingHorizontal: normalize(7), paddingVertical: normalize(3)
+                                    backgroundColor: '#ECFDF5',
+                                    borderWidth: 1,
+                                    borderColor: '#A7F3D0',
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(3),
+                                    borderRadius: normalize(6),
                                 }}>
-                                    {spanroute?.checkoutSpan?.cmeCreditsData?.length > 1 ? (
-                                        spanroute?.checkoutSpan?.cmeCreditsData?.map((d, index, array) => {
-                                            const points = parseFloat(d?.points) || 0;
-                                            const name = d?.name || "";
-
-                                            // Special formatting for "Contact Hour"
-                                            const displayName =
-                                                name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
-
-                                            return (
-                                                <View key={index}>
-                                                    <Text
-                                                        numberOfLines={5}
-                                                        style={{
-                                                            fontFamily: Fonts.InterMedium,
-                                                            fontSize: 16,
-                                                            color: "#000000",
-                                                            paddingVertical: normalize(0),
-                                                        }}
-                                                    >
-                                                        {`${points} ${displayName}${index < array.length - 1 ? ', ' : ''}`}
-                                                    </Text>
-                                                </View>
-                                            );
-                                        })
-
-                                    ) : (spanroute?.inpersonSpanrole?.cmeCreditsData?.map((d, index, array) => {
-                                        const points = parseFloat(d?.points) || 0;
-                                        const name = d?.name || "";
-
-                                        // ✅ If the credit name is "Contact Hour", change it to "Contact Hour(s)"
-                                        const displayName =
-                                            name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
-
-                                        return (
-                                            <React.Fragment key={index}>
-                                                <Text
-                                                    numberOfLines={5}
-                                                    style={{
-                                                        fontFamily: Fonts.InterMedium,
-                                                        fontSize: 16,
-                                                        color: "#000000",
-                                                        paddingVertical: normalize(5),
-                                                        paddingHorizontal: normalize(8),
-                                                    }}
-                                                >
-                                                    {`${points} ${displayName}${index < array.length - 1 ? ', ' : ''}`}
-                                                </Text>
-                                            </React.Fragment>
-                                        );
-                                    }))}
+                                    <Text numberOfLines={1}>
+                                        <Text style={{
+                                            fontFamily: Fonts.InterBold,
+                                            fontSize: 13,
+                                            color: '#059669',
+                                        }}>
+                                            {`${+(points1)} `}
+                                        </Text>
+                                        <Text style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 12,
+                                            color: '#065F46',
+                                        }}>
+                                            {name1}
+                                        </Text>
+                                    </Text>
                                 </View>
-                            </View>
-                        </>
-
+                            ) : null}
+                            {points2 ? (
+                                <View style={{
+                                    backgroundColor: '#ECFDF5',
+                                    borderWidth: 1,
+                                    borderColor: '#A7F3D0',
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(3),
+                                    borderRadius: normalize(6),
+                                }}>
+                                    <Text numberOfLines={1}>
+                                        <Text style={{
+                                            fontFamily: Fonts.InterBold,
+                                            fontSize: 13,
+                                            color: '#059669',
+                                        }}>
+                                            {`${+(points2)} `}
+                                        </Text>
+                                        <Text style={{
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 12,
+                                            color: '#065F46',
+                                        }}>
+                                            {name2}
+                                        </Text>
+                                    </Text>
+                                </View>
+                            ) : null}
+                        </View>
+                    ) : (
+                        <View style={{ flexDirection: "row", flexWrap: 'wrap', gap: normalize(6), marginTop: normalize(6) }}>
+                            {conferenceTypeText ? (
+                                <View style={{
+                                    backgroundColor: '#EFF6FF',
+                                    borderWidth: 1,
+                                    borderColor: '#BFDBFE',
+                                    paddingHorizontal: normalize(8),
+                                    paddingVertical: normalize(3),
+                                    borderRadius: normalize(6),
+                                }}>
+                                    <Text numberOfLines={1} style={{
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 12,
+                                        color: '#1D4ED8',
+                                    }}>
+                                        {conferenceTypeText}
+                                    </Text>
+                                </View>
+                            ) : null}
+                            {spanroute?.checkoutSpan?.cmeCreditsData?.length > 1 ? (
+                                spanroute?.checkoutSpan?.cmeCreditsData?.map((d, index, array) => {
+                                    const points = parseFloat(d?.points) || 0;
+                                    const name = d?.name || "";
+                                    const displayName = name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
+                                    return (
+                                        <View key={index} style={{
+                                            backgroundColor: '#ECFDF5',
+                                            borderWidth: 1,
+                                            borderColor: '#A7F3D0',
+                                            paddingHorizontal: normalize(8),
+                                            paddingVertical: normalize(3),
+                                            borderRadius: normalize(6),
+                                        }}>
+                                            <Text numberOfLines={1}>
+                                                <Text style={{
+                                                    fontFamily: Fonts.InterBold,
+                                                    fontSize: 13,
+                                                    color: '#059669',
+                                                }}>
+                                                    {`${points} `}
+                                                </Text>
+                                                <Text style={{
+                                                    fontFamily: Fonts.InterMedium,
+                                                    fontSize: 12,
+                                                    color: '#065F46',
+                                                }}>
+                                                    {displayName}
+                                                </Text>
+                                            </Text>
+                                        </View>
+                                    );
+                                })
+                            ) : (spanroute?.inpersonSpanrole?.cmeCreditsData?.map((d, index, array) => {
+                                const points = parseFloat(d?.points) || 0;
+                                const name = d?.name || "";
+                                const displayName = name.toLowerCase() == "contact hour" ? "Contact Hour(s)" : name;
+                                return (
+                                    <View key={index} style={{
+                                        backgroundColor: '#ECFDF5',
+                                        borderWidth: 1,
+                                        borderColor: '#A7F3D0',
+                                        paddingHorizontal: normalize(8),
+                                        paddingVertical: normalize(3),
+                                        borderRadius: normalize(6),
+                                    }}>
+                                        <Text numberOfLines={1}>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterBold,
+                                                fontSize: 13,
+                                                color: '#059669',
+                                            }}>
+                                                {`${points} `}
+                                            </Text>
+                                            <Text style={{
+                                                fontFamily: Fonts.InterMedium,
+                                                fontSize: 12,
+                                                color: '#065F46',
+                                            }}>
+                                                {displayName}
+                                            </Text>
+                                        </Text>
+                                    </View>
+                                );
+                            }))}
+                        </View>
                     )}
 
 
                 {(spanroute?.checkoutSpan?.conferenceTypeText !== "Webcast" || spanroute?.inpersonSpanrole?.conferenceTypeText !== "Webcast") && <>
-                    <View style={{ paddingVertical: normalize(10), flexDirection: "row", justifyContent: "space-between", alignContent: "space-between" }}>
+                    <View style={{ height: 1, width: '100%', backgroundColor: '#BAE6FD', marginTop: normalize(12), marginBottom: normalize(8) }} />
+                    <View style={{ paddingTop: normalize(4), paddingBottom: normalize(4), flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                         <View>
                             {(spanroute?.inPersonTicket?.tickets) ? (
-                                <View
-                                    style={{
-                                        paddingHorizontal: normalize(4),
-                                        paddingVertical: normalize(5),
-                                        // marginTop: normalize(10)
-                                    }}>
+                                <View style={{ paddingVertical: normalize(2) }}>
                                     <Text
                                         style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            color: '#000000'
+                                            fontFamily: Fonts.InterMedium,
+                                            fontSize: 13,
+                                            color: '#64748B'
                                         }}>
-                                        {` Total (${totalcount} tickets)`}
+                                        {`Total (${totalcount} tickets)`}
                                     </Text>
                                 </View>
                             ) : null}
                             {(spanroute?.checkoutSpan?.buttonType?.toLowerCase() === "register" &&
                                 spanroute?.checkoutSpan?.registered_allow === 1 || spanroute?.inpersonSpanrole?.buttonType?.toLowerCase() === "register" &&
                                 spanroute?.inpersonSpanrole?.registered_allow === 1) ? (
-                                <View
-                                    style={{
-                                        paddingHorizontal: normalize(7),
-                                        // paddingVertical: normalize(10),
-                                    }}>
+                                <View style={{ paddingVertical: normalize(2) }}>
                                     <Text
                                         style={{
                                             fontFamily: Fonts.InterBold,
                                             fontSize: 18,
-                                            color: "#000000",
+                                            color: Colorpath.ButtonColr,
                                         }}
                                     >
                                         {feeAwareBaseAmount > 0
@@ -538,36 +610,25 @@ function formatPrice(price) {
                             <TouchableOpacity
                                 onPress={handleToggleExpand}
                                 style={{
-                                    height: normalize(30),
-                                    width: normalize(30),
-                                    borderRadius: normalize(30),
-                                    borderColor: "#000000",
-                                    borderWidth: 2,
-                                    justifyContent: "center", // Center icon vertically
-                                    alignItems: "center", // Center icon horizontally
-                                    marginRight: normalize(10),
-                                    marginTop: normalize(10),
+                                    height: normalize(28),
+                                    width: normalize(28),
+                                    borderRadius: normalize(14),
+                                    backgroundColor: '#EFF6FF',
+                                    justifyContent: "center",
+                                    alignItems: "center",
                                 }}
                             >
                                 <ArrowIcon
-                                    name={"keyboard-arrow-down"}
-                                    style={{ alignSelf: "center" }}
-                                    color={"#000000"}
-                                    size={30}
+                                    name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                    color={"#1D4ED8"}
+                                    size={20}
                                 />
                             </TouchableOpacity>
                         )}
                     </View>
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(0) }}>
-                        <View style={{ height: 0.5, width: normalize(300), backgroundColor: "#DADADA", alignSelf: "center" }} />
-                    </View>
+                    <View style={{ height: 1, width: '100%', backgroundColor: "#BAE6FD", marginVertical: normalize(8) }} />
                     {displayedTickets?.length === 1 && (
-                        <View
-                            style={{
-                                paddingHorizontal: normalize(10),
-                                paddingVertical: normalize(10),
-                            }}
-                        >
+                        <View style={{ paddingVertical: normalize(4) }}>
                             <View
                                 style={{
                                     flexDirection: "row",
@@ -577,42 +638,29 @@ function formatPrice(price) {
                             >
                                 <Text
                                     style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: "#666666",
-                                        width: normalize(235)
+                                        flex: 1,
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 13.5,
+                                        color: "#1E293B",
+                                        paddingRight: normalize(8),
                                     }}
                                 >
                                     {`${displayedTickets[0]?.description}`}
                                 </Text>
-                                <View
+                                <Text
                                     style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-evenly",
-                                        alignContent: "space-evenly",
+                                        fontFamily: Fonts.InterSemiBold,
+                                        fontSize: 14.5,
+                                        color: "#0F172A",
                                     }}
                                 >
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterSemiBold,
-                                            fontSize: 14,
-                                            color: "#000000",
-                                        }}
-                                    >
-                                        {`$${formatNumberWithCommas(formatPrice(displayedTickets[0]?.itemamt))}`}
-                                    </Text>
-                                    {/* <TouchableOpacity
-                                        style={{ marginLeft: normalize(10) }}
-                                        onPress={() => handleSoftDelete(0)}
-                                    >
-                                        <ArrowIcon name="delete" color={"#000000"} size={24} />
-                                    </TouchableOpacity> */}
-                                </View>
+                                    {`$${formatNumberWithCommas(formatPrice(displayedTickets[0]?.itemamt))}`}
+                                </Text>
                             </View>
                         </View>
                     )}
                     {isExpanded && displayedTickets?.length > 0 && (
-                        <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                        <View style={{ paddingVertical: normalize(4) }}>
                             {displayedTickets.map((ticket, index) => (
                                 <View
                                     key={index}
@@ -620,24 +668,21 @@ function formatPrice(price) {
                                         flexDirection: "row",
                                         justifyContent: "space-between",
                                         alignItems: "center",
-                                        marginBottom: normalize(5),
+                                        paddingVertical: normalize(4),
                                     }}
                                 >
                                     <Text style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
-                                        color: '#666666',
-                                        width: normalize(235)
+                                        flex: 1,
+                                        fontFamily: Fonts.InterMedium,
+                                        fontSize: 13.5,
+                                        color: '#1E293B',
+                                        paddingRight: normalize(8),
                                     }}>
                                         {`${ticket?.description}`}
                                     </Text>
-
-                                    <View style={{ flexDirection: "row", justifyContent: "space-evenly", alignContent: "space-evenly" }}>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#000000" }}>{`$${formatNumberWithCommas(formatPrice(ticket?.itemamt))}`}</Text>
-                                        {/* <TouchableOpacity style={{ marginLeft: normalize(10) }} onPress={() => handleSoftDelete(index)}>
-                                            <ArrowIcon name="delete" color={"#000000"} size={24} />
-                                        </TouchableOpacity> */}
-                                    </View>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14.5, color: "#0F172A" }}>
+                                        {`$${formatNumberWithCommas(formatPrice(ticket?.itemamt))}`}
+                                    </Text>
                                 </View>
                             ))}
                         </View>
@@ -646,40 +691,38 @@ function formatPrice(price) {
 
             </View> : null}
 
-            {allPickersAreFalse && !spanroute?.cartData && <View>
+            {allPickersAreFalse && !spanroute?.cartData && (
                 <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingHorizontal: normalize(10),
-                    paddingVertical: normalize(10)
+                    backgroundColor: '#F0F9FF',
+                    borderRadius: normalize(8),
+                    borderWidth: 1,
+                    borderColor: '#BAE6FD',
+                    paddingHorizontal: normalize(12),
+                    paddingVertical: normalize(10),
+                    marginHorizontal: normalize(10),
+                    marginTop: normalize(4),
+                    marginBottom: normalize(6),
                 }}>
-                    <TouchableOpacity onPress={() => { console.log("helo") }}>
-                        <Image source={Imagepath.Info} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain" }} />
-                    </TouchableOpacity>
-                    <Text style={Platform.OS === "ios" ? {
-                        fontFamily: Fonts.InterMedium,
-                        fontSize: 12,
-                        color: "#333",
-                        marginLeft: normalize(5),
-                        width: normalize(270)
-                    } : {
-                        fontFamily: Fonts.InterMedium,
-                        fontSize: 12,
-                        color: "#333",
-                        marginLeft: normalize(5),
-                        width: normalize(290)
+                    <Image source={Imagepath.Info} style={{ height: normalize(16), width: normalize(16), resizeMode: "contain", marginRight: normalize(8) }} />
+                    <Text style={{
+                        flex: 1,
+                        fontFamily: Fonts.InterRegular,
+                        fontSize: 12.5,
+                        lineHeight: 18,
+                        color: "#0369A1",
                     }}>
                         {"Please fill in the registrant information, mailing address, and billing information and proceed to complete the payment."}
                     </Text>
                 </View>
-            </View>}
-            {allPickersAreFalse && (spanroute?.checkoutSpan?.conferenceTypeText == "Webcast" || spanroute?.inpersonSpanrole?.conferenceTypeText == "Webcast") ? <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+            )}
+            {allPickersAreFalse && (spanroute?.checkoutSpan?.conferenceTypeText == "Webcast" || spanroute?.inpersonSpanrole?.conferenceTypeText == "Webcast") ? <View style={{ paddingHorizontal: normalize(12), paddingTop: normalize(8), paddingBottom: normalize(4) }}>
                 <Text
                     style={{
-                        fontFamily: Fonts.InterMedium,
-                        fontSize: 16,
-                        color: '#333',
-                        fontWeight: 'bold',
+                        fontFamily: Fonts.InterSemiBold,
+                        fontSize: 15,
+                        color: '#0F172A',
                     }}>
                     {"Primary Registrant Information"}
                 </Text>
@@ -786,13 +829,12 @@ function formatPrice(price) {
                     (spanroute?.finalTicket?.tickets || spanroute?.inPersonTicket?.tickets) &&
                     (spanroute?.finalTicket?.tickets?.some(ticket => ticket?.ticket_type == "Paid") ||
                         spanroute?.inPersonTicket?.tickets?.some(ticket => ticket?.ticket_type == "Paid")) ? (
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                    <View style={{ paddingHorizontal: normalize(12), paddingTop: normalize(10), paddingBottom: normalize(4) }}>
                         <Text
                             style={{
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 16,
-                                color: '#333',
-                                fontWeight: 'bold',
+                                fontFamily: Fonts.InterSemiBold,
+                                fontSize: 15,
+                                color: '#0F172A',
                             }}>
                             {"Billing Information"}
                         </Text>
@@ -806,160 +848,201 @@ function formatPrice(price) {
                     (spanroute?.finalTicket?.tickets || spanroute?.inPersonTicket?.tickets) &&
                     (spanroute?.finalTicket?.tickets?.some(ticket => ticket?.ticket_type == "Paid") ||
                         spanroute?.inPersonTicket?.tickets?.some(ticket => ticket?.ticket_type == "Paid")) ? (
-                    <View style={{ flexDirection: "row" }}>
-                        <View style={{ flexDirection: "row", marginLeft: normalize(10), paddingVertical: normalize(5) }}>
-                            <View>
-                                <View style={{
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    backgroundColor: Colorpath.ButtonColr,
-                                    borderColor: Colorpath.ButtonColr,
-                                    height: normalize(17),
-                                    width: normalize(17),
-                                    borderRadius: normalize(5),
-                                    borderWidth: normalize(0.5)
-                                }}>
-                                    <TickMark name="checkmark" color={Colorpath.white} size={17} />
-                                </View>
-                            </View>
-                            <View style={{ flexDirection: "row", paddingHorizontal: normalize(4) }}>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000" }}>
-                                    {"Same as primary registrant information"}
-                                </Text>
-                            </View>
+                    <View style={{ flexDirection: "row", alignItems: 'center', paddingHorizontal: normalize(12), paddingVertical: normalize(6) }}>
+                        <View style={{
+                            justifyContent: "center",
+                            alignItems: "center",
+                            backgroundColor: Colorpath.ButtonColr,
+                            borderColor: Colorpath.ButtonColr,
+                            height: normalize(18),
+                            width: normalize(18),
+                            borderRadius: normalize(5),
+                            borderWidth: normalize(0.5),
+                            marginRight: normalize(8),
+                        }}>
+                            <TickMark name="checkmark" color={Colorpath.white} size={14} />
                         </View>
+                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13.5, color: "#475569" }}>
+                            {"Same as primary registrant information"}
+                        </Text>
                     </View>
                 ) : null
             }
 
-            {iseMededDo ? <View style={{ flexDirection: "row" }}>
-                <View style={{ flexDirection: "row", marginLeft: normalize(10), paddingVertical: normalize(5) }}>
-                    <View>
-                        <TouchableOpacity onPress={() => { setChecked(!checked) }}>
-                            {!checked ? <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(17), width: normalize(17), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }}>
-                                <TickMark name="checkmark" color={Colorpath.white} size={17} />
-                            </View> :
-                                <View style={{ borderColor: Colorpath.black, height: normalize(17), width: normalize(17), borderRadius: normalize(5), marginTop: normalize(5), borderWidth: normalize(0.5) }} />
-                            }
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: "row", paddingHorizontal: normalize(4), width: normalize(280) }}>
-                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", flexWrap: "wrap" }}>
+            {iseMededDo ? (
+                <View style={{ flexDirection: "row", alignItems: 'flex-start', paddingHorizontal: normalize(12), paddingVertical: normalize(8) }}>
+                    <TouchableOpacity onPress={() => { setChecked(!checked) }} style={{ marginRight: normalize(8), marginTop: normalize(2) }}>
+                        {!checked ? (
+                            <View style={{ justifyContent: "center", alignItems: "center", backgroundColor: Colorpath.ButtonColr, borderColor: Colorpath.ButtonColr, height: normalize(18), width: normalize(18), borderRadius: normalize(5), borderWidth: normalize(0.5) }}>
+                                <TickMark name="checkmark" color={Colorpath.white} size={14} />
+                            </View>
+                        ) : (
+                            <View style={{ borderColor: "#94A3B8", height: normalize(18), width: normalize(18), borderRadius: normalize(5), borderWidth: 1 }} />
+                        )}
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 13, lineHeight: 18, color: "#475569" }}>
                             {"I authorize reporting my credits to ACCME and the State Medical Board."}
                         </Text>
                     </View>
                 </View>
-            </View> : null}
+            ) : null}
             {(ticketSave?.discounts == true && !spanroute?.inPersonTicket) ? (<>
                 <View style={{ flexDirection: "column", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                    <View style={{ paddingHorizontal: normalize(0), paddingVertical: normalize(10) }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#666666" }}>{"Apply Coupon"}</Text>
+                    <View style={{ paddingHorizontal: normalize(0), paddingBottom: normalize(8) }}>
+                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#334155" }}>{"Apply Coupon"}</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: "#666", borderRadius: normalize(10), width: normalize(250), height: normalize(45) }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: "#CBD5E1",
+                        borderRadius: normalize(10),
+                        backgroundColor: '#FFFFFF',
+                        overflow: 'hidden',
+                        height: normalize(44),
+                    }}>
                         <TextInput
                             maxLength={30}
                             value={couponapp}
                             placeholder='Enter Coupon'
-                            placeholderTextColor={"#666"}
+                            placeholderTextColor={"#94A3B8"}
                             onChangeText={(val) => { setCouponapp(val) }}
                             keyboardType="visible-password"
-                            style={{ height: normalize(55), width: normalize(180), paddingLeft: normalize(10), color: "#8f8f8f", fontFamily: Fonts.InterMedium, fontSize: 16, textTransform: "uppercase" }}
+                            style={{
+                                flex: 1,
+                                height: normalize(44),
+                                paddingHorizontal: normalize(12),
+                                color: "#0F172A",
+                                fontFamily: Fonts.InterMedium,
+                                fontSize: 14,
+                                textTransform: "uppercase"
+                            }}
                             editable={!notadded}
                         />
-                        <View
-                            style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10) }}
-                        >
+                        <View style={{ height: normalize(44), width: normalize(95) }}>
                             {!notadded ? (
-                                <TouchableOpacity style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10), backgroundColor: !couponapp ? "#DADADA" : Colorpath.ButtonColr }} disabled={!couponapp} onPress={() => {
-                                    applyCoupon();
-                                    setNotadded(true);
-                                }}>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
+                                <TouchableOpacity
+                                    style={{
+                                        height: normalize(44),
+                                        width: normalize(95),
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        backgroundColor: !couponapp ? "#E2E8F0" : Colorpath.ButtonColr
+                                    }}
+                                    disabled={!couponapp}
+                                    onPress={() => {
+                                        applyCoupon();
+                                        setNotadded(true);
+                                    }}
+                                >
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: !couponapp ? "#94A3B8" : '#FFFFFF' }}>
                                         {"Apply"}
                                     </Text>
                                 </TouchableOpacity>
-                            ) :
-                                (
-                                    <TouchableOpacity style={{ height: normalize(45), width: normalize(120), justifyContent: 'center', alignItems: 'center', borderTopRightRadius: normalize(10), borderBottomRightRadius: normalize(10), backgroundColor: "#ff4d4f" }} onPress={() => {
+                            ) : (
+                                <TouchableOpacity
+                                    style={{
+                                        height: normalize(44),
+                                        width: normalize(95),
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        backgroundColor: "#EF4444"
+                                    }}
+                                    onPress={() => {
                                         setCouponapp("");
                                         setCodesave("");
                                         setSavefull("")
                                         setNotadded(false);
-                                    }}>
-                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 18, color: '#FFFFFF' }}>
-                                            {"Remove"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                )
-                            }
+                                    }}
+                                >
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: '#FFFFFF' }}>
+                                        {"Remove"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
                 </View>
                 {codesave && (
-                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                    <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(4) }}>
                         <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
-                            fontSize: 14,
-                            color: codesave == "Successfully applied." ? '#009E38' : "red"
+                            fontFamily: Fonts.InterMedium,
+                            fontSize: 13,
+                            color: codesave == "Successfully applied." ? '#16A34A' : "#DC2626"
                         }}>
                             {codesave}
                         </Text>
                     </View>
                 )}
-                <View style={{ paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
+                <View style={{
+                    backgroundColor: '#F0F7FF',
+                    borderRadius: normalize(12),
+                    borderWidth: 1,
+                    borderColor: '#BAE6FD',
+                    padding: normalize(14),
+                    marginHorizontal: normalize(10),
+                    marginVertical: normalize(8),
+                }}>
+                    <Text style={{
+                        fontFamily: Fonts.InterSemiBold,
+                        fontSize: 15,
+                        color: "#0F172A",
+                        marginBottom: normalize(8),
+                    }}>
+                        {"Order Summary"}
+                    </Text>
                     <View style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
                         width: '100%',
-                        paddingVertical: normalize(5)
+                        paddingVertical: normalize(4)
                     }}>
                         <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
+                            fontFamily: Fonts.InterMedium,
                             fontSize: 14,
-                            color: Colorpath.black,
-                            fontWeight: "bold"
+                            color: "#475569",
                         }}>
                             {ticketSave?.tickets?.[0]?.ticket_name}
                         </Text>
                         <Text style={{
                             fontFamily: Fonts.InterSemiBold,
                             fontSize: 14,
-                            color: Colorpath.black,
-                            fontWeight: "bold"
+                            color: "#0F172A",
                         }}>
                             {savefull?.discount_value ? `US$${savefull?.gross_value}` : `US$${ticketSave?.tickets?.[0]?.itemamt}`}
                         </Text>
                     </View>
-                    {savefull?.discount_value ? (<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(5) }}>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                            {"Discount (-)"}
-                        </Text>
-                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: Colorpath.black, fontWeight: "bold" }}>
-                            {`US$${savefull?.discount_value}`}
-                        </Text>
-                    </View>) : null}
-                    <View style={{ marginTop: normalize(10), height: 1, width: '100%', backgroundColor: "#DDD" }} />
+                    {savefull?.discount_value ? (
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(4) }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#16A34A" }}>
+                                {"Discount (-)"}
+                            </Text>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, color: "#16A34A" }}>
+                                {`US$${savefull?.discount_value}`}
+                            </Text>
+                        </View>
+                    ) : null}
+                    <View style={{ marginVertical: normalize(8), height: 1, width: '100%', backgroundColor: "#E2E8F0" }} />
                     <View style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
                         width: '100%',
-                        paddingVertical: normalize(5)
+                        paddingVertical: normalize(2)
                     }}>
                         <Text style={{
                             fontFamily: Fonts.InterSemiBold,
-                            fontSize: 18,
-                            color: Colorpath.black,
-                            fontWeight: "bold"
+                            fontSize: 16,
+                            color: "#0F172A",
                         }}>
                             {"Total Amount"}
                         </Text>
                         <Text style={{
-                            fontFamily: Fonts.InterSemiBold,
+                            fontFamily: Fonts.InterBold,
                             fontSize: 18,
-                            color: Colorpath.black,
-                            fontWeight: "bold"
+                            color: Colorpath.ButtonColr,
                         }}>
                             {`US$${formatNumberWithCommas(formatPrice(feeAwareBaseAmount))}`}
                         </Text>
@@ -967,29 +1050,32 @@ function formatPrice(price) {
                 </View>
 
             </>) : null}
-            {allPickersAreFalse ? <Buttons
-                onPress={() => {
-                    if (spanroute?.cartData) {
-                        cartPayment();
-                        setPaymentcardfree(false);
-                        setPaymentfdfree(false);
-                    } else {
-                        setPaymentcardfree(false);
-                        setPaymentfdfree(false);
-                        proceedPayment(ticketSave);
-                    }
-                }}
-                height={normalize(45)}
-                width={normalize(300)}
-                backgroundColor={isDisabled ? "#DADADA" : Colorpath.ButtonColr}
-                borderRadius={normalize(9)}
-                text="Proceed"
-                color={Colorpath.white}
-                fontSize={18}
-                fontFamily={Fonts.InterSemiBold}
-                marginTop={normalize(10)}
-                disabled={isDisabled}
-            /> : null}
+            {allPickersAreFalse ? (
+                <View style={{ paddingHorizontal: normalize(10), marginTop: normalize(14), marginBottom: normalize(10) }}>
+                    <Buttons
+                        onPress={() => {
+                            if (spanroute?.cartData) {
+                                cartPayment();
+                                setPaymentcardfree(false);
+                                setPaymentfdfree(false);
+                            } else {
+                                setPaymentcardfree(false);
+                                setPaymentfdfree(false);
+                                proceedPayment(ticketSave);
+                            }
+                        }}
+                        height={normalize(46)}
+                        width={'100%'}
+                        backgroundColor={isDisabled ? "#DADADA" : Colorpath.ButtonColr}
+                        borderRadius={normalize(10)}
+                        text="Proceed"
+                        color={Colorpath.white}
+                        fontSize={16}
+                        fontFamily={Fonts.InterSemiBold}
+                        disabled={isDisabled}
+                    />
+                </View>
+            ) : null}
 
         </ScrollView>
     )

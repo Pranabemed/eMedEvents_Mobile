@@ -539,13 +539,13 @@ const styles = StyleSheet.create({
     cardTitle: {
         flex: 1,
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 15,
+        lineHeight: 21,
         color: '#0F172A',
     },
     organizationText: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 12,
+        fontSize: 13,
         color: '#64748B',
         marginTop: normalize(4),
     },
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
     metaText: {
         flex: 1,
         fontFamily: Fonts.InterMedium,
-        fontSize: 12,
+        fontSize: 12.5,
         color: '#475569',
     },
     cardDivider: {
@@ -579,8 +579,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     priceText: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
+        fontFamily: Fonts.InterBold,
+        fontSize: 15,
         color: '#0F172A',
     },
     freePriceText: {
@@ -592,14 +592,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
         borderWidth: 1,
         borderColor: '#DBEAFE',
-        borderRadius: normalize(6),
-        paddingHorizontal: normalize(10),
-        paddingVertical: normalize(5),
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(12),
+        paddingVertical: normalize(6),
         gap: normalize(4),
     },
     actionBadgeText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 12,
+        fontSize: 12.5,
         color: Colorpath.ButtonColr,
     },
     footerLoader: {

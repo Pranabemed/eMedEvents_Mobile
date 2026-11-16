@@ -283,7 +283,7 @@ const downPress = () => {
                         borderRadius={normalize(5)}
                         text={props?.route?.params?.PngFIle?.notrq ? "Back" : props?.route?.params?.PngFIle ? "Back to Credit Vault " : "Go to Dashboard"}
                         color={Colorpath.ButtonColr}
-                        fontSize={18}
+                        fontSize={15}
                         fontFamily={Fonts.InterSemiBold}
                         marginTop={normalize(15)}
                         borderColor={Colorpath.ButtonColr}
@@ -297,7 +297,7 @@ const downPress = () => {
                         borderRadius={normalize(5)}
                         text="Review Course"
                         color={Colorpath.white}
-                        fontSize={18}
+                        fontSize={15}
                         fontFamily={Fonts.InterSemiBold}
                         marginTop={normalize(15)}
                     />}
@@ -328,11 +328,11 @@ const styles = StyleSheet.create({
         bottom: 0
     },
     buttonText: {
-        fontSize: 20,
+        fontSize: normalize(15),
         fontFamily: Fonts.InterMedium,
         color: Colorpath.white,
         alignSelf: "center",
-        paddingVertical: normalize(12)
+        paddingVertical: normalize(14)
     },
     pdfContainer: {
         width: '90%',

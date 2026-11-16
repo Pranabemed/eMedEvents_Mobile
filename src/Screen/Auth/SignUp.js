@@ -594,20 +594,20 @@ const SignUp = (props) => {
                 </View>
               </View>
             </View>
-            <TouchableOpacity>
+            <View style={styles.buttonWrapper}>
               <Buttons
                 onPress={CreateAccount}
                 height={normalize(45)}
-                width={normalize(280)}
+                width="100%"
                 backgroundColor={Colorpath.ButtonColr}
                 borderRadius={normalize(9)}
                 text="Proceed"
                 color={Colorpath.white}
-                fontSize={18}
+                fontSize={normalize(15)}
                 fontFamily={Fonts.InterSemiBold}
-                marginTop={normalize(20)}
+                marginTop={normalize(10)}
               />
-            </TouchableOpacity>
+            </View>
             <View style={styles.footerRow}>
               <View>
                 <Text style={styles.footerText}>

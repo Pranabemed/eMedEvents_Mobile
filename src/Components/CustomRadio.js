@@ -43,34 +43,34 @@ const handleSelect = (option) => {
         radioButton: {
             flexDirection: 'row',
             alignItems: 'center',
-            marginVertical: normalize(5),
-            width: normalize(290),
-            paddingHorizontal: normalize(15),
-            height: normalize(50),
-            borderWidth: 0.5,
-            borderColor: "#AAAAAA",
+            marginVertical: normalize(4),
+            width: normalize(295),
+            paddingHorizontal: normalize(14),
+            height: normalize(40),
+            borderWidth: 0.8,
+            borderColor: "#D1D5DB",
             backgroundColor: Colorpath.white,
-            borderRadius: normalize(10)
+            borderRadius: normalize(8)
         },
         radioCircle: {
-            height: normalize(20),
-            width: normalize(20),
-            borderRadius: normalize(10),
-            borderWidth: 2,
+            height: normalize(18),
+            width: normalize(18),
+            borderRadius: normalize(9),
+            borderWidth: 1.8,
             borderColor: '#2C4DB9',
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: normalize(10),
         },
         selectedRbCircle: {
-            height: normalize(10),
-            width: normalize(10),
-            borderRadius: normalize(5),
+            height: normalize(9),
+            width: normalize(9),
+            borderRadius: normalize(4.5),
             backgroundColor: '#2C4DB9',
         },
         radioText: {
-            fontSize: 16,
-            color: '#333',
+            fontSize: normalize(14.5),
+            color: '#1E293B',
         },
     });
     return (
@@ -80,8 +80,7 @@ const handleSelect = (option) => {
                     key={option.id}
                     style={[
                         styles.radioButton,
-                        selectedOption === option.id && { borderColor: Colorpath.ButtonColr },
-                        index % 2 === 0 && { marginRight: normalize(10) }
+                        selectedOption === option.id && { borderColor: Colorpath.ButtonColr }
                     ]}
                     onPress={() => handleSelect(option)}
                 >

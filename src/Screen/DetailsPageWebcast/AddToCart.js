@@ -488,8 +488,9 @@ const exploreCart = ({ item, index }) => {
 
                 {hasCreditBadge ? (
                     <View style={styles.creditBadge}>
-                        <Text style={styles.creditBadgeText}>
-                            {`${creditPoints} ${creditName}`}
+                        <Text numberOfLines={1}>
+                            <Text style={styles.creditBadgePoints}>{`${creditPoints} `}</Text>
+                            <Text style={styles.creditBadgeText}>{creditName}</Text>
                         </Text>
                     </View>
                 ) : null}
@@ -812,13 +813,13 @@ const formatNumberWithCommas = (value) => {
                                                 props.navigation.push("Checkout", { checkoutSpan: buildCartRoutePayload() });
                                             }
                                         }}
-                                        height={normalize(44)}
+                                        height={normalize(46)}
                                         width={normalize(155)}
                                         backgroundColor={selectedCartItems.length === 0 ? '#94A3B8' : Colorpath.ButtonColr}
                                         borderRadius={normalize(10)}
                                         text="Proceed"
                                         color={Colorpath.white}
-                                        fontSize={14}
+                                        fontSize={15}
                                         fontFamily={Fonts.InterSemiBold}
                                         marginTop={0}
                                         disabled={selectedCartItems.length === 0}
@@ -875,7 +876,7 @@ const styles = StyleSheet.create({
     },
     sectionHeaderTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
+        fontSize: 15,
         color: '#0F172A',
     },
     countBadge: {
@@ -886,7 +887,7 @@ const styles = StyleSheet.create({
     },
     countBadgeText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 11,
+        fontSize: 12,
         color: Colorpath.ButtonColr,
     },
     centerLoader: {
@@ -932,8 +933,8 @@ const styles = StyleSheet.create({
     },
     cartItemTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
-        lineHeight: 19,
+        fontSize: 15,
+        lineHeight: 21,
         color: '#0F172A',
     },
     deleteButton: {
@@ -950,14 +951,21 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginTop: normalize(5),
         backgroundColor: '#ECFDF5',
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
         borderRadius: normalize(6),
         paddingHorizontal: normalize(8),
         paddingVertical: normalize(3),
     },
+    creditBadgePoints: {
+        fontFamily: Fonts.InterBold,
+        fontSize: 12,
+        color: '#059669',
+    },
     creditBadgeText: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 11,
-        color: '#047857',
+        fontSize: 11.5,
+        color: '#065F46',
     },
     cardDivider: {
         height: 1,
@@ -979,12 +987,12 @@ const styles = StyleSheet.create({
     },
     qtyPillText: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 11,
+        fontSize: 11.5,
         color: '#475569',
     },
     cartItemPriceText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
+        fontSize: 15,
         color: Colorpath.ButtonColr,
     },
     emptyWrapper: {
@@ -1004,7 +1012,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
+        fontSize: 14.5,
         color: '#334155',
         textAlign: 'center',
     },
@@ -1019,7 +1027,7 @@ const styles = StyleSheet.create({
     },
     cardSectionTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: 14,
         color: '#0F172A',
         marginBottom: normalize(6),
     },
@@ -1038,7 +1046,7 @@ const styles = StyleSheet.create({
         height: '100%',
         paddingHorizontal: normalize(10),
         fontFamily: Fonts.InterMedium,
-        fontSize: 13,
+        fontSize: 13.5,
         color: '#0F172A',
     },
     couponButton: {
@@ -1050,7 +1058,7 @@ const styles = StyleSheet.create({
     },
     couponButtonText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: 13.5,
         color: '#FFFFFF',
     },
     couponFeedbackText: {
@@ -1070,22 +1078,22 @@ const styles = StyleSheet.create({
     },
     summaryLabel: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 13,
+        fontSize: 13.5,
         color: '#475569',
     },
     summaryValue: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: 14,
         color: '#0F172A',
     },
     discountLabel: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 13,
+        fontSize: 13.5,
         color: '#059669',
     },
     discountValue: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: 14,
         color: '#059669',
     },
     footerBar: {
@@ -1104,12 +1112,12 @@ const styles = StyleSheet.create({
     },
     footerPriceLabel: {
         fontFamily: Fonts.InterMedium,
-        fontSize: 11,
+        fontSize: 12,
         color: '#64748B',
     },
     footerPriceValue: {
-        fontFamily: Fonts.InterSemiBold,
-        fontSize: 15,
+        fontFamily: Fonts.InterBold,
+        fontSize: 17,
         color: '#0F172A',
         marginTop: normalize(2),
     },

@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { cmeactivityRequest, cmenextactionRequest } from '../Redux/Reducers/CMEReducer';
 import showErrorAlert from '../Utils/Helpers/Toast';
 import Buttons from './Button';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, CommonActions } from '@react-navigation/native';
 import RenderHTML from 'react-native-render-html';
 import RNFS from "react-native-fs";
 import FileViewer from "react-native-file-viewer";
@@ -1472,6 +1472,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
     const isEvaluationStatusFailed = (evalStatus !== null && Number(evalStatus) !== 1) || Boolean(props?.route?.params?.retakeCourse);
 
     const isPostTestCleared = isEvaluationStatusPassed;
+    const isCourseRevisionCompleted = !props?.route?.params?.retakeCourse && !activeNextAction?.next_activity_button_text;
 
     let rawNextActivityButtonText = String(activeNextAction?.next_activity_button_text || '').trim();
     if (rawNextActivityButtonText.toLowerCase() === 'proceed to section 1' && activeCourseModule?.name) {
@@ -1943,10 +1944,35 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                     setStatepush(statepush);
                                     takeCourseVideo();
                                     setPaused(true);
-                                    if (props.navigation.canGoBack()) {
-                                        props.navigation.goBack();
+                                    const navigationState = props.navigation.getState ? props.navigation.getState() : null;
+                                    const courseIndex = navigationState?.routes
+                                        ? navigationState.routes.map(route => route.name).lastIndexOf('Course')
+                                        : -1;
+                                    if (courseIndex >= 0) {
+                                        const routes = navigationState.routes.slice(0, courseIndex + 1);
+                                        props.navigation.dispatch(
+                                            CommonActions.reset({
+                                                ...navigationState,
+                                                routes,
+                                                index: routes.length - 1,
+                                            })
+                                        );
                                     } else {
-                                        props.navigation.navigate("TabNav");
+                                        const tabNavIndex = navigationState?.routes
+                                            ? navigationState.routes.map(route => route.name).lastIndexOf('TabNav')
+                                            : -1;
+                                        if (tabNavIndex >= 0) {
+                                            const routes = navigationState.routes.slice(0, tabNavIndex + 1);
+                                            props.navigation.dispatch(
+                                                CommonActions.reset({
+                                                    ...navigationState,
+                                                    routes,
+                                                    index: routes.length - 1,
+                                                })
+                                            );
+                                        } else {
+                                            props.navigation.navigate("TabNav");
+                                        }
                                     }
                                 }}
                                 height={normalize(45)}
@@ -1965,6 +1991,13 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                 onPress={() => {
                                     takeCourseVideo();
                                     setPaused(true);
+
+                                    if (isCourseRevisionCompleted || !displayButtonText) {
+                                        setAddit(statepush);
+                                        setStatepush(statepush);
+                                        props.navigation.navigate("TabNav");
+                                        return;
+                                    }
 
                                     // If user has NOT passed PostTest (failed, pending, or normal flow), exact logic as PostTestFail:
                                     // They MUST go to PreTest for Post Assessment / Post Test, NEVER Feedback / Evaluation / Certificate
@@ -1987,7 +2020,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
 
                                         props.navigation.navigate("PreTest", {
                                             ...(props?.route?.params || {}),
-                                            nodata: evalResponse ? { ...evalResponse, activityId: targetPostTestId, conferenceId: conferenceIdAll } : undefined,
+                                            nodata: evalResponse ? { ...evalResponse, activityId: targetPostTestId, conferenceId: conferenceIdAll } : { activityId: targetPostTestId, conferenceId: conferenceIdAll },
                                             videoData: activeNextAction,
                                             videoContentData: videoDic,
                                             testFlowType: 'post',
@@ -2078,10 +2111,10 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                 }}
                                 height={normalize(45)}
                                 width={normalize(150)}
-                                backgroundColor={displayButtonText ? Colorpath.white : Colorpath.ButtonColr}
+                                backgroundColor={!isCourseRevisionCompleted && displayButtonText ? Colorpath.white : Colorpath.ButtonColr}
                                 borderRadius={normalize(5)}
-                                text={displayButtonText ? displayButtonText : " Go back to Dashboard "}
-                                color={displayButtonText ? Colorpath.ButtonColr : Colorpath.white}
+                                text={isCourseRevisionCompleted || !displayButtonText ? "Go back to Dashboard" : displayButtonText}
+                                color={!isCourseRevisionCompleted && displayButtonText ? Colorpath.ButtonColr : Colorpath.white}
                                 fontSize={16}
                                 fontFamily={Fonts.InterSemiBold}
                                 marginTop={normalize(-15)} />
