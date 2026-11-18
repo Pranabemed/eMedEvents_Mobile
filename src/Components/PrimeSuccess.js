@@ -32,8 +32,10 @@ const PrimeSuccess = ({ primesc, setPrimesc, nav, navigation, endDate, startDate
             onBackdropPress={() => setPrimesc(false)}
         >
             <View style={styles.container}>
-                <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                <View style={{ marginTop: normalize(10), flexDirection: "column" }}>
+                <View style={styles.iconBadge}>
+                    <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
+                </View>
+                <View style={{ marginTop: normalize(8), flexDirection: "column" }}>
                     <Text style={styles.content}>{"Thank you for subscribing to the"}</Text>
                     <Text style={styles.contentanoth}>{"Prime Membership"}</Text>
                 </View>
@@ -163,38 +165,53 @@ const styles = StyleSheet.create({
         margin: 0,
     },
     container: {
-        width: normalize(300),
+        width: normalize(310),
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(10),
-        padding: normalize(30),
+        borderRadius: normalize(16),
+        paddingVertical: normalize(24),
+        paddingHorizontal: normalize(20),
         alignItems: 'center',
         justifyContent: 'center',
         alignSelf: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 6,
+    },
+    iconBadge: {
+        width: normalize(64),
+        height: normalize(64),
+        borderRadius: normalize(32),
+        backgroundColor: "#ECFDF5",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: normalize(10),
     },
     closeIcon: {
         position: 'absolute',
         top: normalize(10),
         right: normalize(10),
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        height: normalize(25),
-        width: normalize(25),
-        borderRadius: normalize(25),
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        height: normalize(26),
+        width: normalize(26),
+        borderRadius: normalize(13),
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
     },
     content: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 18,
-        color: Colorpath.black,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(15),
+        color: "#1E293B",
         width: normalize(260),
         textAlign: 'center',
-        // marginBottom: normalize(20),
     },
     contentanoth: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 18,
+        fontFamily: Fonts.InterBold,
+        fontSize: normalize(15),
         color: "#FF773D",
         textAlign: 'center',
+        marginTop: normalize(2),
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -204,28 +221,33 @@ const styles = StyleSheet.create({
         marginTop: normalize(15),
     },
     button: {
-        backgroundColor: Colorpath.white,
-        borderRadius: normalize(5),
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
         height: normalize(40),
-        width: normalize(140),
+        minWidth: normalize(140),
+        paddingHorizontal: normalize(24),
         justifyContent: 'center',
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#2C4DB9",
-        marginTop: normalize(10)
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+        marginTop: normalize(14),
     },
     singlebutton: {
         backgroundColor: Colorpath.ButtonColr,
-        borderRadius: normalize(5),
+        borderRadius: normalize(10),
         height: normalize(40),
-        width: normalize(295),
+        width: normalize(275),
         justifyContent: 'center',
         alignSelf: "center",
     },
     buttonText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 16,
-        color: Colorpath.ButtonColr,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: Colorpath.white,
+        fontWeight: "600",
         textAlign: "center",
     },
 });

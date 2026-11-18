@@ -131,6 +131,8 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
   setActiveIndexct, city_id, state_id, country_id, countrypicker, spanroute, ticketSave, speciality_id, setSpeciality, setSpeciality_id, activeIndex, removeSpeciality, selectedSpecialities, setSelectedSpecialities, slist, searchStateName, searchState, setSearchState, statepicker, handleSpecialitySelect, formData, setFormData, setActiveIndex, totalQuantity, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
   console.log(speciality, "totalQuantity122", slist, totalQuantity, spanroute)
   const editedPhoneIndexes = useRef(new Set());
+  const editedEmailIndexes = useRef(new Set());
+  const emailInputRefs = useRef({});
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const checkoutScrollRef = useRef(null);
 
@@ -212,6 +214,7 @@ const CheckoutInputbox = ({ handleInputChangeeamilad, activeIndexc,
         }
         // An explicitly cleared phone must not be repopulated by a late profile response.
         if (editedPhoneIndexes.current.has(index)) merged.cellno = existing.cellno;
+        if (editedEmailIndexes.current.has(index)) merged.emailad = existing.emailad;
         if (isUsCallingCode(merged.dialcode)) merged.cellno = formatUsPhone(merged.cellno);
         return merged;
       }));
@@ -300,6 +303,7 @@ const handleDateSelect = (date, index, fieldName) => {
  * @returns {void}
  */
 const handleInputChange = (index, key, value) => {
+    if (key === 'emailad') editedEmailIndexes.current.add(index);
     if (index === 0 && key === 'emailad') {
       markPersonalizationEdited?.('email');
       setEmailad(value);
@@ -1005,11 +1009,18 @@ const renderForms = () => {
               flexDirection: 'row',
               flex: 1
             }}>
-              <View style={{
-                flex: 1,
-                paddingRight: normalize(0)
-              }}>
+              <Pressable
+                accessible={false}
+                testID={`checkout-email-area-attendee-${index}`}
+                onPress={() => {
+                  if (index !== 0 || isGuestCheckout || !!allmsg) {
+                    emailInputRefs.current[`attendee-${index}`]?.focus();
+                  }
+                }}
+                style={{ flex: 1, paddingRight: normalize(0) }}
+              >
                 <InputField
+                  ref={input => { emailInputRefs.current[`attendee-${index}`] = input; }}
                   label='Email ID*'
                   value={formData[index]?.emailad || ''}
                   onChangeText={(val) => {
@@ -1019,12 +1030,14 @@ const renderForms = () => {
                   }}
                   placeholder=''
                   placeholderTextColor="#949494"
-                  keyboardType="default"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   showCountryCode={false}
                   maxlength={100}
                   editable={index === 0 ? (isGuestCheckout || !!allmsg) : true}
                 />
-              </View>
+              </Pressable>
             </View>
             {errorFlags[index]?.emailad && isEmailTouched[index] && <View style={{ marginLeft: normalize(0), bottom: normalize(10) }}>
               {errorFlags[index]?.emailad && <Text style={{ color: '#FF0000', fontFamily: Fonts.InterMedium, fontSize: 12 }}>{errorFlags[index].emailad}</Text>}
@@ -1763,11 +1776,18 @@ const billingForms = () => {
               flexDirection: 'row',
               flex: 1
             }}>
-              <View style={{
-                flex: 1,
-                paddingRight: normalize(0)
-              }}>
+              <Pressable
+                accessible={false}
+                testID={`checkout-email-area-billing-${index}`}
+                onPress={() => {
+                  if (index !== 0 || isGuestCheckout || !!allmsg) {
+                    emailInputRefs.current[`billing-${index}`]?.focus();
+                  }
+                }}
+                style={{ flex: 1, paddingRight: normalize(0) }}
+              >
                 <InputField
+                  ref={input => { emailInputRefs.current[`billing-${index}`] = input; }}
                   label='Email ID*'
                   value={formData[index]?.emailad || ''}
                   onChangeText={(val) => {
@@ -1777,12 +1797,14 @@ const billingForms = () => {
                   }}
                   placeholder=''
                   placeholderTextColor="#949494"
-                  keyboardType="default"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   showCountryCode={false}
                   maxlength={100}
                   editable={index === 0 ? (isGuestCheckout || !!allmsg) : true}
                 />
-              </View>
+              </Pressable>
             </View>
             {errorFlags[index]?.emailad && isEmailTouched[index] && <View style={{ marginLeft: normalize(0), bottom: normalize(10) }}>
               {errorFlags[index]?.emailad && <Text style={{ color: '#FF0000', fontFamily: Fonts.InterMedium, fontSize: 12 }}>{errorFlags[index].emailad}</Text>}

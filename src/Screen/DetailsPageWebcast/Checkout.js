@@ -584,7 +584,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
             }
             : null;
     const checkoutCompletionRoute = 'TabNav';
-    const completeCheckoutToDashboard = async () => {
+    const completeCheckoutToDashboard = async (params = {}) => {
         if (isGuestCheckout) {
             await AsyncStorage.setItem(
                 GUEST_REGISTRATION_FLOW_KEY,
@@ -602,7 +602,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         }
         props.navigation.reset({
             index: 0,
-            routes: [{ name: checkoutCompletionRoute }],
+            routes: [{ name: checkoutCompletionRoute, params }],
         });
     };
     /**

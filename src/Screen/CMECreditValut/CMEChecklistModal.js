@@ -134,93 +134,171 @@ const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, a
                 </View>
                 <View>
                     <View style={styles.container}>
-                        <Buttons
-                            onPress={() => { onCMEClose(); }}
-                            height={normalize(45)}
-                            width={normalize(160)}
-                            backgroundColor={Colorpath.white}
-                            borderRadius={normalize(5)}
-                            text="Know Your State CME Requirements"
-                            color={"#000000"}
-                            fontSize={18}
-                            fontFamily={Fonts.InterSemiBold}
-                            fontWeight={"bold"}
-                        />
-                        <Buttons
+                        <Text style={styles.headerTitle} numberOfLines={2}>
+                            {"Know Your State CME Requirements"}
+                        </Text>
+                        <TouchableOpacity
                             onPress={() => {
                                 onSaved();
                                 onCMEClose();
                             }}
-                            height={normalize(45)}
-                            width={normalize(110)}
-                            backgroundColor={Colorpath.white}
-                            borderRadius={normalize(5)}
-                            text="Close"
-                            color={"#666666"}
-                            fontSize={16}
-                            fontFamily={Fonts.InterMedium}
-                            fontWeight={"bold"}
-                            disabled={false}
-                        />
-                    </View>
-                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120)}}>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingHorizontal: normalize(8), alignItems: 'center' }}
+                            style={styles.closeButton}
+                            activeOpacity={0.7}
                         >
-                            <View style={{ flexDirection: "row", alignItems: "center", width: width - normalize(16) }}>
-                                {Object.keys(allProfessionData?.cme_data || {}).map((optionKey) => (
-                                    <TouchableOpacity
-                                        key={optionKey}
-                                        onPress={() => handleOptionSelect(optionKey)}
-                                    style={{
-                                        flex: 1,
-                                        paddingVertical: normalize(6),
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: selectedOption === optionKey ? '#FF773D' : '#cccccc',
-                                        alignItems: 'center',
-                                    }}
-                                    >
-                                        <Text
-                                            numberOfLines={1}
-                                            style={{
-                                                fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: selectedOption === optionKey ? "#FF773D" : "#000000",
-                                                fontWeight: "bold"
-                                            }}
-                                        >
-                                            {optionKey}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                        {allOptions?.length > 1 && (
+                            <View style={{ marginHorizontal: normalize(16), marginBottom: normalize(8) }}>
+                                <View style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    backgroundColor: "#F1F5F9",
+                                    borderRadius: normalize(8),
+                                    padding: normalize(3),
+                                }}>
+                                    {allOptions.map((optionKey) => {
+                                        const isSelected = selectedOption === optionKey;
+                                        return (
+                                            <TouchableOpacity
+                                                key={optionKey}
+                                                onPress={() => handleOptionSelect(optionKey)}
+                                                style={{
+                                                    flex: 1,
+                                                    paddingVertical: normalize(7),
+                                                    borderRadius: normalize(6),
+                                                    backgroundColor: isSelected ? "#FFFFFF" : "transparent",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    shadowColor: isSelected ? "#000" : "transparent",
+                                                    shadowOffset: { width: 0, height: 1 },
+                                                    shadowOpacity: isSelected ? 0.08 : 0,
+                                                    shadowRadius: 2,
+                                                    elevation: isSelected ? 2 : 0,
+                                                }}
+                                            >
+                                                <Text
+                                                    numberOfLines={1}
+                                                    style={{
+                                                        fontFamily: Fonts.InterSemiBold,
+                                                        fontSize: normalize(12.5),
+                                                        color: isSelected ? Colorpath.ButtonColr : "#64748B",
+                                                        fontWeight: isSelected ? "700" : "500",
+                                                    }}
+                                                >
+                                                    {optionKey}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
                             </View>
-                        </ScrollView>
-                        <View style={{ paddingHorizontal: normalize(16), paddingVertical: normalize(0), marginTop: normalize(10) }}>
-                            <Text numberOfLines={2} style={{ flex: 1, fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000", fontWeight: "bold" }}>
+                        )}
+                        <View style={{ paddingHorizontal: normalize(16), marginTop: normalize(4), marginBottom: normalize(6) }}>
+                            <Text numberOfLines={2} style={{ fontFamily: Fonts.InterBold, fontSize: normalize(15), color: "#1E293B", fontWeight: "700" }}>
                                 {selectedData?.name}
                             </Text>
                         </View>
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", paddingHorizontal: normalize(16), paddingVertical: normalize(10), width: "100%" }}>
-                            <Text numberOfLines={2} style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000" }}>
-                                {`${allProfessionData?.creditRequiredText} ${selectedData?.credits} credits | Licensing Cycle: ${selectedData?.term} Year(s) | ${allProfessionData?.creditCategory} ${selectedData?.amapra_cat_credits}`}
-                            </Text>
+                        <View style={{
+                            marginHorizontal: normalize(16),
+                            marginTop: normalize(4),
+                            marginBottom: normalize(12),
+                            padding: normalize(12),
+                            backgroundColor: "#F0F7FF",
+                            borderRadius: normalize(10),
+                            borderWidth: 1,
+                            borderColor: "#C8DDFB",
+                        }}>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "stretch", gap: normalize(8) }}>
+                                <View style={{
+                                    flex: 1,
+                                    backgroundColor: "#FFFFFF",
+                                    borderRadius: normalize(8),
+                                    borderWidth: 1,
+                                    borderColor: "#DBEAFE",
+                                    paddingVertical: normalize(8),
+                                    paddingHorizontal: normalize(4),
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(10.5), color: "#2563EB", fontWeight: "600", textAlign: "center", marginBottom: normalize(2) }}>
+                                        {allProfessionData?.creditRequiredText ? String(allProfessionData.creditRequiredText).replace(':', '') : "Required"}
+                                    </Text>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterBold, fontSize: normalize(15), color: "#1E3A8A", fontWeight: "700" }}>
+                                        {selectedData?.credits ?? "--"}
+                                    </Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: normalize(9.5), color: "#64748B" }}>
+                                        {"Credits"}
+                                    </Text>
+                                </View>
+
+                                <View style={{
+                                    flex: 1,
+                                    backgroundColor: "#FFFFFF",
+                                    borderRadius: normalize(8),
+                                    borderWidth: 1,
+                                    borderColor: "#D1FAE5",
+                                    paddingVertical: normalize(8),
+                                    paddingHorizontal: normalize(4),
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(10.5), color: "#059669", fontWeight: "600", textAlign: "center", marginBottom: normalize(2) }}>
+                                        {"Cycle"}
+                                    </Text>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterBold, fontSize: normalize(15), color: "#065F46", fontWeight: "700" }}>
+                                        {selectedData?.term ? `${selectedData.term} Yr` : "--"}
+                                    </Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: normalize(9.5), color: "#64748B" }}>
+                                        {"Licensing"}
+                                    </Text>
+                                </View>
+
+                                <View style={{
+                                    flex: 1,
+                                    backgroundColor: "#FFFFFF",
+                                    borderRadius: normalize(8),
+                                    borderWidth: 1,
+                                    borderColor: "#E0E7FF",
+                                    paddingVertical: normalize(8),
+                                    paddingHorizontal: normalize(4),
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(10.5), color: "#4F46E5", fontWeight: "600", textAlign: "center", marginBottom: normalize(2) }}>
+                                        {allProfessionData?.creditCategory ? String(allProfessionData.creditCategory).replace(':', '') : "Category"}
+                                    </Text>
+                                    <Text numberOfLines={1} style={{ fontFamily: Fonts.InterBold, fontSize: normalize(15), color: "#3730A3", fontWeight: "700" }}>
+                                        {selectedData?.amapra_cat_credits ?? "--"}
+                                    </Text>
+                                    <Text style={{ fontFamily: Fonts.InterRegular, fontSize: normalize(9.5), color: "#64748B" }}>
+                                        {"Category 1"}
+                                    </Text>
+                                </View>
+                            </View>
                         </View>
-                        <View style={{ width: "100%", paddingHorizontal: normalize(5), paddingVertical: normalize(0) }}>
-                            <View style={{ paddingHorizontal: normalize(8), paddingVertical: normalize(2), width: "100%" }}>
+                        {selectedData?.additional_notes ? (
+                            <View style={{
+                                marginHorizontal: normalize(16),
+                                backgroundColor: "#F8FAFC",
+                                borderRadius: normalize(10),
+                                borderWidth: 1,
+                                borderColor: "#E2E8F0",
+                                padding: normalize(14),
+                            }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: normalize(10), gap: normalize(6) }}>
+                                    <View style={{ width: 3, height: normalize(14), backgroundColor: Colorpath.ButtonColr, borderRadius: 2 }} />
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#1E293B", fontWeight: "600" }}>
+                                        {"State Board Requirements & Guidelines"}
+                                    </Text>
+                                </View>
                                 <RenderHTML
-                                    contentWidth={width}
+                                    contentWidth={width - normalize(60)}
                                     source={{ html: selectedData?.additional_notes }}
                                     renderersProps={{
                                         a: {
-                                                                                        /**
- * On press helper.
- * @param {*} event - Input value.
- * @param {*} href - Input value.
- * @returns {void}
- */
-onPress: (event, href) => {
+                                            onPress: (event, href) => {
                                                 if (href) {
                                                     let resultTopic = href.substring(href.lastIndexOf('/') + 1);
                                                     if (href.includes('/topic/')) {
@@ -241,42 +319,54 @@ onPress: (event, href) => {
                                     tagsStyles={{
                                         ...styles.tagsStyles,
                                         p: {
-                                            color: '#000',
-                                            marginVertical: normalize(5),
-                                            paddingHorizontal: normalize(5),
+                                            color: '#334155',
+                                            fontSize: normalize(12),
+                                            lineHeight: normalize(18),
+                                            marginVertical: normalize(3),
+                                            fontFamily: Fonts.InterRegular,
                                         },
                                         div: {
-                                            color: '#000',
-                                            marginVertical: normalize(5),
-                                            paddingHorizontal: normalize(5),
+                                            color: '#334155',
+                                            fontSize: normalize(12),
+                                            lineHeight: normalize(18),
+                                            marginVertical: normalize(3),
+                                            fontFamily: Fonts.InterRegular,
                                         },
                                         a: {
                                             color: Colorpath.ButtonColr,
+                                            fontSize: normalize(12),
                                             textDecorationLine: 'underline',
+                                            fontFamily: Fonts.InterMedium,
                                         },
                                         u: {
                                             textDecorationLine: 'underline',
+                                        },
+                                        b: {
+                                            fontFamily: Fonts.InterSemiBold,
+                                            color: '#1E293B',
+                                        },
+                                        strong: {
+                                            fontFamily: Fonts.InterSemiBold,
+                                            color: '#1E293B',
                                         }
                                     }}
                                 />
                             </View>
-                        </View>
-                        <View style={{ paddingVertical: normalize(10) }}>
+                        ) : null}
+                        <View style={{ paddingVertical: normalize(14), alignItems: "center" }}>
                             <Buttons
                                 onPress={() => {
                                     StateCMEChekck(allProfession, certificatedata?.state_id, "professionlandingpage", "listby_type", "state_id", "profession_name", "medicalresourselanding");
                                     onCMEClose();
                                 }}
-                                height={normalize(45)}
-                                width={normalize(200)}
-                                backgroundColor={Colorpath.white}
-                                borderRadius={normalize(5)}
+                                height={normalize(40)}
+                                width={normalize(180)}
+                                backgroundColor={Colorpath.ButtonColr}
+                                borderRadius={normalize(8)}
                                 text="Browse Courses"
-                                color={Colorpath.ButtonColr}
-                                fontSize={16}
-                                fontFamily={Fonts.InterMedium}
-                                borderWidth={0.5}
-                                borderColor={Colorpath.ButtonColr}
+                                color={Colorpath.white}
+                                fontSize={normalize(13)}
+                                fontFamily={Fonts.InterSemiBold}
                             />
                         </View>
                     </ScrollView>
@@ -300,10 +390,31 @@ export default CMEChecklistModal;
 const styles = StyleSheet.create({
     container: {
         paddingVertical: normalize(10),
-        paddingHorizontal: normalize(10),
+        paddingHorizontal: normalize(16),
         flexDirection: "row",
         justifyContent: "space-between",
-        alignContent: "space-between",
+        alignItems: "center",
+    },
+    headerTitle: {
+        flex: 1,
+        fontFamily: Fonts.InterBold,
+        fontSize: normalize(14.5),
+        color: "#1E293B",
+        fontWeight: "bold",
+        marginRight: normalize(10),
+    },
+    closeButton: {
+        paddingVertical: normalize(6),
+        paddingHorizontal: normalize(12),
+        borderRadius: normalize(6),
+        backgroundColor: "#F1F5F9",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    closeButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(12.5),
+        color: "#64748B",
     },
     modalView: {
         flex: 1,
@@ -312,26 +423,28 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        borderTopRightRadius: normalize(20),
-        borderTopLeftRadius: normalize(20),
-        paddingVertical: normalize(10),
+        borderTopRightRadius: normalize(16),
+        borderTopLeftRadius: normalize(16),
+        paddingTop: normalize(8),
     },
     modalIndicator: {
-        height: 5,
-        width: normalize(100),
-        backgroundColor: "#DDDDDD",
-        borderRadius: 5,
+        height: 4,
+        width: normalize(44),
+        backgroundColor: "#CBD5E1",
+        borderRadius: 2,
+        marginTop: normalize(2),
     },
     tagsStyles: {
         ul: {
-            marginVertical: 10,
-            paddingLeft: 20
+            marginVertical: normalize(4),
+            paddingLeft: normalize(16),
         },
         li: {
-            fontFamily: Fonts.InterSemiBold,
-            marginBottom: 5,
-            fontSize: 16,
-            color: '#000',
+            fontFamily: Fonts.InterRegular,
+            marginBottom: normalize(4),
+            fontSize: normalize(12),
+            lineHeight: normalize(17),
+            color: '#334155',
         },
     },
 });

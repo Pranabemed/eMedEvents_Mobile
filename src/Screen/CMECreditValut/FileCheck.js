@@ -19,7 +19,7 @@ import Icon from 'react-native-vector-icons/AntDesign'
 import CMEChecklistModal from './CMEChecklistModal';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
-import { creditvaultRequest, downloadTranscriptRequest, downloadTranscriptNonUsaRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import { boardvaultRequest, creditvaultRequest, downloadTranscriptRequest, downloadTranscriptNonUsaRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import { stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import CertificatModal from './CertificatModal';
@@ -32,7 +32,7 @@ import IntOff from '../../Utils/Helpers/IntOff';
 import { AppContext } from '../GlobalSupport/AppContext';
 import NetInfo from '@react-native-community/netinfo';
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { isNonUsaAccount, readNonUsaFlowState } from '../../Utils/Helpers/nonUsaFlow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -73,9 +73,26 @@ const CertficateHandle = (props) => {
     }, [isConnected]);
     const [zippath, setZippath] = useState("");
     const pendingTranscript = useRef(null);
+    const isFocused = useIsFocused();
+    const hasLoadedCredits = useRef(false);
+    const creditsRefreshInFlight = useRef(false);
+    const nonUsaUserRef = useRef(false);
+    const pendingCreditsRequest = useRef(null);
+    const pendingCreditsBaseline = useRef(null);
+    const latestCreditsResponses = useRef({});
+    const [isCreditsLoading, setIsCreditsLoading] = useState(true);
+    const [isBoardCreditsLoading, setIsBoardCreditsLoading] = useState(false);
+    const pendingBoardResponse = useRef(null);
+    const latestBoardResponse = useRef(null);
+    const isNavigatingRef = useRef(false);
     const dispatch = useDispatch();
     const CreditVaultReducer = useSelector(state => state.CreditVaultReducer);
+    latestBoardResponse.current = CreditVaultReducer?.boardvaultResponse;
     const DashboardReducer = useSelector(state => state.DashboardReducer);
+    latestCreditsResponses.current = {
+        usa: CreditVaultReducer?.creditVaultResponse,
+        nonUsa: DashboardReducer?.stateMandatoryResponse,
+    };
     const AuthReducer = useSelector(state => state.AuthReducer);
     console.log(props?.route?.params?.boardID, props?.route?.params?.boardCert, "route=========");
     // console.log(props?.route?.params?.boardID?.certificates,"array of data " ,typeof props?.route?.params?.boardID?.certificates);
@@ -84,7 +101,12 @@ const CertficateHandle = (props) => {
 * @returns {Array}
 */
     const wrapDataInDoubleArray = () => {
-        const certificates = props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.certificates : props?.route?.params?.boardCert?.certificate;
+        const board = props?.route?.params?.boardCert;
+        const boardId = board?.board_id || board?.board_data?.board_id;
+        const currentBoard = CreditVaultReducer?.boardvaultResponse?.board_data?.[boardId] ||
+            CreditVaultReducer?.boardvaultResponse?.board_data?.[String(boardId)] ||
+            board;
+        const certificates = currentBoard?.certificates ?? currentBoard?.certificate ?? CreditVaultReducer?.creditVaultResponse?.certificates;
         if (certificates) {
             return [[certificates]];
         }
@@ -116,15 +138,22 @@ const CertficateHandle = (props) => {
     const hasNonUsaParam = props?.route?.params?.isNonUsaUser === true || props?.route?.params?.boardID?.state_id === '-1' || Boolean(DashboardReducer?.stateMandatoryResponse?.state_data?.['-1']);
     const hasBoardOrState = Boolean((props?.route?.params?.boardID && props?.route?.params?.boardID?.state_id !== '-1') || props?.route?.params?.boardCert);
     const isNonUsaUser = hasNonUsaParam || (!hasBoardOrState && ((nonUsaFlowState?.isNonUsa === true || isNonUsaAccount(userObj || {}, nonUsaFlowState)) && !hasUsaData));
-    const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = isNonUsaUser) => {
+    nonUsaUserRef.current = isNonUsaUser;
+    const fetchCreditVaultData = useCallback((resolvedIsNonUsaUser = nonUsaUserRef.current) => {
+        if (creditsRefreshInFlight.current) return;
+        creditsRefreshInFlight.current = true;
+        setIsCreditsLoading(true);
         if (resolvedIsNonUsaUser) {
             connectionrequest()
                 .then(() => {
                     setIsNonUsaLoading(true);
+                    pendingCreditsRequest.current = 'nonUsa';
+                    pendingCreditsBaseline.current = latestCreditsResponses.current.nonUsa;
                     dispatch(stateMandatoryRequest({}));
                 })
                 .catch((err) => {
                     setIsNonUsaLoading(false);
+                    setIsCreditsLoading(false);
                     showErrorAlert("Please connect to ineternet", err)
                 });
             return;
@@ -137,20 +166,31 @@ const CertficateHandle = (props) => {
             "state_id": props?.route?.params?.boardID?.state_id
         };
         if (!props?.route?.params?.boardID && !props?.route?.params?.boardCert) {
+            setIsCreditsLoading(false);
             return;
         }
         connectionrequest()
             .then(() => {
+                pendingCreditsRequest.current = 'usa';
+                pendingCreditsBaseline.current = latestCreditsResponses.current.usa;
+                if (props?.route?.params?.boardCert) {
+                    pendingBoardResponse.current = latestBoardResponse.current;
+                    setIsBoardCreditsLoading(true);
+                    dispatch(boardvaultRequest({}));
+                }
                 dispatch(creditvaultRequest(props?.route?.params?.boardID ? objState : obj));
             })
             .catch((err) => {
+                setIsCreditsLoading(false);
                 showErrorAlert("Please connect to ineternet", err)
             });
-    }, [dispatch, props?.route?.params?.boardID, props?.route?.params?.boardCert, isNonUsaUser]);
+    }, [dispatch, props?.route?.params?.boardID, props?.route?.params?.boardCert]);
 
     useFocusEffect(
         useCallback(() => {
             let mounted = true;
+            isNavigatingRef.current = false;
+            if (!hasLoadedCredits.current) setIsCreditsLoading(true);
             readNonUsaFlowState().then(async state => {
                 if (mounted) {
                     setNonUsaFlowState(state);
@@ -159,9 +199,14 @@ const CertficateHandle = (props) => {
                     const stateDataTemp = DashboardReducer?.stateMandatoryResponse?.state_data;
                     const hasUsaDataTemp = stateDataTemp && Object.keys(stateDataTemp).some(key => key !== '-1');
                     const skipped = await AsyncStorage.getItem("PrimeMembershipSkipped");
+                    if (!mounted) return;
                     const resolvedIsNonUsaUser = !hasBoardOrState && ((props?.route?.params?.isNonUsaUser === true) || ((state?.isNonUsa === true || isNonUsaAccount(resolvedUserObj || {}, state)) && !hasUsaDataTemp));
                     fetchCreditVaultData(resolvedIsNonUsaUser);
                 }
+            }).catch(err => {
+                if (!mounted) return;
+                setIsCreditsLoading(false);
+                showErrorAlert("Unable to load earned credits. Please try again.", err);
             });
             return () => {
                 mounted = false;
@@ -179,7 +224,24 @@ const CertficateHandle = (props) => {
     const [showMore, setShowMore] = useState({});
     const [searchText, setSearchText] = useState("");
     const [creditModal, setCreditModal] = useState(false);
-    const [certificatefecthed, setCertificatefecthed] = useState(null);
+    const [certificatefecthed, setCertificatefecthed] = useState(CreditVaultReducer?.creditVaultResponse || null);
+    useEffect(() => {
+        setCertificatefecthed(CreditVaultReducer?.creditVaultResponse);
+    }, [CreditVaultReducer?.creditVaultResponse]);
+    const lastSavedCreditsResponse = useRef(DashboardReducer?.addCreditVaultResponse);
+    useEffect(() => {
+        const response = DashboardReducer?.addCreditVaultResponse;
+        if (response === lastSavedCreditsResponse.current) return;
+        lastSavedCreditsResponse.current = response;
+        if (response?.success === true && isFocused) fetchCreditVaultData();
+    }, [DashboardReducer?.addCreditVaultResponse, fetchCreditVaultData, isFocused]);
+    useEffect(() => {
+        const emitter = require('react-native').DeviceEventEmitter;
+        const sub = emitter.addListener('CREDIT_VAULT_UPDATED', () => {
+            if (isFocused) fetchCreditVaultData();
+        });
+        return () => sub.remove();
+    }, [fetchCreditVaultData, isFocused]);
     const [particular, setParticular] = useState(null);
     const [deleteIndex, setDeleteIndex] = useState(-1);
     const [dataFull, setDataFull] = useState([]);
@@ -222,7 +284,7 @@ const CertficateHandle = (props) => {
             case 'CreditVault/creditvaultSuccess':
                 status = CreditVaultReducer.status;
                 console.log(CreditVaultReducer?.creditVaultResponse, ">>>>>>>CreditVaultReducer1233");
-                setCertificatefecthed(CreditVaultReducer?.creditVaultResponse);
+
                 console.log(certificatefecthed, "certddificatefecthed?.stddate_data[1]?.renewal_date")
                 break;
             case 'CreditVault/creditvaultFailure':
@@ -493,7 +555,16 @@ const CertficateHandle = (props) => {
         const doubleArrayCertificates = wrapDataInDoubleArray();
         const fulFinal = doubleArrayCertificates[0];
         setDataFull(fulFinal);
-    }, [props?.route?.params?.boardCert, nonUsaCertificateRows, DashboardReducer?.stateMandatoryResponse, DashboardReducer?.stateMandatorySuccess, props?.route?.params?.isNonUsaUser]);
+    }, [
+        props?.route?.params?.boardCert,
+        CreditVaultReducer?.boardvaultResponse,
+        CreditVaultReducer?.creditVaultResponse,
+        certificatefecthed,
+        nonUsaCertificateRows,
+        DashboardReducer?.stateMandatoryResponse,
+        DashboardReducer?.stateMandatorySuccess,
+        props?.route?.params?.isNonUsaUser
+    ]);
     /**
 * Categorize data dynamically utility.
 * @param {*} data - Input value.
@@ -555,25 +626,65 @@ const CertficateHandle = (props) => {
     };
 
     useEffect(() => {
-        const stateId = props?.route?.params?.boardID?.state_id;
-        const sourceData = certificatefecthed?.state_data || DashboardReducer?.stateMandatoryResponse?.state_data || DashboardReducer?.stateMandatorySuccess?.state_data;
+        const stateId = props?.route?.params?.boardID?.state_id || props?.route?.params?.boardID?.id;
+        const vaultResp = CreditVaultReducer?.creditVaultResponse || certificatefecthed;
+        const vaultStateData = vaultResp?.state_data || vaultResp?.data?.state_data;
+        const dashStateData = DashboardReducer?.stateMandatoryResponse?.state_data ||
+            DashboardReducer?.stateMandatorySuccess?.state_data;
+        const sourceData = vaultStateData || dashStateData;
+
+        let stateData = null;
 
         if (sourceData && typeof sourceData === 'object') {
             const targetStateId = (stateId && sourceData[stateId])
                 ? stateId
+                : (stateId && sourceData[String(stateId)])
+                ? String(stateId)
+                : (stateId && sourceData[Number(stateId)])
+                ? Number(stateId)
                 : (sourceData['-1'] ? '-1' : Object.keys(sourceData).find(key => key !== '-1') || Object.keys(sourceData)[0]);
 
-            const stateData = sourceData[targetStateId]?.certificates || sourceData['-1']?.certificates;
+            const vaultCerts = vaultStateData?.[targetStateId]?.certificates ||
+                vaultStateData?.[String(targetStateId)]?.certificates ||
+                vaultStateData?.[Number(targetStateId)]?.certificates ||
+                vaultResp?.certificates ||
+                vaultResp?.data?.certificates ||
+                vaultResp?.certificate;
 
-            if (stateData) {
-                const dynamicYearData = categorizeDataDynamically(stateData);
-                if (JSON.stringify(dynamicYearData) !== JSON.stringify(stateget)) {
-                    setStategetdt(dynamicYearData);
-                    setStateget(dynamicYearData);
-                }
+            const dashCerts = dashStateData?.[targetStateId]?.certificates ||
+                dashStateData?.[String(targetStateId)]?.certificates ||
+                dashStateData?.[Number(targetStateId)]?.certificates ||
+                dashStateData?.['-1']?.certificates;
+
+            if (vaultCerts && Array.isArray(vaultCerts) && dashCerts && Array.isArray(dashCerts)) {
+                stateData = vaultCerts.length >= dashCerts.length ? vaultCerts : dashCerts;
+            } else {
+                stateData = vaultCerts || dashCerts || sourceData[targetStateId]?.certificates || sourceData['-1']?.certificates;
+            }
+        } else if (vaultResp?.certificates || vaultResp?.data?.certificates || certificatefecthed?.certificates) {
+            stateData = vaultResp?.certificates || vaultResp?.data?.certificates || certificatefecthed?.certificates;
+        }
+
+        if (!stateData && props?.route?.params?.boardID?.certificates) {
+            stateData = props?.route?.params?.boardID?.certificates;
+        }
+
+        if (stateData) {
+            const dynamicYearData = categorizeDataDynamically(stateData);
+            if (JSON.stringify(dynamicYearData) !== JSON.stringify(stateget)) {
+                setStategetdt(dynamicYearData);
+                setStateget(dynamicYearData);
             }
         }
-    }, [props?.route?.params?.boardID?.state_id, certificatefecthed, DashboardReducer?.stateMandatoryResponse?.state_data, DashboardReducer?.stateMandatorySuccess?.state_data]);
+    }, [
+        props?.route?.params?.boardID?.state_id,
+        props?.route?.params?.boardID?.id,
+        props?.route?.params?.boardID?.certificates,
+        certificatefecthed,
+        CreditVaultReducer?.creditVaultResponse,
+        DashboardReducer?.stateMandatoryResponse?.state_data,
+        DashboardReducer?.stateMandatorySuccess?.state_data
+    ]);
 
 
     const [stateget, setStateget] = useState("");
@@ -636,19 +747,21 @@ const CertficateHandle = (props) => {
         return existingData;
     }
     useEffect(() => {
-        const data = certificatefecthed?.certificates
-        console.log(data, "data----------", certificatefecthed?.certificates)
-        const newData = dataFull?.length > 0 ? dataFull : [];
-        if (newData) {
+        const boardId = props?.route?.params?.boardCert?.board_id || props?.route?.params?.boardCert?.board_data?.board_id;
+        const boardCerts = CreditVaultReducer?.boardvaultResponse?.board_data?.[boardId]?.certificates ||
+            CreditVaultReducer?.boardvaultResponse?.board_data?.[String(boardId)]?.certificates ||
+            CreditVaultReducer?.boardvaultResponse?.board_data?.[boardId]?.certificate ||
+            CreditVaultReducer?.boardvaultResponse?.board_data?.[String(boardId)]?.certificate;
+        const data = CreditVaultReducer?.creditVaultResponse?.certificates || certificatefecthed?.certificates || boardCerts;
+        const newData = dataFull?.length > 0 ? dataFull : (boardCerts || []);
+        if (newData || data) {
             const transformedData = categorizeData(newData);
-            const fullTrans = AnothcategorizeData(data)
+            const fullTrans = AnothcategorizeData(data);
             const finalData = mergeData(fullTrans, transformedData);
-            if (transformedData !== boardTake) {
-                setboardTakedt(finalData)
-                setboardTake(finalData);
-            }
+            setboardTakedt(finalData);
+            setboardTake(finalData);
         }
-    }, [props?.route?.params?.boardCert, certificatefecthed, dataFull]);
+    }, [props?.route?.params?.boardCert, certificatefecthed, dataFull, CreditVaultReducer?.boardvaultResponse, CreditVaultReducer?.creditVaultResponse]);
     useEffect(() => {
         if (stateget) {
             const stateFull = stateget;
@@ -750,53 +863,32 @@ const CertficateHandle = (props) => {
 * @returns {JSX.Element}
 */
     const renderCertificateCard = (item, category) => {
-        console.log(item, "state_mandatory=====>>>>>>")
         return (
-            <View>
-                <View style={{ justifyContent: "center", alignSelf: "center", paddingVertical: normalize(8) }}>
-                    <View
-                        style={{
-                            flexDirection: "column",
-                            width: normalize(297),
-                            borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            alignItems: "flex-start",
-                            borderWidth: 0.5,
-                            borderColor: "#AAAAAA"
-                        }}
-                    >
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%' }}>
-                            <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                                <Image source={Imagepath.VaultCer} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain" }} />
-                                <Text
-                                    numberOfLines={2}
-                                    style={{
-                                        fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 16,
-                                        color: "#000000",
-                                        fontWeight: "bold",
-                                        flexShrink: 1,
-                                        flexWrap: 'wrap',
-                                        marginLeft: normalize(10)
-                                    }}
-                                >
-                                    {item?.program_title}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => {
+            <View style={styles.cardWrapper}>
+                <View style={styles.certificateCard}>
+                    <View style={styles.cardHeaderRow}>
+                        <Image source={Imagepath.VaultCer} style={styles.certIcon} />
+                        <Text
+                            numberOfLines={2}
+                            style={styles.certificateTitle}
+                        >
+                            {item?.program_title}
+                        </Text>
+                        <TouchableOpacity
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            onPress={() => {
                                 setCreditModal(true);
-                                setParticular(item)
-                            }}>
-                                <IconDot name="dots-three-vertical" size={25} color={"#848484"} />
-                            </TouchableOpacity>
-                        </View>
+                                setParticular(item);
+                            }}
+                            style={styles.moreButton}
+                        >
+                            <IconDot name="dots-three-vertical" size={20} color={"#848484"} />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
-        )
-    }
+        );
+    };
 
     useEffect(() => {
         Object.keys(stateget).forEach((year) => {
@@ -814,7 +906,40 @@ const CertficateHandle = (props) => {
     useLayoutEffect(() => {
         props.navigation.setOptions({ gestureEnabled: false });
     }, []);
-    const isInitialNonUsaLoading = isNonUsaLoading && DashboardReducer?.status === 'Dashboard/stateMandatoryRequest';
+    // Clear each loader only after its fresh data has reached the grouping effects.
+    useEffect(() => {
+        const boardId = props?.route?.params?.boardCert?.board_id || props?.route?.params?.boardCert?.board_data?.board_id;
+        const board = CreditVaultReducer?.boardvaultResponse?.board_data?.[boardId] ||
+            CreditVaultReducer?.boardvaultResponse?.board_data?.[String(boardId)];
+        const certificates = board?.certificates ?? board?.certificate;
+        const failed = CreditVaultReducer?.status === 'CreditVault/boardvaultFailure';
+        const boardReady = failed || (CreditVaultReducer?.boardvaultResponse !== pendingBoardResponse.current &&
+            (!certificates || dataFull?.[0] === certificates));
+        if (isBoardCreditsLoading && boardReady) {
+            setIsBoardCreditsLoading(false);
+        }
+    }, [CreditVaultReducer?.boardvaultResponse, CreditVaultReducer?.status, isBoardCreditsLoading, dataFull, props?.route?.params?.boardCert]);
+    useEffect(() => {
+        const kind = pendingCreditsRequest.current;
+        if (!kind) return;
+        const requestStatus = kind === 'nonUsa' ? DashboardReducer?.status : CreditVaultReducer?.status;
+        const failed = requestStatus === 'CreditVault/creditvaultFailure' || requestStatus === 'Dashboard/stateMandatoryFailure';
+        const response = kind ? latestCreditsResponses.current[kind] : null;
+        const ready = failed || (response && response !== pendingCreditsBaseline.current &&
+            (kind === 'nonUsa' || certificatefecthed === response));
+        if (ready) {
+            pendingCreditsRequest.current = null;
+            setIsCreditsLoading(false);
+        }
+    }, [CreditVaultReducer?.status, CreditVaultReducer?.creditVaultResponse, DashboardReducer?.status, DashboardReducer?.stateMandatoryResponse, certificatefecthed]);
+    useEffect(() => {
+        if (!isCreditsLoading && !isBoardCreditsLoading) {
+            creditsRefreshInFlight.current = false;
+            hasLoadedCredits.current = true;
+        }
+    }, [isCreditsLoading, isBoardCreditsLoading]);
+    const showInitialCreditsLoader = !hasLoadedCredits.current && (isCreditsLoading || isBoardCreditsLoading);
+    const isInitialNonUsaLoading = showInitialCreditsLoader;
 
     if (isNonUsaUser) {
         return (
@@ -827,7 +952,7 @@ const CertficateHandle = (props) => {
                         <PageHeader nol="yes" title={props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_data?.board_name : props?.route?.params?.boardID?.board_data?.board_name || "Credit Vault"} onBackPress={certificatpress} />
                     </View>
                 )}
-                {conn == false ? <IntOff /> : <KeyboardAvoidingView
+                {conn === false ? <IntOff /> : <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
@@ -855,7 +980,7 @@ const CertficateHandle = (props) => {
                                                     <View key={year} style={styles.yearContainer}>
                                                         <View style={styles.headerContainer}>
                                                             <View style={{ flexDirection: "row" }}>
-                                                                <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
+                                                                <CalIcon name="calendar" size={20} color={Colorpath.ButtonColr} />
                                                                 <TouchableOpacity style={styles.yearButton}>
                                                                     <Text style={styles.yearText}>
                                                                         {index == 0
@@ -871,7 +996,7 @@ const CertficateHandle = (props) => {
                                                                 </TouchableOpacity>
                                                             </View>
                                                             <TouchableOpacity onPress={() => { stateTranscript(index, dateRange) }} style={styles.button}>
-                                                                <DownloadIcn name="download" size={25} color={Colorpath.ButtonColr} />
+                                                                <DownloadIcn name="download" size={16} color={Colorpath.ButtonColr} />
                                                                 <Text style={styles.buttonText}>{"All Transcripts"}</Text>
                                                             </TouchableOpacity>
                                                         </View>
@@ -880,13 +1005,25 @@ const CertficateHandle = (props) => {
                                                             <View style={{ flexDirection: "column" }}>
                                                                 <TouchableOpacity
                                                                     onPress={() => toggleShowMore(year, 'state_mandatory')}
-                                                                    style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                                    style={{
+                                                                        flexDirection: "row",
+                                                                        justifyContent: "space-between",
+                                                                        alignItems: "center",
+                                                                        paddingHorizontal: normalize(12),
+                                                                        paddingVertical: normalize(9),
+                                                                        backgroundColor: '#142B5B',
+                                                                        borderRadius: normalize(8),
+                                                                        borderWidth: 1,
+                                                                        borderColor: '#243F7A',
+                                                                        marginHorizontal: normalize(10),
+                                                                        marginTop: normalize(6),
+                                                                        marginBottom: normalize(4)
+                                                                    }}>
+                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                                         {"State Mandatory Course Certificates"}
                                                                     </Text>
-                                                                    <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                                    <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                                 </TouchableOpacity>
-                                                                <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
                                                             </View>
                                                         )}
 
@@ -902,13 +1039,25 @@ const CertficateHandle = (props) => {
                                                             <View style={{ flexDirection: "column" }}>
                                                                 <TouchableOpacity
                                                                     onPress={() => toggleShowMore(year, 'speciality')}
-                                                                    style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                                    style={{
+                                                                        flexDirection: "row",
+                                                                        justifyContent: "space-between",
+                                                                        alignItems: "center",
+                                                                        paddingHorizontal: normalize(12),
+                                                                        paddingVertical: normalize(9),
+                                                                        backgroundColor: '#142B5B',
+                                                                        borderRadius: normalize(8),
+                                                                        borderWidth: 1,
+                                                                        borderColor: '#243F7A',
+                                                                        marginHorizontal: normalize(10),
+                                                                        marginTop: normalize(6),
+                                                                        marginBottom: normalize(4)
+                                                                    }}>
+                                                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                                         {"Specialty Course Certificates"}
                                                                     </Text>
-                                                                    <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                                    <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                                 </TouchableOpacity>
-                                                                <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
                                                             </View>
                                                         )}
 
@@ -943,9 +1092,11 @@ const CertficateHandle = (props) => {
                                                             <TouchableOpacity
                                                                 style={styles.nonUsaButton}
                                                                 onPress={() => {
+                                                                    if (isNavigatingRef.current) return;
+                                                                    isNavigatingRef.current = true;
+                                                                    setTimeout(() => { isNavigatingRef.current = false; }, 1000);
                                                                     props.navigation.navigate("AddCredits", {
                                                                         isNonUsaUser: true,
-                                                                        returnToDashboardVault: true,
                                                                     });
                                                                 }}
                                                             >
@@ -965,9 +1116,11 @@ const CertficateHandle = (props) => {
                         <View style={styles.nonUsaAddButtonContainer}>
                             <TouchableOpacity
                                 onPress={() => {
+                                    if (isNavigatingRef.current) return;
+                                    isNavigatingRef.current = true;
+                                    setTimeout(() => { isNavigatingRef.current = false; }, 1000);
                                     props.navigation.navigate("AddCredits", {
                                         isNonUsaUser: true,
-                                        returnToDashboardVault: true,
                                     });
                                 }}
                                 style={styles.nonUsaAddButton}
@@ -1013,18 +1166,19 @@ const CertficateHandle = (props) => {
                     <PageHeader nol={props?.route?.params?.boardCert ? "yes" : "no"} title={props?.route?.params?.boardCert ? props?.route?.params?.boardCert?.board_data?.board_name : props?.route?.params?.boardID?.board_data?.board_name} onBackPress={certificatpress} />
                 </View>
             )}
-            {conn == false ? <IntOff /> : <KeyboardAvoidingView
+            {conn === false ? <IntOff /> : <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <Loader visible={CreditVaultReducer?.status == 'CreditVault/downloadTranscriptRequest'} />
+                <Loader visible={showInitialCreditsLoader || CreditVaultReducer?.status == 'CreditVault/downloadTranscriptRequest'} />
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={{ alignItems: 'center' }}>
                         <View
                             style={{
                                 borderBottomColor: '#000000',
                                 borderBottomWidth: 0.5,
-                                marginTop: normalize(5)
+                                marginTop: normalize(5),
+                                marginBottom: normalize(5),
                             }}>
                             {props?.route?.params?.boardCert ? <CustomTextField
                                 value={searchText}
@@ -1032,16 +1186,13 @@ const CertficateHandle = (props) => {
                                 color={"#000000"}
                                 height={normalize(35)}
                                 width={normalize(300)}
-                                // backgroundColor={Colorpath.white}
                                 alignSelf={'center'}
                                 placeholder={'Type a Year or Title to Find Results'}
                                 placeholderTextColor="#AAAAAA"
-                                fontSize={16}
+                                fontSize={normalize(12.5)}
                                 fontFamily={Fonts.InterRegular}
-                                // marginTop={normalize(15)}
                                 autoCapitalize="none"
                                 keyboardType='default'
-                                // borderWidth={1}
                                 borderColor={"#DDDDDD"}
                                 rightIcon={Search}
                                 rightIconName={searchText ? "search1" : ""}
@@ -1054,16 +1205,13 @@ const CertficateHandle = (props) => {
                                 color={"#000000"}
                                 height={normalize(35)}
                                 width={normalize(300)}
-                                // backgroundColor={Colorpath.white}
                                 alignSelf={'center'}
                                 placeholder={'Type a Year or Title to Find Results'}
                                 placeholderTextColor="#AAAAAA"
-                                fontSize={16}
+                                fontSize={normalize(12.5)}
                                 fontFamily={Fonts.InterRegular}
-                                // marginTop={normalize(15)}
                                 autoCapitalize="none"
                                 keyboardType='default'
-                                // borderWidth={1}
                                 borderColor={"#DDDDDD"}
                                 rightIcon={Search}
                                 rightIconName={searchText ? "search1" : ""}
@@ -1074,7 +1222,7 @@ const CertficateHandle = (props) => {
                         </View>
                     </View>
 
-                    {props?.route?.params?.boardID?.state_id && certificatefecthed ? (
+                    {(props?.route?.params?.boardID?.state_id || props?.route?.params?.boardID?.id || props?.route?.params?.boardID) && !props?.route?.params?.boardCert ? (
                         <>
                             {Object.keys(stateget).length > 0 ? (
                                 Object.keys(stateget)
@@ -1085,11 +1233,11 @@ const CertficateHandle = (props) => {
                                         return (
                                             <View key={year} style={styles.yearContainer}>
                                                 <View style={styles.headerContainer}>
-                                                    <View style={{ flexDirection: "row" }}>
-                                                        <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
+                                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                        <CalIcon name="calendar" size={20} color={Colorpath.ButtonColr} />
                                                         <TouchableOpacity style={styles.yearButton}>
                                                             <Text style={styles.yearText}>
-                                                                 {index == 0
+                                                                {index == 0
                                                                     ? (() => {
                                                                         const targetStateId = props?.route?.params?.boardID?.state_id;
                                                                         const renewalVal =
@@ -1105,23 +1253,35 @@ const CertficateHandle = (props) => {
                                                         </TouchableOpacity>
                                                     </View>
                                                     <TouchableOpacity onPress={() => { stateTranscript(index, dateRange) }} style={styles.button}>
-                                                        <DownloadIcn name="download" size={25} color={Colorpath.ButtonColr} />
+                                                        <DownloadIcn name="download" size={16} color={Colorpath.ButtonColr} />
                                                         <Text style={styles.buttonText}>{"All Transcripts"}</Text>
                                                     </TouchableOpacity>
                                                 </View>
-                                                {stateget[year]?.state_mandatory?.length > 0 && <View style={{ flexDirection: "column" }}>
+                                                <View style={{ flexDirection: "column" }}>
                                                     <TouchableOpacity
                                                         onPress={() => toggleShowMore(year, 'state_mandatory')}
-                                                        style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                        style={{
+                                                            flexDirection: "row",
+                                                            justifyContent: "space-between",
+                                                            alignItems: "center",
+                                                            paddingHorizontal: normalize(12),
+                                                            paddingVertical: normalize(9),
+                                                            backgroundColor: '#142B5B',
+                                                            borderRadius: normalize(8),
+                                                            borderWidth: 1,
+                                                            borderColor: '#243F7A',
+                                                            marginHorizontal: normalize(10),
+                                                            marginTop: normalize(6),
+                                                            marginBottom: normalize(4)
+                                                        }}>
+                                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                             {"State Mandatory Course Certificates"}
                                                         </Text>
-                                                        <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                        <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                     </TouchableOpacity>
-                                                    <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
-                                                </View>}
+                                                </View>
 
-                                                {showMore[year]?.state_mandatory && stateget[year]?.state_mandatory?.length > 0 && (
+                                                {showMore[year]?.state_mandatory && (
                                                     <FlatList
                                                         data={stateget[year]?.state_mandatory || []}
                                                         renderItem={({ item }) => renderCertificateCard(item, 'state_mandatory')}
@@ -1141,19 +1301,31 @@ const CertficateHandle = (props) => {
                                                 )}
 
                                                 {/* Specialty Course Section */}
-                                                {stateget[year]?.speciality?.length > 0 && <View style={{ flexDirection: "column" }}>
+                                                <View style={{ flexDirection: "column" }}>
                                                     <TouchableOpacity
                                                         onPress={() => toggleShowMore(year, 'speciality')}
-                                                        style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                        style={{
+                                                            flexDirection: "row",
+                                                            justifyContent: "space-between",
+                                                            alignItems: "center",
+                                                            paddingHorizontal: normalize(12),
+                                                            paddingVertical: normalize(9),
+                                                            backgroundColor: '#142B5B',
+                                                            borderRadius: normalize(8),
+                                                            borderWidth: 1,
+                                                            borderColor: '#243F7A',
+                                                            marginHorizontal: normalize(10),
+                                                            marginTop: normalize(6),
+                                                            marginBottom: normalize(4)
+                                                        }}>
+                                                        <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                             {"Specialty Course Certificates"}
                                                         </Text>
-                                                        <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                        <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                     </TouchableOpacity>
-                                                    <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
-                                                </View>}
+                                                </View>
 
-                                                {showMore[year]?.speciality && stateget[year]?.speciality?.length > 0 && (
+                                                {showMore[year]?.speciality && (
                                                     <FlatList
                                                         data={stateget[year]?.speciality || []}
                                                         renderItem={({ item }) => renderCertificateCard(item, 'speciality')}
@@ -1196,9 +1368,27 @@ const CertficateHandle = (props) => {
                                             <View key={year} style={styles.yearContainer}>
                                                 <View>
                                                     {index == 0 ? <View style={styles.headerContainer}>
-                                                        <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
-                                                        <TouchableOpacity>
-                                                            <Text style={styles.yearText}>
+                                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                            <CalIcon name="calendar" size={20} color={Colorpath.ButtonColr} />
+                                                            <TouchableOpacity style={styles.yearButton}>
+                                                                <Text style={styles.yearText}>
+                                                                    {index == 0
+                                                                        ? props?.route?.params?.boardCert?.board_data?.expiry_date
+                                                                            ? `${moment(props?.route?.params?.boardCert?.board_data?.expiry_date, "YYYY-MM-DD").format("MMM DD")}(${year})`
+                                                                            : year
+                                                                        : year}
+
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                        <TouchableOpacity onPress={downloadTrans} style={styles.button}>
+                                                            <DownloadIcn name="download" size={16} color={Colorpath.ButtonColr} />
+                                                            <Text style={styles.buttonText}>{"All Transcripts"}</Text>
+                                                        </TouchableOpacity>
+                                                    </View> : <View style={styles.headerContainer}>
+                                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                                            <CalIcon name="calendar" size={20} color={Colorpath.ButtonColr} />
+                                                            <Text style={[styles.yearText, { marginRight: normalize(70) }]}>
                                                                 {index == 0
                                                                     ? props?.route?.params?.boardCert?.board_data?.expiry_date
                                                                         ? `${moment(props?.route?.params?.boardCert?.board_data?.expiry_date, "YYYY-MM-DD").format("MMM DD")}(${year})`
@@ -1206,42 +1396,42 @@ const CertficateHandle = (props) => {
                                                                     : year}
 
                                                             </Text>
-                                                        </TouchableOpacity>
+                                                        </View>
                                                         <TouchableOpacity onPress={downloadTrans} style={styles.button}>
-                                                            <DownloadIcn name="download" size={25} color={Colorpath.ButtonColr} />
-                                                            <Text style={styles.buttonText}>{"All Transcripts"}</Text>
-                                                        </TouchableOpacity>
-                                                    </View> : <View style={styles.headerContainer}>
-                                                        <CalIcon name="calendar" size={25} color={Colorpath.ButtonColr} />
-                                                        <Text style={[styles.yearText, { marginRight: normalize(70) }]}>
-                                                            {index == 0
-                                                                ? props?.route?.params?.boardCert?.board_data?.expiry_date
-                                                                    ? `${moment(props?.route?.params?.boardCert?.board_data?.expiry_date, "YYYY-MM-DD").format("MMM DD")}(${year})`
-                                                                    : year
-                                                                : year}
-
-                                                        </Text>
-                                                        <TouchableOpacity onPress={downloadTrans} style={styles.button}>
-                                                            <DownloadIcn name="download" size={25} color={Colorpath.ButtonColr} />
+                                                            <DownloadIcn name="download" size={16} color={Colorpath.ButtonColr} />
                                                             <Text style={styles.buttonText}>{"All Transcripts"}</Text>
                                                         </TouchableOpacity>
                                                     </View>}
                                                 </View>
-                                                {boardTake[year].state_mandatory?.length > 0 && <View>
+                                                <View>
                                                     <View style={{ flexDirection: "column" }}>
-                                                        <TouchableOpacity onPress={() => toggleShowMore(year, 'state_mandatory')} style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                        <TouchableOpacity
+                                                            onPress={() => toggleShowMore(year, 'state_mandatory')}
+                                                            style={{
+                                                                flexDirection: "row",
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                paddingHorizontal: normalize(12),
+                                                                paddingVertical: normalize(9),
+                                                                backgroundColor: '#142B5B',
+                                                                borderRadius: normalize(8),
+                                                                borderWidth: 1,
+                                                                borderColor: '#243F7A',
+                                                                marginHorizontal: normalize(10),
+                                                                marginTop: normalize(6),
+                                                                marginBottom: normalize(4)
+                                                            }}>
+                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                                 {"State Mandatory Course Certificates"}
                                                             </Text>
-                                                            <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                            <ArrowIcon name={showMore[year]?.state_mandatory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                         </TouchableOpacity>
-                                                        <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
                                                     </View>
-                                                </View>}
+                                                </View>
                                                 <View>
-                                                    {showMore[year]?.state_mandatory && boardTake[year].state_mandatory?.length > 0 ? (
+                                                    {showMore[year]?.state_mandatory ? (
                                                         <FlatList
-                                                            data={boardTake[year].state_mandatory}
+                                                            data={boardTake[year]?.state_mandatory || []}
                                                             renderItem={({ item }) => renderCertificateCard(item, 'state_mandatory')}
                                                             keyExtractor={(item) => item.id.toString()}
                                                             ListEmptyComponent={
@@ -1258,21 +1448,35 @@ const CertficateHandle = (props) => {
                                                         />
                                                     ) : null}
                                                 </View>
-                                                {boardTake[year].speciality?.length > 0 && <View>
+                                                <View>
                                                     <View style={{ flexDirection: "column" }}>
-                                                        <TouchableOpacity onPress={() => toggleShowMore(year, 'speciality')} style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "space-between", paddingHorizontal: normalize(10), paddingVertical: normalize(10) }}>
-                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14, fontWeight: "bold", color: "#000000" }}>
+                                                        <TouchableOpacity
+                                                            onPress={() => toggleShowMore(year, 'speciality')}
+                                                            style={{
+                                                                flexDirection: "row",
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                paddingHorizontal: normalize(12),
+                                                                paddingVertical: normalize(9),
+                                                                backgroundColor: '#142B5B',
+                                                                borderRadius: normalize(8),
+                                                                borderWidth: 1,
+                                                                borderColor: '#243F7A',
+                                                                marginHorizontal: normalize(10),
+                                                                marginTop: normalize(6),
+                                                                marginBottom: normalize(4)
+                                                            }}>
+                                                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#FFD08A" }}>
                                                                 {"Specialty Course Certificates"}
                                                             </Text>
-                                                            <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={25} color={"#000000"} />
+                                                            <ArrowIcon name={showMore[year]?.speciality ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={"#FFD08A"} />
                                                         </TouchableOpacity>
-                                                        <View style={{ height: 1, width: normalize(295), marginLeft: normalize(10), backgroundColor: "#AAAAAA", justifyContent: "center", alignItems: "center" }} />
                                                     </View>
-                                                </View>}
+                                                </View>
                                                 <View>
-                                                    {showMore[year]?.speciality && boardTake[year].speciality?.length > 0 ? (
+                                                    {showMore[year]?.speciality ? (
                                                         <FlatList
-                                                            data={boardTake[year].speciality}
+                                                            data={boardTake[year]?.speciality || []}
                                                             renderItem={({ item }) => renderCertificateCard(item, 'speciality')}
                                                             keyExtractor={(item) => item.id.toString()}
                                                             ListEmptyComponent={
@@ -1315,6 +1519,9 @@ const CertficateHandle = (props) => {
                     zIndex: 999
                 }}>
                     <TouchableOpacity onPress={() => {
+                        if (isNavigatingRef.current) return;
+                        isNavigatingRef.current = true;
+                        setTimeout(() => { isNavigatingRef.current = false; }, 1000);
                         if (props?.route?.params?.boardID) {
                             props.navigation.navigate("AddCredits", { creditvalutstate: props?.route?.params?.boardID });
                         } else if (props?.route?.params?.boardCert) {
@@ -1393,23 +1600,24 @@ const styles = StyleSheet.create({
         borderRadius: normalize(50),
     },
     yearContainer: {
-        marginBottom: normalize(10),
+        marginBottom: normalize(12),
+        marginHorizontal: normalize(4),
     },
     headerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: normalize(10),
+        paddingHorizontal: normalize(12),
         paddingVertical: normalize(8),
         justifyContent: "space-between"
     },
     yearButton: {
-        marginLeft: normalize(5),
-        marginTop: normalize(3)
+        marginLeft: normalize(6),
+        justifyContent: 'center',
     },
     yearText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 14,
-        color: Colorpath.ButtonColr,
+        fontSize: normalize(13.5),
+        color: '#1E60F2',
         fontWeight: "600"
     },
     sectionButton: {
@@ -1421,8 +1629,8 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 16,
-        color: '#000',
+        fontSize: normalize(13),
+        color: Colorpath.ButtonColr,
     },
     emptyText: {
         textAlign: 'center',
@@ -1448,17 +1656,61 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.InterMedium
     },
     button: {
-        width: normalize(140),
-        height: normalize(40),
+        height: normalize(32),
+        paddingHorizontal: normalize(10),
+        borderRadius: normalize(8),
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: "row"
     },
     buttonText: {
-        color: '#2C4DB9',
-        fontSize: 16,
+        color: '#1E60F2',
+        fontSize: normalize(12),
+        fontFamily: Fonts.InterSemiBold,
+        fontWeight: '600',
+        marginLeft: normalize(4),
+    },
+    cardWrapper: {
+        justifyContent: 'center',
+        alignSelf: 'center',
+        paddingVertical: normalize(4),
+    },
+    certificateCard: {
+        width: normalize(300),
+        borderRadius: normalize(8),
+        backgroundColor: '#F4F8FC',
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(7),
+        borderWidth: 0.8,
+        borderColor: '#DCE6F1',
+    },
+    cardHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    certIcon: {
+        height: normalize(18),
+        width: normalize(18),
+        resizeMode: 'contain',
+    },
+    certificateTitle: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: '#000000',
         fontWeight: 'bold',
-        padding: 5
+        flex: 1,
+        marginLeft: normalize(10),
+        marginRight: normalize(6),
+    },
+    moreButton: {
+        padding: normalize(2),
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     nonUsaContainer: {
         flex: 1,

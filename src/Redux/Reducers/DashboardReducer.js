@@ -144,7 +144,6 @@ stateDashboardFailure(state, action) {
 stateCourseRequest(state, action) {
       state.stateCourseRequestId = action.meta?.complianceRequestId;
       state.stateCourseLoading = true;
-      state.stateCourseResponse = {};
       state.status = action.type;
     },
         /**

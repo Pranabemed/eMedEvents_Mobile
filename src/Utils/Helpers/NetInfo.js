@@ -14,13 +14,23 @@ import NetInfo from '@react-native-community/netinfo';
 export default function connectionrequest() {
     return new Promise(function (resolve, reject) {
         NetInfo.fetch().then(state => {
-             //console.log("Is connected", state.isConnected);
-            if (state.isConnected) {
-                resolve(state.isConnected);
+            if (state.isConnected === true) {
+                resolve(true);
+            } else if (state.isConnected === null) {
+                // Initial state may be null while native module initializes. Wait briefly.
+                setTimeout(() => {
+                    NetInfo.fetch().then(nextState => {
+                        if (nextState.isConnected !== false) {
+                            resolve(true);
+                        } else {
+                            reject(false);
+                        }
+                    }).catch(() => resolve(true));
+                }, 200);
             } else {
-                reject(state.isConnected)
+                reject(state.isConnected);
             }
-        });
+        }).catch(() => resolve(true));
     });
 }
 

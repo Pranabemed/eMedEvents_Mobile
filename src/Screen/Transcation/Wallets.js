@@ -541,6 +541,7 @@ const Wallets = (props) => {
                                     </View>
                                 </View>
                                 <View style={localStyles.modalActionsRow}>
+                                    <View style={localStyles.modalAction}>
                                     <Buttons
                                         onPress={() => {
                                             setWallettake(false);
@@ -552,7 +553,7 @@ const Wallets = (props) => {
                                             fetchHandle(0, "", "", true);
                                         }}
                                         height={normalize(36)}
-                                        width={normalize(105)}
+                                        width="100%"
                                         backgroundColor={Colorpath.white}
                                         borderRadius={normalize(8)}
                                         text="Cancel"
@@ -564,6 +565,8 @@ const Wallets = (props) => {
                                         borderColor="#CBD5E1"
                                         borderWidth={1}
                                     />
+                                    </View>
+                                    <View style={localStyles.modalAction}>
                                     <Buttons
                                         onPress={() => {
                                             if (!sdate) {
@@ -579,7 +582,7 @@ const Wallets = (props) => {
                                             }
                                         }}
                                         height={normalize(36)}
-                                        width={normalize(105)}
+                                        width="100%"
                                         backgroundColor={Colorpath.ButtonColr}
                                         borderRadius={normalize(8)}
                                         text="Submit"
@@ -588,6 +591,7 @@ const Wallets = (props) => {
                                         fontFamily={Fonts.InterMedium}
                                         marginTop={normalize(14)}
                                     />
+                                    </View>
                                 </View>
                             </View>
                             <DateTimePickerModal
@@ -866,7 +870,7 @@ const localStyles = StyleSheet.create({
     },
     dateInputsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         gap: normalize(10),
     },
     dateField: {
@@ -891,9 +895,12 @@ const localStyles = StyleSheet.create({
     datePlaceholder: {
         color: '#94A3B8',
     },
+    modalAction: {
+        flex: 1,
+    },
     modalActionsRow: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
         gap: normalize(10),
     },
 });

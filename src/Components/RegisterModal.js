@@ -72,7 +72,17 @@ const handleDismiss = async () => {
             style={styles.modal}
         >
             <View style={styles.container}>
-                <VerifiedCheck name="checkcircleo" size={normalize(75)} color={"#009E38"} />
+                <View style={{
+                    width: normalize(64),
+                    height: normalize(64),
+                    borderRadius: normalize(32),
+                    backgroundColor: "#ECFDF5",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginBottom: normalize(14)
+                }}>
+                    <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
+                </View>
                 
                 <Text style={styles.titleText}>{"Thank you for your interest!"}</Text>
                 
@@ -104,40 +114,53 @@ const styles = StyleSheet.create({
     container: {
         width: normalize(310),
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(10),
-        paddingVertical: normalize(30),
+        borderRadius: normalize(16),
+        paddingVertical: normalize(24),
         paddingHorizontal: normalize(20),
         alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 6,
     },
     titleText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: normalize(20),
-        color: Colorpath.black,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(16),
+        color: "#0F172A",
         textAlign: 'center',
-        marginTop: normalize(15),
-        marginBottom: normalize(10),
+        marginTop: normalize(5),
+        marginBottom: normalize(8),
+        fontWeight: "600",
     },
     descriptionText: {
         fontFamily: Fonts.InterRegular,
-        fontSize: normalize(14),
-        color: "#666666",
+        fontSize: normalize(13),
+        color: "#64748B",
         textAlign: 'center',
-        marginBottom: normalize(25),
-        lineHeight: normalize(20),
+        marginBottom: normalize(20),
+        lineHeight: normalize(19),
+        paddingHorizontal: normalize(6),
     },
     button: {
         justifyContent: "center",
         alignItems: "center",
-        height: normalize(50),
-        width: normalize(120),
+        height: normalize(40),
+        minWidth: normalize(120),
+        paddingHorizontal: normalize(22),
         borderRadius: normalize(10),
-        borderWidth: 1,
-        borderColor: "#DDDDDD",
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     buttonText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: normalize(18),
-        color: "#999999",
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: Colorpath.white,
+        fontWeight: "600",
     },
 });
 

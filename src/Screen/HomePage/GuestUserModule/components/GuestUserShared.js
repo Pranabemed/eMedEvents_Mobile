@@ -37,10 +37,10 @@ const MEMBERSHIP_POINTS = [
  */
 const SectionTitleComponent = ({ title, action, onAction, width }) => (
   <View style={styles.sectionHeader}>
-    <Text style={[styles.sectionTitle, { fontSize: scale(width, 20) }]}>{title}</Text>
+    <Text style={styles.sectionTitle}>{title}</Text>
     {action ? (
       <TouchableOpacity onPress={onAction} hitSlop={10}>
-        <Text style={[styles.sectionAction, { fontSize: scale(width, 12) }]}>{action}</Text>
+        <Text style={styles.sectionAction}>{action}</Text>
       </TouchableOpacity>
     ) : null}
   </View>
@@ -57,14 +57,14 @@ const TagChipComponent = ({ label, active, width, onPress }) => (
     style={[
       styles.chip,
       active && styles.chipActive,
-      { paddingHorizontal: scale(width, 14), paddingVertical: scale(width, 9) },
+      { paddingHorizontal: scale(width, 12), paddingVertical: scale(width, 7) },
     ]}
   >
     <Text
       style={[
         styles.chipText,
         active && styles.chipTextActive,
-        { fontSize: scale(width, 12) },
+        { fontSize: scale(width, 11.5) },
       ]}
     >
       {label}
@@ -78,8 +78,8 @@ const TagChipComponent = ({ label, active, width, onPress }) => (
  */
 const InfoRowComponent = ({ icon, text, width, iconColor = '#666666' }) => (
   <View style={styles.infoRow}>
-    <Icon name={icon} size={scale(width, 16)} color={iconColor} />
-    <Text style={[styles.infoText, { fontSize: scale(width, 12) }]}>{text}</Text>
+    <Icon name={icon} size={scale(width, 14)} color={iconColor} />
+    <Text style={styles.infoText}>{text}</Text>
   </View>
 );
 
@@ -94,8 +94,8 @@ const StatsGridComponent = ({ width, stats }) => {
     <View style={styles.statsGrid}>
       {stats.slice(1, 5).map(item => (
         <View key={item.label} style={styles.statTile}>
-          <Text style={[styles.statValue, { fontSize: scale(width, 18) }]}>{item.value}</Text>
-          <Text style={[styles.statLabel, { fontSize: scale(width, 11) }]}>{item.label}</Text>
+          <Text style={styles.statValue}>{item.value}</Text>
+          <Text style={styles.statLabel}>{item.label}</Text>
         </View>
       ))}
     </View>

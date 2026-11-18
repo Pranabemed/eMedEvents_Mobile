@@ -267,20 +267,17 @@ const renderFooter = () => {
 const stateTakeItemboard = ({ item, index }) => {
         return (
             <View>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(8) }}>
                     <View
                         style={{
                             flexDirection: "column",
-                            width: normalize(290),
+                            width: normalize(300),
                             borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 2,
-                            elevation: 5
+                            backgroundColor: "#F7FBFF",
+                            paddingHorizontal: normalize(14),
+                            paddingVertical: normalize(12),
+                            borderWidth: 1,
+                            borderColor: "#C8DDFB",
                         }}
                     >
                         <View style={{ flex: 1 }}>
@@ -290,7 +287,7 @@ const stateTakeItemboard = ({ item, index }) => {
                                 alignItems: "center",
                                 width: '100%'
                             }}>
-                                <View style={{ flex: 1, marginRight: 10 }}>
+                                <View style={{ flex: 1, marginRight: normalize(10) }}>
                                     <TouchableOpacity onPress={() => {
                                         setDetectdata(item);
                                         setProfiletakeshow(true);
@@ -299,12 +296,11 @@ const stateTakeItemboard = ({ item, index }) => {
                                             numberOfLines={2}
                                             style={{
                                                 fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: "#000000",
-                                                fontWeight: "bold",
+                                                fontSize: normalize(13.5),
+                                                color: "#1E293B",
+                                                fontWeight: "600",
                                                 flexShrink: 1,
-                                                flexWrap: 'wrap',
-                                                width: normalize(210)
+                                                flexWrap: 'wrap'
                                             }}
                                         >
                                             {item?.board_name}
@@ -314,25 +310,25 @@ const stateTakeItemboard = ({ item, index }) => {
                                 <TouchableOpacity onPress={() => {
                                     setDetectdata(item);
                                     setProfiletakeshow(true);
-                                }} style={{ marginTop: normalize(-8) }}>
-                                    <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
+                                }} style={{ padding: normalize(4) }}>
+                                    <IconDot name="dots-three-vertical" size={normalize(18)} color={"#94A3B8"} />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
-                        <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(8) }} />
-                        {item?.certification_id && <View style={{ justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column", marginTop: normalize(5) }}>
-                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Board Certification ID"}</Text>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{item?.certification_id}</Text>
+                        <View style={{ height: 1, width: '100%', backgroundColor: "#DCEBFB", marginVertical: normalize(8) }} />
+                        {item?.certification_id && <View style={{ justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column" }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Board Certification ID"}</Text>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#1E293B" }}>{item?.certification_id}</Text>
                         </View>}
-                        <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", width: "70%", marginTop: normalize(5) }}>
+                        <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", width: "80%", marginTop: normalize(8) }}>
                             {item?.from_date && <View style={{ flexDirection: "column" }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Issue Date"}</Text>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{moment(item?.from_date).format("MM-DD-YYYY")}</Text>
+                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Issue Date"}</Text>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#1E293B" }}>{moment(item?.from_date).format("MM-DD-YYYY")}</Text>
                             </View>}
                             {item?.to_date && <View style={{ flexDirection: "column" }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Expiry Date"}</Text>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000" }}>{moment(item?.to_date).format("MM-DD-YYYY")}</Text>
+                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Expiry Date"}</Text>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#1E293B" }}>{moment(item?.to_date).format("MM-DD-YYYY")}</Text>
                             </View>}
                         </View>
                     </View>
@@ -349,22 +345,22 @@ const stateTakeItemboard = ({ item, index }) => {
  * @returns {JSX.Element}
  */
 const renderAddButton = () => (
-        <View style={{ justifyContent: "center", alignContent: "center", flexDirection: "row", gap: 5 }}>
+        <View style={{ justifyContent: "center", alignItems: "center", flexDirection: "row", gap: normalize(6) }}>
             <View style={{
                 alignItems: "center",
                 justifyContent: "center",
-                height: normalize(20),
-                width: normalize(20),
-                borderWidth: 0.5,
+                height: normalize(22),
+                width: normalize(22),
+                borderWidth: 1,
                 borderColor: Colorpath.ButtonColr,
-                borderRadius: normalize(20),
+                borderRadius: normalize(11),
             }}>
-                <Search name="plus" color={Colorpath.ButtonColr} size={18} />
+                <Search name="plus" color={Colorpath.ButtonColr} size={normalize(14)} />
             </View>
             <View>
                 <Text style={{
                     fontFamily: Fonts.InterSemiBold,
-                    fontSize: 18,
+                    fontSize: normalize(14),
                     color: Colorpath.ButtonColr,
                 }}>
                     {"Add"}
@@ -382,9 +378,10 @@ const renderAddButton = () => (
 const renderMessage = (message, underline = false) => (
         <Text style={{
             fontFamily: Fonts.InterSemiBold,
-            fontSize: 16,
+            fontSize: normalize(13),
             color: Colorpath.ButtonColr,
-            fontWeight: "bold",
+            fontWeight: "600",
+            textAlign: 'center',
             textDecorationLine: underline ? "underline" : "none",
         }}>
             {message}
@@ -446,15 +443,15 @@ const onBackPress = () => {
                                 <View
                                     style={{
                                         flexDirection: "row",
-                                        // height: normalize(83),
-                                        width: normalize(290),
+                                        width: normalize(300),
                                         borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(10),
+                                        backgroundColor: "#F7FBFF",
+                                        paddingHorizontal: normalize(14),
+                                        paddingVertical: normalize(16),
                                         alignItems: "center",
                                         borderStyle: "dashed",
                                         borderWidth: 1,
+                                        borderColor: "#C8DDFB",
                                     }}
                                 >
                                     <View style={{ flex: 1, justifyContent: "center" }}>
@@ -520,15 +517,12 @@ const onBackPress = () => {
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",
-                        height: normalize(50),
-                        width: normalize(50),
+                        height: normalize(46),
+                        width: normalize(46),
                         backgroundColor: Colorpath.ButtonColr,
-                        borderWidth: 0.5,
-                        borderColor: "#AAAAAA",
-                        borderRadius: normalize(50),
-                        paddingHorizontal: normalize(15)
+                        borderRadius: normalize(23),
                     }}>
-                        <Search name="plus" color={Colorpath.white} size={25} />
+                        <Search name="plus" color={Colorpath.white} size={normalize(20)} />
                     </TouchableOpacity>
                 </View>}
             </SafeAreaView>}

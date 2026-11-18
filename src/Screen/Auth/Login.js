@@ -912,7 +912,7 @@ const onBackPress = () => {
             <View style={[styles.headerContainer]}>
               <Text style={styles.headerText}>{"Hello Again!"}</Text>
               <Text style={styles.subHeaderText}>
-                {"Welcome back we’re always \n    happy to see you again"}
+                {"Welcome back! We’re always happy to see you again"}
               </Text>
             </View>
             <View>

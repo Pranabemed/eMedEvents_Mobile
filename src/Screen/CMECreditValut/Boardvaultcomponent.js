@@ -61,11 +61,11 @@ const cleanNumber = (value) => {
         }
         return 0;
     };
-    const topicEarned = cleanNumber(stateid?.credits_data?.topic_earned_credits || certificateboard?.credits_data?.topic_earned_credits);
-    const topicTotal = cleanNumber(stateid?.credits_data?.topic_credits || certificateboard?.credits_data?.topic_credits);
-    const generalEarned = cleanNumber(stateid?.credits_data?.total_general_earned_credits || certificateboard?.credits_data?.total_general_earned_credits);
-    const generalTotal = cleanNumber(stateid?.credits_data?.total_general_credits || certificateboard?.credits_data?.total_general_credits);
-    const showTotal = !!(stateid?.credits_data?.total_credits || totalCredit);
+    const topicEarned = Math.max(cleanNumber(certificateboard?.credits_data?.topic_earned_credits), cleanNumber(stateid?.credits_data?.topic_earned_credits));
+    const topicTotal = cleanNumber(certificateboard?.credits_data?.topic_credits || stateid?.credits_data?.topic_credits);
+    const generalEarned = Math.max(cleanNumber(certificateboard?.credits_data?.total_general_earned_credits), cleanNumber(stateid?.credits_data?.total_general_earned_credits));
+    const generalTotal = cleanNumber(certificateboard?.credits_data?.total_general_credits || stateid?.credits_data?.total_general_credits);
+    const showTotal = !!(stateid?.credits_data?.total_credits || certificateboard?.credits_data?.total_credits || totalCredit);
     const showMandatory = !((topicEarned == 0 && topicTotal == 0) || (mancredit == 0 && mantopiccredit == 0));
     const showGeneral = !((generalEarned == 0 && generalTotal == 0) || (gencredit == 0 && gentopiccredit == 0));
     // console.log(certificateboard, "1", stateid, "certificateboard", mancredit, mantopiccredit, topicEarned, topicTotal, showMandatory)
@@ -152,7 +152,7 @@ const cleanNumber = (value) => {
                             paddingHorizontal: normalize(10),
                             paddingVertical: normalize(65)
                         }} /> : (<>
-                            <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(2), marginTop: normalize(10), marginLeft: normalize(15) }}>
+                            <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(2), marginTop: normalize(8), marginLeft: normalize(15) }}>
                                 <Animated.View style={{ opacity: animatedboardname, transform: [{ scale: scalvaluesboard }] }}>
                                     {boardname ? (
                                         <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginLeft: normalize(0) }}>
@@ -230,30 +230,30 @@ const cleanNumber = (value) => {
                                             </View> : null} */}
                                         </View>
                                         <View style={stylefalse.footer}>
-                                            <View style={{ flexDirection: "row", gap: normalize(5), paddingHorizontal: normalize(10), paddingVertical: normalize(20), top: normalize(5) }}>
-                                                <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain", tintColor: "#FFFFFF" }} />
-                                                <Text style={[stylefalse.footerTitle, { marginTop: Platform.OS === "ios" ? normalize(4) : normalize(0) }]}>{"MOC Credits"}</Text>
+                                            <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(6), marginBottom: normalize(8) }}>
+                                                <Image source={Imagepath.CreditValut} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#FFFFFF" }} />
+                                                <Text style={stylefalse.footerTitle}>{"MOC Credits"}</Text>
                                             </View>
-                                            <View style={[stylefalse.creditsRow, { top: Platform.OS === "ios" ? normalize(8) : 0 }]}>
+                                            <View style={stylefalse.creditsRow}>
                                                 {showTotal && (
-                                                    <View style={{ width: normalize(85) }}>
-                                                        <Text style={[stylefalse.creditLabel, { marginLeft: normalize(10),fontWeight:"500" }]}>{"Total Required"}</Text>
-                                                        <Text style={[stylefalse.creditValue, { marginLeft: normalize(10),fontWeight:"500" }]} numberOfLines={1}>
-                                                            {stateid?.credits_data?.total_credits || totalCredit}
+                                                    <View style={{ minWidth: normalize(75), maxWidth: normalize(85), paddingRight: normalize(4) }}>
+                                                        <Text style={stylefalse.creditLabel}>{"Total Required"}</Text>
+                                                        <Text style={stylefalse.creditValue} numberOfLines={1}>
+                                                            {stateid?.credits_data?.total_credits || certificateboard?.credits_data?.total_credits || totalCredit}
                                                         </Text>
                                                     </View>
                                                 )}
 
                                                 {showMandatory && (
                                                     <>
-                                                        <View style={[stylefalse.verticalDivider, { marginRight: normalize(10) }]} />
+                                                        <View style={stylefalse.verticalDivider} />
                                                         <View style={stylefalse.creditItem}>
                                                             <Text style={stylefalse.creditLabel}>{"Mandatory"}</Text>
-                                                            <View style={{ flexDirection: "row", gap: normalize(3) }}>
+                                                            <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: normalize(2) }}>
                                                                 <Text style={stylefalse.creditValue} numberOfLines={1}>
-                                                                    {`${stateid?.credits_data?.topic_earned_credits || mancredit} / ${stateid?.credits_data?.topic_credits || mantopiccredit}`}
+                                                                    {`${topicEarned} / ${topicTotal || mantopiccredit || 0}`}
                                                                 </Text>
-                                                                <Text style={[stylefalse.earned, { marginTop: normalize(4) }]}>
+                                                                <Text style={stylefalse.earned}>
                                                                     {`earned`}
                                                                 </Text>
                                                             </View>
@@ -263,14 +263,14 @@ const cleanNumber = (value) => {
 
                                                 {showGeneral && (
                                                     <>
-                                                        <View style={[stylefalse.verticalDivider, { marginRight: normalize(10) }]} />
+                                                        <View style={stylefalse.verticalDivider} />
                                                         <View style={stylefalse.creditItem}>
                                                             <Text style={stylefalse.creditLabel}>{"General"}</Text>
-                                                            <View style={{ flexDirection: "row", gap: normalize(3) }}>
+                                                            <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: normalize(2) }}>
                                                                 <Text style={stylefalse.creditValue} numberOfLines={1}>
-                                                                    {`${stateid?.credits_data?.total_general_earned_credits || gencredit} / ${(stateid?.credits_data?.total_general_credits || gentopiccredit)}`}
+                                                                    {`${generalEarned} / ${(generalTotal || gentopiccredit || 0)}`}
                                                                 </Text>
-                                                                <Text style={[stylefalse.earned, { marginTop: normalize(4) }]}>
+                                                                <Text style={stylefalse.earned}>
                                                                     {`earned`}
                                                                 </Text>
                                                             </View>
@@ -283,16 +283,16 @@ const cleanNumber = (value) => {
                                 )}
                                 {!hideCertificateAction && certificateboard?.certificates?.length > 0 && <Buttons
                                     onPress={() => { navigation.navigate("CertficateHandle", { boardCert: certificateboard }); }}
-                                    height={normalize(45)}
+                                    height={normalize(38)}
                                     width={normalize(273)}
                                     backgroundColor={Colorpath.white}
-                                    borderRadius={normalize(7)}
-                                    text="View Earned Certificates"
+                                    borderRadius={normalize(8)}
+                                    text="View Earned Credits"
                                     color={Colorpath.ButtonColr}
-                                    fontSize={16}
+                                    fontSize={normalize(13)}
                                     fontFamily={Fonts.InterSemiBold}
-                                    borderWidth={0}
-                                    borderColor={Colorpath.ButtonColr}
+                                    borderWidth={1}
+                                    borderColor={"#BFDBFE"}
                                 />}
                                 <View style={{
                                     bottom: 0,
@@ -305,17 +305,17 @@ const cleanNumber = (value) => {
                                         flexDirection: "row",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        height: normalize(35),
-                                        width: normalize(140),
+                                        height: normalize(34),
+                                        width: normalize(130),
                                         backgroundColor: "#2896CD",
                                         borderWidth: 0.5,
                                         borderColor: "#AAAAAA",
-                                        borderRadius: normalize(10),
+                                        borderRadius: normalize(8),
                                         paddingHorizontal: normalize(0)
                                     }}>
-                                        <View style={{ gap: normalize(5), flexDirection: "row" }}>
-                                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
-                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 15, color: "#FFFFFF" }}>{"Add Credits"}</Text>
+                                        <View style={{ gap: normalize(5), flexDirection: "row", alignItems: "center" }}>
+                                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={18} />
+                                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(13), color: "#FFFFFF" }}>{"Add Credits"}</Text>
                                         </View>
                                     </Pressable>
                                 </View>
@@ -425,58 +425,62 @@ const stylefalse = StyleSheet.create({
     },
     cardContainer: {
         margin: 16,
+        borderRadius: normalize(12),
+        overflow: 'hidden',
     },
     card: {
         backgroundColor: '#FFFFFF',
-        borderTopStartRadius: normalize(15),
-        borderTopEndRadius: normalize(15),
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        padding: 16,
-        zIndex: 2,
+        borderTopStartRadius: normalize(12),
+        borderTopEndRadius: normalize(12),
+        borderBottomStartRadius: 0,
+        borderBottomEndRadius: 0,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderBottomWidth: 0,
+        padding: normalize(14),
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     logo: {
-        width: 48,
-        height: 48,
-        marginRight: 12,
+        width: normalize(44),
+        height: normalize(44),
+        marginRight: normalize(12),
         resizeMode: 'contain',
     },
     headerText: {
         flex: 1,
     },
     stateText: {
-        fontSize: 12,
-        color: '#777777',
+        fontSize: normalize(11),
+        color: '#64748B',
         fontFamily: Fonts.InterMedium,
     },
     boardText: {
-        fontSize: 18,
+        fontSize: normalize(14.5),
         fontFamily: Fonts.InterBold,
-        color: '#000000',
-        fontWeight: "bold"
+        color: '#1E293B',
+        fontWeight: "600"
     },
     divider: {
         height: 1,
-        backgroundColor: '#eee',
-        marginVertical: 12,
+        backgroundColor: '#E2E8F0',
+        marginVertical: normalize(10),
     },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        marginBottom: normalize(8),
     },
     label: {
-        fontSize: 12,
-        color: '#777777',
+        fontSize: normalize(11),
+        color: '#64748B',
         fontFamily: Fonts.InterMedium,
     },
     value: {
-        fontSize: 14,
-        color: '#000000',
+        fontSize: normalize(13),
+        color: '#1E293B',
         fontFamily: Fonts.InterSemiBold,
     },
     checklistButton: {
@@ -496,13 +500,11 @@ const stylefalse = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: "center",
         alignItems: "center",
-        marginTop: normalize(2),
-        height: normalize(40),
-        width: normalize(295),
+        height: normalize(38),
+        width: "100%",
         backgroundColor: "#FFE0E0",
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        paddingHorizontal: normalize(15),
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(12),
     },
     renewRow: {
         flexDirection: "row",
@@ -511,75 +513,72 @@ const stylefalse = StyleSheet.create({
     },
     checklistText: {
         color: '#1A4DB3',
-        fontSize: 14,
+        fontSize: normalize(12.5),
         fontFamily: Fonts.InterSemiBold,
     },
     expireAlert: {
         color: 'red',
-        fontSize: 10,
+        fontSize: normalize(10),
         fontFamily: Fonts.InterMedium,
         width: normalize(165),
     },
     update: {
         color: Colorpath.ButtonColr,
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: normalize(12.5),
     },
     renew: {
         color: Colorpath.black,
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: normalize(12.5),
     },
     footer: {
         backgroundColor: '#264092',
-        marginTop: -15, // Overlap effect
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        paddingBottom: Platform.OS === "ios" ? normalize(15) : normalize(20),
-        zIndex: 1,
+        borderBottomStartRadius: normalize(12),
+        borderBottomEndRadius: normalize(12),
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(12),
+        overflow: 'hidden',
     },
     footerTitle: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: normalize(13.5),
         fontFamily: Fonts.InterSemiBold,
     },
     creditsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: "flex-start",
+        width: "100%",
     },
     creditItem: {
-        flex: 1, // all columns same width
-        // alignItems: "center",
-        // backgroundColor:"red" 
+        flex: 1,
+        paddingHorizontal: normalize(2),
     },
     creditLabel: {
         color: "#FFFFFF",
-        fontSize: 12,
-        marginBottom: 4,
+        fontSize: normalize(10.5),
+        marginBottom: normalize(2),
         fontFamily: Fonts.InterMedium,
-        fontWeight:"500"
-        // marginLeft:normalize(3),
-        // textAlign: "center",
+        fontWeight: "500",
     },
     creditValue: {
         color: "#FFFFFF",
-        fontSize: 10, // fixed size
+        fontSize: normalize(10.5),
         fontFamily: Fonts.InterSemiBold,
-        fontWeight:"500"
-        // textAlign: "center",
+        fontWeight: "600",
     },
     earned: {
-        color: "#FFFFFF",
-        fontSize: 8, // fixed size
-        fontFamily: Fonts.InterSemiBold,
-        textAlign: "center",
-        fontWeight:"500"
+        color: "#CBD5E1",
+        fontSize: normalize(8.5),
+        fontFamily: Fonts.InterMedium,
+        fontWeight: "500",
     },
     verticalDivider: {
-        height: "100%",
+        height: "80%",
         width: 1,
-        backgroundColor: "#FFFFFF",
-        marginHorizontal: normalize(2),
+        backgroundColor: "rgba(255, 255, 255, 0.3)",
+        marginHorizontal: normalize(4),
+        alignSelf: "center",
     }
 })

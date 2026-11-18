@@ -534,7 +534,7 @@ export /**
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>
-                    Select Profession
+                    <Text style={styles.required}>* </Text>Select Profession
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -604,7 +604,7 @@ export /**
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>
-                    Select Specialty
+                    <Text style={styles.required}>* </Text>Select Specialty
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -632,9 +632,6 @@ export /**
                       color="#8B93A7"
                     />
                   </TouchableOpacity>
-                  {!profession ? (
-                    <Text style={styles.helperText}>Select a profession first.</Text>
-                  ) : null}
                   {errors.specialty ? <Text style={styles.errorText}>{errors.specialty}</Text> : null}
 
                   {specialtyOpen ? (
@@ -816,7 +813,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: '#111827',
     fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(12),
+    fontSize: normalize(12.5),
     marginBottom: normalize(4),
   },
   required: {
@@ -872,12 +869,6 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#8D97AA',
-  },
-  helperText: {
-    marginTop: normalize(3),
-    color: '#6B7280',
-    fontFamily: Fonts.InterRegular,
-    fontSize: normalize(11),
   },
   errorText: {
     marginTop: normalize(3),
@@ -935,7 +926,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#111827',
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(12),
+    fontSize: normalize(12.5),
     paddingRight: normalize(8),
   },
   optionTextSelected: {

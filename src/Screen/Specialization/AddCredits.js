@@ -20,7 +20,8 @@ import CellModal from '../../Components/CellModal';
 import moment from 'moment';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { OCRCertificateRequest, addCreditVaultRequest, addCreditsRequest, dashboardRequest, stateCourseRequest, stateMandatoryRequest } from '../../Redux/Reducers/DashboardReducer';
+import { OCRCertificateRequest, addCreditVaultRequest, addCreditsRequest, dashboardRequest, stateCourseRequest, stateMandatoryRequest, dashMbRequest } from '../../Redux/Reducers/DashboardReducer';
+import { boardvaultRequest, creditvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
@@ -95,6 +96,8 @@ const AddCredits = (props) => {
     const [cleardata, setCleardata] = useState(false);
     const [stopic, setStopic] = useState('');
     const [isModalVisiblecred, setModalVisiblecred] = useState(false);
+    const isSubmittingRef = useRef(false);
+    const addCreditSuccessHandledRef = useRef(false);
     const [opendate, setOpendate] = useState(false);
     const dispatch = useDispatch();
     const DashboardReducer = useSelector(state => state.DashboardReducer);
@@ -328,6 +331,7 @@ const AddCredits = (props) => {
 * @returns {void}
 */
     const handleAddCredits = () => {
+        if (isSubmittingRef.current || isModalVisiblecred || addCreditSuccessHandledRef.current) return;
         const creditsValue = Number(creditscount);
 
         if (!ProfilePicObj1) {
@@ -349,6 +353,8 @@ const AddCredits = (props) => {
         } else if (!isNonUsaUser && finalstate === "Yes" && !stopic) {
             showErrorAlert("Select your topic")
         } else {
+            isSubmittingRef.current = true;
+            addCreditSuccessHandledRef.current = false;
             let obj = new FormData();
             obj.append("id", props?.route?.params?.creditvalutstate?.id || props?.route?.params?.mainAdd?.creditID?.id || props?.route?.params?.creditvalut?.id || props?.route?.params?.fulldata?.fulldata?.id || props?.route?.params?.mainAdd?.id || props?.route?.params?.mainAdd?.state_data?.id || 0);
             obj.append("course_title", activitytitle);
@@ -381,7 +387,10 @@ const AddCredits = (props) => {
                 .then(() => {
                     dispatch(addCreditVaultRequest(obj));
                 })
-                .catch(err => { showErrorAlert("Please connect to internet") })
+                .catch(err => {
+                    isSubmittingRef.current = false;
+                    showErrorAlert("Please connect to internet");
+                })
         }
     }
     /**
@@ -551,17 +560,49 @@ const AddCredits = (props) => {
                 break;
             case 'Dashboard/addCreditVaultSuccess':
                 status = DashboardReducer.status;
-                if (props?.route?.params?.mainAdd?.creditID?.state_id || props?.route?.params?.creditvalut?.state_id || props?.route?.params?.fulldata?.statenamefull?.state_id) {
-                    let obj = {
-                        "state_id": props?.route?.params?.creditvalut?.state_id || props?.route?.params?.fulldata?.statenamefull?.state_id
+                if (isSubmittingRef.current && !addCreditSuccessHandledRef.current) {
+                    isSubmittingRef.current = false;
+                    addCreditSuccessHandledRef.current = true;
+                    const stateIdToRefresh = props?.route?.params?.mainAdd?.creditID?.state_id ||
+                        props?.route?.params?.creditvalut?.state_id ||
+                        props?.route?.params?.creditvalut?.id ||
+                        props?.route?.params?.creditvalutstate?.state_id ||
+                        props?.route?.params?.creditvalutstate?.id ||
+                        props?.route?.params?.fulldata?.statenamefull?.state_id ||
+                        props?.route?.params?.fulldata?.fulldata?.state_id ||
+                        props?.route?.params?.mainAdd?.statid;
+                    if (stateIdToRefresh) {
+                        let obj = {
+                            "state_id": stateIdToRefresh
+                        };
+                        dispatch(stateCourseRequest(obj));
+                        dispatch(creditvaultRequest(obj));
                     }
-                    dispatch(stateCourseRequest(obj));
+                    const boardIdToRefresh = props?.route?.params?.fulldata?.takeboardall?.board_data?.board_id ||
+                        props?.route?.params?.creditvalutboard?.board_data?.board_id ||
+                        props?.route?.params?.FullBoard?.stateid ||
+                        props?.route?.params?.creditvalut?.board_data?.board_id ||
+                        props?.route?.params?.creditvalutboard?.board_id ||
+                        props?.route?.params?.boardCert?.board_id;
+                    if (boardIdToRefresh) {
+                        dispatch(creditvaultRequest({ board_id: boardIdToRefresh, type: 'certificate' }));
+                    }
+                    dispatch(stateMandatoryRequest({}));
+                    dispatch(boardvaultRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(dashboardRequest({}));
+                    try {
+                        const emitter = require('react-native').DeviceEventEmitter;
+                        emitter.emit('CREDIT_VAULT_UPDATED', { state_id: stateIdToRefresh, timestamp: Date.now() });
+                    } catch (e) {
+                        console.log('emitter error', e);
+                    }
+                    setModalVisiblecred(true);
                 }
-                dispatch(dashboardRequest({}))
-                toggleModalcred();
                 break;
             case 'Dashboard/addCreditVaultFailure':
                 status = DashboardReducer.status;
+                isSubmittingRef.current = false;
                 break;
             case 'Dashboard/OCRCertificateRequest':
                 status = DashboardReducer.status;
@@ -1318,10 +1359,10 @@ const AddCredits = (props) => {
                             </View>
                             <Buttons
                                 onPress={handleAddCredits}
-                                disabled={!hasValidUploadedDocument}
+                                disabled={!hasValidUploadedDocument || isSubmittingRef.current || isModalVisiblecred || addCreditSuccessHandledRef.current || DashboardReducer?.status == 'Dashboard/addCreditVaultRequest'}
                                 height={normalize(45)}
                                 width={normalize(300)}
-                                backgroundColor={hasValidUploadedDocument ? Colorpath.ButtonColr : "#DADADA"}
+                                backgroundColor={hasValidUploadedDocument && !isSubmittingRef.current && !isModalVisiblecred && !addCreditSuccessHandledRef.current && DashboardReducer?.status != 'Dashboard/addCreditVaultRequest' ? Colorpath.ButtonColr : "#DADADA"}
                                 borderRadius={normalize(9)}
                                 text="Save"
                                 color={Colorpath.white}
@@ -1347,7 +1388,7 @@ const AddCredits = (props) => {
 
                             <CellModal
                                 isVisible={isModalVisiblecred}
-                                onClose={toggleModalcred}
+                                onClose={() => setModalVisiblecred(false)}
                                 content={isNonUsaUser ? "Credit details \n added successfully." : (props?.route?.params?.FullBoard || props?.route?.params?.creditvalutboard || props?.route?.params?.fulldata?.takeboardall?.board_data?.board_name ? "Board certificate details \n added successfully." : "Licensure certificate details \n added successfully.")}
                                 navigation={props.navigation}
                                 name={returnToDashboardVault ? "DashoardVault" : isNonUsaUser ? "CertficateHandle" : "goBack"}

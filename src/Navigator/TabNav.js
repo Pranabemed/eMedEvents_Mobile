@@ -186,7 +186,7 @@ function TabScreen() {
               dispatch(chooseStatecardRequest(objToken));
               dispatch(verifyRequest(objToken))
             })
-            .catch((err) => showErrorAlert("Please connect to internet", err))
+            .catch((err) => console.log('Hydrate dashboard state failed', err))
         }
       });
     };
@@ -438,7 +438,7 @@ function TabScreen() {
       .then(() => {
         dispatch(PrimeCheckRequest({}))
       })
-      .catch((err) => showErrorAlert("Please connect to internet", err))
+      .catch((err) => console.log('Prime check failed', err))
   }, [isFoucs])
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -596,9 +596,9 @@ function TabScreen() {
 * @returns {void}
 */
   const toggleDrawerModal = () => {
-    if (visible || isOpeningDrawerRef.current) return;
+    if (isOpeningDrawerRef.current) return;
     isOpeningDrawerRef.current = true;
-    setVisible(true);
+    setVisible(prev => !prev);
   };
   /**
 * Navigation helper that exposes close drawer modal behavior.
@@ -608,13 +608,10 @@ function TabScreen() {
     setVisible(false);
   };
   useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => {
-        isOpeningDrawerRef.current = false;
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-    isOpeningDrawerRef.current = false;
+    const timer = setTimeout(() => {
+      isOpeningDrawerRef.current = false;
+    }, 300);
+    return () => clearTimeout(timer);
   }, [visible]);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -687,7 +684,7 @@ function TabScreen() {
       {[
         { name: "Home", component: resolvedHomeComponent, icon: Imagepath.Home, label: "Home" },
         { name: "Profiles", component: ProfileMain, icon: Imagepath.Profile, label: "Profile" },
-        { name: "Contact", component: resolvedContactComponent, icon: Imagepath.DocVault, label: "CVault" },
+        { name: "Contact", component: resolvedContactComponent, icon: Imagepath.DocVault, label: "Credits" },
       ]
         .map((item) => (
           <Tab.Screen
@@ -705,7 +702,7 @@ function TabScreen() {
 * @returns {JSX.Element}
 */
               tabBarIcon: ({ focused }) => {
-                if (item?.label?.trim() == "CVault" && (tabsub || isSubscriptionExpiredSync)) {
+                if (item?.label?.trim() == "Credits" && (tabsub || isSubscriptionExpiredSync)) {
                   return (
                     <Pressable onPress={() => setTabmodal(true)} style={{ alignItems: 'center', justifyContent: 'center' }}>
                       <Image

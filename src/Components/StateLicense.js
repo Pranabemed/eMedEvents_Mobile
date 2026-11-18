@@ -307,19 +307,20 @@ const tokenHandle = async () => {
         lastCheckoutRefreshRef.current = now;
         lastDashboardSyncRef.current = 0;
         lastStateSyncRef.current = null;
+        stateDashboardCacheRef.current = {};
         dashBoarData();
         const list = effectiveFulldashbaord?.length > 0 ? effectiveFulldashbaord : fulldashbaord;
-        const activeStateId = addit?.state_id || list?.[currentIndex]?.state_id || list?.[0]?.state_id;
+        const activeStateId = addit?.state_id || list?.[currentIndex]?.state_id || list?.[0]?.state_id || selectedDashboardStateId;
         if (activeStateId) {
             dispatch(stateDashboardRequest({ state_id: activeStateId }));
             dispatch(stateReportingRequest({ state_id: activeStateId }));
         }
     };
     useEffect(() => {
-        if (!propsData?.refreshLicensesAt) return;
+        if (!propsData?.refreshLicensesAt && !(typeof propsData?.detectmain === 'string' && propsData?.detectmain?.startsWith('checkoutDone'))) return;
         triggerCheckoutRefresh();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [propsData?.refreshLicensesAt]);
+    }, [propsData?.refreshLicensesAt, propsData?.detectmain]);
     useEffect(() => {
         if (DashboardReducer.status === 'Dashboard/dashboardSuccess' || DashboardReducer.status === 'Dashboard/dashboardFailure') {
             dashboardFetchInFlightRef.current = false;
@@ -566,6 +567,13 @@ const stateTake = (toklen, anoth) => {
                 }
                 if (uniqueStates?.length > 0) {
                     setFulldashbaord(uniqueStates);
+                    if (Date.now() - lastCheckoutRefreshRef.current < 6000) {
+                        const targetId = addit?.state_id || uniqueStates?.[currentIndex]?.state_id || uniqueStates?.[0]?.state_id;
+                        if (targetId) {
+                            dispatch(stateDashboardRequest({ state_id: targetId }));
+                            dispatch(stateReportingRequest({ state_id: targetId }));
+                        }
+                    }
                 }
                 break;
             case 'Dashboard/stateReportingSuccess':
@@ -642,12 +650,12 @@ const stateTake = (toklen, anoth) => {
 
     const resolvedFindData = useMemo(() => {
         if (selectedDashboardStateId == null) return null;
-        const cached = stateDashboardCacheRef.current[String(selectedDashboardStateId)];
-        if (cached) return cached;
+        // The cache is updated in an effect, after this render. Prefer the fresh
+        // matching response so checkout updates appear without another interaction.
         if (String(DashboardReducer?.stateDashboardResponseStateId) === String(selectedDashboardStateId)) {
             return DashboardReducer?.stateDashboardResponse?.data || null;
         }
-        return null;
+        return stateDashboardCacheRef.current[String(selectedDashboardStateId)] || null;
     }, [selectedDashboardStateId, DashboardReducer?.stateDashboardResponseStateId, DashboardReducer?.stateDashboardResponse?.data]);
 
     useEffect(() => {

@@ -248,6 +248,7 @@ const token_handle_vault = () => {
         }
     }
     useEffect(() => {
+        if (!isFocus) return;
                 /**
  * On back press utility.
  * @returns {boolean}
@@ -262,7 +263,7 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [isFocus, props.navigation, props.route?.params]);
         /**
  * Load more data utility.
  * @returns {void}
@@ -302,22 +303,17 @@ const renderFooter = () => {
 const stateProfileget = ({ item, index }) => {
         return (
             <View>
-                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(10) }}>
+                <View style={{ justifyContent: "center", alignItems: "center", paddingVertical: normalize(8) }}>
                     <View
                         style={{
                             flexDirection: "column",
-                            width: normalize(290),
+                            width: normalize(300),
                             borderRadius: normalize(10),
-                            backgroundColor: "#FFFFFF",
-                            paddingHorizontal: normalize(10),
-                            paddingVertical: normalize(10),
-                            borderWidth: 0.8,
-                            borderColor: "#DADADA"
-                            // shadowColor: "#000",
-                            // shadowOffset: { width: 0, height: 1 },
-                            // shadowOpacity: 0.2,
-                            // shadowRadius: 2,
-                            // elevation: 5
+                            backgroundColor: "#F7FBFF",
+                            paddingHorizontal: normalize(14),
+                            paddingVertical: normalize(12),
+                            borderWidth: 1,
+                            borderColor: "#C8DDFB",
                         }}
                     >
                         <View style={{ flex: 1 }}>
@@ -327,18 +323,17 @@ const stateProfileget = ({ item, index }) => {
                                 alignItems: "center",
                                 width: '100%'
                             }}>
-                                <View style={{ flex: 1, marginRight: 10 }}>
+                                <View style={{ flex: 1, marginRight: normalize(10) }}>
                                     <TouchableOpacity>
                                         <Text
                                             numberOfLines={2}
                                             style={{
                                                 fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: "#000000",
-                                                fontWeight: "bold",
+                                                fontSize: normalize(13.5),
+                                                color: "#1E293B",
+                                                fontWeight: "600",
                                                 flexShrink: 1,
-                                                flexWrap: 'wrap',
-                                                width: normalize(210)
+                                                flexWrap: 'wrap'
                                             }}
                                         >
                                             {item?.board_name}
@@ -348,28 +343,28 @@ const stateProfileget = ({ item, index }) => {
                                 <TouchableOpacity onPress={() => {
                                     setDetectdata(item);
                                     setProfiletakeshow(!profiletakeshow);
-                                }} style={{ marginTop: normalize(-8) }}>
-                                    <IconDot name="dots-three-vertical" size={22} color={"#848484"} />
+                                }} style={{ padding: normalize(4) }}>
+                                    <IconDot name="dots-three-vertical" size={normalize(18)} color={"#94A3B8"} />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={{ height: 0.8, width: normalize(273), backgroundColor: "#DADADA", marginTop: normalize(5) }} />
-                        <View style={{ justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column", marginTop: normalize(5) }}>
-                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"License Number"}</Text>
-                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#000000", textTransform: "uppercase" }}>{item?.license_number}</Text>
+                        <View style={{ height: 1, width: '100%', backgroundColor: "#DCEBFB", marginVertical: normalize(8) }} />
+                        <View style={{ justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column" }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"License Number"}</Text>
+                            <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: "#1E293B", textTransform: "uppercase" }}>{item?.license_number}</Text>
                         </View>
-                        <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", width: "70%", marginTop: normalize(6) }}>
+                        <View style={{ justifyContent: "space-between", alignContent: "space-between", flexDirection: "row", width: "80%", marginTop: normalize(8) }}>
                             {item?.to_date && item?.to_date == "0000-00-00" ? (<View style={{ flexDirection: "column" }}>
-                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Expiry Date & Expiry Year"}</Text>
-                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: item?.to_date && item?.to_date !== "0000-00-00" ? "#000000" : "red" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("DD MMM") : "Update license info"}</Text>
+                                <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Expiry Date & Expiry Year"}</Text>
+                                <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: item?.to_date && item?.to_date !== "0000-00-00" ? "#1E293B" : "#EF4444" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("DD MMM") : "Update license info"}</Text>
                             </View>) : <>
                                 {item?.to_date && <View style={{ flexDirection: "column" }}>
-                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Expiry Date"}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: item?.to_date && item?.to_date !== "0000-00-00" ? "#000000" : "red" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("DD MMM") : "Update license info"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Expiry Date"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: item?.to_date && item?.to_date !== "0000-00-00" ? "#1E293B" : "#EF4444" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("DD MMM") : "Update license info"}</Text>
                                 </View>}
                                 {item?.to_date && <View style={{ flexDirection: "column" }}>
-                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#999999" }}>{"Expiry Year"}</Text>
-                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 16, color: item?.to_date && item?.to_date !== "0000-00-00" ? "#000000" : "red" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("YYYY") : "Update license info"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(11), color: "#64748B", marginBottom: normalize(2) }}>{"Expiry Year"}</Text>
+                                    <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(13), color: item?.to_date && item?.to_date !== "0000-00-00" ? "#1E293B" : "#EF4444" }}>{item?.to_date && item?.to_date !== "0000-00-00" ? moment(item?.to_date, "YYYY-MM-DD").format("YYYY") : "Update license info"}</Text>
                                 </View>}
                             </>}
 
@@ -417,24 +412,24 @@ const stateProfileget = ({ item, index }) => {
                                 <View
                                     style={{
                                         flexDirection: "row",
-                                        // height: normalize(83),
-                                        width: normalize(290),
+                                        width: normalize(300),
                                         borderRadius: normalize(10),
-                                        backgroundColor: "#FFFFFF",
-                                        paddingHorizontal: normalize(10),
-                                        paddingVertical: normalize(10),
+                                        backgroundColor: "#F7FBFF",
+                                        paddingHorizontal: normalize(14),
+                                        paddingVertical: normalize(16),
                                         alignItems: "center",
-                                        borderStyle: 'dotted',
+                                        borderStyle: 'dashed',
                                         borderWidth: 1,
+                                        borderColor: "#C8DDFB",
                                     }}
                                 >
                                     <View style={{ flex: 1, justifyContent: "center" }}>
                                         <Text
                                             style={{
                                                 fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
+                                                fontSize: normalize(13.5),
                                                 color: Colorpath.ButtonColr,
-                                                fontWeight: "bold",
+                                                fontWeight: "600",
                                                 alignSelf: "center"
                                             }}
                                         >
@@ -458,19 +453,13 @@ const stateProfileget = ({ item, index }) => {
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",
-                        height: normalize(50),
-                        width: normalize(50),
+                        height: normalize(46),
+                        width: normalize(46),
                         backgroundColor: Colorpath.ButtonColr,
-                        borderWidth: 0.5,
-                        borderColor: "#AAAAAA",
-                        borderRadius: normalize(50),
-                        paddingHorizontal: normalize(15)
+                        borderRadius: normalize(23),
                     }}>
-                        <Search style={{ alignSelf: "center" }} name="plus" color={Colorpath.white} size={25} />
+                        <Search style={{ alignSelf: "center" }} name="plus" color={Colorpath.white} size={normalize(20)} />
                     </TouchableOpacity>
-                    {/* <TouchableOpacity onPress={()=>props.navigation.navigate("AddLicense",{profile:"text"})}>
-                    <Image source={Imagepath.PlusNew} style={{height:normalize(55),width:normalize(55),resizeMode:"contain",tintColor:Colorpath.ButtonColr}}/>
-                    </TouchableOpacity> */}
                 </View>}
             </SafeAreaView>}
             <ProfileModal setTicktry={setTicktry} main={ProfileReducer?.stateLicenseListResponse?.lisensure_file_path} setPaginatedData={setPaginatedDatapr} paginatedData={paginatedDatapr} nav={props.navigation} detectdata={detectdata} setProfiletakeshow={setProfiletakeshow} profiletakeshow={profiletakeshow} onDeleteSuccess={handleDeleteSuccess} />

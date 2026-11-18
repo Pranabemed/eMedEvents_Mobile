@@ -2,7 +2,7 @@
  * Drawer modal reusable component module. Provides a React Native UI building block used across screens. Exported members: checkPrimeSkipped, navigateSmooth, getInitials, handleToggle, token_handle_vault, clean, readProfileText, buildProfessionLabel, renderNestedItem, modalRender, handleRot, clearAllAsyncStorage, openEmail, modalDown, styles.
  */
 
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   View,
@@ -95,7 +95,6 @@ export default function DrawerModal(props) {
   const syncDrawerProfileState = useCallback(() => {
     let mounted = true;
 
-    setIsProfileReady(false);
     Promise.all([
       readNonUsaFlowState(),
       readNonUsaPermanentFlags(),
@@ -244,10 +243,20 @@ export default function DrawerModal(props) {
   const isNonSubscribedNoSubscription =
     !isPrimeUserActive &&
     (resolvedSubscriptionUser == "non-subscribed" || !isPrimeSubscribed);
+  const lastVisibilityRef = useRef(null);
   useEffect(() => {
-    const emitter = require('react-native').DeviceEventEmitter;
-    emitter.emit('DRAWER_MODAL_VISIBILITY', props.isVisible);
+    if (props.isVisible) {
+      lastVisibilityRef.current = true;
+      const emitter = require('react-native').DeviceEventEmitter;
+      emitter.emit('DRAWER_MODAL_VISIBILITY', true);
+    }
   }, [props.isVisible]);
+
+  const handleModalHide = useCallback(() => {
+    lastVisibilityRef.current = false;
+    const emitter = require('react-native').DeviceEventEmitter;
+    emitter.emit('DRAWER_MODAL_VISIBILITY', false);
+  }, []);
   useEffect(() => {
     /**
 * Check prime skipped utility.
@@ -268,15 +277,12 @@ export default function DrawerModal(props) {
     }
   }, [isFocus, props.isVisible]);
   useEffect(() => {
-    if (isFocus) {
-      const cleanup = syncDrawerProfileState();
-      return () => cleanup?.();
-    }
-  }, [isFocus, syncDrawerProfileState]);
+    const cleanup = syncDrawerProfileState();
+    return () => cleanup?.();
+  }, [syncDrawerProfileState]);
   useEffect(() => {
     if (props.isVisible) {
-      const cleanup = syncDrawerProfileState();
-      return () => cleanup?.();
+      return syncDrawerProfileState();
     }
   }, [props.isVisible, syncDrawerProfileState]);
   useEffect(() => {
@@ -338,7 +344,10 @@ export default function DrawerModal(props) {
   };
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      setNettruedr(state.isConnected);
+      // NetInfo can report an unknown connection during a refresh.
+      if (typeof state.isConnected === 'boolean') {
+        setNettruedr(state.isConnected);
+      }
     });
 
     return () => unsubscribe();
@@ -413,37 +422,47 @@ export default function DrawerModal(props) {
     }
   }, [AuthReducer.status]);
   useEffect(() => {
-    if (props?.handel == "closeit") {
-      connectionrequest()
-        .then(() => {
-          dispatch(mainprofileRequest({}))
-        })
-        .catch((err) => showErrorAlert("Please connect to internet", err))
-    }
-  }, [props?.handel]);
-  useEffect(() => {
-    connectionrequest()
-      .then(() => {
-        dispatch(mainprofileRequest({}))
-      })
-      .catch((err) => showErrorAlert("Please connect to internet", err))
-  }, [isFocus])
-  useEffect(() => {
     if (resolvedDrawerUser) {
       setAllHandled(resolvedDrawerUser);
     }
   }, [resolvedDrawerUser]);
 
+  const lastProfileFetchRef = useRef(0);
   useEffect(() => {
     if (props.isVisible) {
-      connectionrequest()
-        .then(() => {
-          dispatch(mainprofileRequest({}));
-          dispatch(PrimeCheckRequest({}));
-        })
-        .catch((err) => showErrorAlert("Please connect to internet", err));
+      const now = Date.now();
+      const hasProfile = Boolean(
+        DashboardReducer?.mainprofileResponse &&
+        Object.keys(DashboardReducer.mainprofileResponse).length > 0
+      );
+      const hasPrime = Boolean(
+        WebcastReducer?.PrimeCheckResponse &&
+        Object.keys(WebcastReducer.PrimeCheckResponse).length > 0
+      );
+
+      // If already loaded and fetched within last 30 seconds, avoid duplicate network and Redux updates
+      if (hasProfile && hasPrime && (now - lastProfileFetchRef.current < 30000)) {
+        return;
+      }
+
+      // Defer background refresh until slide-in transition finishes to keep animation smooth
+      const timer = setTimeout(() => {
+        connectionrequest()
+          .then(() => {
+            lastProfileFetchRef.current = Date.now();
+            if (!hasProfile || (Date.now() - lastProfileFetchRef.current > 30000)) {
+              dispatch(mainprofileRequest({}));
+            }
+            if (!hasPrime || (Date.now() - lastProfileFetchRef.current > 30000)) {
+              dispatch(PrimeCheckRequest({}));
+            }
+          })
+          .catch((err) => showErrorAlert("Please connect to internet", err));
+      }, 350);
+
+      return () => clearTimeout(timer);
     }
-  }, [props.isVisible]);
+  }, [props.isVisible, DashboardReducer?.mainprofileResponse, WebcastReducer?.PrimeCheckResponse]);
   /**
 * Returns initials.
 * @param {*} firstname - Input value.
@@ -561,7 +580,7 @@ export default function DrawerModal(props) {
       setNonUsaFlowState(null);
     }
   }, [hasMainAddr, hasFallbackAddr, isMainAddrUsa, isFallbackAddrUsa, isUsaIpAddress, nonUsaFlowState]);
-  const physicianMenuItems = [
+  const physicianMenuItems = useMemo(() => [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 2, name: "State Required Courses", img: Imagepath.GradCap },
@@ -569,27 +588,25 @@ export default function DrawerModal(props) {
     { id: 4, name: "Specialty Courses", img: Imagepath.Brain },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
-  ];
+  ], []);
 
-  const otherMenuItems = [
+  const otherMenuItems = useMemo(() => [
     { id: 0, name: "Dashboard", img: Imagepath.FourDot },
     { id: 1, name: "My CME/CE Courses ", img: Imagepath.CreditCard },
     { id: 5, name: "Transactions", img: Imagepath.CreditCard, nestedItems: [{ id: 0, name: "Registrations" }, { id: 1, name: "Subscriptions Transaction" }, { id: 2, name: "Wallet Transactions" }, { id: 3, name: "Subscriptions" }] },
     { id: 6, name: "Interested Conferences", img: Imagepath.IntConf },
-  ];
+  ], []);
 
-  const modalKey = currentProfile === 'SkipProfile' || isExplicitNonUsaProfile
-    ? otherMenuItems
-    : isPhysicianUser && hasFullMenuAccess
+  const modalKey = useMemo(() => {
+    if (currentProfile === 'SkipProfile' || isExplicitNonUsaProfile) {
+      return otherMenuItems;
+    }
+    return isPhysicianUser && hasFullMenuAccess
       ? physicianMenuItems
       : otherMenuItems;
-  const downKey = [
-    { id: 0, name: "For Any Queries" },
-    { id: 1, name: "support@emedevents.com" },
-    { id: 2, name: "Sign Out" }
-  ]
+  }, [currentProfile, isExplicitNonUsaProfile, isPhysicianUser, hasFullMenuAccess, otherMenuItems, physicianMenuItems]);
+
   const [expandedId, setExpandedId] = useState(0);
-  const [alphaimg, setAlphaimg] = useState("");
   /**
 * Handles toggle.
 * @param {*} id - Input value.
@@ -598,39 +615,6 @@ export default function DrawerModal(props) {
   const handleToggle = (id) => {
     setExpandedId(prevId => (prevId === id ? null : id));
   };
-  useEffect(() => {
-    /**
-* Token handle vault utility.
-* @returns {void}
-*/
-    const token_handle_vault = () => {
-      setTimeout(async () => {
-        try {
-          const [board_special, profession_data] = await Promise.all([
-            AsyncStorage.getItem(constants.VERIFYSTATEDATA),
-            AsyncStorage.getItem(constants.PROFESSION)
-          ]);
-          const board_special_json = board_special ? JSON.parse(board_special) : null;
-          const profession_data_json = profession_data ? JSON.parse(profession_data) : null;
-          setFinalverifyvault(board_special_json);
-          setFinalProfession(profession_data_json);
-        } catch (error) {
-          console.log('Error fetching data:', error);
-        }
-      }, 100);
-    };
-
-    if (isFocus || props.isVisible) {
-      token_handle_vault();
-    }
-  }, [isFocus, props.isVisible]);
-  useEffect(() => {
-    connectionrequest()
-      .then(() => {
-        dispatch(PrimeCheckRequest({}))
-      })
-      .catch((err) => showErrorAlert("Please connect to internet", err))
-  }, [])
   const resolvedProfessionSource = useMemo(() => {
     return (
       resolvedDrawerUser?.professional_information ||
@@ -742,14 +726,11 @@ export default function DrawerModal(props) {
       setStableProfileMetaText(currentProfileMetaText);
     }
   }, [currentProfileMetaText]);
-  useEffect(() => {
-    if (resolvedDrawerUser || resolvedProfessionSource) {
-      const firstName = resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname;
-      const lastName = resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname;
-      const initials = getInitials(firstName, lastName);
-      setAlphaimg(initials)
-    }
-  }, [resolvedDrawerUser, resolvedProfessionSource])
+  const alphaimg = useMemo(() => {
+    const firstName = resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname;
+    const lastName = resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname;
+    return getInitials(firstName, lastName);
+  }, [resolvedDrawerUser, resolvedProfessionSource]);
   /**
 * Render nested item utility.
 * @param {Object} props - Input object.
@@ -757,10 +738,10 @@ export default function DrawerModal(props) {
 * @param {*} props.index - Nested property value.
 * @returns {JSX.Element}
 */
-  const renderNestedItem = ({ item, index }) => {
+  const renderNestedItem = useCallback(({ item, index }) => {
     return (
       <>
-        <View style={{ paddingHorizontal: normalize(51), paddingVertical: normalize(5) }}>
+        <View style={{ paddingLeft: normalize(44), paddingRight: normalize(16), paddingVertical: normalize(6) }}>
           <Pressable onPress={() => {
             if (item?.id == 2) {
               navigateSmooth("Wallets", { name: item?.name });
@@ -770,18 +751,20 @@ export default function DrawerModal(props) {
               navigateSmooth("Registration", { name: item?.name });
             } else {
               navigateSmooth("SubTransaction", { name: item?.name });
-
             }
-          }}>
-            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 16, color: "#666", width: normalize(200), fontWeight: "500" }}>{item?.name}</Text>
+          }}
+            style={{ flexDirection: "row", alignItems: "center", gap: normalize(8) }}
+          >
+            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#94A3B8" }} />
+            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(12.5), color: "#475569", fontWeight: "500" }}>{item?.name}</Text>
           </Pressable>
         </View>
-        {item?.id == 3 && <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
-          <View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+        {item?.id == 3 && <View style={{ paddingHorizontal: normalize(16), marginVertical: normalize(4) }}>
+          <View style={{ height: 1, width: "100%", backgroundColor: "#F1F5F9" }} />
         </View>}
       </>
     );
-  }
+  }, [isMenuNavigating]);
   /**
 * Modal render utility.
 * @param {Object} props - Input object.
@@ -789,7 +772,7 @@ export default function DrawerModal(props) {
 * @param {*} props.index - Nested property value.
 * @returns {JSX.Element}
 */
-  const modalRender = ({ item, index }) => {
+  const modalRender = useCallback(({ item, index }) => {
     return (
       <>
         <Pressable onPress={() => {
@@ -804,20 +787,16 @@ export default function DrawerModal(props) {
           } else if (item?.id == 2) {
             if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
-              // props.expensesNav();
             } else {
-              // props.expensesNav();
               navigateSmooth("StateCourse");
             }
           } else if (item?.id == 3) {
-            // props.expensesNav();
             if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
             } else {
               navigateSmooth("BoardCourseSlide");
             }
           } else if (item?.id == 4) {
-            // props.expensesNav();
             if (primeit || isNonSubscribedNoSubscription) {
               setSubit(true);
             } else {
@@ -830,17 +809,17 @@ export default function DrawerModal(props) {
           } else if (item?.id == 6) {
             navigateSmooth("InterestedChekout");
           }
-        }} style={{ flexDirection: "row", paddingHorizontal: normalize(15), paddingVertical: normalize(5), gap: 8 }}>
-          <Image source={item.img} style={{ height: item?.id == 6 ? normalize(18) : normalize(20), width: item?.id == 6 ? normalize(18) : normalize(20), resizeMode: "contain", tintColor: "#000000" }} />
-          <View style={{ flexDirection: "row" }}>
-            <Text style={Platform.OS === 'ios' ? { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333", paddingHorizontal: normalize(8), paddingVertical: normalize(4), fontWeight: "500" } : { fontFamily: Fonts.InterSemiBold, fontSize: 16, color: "#333", paddingHorizontal: normalize(8) }}>{item?.name}</Text>
-            {item?.nestedItems && (
-              <ArrowIcn style={{ marginTop: normalize(-2), paddingHorizontal: normalize(80) }} name={expandedId == 0 ? expandedId == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down" : (expandedId || props?.expandId) == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={30} color={"#000000"} />
-            )}
+        }} style={{ flexDirection: "row", paddingHorizontal: normalize(16), paddingVertical: normalize(10), alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(10), flex: 1 }}>
+            <Image source={item.img} style={{ height: item?.id == 6 ? normalize(17) : normalize(18), width: item?.id == 6 ? normalize(17) : normalize(18), resizeMode: "contain", tintColor: "#334155" }} />
+            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(13.5), color: "#1E293B", fontWeight: "500" }}>{item?.name}</Text>
           </View>
+          {item?.nestedItems && (
+            <ArrowIcn name={expandedId == 0 ? expandedId == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down" : (expandedId || props?.expandId) == item.id ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={22} color={"#64748B"} />
+          )}
         </Pressable>
-        <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
-          <View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+        <View style={{ paddingHorizontal: normalize(16) }}>
+          <View style={{ height: 1, width: "100%", backgroundColor: "#F1F5F9" }} />
         </View>
 
         {expandedId == 0 ? expandedId == item?.id && item?.nestedItems && (
@@ -848,18 +827,17 @@ export default function DrawerModal(props) {
             data={item?.nestedItems}
             renderItem={renderNestedItem}
             keyExtractor={(nestedItem) => nestedItem.id.toString()}
+            initialNumToRender={4}
           />) : (expandedId || props?.expandId) == item?.id && item?.nestedItems && (
             <FlatList
               data={item?.nestedItems}
               renderItem={renderNestedItem}
               keyExtractor={(nestedItem) => nestedItem.id.toString()}
+              initialNumToRender={4}
             />)}
-        {/* <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
-          <View style={{ height: 1, width: normalize(230), backgroundColor: "#DDD" }} />
-        </View> */}
       </>
-    )
-  }
+    );
+  }, [fulldashbaord, setAddit, takedata, primeit, isNonSubscribedNoSubscription, expandedId, props?.expandId, renderNestedItem, isMenuNavigating]);
   /**
 * Handles rot.
 * @returns {*}
@@ -919,79 +897,46 @@ export default function DrawerModal(props) {
 * @param {*} props.index - Nested property value.
 * @returns {JSX.Element}
 */
-  const modalDown = ({ item, index }) => {
-    return (
-      <View style={{ paddingHorizontal: normalize(15), paddingVertical: normalize(5) }}>
-        <Pressable onPress={() => {
-          if (item?.id == 2) {
-            Alert.alert("eMedEvents", "Are you sure want to signout ?",
-              [{
-                text: "No", style: "cancel",               /**
- * On press utility.
- * @returns {void}
- */
-                onPress: () => { console.log("hello") }
-              },
-              {
-                text: "Yes", style: "default",
-                /**
-* On press utility.
-* @returns {void}
-*/
-                onPress: () => {
-                  setLogoutPending(true);
-                  clearAllAsyncStorage()
-                    .then(() => dispatch(logoutRequest()))
-                    .then(() => dispatch(allreducerRequest({ "obj": "" })))
-                    .catch(err => console.log("Logout flow error:", err));
-                }
-              }])
-          } else if (item.id == 1) {
-            openEmail();
-          }
-        }}>
-          <Text style={{ fontWeight: "500", fontFamily: Fonts.InterSemiBold, fontSize: 16, color: item?.id == 1 ? Colorpath.ButtonColr : item?.id == 2 ? "#FF5E62" : "#333", marginTop: item?.id == 2 ? normalize(10) : 0 }}>{item?.name}</Text>
-        </Pressable>
-      </View>
-    )
-  }
+  const handleSignOut = useCallback(() => {
+    Alert.alert("eMedEvents", "Are you sure want to signout ?",
+      [{
+        text: "No", style: "cancel",
+        onPress: () => { console.log("hello") }
+      },
+      {
+        text: "Yes", style: "default",
+        onPress: () => {
+          setLogoutPending(true);
+          clearAllAsyncStorage()
+            .then(() => dispatch(logoutRequest()))
+            .then(() => dispatch(allreducerRequest({ "obj": "" })))
+            .catch(err => console.log("Logout flow error:", err));
+        }
+      }]);
+  }, [dispatch]);
 
   return (
     <>
       <Modal
         backdropOpacity={0.5}
-        backdropColor="rgba(0,0,0,0.5)"
+        backdropColor="#000000"
         animationIn={'slideInLeft'}
         animationOut={'slideOutLeft'}
-        animationInTiming={250}
+        animationInTiming={240}
         animationOutTiming={200}
         useNativeDriver={true}
-        hideModalContentWhileAnimating={true}
-        backdropTransitionOutTiming={0}
+        useNativeDriverForBackdrop={true}
+        hideModalContentWhileAnimating={false}
+        backdropTransitionInTiming={240}
+        backdropTransitionOutTiming={200}
         onBackdropPress={() => {
-          if (props?.lastActiveTab) {
-            const getAda = fulldashbaord?.[0];
-            setAddit(getAda);
-            props.onBackdropPress();
-            navigation.navigate("TabNav", { initialRoute: props?.lastActiveTab });
-          } else if (props?.handel == 'drawerclose') {
-            const getAda = fulldashbaord?.[0];
-            setAddit(getAda);
-            props.onBackdropPress();
-            navigation.navigate("TabNav");
-          } else if (props?.handel == "closeit") {
-            const getAda = fulldashbaord?.[0];
-            setAddit(getAda);
-            props.onBackdropPress();
-            navigation.navigate("TabNav");
-          } else {
-            props.onBackdropPress();
-          }
+          props.onBackdropPress?.();
         }}
+        onModalHide={handleModalHide}
         isVisible={Boolean(props.isVisible === true || props.isVisible === 'true' || props.isVisible)}
         style={{ margin: normalize(0) }}
         onRequestClose={() => {
-          props.onRequestClose();
+          props.onRequestClose?.();
         }}>
         <SafeAreaView
           style={{
@@ -1008,9 +953,10 @@ export default function DrawerModal(props) {
             <View
               style={{
                 flexDirection: 'row',
-                paddingLeft: normalize(32),
-                paddingTop: Platform.OS === 'ios' ? normalize(20) : normalize(10),
-                gap: 10
+                paddingHorizontal: normalize(16),
+                paddingTop: Platform.OS === 'ios' ? normalize(16) : normalize(12),
+                alignItems: "center",
+                gap: normalize(12)
               }}>
               <Pressable onPress={() => {
                 navigateSmooth("TabNav", { initialRoute: "Profiles" });
@@ -1019,33 +965,31 @@ export default function DrawerModal(props) {
                   resolvedDrawerUser?.personal_information?.image_path == null || !resolvedDrawerUser?.personal_information?.image_path || resolvedDrawerUser?.personal_information?.image_path == ""
                   ? Imagepath.HumanIcn
                   : { uri: `${resolvedDrawerUser?.personal_information?.image_path}${resolvedDrawerUser?.personal_information?.image_name}` }
-                } resizeMode="cover" style={{ height: normalize(35), width: normalize(35) }} imageStyle={{ borderRadius: normalize(35) }} /> : <View style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 25,
+                } resizeMode="cover" style={{ height: normalize(44), width: normalize(44) }} imageStyle={{ borderRadius: normalize(22) }} /> : <View style={{
+                  width: normalize(44),
+                  height: normalize(44),
+                  borderRadius: normalize(22),
                   backgroundColor: Colorpath.Pagebg,
                   justifyContent: "center",
                   alignItems: "center",
                 }}>
                   <Text style={{
                     color: Colorpath.ButtonColr,
-                    fontSize: 18,
+                    fontSize: normalize(15),
                     fontWeight: "bold", fontFamily: Fonts.InterBold
                   }}>{alphaimg}</Text>
                 </View>}
               </Pressable>
-              <View style={{ flexDirection: "column" }}>
-                <View style={{ flexDirection: "column" }}>
-                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 20, color: "#000000", width: normalize(140), fontWeight: "500" }}>{`${resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname || AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || 'Guest'} ${resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname || AuthReducer?.loginResponse?.user?.lastname || AuthReducer?.againloginsiginResponse?.user?.lastname || 'User'}`}</Text>
-                  <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#666", width: normalize(160), fontWeight: "500" }}>
-                    {stableProfileMetaText || 'Guest Profile'}
-                  </Text>
-                </View>
+              <View style={{ flex: 1, flexDirection: "column" }}>
+                <Text numberOfLines={1} style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(15), color: "#1E293B", fontWeight: "600" }}>{`${resolvedDrawerUser?.personal_information?.firstname || resolvedProfessionSource?.firstname || AuthReducer?.loginResponse?.user?.firstname || AuthReducer?.againloginsiginResponse?.user?.firstname || 'Guest'} ${resolvedDrawerUser?.personal_information?.lastname || resolvedProfessionSource?.lastname || AuthReducer?.loginResponse?.user?.lastname || AuthReducer?.againloginsiginResponse?.user?.lastname || 'User'}`}</Text>
+                <Text numberOfLines={2} style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(12), color: "#64748B", fontWeight: "500", marginTop: normalize(2), lineHeight: normalize(16) }}>
+                  {stableProfileMetaText || currentProfileMetaText || 'Guest Profile'}
+                </Text>
                 {isUsaPhysicianMDDODPM && (isNonSubscribedNoSubscription || allProfTake || isPrimeUserActive) && (
                   <Pressable
                     style={{
-                      alignSelf: 'flex-start', // Let content determine width
-                      marginTop: normalize(8),
+                      alignSelf: 'flex-start',
+                      marginTop: normalize(6),
                     }}
                     disabled={isPaidPrimeMember && !isMembershipExpired}
                     onPress={() => {
@@ -1058,49 +1002,32 @@ export default function DrawerModal(props) {
                     <View
                       style={{
                         flexDirection: "row",
-                        paddingVertical: 3,
-                        paddingHorizontal: 10,
-                        borderRadius: normalize(20),
-                        borderWidth: 0.8,
+                        paddingVertical: normalize(2),
+                        paddingHorizontal: normalize(8),
+                        borderRadius: normalize(12),
+                        borderWidth: 1,
                         borderColor: "#FF773D",
                         alignItems: "center",
-                        gap: 3,
+                        gap: normalize(4),
+                        backgroundColor: "#FFF7ED"
                       }}
                     >
-                      <View
+                      <Image
+                        source={Imagepath.CrownHome}
                         style={{
-                          height: normalize(20),
-                          width: normalize(20),
-                          borderRadius: normalize(20),
-                          backgroundColor: "#FF773D",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          shadowColor: "#000",
-                          shadowOffset: { height: 3, width: 0 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 3,
-                          elevation: 5,
-                          right: normalize(5),
-                          marginRight: normalize(-5)
+                          height: normalize(13),
+                          width: normalize(13),
+                          resizeMode: "contain",
+                          tintColor: "#FF773D"
                         }}
-                      >
-                        <Image
-                          source={Imagepath.CrownHome}
-                          style={{
-                            height: normalize(15),
-                            width: normalize(15),
-                            resizeMode: "contain"
-                          }}
-                        />
-                      </View>
+                      />
                       <Text
                         style={{
-                          fontFamily: Fonts.InterMedium,
-                          fontSize: 14,
+                          fontFamily: Fonts.InterSemiBold,
+                          fontSize: normalize(11.5),
                           color: "#FF773D",
                           textAlign: "center",
-                          paddingVertical: 3,
-                          fontWeight: "500"
+                          fontWeight: "600"
                         }}
                       >
                         {isPaidPrimeMember
@@ -1112,20 +1039,91 @@ export default function DrawerModal(props) {
                 )}
               </View>
             </View>
-            <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(10) }}>
-              <View style={{ height: 1, width: Platform.OS === 'ios' ? normalize(230) : normalize(250), backgroundColor: "#DDD" }} />
+            <View style={{ paddingHorizontal: normalize(16), marginVertical: normalize(10) }}>
+              <View style={{ height: 1, width: "100%", backgroundColor: "#E2E8F0" }} />
             </View>
             <View>
               <FlatList
                 data={modalKey}
                 renderItem={modalRender}
-                keyExtractor={(item, index) => index.toString()} />
+                keyExtractor={item => String(item.id)}
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
+                windowSize={5}
+                removeClippedSubviews={false}
+              />
             </View>
-            <View>
-              <FlatList
-                data={downKey}
-                renderItem={modalDown}
-                keyExtractor={(item, index) => index.toString()} />
+            {/* Highlighted Support & Queries Card */}
+            <View style={{
+              marginHorizontal: normalize(16),
+              marginTop: normalize(14),
+              backgroundColor: "#F0F7FF",
+              borderRadius: normalize(12),
+              borderWidth: 1,
+              borderColor: "#BAE6FD",
+              padding: normalize(12),
+            }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(10), marginBottom: normalize(8) }}>
+                <View style={{
+                  width: normalize(28),
+                  height: normalize(28),
+                  borderRadius: normalize(14),
+                  backgroundColor: "#E0F2FE",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}>
+                  <ArrowIcn name="help-outline" size={17} color={Colorpath.ButtonColr || "#0284C7"} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(12.5), color: "#0F172A", fontWeight: "600" }}>
+                    For Any Queries
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.InterRegular, fontSize: normalize(11), color: "#64748B", marginTop: normalize(1) }}>
+                    Reach out to our support team
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable
+                onPress={openEmail}
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: normalize(8),
+                  borderWidth: 1,
+                  borderColor: "#BFDBFE",
+                  paddingHorizontal: normalize(10),
+                  paddingVertical: normalize(8),
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(8) }}>
+                  <Image source={Imagepath.Mail} style={{ height: normalize(16), width: normalize(16), resizeMode: "contain", tintColor: Colorpath.ButtonColr || "#0284C7" }} />
+                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(12.5), color: Colorpath.ButtonColr || "#0284C7", fontWeight: "600" }}>
+                    support@emedevents.com
+                  </Text>
+                </View>
+                <ArrowIcn name="arrow-forward-ios" size={12} color={Colorpath.ButtonColr || "#0284C7"} />
+              </Pressable>
+            </View>
+
+            {/* Sign Out Button */}
+            <View style={{ paddingHorizontal: normalize(16), marginTop: normalize(12), marginBottom: normalize(8) }}>
+              <Pressable
+                onPress={handleSignOut}
+                style={{ flexDirection: "row", alignItems: "center", gap: normalize(10), paddingVertical: normalize(8) }}
+              >
+                <ArrowIcn name="logout" size={18} color="#EF4444" />
+                <Text style={{
+                  fontFamily: Fonts.InterSemiBold,
+                  fontSize: normalize(13.5),
+                  color: "#EF4444",
+                  fontWeight: "600"
+                }}>
+                  Sign Out
+                </Text>
+              </Pressable>
             </View>
           </ScrollView> : <SafeAreaView style={styles.container}>
             <View style={styles.centerContainer}>

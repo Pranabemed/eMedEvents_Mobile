@@ -27,6 +27,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { tokenRequest } from '../../Redux/Reducers/AuthReducer.js';
 import Buttons from '../../Components/Button.js';
 import StackNav from '../../Navigator/StackNav.js';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow.js';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry.js';
@@ -41,6 +42,11 @@ import { isPrimeSubscriptionMissing, filterValidLicensures } from '../../Utils/H
  */
 
 const ProfileMain = (props) => {
+    const bottomTabBarHeight = useContext(BottomTabBarHeightContext);
+    // The Android tab bar already includes the system gesture/navigation inset.
+    const safeAreaEdges = Platform.OS === 'android' && bottomTabBarHeight > 0
+        ? ['top', 'left', 'right']
+        : ['top', 'left', 'right', 'bottom'];
     const {
         setFulldashbaord,
         setGtprof,
@@ -639,7 +645,7 @@ const ProfileMain = (props) => {
 */
     const profileItem = ({ item, index }) => {
         return (
-            <View style={{ margin: 15 }}>
+            <View style={{ marginHorizontal: normalize(16), marginVertical: normalize(3.5) }}>
                 <TouchableOpacity onPress={() => {
                     if (item?.id == 0) {
                         props.navigation.navigate("ContactProfile", { wholedata: allHandle });
@@ -681,37 +687,33 @@ const ProfileMain = (props) => {
                     style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        paddingHorizontal: normalize(15),
-                        paddingVertical: normalize(10),
+                        paddingHorizontal: normalize(14),
+                        paddingVertical: normalize(8),
                         borderRadius: normalize(8),
                         backgroundColor: "#FFFFFF",
-                        marginBottom: normalize(-15),
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 2,
-                        elevation: 3
+                        borderWidth: 1,
+                        borderColor: "#E2E8F0",
                     }}
                 >
                     <View
                         style={{
-                            height: normalize(30),
-                            width: normalize(30),
-                            borderRadius: normalize(15),
-                            backgroundColor: Colorpath.Pagebg,
+                            height: normalize(28),
+                            width: normalize(28),
+                            borderRadius: normalize(14),
+                            backgroundColor: "#F0F7FF",
                             justifyContent: "center",
                             alignItems: "center",
-                            marginRight: normalize(10),
+                            marginRight: normalize(12),
                         }}
                     >
                         <Image
                             source={item?.Img}
                             style={{
-                                height: normalize(18),
-                                width: normalize(18),
+                                height: normalize(15),
+                                width: normalize(15),
                                 resizeMode: "contain",
                                 alignSelf: "center",
-                                tintColor: "#000000"
+                                tintColor: Colorpath.ButtonColr
                             }}
                         />
                     </View>
@@ -719,17 +721,16 @@ const ProfileMain = (props) => {
                         style={{
                             flex: 1,
                             fontFamily: Fonts.InterSemiBold,
-                            fontSize: 16,
-                            color: "#333",
-                            fontWeight: "bold"
+                            fontSize: normalize(13),
+                            color: "#1E293B",
                         }}
                     >
                         {item?.name}
                     </Text>
                     <RightIcn
                         name="right"
-                        size={20}
-                        color="#000000"
+                        size={normalize(13)}
+                        color="#94A3B8"
                     />
                 </TouchableOpacity>
             </View>
@@ -762,7 +763,7 @@ const ProfileMain = (props) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {nettrue === false ? <SafeAreaView style={stylesd.container}>
+            {nettrue === false ? <SafeAreaView edges={safeAreaEdges} style={stylesd.container}>
                 <View style={stylesd.centerContainer}>
                     <View style={{ height: normalize(100), width: normalize(120), borderRadius: normalize(20), bottom: normalize(50), justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { height: 3, width: 0 }, elevation: 10, backgroundColor: "#FFFFFF" }}>
                         <Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
@@ -785,7 +786,7 @@ const ProfileMain = (props) => {
                     <Text style={stylesd.internetText}>{"No Internet Connection"}</Text>
                     <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>{"Please check your internet connection \n                    and try again"}</Text>
                 </View>
-            </SafeAreaView> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            </SafeAreaView> : <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 <View style={{ backgroundColor: "#FFFFFF", marginTop: Platform.OS === 'ios' ? normalize(0) : normalize(0) }}>
                     {Platform.OS === "ios" ? (
                         <PageHeader
@@ -802,22 +803,23 @@ const ProfileMain = (props) => {
                 </View>
                 <Loader visible={isProfileDataLoading} />
                 {!isProfileDataLoading && <ScrollView>
-                    <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(10) }}>
+                    <View style={{ backgroundColor: Colorpath.ButtonColr, justifyContent: "center", alignContent: "center", paddingVertical: normalize(12), borderBottomLeftRadius: normalize(16), borderBottomRightRadius: normalize(16) }}>
                         <CircleLoader allProfTake={allProfTake} percentage={DashboardReducer?.mainprofileResponse?.profile_complete_percentage} mainData={DashboardReducer?.mainprofileResponse} />
-                        {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center" }}>
-                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: 20, color: "#FFFFFF", fontWeight: "bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
+                        {(displayName.firstname || displayName.lastname) && <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(4) }}>
+                            <Text style={{ fontFamily: Fonts.InterBold, fontSize: normalize(17), color: "#FFFFFF", fontWeight: "bold" }}>{`${displayName.firstname} ${displayName.lastname}`.trim()}</Text>
                             <View style={{
                                 width: "90%",
                                 justifyContent: "center",
-                                alignItems: "center"
+                                alignItems: "center",
+                                marginTop: normalize(2)
                             }}>
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterSemiBold,
-                                        fontSize: 14,
+                                        fontSize: normalize(12.5),
                                         color: "#FFFFFF",
                                         textAlign: "center",
-                                        lineHeight: 20,
+                                        lineHeight: normalize(17),
                                         fontWeight: "bold",
                                     }}
                                 >
@@ -828,11 +830,12 @@ const ProfileMain = (props) => {
                                         numberOfLines={1}
                                         style={{
                                             fontFamily: Fonts.InterMedium,
-                                            fontSize: 14,
-                                            color: "#FFFFFF",
+                                            fontSize: normalize(12),
+                                            color: "#E0E7FF",
                                             textAlign: "center",
-                                            lineHeight: 20,
-                                            fontWeight: "700"
+                                            lineHeight: normalize(16),
+                                            fontWeight: "600",
+                                            marginTop: normalize(2)
                                         }}
                                     >
                                         {text}
@@ -840,24 +843,20 @@ const ProfileMain = (props) => {
                                 )}
                             </View>
                         </View>}
-                        {allProfTake && <View style={{ paddingVertical: normalize(5), justifyContent: 'center', alignItems: "center" }}>
-                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#6a82ce", textAlign: "center", fontWeight: "5s00" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
+                        {allProfTake && <View style={{ paddingVertical: normalize(4), justifyContent: 'center', alignItems: "center" }}>
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(12), color: "#CBECFF", textAlign: "center" }}>{`${DashboardReducer?.mainprofileResponse?.profile_complete_percentage || "0"}% Profile Completed`}</Text>
                         </View>}
                         {showPrimeCardButton && <TouchableOpacity disabled={primeitprof ? !primeitprof : !primeitprofs} onPress={() => setSubitprof(true)}>
                             <View
                                 style={{
-                                    height: normalize(40),
-                                    width: primeitprof ? normalize(220) : primeitprofs && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ? normalize(220) : normalize(170),
-                                    borderRadius: normalize(40),
-                                    shadowColor: "#000",
-                                    shadowOffset: { height: 3, width: 0 },
-                                    shadowOpacity: 0.2,
-                                    shadowRadius: 10,
-                                    elevation: 10,
+                                    height: normalize(38),
+                                    width: primeitprof ? normalize(210) : primeitprofs && !WebcastReducer?.PrimeCheckResponse?.subscription?.end_date ? normalize(210) : normalize(160),
+                                    borderRadius: normalize(19),
                                     backgroundColor: "#FF773D",
                                     alignSelf: "center",
                                     position: "relative",
                                     zIndex: 999,
+                                    marginTop: normalize(6),
                                     marginBottom: normalize(-25),
                                     justifyContent: "center",
                                     flexDirection: "row",
@@ -866,20 +865,20 @@ const ProfileMain = (props) => {
                             >
                                 <View
                                     style={{
-                                        height: normalize(30),
-                                        width: normalize(30),
-                                        borderRadius: normalize(15),
+                                        height: normalize(26),
+                                        width: normalize(26),
+                                        borderRadius: normalize(13),
                                         backgroundColor: "#FFFFFF",
                                         justifyContent: "center",
                                         alignItems: "center",
-                                        marginRight: normalize(10),
+                                        marginRight: normalize(8),
                                     }}
                                 >
                                     <Image
                                         source={Imagepath.CrownHome}
                                         style={{
-                                            height: normalize(20),
-                                            width: normalize(20),
+                                            height: normalize(16),
+                                            width: normalize(16),
                                             resizeMode: "contain",
                                             tintColor: "#FF773D",
                                         }}
@@ -888,7 +887,7 @@ const ProfileMain = (props) => {
                                 <Text
                                     style={{
                                         fontFamily: Fonts.InterBold,
-                                        fontSize: 16,
+                                        fontSize: normalize(13),
                                         color: "#FFFFFF",
                                         fontWeight: "bold"
                                     }}
@@ -898,7 +897,7 @@ const ProfileMain = (props) => {
                             </View>
                         </TouchableOpacity>}
                     </View>
-                    <View style={{ paddingVertical: allProfTake ? normalize(20) : normalize(5) }}>
+                    <View style={{ paddingTop: showPrimeCardButton ? normalize(24) : normalize(12), paddingBottom: normalize(15) }}>
                         <FlatList
                             data={profileData}
                             renderItem={profileItem}

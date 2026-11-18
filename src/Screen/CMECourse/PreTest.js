@@ -61,14 +61,7 @@ const PreTest = (props) => {
   const PrePress = () => {
     setAddit(statepush);
     takeCoursepre();
-    if (props.navigation.canGoBack()) {
-      props.navigation.goBack();
-    } else {
-      props.navigation.reset({
-        index: 0,
-        routes: [{ name: 'TabNav', params: { screen: 'Home' } }],
-      });
-    }
+    props.navigation.reset({ index: 0, routes: [{ name: 'TabNav' }] });
   };
   const [conn, setConn] = useState("")
   useEffect(() => {
@@ -302,40 +295,56 @@ const PreTest = (props) => {
     });
   };
 
+  const [assessmentLoad, setAssessmentLoad] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   useEffect(() => {
+    setAssessmentLoad(null);
+    setLoadError(false);
+    setTestData(null);
+    setHeaderText('');
+    setSelectedOptions({});
+    setLengthCheck(0);
+    setTimeflex(0);
     if (!isFocus || !assessmentActivityId) return;
-    const obj = { "ActivityId": assessmentActivityId };
-    connectionrequest()
-      .then(() => {
-        dispatch(startTestRequest(obj));
-      })
-      .catch((err) => { showErrorAlert("Please connect to internet", err); });
+    let cancelled = false;
+    setAssessmentLoad({
+      id: assessmentActivityId,
+      questions: CMEReducer.startTestResponse,
+      metadata: CMEReducer.cmedulicateResponse,
+    });
+    connectionrequest().then(() => {
+      if (cancelled) return;
+      dispatch(startTestRequest({ ActivityId: assessmentActivityId }));
+      dispatch(cmedulicateRequest({
+        conference_id: props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.FullID?.conferenceId || props?.route?.params?.conference || props?.route?.params?.conferenceId || props?.route?.params?.nodata?.conferenceId,
+        ActivityId: assessmentActivityId,
+      }));
+    }).catch((err) => {
+      if (!cancelled) {
+        setLoadError(true);
+        showErrorAlert('Please connect to internet', err);
+      }
+    });
+    return () => { cancelled = true; };
   }, [isFocus, assessmentActivityId]);
-  console.log("props?.route?.params?.nodata", props?.route?.params)
+
+  const hasFreshAssessment = isFocus && Boolean(assessmentLoad) && assessmentLoad.id === assessmentActivityId &&
+    CMEReducer.startTestResponse !== assessmentLoad?.questions &&
+    CMEReducer.cmedulicateResponse !== assessmentLoad?.metadata;
+  const showLoader = !hasFreshAssessment || testData !== CMEReducer.startTestResponse;
   useEffect(() => {
-    if (props?.route?.params?.nodata) {
-      setSelectedOptions({});
-      setTimeflex(0);
-      setLengthCheck(0);
-    }
-  }, [props?.route?.params?.nodata])
+    if (!hasFreshAssessment) return;
+    setTestData(CMEReducer.startTestResponse);
+    setHeaderText(CMEReducer.cmedulicateResponse?.current_activity_text);
+  }, [hasFreshAssessment, CMEReducer.startTestResponse, CMEReducer.cmedulicateResponse]);
   useEffect(() => {
-    if (!isFocus || !assessmentActivityId) return;
-    let obj = {
-      "conference_id": props?.route?.params?.FullID?.wholedata?.conferenceId || props?.route?.params?.activityID?.conference_id || props?.route?.params?.FullID?.conferenceId || props?.route?.params?.conference || props?.route?.params?.conferenceId || props?.route?.params?.nodata?.conferenceId,
-      "ActivityId": assessmentActivityId
+    if (isFocus && ['CME/startTestRequest', 'CME/cmedulicateRequest'].includes(CMEReducer.status)) {
+      setLoadError(false);
     }
-    connectionrequest()
-      .then(() => {
-        dispatch(cmedulicateRequest(obj));
-      })
-      .catch((err) => { showErrorAlert("Please connect to internet", err) })
-  }, [isFocus, assessmentActivityId])
-  useEffect(() => {
-    if (CMEReducer?.startTestResponse) {
-      setTestData(CMEReducer?.startTestResponse);
+    if (isFocus && ['CME/startTestFailure', 'CME/cmedulicateFailure'].includes(CMEReducer.status)) {
+      setLoadError(true);
     }
-  }, [CMEReducer?.startTestResponse])
+  }, [isFocus, CMEReducer.status]);
 
   useEffect(() => {
     if (!isFocus) return;
@@ -495,7 +504,6 @@ const PreTest = (props) => {
         break;
       case 'CME/startTestSuccess':
         status = CMEReducer.status;
-        setTestData(CMEReducer?.startTestResponse);
         break;
       case 'CME/startTestFailure':
         status = CMEReducer.status;
@@ -515,10 +523,6 @@ const PreTest = (props) => {
         break;
       case 'CME/cmedulicateSuccess':
         status = CMEReducer.status;
-        setHeaderText(CMEReducer?.cmedulicateResponse?.current_activity_text);
-        setLengthCheck(0);
-        setSelectedOptions({});
-        setTimeflex(0);
         break;
 
       case 'CME/cmedulicateFailure':
@@ -771,6 +775,7 @@ const PreTest = (props) => {
     );
   };
   useEffect(() => {
+        if (!isFocus) return;
     /**
 * On back press utility.
 * @returns {boolean}
@@ -786,16 +791,7 @@ const PreTest = (props) => {
     );
 
     return () => backHandler.remove();
-  }, []);
-  const [showLoader, setShowLoader] = useState(true);
-  useEffect(() => {
-    // Simulate 2-second loading time
-    const timeout = setTimeout(() => {
-      setShowLoader(false);
-    }, 2000);
-
-    return () => clearTimeout(timeout);
-  }, []);
+  }, [isFocus, statepush]);
   const allQuestions = useMemo(() => {
     const questionGroups = testData?.testData?.[0]?.questions;
 
@@ -833,20 +829,20 @@ const PreTest = (props) => {
             visible={CMEReducer?.status == 'CME/startTestRequest' || CMEReducer?.status == 'CME/evaulateexamRequest'} />
           {Platform.OS === 'ios' ? (
             <PageHeader
-              title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
+              title={showLoader ? "Loading assessment..." : wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
               onBackPress={PrePress}
               nol={"yes"}
             />
           ) : (
             <View>
               <PageHeader
-                title={wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
+                title={showLoader ? "Loading assessment..." : wholeTitle || headerText || props?.route?.params?.FullID?.Wktext || props?.route?.params?.activityID?.text || headerTexts}
                 onBackPress={PrePress}
                 nol={"yes"}
               />
             </View>
           )}
-          {conn == false ? <IntOff /> : <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
+          {conn == false ? <IntOff /> : loadError ? <Text style={{ padding: 20, textAlign: 'center' }}>Unable to load assessment. Please return to the dashboard and try again.</Text> : showLoader ? <ActivityIndicator style={{ flex: 1 }} size="large" color={Colorpath.ButtonColr} /> : <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: normalize(120) }}>
             <View>
               <View style={styles.container}>
                 {showLoader ? <ActivityIndicator style={{ paddingVertical: normalize(10) }} size={"small"} color={Colorpath.green} /> : <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>

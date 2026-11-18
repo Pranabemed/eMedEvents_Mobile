@@ -19,21 +19,30 @@ import { SafeAreaView } from 'react-native-safe-area-context'
  */
 const Menu = () => {
     const [visible, setVisible] = useState(false);
-    const[care,setCare] = useState("closeit");
-    const navigation = useNavigation()
-        /**
- * Toggle drawer modal utility.
- * @returns {void}
- */
-const toggleDrawerModal = () => {
-        setVisible(!visible);
-        setCare("closeit")
+    const [care, setCare] = useState("closeit");
+    const navigation = useNavigation();
+
+    /**
+     * Close drawer modal utility and return to last route.
+     * @returns {void}
+     */
+    const handleClose = () => {
+        setVisible(false);
+        setTimeout(() => {
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('Home');
+            }
+        }, 220);
     };
+
     useFocusEffect(
         useCallback(() => {
-            toggleDrawerModal();
+            setVisible(true);
+            setCare("closeit");
             return () => {
-                console.log('Screen unfocused');
+                setVisible(false);
             };
         }, [])
     );
@@ -45,17 +54,17 @@ const toggleDrawerModal = () => {
                 <DrawerModal
                     handel={care}
                     isVisible={visible}
-                    onBackdropPress={() => setVisible(!visible)}
-                    onRequestClose={() => setVisible(false)}
-                    backButton={() => setVisible(!visible)}
-                    rentalNavigate={() => setVisible(!visible)}
-                    watchlistNavigate={() => setVisible(!visible)}
-                    subscribeNavigate={() => setVisible(!visible)}
-                    rewardNavigate={() => setVisible(!visible)}
-                    homeNavigate={() => setVisible(!visible)}
-                    expensesNav={() => setVisible(!visible)}
-                    interestedNav={() => setVisible(!visible)}
-                    drawerPress={()=> setVisible(!visible)}
+                    onBackdropPress={handleClose}
+                    onRequestClose={handleClose}
+                    backButton={handleClose}
+                    rentalNavigate={handleClose}
+                    watchlistNavigate={handleClose}
+                    subscribeNavigate={handleClose}
+                    rewardNavigate={handleClose}
+                    homeNavigate={handleClose}
+                    expensesNav={handleClose}
+                    interestedNav={handleClose}
+                    drawerPress={handleClose}
                 />
             </SafeAreaView>
         </>

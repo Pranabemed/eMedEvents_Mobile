@@ -781,11 +781,16 @@ const Main = (props) => {
           dispatch(stateMandatoryRequest({}));
           dispatch(stateLicenseListRequest({}));
           dispatch(chooseStatecardRequest({}));
+          const targetStateId = addit?.state_id || fulldashbaord?.[0]?.state_id || takestate;
+          if (targetStateId) {
+            dispatch(stateDashboardRequest({ state_id: targetStateId }));
+            dispatch(stateReportingRequest({ state_id: targetStateId }));
+          }
         })
         .catch((err) => showErrorAlert("Please connect to internet", err));
     });
     return () => sub.remove();
-  }, [dispatch]);
+  }, [dispatch, addit, fulldashbaord, takestate]);
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setNettruedr(state.isConnected);
@@ -1015,8 +1020,13 @@ const Main = (props) => {
         dispatch(stateMandatoryRequest({}));
         dispatch(stateLicenseListRequest({}));
         dispatch(chooseStatecardRequest({}));
+        const targetStateId = addit?.state_id || fulldashbaord?.[0]?.state_id || takestate;
+        if (targetStateId) {
+          dispatch(stateDashboardRequest({ state_id: targetStateId }));
+          dispatch(stateReportingRequest({ state_id: targetStateId }));
+        }
       })
-      .catch((err) => showErrorAlert("Please connect to internet", err));
+      .catch((err) => console.log('Background dashboard refresh failed', err));
   }, [detectmain, isFocus]);
 
   const backPressCount = useRef(0);
@@ -1481,7 +1491,7 @@ const Main = (props) => {
       })
       .catch((err) => {
         setGuestVerifyCheckRequested(false);
-        showErrorAlert("Please connect to internet", err);
+        console.log('Guest verification check failed', err);
       });
   };
   /**
@@ -2542,40 +2552,41 @@ const Main = (props) => {
               <View
                 style={{
                   alignSelf: 'center',
-                  width: normalize(48),
-                  height: normalize(5),
+                  width: normalize(42),
+                  height: normalize(4),
                   borderRadius: normalize(10),
                   backgroundColor: '#D1D5DB',
-                  marginBottom: normalize(18),
+                  marginBottom: normalize(14),
                 }}
               />
               <Text
                 style={{
                   fontFamily: Fonts.InterBold,
-                  fontSize: 22,
+                  fontSize: normalize(16),
                   color: '#111827',
                   textAlign: 'center',
-                  marginBottom: normalize(14),
+                  marginBottom: normalize(12),
                 }}
               >
                 {'Verification Alert !'}
               </Text>
               <View
                 style={{
-                  height: 0.5,
-                  backgroundColor: Colorpath.ButtonColr,
+                  height: 1,
+                  backgroundColor: '#E5E7EB',
                   width: '100%',
-                  marginBottom: normalize(18),
+                  marginBottom: normalize(16),
                 }}
               />
               <Text
                 style={{
-                  fontFamily: Fonts.InterSemiBold,
-                  fontSize: 18,
-                  color: '#111827',
+                  fontFamily: Fonts.InterRegular,
+                  fontSize: normalize(13.5),
+                  color: '#374151',
                   textAlign: 'center',
                   marginBottom: normalize(20),
-                  lineHeight: normalize(24),
+                  lineHeight: normalize(20),
+                  paddingHorizontal: normalize(4),
                 }}
               >
                 {"We've sent a verification email to your registered email address "}
@@ -2583,8 +2594,8 @@ const Main = (props) => {
                   <Text
                     style={{
                       color: '#FF773D',
-                      fontFamily: Fonts.InterBold,
-                      fontSize: 18,
+                      fontFamily: Fonts.InterSemiBold,
+                      fontSize: normalize(13.5),
                     }}
                   >
                     {guestVerifyEmail}
@@ -2598,7 +2609,7 @@ const Main = (props) => {
                 onPress={handleGuestVerifyAccount}
                 disabled={guestVerifyLoading}
                 style={{
-                  height: normalize(48),
+                  height: normalize(44),
                   borderRadius: normalize(10),
                   backgroundColor: Colorpath.ButtonColr,
                   justifyContent: 'center',
@@ -2609,8 +2620,8 @@ const Main = (props) => {
               >
                 <Text
                   style={{
-                    fontFamily: Fonts.InterBold,
-                    fontSize: 16,
+                    fontFamily: Fonts.InterSemiBold,
+                    fontSize: normalize(14),
                     color: '#FFFFFF',
                   }}
                 >

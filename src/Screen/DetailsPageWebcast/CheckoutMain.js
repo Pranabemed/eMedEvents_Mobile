@@ -16,7 +16,7 @@ import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
 
 import moment from 'moment';
 import { FormatDateZone } from '../../Utils/Helpers/Timezone';
-// import { useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 /**
  * Reusable CheckoutMain component.
@@ -153,12 +153,17 @@ const formatNumberWithCommas = (value) => {
             : feeAwareBaseAmount + feeAwareProcessingAmount
     );
     const feeAwareDisplayAmount = feeAwareTotalAmount > 0 ? feeAwareTotalAmount : feeAwareBaseAmount;
+    const hasPriceContent = feeAwareBaseAmount > 0;
+    const hasTicketList = Boolean(displayedTickets?.length > 0);
     const guestOrigin =
         spanroute?.guestOrigin ||
         spanroute?.checkoutSpan?.Realback ||
         spanroute?.inpersonSpanrole?.Realback;
-    const isGuestCheckout = ['guest', 'guestuser'].includes(
-        String(guestOrigin || '').toLowerCase()
+    const hasAuthToken = useSelector(state => Boolean(String(
+        state.AuthReducer?.token || state.AuthReducer?.loginResponse?.token || ''
+    ).trim()));
+    const isGuestCheckout = !hasAuthToken || ['guest', 'guestuser'].includes(
+        String(guestOrigin || '').trim().toLowerCase()
     );
         /**
  * Handles toggle expand.
@@ -572,61 +577,63 @@ function formatPrice(price) {
                     )}
 
 
-                {(spanroute?.checkoutSpan?.conferenceTypeText !== "Webcast" || spanroute?.inpersonSpanrole?.conferenceTypeText !== "Webcast") && <>
+                {(spanroute?.checkoutSpan?.conferenceTypeText !== "Webcast" || spanroute?.inpersonSpanrole?.conferenceTypeText !== "Webcast") && (hasPriceContent || hasTicketList) ? (<>
                     <View style={{ height: 1, width: '100%', backgroundColor: '#BAE6FD', marginTop: normalize(12), marginBottom: normalize(8) }} />
-                    <View style={{ paddingTop: normalize(4), paddingBottom: normalize(4), flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                        <View>
-                            {(spanroute?.inPersonTicket?.tickets) ? (
-                                <View style={{ paddingVertical: normalize(2) }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterMedium,
-                                            fontSize: 13,
-                                            color: '#64748B'
-                                        }}>
-                                        {`Total (${totalcount} tickets)`}
-                                    </Text>
-                                </View>
-                            ) : null}
-                            {(spanroute?.checkoutSpan?.buttonType?.toLowerCase() === "register" &&
-                                spanroute?.checkoutSpan?.registered_allow === 1 || spanroute?.inpersonSpanrole?.buttonType?.toLowerCase() === "register" &&
-                                spanroute?.inpersonSpanrole?.registered_allow === 1) ? (
-                                <View style={{ paddingVertical: normalize(2) }}>
-                                    <Text
-                                        style={{
-                                            fontFamily: Fonts.InterBold,
-                                            fontSize: 18,
-                                            color: Colorpath.ButtonColr,
-                                        }}
-                                    >
-                                        {feeAwareBaseAmount > 0
-                                            ? `US$${formatNumberWithCommas(formatPrice(feeAwareBaseAmount))}`
-                                            : null}
-                                    </Text>
-                                </View>
-                            ) : null}
+                    {(hasPriceContent || (spanroute?.inPersonTicket?.tickets && displayedTickets?.length > 1)) ? (
+                        <View style={{ paddingTop: normalize(4), paddingBottom: normalize(4), flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                            <View>
+                                {(spanroute?.inPersonTicket?.tickets) ? (
+                                    <View style={{ paddingVertical: normalize(2) }}>
+                                        <Text
+                                            style={{
+                                                fontFamily: Fonts.InterMedium,
+                                                fontSize: 13,
+                                                color: '#64748B'
+                                            }}>
+                                            {`Total (${totalcount} tickets)`}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                                {(hasPriceContent && (spanroute?.checkoutSpan?.buttonType?.toLowerCase() === "register" &&
+                                    spanroute?.checkoutSpan?.registered_allow === 1 || spanroute?.inpersonSpanrole?.buttonType?.toLowerCase() === "register" &&
+                                    spanroute?.inpersonSpanrole?.registered_allow === 1)) ? (
+                                    <View style={{ paddingVertical: normalize(2) }}>
+                                        <Text
+                                            style={{
+                                                fontFamily: Fonts.InterBold,
+                                                fontSize: 18,
+                                                color: Colorpath.ButtonColr,
+                                            }}
+                                        >
+                                            {`US$${formatNumberWithCommas(formatPrice(feeAwareBaseAmount))}`}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                            {displayedTickets?.length > 1 && (
+                                <TouchableOpacity
+                                    onPress={handleToggleExpand}
+                                    style={{
+                                        height: normalize(28),
+                                        width: normalize(28),
+                                        borderRadius: normalize(14),
+                                        backgroundColor: '#EFF6FF',
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <ArrowIcon
+                                        name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                        color={"#1D4ED8"}
+                                        size={20}
+                                    />
+                                </TouchableOpacity>
+                            )}
                         </View>
-                        {displayedTickets?.length > 1 && (
-                            <TouchableOpacity
-                                onPress={handleToggleExpand}
-                                style={{
-                                    height: normalize(28),
-                                    width: normalize(28),
-                                    borderRadius: normalize(14),
-                                    backgroundColor: '#EFF6FF',
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <ArrowIcon
-                                    name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                                    color={"#1D4ED8"}
-                                    size={20}
-                                />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                    <View style={{ height: 1, width: '100%', backgroundColor: "#BAE6FD", marginVertical: normalize(8) }} />
+                    ) : null}
+                    {hasPriceContent && hasTicketList && (
+                        <View style={{ height: 1, width: '100%', backgroundColor: "#BAE6FD", marginVertical: normalize(8) }} />
+                    )}
                     {displayedTickets?.length === 1 && (
                         <View style={{ paddingVertical: normalize(4) }}>
                             <View
@@ -687,7 +694,7 @@ function formatPrice(price) {
                             ))}
                         </View>
                     )}
-                </>}
+                </>) : null}
 
             </View> : null}
 

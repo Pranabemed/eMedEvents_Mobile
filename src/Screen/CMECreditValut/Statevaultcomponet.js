@@ -154,11 +154,11 @@ const cleanNumber = (value) => {
         }
         return 0;
     };
-    const topicEarned = cleanNumber(creditwise?.credits_data?.topic_earned_credits || certificatedata?.credits_data?.topic_earned_credits);
-    const topicTotal = cleanNumber(creditwise?.credits_data?.topic_credits || certificatedata?.credits_data?.topic_credits);
-    const generalEarned = cleanNumber(creditwise?.credits_data?.total_general_earned_credits || certificatedata?.credits_data?.total_general_earned_credits);
-    const generalTotal = cleanNumber(creditwise?.credits_data?.total_general_credits || certificatedata?.credits_data?.total_general_credits);
-    const showTotal = !!(creditwise?.credits_data?.total_credits || totalCredit);
+    const topicEarned = Math.max(cleanNumber(certificatedata?.credits_data?.topic_earned_credits), cleanNumber(creditwise?.credits_data?.topic_earned_credits));
+    const topicTotal = cleanNumber(certificatedata?.credits_data?.topic_credits || creditwise?.credits_data?.topic_credits);
+    const generalEarned = Math.max(cleanNumber(certificatedata?.credits_data?.total_general_earned_credits), cleanNumber(creditwise?.credits_data?.total_general_earned_credits));
+    const generalTotal = cleanNumber(certificatedata?.credits_data?.total_general_credits || creditwise?.credits_data?.total_general_credits);
+    const showTotal = !!(creditwise?.credits_data?.total_credits || certificatedata?.credits_data?.total_credits || totalCredit);
     const showMandatory = !(topicEarned == 0 && topicTotal == 0)
     const showGeneral = !((generalEarned == 0 && generalTotal == 0) || (gencredit == 0 && gentopiccredit == 0));
     return (allZero ? <View>
@@ -231,7 +231,7 @@ const cleanNumber = (value) => {
     </View> : <View>
         <>
             <>
-                <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(2), marginTop: normalize(10), marginLeft: normalize(15) }}>
+                <View style={{ paddingVertical: normalize(10), paddingHorizontal: normalize(2), marginTop: normalize(8), marginLeft: normalize(15) }}>
                     <Animated.View style={{ opacity: animatedValuespass, transform: [{ scale: scaleValuesespass }] }}>
                         {statewise ? (
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#000000", fontWeight: "bold", marginLeft: normalize(0) }}>
@@ -248,7 +248,7 @@ const cleanNumber = (value) => {
                             }}
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0,fontWeight:"500" }}>
+                                <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 14, color: "#000000", paddingVertical: 0, fontWeight: "500" }}>
                                     {creditwise?.state_name || statewise ? creditwise?.state_name || statewise : "Select State*"}
                                 </Text>
                                 <TouchableOpacity onPress={() => { setStatepick(!statepick); }}>
@@ -311,27 +311,27 @@ const cleanNumber = (value) => {
                             </View>
                             <View style={[styles.infoRow, { marginRight: normalize(10) }]}>
                                 <Text style={styles.labelText}>{"Required CME/CE Credits"}</Text>
-                                {(creditwise?.credits_data?.total_credits || totalCredit) &&<Text style={styles.valueText}>{creditwise?.credits_data?.total_credits || totalCredit}</Text>}
+                                {(creditwise?.credits_data?.total_credits || certificatedata?.credits_data?.total_credits || totalCredit) &&<Text style={styles.valueText}>{creditwise?.credits_data?.total_credits || certificatedata?.credits_data?.total_credits || totalCredit}</Text>}
                             </View>
                             <View style={styles.infoRow}>
                                 <Text style={styles.labelText}>{"Mandatory Credits"}</Text>
-                                {(creditwise?.credits_data?.topic_earned_credits || creditwise?.credits_data?.topic_credits || mantopiccredit) &&<View style={styles.creditsContainer}>
+                                {(topicEarned !== 0 || topicTotal !== 0 || mantopiccredit) &&<View style={styles.creditsContainer}>
                                      <Text style={styles.creditsText}>
-                                        {(creditwise?.credits_data?.topic_earned_credits === 0 && creditwise?.credits_data?.topic_credits === 0)
+                                        {(topicEarned === 0 && topicTotal === 0)
                                             ? 'No requirement'
-                                            : `${creditwise?.credits_data?.topic_earned_credits} / ${creditwise?.credits_data?.topic_credits || mantopiccredit} earned`}
+                                            : `${topicEarned} / ${topicTotal || mantopiccredit} earned`}
                                     </Text>
                                 </View>}
                             </View>
                             <View style={styles.infoRow}>
                                 <Text style={styles.labelText}>{"General Credits"}</Text>
-                      {(creditwise?.credits_data?.total_general_earned_credits ||creditwise?.credits_data?.total_general_credits || gentopiccredit ) && <View style={styles.creditsContainer}>
+                      {(generalEarned !== 0 || generalTotal !== 0 || gentopiccredit) && <View style={styles.creditsContainer}>
                                     <Text style={styles.creditsText}>
                                         {
-                                            (creditwise?.credits_data?.total_general_earned_credits ?? gencredit) === 0 &&
-                                                parseFloat(creditwise?.credits_data?.total_general_credits || gentopiccredit) === 0
+                                            generalEarned === 0 &&
+                                                parseFloat(generalTotal || gentopiccredit) === 0
                                                 ? "No requirement"
-                                                : `${creditwise?.credits_data?.total_general_earned_credits ?? gencredit} / ${parseFloat(creditwise?.credits_data?.total_general_credits || gentopiccredit)} earned`
+                                                : `${generalEarned} / ${parseFloat(generalTotal || gentopiccredit)} earned`
                                         }
 
                                     </Text>
@@ -411,7 +411,7 @@ const cleanNumber = (value) => {
                                     <Text style={[stylesmodal.expireAlert, { lineHeight: normalize(12), top: normalize(0) }]}> {`License Expires in ${countdownMessagecredit} Days`}</Text>
                                 </View>} */}
                             </View>
-                            {expireDatecredit ? <View style={{ justifyContent: "center", alignItems: "center", top: normalize(12) }}>
+                            {expireDatecredit ? <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(8) }}>
                                 <View style={stylesmodal.updateRenew}>
                                     <Pressable onPress={() => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "AddLicense", params: { myTaskask: { addLic: creditwise, creditvault: "TabNav" } } }] }))}>
                                         <Text style={stylesmodal.update}>{"Update"}</Text>
@@ -423,40 +423,38 @@ const cleanNumber = (value) => {
                                         </View>
                                     </Pressable>}
                                 </View>
-                            </View> : <View style={{ justifyContent: "center", alignItems: "center", top: normalize(12) }}>
+                            </View> : <View style={{ justifyContent: "center", alignItems: "center", marginTop: normalize(8) }}>
                                 <View style={stylesmodal.activebody}>
                                     <Text style={[stylesmodal.renew,{fontWeight:"bold"}]}>{"License Status"}</Text>
                                     <Text style={[stylesmodal.active,{fontWeight:"bold"}]}>{"Active"}</Text>
-
                                 </View>
                             </View>}
                         </View>
                         <View style={stylesmodal.footer}>
-                            <View style={{ flexDirection: "row", gap: normalize(5), paddingHorizontal: normalize(5), paddingVertical: normalize(20), top: normalize(5) }}>
-                                <Image source={Imagepath.CreditValut} style={{ height: normalize(20), width: normalize(20), resizeMode: "contain", tintColor: "#FFFFFF" }} />
-                                <Text style={[stylesmodal.footerTitle, { marginTop: Platform.OS === "ios" ? normalize(4) : normalize(0) }]}>{"CME/CE Credits"}</Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(6), marginBottom: normalize(8) }}>
+                                <Image source={Imagepath.CreditValut} style={{ height: normalize(18), width: normalize(18), resizeMode: "contain", tintColor: "#FFFFFF" }} />
+                                <Text style={stylesmodal.footerTitle}>{"CME/CE Credits"}</Text>
                             </View>
-                            <View style={[stylesmodal.creditsRow, { top: Platform.OS === "ios" ? normalize(8) : 0 }]}>
+                            <View style={stylesmodal.creditsRow}>
                                 {showTotal && (
-                                    <View style={{ width: normalize(85) }}>
-                                        <Text style={[stylesmodal.creditLabel, { marginLeft: normalize(10),fontWeight:"500" }]}>{"Total Required"}</Text>
-                                        <Text style={[stylesmodal.creditValue, { marginLeft: normalize(10),fontWeight:"500" }]} numberOfLines={1}>
-                                            {creditwise?.credits_data?.total_credits || totalCredit}
+                                    <View style={{ minWidth: normalize(75), maxWidth: normalize(85), paddingRight: normalize(4) }}>
+                                        <Text style={stylesmodal.creditLabel}>{"Total Required"}</Text>
+                                        <Text style={stylesmodal.creditValue} numberOfLines={1}>
+                                            {creditwise?.credits_data?.total_credits || certificatedata?.credits_data?.total_credits || totalCredit}
                                         </Text>
                                     </View>
                                 )}
 
                                 {showMandatory && (
                                     <>
-                                        <View style={[stylesmodal.verticalDivider, { marginRight: normalize(10) }]} />
+                                        <View style={stylesmodal.verticalDivider} />
                                         <View style={stylesmodal.creditItem}>
-                                            <Text style={[stylesmodal.creditLabel,{fontWeight:"500"}]}>{"Mandatory"}</Text>
-                                            <View style={{ flexDirection: "row", gap: normalize(3) }}>
-                                                <Text style={[stylesmodal.creditValue,{fontWeight:"500"}]} numberOfLines={1}>
-                                                    {`${creditwise?.credits_data?.topic_earned_credits} / ${creditwise?.credits_data?.topic_credits || mantopiccredit
-                                                        }`}
+                                            <Text style={stylesmodal.creditLabel}>{"Mandatory"}</Text>
+                                            <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: normalize(2) }}>
+                                                <Text style={stylesmodal.creditValue} numberOfLines={1}>
+                                                    {`${topicEarned} / ${topicTotal || mantopiccredit || 0}`}
                                                 </Text>
-                                                <Text style={[stylesmodal.earned, { marginTop: normalize(4),fontWeight:"500" }]}>
+                                                <Text style={stylesmodal.earned}>
                                                     {`earned`}
                                                 </Text>
                                             </View>
@@ -466,18 +464,14 @@ const cleanNumber = (value) => {
 
                                 {showGeneral && (
                                     <>
-                                        <View style={[stylesmodal.verticalDivider, { marginRight: normalize(10) }]} />
+                                        <View style={stylesmodal.verticalDivider} />
                                         <View style={stylesmodal.creditItem}>
-                                            <Text style={[stylesmodal.creditLabel,{fontWeight:"500"}]}>{"General"}</Text>
-                                            <View style={{ flexDirection: "row", gap: normalize(3) }}>
-                                                <Text style={[stylesmodal.creditValue,{fontWeight:"500"}]} numberOfLines={1}>
-                                                    {`${creditwise?.credits_data?.total_general_earned_credits ?? gencredit
-                                                        } / ${(
-                                                            creditwise?.credits_data?.total_general_credits || gentopiccredit
-                                                        )
-                                                        }`}
+                                            <Text style={stylesmodal.creditLabel}>{"General"}</Text>
+                                            <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: normalize(2) }}>
+                                                <Text style={stylesmodal.creditValue} numberOfLines={1}>
+                                                    {`${generalEarned} / ${(generalTotal || gentopiccredit || 0)}`}
                                                 </Text>
-                                                 <Text style={[stylesmodal.earned, { marginTop: normalize(4),fontWeight:"500" }]}>
+                                                <Text style={stylesmodal.earned}>
                                                     {`earned`}
                                                 </Text>
                                             </View>
@@ -491,16 +485,16 @@ const cleanNumber = (value) => {
                 </View>
                 {!hideCertificateAction && certificatedata?.certificates?.length > 0 && <Buttons
                     onPress={() => { navigation.navigate("CertficateHandle", { boardID: certificatedata, isNonUsaUser }); }}
-                    height={normalize(45)}
+                    height={normalize(38)}
                     width={normalize(273)}
                     backgroundColor={Colorpath.white}
-                    borderRadius={normalize(7)}
-                    text="View Earned Certificates"
+                    borderRadius={normalize(8)}
+                    text="View Earned Credits"
                     color={Colorpath.ButtonColr}
-                    fontSize={16}
+                    fontSize={normalize(13)}
                     fontFamily={Fonts.InterSemiBold}
-                    borderWidth={0}
-                    borderColor={Colorpath.ButtonColr}
+                    borderWidth={1}
+                    borderColor={"#BFDBFE"}
                 />}
                 <View style={{
                     bottom: 0,
@@ -513,17 +507,17 @@ const cleanNumber = (value) => {
                         flexDirection: "row",
                         alignItems: "center",
                         justifyContent: "center",
-                        height: normalize(35),
-                        width: normalize(140),
+                        height: normalize(34),
+                        width: normalize(130),
                         backgroundColor: "#2896CD",
                         borderWidth: 0.5,
                         borderColor: "#AAAAAA",
-                        borderRadius: normalize(10),
+                        borderRadius: normalize(8),
                         paddingHorizontal: normalize(0)
                     }}>
-                        <View style={{gap:normalize(5),flexDirection:"row"}}>
-                        <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={20} />
-                        <Text style={{fontFamily:Fonts.InterMedium,fontSize:15,color:"#FFFFFF"}}>{"Add Credits"}</Text>
+                        <View style={{ gap: normalize(5), flexDirection: "row", alignItems: "center" }}>
+                            <Search name="plus" style={{ alignSelf: "center", marginLeft: normalize(1) }} color={Colorpath.white} size={18} />
+                            <Text style={{ fontFamily: Fonts.InterMedium, fontSize: normalize(13), color: "#FFFFFF" }}>{"Add Credits"}</Text>
                         </View>
                     </Pressable>
                 </View>
@@ -623,59 +617,63 @@ const stylesmodal = StyleSheet.create({
     },
     cardContainer: {
         margin: 16,
+        borderRadius: normalize(12),
+        overflow: 'hidden',
     },
     card: {
         backgroundColor: '#FFFFFF',
-        borderTopStartRadius: normalize(15),
-        borderTopEndRadius: normalize(15),
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        padding: 16,
-        zIndex: 2,
+        borderTopStartRadius: normalize(12),
+        borderTopEndRadius: normalize(12),
+        borderBottomStartRadius: 0,
+        borderBottomEndRadius: 0,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderBottomWidth: 0,
+        padding: normalize(14),
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     logo: {
-        width: 48,
-        height: 48,
-        marginRight: 12,
+        width: normalize(44),
+        height: normalize(44),
+        marginRight: normalize(12),
         resizeMode: 'contain',
     },
     headerText: {
         flex: 1,
     },
     stateText: {
-        fontSize: 12,
-        color: '#777777',
+        fontSize: normalize(11),
+        color: '#64748B',
         fontFamily: Fonts.InterMedium,
     },
     boardText: {
-        fontSize: 18,
+        fontSize: normalize(14.5),
         fontFamily: Fonts.InterBold,
-        color: '#000000',
-        fontWeight: "bold"
+        color: '#1E293B',
+        fontWeight: "600"
     },
     divider: {
         height: 1,
-        backgroundColor: '#eee',
-        marginVertical: 12,
+        backgroundColor: '#E2E8F0',
+        marginVertical: normalize(10),
     },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        marginBottom: normalize(8),
     },
     label: {
-        fontSize: 12,
-        color: '#777777',
+        fontSize: normalize(11),
+        color: '#64748B',
         fontFamily: Fonts.InterMedium,
-        fontWeight:"500"
+        fontWeight: "500"
     },
     value: {
-        fontSize: 14,
-        color: '#000000',
+        fontSize: normalize(13),
+        color: '#1E293B',
         fontFamily: Fonts.InterSemiBold,
     },
     checklistButton: {
@@ -695,13 +693,11 @@ const stylesmodal = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: "space-between",
         alignItems: "center",
-        marginTop: normalize(2),
-        height: normalize(40),
-        width: normalize(295),
+        height: normalize(38),
+        width: "100%",
         backgroundColor: "#FFE0E0",
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        paddingHorizontal: normalize(15),
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(12),
     },
     renewRow: {
         flexDirection: "row",
@@ -710,84 +706,83 @@ const stylesmodal = StyleSheet.create({
     },
     checklistText: {
         color: '#1A4DB3',
-        fontSize: 14,
+        fontSize: normalize(12.5),
         fontFamily: Fonts.InterSemiBold,
     },
     expireAlert: {
         color: 'red',
-        fontSize: 10,
+        fontSize: normalize(10),
         fontFamily: Fonts.InterMedium,
         width: normalize(75),
     },
     update: {
         color: Colorpath.ButtonColr,
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: normalize(12.5),
     },
     renew: {
         color: Colorpath.black,
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 13,
+        fontSize: normalize(12.5),
     },
     footer: {
         backgroundColor: '#264092',
-        marginTop: -15, // Overlap effect
-        borderBottomStartRadius: normalize(15),
-        borderBottomEndRadius: normalize(15),
-        paddingBottom: Platform.OS === "ios" ? normalize(15) : normalize(20),
-        zIndex: 1,
+        borderBottomStartRadius: normalize(12),
+        borderBottomEndRadius: normalize(12),
+        paddingHorizontal: normalize(14),
+        paddingVertical: normalize(12),
+        overflow: 'hidden',
     },
     footerTitle: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: normalize(13.5),
         fontFamily: Fonts.InterSemiBold,
     },
     creditsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: "flex-start",
+        width: "100%",
     },
     creditItem: {
-        flex: 1, // all columns same width
-        // alignItems: "center",
-        // backgroundColor:"red" 
+        flex: 1,
+        paddingHorizontal: normalize(2),
     },
     creditLabel: {
         color: "#FFFFFF",
-        fontSize: 12,
-        marginBottom: 4,
+        fontSize: normalize(10.5),
+        marginBottom: normalize(2),
         fontFamily: Fonts.InterMedium,
-        // marginLeft:normalize(3),
-        // textAlign: "center",
+        fontWeight: "500",
     },
     creditValue: {
         color: "#FFFFFF",
-        fontSize: 10, // fixed size
+        fontSize: normalize(10.5),
         fontFamily: Fonts.InterSemiBold,
-        // textAlign: "center",
+        fontWeight: "600",
     },
     earned: {
-        color: "#FFFFFF",
-        fontSize: 8, // fixed size
-        fontFamily: Fonts.InterSemiBold,
-        textAlign: "center",
+        color: "#CBD5E1",
+        fontSize: normalize(8.5),
+        fontFamily: Fonts.InterMedium,
+        fontWeight: "500",
     },
     verticalDivider: {
-        height: "100%",
+        height: "80%",
         width: 1,
-        backgroundColor: "#FFFFFF",
-        marginHorizontal: normalize(2),
+        backgroundColor: "rgba(255, 255, 255, 0.3)",
+        marginHorizontal: normalize(4),
+        alignSelf: "center",
     },
     activebody: {
         flexDirection: 'row',
         justifyContent: "space-between",
         alignItems: "center",
-        height: normalize(40),
-        width: normalize(295),
+        height: normalize(38),
+        width: "100%",
         backgroundColor: "#deefd9",
-        borderBottomStartRadius: normalize(12),
-        borderBottomEndRadius: normalize(12),
-        paddingHorizontal: normalize(15),
+        borderRadius: normalize(8),
+        paddingHorizontal: normalize(12),
     },
     active: {
         color: "#2cad21",

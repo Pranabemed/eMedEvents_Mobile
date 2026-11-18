@@ -81,46 +81,42 @@ const onPress = async () => {
             hideModalContentWhileAnimating={true}
             style={styles.modal}
         >
-            <View style={styles.container}>
-                <TouchableOpacity onPress={() => {
-                    setPaymentcard(false);
-                    navigation?.navigate(name);
-                }} style={styles.closeIcon}>
-                    <CloseIcon name="close" size={24} color={Colorpath.white} />
-                </TouchableOpacity>
+        <View style={styles.container}>
+            <TouchableOpacity onPress={() => {
+                setPaymentcard(false);
+                navigation?.navigate(name);
+            }} style={styles.closeIcon}>
+                <CloseIcon name="close" size={20} color={Colorpath.white} />
+            </TouchableOpacity>
 
-                <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                <View style={{ marginTop: normalize(20) }}>
-                    <Text style={styles.content}>{content}</Text>
-                </View>
-
-                <View style={styles.container}>
-                    <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                    <View style={{ marginTop: normalize(20) }}>
-                        <Text style={styles.content}>{content}</Text>
-                    </View>
-                    <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                navigation?.navigate(name);
-                                setPaymentcard(false);
-                            }}
-                            style={styles.button}
-                        >
-                            <Text style={styles.buttonText}>{"Go to Dashboard"}</Text>
-                        </TouchableOpacity>
-                        {dataPayemnt?.invoice && <TouchableOpacity
-                            onPress={() => {
-                                setPaymentcard(false);
-                                onPress();
-                            }}
-                            style={[styles.button, { marginLeft: normalize(20) }]}
-                        >
-                            <Text style={styles.buttonText}>{"Print Ticket"}</Text>
-                        </TouchableOpacity>}
-                    </View>
-                </View>
+            <View style={styles.iconBadge}>
+                <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
             </View>
+            <View style={{ marginBottom: normalize(16) }}>
+                <Text style={styles.content}>{content}</Text>
+            </View>
+
+            <View style={[styles.buttonContainer, { marginTop: normalize(8) }]}>
+                <TouchableOpacity
+                    onPress={() => {
+                        navigation?.navigate(name);
+                        setPaymentcard(false);
+                    }}
+                    style={dataPayemnt?.invoice ? styles.buttonHalfPrimary : styles.doneButton}
+                >
+                    <Text style={styles.doneButtonText}>{"Go to Dashboard"}</Text>
+                </TouchableOpacity>
+                {dataPayemnt?.invoice && <TouchableOpacity
+                    onPress={() => {
+                        setPaymentcard(false);
+                        onPress();
+                    }}
+                    style={[styles.buttonTicket, { marginLeft: normalize(12) }]}
+                >
+                    <Text style={styles.buttonTicketText}>{"Print Ticket"}</Text>
+                </TouchableOpacity>}
+            </View>
+        </View>
         </Modal>
     );
 };
@@ -136,42 +132,108 @@ const styles = StyleSheet.create({
         margin: 0,
     },
     container: {
-        width: normalize(300),
+        width: normalize(310),
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(10),
-        padding: normalize(30),
+        borderRadius: normalize(16),
+        paddingVertical: normalize(24),
+        paddingHorizontal: normalize(20),
         alignItems: 'center',
         justifyContent: 'center',
         alignSelf: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 6,
     },
     closeIcon: {
         position: 'absolute',
         top: normalize(10),
         right: normalize(10),
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        height: normalize(25),
-        width: normalize(25),
-        borderRadius: normalize(25),
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        height: normalize(26),
+        width: normalize(26),
+        borderRadius: normalize(13),
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        zIndex: 10,
+    },
+    iconBadge: {
+        width: normalize(64),
+        height: normalize(64),
+        borderRadius: normalize(32),
+        backgroundColor: "#ECFDF5",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: normalize(14),
     },
     content: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 20,
-        color: Colorpath.black,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(14.5),
+        color: "#1E293B",
         textAlign: 'center',
-        marginBottom: normalize(20),
+        lineHeight: normalize(21),
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: "space-evenly",
-        width: normalize(280),
-        paddingVertical: normalize(10),
-        marginTop: normalize(15),
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+    },
+    buttonHalfPrimary: {
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: "center",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    buttonTicket: {
+        backgroundColor: "#EFF6FF",
+        borderWidth: 1,
+        borderColor: "#93C5FD",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: "center",
+    },
+    buttonTicketText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13),
+        color: Colorpath.ButtonColr || "#003B6D",
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    doneButton: {
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        minWidth: normalize(120),
+        paddingHorizontal: normalize(22),
+        justifyContent: 'center',
+        alignItems: "center",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    doneButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: Colorpath.white,
+        fontWeight: "600",
+        textAlign: "center",
     },
     button: {
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(5),
+        borderRadius: normalize(10),
         height: normalize(40),
         width: normalize(140),
         justifyContent: 'center',
@@ -179,17 +241,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#2C4DB9",
     },
-    singlebutton: {
-        backgroundColor: Colorpath.ButtonColr,
-        borderRadius: normalize(5),
-        height: normalize(40),
-        width: normalize(295),
-        justifyContent: 'center',
-        alignSelf: "center",
-    },
     buttonText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 16,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
         color: Colorpath.ButtonColr,
         textAlign: "center",
     },

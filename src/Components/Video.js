@@ -842,11 +842,8 @@ const VideoComponent = (props) => {
     const videoPress = () => {
         setAddit(statepush);
         takeCourseVideo();
-        if (props.navigation.canGoBack()) {
-            props.navigation.goBack();
-        } else {
-            props.navigation.navigate("TabNav");
-        }
+        setPaused(true);
+        props.navigation.reset({ index: 0, routes: [{ name: 'TabNav' }] });
     };
 
     /**
@@ -1595,11 +1592,14 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
         }
     }, [pdfUri]);
     useEffect(() => {
+        if (!isFocus) return;
         /**
 * On back press utility.
 * @returns {boolean}
 */
         const onBackPress = () => {
+            // Consume repeated presses until the rotation has settled.
+            if (fullscreenTransitionRef.current) return true;
             if (fullscreen) {
                 toggleFullscreen();
             } else {
@@ -1612,7 +1612,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
             onBackPress
         );
         return () => backHandler.remove();
-    }, [fullscreen]);
+    }, [isFocus, fullscreen, statepush]);
     useEffect(() => {
         // Simulate 2-second loading time
         const timeout = setTimeout(() => {

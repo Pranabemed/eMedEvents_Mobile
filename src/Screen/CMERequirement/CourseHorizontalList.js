@@ -537,48 +537,48 @@ const CourseHorizontalList = ({ data, isMandatory, highlightFirstItem = false })
  */
 const styles = StyleSheet.create({
   container: {
-    marginTop: normalize(4),
-    marginBottom: normalize(10),
+    marginTop: normalize(2),
+    marginBottom: normalize(8),
     paddingHorizontal: normalize(16),
   },
   listContent: {
     paddingTop: normalize(0),
   },
   separator: {
-    height: normalize(14),
+    height: normalize(10),
   },
   card: {
-    borderRadius: normalize(16),
+    borderRadius: normalize(14),
     borderWidth: 1,
   },
   featuredCard: {
     backgroundColor: '#fff4ef',
     borderColor: '#FF7A00',
     borderStyle: 'dashed',
-    marginBottom: normalize(14),
+    marginBottom: normalize(10),
   },
   standardCard: {
     backgroundColor: '#FFFFFF',
     borderColor: '#E5E7EB',
   },
   cardBody: {
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(14),
+    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(10),
   },
   featuredCardBody: {
-    paddingTop: normalize(16),
-    paddingBottom: normalize(16),
+    paddingTop: normalize(12),
+    paddingBottom: normalize(12),
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    marginTop: normalize(8),
+    marginTop: normalize(5),
   },
   infoText: {
     fontFamily: Fonts.InterMedium,
-    fontSize: normalize(12),
-    lineHeight: normalize(18),
+    fontSize: normalize(11),
+    lineHeight: normalize(15),
     color: '#6B7280',
   },
   featuredInfoText: {
@@ -586,8 +586,8 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: Fonts.InterBold,
-    fontSize: normalize(15),
-    lineHeight: normalize(22),
+    fontSize: normalize(13.5),
+    lineHeight: normalize(18),
     color: '#111827',
   },
   featuredCardTitle: {
@@ -595,10 +595,10 @@ const styles = StyleSheet.create({
   },
   courseCountText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(12),
-    lineHeight: normalize(18),
+    fontSize: normalize(10.5),
+    lineHeight: normalize(15),
     color: '#6B7280',
-    marginTop: normalize(8),
+    marginTop: normalize(5),
   },
   featuredCourseCountText: {
     color: 'rgba(0, 0, 0, 0.82)',
@@ -606,11 +606,11 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: normalize(8),
+    marginTop: normalize(5),
   },
   ratingLabel: {
     fontFamily: Fonts.InterSemiBold,
-    fontSize: normalize(12),
+    fontSize: normalize(11),
     color: '#374151',
     marginRight: normalize(6),
   },
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   },
   ratingCountText: {
     fontFamily: Fonts.InterRegular,
-    fontSize: normalize(12),
+    fontSize: normalize(11),
     color: '#6B7280',
     marginLeft: normalize(6),
   },
@@ -630,21 +630,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: normalize(14),
+    marginTop: normalize(10),
   },
   priceText: {
     fontFamily: Fonts.InterExtraBold,
-    fontSize: normalize(16),
+    fontSize: normalize(14.5),
     color: '#FF6A00',
   },
   featuredPriceText: {
     color: '#000000',
   },
   registerButton: {
-    minWidth: normalize(98),
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(10),
+    minWidth: normalize(86),
+    paddingHorizontal: normalize(14),
+    paddingVertical: normalize(7),
+    borderRadius: normalize(8),
     borderWidth: 1,
     borderColor: '#FF6A00',
     alignItems: 'center',
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
   },
   registerButtonText: {
     fontFamily: Fonts.InterBold,
-    fontSize: normalize(13),
+    fontSize: normalize(12),
     color: '#FF6A00',
   },
   featuredRegisterButtonText: {

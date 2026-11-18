@@ -314,9 +314,9 @@ const Mytasks = (props) => {
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View style={styles.courseFooterRow}>
-                            <View style={styles.progressCol}>
-                                {safeProgress !== null ? (
+                        <View style={[styles.courseFooterRow, !(safeProgress > 0 && !isStartCourse) && { justifyContent: 'flex-end' }]}>
+                            {safeProgress > 0 && !isStartCourse ? (
+                                <View style={styles.progressCol}>
                                     <ProgressBarLine
                                         tasks={tasks}
                                         textadd="yes"
@@ -324,8 +324,8 @@ const Mytasks = (props) => {
                                         height={6}
                                         fillColor={"#2C4DB9"}
                                     />
-                                ) : null}
-                            </View>
+                                </View>
+                            ) : null}
                             <TouchableOpacity
                                 activeOpacity={0.8}
                                 onPress={() => {

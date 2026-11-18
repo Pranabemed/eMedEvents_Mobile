@@ -21,11 +21,42 @@ jest.mock('../src/Utils/Helpers/IPServer', () => ({getCountryAndDialCode: async 
 const user = {user_address: {country_code: 'US'}, profession: 'Physician', profession_type: 'MD', subscription_user: 'non-subscribed'};
 let tree;
 const label = text => tree.root.findAll(node => node.props.children === text).length > 0;
+const requestCount = type => mockDispatch.mock.calls.filter(([action]) => action.type === type).length;
 beforeEach(async () => {
   await AsyncStorage.clear();
   mockState = {AuthReducer: {}, DashboardReducer: {}, WebcastReducer: {}};
 });
 afterEach(async () => {if (tree) await act(async () => tree.unmount()); tree = null;});
+
+test('opening Menu refreshes profile and membership once, including on reopen', async () => {
+  const render = isVisible => <DrawerModal isVisible={isVisible} handel="closeit" onBackdropPress={() => {}} />;
+  await act(async () => {tree = create(render(false));});
+  expect(requestCount('Dashboard/mainprofileRequest')).toBe(0);
+  expect(requestCount('WebCast/PrimeCheckRequest')).toBe(0);
+
+  await act(async () => tree.update(render(true)));
+  expect(requestCount('Dashboard/mainprofileRequest')).toBe(1);
+  expect(requestCount('WebCast/PrimeCheckRequest')).toBe(1);
+
+  await act(async () => tree.update(render(true)));
+  expect(requestCount('Dashboard/mainprofileRequest')).toBe(1);
+  await act(async () => tree.update(render(false)));
+  await act(async () => tree.update(render(true)));
+  expect(requestCount('Dashboard/mainprofileRequest')).toBe(2);
+  expect(requestCount('WebCast/PrimeCheckRequest')).toBe(2);
+});
+
+test('an unknown network update keeps Menu visible; a confirmed disconnect shows offline content', async () => {
+  const NetInfo = require('@react-native-community/netinfo');
+  await act(async () => {tree = create(<DrawerModal isVisible onBackdropPress={() => {}} />);});
+  const onNetworkChange = NetInfo.addEventListener.mock.calls[0][0];
+  await act(async () => onNetworkChange({isConnected: true}));
+  expect(label('Dashboard')).toBe(true);
+  await act(async () => onNetworkChange({isConnected: null}));
+  expect(label('Dashboard')).toBe(true);
+  await act(async () => onNetworkChange({isConnected: false}));
+  expect(label('Dashboard')).toBe(false);
+});
 
 test('first Menu render uses live login while persisted account is empty and IP is India', async () => {
   mockState.AuthReducer = {dircetloginResponse: {user}};

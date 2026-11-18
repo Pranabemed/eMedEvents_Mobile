@@ -5,6 +5,7 @@
 import { View, Text, FlatList, TouchableOpacity, Alert, Platform, StyleSheet } from 'react-native'
 import React, { useEffect, useRef } from 'react'
 import Modal from 'react-native-modal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/AntDesign'
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -39,6 +40,8 @@ let statusd = "";
  * @returns {JSX.Element}
  */
 const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData, profiletakeshow, setProfiletakeshow, remove, detectdata, nav, onDeleteSuccess }) => {
+    const insets = useSafeAreaInsets();
+    const licenseBottomSpace = insets.bottom + normalize(12);
     const profileData = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }, { id: 2, name: "Delete", Icon: "delete" }];
     const deletTake = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 2, name: "Delete", Icon: "delete" }];
     const deletTakef = [{ id: 0, name: "Edit", Icon: "edit" }, { id: 1, name: "View", Icon: "eye" }];
@@ -48,6 +51,24 @@ const ProfileModal = ({setTicktry, board, main, setPaginatedData, paginatedData,
     const dispatch = useDispatch();
     const ProfileReducer = useSelector(state => state.ProfileReducer);
     const deletePendingRef = useRef(false);
+    const pendingLicenseEdit = useRef(null);
+
+    const openLicenseEdit = () => {
+        if (pendingLicenseEdit.current) return;
+        if (Platform.OS === 'android') {
+            pendingLicenseEdit.current = { profiledet: detectdata };
+            setProfiletakeshow(false);
+        } else {
+            setProfiletakeshow(false);
+            nav.navigate('AddLicense', { profiledet: detectdata });
+        }
+    };
+
+    const finishModalClose = () => {
+        const params = pendingLicenseEdit.current;
+        pendingLicenseEdit.current = null;
+        if (params) nav.navigate('AddLicense', params);
+    };
 
     useEffect(() => {
         if (!deletePendingRef.current) return;
@@ -181,79 +202,11 @@ onPress: () => { setCreditModal(false) } }]);
             status = "Expiry"; // Update status if conditions match
         }
     }
-    const containerStyle = detectdata?.license_file && status == "Active" ? {
+    const licenseActions = detectdata?.license_file && status == "Active" ? deletTakef :detectdata?.license_file == "" && status == "Active" ? deletT : typeof detectdata?.license_file == 'object' && status == "Active" ? deletT : status == "Expiry" && detectdata?.license_file ? profileData : status == "Expiry" && detectdata?.license_file == "" ? deletTake:detectdata?.license_file == ""&& status =="Invalid Date" ? deletT : detectdata?.license_file && status =="Invalid Date" ? deletT : detectdata?.license_file == "" ? deletTakef : status == "Expiry" ? deletTake :status =="Invalid Date" ? deletT: remove ? profMemb : profileData;
+    const containerStyle = {
         borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(120) : normalize(120),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    }: detectdata?.license_file == "" && status == "Active" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(90) : normalize(90),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } : typeof detectdata?.license_file == 'object' && status == "Active" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(90) : normalize(90),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } : status == "Expiry" && detectdata?.license_file == "" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(120) : normalize(120),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } : status == "Expiry" && detectdata?.license_file ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(200) : normalize(200),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } :detectdata?.license_file == "" && status == "Invalid Date" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(90) : normalize(90),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    }:detectdata?.license_file && status == "Invalid Date" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(90) : normalize(90),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    }: status == "Expiry" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(120) : normalize(120),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } : detectdata?.license_file == "" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(120) : normalize(120),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    } : status == "Invalid Date" ? {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(90) : normalize(90),
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#fff',
-    }: {
-        borderRadius: normalize(7),
-        height: Platform.OS === 'ios' ? normalize(200) : normalize(200),
+        height: licenseActions.length * (normalize(40) + normalize(10)) + normalize(7) + licenseBottomSpace,
+        paddingBottom: licenseBottomSpace,
         position: 'absolute',
         bottom: 0,
         width: '100%',
@@ -343,6 +296,8 @@ onPress: () => { setCreditModal(false) } }]);
                 alignSelf: 'center',
                 margin: 0,
             }}
+            onModalHide={finishModalClose}
+            onBackButtonPress={() => setProfiletakeshow(false)}
             onBackdropPress={() => setProfiletakeshow(false)}>
             <TouchableOpacity
                 style={{ flex: 1 }}
@@ -403,19 +358,19 @@ onPress: () => { deletLic(); }, style: "default" }])
                     style={containerStyle}>
                     <FlatList
                         contentContainerStyle={{
-                            paddingBottom: normalize(70),
+                            paddingBottom: 0,
                             paddingTop: normalize(7),
                         }}
                         showsVerticalScrollIndicator={false}
+                        scrollEnabled={false}
                         keyExtractor={item => item.id.toString()}
-                        data={detectdata?.license_file && status == "Active" ? deletTakef :detectdata?.license_file == "" && status == "Active" ? deletT : typeof detectdata?.license_file == 'object' && status == "Active" ? deletT : status == "Expiry" && detectdata?.license_file ? profileData : status == "Expiry" && detectdata?.license_file == "" ? deletTake:detectdata?.license_file == ""&& status =="Invalid Date" ? deletT : detectdata?.license_file && status =="Invalid Date" ? deletT : detectdata?.license_file == "" ? deletTakef : status == "Expiry" ? deletTake :status =="Invalid Date" ? deletT: remove ? profMemb : profileData}
+                        data={licenseActions}
                         renderItem={({ item, index }) => {
                             return (
                                 <>
                                     <TouchableOpacity onPress={() => {
                                         if (item?.id == 0) {
-                                            setProfiletakeshow(false);
-                                            nav.navigate("AddLicense", { profiledet: detectdata })
+                                            openLicenseEdit();
                                         } else if (item?.id == 2) {
                                             Alert.alert("eMedEvents", "Are you sure you want to Delete this ?", [{
                                                 text: "No",                                                 /**

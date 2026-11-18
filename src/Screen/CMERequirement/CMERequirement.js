@@ -863,12 +863,12 @@ const styles = StyleSheet.create({
   },
   dropdownWrap: {
     paddingHorizontal: normalize(16),
-    paddingTop: normalize(12),
-    paddingBottom: normalize(10),
+    paddingTop: normalize(8),
+    paddingBottom: normalize(6),
   },
   cardWrap: {
     paddingHorizontal: normalize(16),
-    paddingVertical: normalize(6),
+    paddingVertical: normalize(4),
   },
   emptyContainer: {
     flex: 1,
@@ -886,10 +886,10 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     alignSelf: 'center',
-    marginTop: normalize(4),
-    marginBottom: normalize(16),
-    paddingHorizontal: normalize(18),
-    paddingVertical: normalize(10),
+    marginTop: normalize(2),
+    marginBottom: normalize(14),
+    paddingHorizontal: normalize(16),
+    paddingVertical: normalize(8),
     borderRadius: normalize(20),
     backgroundColor: '#FFFFFF',
     borderWidth: 1,

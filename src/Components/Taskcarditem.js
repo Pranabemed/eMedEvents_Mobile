@@ -26,6 +26,7 @@ const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, ind
             setStatepush
         } = useContext(AppContext);
     const tasks = Array.isArray(item?.[tasksKey]) ? item[tasksKey] : [];
+    const courseCount = tasks.filter(task => task && task.button_display_text !== 'Update').length;
     const statusColor = STATUS_COLORS[index] || Colorpath.ButtonColr;
     const isActionable = tasks.length > 0;
 
@@ -53,7 +54,7 @@ const TaskCardItem = ({setAddit,addit, item, taskType, tasksKey, navigation, ind
             <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
             <View style={styles.textContainer}>
                 <Text numberOfLines={1} style={styles.taskCountText}>
-                    {`${tasks.length} Task(s)`}
+                    {`${courseCount} Task(s)`}
                 </Text>
                 <Text numberOfLines={1} style={[styles.taskTypeText, { color: statusColor }]}>
                     {taskType}

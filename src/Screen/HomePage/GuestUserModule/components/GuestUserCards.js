@@ -63,34 +63,38 @@ const handlePress = () => item?.onPress?.(item?.detailpageUrl);
   return (
     <View style={styles.freeCardWrap}>
       <Pressable onPress={handlePress} style={styles.freeCard}>
-        <View style={styles.freeTopRow}>
-          {item?.eventType ? (
-            <View style={styles.freeTypePill}>
-              {eventTypeIcon ? (
-                <Image source={eventTypeIcon} style={styles.freeTypeIcon} resizeMode="contain" />
-              ) : (
-                <Icon name="keyboard-voice" size={13} color="#FFFFFF" />
-              )}
-              <Text numberOfLines={1} style={styles.freeTypeText}>{item.eventType}</Text>
-            </View>
-          ) : null}
-          {item?.date ? <Text numberOfLines={1} style={styles.freeDateText}>{item.date}</Text> : null}
+        <View style={{ flex: 1 }}>
+          <View style={styles.freeTopRow}>
+            {item?.eventType ? (
+              <View style={styles.freeTypePill}>
+                {eventTypeIcon ? (
+                  <Image source={eventTypeIcon} style={styles.freeTypeIcon} resizeMode="contain" />
+                ) : (
+                  <Icon name="keyboard-voice" size={13} color="#FFFFFF" />
+                )}
+                <Text numberOfLines={1} style={styles.freeTypeText}>{item.eventType}</Text>
+              </View>
+            ) : null}
+            {item?.date ? <Text numberOfLines={1} style={styles.freeDateText}>{item.date}</Text> : null}
+          </View>
+          {item?.organization ? <Text numberOfLines={1} style={styles.freeOrgText}>{item.organization}</Text> : null}
+          <Text numberOfLines={2} style={styles.freeTitleText}>{item.title}</Text>
         </View>
-        {item?.organization ? <Text numberOfLines={1} style={styles.freeOrgText}>{item.organization}</Text> : null}
-        <Text numberOfLines={2} style={styles.freeTitleText}>{item.title}</Text>
-        <View style={styles.freeBottomRow}>
-          {item?.cmeLabel ? (
-            <View style={styles.freeCreditPill}>
-              <Text numberOfLines={1} style={styles.freeCreditText}>{item.cmeLabel}</Text>
-            </View>
+        <View>
+          <View style={styles.freeBottomRow}>
+            {item?.cmeLabel ? (
+              <View style={styles.freeCreditPill}>
+                <Text numberOfLines={1} style={styles.freeCreditText}>{item.cmeLabel}</Text>
+              </View>
+            ) : null}
+            {item?.price ? <Text numberOfLines={1} style={styles.freePriceText}>{item.price}</Text> : null}
+          </View>
+          {item?.buttonText ? (
+            <TouchableOpacity onPress={handlePress} style={styles.freeButton}>
+              <Text numberOfLines={1} style={styles.freeButtonText}>{item.buttonText}</Text>
+            </TouchableOpacity>
           ) : null}
-          {item?.price ? <Text numberOfLines={1} style={styles.freePriceText}>{item.price}</Text> : null}
         </View>
-        {item?.buttonText ? (
-          <TouchableOpacity onPress={handlePress} style={styles.freeButton}>
-            <Text numberOfLines={1} style={styles.freeButtonText}>{item.buttonText}</Text>
-          </TouchableOpacity>
-        ) : null}
       </Pressable>
     </View>
   );
@@ -188,24 +192,26 @@ const handlePress = () => {
           ) : null}
         </View>
 
-        <View style={styles.featureBottomRow}>
-          {item?.cmeLabel ? (
-            <View style={styles.featureCmePill}>
-              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureCmeText}>{item.cmeLabel}</Text>
-            </View>
-          ) : null}
-          {item?.price ? (
-            <View style={styles.featurePricePill}>
-              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featurePriceText}>{item.price}</Text>
-            </View>
+        <View>
+          <View style={styles.featureBottomRow}>
+            {item?.cmeLabel ? (
+              <View style={styles.featureCmePill}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featureCmeText}>{item.cmeLabel}</Text>
+              </View>
+            ) : null}
+            {item?.price ? (
+              <View style={styles.featurePricePill}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.featurePriceText}>{item.price}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {item?.button ? (
+            <TouchableOpacity onPress={handlePress} style={styles.featureButton}>
+              <Text numberOfLines={1} style={styles.featureButtonText}>{item.button}</Text>
+            </TouchableOpacity>
           ) : null}
         </View>
-
-        {item?.button ? (
-          <TouchableOpacity onPress={handlePress} style={styles.featureButton}>
-            <Text numberOfLines={1} style={styles.featureButtonText}>{item.button}</Text>
-          </TouchableOpacity>
-        ) : null}
       </Pressable>
     </View>
   );
@@ -236,22 +242,22 @@ const ConferenceCardComponent = ({ item, width, dark = false, compact = false })
           </View>
         ) : null}
       </View>
-      {item.kicker ? <Text style={[styles.cardMeta, dark && styles.cardMetaDark, { fontSize: scale(width, 11) }]}>{item.kicker}</Text> : null}
-      <Text numberOfLines={2} style={[styles.cardTitle, dark && styles.cardTitleDark, { fontSize: scale(width, 16) }]}>{item.title}</Text>
-      {!item.kicker ? <Text style={[styles.cardMeta, dark && styles.cardMetaDark, { fontSize: scale(width, 11) }]}>{item.by}</Text> : null}
+      {item.kicker ? <Text style={[styles.cardMeta, dark && styles.cardMetaDark]}>{item.kicker}</Text> : null}
+      <Text numberOfLines={2} style={[styles.cardTitle, dark && styles.cardTitleDark]}>{item.title}</Text>
+      {!item.kicker ? <Text style={[styles.cardMeta, dark && styles.cardMetaDark]}>{item.by}</Text> : null}
       <View style={styles.metaGroup}>
         <InfoRow icon="calendar-today" text={item.date} width={width} iconColor={dark ? '#FFFFFF' : '#666666'} />
         <InfoRow icon="place" text={item.location} width={width} iconColor={dark ? '#FFFFFF' : '#666666'} />
         <View style={styles.creditRow}>
           <Image source={Imagepath.CreditValut} style={[styles.creditIcon, dark && styles.creditIconDark]} />
-          <Text style={[styles.cardMeta, dark && styles.cardMetaDark, { fontSize: scale(width, 11) }]}>{item.credit}</Text>
+          <Text style={[styles.cardMeta, dark && styles.cardMetaDark]}>{item.credit}</Text>
         </View>
       </View>
       <View style={styles.divider} />
       <View style={styles.priceRow}>
-        <Text style={[styles.priceText, dark && styles.priceTextDark, { fontSize: scale(width, 18) }]}>{item.price}</Text>
+        <Text style={[styles.priceText, dark && styles.priceTextDark]}>{item.price}</Text>
         <TouchableOpacity onPress={item.onPress} style={[styles.ctaPill, dark && styles.ctaPillDark]}>
-          <Text style={[styles.ctaText, { fontSize: scale(width, 12) }]}>{item.cta}</Text>
+          <Text style={[styles.ctaText]}>{item.cta}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -274,30 +280,34 @@ const handlePress = () => item?.onPress?.(item?.detailpageUrl);
   return (
     <View style={styles.popularCardWrap}>
       <Pressable onPress={handlePress} style={styles.popularCard}>
-        {item?.kicker ? <Text numberOfLines={1} style={styles.popularByText}>{item.kicker}</Text> : null}
-        <Text numberOfLines={2} style={[styles.popularTitle, { fontSize: scale(width, 16) }]}>{item.title}</Text>
-        <View style={styles.popularMetaGroup}>
-          {item?.date ? <InfoRow icon="calendar-today" text={item.date} width={width} /> : null}
-          {item?.location ? <InfoRow icon="place" text={item.location} width={width} /> : null}
-          {item?.credit ? (
-            <View style={styles.creditRow}>
-              <Image
-                source={Imagepath.CreditValut}
-                style={[styles.creditIcon, { tintColor: '#000000' }]}
-                resizeMode="contain"
-              />
-              <Text numberOfLines={1} style={styles.infoText}>{item.credit}</Text>
-            </View>
-          ) : null}
+        <View style={{ flex: 1 }}>
+          {item?.kicker ? <Text numberOfLines={1} style={styles.popularByText}>{item.kicker}</Text> : null}
+          <Text numberOfLines={2} style={styles.popularTitle}>{item.title}</Text>
+          <View style={styles.popularMetaGroup}>
+            {item?.date ? <InfoRow icon="calendar-today" text={item.date} width={width} /> : null}
+            {item?.location ? <InfoRow icon="place" text={item.location} width={width} /> : null}
+            {item?.credit ? (
+              <View style={styles.creditRow}>
+                <Image
+                  source={Imagepath.CreditValut}
+                  style={[styles.creditIcon, { tintColor: '#000000' }]}
+                  resizeMode="contain"
+                />
+                <Text numberOfLines={1} style={styles.infoText}>{item.credit}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.popularDivider} />
-        <View style={styles.popularFooterRow}>
-          {item?.price ? <Text style={[styles.popularPrice, { fontSize: scale(width, 18) }]}>{item.price}</Text> : null}
-          {item?.buttonText ? (
-            <TouchableOpacity onPress={handlePress} style={styles.popularButton}>
-              <Text style={styles.popularButtonText}>{item.buttonText}</Text>
-            </TouchableOpacity>
-          ) : null}
+        <View>
+          <View style={styles.popularDivider} />
+          <View style={styles.popularFooterRow}>
+            {item?.price ? <Text style={styles.popularPrice}>{item.price}</Text> : null}
+            {item?.buttonText ? (
+              <TouchableOpacity onPress={handlePress} style={styles.popularButton}>
+                <Text style={styles.popularButtonText}>{item.buttonText}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       </Pressable>
     </View>

@@ -650,6 +650,7 @@ const searchStateNamePratice = text => {
         }
     };
     useEffect(() => {
+        if (!isFoucs) return;
                 /**
  * On back press utility.
  * @returns {boolean}
@@ -664,7 +665,7 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [isFoucs, props.navigation, props.route?.params]);
         /**
  * Add licsense handle utility.
  * @returns {void}

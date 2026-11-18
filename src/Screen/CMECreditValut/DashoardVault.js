@@ -22,7 +22,7 @@ import Statevaultcomponet from './Statevaultcomponet';
 import { styles } from './Statevaultstyes';
 import moment from 'moment';
 import CMEChecklistModal from './CMEChecklistModal';
-import { boardvaultRequest, professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
+import { boardvaultRequest, creditvaultRequest, professionvaultRequest } from '../../Redux/Reducers/CreditVaultReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../Utils/Helpers/constants';
 import StateVaultModal from './StateVaultModal';
@@ -34,6 +34,7 @@ import Buttons from '../../Components/Button';
 import { AppContext } from '../GlobalSupport/AppContext';
 import StackNav from '../../Navigator/StackNav';
 import Imagepath from '../../Themes/Imagepath';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { isNonUsaAccount, readNonUsaFlowState, readNonUsaPermanentFlags, clearNonUsaFlowState, isUsaCountryCode } from '../../Utils/Helpers/nonUsaFlow';
 import { isPrimeSubscriptionActive } from '../../Utils/Helpers/primeSubscription';
@@ -54,6 +55,11 @@ const parseExpiryDate = (value) => moment(value, ["YYYY-MM-DD", "MM-DD-YYYY", "M
  * @returns {JSX.Element}
  */
 const DashoardVault = (props) => {
+    const bottomTabBarHeight = useContext(BottomTabBarHeightContext);
+    // The Android tab bar already includes the system gesture/navigation inset.
+    const safeAreaEdges = Platform.OS === 'android' && bottomTabBarHeight > 0
+        ? ['top', 'left', 'right']
+        : ['top', 'left', 'right', 'bottom'];
     const {
         isConnected,
         setIsConnected,
@@ -154,20 +160,23 @@ const DashoardVault = (props) => {
     }, [isConnected]);
     useEffect(() => {
         if (isFocus) {
-            initialVaultResponseRef.current = {
-                profile: DashboardReducer?.mainprofileResponse,
-                dashboard: DashboardReducer?.dashMbResponse,
-                state: DashboardReducer?.stateMandatoryResponse,
-                board: CreditVaultReducer?.boardvaultResponse,
-                prime: WebcastReducer?.PrimeCheckResponse,
-            };
-            setInitialVaultReady({
-                profile: false,
-                dashboard: false,
-                state: false,
-                board: false,
-                prime: false,
-            });
+            const isAlreadyReady = Object.values(initialVaultReady).every(Boolean);
+            if (!isAlreadyReady) {
+                initialVaultResponseRef.current = {
+                    profile: DashboardReducer?.mainprofileResponse,
+                    dashboard: DashboardReducer?.dashMbResponse,
+                    state: DashboardReducer?.stateMandatoryResponse,
+                    board: CreditVaultReducer?.boardvaultResponse,
+                    prime: WebcastReducer?.PrimeCheckResponse,
+                };
+                setInitialVaultReady({
+                    profile: false,
+                    dashboard: false,
+                    state: false,
+                    board: false,
+                    prime: false,
+                });
+            }
             connectionrequest()
                 .then(() => {
                     dispatch(boardvaultRequest({}));
@@ -242,27 +251,26 @@ const DashoardVault = (props) => {
     useEffect(() => {
         if (CreditVaultReducer.status === 'CreditVault/boardvaultRequest') {
             setLoadingStatewiseboard(true);
-        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultSuccess') {
+        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultSuccess' || CreditVaultReducer.status === 'CreditVault/boardvaultFailure') {
             setLoadingStatewiseboard(false);
-            const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
-            if (finalboard) {
-                const takeFinalBoard = Object.keys(finalboard).map(key => ({
-                    ...finalboard[key],
-                    board_id: key,
-                }));
-                setSelectCountrytopicboard(takeFinalBoard);
-                setClisttopicboard(takeFinalBoard);
-            }
-        } else if (CreditVaultReducer.status === 'CreditVault/boardvaultFailure') {
-            setLoadingStatewiseboard(false);
+        }
+        const finalboard = CreditVaultReducer?.boardvaultResponse?.board_data;
+        if (finalboard) {
+            const takeFinalBoard = Object.keys(finalboard).map(key => ({
+                ...finalboard[key],
+                board_id: key,
+            }));
+            setSelectCountrytopicboard(takeFinalBoard);
+            setClisttopicboard(takeFinalBoard);
         }
     }, [CreditVaultReducer.status, CreditVaultReducer?.boardvaultResponse]);
     useEffect(() => {
         if (clisttopicboard?.length > 0) {
-            const defaultStated = clisttopicboard[0];
+            const defaultStated = clisttopicboard.find(b => String(b.board_id) === String(stateidboard?.board_id || stateidboard)) || clisttopicboard[0];
             setLengthcheck(defaultStated);
             // setStatewise(defaultState?.board_data?.board_name); 
             setCertificatebaord(defaultStated);
+            setStateidboard(defaultStated);
             setBoardnameboard(defaultStated?.board_data?.board_name);
             setLicesenseboard(defaultStated?.board_data?.certification_id);
             setMancreditboard(defaultStated?.credits_data?.topic_earned_credits);
@@ -366,6 +374,12 @@ const DashoardVault = (props) => {
                 connectionrequest()
                     .then(() => {
                         dispatch(stateMandatoryRequest(obj));
+                        dispatch(boardvaultRequest({}));
+                        dispatch(dashMbRequest({}));
+                        if (stateid) {
+                            dispatch(stateCourseRequest({ state_id: stateid }));
+                            dispatch(stateReportingRequest({ state_id: stateid }));
+                        }
                     })
                     .catch((err) => {
                         showErrorAlert("Please connect to internet2", err);
@@ -378,26 +392,27 @@ const DashoardVault = (props) => {
             return () => {
                 // Cleanup logic here if necessary
             };
-        }, [])
+        }, [stateid])
     );
     useEffect(() => {
         if (DashboardReducer.status === 'Dashboard/stateMandatoryRequest') {
             setLoadingStatewise(true);
-        } else if (DashboardReducer.status === 'Dashboard/stateMandatorySuccess') {
-            setLoadingStatewise(false);
-        } else if (DashboardReducer.status === 'Dashboard/stateMandatoryFailure') {
+        } else if (DashboardReducer.status === 'Dashboard/stateMandatorySuccess' || DashboardReducer.status === 'Dashboard/stateMandatoryFailure') {
             setLoadingStatewise(false);
         }
 
         if (DashboardReducer.status === 'Dashboard/stateCourseRequest') {
             setLoadingCreditwise(true);
-        } else if (DashboardReducer.status === 'Dashboard/stateCourseSuccess') {
-            setLoadingCreditwise(false);
-            setCreditwise(DashboardReducer?.stateCourseResponse?.data?.state_data);
-        } else if (DashboardReducer.status === 'Dashboard/stateCourseFailure') {
+        } else if (DashboardReducer.status === 'Dashboard/stateCourseSuccess' || DashboardReducer.status === 'Dashboard/stateCourseFailure') {
             setLoadingCreditwise(false);
         }
 
+        const courseData = DashboardReducer?.stateCourseResponse?.data?.state_data ||
+            DashboardReducer?.stateCourseResponse?.state_data ||
+            DashboardReducer?.stateCourseResponse?.data;
+        if (courseData && (courseData?.credits_data || courseData?.board_data || courseData?.state_name)) {
+            setCreditwise(courseData);
+        }
     }, [DashboardReducer.status, DashboardReducer?.stateCourseResponse]);
     useEffect(() => {
         const renewalReport = DashboardReducer?.stateReportingResponse?.renewal_report;
@@ -431,6 +446,14 @@ const DashoardVault = (props) => {
                 setCertificatedata(defaultState);
                 setStatewise(defaultState?.state_name || "");
                 setStateid(defaultState?.state_id || "");
+                if (defaultState?.credits_data) {
+                    setCreditwise(prev => ({
+                        ...(prev || {}),
+                        ...defaultState,
+                        credits_data: defaultState.credits_data,
+                        certificates: defaultState.certificates || prev?.certificates,
+                    }));
+                }
                 return;
             }
         }
@@ -481,8 +504,6 @@ const DashoardVault = (props) => {
     useEffect(() => {
         let mounted = true;
         if (isFocus) {
-            setIsAsyncStorageLoaded(false);
-            setIsProfileReady(false);
             Promise.all([
                 readNonUsaFlowState(),
                 readNonUsaPermanentFlags(),
@@ -544,6 +565,29 @@ const DashoardVault = (props) => {
         });
         return () => sub.remove();
     }, [dispatch]);
+    useEffect(() => {
+        const emitter = require('react-native').DeviceEventEmitter;
+        const sub = emitter.addListener('CREDIT_VAULT_UPDATED', (payload) => {
+            connectionrequest()
+                .then(() => {
+                    dispatch(stateMandatoryRequest({}));
+                    dispatch(boardvaultRequest({}));
+                    dispatch(dashMbRequest({}));
+                    dispatch(dashboardRequest({}));
+                    const targetStateId = payload?.state_id || stateid || certificatedata?.state_id || selectCountrytopic?.[0]?.state_id;
+                    if (targetStateId) {
+                        dispatch(stateCourseRequest({ state_id: targetStateId }));
+                        dispatch(stateReportingRequest({ state_id: targetStateId }));
+                        dispatch(creditvaultRequest({ state_id: targetStateId }));
+                    }
+                    if (stateidboard?.board_id) {
+                        dispatch(creditvaultRequest({ board_id: stateidboard?.board_id, type: 'certificate' }));
+                    }
+                })
+                .catch(() => {});
+        });
+        return () => sub.remove();
+    }, [dispatch, stateid, certificatedata?.state_id, selectCountrytopic, stateidboard]);
 
     const hasActiveSession =
         AuthReducer?.dircetloginResponse?.user ||
@@ -746,19 +790,19 @@ const DashoardVault = (props) => {
             if (creditwise?.license_number) {
                 setLicesense(creditwise?.license_number);
             }
-            if (creditwise?.credits_data?.total_credits) {
+            if (creditwise?.credits_data?.total_credits != null) {
                 setTotalCredit(creditwise?.credits_data?.total_credits);
             }
-            if (creditwise?.credits_data?.topic_earned_credits) {
+            if (creditwise?.credits_data?.topic_earned_credits != null) {
                 setMancredit(creditwise?.credits_data?.topic_earned_credits)
             }
-            if (creditwise?.credits_data?.topic_credits) {
+            if (creditwise?.credits_data?.topic_credits != null) {
                 setMantopiccredit(creditwise?.credits_data?.topic_credits);
             }
-            if (creditwise?.credits_data?.total_general_earned_credits) {
+            if (creditwise?.credits_data?.total_general_earned_credits != null) {
                 setGencredit(creditwise?.credits_data?.total_general_earned_credits);
             }
-            if (creditwise?.credits_data?.total_general_credits) {
+            if (creditwise?.credits_data?.total_general_credits != null) {
                 setGentopiccredit(creditwise?.credits_data?.total_general_credits);
             }
         }
@@ -867,7 +911,7 @@ const DashoardVault = (props) => {
                 barStyle={'light-content'}
                 backgroundColor={Colorpath.Pagebg}
             />
-            {conn === false ? <SafeAreaView style={stylesd.container}>
+            {conn === false ? <SafeAreaView edges={safeAreaEdges} style={stylesd.container}>
                 <View style={stylesd.centerContainer}>
                     <View style={{ height: normalize(100), width: normalize(120), borderRadius: normalize(20), bottom: normalize(50), justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { height: 3, width: 0 }, elevation: 10, backgroundColor: "#FFFFFF" }}>
                         <Image source={Imagepath.NoWifi} style={{ height: normalize(40), width: normalize(40), resizeMode: "contain" }} />
@@ -890,7 +934,7 @@ const DashoardVault = (props) => {
                     <Text style={stylesd.internetText}>{"No Internet Connection"}</Text>
                     <Text style={{ fontFamily: Fonts.InterRegular, fontSize: 16, color: "#000000" }}>{"Please check your internet connection \n                    and try again"}</Text>
                 </View>
-            </SafeAreaView> : <SafeAreaView style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
+            </SafeAreaView> : <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: Colorpath.Pagebg }}>
                 <Modal
                     visible={Boolean(statepick)}
                     animationType="slide"
@@ -927,7 +971,7 @@ const DashoardVault = (props) => {
                                 )}
                             </View>
                         )}
-                        <Loader visible={!isCreditVaultDataReady || loadingCreditwise || (isNonUsaUser && loadingStatewise)} />
+                        <Loader visible={!isCreditVaultDataReady || (creditwise == null && loadingCreditwise) || (isNonUsaUser && loadingStatewise && !hasNonUsaCertificates)} />
                         {isCreditVaultDataReady && (shouldShowAddLicenseCard ? (
                             <View style={stylesd.nonUsaContainer}>
                                 <View style={stylesd.nonUsaCard}>
@@ -981,12 +1025,15 @@ const DashoardVault = (props) => {
                                 <View style={{ marginTop: normalize(10) }}>
                                     <View style={{
                                         flexDirection: "row",
-                                        justifyContent: "space-between", // Changed from space-evenly to space-between
+                                        justifyContent: "space-between",
                                         width: normalize(300),
-                                        height: normalize(48),
-                                        backgroundColor: "#FFFFFF",
-                                        borderRadius: normalize(5),
-                                        paddingHorizontal: normalize(2), // Added padding to prevent overflow
+                                        height: normalize(42),
+                                        backgroundColor: "#F1F5F9",
+                                        borderRadius: normalize(8),
+                                        borderWidth: 1,
+                                        borderColor: "#E2E8F0",
+                                        paddingHorizontal: normalize(2),
+                                        alignItems: "center",
                                         alignSelf: 'center',
                                     }}>
                                         <TouchableOpacity
@@ -995,22 +1042,23 @@ const DashoardVault = (props) => {
                                                     justifyContent: "center",
                                                     alignItems: "center",
                                                     flex: 1,
-                                                    height: normalize(41),
-                                                    borderRadius: normalize(5),
-                                                    marginTop: normalize(3),
+                                                    height: normalize(34),
+                                                    borderRadius: normalize(6),
                                                     marginHorizontal: normalize(2),
                                                 },
-                                                valuttext && {
+                                                valuttext ? {
                                                     backgroundColor: "#DCE4FF"
+                                                } : {
+                                                    backgroundColor: "transparent"
                                                 }
                                             ]}
                                             onPress={() => { setValuttext(true); }}
                                         >
                                             <Text style={{
                                                 fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: valuttext ? Colorpath.ButtonColr : "#000000",
-                                                fontWeight: "500"
+                                                fontSize: normalize(12.5),
+                                                color: valuttext ? Colorpath.ButtonColr : "#475569",
+                                                fontWeight: "600"
                                             }}>
                                                 State License{
                                                     selectCountrytopic && selectCountrytopic.length > 0 ? ` (${selectCountrytopic.length})` :
@@ -1026,22 +1074,23 @@ const DashoardVault = (props) => {
                                                     justifyContent: "center",
                                                     alignItems: "center",
                                                     flex: 1,
-                                                    height: normalize(41),
-                                                    borderRadius: normalize(5),
-                                                    marginTop: normalize(3),
-                                                    marginHorizontal: normalize(-1),
+                                                    height: normalize(34),
+                                                    borderRadius: normalize(6),
+                                                    marginHorizontal: normalize(2),
                                                 },
-                                                !valuttext && {
+                                                !valuttext ? {
                                                     backgroundColor: "#DCE4FF"
+                                                } : {
+                                                    backgroundColor: "transparent"
                                                 }
                                             ]}
                                             onPress={() => { setValuttext(false) }}
                                         >
                                             <Text style={{
                                                 fontFamily: Fonts.InterSemiBold,
-                                                fontSize: 16,
-                                                color: !valuttext ? Colorpath.ButtonColr : "#000000",
-                                                fontWeight: "500"
+                                                fontSize: normalize(12.5),
+                                                color: !valuttext ? Colorpath.ButtonColr : "#475569",
+                                                fontWeight: "600"
                                             }}>
                                                 Board Certifications{DashboardReducer?.dashboardResponse?.data?.boards ? `(${Object.keys(DashboardReducer?.dashboardResponse?.data?.boards || {}).length})` :
                                                     AuthReducer?.staticdataResponse?.board && AuthReducer.staticdataResponse.board.length > 0
@@ -1271,27 +1320,27 @@ const stylesd = StyleSheet.create({
     },
     nonUsaBannerText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 18,
+        fontSize: normalize(15),
         color: '#1E60F2',
         fontWeight: '600',
     },
     nonUsaBody: {
         paddingHorizontal: normalize(20),
-        paddingVertical: normalize(24),
+        paddingVertical: normalize(20),
         alignItems: 'center',
     },
     nonUsaDescription: {
         fontFamily: Fonts.InterRegular,
-        fontSize: 14,
+        fontSize: normalize(12.5),
         color: '#4A5568',
         textAlign: 'center',
         lineHeight: 20,
-        marginBottom: normalize(24),
+        marginBottom: normalize(20),
     },
     nonUsaButton: {
         backgroundColor: '#1E60F2',
-        paddingVertical: normalize(12),
-        paddingHorizontal: normalize(24),
+        paddingVertical: normalize(10),
+        paddingHorizontal: normalize(20),
         borderRadius: normalize(6),
         alignItems: 'center',
         justifyContent: 'center',
@@ -1299,7 +1348,7 @@ const stylesd = StyleSheet.create({
     },
     nonUsaButtonText: {
         fontFamily: Fonts.InterSemiBold,
-        fontSize: 15,
+        fontSize: normalize(13),
         color: '#FFFFFF',
         fontWeight: '600',
     },

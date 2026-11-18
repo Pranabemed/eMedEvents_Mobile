@@ -127,14 +127,16 @@ const onPress = async () => {
                 <TouchableOpacity onPress={() => {
                     goToDashboard();
                 }} style={styles.closeIcon}>
-                    <CloseIcon name="close" size={24} color={Colorpath.white} />
+                    <CloseIcon name="close" size={20} color={Colorpath.white} />
                 </TouchableOpacity>
 
-                <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                <View style={{ marginTop: normalize(20) }}>
+                <View style={styles.iconBadge}>
+                    <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
+                </View>
+                <View style={{ marginBottom: normalize(16) }}>
                     <Text style={styles.content}>{content}</Text>
                 </View>
-                <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%" }}>
                     {/* Single Button */}
                     <TouchableOpacity
                         onPress={() => {
@@ -143,68 +145,62 @@ const onPress = async () => {
                         }}
                         style={styles.singlebutton}
                     >
-                        <Text style={{
-                            fontFamily: Fonts.InterMedium,
-                            fontSize: 16,
-                            color: Colorpath.white,
-                            alignSelf: "center"
-                        }}>
+                        <Text style={styles.singlebuttonText}>
                             {"Start Course Now"}
                         </Text>
                     </TouchableOpacity>
-                    <View style={dataPayemnt?.invoice ? [styles.buttonContainer, { marginTop: normalize(7) }] : [styles.buttonContainerg, { marginTop: normalize(7) }]}>
+                    <View style={dataPayemnt?.invoice ? [styles.buttonContainer, { marginTop: normalize(8) }] : [styles.buttonContainerg, { marginTop: normalize(8) }]}>
                         <TouchableOpacity
                             onPress={() => {
                                 goToDashboard();
                             }}
-                            style={dataPayemnt?.invoice ? styles.button : styles.singlebutton}
+                            style={dataPayemnt?.invoice ? styles.buttonOutline : styles.singlebuttonSecondary}
                         >
-                            <Text style={dataPayemnt?.invoice ? styles.buttonText : {
-                                fontFamily: Fonts.InterMedium,
-                                fontSize: 16,
-                                color: Colorpath.white,
-                                alignSelf: "center"
-                            }}>{"Start Course Later"}</Text>
+                            <Text style={dataPayemnt?.invoice ? styles.buttonOutlineText : styles.singlebuttonSecondaryText}>{"Start Course Later"}</Text>
                         </TouchableOpacity>
                         {dataPayemnt?.invoice && <TouchableOpacity
                             onPress={() => {
                                 setPaymentcardfree(false);
                                 onPress();
                             }}
-                            style={[styles.button, { marginLeft: normalize(20) }]}
+                            style={[styles.buttonTicket, { marginLeft: normalize(12) }]}
                         >
-                            <Text style={styles.buttonText}>{"Print Ticket"}</Text>
+                            <Text style={styles.buttonTicketText}>{"Print Ticket"}</Text>
                         </TouchableOpacity>}
                     </View>
                 </View>
 
             </View>) : typeof dataPayemnt == "object" ? (<View style={styles.container}>
-                <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                <View style={{ marginTop: normalize(20) }}>
+                <View style={styles.iconBadge}>
+                    <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
+                </View>
+                <View style={{ marginBottom: normalize(16) }}>
                     <Text style={styles.content}>{content}</Text>
                 </View>
-                <View style={[styles.buttonContainer, { marginTop: normalize(7) }]}>
+                <View style={[styles.buttonContainer, { marginTop: normalize(8) }]}>
                     <TouchableOpacity
                         onPress={() => {
                             goToDashboard();
                         }}
-                        style={styles.button}
+                        style={dataPayemnt?.invoice ? styles.buttonHalf : styles.doneButton}
                     >
-                        <Text style={styles.buttonText}>{"Go to Dashboard"}</Text>
+                        <Text style={styles.doneButtonText}>{"Go to Dashboard"}</Text>
                     </TouchableOpacity>
                     {dataPayemnt?.invoice && <TouchableOpacity
                         onPress={() => {
                             setPaymentcardfree(false);
                             onPress();
                         }}
-                        style={[styles.button, { marginLeft: normalize(20) }]}
+                        style={[styles.buttonTicket, { marginLeft: normalize(12) }]}
                     >
-                        <Text style={styles.buttonText}>{"Print Ticket"}</Text>
+                        <Text style={styles.buttonTicketText}>{"Print Ticket"}</Text>
                     </TouchableOpacity>}
                 </View>
             </View>) : (<View style={styles.container}>
-                <VerifiedCheck name="checkcircleo" size={75} color={"#009E38"} />
-                <View style={{ marginTop: normalize(20) }}>
+                <View style={styles.iconBadge}>
+                    <VerifiedCheck name="checkcircle" size={normalize(38)} color="#10B981" />
+                </View>
+                <View style={{ marginBottom: normalize(16) }}>
                     <Text style={styles.content}>{content}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
@@ -212,8 +208,8 @@ const onPress = async () => {
                     if (gocertificate) {
                         setGocertificate(!gocertificate);
                     }
-                }} style={styles.button}>
-                    <Text style={styles.buttonText}>{"Done"}</Text>
+                }} style={styles.doneButton}>
+                    <Text style={styles.doneButtonText}>{"Done"}</Text>
                 </TouchableOpacity>
             </View>)}
 
@@ -233,51 +229,169 @@ const styles = StyleSheet.create({
         margin: 0,
     },
     container: {
-        width: normalize(300),
+        width: normalize(310),
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(10),
-        padding: normalize(30),
+        borderRadius: normalize(16),
+        paddingVertical: normalize(24),
+        paddingHorizontal: normalize(20),
         alignItems: 'center',
         justifyContent: 'center',
         alignSelf: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 6,
     },
     closeIcon: {
         position: 'absolute',
         top: normalize(10),
         right: normalize(10),
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        height: normalize(25),
-        width: normalize(25),
-        borderRadius: normalize(25),
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        height: normalize(26),
+        width: normalize(26),
+        borderRadius: normalize(13),
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        zIndex: 10,
+    },
+    iconBadge: {
+        width: normalize(64),
+        height: normalize(64),
+        borderRadius: normalize(32),
+        backgroundColor: "#ECFDF5",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: normalize(14),
     },
     content: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 20,
-        color: Colorpath.black,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(14.5),
+        color: "#1E293B",
         textAlign: 'center',
-        marginBottom: normalize(20),
+        lineHeight: normalize(21),
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: "space-evenly",
-        width: normalize(240),
-        paddingVertical: normalize(10),
-        marginTop: normalize(15),
-        gap: normalize(10)
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
     },
     buttonContainerg: {
         flexDirection: 'row',
         justifyContent: "center",
-        width: normalize(240),
-        paddingVertical: normalize(10),
-        marginTop: normalize(15),
-        gap: normalize(10)
+        alignItems: "center",
+        width: "100%",
     },
+    singlebutton: {
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        width: "100%",
+        justifyContent: 'center',
+        alignItems: "center",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    singlebuttonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: Colorpath.white,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    singlebuttonSecondary: {
+        backgroundColor: "#F1F5F9",
+        borderWidth: 1,
+        borderColor: "#CBD5E1",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        width: "100%",
+        justifyContent: 'center',
+        alignItems: "center",
+    },
+    singlebuttonSecondaryText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: "#334155",
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    buttonOutline: {
+        backgroundColor: "#F1F5F9",
+        borderWidth: 1,
+        borderColor: "#CBD5E1",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: "center",
+    },
+    buttonOutlineText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13),
+        color: "#334155",
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    buttonTicket: {
+        backgroundColor: "#EFF6FF",
+        borderWidth: 1,
+        borderColor: "#93C5FD",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: "center",
+    },
+    buttonTicketText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13),
+        color: Colorpath.ButtonColr || "#003B6D",
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    buttonHalf: {
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: "center",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    doneButton: {
+        backgroundColor: Colorpath.ButtonColr || "#003B6D",
+        borderRadius: normalize(10),
+        height: normalize(40),
+        minWidth: normalize(120),
+        paddingHorizontal: normalize(22),
+        justifyContent: 'center',
+        alignItems: "center",
+        shadowColor: Colorpath.ButtonColr || "#003B6D",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    doneButtonText: {
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
+        color: Colorpath.white,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    // Keep legacy styles for backward compatibility if referenced anywhere
     button: {
         backgroundColor: Colorpath.white,
-        borderRadius: normalize(5),
+        borderRadius: normalize(10),
         height: normalize(40),
         width: normalize(130),
         justifyContent: 'center',
@@ -285,17 +399,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#2C4DB9",
     },
-    singlebutton: {
-        backgroundColor: Colorpath.ButtonColr,
-        borderRadius: normalize(5),
-        height: normalize(40),
-        width: normalize(275),
-        justifyContent: 'center',
-        alignSelf: "center",
-    },
     buttonText: {
-        fontFamily: Fonts.InterMedium,
-        fontSize: 16,
+        fontFamily: Fonts.InterSemiBold,
+        fontSize: normalize(13.5),
         color: Colorpath.ButtonColr,
         textAlign: "center",
     },

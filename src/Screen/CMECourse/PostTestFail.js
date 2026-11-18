@@ -65,19 +65,17 @@ const PostTestFail = (props) => {
  */
 const PrePress = () => {
         takeCoursepost();
-        if (props.navigation.canGoBack()) {
-            props.navigation.goBack();
-        } else {
-            props.navigation.reset({
-                index: 0,
-                routes: [{ name: 'TabNav', params: { screen: 'Home' } }],
-            });
-        }
+    props.navigation.reset({ index: 0, routes: [{ name: 'TabNav' }] });
     };
     const [testData, setTestData] = useState([]);
     const isFocus = useIsFocused();
     const pendingResultRef = useRef(null);
+    const [resultLoad, setResultLoad] = useState(null);
+    const [loadError, setLoadError] = useState(false);
     useEffect(() => {
+        setResultLoad(null);
+        setTestData([]);
+        setLoadError(false);
         if (!isFocus || !props?.route?.params?.examID) return;
         let cancelled = false;
         pendingResultRef.current = { response: CMEReducer.evaulatecalculateResponse };
@@ -86,7 +84,12 @@ const PrePress = () => {
             .then(() => {
                 if (!cancelled) dispatch(evaulatecalculateRequest(obj));
             })
-            .catch((err) => { showErrorAlert("Please connect to internet", err); });
+            .catch((err) => {
+                if (!cancelled) {
+                    setLoadError(true);
+                    showErrorAlert("Please connect to internet", err);
+                }
+            });
         return () => {
             cancelled = true;
             pendingResultRef.current = null;
@@ -225,6 +228,7 @@ const takeCoursepost = () => {
         const pending = pendingResultRef.current;
         if (isFocus && pending && CMEReducer?.evaulatecalculateResponse !== pending.response) {
             pendingResultRef.current = null;
+            setResultLoad({ examId: props?.route?.params?.examID, next: CMEReducer.cmenextactionResponse });
             setTestData(CMEReducer?.evaulatecalculateResponse);
                 let obj = {
                     "ActivityId": CMEReducer?.evaulatecalculateResponse?.activityId,
@@ -382,12 +386,12 @@ const renderItem = ({ item, index }) => {
 
 
     useEffect(() => {
+        if (!isFocus) return;
                 /**
  * On back press utility.
  * @returns {boolean}
  */
 const onBackPress = () => {
-            takeCoursepost();
             PrePress();
             return true;
         };
@@ -398,17 +402,18 @@ const onBackPress = () => {
         );
 
         return () => backHandler.remove();
-    }, []);
+    }, [isFocus, statepush]);
 
-    const [showLoader, setShowLoader] = useState(true);
+    const showLoader = !isFocus || !resultLoad || resultLoad.examId !== props?.route?.params?.examID ||
+        resultLoad.next === CMEReducer.cmenextactionResponse;
     useEffect(() => {
-        // Simulate 2-second loading time
-        const timeout = setTimeout(() => {
-            setShowLoader(false);
-        }, 4000);
-
-        return () => clearTimeout(timeout);
-    }, []);
+        if (isFocus && ['CME/evaulatecalculateRequest', 'CME/cmenextactionRequest'].includes(CMEReducer.status)) {
+            setLoadError(false);
+        }
+        if (isFocus && ['CME/evaulatecalculateFailure', 'CME/cmenextactionFailure'].includes(CMEReducer.status)) {
+            setLoadError(true);
+        }
+    }, [isFocus, CMEReducer.status]);
     const failQuestion = useMemo(() => {
         const questionGroups = testData?.questionsReviews;
 
@@ -434,19 +439,19 @@ const onBackPress = () => {
                 {Platform.OS === 'ios' ? (
                     <PageHeader
                         nol={"yes"}
-                        title={CMEReducer?.cmenextactionResponse?.conferenceName ? CMEReducer?.cmenextactionResponse?.conferenceName : CMEReducer?.cmenextactionResponse?.conferenceName}
+                        title={showLoader ? "Loading results..." : CMEReducer?.cmenextactionResponse?.conferenceName}
                         onBackPress={PrePress}
                     />
                 ) : (
                     <View>
                         <PageHeader
                             nol={"yes"}
-                            title={CMEReducer?.cmenextactionResponse?.conferenceName ? CMEReducer?.cmenextactionResponse?.conferenceName : CMEReducer?.cmenextactionResponse?.conferenceName}
+                            title={showLoader ? "Loading results..." : CMEReducer?.cmenextactionResponse?.conferenceName}
                             onBackPress={PrePress}
                         />
                     </View>
                 )}
-                {conn == false ? <IntOff/> :<ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
+                {conn == false ? <IntOff/> : loadError ? <Text style={{ padding: 20, textAlign: 'center' }}>Unable to load results. Please return to the dashboard and try again.</Text> : showLoader ? <ActivityIndicator style={{ flex: 1 }} size="large" color={Colorpath.ButtonColr} /> : <ScrollView contentContainerStyle={{ paddingBottom: normalize(70) }}>
                     <View>
                         <View style={styles.container}>
                             <ImageBackground source={Imagepath.BannerBig} style={styles.imageBackground}>

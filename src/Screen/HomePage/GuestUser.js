@@ -386,7 +386,7 @@ const fetchGuestUsaStates = async () => {
       .catch(err => {
         guestHomeRequestInFlightRef.current = false;
         setIsGuestHomeLoading(false);
-        showErrorAlert('Please connect to internet', err);
+        console.log('Guest home list request failed', err);
       });
   }, [canUseGuestNetworkFlow, dispatch, isFocused]);
   useEffect(() => {
