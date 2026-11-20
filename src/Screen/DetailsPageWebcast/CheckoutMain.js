@@ -1,3 +1,4 @@
+import {checkoutLabel} from './checkoutLabel';
 /**
  * Checkout main screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CheckoutMain, formatNumberWithCommas, handleToggleExpand, handleSoftDelete, parseDate, formatPrice.
  */
@@ -10,6 +11,7 @@ import Fonts from '../../Themes/Fonts';
 import Imagepath from '../../Themes/Imagepath';
 import TickMark from 'react-native-vector-icons/Ionicons';
 import CheckoutInputbox from './CheckoutInputbox';
+import {getCheckoutQuantity} from '../../Utils/Helpers/ConferenceTicketSelection';
 import Buttons from '../../Components/Button';
 import CheckoutModalone from './CheckoutModalone';
 import ArrowIcon from 'react-native-vector-icons/MaterialIcons';
@@ -104,28 +106,13 @@ const CheckoutMain = ({
     checkoutTotalAmount,
     setActiveIndexct, pratice, cityPicker, city_id, state_id, country_id, countrypicker, speciality_id, selectedSpecialities, removeSpeciality, setSelectedSpecialities, handleSpecialitySelect, formData, setFormData, activeIndex, setActiveIndex, setSearchState, searchState, searchStateName, slist, setSpeciality, setSpeciality_id, statepicker, cartPayment, proceedPayment, fullAccess, spanroute, ticketSave, firstname, setFirstname, lastname, setLastname, emailad, setEmailad, professionad, setProfessionad, setstatepicker, allProfession, specaillized, speciality, npino, setNpino, address, setAddress, setCountrypicker, countryReq, country, PraticingState, setPratice, state, setCityPicker, cityReq, city, zipcode, setZipcode, cellno, setCellno }) => {
     console.log(spanroute, statepicker, ticketSave, "spanroute=========", country_id, fullAccess, spanroute?.checkoutSpan?.cmeCreditsData);
-    const getInitialTotalCount = () => {
-        let totalQuantity = 0;
-        if (spanroute?.inPersonTicket?.tickets) {
-            totalQuantity += spanroute.inPersonTicket.tickets.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
-        }
-        if (spanroute?.finalTicket?.tickets) {
-            totalQuantity += spanroute.finalTicket.tickets.reduce((total, ticket) => total + ticket.quantity, 0);
-        }
-        if (spanroute?.cartData?.total_qty) {
-            totalQuantity = spanroute?.cartData?.total_qty;
-        } else if (Array.isArray(spanroute?.cartData?.tickets)) {
-            totalQuantity = spanroute?.cartData?.tickets?.length;
-        }
-        return totalQuantity;
-    };
-    const [totalcount, setTotalcount] = useState(getInitialTotalCount);
+    const [totalcount, setTotalcount] = useState(() => getCheckoutQuantity(spanroute));
     const [checked, setChecked] = useState(false);
     const [formDate, setFormDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const allPickersAreFalse = !licstatepratice && !statepicker && !countrypicker && !pratice && !cityPicker && !countrypickerprof;
     const [isExpanded, setIsExpanded] = useState(false); // State to control the collapse/expand
-    const [displayedTickets, setDisplayedTickets] = useState(spanroute?.inPersonTicket?.tickets || []); // Track tickets to display
+    const [displayedTickets, setDisplayedTickets] = useState(ticketSave?.tickets || spanroute?.inPersonTicket?.tickets || spanroute?.finalTicket?.tickets || []); // Track tickets to display
         /**
  * Formats number with commas.
  * @param {*} value - Input value.
@@ -138,13 +125,21 @@ const formatNumberWithCommas = (value) => {
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         return parts.join('.');
     };
+
+    const getCleanTicketLabel = (ticket) => {
+        const cleanDesc = checkoutLabel(ticket?.description);
+        if (cleanDesc) return cleanDesc;
+        const cleanName = checkoutLabel(ticket?.ticket_name || ticket?.name || ticket?.ticketName);
+        if (cleanName) return cleanName;
+        return '';
+    };
      console.log(ticketSave, "spanroute22222=========")
     const feeAwareBaseAmount = Number(
         checkoutBaseAmount != null
             ? checkoutBaseAmount
             : (savefull?.discount_value && savefull?.total_value != null
                 ? savefull?.total_value
-                : ticketSave?.tickets?.[0]?.itemamt || 0)
+                : (ticketSave?.tickets || []).reduce((sum, ticket) => sum + (Number(String(ticket?.itemamt ?? ticket?.gross_value ?? 0).replace(/,/g, '')) || 0), 0))
     );
     const feeAwareProcessingAmount = Number(checkoutProcessingFeeAmount || 0);
     const feeAwareTotalAmount = Number(
@@ -214,27 +209,11 @@ const handleSoftDelete = (index) => {
         ]);
     };
     useEffect(() => {
-        let totalQuantity = 0;
-        if (spanroute?.inPersonTicket?.tickets) {
-            totalQuantity += spanroute.inPersonTicket.tickets.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
-        }
-
-        if (spanroute?.finalTicket?.tickets) {
-            totalQuantity += spanroute.finalTicket.tickets.reduce((total, ticket) => total + ticket.quantity, 0);
-        }
-        if (spanroute?.cartData?.total_qty) {
-            totalQuantity = spanroute?.cartData?.total_qty;
-        } else if (Array.isArray(spanroute?.cartData?.tickets)) {
-            totalQuantity = spanroute?.cartData?.tickets?.length;
-        }
-        console.log("Total Quantity: main", totalQuantity);
-        setTotalcount(totalQuantity); // Update state with totalQuantity
+        setTotalcount(getCheckoutQuantity(spanroute));
     }, [spanroute]);
     useEffect(() => {
-        if (spanroute?.inPersonTicket?.tickets) {
-            setDisplayedTickets(spanroute.inPersonTicket.tickets);
-        }
-    }, [spanroute?.inPersonTicket?.tickets]);
+        setDisplayedTickets(ticketSave?.tickets || spanroute?.inPersonTicket?.tickets || spanroute?.finalTicket?.tickets || []);
+    }, [ticketSave?.tickets, spanroute?.inPersonTicket?.tickets, spanroute?.finalTicket?.tickets]);
     useEffect(() => {
                 /**
  * Parses date.
@@ -374,7 +353,7 @@ function formatPrice(price) {
                             color: '#0F172A',
                             textTransform: "capitalize"
                         }}>
-                        {spanroute?.checkoutSpan?.title || spanroute?.inpersonSpanrole?.title}
+                        {checkoutLabel(spanroute?.checkoutSpan?.title || spanroute?.inpersonSpanrole?.title)}
                     </Text>
                 </View>
 
@@ -387,7 +366,7 @@ function formatPrice(price) {
                                 color: '#2563EB',
                                 textTransform: "capitalize"
                             }}>
-                            {`${spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName}`}
+                            {`${checkoutLabel(spanroute?.checkoutSpan?.organizerName || spanroute?.inpersonSpanrole?.organizerName)}`}
                         </Text>
                     </View>
                 ) : null}
@@ -398,7 +377,7 @@ function formatPrice(price) {
                             fontSize: 13,
                             color: '#475569',
                         }}>
-                        {conferenceDateLabel}
+                        {checkoutLabel(conferenceDateLabel)}
                     </Text>
                 </View> : null}
                 {spanroute?.inpersonSpanrole?.location ? <View style={{ paddingVertical: normalize(2) }}>
@@ -408,7 +387,7 @@ function formatPrice(price) {
                             fontSize: 13,
                             color: '#64748B',
                         }}>
-                        {`${spanroute?.inpersonSpanrole?.location}`}
+                        {`${checkoutLabel(spanroute?.inpersonSpanrole?.location)}`}
                     </Text>
                 </View> : null}
 
@@ -594,9 +573,7 @@ function formatPrice(price) {
                                         </Text>
                                     </View>
                                 ) : null}
-                                {(hasPriceContent && (spanroute?.checkoutSpan?.buttonType?.toLowerCase() === "register" &&
-                                    spanroute?.checkoutSpan?.registered_allow === 1 || spanroute?.inpersonSpanrole?.buttonType?.toLowerCase() === "register" &&
-                                    spanroute?.inpersonSpanrole?.registered_allow === 1)) ? (
+                                {(hasPriceContent) ? (
                                     <View style={{ paddingVertical: normalize(2) }}>
                                         <Text
                                             style={{
@@ -652,7 +629,7 @@ function formatPrice(price) {
                                         paddingRight: normalize(8),
                                     }}
                                 >
-                                    {`${displayedTickets[0]?.description}`}
+                                    {getCleanTicketLabel(displayedTickets[0])}
                                 </Text>
                                 <Text
                                     style={{
@@ -685,7 +662,7 @@ function formatPrice(price) {
                                         color: '#1E293B',
                                         paddingRight: normalize(8),
                                     }}>
-                                        {`${ticket?.description}`}
+                                        {getCleanTicketLabel(ticket)}
                                     </Text>
                                     <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: 14.5, color: "#0F172A" }}>
                                         {`$${formatNumberWithCommas(formatPrice(ticket?.itemamt))}`}
@@ -999,7 +976,7 @@ function formatPrice(price) {
                     }}>
                         {"Order Summary"}
                     </Text>
-                    <View style={{
+                    {(ticketSave?.tickets || []).map((ticket, index) => <View key={ticket.payment_ticket_id ?? `${ticket.ticket_id ?? ticket.id}-${index}`} style={{
                         flexDirection: "row",
                         justifyContent: "space-between",
                         alignItems: "center",
@@ -1011,16 +988,16 @@ function formatPrice(price) {
                             fontSize: 14,
                             color: "#475569",
                         }}>
-                            {ticketSave?.tickets?.[0]?.ticket_name}
+                            {getCleanTicketLabel(ticket)}
                         </Text>
                         <Text style={{
                             fontFamily: Fonts.InterSemiBold,
                             fontSize: 14,
                             color: "#0F172A",
                         }}>
-                            {savefull?.discount_value ? `US$${savefull?.gross_value}` : `US$${ticketSave?.tickets?.[0]?.itemamt}`}
+                            {`US$${formatNumberWithCommas(formatPrice(ticket.itemamt ?? ticket.gross_value ?? 0))}`}
                         </Text>
-                    </View>
+                    </View>)}
                     {savefull?.discount_value ? (
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: '100%', paddingVertical: normalize(4) }}>
                             <Text style={{ fontFamily: Fonts.InterMedium, fontSize: 14, color: "#16A34A" }}>

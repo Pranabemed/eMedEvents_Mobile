@@ -421,7 +421,7 @@ const DashoardVault = (props) => {
     }, [DashboardReducer?.stateReportingResponse?.renewal_report]);
 
     useEffect(() => {
-        if (CreditVaultReducer.status === 'CreditVault/professionvaultSuccess') {
+        if (CreditVaultReducer.status === 'CreditVault/professionvaultSuccess' || CreditVaultReducer?.professionvaultResponse?.cme_data) {
             setAllProfessionData(CreditVaultReducer?.professionvaultResponse);
         }
     }, [CreditVaultReducer.status, CreditVaultReducer?.professionvaultResponse]);
@@ -719,14 +719,26 @@ const DashoardVault = (props) => {
 
     const allProfession = AuthReducer?.loginResponse?.user?.profession || storedAuthUser?.profession || AuthReducer?.againloginsiginResponse?.user?.profession || AuthReducer?.verifymobileResponse?.user?.profession || finalverifyvault?.profession || finalProfession?.profession;
     useEffect(() => {
-        if (certificatedata) {
+        const effectiveStateId = certificatedata?.state_id || creditwise?.state_id || stateid;
+        if (effectiveStateId && allProfession) {
             let obj = {
                 "profession": allProfession,
-                "stateId": certificatedata?.state_id
+                "stateId": effectiveStateId
             }
             dispatch(professionvaultRequest(obj))
         }
-    }, [certificatedata])
+    }, [certificatedata?.state_id, creditwise?.state_id, stateid, allProfession]);
+    useEffect(() => {
+        if (cmemodal) {
+            const effectiveStateId = certificatedata?.state_id || creditwise?.state_id || stateid;
+            if (effectiveStateId && allProfession && (!allProfessionData || !allProfessionData?.cme_data)) {
+                dispatch(professionvaultRequest({
+                    profession: allProfession,
+                    stateId: effectiveStateId
+                }));
+            }
+        }
+    }, [cmemodal, certificatedata?.state_id, creditwise?.state_id, stateid, allProfession, allProfessionData, dispatch]);
     useEffect(() => {
         if (stateid) {
             setRenewalCheck(null);

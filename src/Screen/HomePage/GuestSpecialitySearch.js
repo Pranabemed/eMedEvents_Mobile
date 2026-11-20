@@ -28,6 +28,8 @@ import MyStatusBar from '../../Utils/MyStatusBar';
 import normalize from '../../Utils/Helpers/Dimen';
 import connectionrequest from '../../Utils/Helpers/NetInfo';
 import showErrorAlert from '../../Utils/Helpers/Toast';
+import { getConferenceSlug } from '../../Utils/Helpers/ConferenceCheckoutApi';
+import { getBannerUrl } from './GuestUserModule/utils/guestUserContentParsers';
 import GlobalSearchAll from '../GlobalSupport/GlobalSearchAll';
 import VoiceSearchBar from '../GlobalSupport/Voice';
 
@@ -109,6 +111,14 @@ const GuestSpecialitySearch = props => {
   const dispatch = useDispatch();
   const BrowsReducer = useSelector(state => state.BrowsReducer);
   const WebcastReducer = useSelector(state => state.WebcastReducer);
+  const GuestReducer = useSelector(state => state.GuestReducer);
+  const topBanners = useMemo(() => {
+    const homeData =
+      GuestReducer?.HomelistResponse?.data && typeof GuestReducer?.HomelistResponse?.data === 'object'
+        ? GuestReducer?.HomelistResponse?.data
+        : GuestReducer?.HomelistResponse || {};
+    return homeData?.mobile_top_banners || homeData?.top_banners || homeData?.banners || [];
+  }, [GuestReducer?.HomelistResponse]);
   const taskData = useMemo(() => {
     const base = props?.route?.params?.taskData || {};
     return {
@@ -291,7 +301,7 @@ const GuestSpecialitySearch = props => {
   const handleUrl = data => {
     const detailUrl = data?.detailpage_url || data?.url || data?.emed_url || '';
     const result = detailUrl.split('/')?.pop();
-    if (!result) return;
+    if (!result && !data?.name && !data?.title) return;
 
     connectionrequest()
       .then(() => {
@@ -308,6 +318,59 @@ const GuestSpecialitySearch = props => {
       });
 
     setSearchText('');
+
+    const searchSlug = getConferenceSlug(detailUrl || result);
+    const searchName = String(data?.event_name || data?.name || data?.title || data?.course_title || '')
+      .toLowerCase()
+      .trim();
+
+    // Check if searched conference matches any GuestHeroSection top banner or is a CME web link
+    let matchedBannerUrl = null;
+    if (Array.isArray(topBanners) && topBanners.length > 0) {
+      for (const banner of topBanners) {
+        const bannerHref = String(banner?.html_content || '').match(/<a[^>]*href=['"]([^'"]+)['"]/i)?.[1];
+        const bannerUrl = getBannerUrl(bannerHref ? {url: bannerHref.replace(/&amp;/gi, '&')} : banner);
+        const bannerSlug = getConferenceSlug(bannerUrl);
+        const titleMatch = String(banner?.html_content || '').match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1]?.replace(/<[^>]*>/g, '').trim().toLowerCase();
+        const bannerTitle = String(titleMatch || banner?.title || banner?.course_title || banner?.name || banner?.banner_title || banner?.conference_title || '')
+          .toLowerCase()
+          .trim();
+
+        if (
+          (searchSlug && bannerSlug && searchSlug === bannerSlug) ||
+          (searchName && bannerTitle && (searchName === bannerTitle || searchName.includes(bannerTitle) || bannerTitle.includes(searchName)))
+        ) {
+          matchedBannerUrl = bannerUrl;
+          break;
+        }
+      }
+    }
+
+    const isWebConference = Boolean(
+      matchedBannerUrl ||
+      detailUrl.includes('/cme/') ||
+      detailUrl.includes('cme') ||
+      detailUrl.includes('medical-') ||
+      detailUrl.includes('hybrid') ||
+      detailUrl.includes('in-person') ||
+      detailUrl.includes('events') ||
+      detailUrl.includes('meeting') ||
+      (detailUrl && !detailUrl.includes('webcast'))
+    );
+
+    if (isWebConference) {
+      let targetUrl = matchedBannerUrl || detailUrl;
+      if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = `https://www.emedevents.com/${targetUrl.replace(/^\/+/, '')}`;
+      }
+      props.navigation.navigate('GuestUser', {
+        deepLinkUrl: targetUrl,
+        url: targetUrl,
+        title: data?.event_name || data?.name || data?.title || data?.course_title || '',
+      });
+      return;
+    }
+
     props.navigation.navigate('Statewebcast', {
       webCastURL: {
         webCastURL: result,

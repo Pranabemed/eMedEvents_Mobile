@@ -205,7 +205,7 @@ const Statevault = ({ modalshow,
             onSaved={onhandle}
             isVisibelCME={cmemodal}
             allProfession={allProfession}
-            certificatedata={certificatedata}
+            certificatedata={certificatedata || creditwise}
         />
     </>
     

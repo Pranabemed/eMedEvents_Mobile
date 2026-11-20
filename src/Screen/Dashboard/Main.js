@@ -228,6 +228,81 @@ const parseStoredJson = (value) => {
 };
 
 /**
+ * Checks whether user email is verified across available user sources.
+ * @param {*} user
+ * @param {*} verifyResponse
+ * @param {*} verifyData
+ * @returns {boolean}
+ */
+const checkUserEmailVerified = (user, verifyResponse = null, verifyData = null) => {
+  const primarySource = verifyResponse || {};
+  const secondarySource = user || {};
+  const tertiarySource = verifyData || {};
+
+  return [
+    primarySource?.is_verified,
+    primarySource?.email_verified,
+    primarySource?.user?.is_verified,
+    primarySource?.user?.email_verified,
+    secondarySource?.is_verified,
+    secondarySource?.email_verified,
+    secondarySource?.user?.is_verified,
+    secondarySource?.user?.email_verified,
+    tertiarySource?.is_verified,
+    tertiarySource?.email_verified,
+    tertiarySource?.user?.is_verified,
+    tertiarySource?.user?.email_verified,
+  ].some(val => String(val) === '1' || val === true || val === 1);
+};
+
+/**
+ * Checks whether user phone is verified across available user sources.
+ * @param {*} user
+ * @param {*} verifyResponse
+ * @param {*} verifyData
+ * @returns {boolean}
+ */
+const checkUserPhoneVerified = (user, verifyResponse = null, verifyData = null) => {
+  const primarySource = verifyResponse || {};
+  const secondarySource = user || {};
+  const tertiarySource = verifyData || {};
+
+  return [
+    primarySource?.phone_verified,
+    primarySource?.user?.phone_verified,
+    secondarySource?.phone_verified,
+    secondarySource?.user?.phone_verified,
+    tertiarySource?.phone_verified,
+    tertiarySource?.user?.phone_verified,
+  ].some(val => String(val) === '1' || val === true || val === 1);
+};
+
+/**
+ * Extracts phone value from user sources.
+ * @param {*} user
+ * @param {*} verifyResponse
+ * @param {*} verifyData
+ * @returns {string}
+ */
+const extractUserPhoneValue = (user, verifyResponse = null, verifyData = null) => {
+  const sources = [
+    verifyResponse?.user,
+    verifyResponse,
+    user?.user,
+    user,
+    verifyData?.user,
+    verifyData,
+  ];
+  for (const src of sources) {
+    const val = src?.phone || src?.mobile || src?.phone_number;
+    if (val && String(val).trim() !== '' && String(val).trim() !== 'null' && String(val).trim() !== 'undefined') {
+      return String(val).trim();
+    }
+  }
+  return '';
+};
+
+/**
  * Requires verification utility.
  * @param {*} user - Input value.
  * @param {boolean} isNonUsa - Input value.
@@ -253,7 +328,7 @@ const requiresVerification = (user, isNonUsa = false, verifyResponse = null, ver
     tertiarySource?.is_verified,
     tertiarySource?.email_verified,
     tertiarySource?.user?.is_verified,
-    tertiarySource?.user?.email_verified
+    tertiarySource?.user?.email_verified,
   ].some(val => String(val) === '1' || val === true || val === 1);
 
   const isPhoneVerified = [
@@ -262,7 +337,7 @@ const requiresVerification = (user, isNonUsa = false, verifyResponse = null, ver
     secondarySource?.phone_verified,
     secondarySource?.user?.phone_verified,
     tertiarySource?.phone_verified,
-    tertiarySource?.user?.phone_verified
+    tertiarySource?.user?.phone_verified,
   ].some(val => String(val) === '1' || val === true || val === 1);
 
   return isNonUsa ? !isEmailVerified : (!isEmailVerified || !isPhoneVerified);
@@ -1677,6 +1752,10 @@ const Main = (props) => {
           return;
         }
 
+        const isUsaLocation = (typeof isUsaCountryCode === 'function'
+          ? isUsaCountryCode(resolvedIpCountryCode)
+          : ['US', 'USA'].includes(String(resolvedIpCountryCode || '').trim().toUpperCase()));
+
         if (primePromptVisibleRef.current && !isAnyGuestFlow) {
           return;
         }
@@ -1695,7 +1774,6 @@ const Main = (props) => {
         const professionData = parseStoredJson(professionRaw);
         console.log(professionRaw, "professionRaw======456465456", professionData?.subscription_user);
         const user = verifyResponseData || verifyData || professionData || DashboardReducer?.mainprofileResponse || authProfessionInfo;
-        const isUsaLocation = resolvedIpCountryCode === 'US' || resolvedIpCountryCode === 'USA';
         const professionType = String(
           verifyData?.profession_type || professionData?.profession_type ||
           user?.profession_type ||
@@ -1740,13 +1818,19 @@ const Main = (props) => {
 
         const isEligibleGuestPhysician =
           allowedProfessions.includes(userProfession) ||
-          allProfTake ||
+          Boolean(typeof allProfTake !== 'undefined' && allProfTake) ||
           ['MD', 'DO', 'DPM'].includes(professionType) ||
           professionLabel.includes('PHYSICIAN - MD') ||
           professionLabel.includes('PHYSICIAN - DO') ||
           professionLabel.includes('PHYSICIAN - DPM');
 
-        const isEligibleCountry = isUsaLocation || hasUsaPrimeProfile(...subscriptionSources, user, professionData) || hasLicenseNumberAndState || hasAnyLicenseData || isAddressUsa;
+        const isEligibleCountry = isUsaLocation ||
+          (typeof hasUsaPrimeProfile === 'function' && Array.isArray(typeof subscriptionSources !== 'undefined' ? subscriptionSources : null)
+            ? hasUsaPrimeProfile(...subscriptionSources, user, professionData)
+            : false) ||
+          Boolean(typeof hasLicenseNumberAndState !== 'undefined' && hasLicenseNumberAndState) ||
+          Boolean(typeof hasAnyLicenseData !== 'undefined' && hasAnyLicenseData) ||
+          Boolean(typeof isAddressUsa !== 'undefined' && isAddressUsa);
         const isUsa =
           user?.usa_user === true ||
           user?.usa_user === 1 ||
@@ -1795,10 +1879,11 @@ const Main = (props) => {
           return;
         }
 
+        const isNonUsaGuest = !isUsaLocation && !isUsa;
         const accountAlreadyVerified = Boolean(
           (!isAnyGuestFlow || hasFreshVerifyResponse) &&
           user &&
-          !requiresVerification(user, !isUsaLocation && !isUsa, currentVerifyResponse, verifyData)
+          !requiresVerification(user, isNonUsaGuest, currentVerifyResponse, verifyData)
         );
         if (accountAlreadyVerified) {
           await Promise.all([
@@ -1817,7 +1902,7 @@ const Main = (props) => {
 
         const shouldRequireVerification = Boolean(
           user &&
-          requiresVerification(user, !isUsaLocation && !isUsa, currentVerifyResponse, verifyData)
+          requiresVerification(user, isNonUsaGuest, currentVerifyResponse, verifyData)
         );
 
         if (suppressGuestPromptsOnce && !isAnyGuestFlow) {
@@ -1831,7 +1916,6 @@ const Main = (props) => {
           return;
         }
 
-        const isNonUsaGuest = !isUsaLocation && !isUsa;
         const shouldCheckVerificationNow =
           !isVerificationPending &&
           !hasFreshVerifyResponse &&
@@ -2117,11 +2201,38 @@ const Main = (props) => {
   };
   const guestVerifyEmail =
     guestVerifyData?.email ||
+    guestVerifyData?.user?.email ||
     AuthReducer?.verifyResponse?.email ||
     AuthReducer?.verifyResponse?.user?.email ||
     finalverifyvaultmain?.email ||
     finalProfessionmain?.email ||
+    DashboardReducer?.mainprofileResponse?.email ||
+    DashboardReducer?.mainprofileResponse?.user?.email ||
     '';
+
+  const currentVerifyUserObj = guestVerifyData || finalverifyvaultmain || finalProfessionmain || AuthReducer?.verifyResponse || DashboardReducer?.mainprofileResponse;
+  const isCurrentEmailVerified = checkUserEmailVerified(currentVerifyUserObj, AuthReducer?.verifyResponse, guestVerifyData);
+  const isCurrentPhoneVerified = checkUserPhoneVerified(currentVerifyUserObj, AuthReducer?.verifyResponse, guestVerifyData);
+  const currentPhoneVal = extractUserPhoneValue(currentVerifyUserObj, AuthReducer?.verifyResponse, guestVerifyData);
+  const isResolvedUsaLocation = (typeof isUsaCountryCode === 'function'
+    ? isUsaCountryCode(resolvedIpCountryCode)
+    : ['US', 'USA'].includes(String(resolvedIpCountryCode || '').trim().toUpperCase())) ||
+    currentVerifyUserObj?.usa_user === true || currentVerifyUserObj?.usa_user === 1 || currentVerifyUserObj?.usa_user === '1' ||
+    hasLicenseNumberAndState || hasAnyLicenseData || isAddressUsa;
+
+  const guestVerifyMode = useMemo(() => {
+    if (!isCurrentEmailVerified) {
+      return 'verify_email';
+    }
+    if (isResolvedUsaLocation && !isCurrentPhoneVerified) {
+      if (!currentPhoneVal) {
+        return 'add_cell';
+      }
+      return 'verify_cell';
+    }
+    return 'verified';
+  }, [isCurrentEmailVerified, isResolvedUsaLocation, isCurrentPhoneVerified, currentPhoneVal]);
+
   /**
 * Proceed guest verification utility.
 *
@@ -2134,21 +2245,17 @@ const Main = (props) => {
       verifyPayload?.countryCode ||
       verifyPayload?.callingCode ||
       (verifyPayload?.usa_user ? '+1' : '');
-    const isEmailVerified = String(verifyPayload?.is_verified ?? verifyPayload?.email_verified ?? '0') === '1';
-    const isPhoneVerified = String(verifyPayload?.phone_verified ?? '0') === '1';
+    const isEmailVerified = checkUserEmailVerified(verifyPayload, AuthReducer?.verifyResponse, guestVerifyData);
+    const isPhoneVerified = checkUserPhoneVerified(verifyPayload, AuthReducer?.verifyResponse, guestVerifyData);
     const isNonUsaUser = !(
       String(resolvedIpCountryCode || '').trim().toUpperCase() === 'US' ||
       String(resolvedIpCountryCode || '').trim().toUpperCase() === 'USA' ||
       hasLicenseNumberAndState ||
       hasAnyLicenseData ||
       isAddressUsa ||
-      hasUsaPrimeProfile(DashboardReducer?.mainprofileResponse, verifyPayload, AuthReducer?.loginResponse?.user)
+      (typeof hasUsaPrimeProfile === 'function' ? hasUsaPrimeProfile(DashboardReducer?.mainprofileResponse, verifyPayload, AuthReducer?.loginResponse?.user) : false)
     );
-    const phoneValue =
-      verifyPayload?.phone ||
-      verifyPayload?.mobile ||
-      verifyPayload?.phone_number ||
-      verifyPayload?.user?.phone;
+    const phoneValue = extractUserPhoneValue(verifyPayload, AuthReducer?.verifyResponse, guestVerifyData);
 
     guestVerifyNavigationRef.current = true;
     setTimeout(() => {
@@ -2523,7 +2630,7 @@ const Main = (props) => {
           })()}
 
           <Modal
-            isVisible={!isAccreditationUser && guestVerifyModalVisible && !isDrawerVisible && !primeadd}
+            isVisible={!isAccreditationUser && guestVerifyModalVisible && !isDrawerVisible && !primeadd && guestVerifyMode !== 'verified'}
             onBackdropPress={() => { }}
             onBackButtonPress={() => { }}
             animationIn="slideInUp"
@@ -2589,21 +2696,29 @@ const Main = (props) => {
                   paddingHorizontal: normalize(4),
                 }}
               >
-                {"We've sent a verification email to your registered email address "}
-                {guestVerifyEmail ? (
-                  <Text
-                    style={{
-                      color: '#FF773D',
-                      fontFamily: Fonts.InterSemiBold,
-                      fontSize: normalize(13.5),
-                    }}
-                  >
-                    {guestVerifyEmail}
-                  </Text>
-                ) : null}
-                {
-                  '. Please verify your account to access all features of your eMedEvents account.'
-                }
+                {guestVerifyMode === 'add_cell' ? (
+                  'Please add your cell number to access all features of your eMedEvents account.'
+                ) : guestVerifyMode === 'verify_cell' ? (
+                  'Please verify your cell number to access all features of your eMedEvents account.'
+                ) : (
+                  <>
+                    {"We've sent a verification email to your registered email address "}
+                    {guestVerifyEmail ? (
+                      <Text
+                        style={{
+                          color: '#FF773D',
+                          fontFamily: Fonts.InterSemiBold,
+                          fontSize: normalize(13.5),
+                        }}
+                      >
+                        {guestVerifyEmail}
+                      </Text>
+                    ) : null}
+                    {
+                      '. Please verify your account to access all features of your eMedEvents account.'
+                    }
+                  </>
+                )}
               </Text>
               <TouchableOpacity
                 onPress={handleGuestVerifyAccount}
@@ -2625,7 +2740,13 @@ const Main = (props) => {
                     color: '#FFFFFF',
                   }}
                 >
-                  {guestVerifyLoading ? 'Please wait...' : 'Verify your account'}
+                  {guestVerifyLoading
+                    ? 'Please wait...'
+                    : guestVerifyMode === 'add_cell'
+                      ? 'Add cell number'
+                      : guestVerifyMode === 'verify_cell'
+                        ? 'Verify Cell Number'
+                        : 'Verify your account'}
                 </Text>
               </TouchableOpacity>
             </View>

@@ -21,3 +21,21 @@ test.each([
   await act(async () => {tree = create(<CheckoutMain spanroute={route} errors={{}} WebcastReducer={{}} formData={[]} customFields={[]} selectedSpecialities={[]} />);});
   expect(tree.root.findByType('CheckoutInputbox').props.isGuestCheckout).toBe(expected);
 });
+
+test.each([false, true])('shows both ticket amounts and their combined subtotal (in-person route: %s)', async inPerson => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  const ticketSave = {discounts: true, tickets: [
+    {ticket_id: 'one', ticket_name: '<b>Physician</b>', quantity: '1', itemamt: '380.00'},
+    {ticket_id: 'two', ticket_name: 'Nurse / PA', quantity: '1', itemamt: '50.00'},
+  ]};
+  const route = inPerson ? {inPersonTicket: ticketSave, inpersonSpanrole: {title: "Conference"}} : {finalTicket: ticketSave};
+  await act(async () => {tree = create(<CheckoutMain spanroute={route} ticketSave={ticketSave} errors={{}} WebcastReducer={{}} formData={[]} customFields={[]} selectedSpecialities={[]} />);});
+  const text = tree.root.findAllByType(require('react-native').Text).map(node => node.props.children);
+  expect(text).toContain('US$430');
+  if (!inPerson) {
+    expect(text).toContain('Physician');
+    expect(text).toContain('Nurse / PA');
+    expect(text).toContain('US$380');
+    expect(text).toContain('US$50');
+  }
+});

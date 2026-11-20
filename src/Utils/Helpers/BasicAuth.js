@@ -11,18 +11,27 @@ import getUserAgentJSON from './UserAgent';
  * Basic auth promise value.
  * @returns {*}
  */
-let basicAuthPromise = null;
+const basicAuthPromises = new Map();
 
-export async function fetchAndStoreBasicAuthToken() {
-  if (basicAuthPromise) {
-    return basicAuthPromise;
-  }
+// Only bootstrap credentials from known API hosts, never from arbitrary page URLs.
+const getAuthBase = requestUrl => {
+  const origin = String(requestUrl || '').match(/^https:\/\/[^/]+/i)?.[0];
+  return ['https://v2api.emedevents.com', 'https://newdev.emedevents.com'].includes(origin)
+    ? origin : constants.BASE_URL;
+};
+const getAuthKey = base => base === constants.BASE_URL
+  ? constants.BASIC_AUTH_TOKEN : `${constants.BASIC_AUTH_TOKEN}:${base}`;
 
-  basicAuthPromise = (async () => {
+export async function fetchAndStoreBasicAuthToken(requestUrl) {
+  const base = getAuthBase(requestUrl);
+  const storageKey = getAuthKey(base);
+  if (basicAuthPromises.has(base)) return basicAuthPromises.get(base);
+
+  const basicAuthPromise = (async () => {
     try {
       const userAgentHeader = getUserAgentJSON();
       const response = await axios.post(
-        `${constants.BASE_URL}/AccessControl/fetchABAtok`,
+        `${base}/AccessControl/fetchABAtok`,
         null,
         {
           headers: {
@@ -38,28 +47,29 @@ export async function fetchAndStoreBasicAuthToken() {
       const basicAuthToken = rawToken ? `Basic ${rawToken}` : '';
 
       if (basicAuthToken) {
-        await AsyncStorage.setItem(constants.BASIC_AUTH_TOKEN, basicAuthToken);
+        await AsyncStorage.setItem(storageKey, basicAuthToken);
       } else {
-        await AsyncStorage.removeItem(constants.BASIC_AUTH_TOKEN);
+        await AsyncStorage.removeItem(storageKey);
       }
 
       return basicAuthToken;
     } catch (error) {
-      await AsyncStorage.removeItem(constants.BASIC_AUTH_TOKEN);
+      await AsyncStorage.removeItem(storageKey);
       throw error;
     } finally {
-      basicAuthPromise = null;
+      basicAuthPromises.delete(base);
     }
   })();
 
+  basicAuthPromises.set(base, basicAuthPromise);
   return basicAuthPromise;
 }
 
-export async function getBasicAuthorizationHeader() {
-  const storedToken = await AsyncStorage.getItem(constants.BASIC_AUTH_TOKEN);
+export async function getBasicAuthorizationHeader(requestUrl) {
+  const storedToken = await AsyncStorage.getItem(getAuthKey(getAuthBase(requestUrl)));
   if (storedToken) {
     return storedToken;
   }
 
-  return fetchAndStoreBasicAuthToken();
+  return fetchAndStoreBasicAuthToken(requestUrl);
 }

@@ -137,7 +137,12 @@ const shouldBypassDashboardCache = (payload) =>
  * @param {string} url - Relative endpoint path.
  * @returns {string} Absolute API URL.
  */
-const buildApiUrl = (url = '') => `${constants.BASE_URL}/${String(url).replace(/^\/+/, '')}`;
+const buildApiUrl = (url = '') => {
+  if (/^https?:\/\//i.test(String(url || ''))) {
+    return url;
+  }
+  return `${constants.BASE_URL}/${String(url).replace(/^\/+/, '')}`;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-expiry detection — STRICT
@@ -256,7 +261,7 @@ async function retryWithFreshBasicAuth(originalConfig) {
 
   let basicAuthToken = '';
   try {
-    basicAuthToken = await fetchAndStoreBasicAuthToken();
+    basicAuthToken = await fetchAndStoreBasicAuthToken(originalConfig.url);
   } catch (error) {
     console.warn('[BasicAuth] Refresh failed before retry:', error?.message || error);
   }
@@ -306,7 +311,7 @@ axiosInstance.interceptors.request.use(
       delete config.headers.skipBasicAuth;
 
       if (!skipBasicAuth) {
-        const basicAuthToken = await getBasicAuthorizationHeader();
+        const basicAuthToken = await getBasicAuthorizationHeader(config.url);
         if (basicAuthToken) {
           config.headers['Authorization'] = basicAuthToken;
         }
@@ -460,7 +465,7 @@ axiosInstance.interceptors.response.use(
  */
 export async function getApi(url, header = {}) {
   const userAgentHeader = getUserAgentJSON();
-  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader(url);
   const reqHeaders = {
     Accept: header.Accept,
     'Content-type': header.contenttype,
@@ -491,7 +496,7 @@ export async function getApi(url, header = {}) {
  */
 export async function getApiWithParam(url, param, header = {}) {
   const userAgentHeader = getUserAgentJSON();
-  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader(url);
   const reqHeaders = {
     Accept: header.Accept,
     'Content-type': header.contenttype,
@@ -544,7 +549,7 @@ export async function postApi(url, payload, header = {}) {
   }
 
   const userAgentHeader = getUserAgentJSON();
-  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader(url);
   const reqHeaders = {
     Accept: header.Accept,
     'Content-Type': header.contenttype,
@@ -598,7 +603,7 @@ export async function postApi(url, payload, header = {}) {
 export async function deleteApi(url, payload, header = {}) {
   const cleanUrl = buildApiUrl(url).trim();
   const userAgentHeader = getUserAgentJSON();
-  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader();
+  const basicAuthToken = header.skipBasicAuth ? '' : await getBasicAuthorizationHeader(url);
   const reqHeaders = {
     Accept: header.Accept,
     'Content-Type': header.contenttype,

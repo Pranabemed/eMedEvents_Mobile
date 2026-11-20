@@ -133,7 +133,8 @@ const getBannerUrl = item => {
   if (rawUrl) {
     const url = String(rawUrl).trim();
     if (!url) return '';
-    return url.startsWith('/') ? `https://www.emedevents.com${url}` : url;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `https://www.emedevents.com/${url.replace(/^\/+/, '')}`;
   }
 
   const html = String(item?.html_content || '');
@@ -142,7 +143,8 @@ const getBannerUrl = item => {
 
   const href = hrefMatch[1].trim();
   if (!href) return '';
-  return href.startsWith('/') ? `https://www.emedevents.com${href}` : href;
+  if (/^https?:\/\//i.test(href)) return href;
+  return `https://www.emedevents.com/${href.replace(/^\/+/, '')}`;
 };
 
 /**

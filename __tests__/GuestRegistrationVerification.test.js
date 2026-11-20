@@ -80,3 +80,61 @@ test.each(['US', 'IN'])('%s guest verification overrides Prime and waits for fre
   expect(context.openGuestVerificationAlert).toHaveBeenCalledWith(guestUser, true);
   expect(context.requestGuestVerificationCheck).toHaveBeenCalledTimes(1);
 });
+
+test('Non-USA user once email is verified completes verification and does not show alert', async () => {
+  await AsyncStorage.multiSet([
+    ['GUEST_REGISTRATION_FLOW', '{}'],
+    ['IS_GUEST_CONVERTED_USER', 'true'],
+    [constants.VERIFYSTATEDATA, JSON.stringify(guestUser)],
+  ]);
+  const verifiedEmailUser = {...guestUser, is_verified: 1, phone_verified: 0, phone: ''};
+  const context = {
+    ...keys, AsyncStorage, constants, isAccreditationUser: false, verificationEffectActive: true,
+    AuthReducer: {status: 'Auth/verifySuccess', verifyResponse: {user: verifiedEmailUser}},
+    DashboardReducer: {}, authProfessionInfo: {}, dashboardProfessionInfo: {}, dashboardProfessionType: '',
+    allProfTake: true, resolvedIpCountryCode: 'IN', primeCardSessionSkipped: false,
+    primePromptVisibleRef: {current: false}, guestVerifyNavigationRef: {current: false},
+    guestVerificationRefreshRef: {current: true}, guestVerificationResponseRef: {current: null},
+    parseStoredJson: handler(main, 'parseStoredJson'), buildProfessionLabel: handler(main, 'buildProfessionLabel'),
+    requiresVerification: handler(main, 'requiresVerification'),
+    setShowGuestPrimePrompt: jest.fn(), setPrimeadd: jest.fn(), setGuestVerifyModalVisible: jest.fn(),
+    setGuestVerifyData: jest.fn(), setGuestVerifyLoading: jest.fn(), setIsSkippedFlow: jest.fn(), setPrimeCardSessionSkipped: jest.fn(),
+    requestGuestVerificationCheck: jest.fn(),
+    setGuestPrimeVerificationPending: jest.fn(),
+    openGuestVerificationAlert: jest.fn(),
+  };
+
+  await handler(main, 'loadGuestVerifyModal', context)();
+  expect(context.openGuestVerificationAlert).not.toHaveBeenCalled();
+  expect(context.setGuestVerifyModalVisible).toHaveBeenCalledWith(false);
+  expect(await AsyncStorage.getItem('GUEST_VERIFICATION_COMPLETED')).toBe('true');
+});
+
+test('USA user with verified email but no mobile number requires cell number', async () => {
+  await AsyncStorage.multiSet([
+    ['GUEST_REGISTRATION_FLOW', '{}'],
+    ['IS_GUEST_CONVERTED_USER', 'true'],
+    ['GUEST_PRIME_VERIFICATION_PENDING', 'true'],
+    [constants.VERIFYSTATEDATA, JSON.stringify(guestUser)],
+  ]);
+  const usaUserEmailOnly = {...guestUser, is_verified: 1, phone_verified: 0, phone: '', usa_user: true};
+  const context = {
+    ...keys, AsyncStorage, constants, isAccreditationUser: false, verificationEffectActive: true,
+    AuthReducer: {status: 'Auth/verifySuccess', verifyResponse: {user: usaUserEmailOnly}},
+    DashboardReducer: {}, authProfessionInfo: {}, dashboardProfessionInfo: {}, dashboardProfessionType: '',
+    allProfTake: true, resolvedIpCountryCode: 'US', primeCardSessionSkipped: false,
+    primePromptVisibleRef: {current: false}, guestVerifyNavigationRef: {current: false},
+    guestVerificationRefreshRef: {current: true}, guestVerificationResponseRef: {current: null},
+    parseStoredJson: handler(main, 'parseStoredJson'), buildProfessionLabel: handler(main, 'buildProfessionLabel'),
+    requiresVerification: handler(main, 'requiresVerification'),
+    setShowGuestPrimePrompt: jest.fn(), setPrimeadd: jest.fn(), setGuestVerifyModalVisible: jest.fn(),
+    setGuestVerifyData: jest.fn(), setGuestVerifyLoading: jest.fn(), setIsSkippedFlow: jest.fn(), setPrimeCardSessionSkipped: jest.fn(),
+    requestGuestVerificationCheck: jest.fn(),
+    setGuestPrimeVerificationPending: jest.fn(),
+    openGuestVerificationAlert: jest.fn(),
+  };
+
+  await handler(main, 'loadGuestVerifyModal', context)();
+  expect(context.openGuestVerificationAlert).toHaveBeenCalledWith(usaUserEmailOnly, true);
+  expect(await AsyncStorage.getItem('GUEST_VERIFICATION_COMPLETED')).toBeNull();
+});

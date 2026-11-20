@@ -2,6 +2,7 @@
  * Webcast saga Redux-Saga module. Coordinates side effects, API calls, and watcher registration for webcast. Exported members: getItem, webcastSearchSaga, webcastDetailsSaga, webcastAllSaga, webcastStateSaga, saveTicketSaga, saveTicketCartSaga, saveTicketAddtoCartSaga, checkoutTicketSaga, saveTicketInpersonSaga, saveRegistSaga, webcastPaymentSaga, StatusPaymentSaga, PaymentCheckSaga, addtoCartWebcastSaga, cartCountWebcastSaga, cartDetailsWebcastSaga, cartdeleteWebcastSaga, couponapplySaga, cancelcouponSaga, cartCheckoutSaga, cartPaymentSaga, TransEmailCheckSaga, walletCheckSaga, FreeCheckSaga, FreeCartSaga, PrimePayemntSaga, PrimeCheckSaga, RegisterIntPrSaga, refIDSaga, watchFunction.
  */
 
+import { conferenceCheckoutEndpoint } from '../../Utils/Helpers/ConferenceCheckoutApi';
 import { takeLatest, select, put, call } from 'redux-saga/effects';
 import { postApi, getApi, deleteApi } from '../../Utils/Helpers/ApiRequest';
 import { couponapplyFailure, couponapplyRequest, couponapplySuccess, primepromotSuccess, primepromoFailure, FreeCartFailure, FreeCartSuccess, FreeTransFailure, FreeTransSuccess, PaymentCheckFailure, PaymentCheckSuccess, PrimeCheckFailure, PrimeCheckRequest, PrimeCheckSuccess, primetrialCheckFailure, primetrialCheckRequest, primetrialCheckSuccess, saveUserSubscriptionFailure, saveUserSubscriptionRequest, saveUserSubscriptionSuccess, PrimePaymentFailure, PrimePaymentRequest, PrimePaymentSuccess, RegisterIntFailure, RegisterIntSuccess, StatusPaymentFailure, StatusPaymentSuccess, TransemailcheckFailure, TransemailcheckSuccess, addtoCartWebcastFailure, addtoCartWebcastSuccess, cancelcouponFailure, cancelcouponSuccess, cartCheckoutFailure, cartCheckoutSuccess, cartPaymentFailure, cartPaymentSuccess, cartcountWebcastFailure, cartcountWebcastSuccess, cartdeleteWebcastFailure, cartdeleteWebcastSuccess, cartdetailsWebcastFailure, cartdetailsWebcastSuccess, checkoutTicketFailure, checkoutTicketSuccess, couponWebcastFailure, couponWebcastSuccess, saveRegistFailure, saveRegistSuccess, saveTicketAddFailure, saveTicketAddSuccess, saveTicketCartFailure, saveTicketCartSuccess, saveTicketFailure, saveTicketInpersonFailure, saveTicketInpersonSuccess, saveTicketSuccess, walletCheckFailure, walletCheckSuccess, webcastDeatilsFailure, webcastDeatilsSuccess, webcastPaymentFailure, webcastPaymentSuccess, webcastStateFailure, webcastStateSuccess, webcastsearchFailure, webcastsearchSuccess, webcastviewallFailure, webcastviewallSuccess, refIDSuccess, refIDFailure } from '../Reducers/WebcastReducer';
@@ -58,9 +59,9 @@ export function* webcastDetailsSaga(action) {
 
   };
   try {
-    let response = yield call(postApi, 'Conference/conferenceDetailPage', action.payload, header);
+    let response = yield call(postApi, conferenceCheckoutEndpoint('Conference/conferenceDetailPage', action.meta?.checkoutApiBase), action.payload, header);
     if (response?.data?.success == true) {
-      yield put(webcastDeatilsSuccess(response?.data));
+      yield put({...webcastDeatilsSuccess(response?.data), meta: {conferenceUrl: action.payload?.conference_url}});
     } else {
       yield put(webcastDeatilsFailure(response?.data));
     }
@@ -272,7 +273,7 @@ export function* saveRegistSaga(action) {
     skipPhoneNormalization: Boolean(action?.payload?.playerSessionID),
   };
   try {
-    let response = yield call(postApi, 'transaction/saveRegistration', action.payload, header);
+    let response = yield call(postApi, conferenceCheckoutEndpoint('transaction/saveRegistration', action.meta?.checkoutApiBase), action.payload, header);
     if (response?.data?.success == true) {
       yield put(saveRegistSuccess(response?.data));
     } else {
@@ -590,7 +591,7 @@ export function* TransEmailCheckSaga(action) {
     authorization: items.token,
   };
   try {
-    let response = yield call(postApi, 'Transaction/RegistrationStatus', action.payload, header);
+    let response = yield call(postApi, conferenceCheckoutEndpoint('Transaction/RegistrationStatus', action.meta?.checkoutApiBase), action.payload, header);
     if (response?.status == 200) {
       yield put(TransemailcheckSuccess(response?.data));
     } else {

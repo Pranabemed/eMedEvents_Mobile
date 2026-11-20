@@ -471,9 +471,13 @@ const stateTake = (toklen, anoth) => {
                             ? DashboardReducer.dashboardResponse.data.licensures
                             : DashboardReducer?.dashPerResponse?.data?.licensures?.length
                                 ? DashboardReducer.dashPerResponse.data.licensures
-                                : [];
+                                : (Array.isArray(ProfileReducer?.stateLicenseListResponse?.licensures) && ProfileReducer.stateLicenseListResponse.licensures.length > 0)
+                                    ? ProfileReducer.stateLicenseListResponse.licensures
+                                    : (Array.isArray(DashboardReducer?.mainprofileResponse?.licensures) && DashboardReducer.mainprofileResponse.licensures.length > 0)
+                                        ? DashboardReducer.mainprofileResponse.licensures
+                                        : [];
         return filterValidLicensures(sourceLicensures, ProfileReducer?.stateLicenseListResponse?.licensures);
-    }, [fulldashbaord, fetcheddt, DashboardReducer?.dashMbResponse, DashboardReducer?.dashboardResponse, DashboardReducer?.dashPerResponse, ProfileReducer?.stateLicenseListResponse?.licensures]);
+    }, [fulldashbaord, fetcheddt, DashboardReducer?.dashMbResponse, DashboardReducer?.dashboardResponse, DashboardReducer?.dashPerResponse, DashboardReducer?.mainprofileResponse, ProfileReducer?.stateLicenseListResponse?.licensures]);
 
     useEffect(() => {
         if ((!fulldashbaord || fulldashbaord.length === 0) && effectiveFulldashbaord.length > 0) {
@@ -704,14 +708,18 @@ const stateTake = (toklen, anoth) => {
     const [completedCount, pendingCount] = useActivityCounts(resolvedFindData);
 
     const tasksData = useMemo(
-        () => syncTasksDataWithLicense(resolvedFindData?.tasks_data, activeLicenseForTasks),
+        () => (resolvedFindData?.tasks_data
+            ? syncTasksDataWithLicense(resolvedFindData.tasks_data, activeLicenseForTasks)
+            : null),
         [resolvedFindData?.tasks_data, activeLicenseForTasks]
     );
     const hasTasks = useMemo(() => (
-        tasksData?.due_in_30_days?.length > 0 ||
-        tasksData?.due_in_60_days?.length > 0 ||
-        tasksData?.due_in_90_days?.length > 0
-    ), [tasksData]);
+        Boolean(resolvedFindData?.tasks_data) && (
+            tasksData?.due_in_30_days?.some(task => task && task.button_display_text !== 'Update') ||
+            tasksData?.due_in_60_days?.some(task => task && task.button_display_text !== 'Update') ||
+            tasksData?.due_in_90_days?.some(task => task && task.button_display_text !== 'Update')
+        )
+    ), [resolvedFindData?.tasks_data, tasksData]);
         /**
  * Clean number utility.
  * @param {*} value - Input value.
@@ -813,9 +821,40 @@ const handleAllIndex = (index) => {
     }, [effectiveFulldashbaord?.length, fulldashbaord?.length, initialIndex]);
     console.log(fulldashbaord, "fulldashbaord=====")
     const finalDatCD = statepush?.state_code || statepush?.creditID?.state_code || addit?.state_code || fulldashbaord?.[0]?.state_code;
+    const [licenseLoadTimedOut, setLicenseLoadTimedOut] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLicenseLoadTimedOut(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const isDashboardInFlight =
+        DashboardReducer.status === 'Dashboard/dashboardRequest' ||
+        DashboardReducer.status === 'Dashboard/dashMbRequest' ||
+        DashboardReducer.status === 'Dashboard/dashPerRequest' ||
+        DashboardReducer.status === 'Dashboard/mainprofileRequest' ||
+        ProfileReducer?.status === 'Profile/stateLicenseListRequest' ||
+        dashboardFetchInFlightRef.current;
+
     const hasAnyResolvedLicensure = (fulldashbaord?.length > 0) || (effectiveFulldashbaord?.length > 0);
+
+    const hasCompletedAnyDashboardFetch =
+        Boolean(DashboardReducer?.dashMbResponse ||
+                DashboardReducer?.dashboardResponse ||
+                DashboardReducer?.dashPerResponse ||
+                ProfileReducer?.stateLicenseListResponse);
+
+    const isStateLicenseLoading =
+        !licenseLoadTimedOut &&
+        !hasAnyResolvedLicensure &&
+        (isDashboardInFlight ||
+         !hasCompletedAnyDashboardFetch ||
+         (fulldashbaord === null && !DashboardReducer?.dashboardResponse?.data));
+
     const shouldShowAddLicenseCard =
         !hasAnyResolvedLicensure &&
+        !isStateLicenseLoading &&
         !isNonUsaUser &&
         canAddLicenses &&
         (activePhysicianTrial ||
@@ -883,19 +922,6 @@ const renderAddLicenseCard = () => (
             </View>
         </View>
     );
-    const [licenseLoadTimedOut, setLicenseLoadTimedOut] = useState(false);
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setLicenseLoadTimedOut(true);
-        }, 5000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const isStateLicenseLoading =
-        !licenseLoadTimedOut &&
-        (DashboardReducer.status === 'Dashboard/dashboardRequest' ||
-         dashboardFetchInFlightRef.current ||
-         (fulldashbaord === null && !DashboardReducer?.dashboardResponse?.data));
 
     if (isStateLicenseLoading) {
         return (
@@ -1182,7 +1208,7 @@ const renderAddLicenseCard = () => (
                                     setTakestate={setTakestate}
                                     takestate={takestate}
                                     cmecourse={cmecourse}
-                                    tasksData={tasksData}
+                                    tasksData={tasksData || {}}
                                     cmeValult={cmeValult}
                                     navigation={navigation}
                                     completedCount={completedCount}

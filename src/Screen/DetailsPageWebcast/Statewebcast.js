@@ -1,3 +1,4 @@
+import {getConferenceSlug} from '../../Utils/Helpers/ConferenceCheckoutApi';
 /**
  * Statewebcast screen module. Renders a React Native screen or a screen-scoped support component. Exported members: GOOGLE_API_KEY, Statewebcast, handleSnapToItem, scrollToReviews, toggleExpansion, toggleTopic, toggleExpansionacc, refundExpand, conferShows, specailityChange, targetChange, reviewChange, onBackPress, handleTicketsCart, cartHand, calculatePrice, styles.
  */
@@ -341,7 +342,7 @@ const handleSnapToItem = (index) => {
             setStatepush(props?.route?.params?.webCastURL?.creditData?.creditID);
         }
     }, [props?.route?.params?.webCastURL?.creditData?.creditID]);
-    const requestedConferenceUrl = props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast || "";
+    const requestedConferenceUrl = getConferenceSlug(props?.route?.params?.webCastURL?.webCastURL || props?.route?.params?.newCast);
     const lastFetchedConferenceUrlRef = useRef("");
     const hasLoadedOnceRef = useRef(false);
     const isSilentRefreshRef = useRef(false);

@@ -1711,39 +1711,33 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                 {conn == false ? <IntOff /> : <ScrollView scrollEnabled={!fullscreen} contentContainerStyle={{ paddingBottom: fullscreen ? normalize(320) : normalize(120) }}>
                     {apiInFlight ? <ActivityIndicator style={{ paddingVertical: normalize(12) }} size={"small"} color={"green"} /> : (hasVideoSource || (externalVideoUrl && getEmbedUrl(externalVideoUrl))) ? <View style={fullscreen ? styles.fullscreenContainer : styles.container}>
                         {hasVideoSource ? (
-                            <Pressable
-                                style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}
-                                onPress={() => {
-                                    setShowThumb((prev) => !prev);
-                                    if (!showThumb) {
-                                        showControlsBriefly();
-                                    }
-                                }}
-                            >
-                                <Video
-                                    ref={videoRef}
-                                    source={{ uri: videoUrl }}
-                                    style={fullscreen ? styles.fullscreenVideo : styles.video}
-                                    paused={paused}
-                                    onLoad={onLoad}
-                                    onProgress={onProgress}
-                                    onEnd={onEnd}
-                                    onReadyForDisplay={onReadyForDisplay}
-                                    bufferConfig={{
-                                        minBufferMs: 15000,
-                                        maxBufferMs: 50000,
-                                        bufferForPlaybackMs: 2500,
-                                        bufferForPlaybackAfterRebufferMs: 5000,
-                                    }}
-                                    resizeMode="contain"
-                                    shutterColor="transparent"
-                                    hideShutterView={true}
-                                    onVideoLoadStart={() => {
-                                        if (!fullscreenTransitionRef.current) {
-                                            setLoading(true);
-                                        }
-                                    }}
-                                />
+                            <View style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}>
+                                <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                                    <Video
+                                        ref={videoRef}
+                                        source={{ uri: videoUrl }}
+                                        style={fullscreen ? styles.fullscreenVideo : styles.video}
+                                        paused={paused}
+                                        onLoad={onLoad}
+                                        onProgress={onProgress}
+                                        onEnd={onEnd}
+                                        onReadyForDisplay={onReadyForDisplay}
+                                        bufferConfig={{
+                                            minBufferMs: 15000,
+                                            maxBufferMs: 50000,
+                                            bufferForPlaybackMs: 2500,
+                                            bufferForPlaybackAfterRebufferMs: 5000,
+                                        }}
+                                        resizeMode="contain"
+                                        shutterColor="transparent"
+                                        hideShutterView={true}
+                                        onVideoLoadStart={() => {
+                                            if (!fullscreenTransitionRef.current) {
+                                                setLoading(true);
+                                            }
+                                        }}
+                                    />
+                                </View>
                                 {loading && initialVideoThumbnail && (
                                     <View pointerEvents="none" style={styles.loadingThumbWrap}>
                                         <Image
@@ -1781,6 +1775,21 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                         )}
                                     </View>
                                 )}
+                                <Pressable
+                                    style={StyleSheet.absoluteFill}
+                                    onPress={() => {
+                                        if (loading) return;
+                                        setShowThumb((prev) => {
+                                            const next = !prev;
+                                            if (next) {
+                                                showControlsBriefly();
+                                            } else {
+                                                clearControlsTimer();
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                />
                                 {loading && (
                                     <ActivityIndicator
                                         style={styles.playText}
@@ -1802,7 +1811,7 @@ const hasData = (data) => data && ((data.activityData && data.activityData.lengt
                                         <FullIcon style={{ alignSelf: "center" }} name={fullscreen ? "minimize" : "maximize"} size={22} color="#FFFFFF" />
                                     </Pressable>
                                 )}
-                            </Pressable>
+                            </View>
                         ) : (
                             <View style={fullscreen ? styles.fullscreenVideoContainer : styles.videoContainer}>
                                 <WebView

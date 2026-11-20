@@ -94,12 +94,13 @@ export default StyleSheet.create({
     paddingRight: 8,
   },
   hero: {
-    width: normalize(300),
+    width: '100%',
     overflow: 'hidden',
     padding: normalize(16),
     marginBottom: 0,
     alignSelf: 'center',
     borderRadius: normalize(16),
+    justifyContent: 'space-between',
   },
   heroRadius: {
     borderRadius: normalize(16),
@@ -133,15 +134,18 @@ export default StyleSheet.create({
   heroTitle: {
     color: '#FFFFFF',
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     fontSize: normalize(15),
     lineHeight: normalize(20),
-    width: '90%',
+    width: '100%',
   },
   heroBottomRow: {
     gap: normalize(6),
+    width: '100%',
   },
   heroMeta: {
     minWidth: 0,
+    width: '100%',
     gap: normalize(6),
   },
   heroMetaRow: {
@@ -149,13 +153,14 @@ export default StyleSheet.create({
     alignItems: 'center',
     gap: normalize(8),
     minWidth: 0,
+    width: '100%',
   },
   heroLocationRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: normalize(8),
-    width: normalize(260),
+    width: '100%',
   },
   heroLocationTextWrap: {
     flex: 1,
@@ -193,8 +198,7 @@ export default StyleSheet.create({
     borderRadius: normalize(8),
     paddingHorizontal: normalize(10),
     paddingVertical: normalize(6),
-    minWidth: 0,
-    maxWidth: '42%',
+    minWidth: normalize(95),
     alignItems: 'center',
     flexShrink: 0,
   },
@@ -231,6 +235,7 @@ export default StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     color: '#0F172A',
     fontSize: normalize(16),
   },
@@ -373,6 +378,7 @@ export default StyleSheet.create({
   liveSectionTitle: {
     color: '#0F172A',
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     fontSize: normalize(16),
   },
   liveViewAll: {
@@ -423,6 +429,7 @@ export default StyleSheet.create({
   liveTitle: {
     color: '#0F172A',
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     fontSize: normalize(14),
     lineHeight: normalize(19),
   },
@@ -595,6 +602,7 @@ export default StyleSheet.create({
   },
   cardTitle: {
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     color: '#0F172A',
     fontSize: normalize(14),
     lineHeight: normalize(19),
@@ -670,6 +678,7 @@ export default StyleSheet.create({
   },
   popularTitle: {
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     color: '#0F172A',
     fontSize: normalize(14),
     lineHeight: normalize(19),
@@ -788,6 +797,7 @@ export default StyleSheet.create({
   },
   featureTitle: {
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     color: '#0F172A',
     fontSize: normalize(14),
     lineHeight: normalize(19),
@@ -964,6 +974,7 @@ export default StyleSheet.create({
   freeTitleText: {
     color: '#0F172A',
     fontFamily: Fonts.InterBold,
+    fontWeight: '700',
     fontSize: normalize(14),
     lineHeight: normalize(19),
     marginBottom: normalize(8),

@@ -52,6 +52,9 @@ import DownloadImage from '../Screen/CMECreditValut/PngFile';
 import ImagePDF from '../Screen/CMECreditValut/ImagePDF';
 import CertficateHandle from '../Screen/CMECreditValut/FileCheck';
 import Statewebcast from '../Screen/DetailsPageWebcast/Statewebcast';
+import ExternalWebView from '../Screen/GlobalSupport/ExternalWebView';
+import {isCmeWebLink} from '../Screen/GlobalSupport/hooks/useConferenceCheckout';
+import {getCmeWebLink} from './cmeWebLink';
 import StateDataComponent from '../Components/StateDataComponent';
 import Payment from '../Screen/DetailsPageWebcast/Payment';
 import Checkout from '../Screen/DetailsPageWebcast/Checkout';
@@ -366,6 +369,7 @@ const StackNav = props => {
     ImagePDF: ImagePDF,
     CertficateHandle: CertficateHandle,
     Statewebcast: Statewebcast,
+    ExternalWebView: ExternalWebView,
     StateDataComponent: StateDataComponent,
     Payment: Payment,
     Checkout: Checkout,
@@ -444,7 +448,7 @@ const StackNav = props => {
 
   const resetToSplashScreen = useCallback(() => {
     // A background/foreground transition must not discard an unfinished form.
-    if (['Login', 'SignUp'].includes(getCurrentRoute())) return;
+    if (['Login', 'SignUp', 'ExternalWebView'].includes(getCurrentRoute())) return;
     navigationRef.dispatch(
       CommonActions.reset({
         index: 0,
@@ -838,6 +842,17 @@ const StackNav = props => {
 
     console.log('🌍 Incoming URL:', trimmedUrl);
 
+    // Handle direct CME URLs before generic tracking/query-string unwrapping.
+    const cmeUrl = getCmeWebLink(trimmedUrl);
+    if (cmeUrl) {
+      if (!isNavigationReady) {
+        setPendingDeepLink({url: cmeUrl});
+        return;
+      }
+      navigateToScreen('GuestUser', {deepLinkUrl: cmeUrl, url: cmeUrl});
+      return;
+    }
+
     if (trimmedUrl.includes('directLogin') || trimmedUrl.includes('directlogin')) {
       let rawToken = '';
       if (trimmedUrl.includes('/directLogin/')) {
@@ -876,6 +891,15 @@ const StackNav = props => {
     } = parseDeepLinkDetails(trimmedUrl);
 
     console.log('🔥 FINAL CLEAN URL:', resolvedUrl);
+
+    if (isCmeWebLink(resolvedUrl)) {
+      if (!isNavigationReady) {
+        setPendingDeepLink({url: resolvedUrl});
+        return;
+      }
+      navigateToScreen('GuestUser', {deepLinkUrl: resolvedUrl, url: resolvedUrl});
+      return;
+    }
 
     if (refID) {
       try {
@@ -1156,7 +1180,7 @@ const StackNav = props => {
   }, [AuthReducer?.status, AuthReducer?.dircetloginResponse, AuthReducer?.directloginResponse, dispatch, handleDeepLink, normalizeDirectLoginRedirectUrl]);
 
   useEffect(() => {
-    if (isAuthReady && isNavigationReady && pendingDeepLink) {
+    if (isNavigationReady && pendingDeepLink && (isAuthReady || getCmeWebLink(pendingDeepLink.url))) {
       console.log('Context ready, processing pending deep link:', pendingDeepLink);
       lastProcessedUrl.current = null;
       handleDeepLink(pendingDeepLink.url || pendingDeepLink.slug);
@@ -1224,6 +1248,8 @@ const StackNav = props => {
   }, [isNavigationReady, isAuthReady, handleDeepLink]);
 
   const linking = {
+    // CME links are owned by handleDeepLink, including cold-start queuing.
+    filter: url => !getCmeWebLink(url),
     prefixes: [
       'https://www.emedevents.com',
       'https://emedevents.com',

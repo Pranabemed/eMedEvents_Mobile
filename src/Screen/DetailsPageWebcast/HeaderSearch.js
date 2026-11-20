@@ -24,6 +24,8 @@ import { ConfActRequest } from '../../Redux/Reducers/CMEReducer';
 import { SafeAreaView } from 'react-native-safe-area-context'
 import VoiceSearchBar from '../GlobalSupport/Voice';
 import { trackScreen } from '../../Utils/Helpers/Analytics';
+import { getConferenceSlug } from '../../Utils/Helpers/ConferenceCheckoutApi';
+import { getBannerUrl } from '../HomePage/GuestUserModule/utils/guestUserContentParsers';
 
 /**
  * Reusable HeaderSearch component.
@@ -40,6 +42,14 @@ const SEARCH_DEBOUNCE_MS = 280;
  */
 const HeaderSearch = (props) => {
     const WebcastReducer = useSelector(state => state.WebcastReducer);
+    const GuestReducer = useSelector(state => state.GuestReducer);
+    const topBanners = useMemo(() => {
+        const homeData =
+            GuestReducer?.HomelistResponse?.data && typeof GuestReducer?.HomelistResponse?.data === 'object'
+                ? GuestReducer?.HomelistResponse?.data
+                : GuestReducer?.HomelistResponse || {};
+        return homeData?.mobile_top_banners || homeData?.top_banners || homeData?.banners || [];
+    }, [GuestReducer?.HomelistResponse]);
     const dispatch = useDispatch();
     const isFocus = useIsFocused();
     const [webcast, setWebcast] = useState(null);
@@ -133,8 +143,8 @@ const checkoutClear = () => {
  * @returns {void}
  */
 const handleUrl = (data) => {
-        const url = data?.url;
-        const result = url.split('/').pop();
+        const url = data?.detailpage_url || data?.url || data?.emed_url || '';
+        const result = url ? url.split('/').filter(Boolean).pop() : '';
         console.log(result, "webcast url=======", data);
         let obj = {
             "conference_id": data?.id,
@@ -148,8 +158,60 @@ const handleUrl = (data) => {
             .catch((err) => {
                 showErrorAlert("Please connect to internet", err);
             });
-        if (result) {
+        if (result || data?.name || data?.title) {
             setSearchText("");
+
+            const searchSlug = getConferenceSlug(url || result);
+            const searchName = String(data?.event_name || data?.name || data?.title || data?.course_title || '')
+                .toLowerCase()
+                .trim();
+
+            let matchedBannerUrl = null;
+            if (Array.isArray(topBanners) && topBanners.length > 0) {
+                for (const banner of topBanners) {
+                    const bannerHref = String(banner?.html_content || '').match(/<a[^>]*href=['"]([^'"]+)['"]/i)?.[1];
+                    const bannerUrl = getBannerUrl(bannerHref ? {url: bannerHref.replace(/&amp;/gi, '&')} : banner);
+                    const bannerSlug = getConferenceSlug(bannerUrl);
+                    const titleMatch = String(banner?.html_content || '').match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1]?.replace(/<[^>]*>/g, '').trim().toLowerCase();
+                    const bannerTitle = String(titleMatch || banner?.title || banner?.course_title || banner?.name || banner?.banner_title || banner?.conference_title || '')
+                        .toLowerCase()
+                        .trim();
+
+                    if (
+                        (searchSlug && bannerSlug && searchSlug === bannerSlug) ||
+                        (searchName && bannerTitle && (searchName === bannerTitle || searchName.includes(bannerTitle) || bannerTitle.includes(searchName)))
+                    ) {
+                        matchedBannerUrl = bannerUrl;
+                        break;
+                    }
+                }
+            }
+
+            const isWebConference = Boolean(
+                matchedBannerUrl ||
+                url.includes('/cme/') ||
+                url.includes('cme') ||
+                url.includes('medical-') ||
+                url.includes('hybrid') ||
+                url.includes('in-person') ||
+                url.includes('events') ||
+                url.includes('meeting') ||
+                (url && !url.includes('webcast'))
+            );
+
+            if (isWebConference) {
+                let targetUrl = matchedBannerUrl || url;
+                if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+                    targetUrl = `https://www.emedevents.com/${targetUrl.replace(/^\/+/, '')}`;
+                }
+                props.navigation.navigate('GuestUser', {
+                    deepLinkUrl: targetUrl,
+                    url: targetUrl,
+                    title: data?.event_name || data?.name || data?.title || data?.course_title || '',
+                });
+                return;
+            }
+
             props.navigation.navigate("Statewebcast", {
                 webCastURL: {
                     webCastURL: result,

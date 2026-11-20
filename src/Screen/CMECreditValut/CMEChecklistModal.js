@@ -2,7 +2,7 @@
  * Cmechecklist modal screen module. Renders a React Native screen or a screen-scoped support component. Exported members: CMEChecklistModal, handleOptionSelect, handleTabLayout, StateCMEChekck, styles.
  */
 
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Pressable, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Colorpath from '../../Themes/Colorpath';
 import normalize from '../../Utils/Helpers/Dimen';
@@ -23,21 +23,16 @@ import { useNavigation } from '@react-navigation/native';
 const CMEChecklistModal = ({ certificatedata, allProfession, allProfessionData, setAllProfessionData, isVisibelCME, onCMEClose, onSaved, cmeRealback, selectedState, onBrowseCourses }) => {
     // const firstOption = Object.keys(allProfessionData?.cme_data || {})[0] || "";
 
-    const allOptions = Object.keys(allProfessionData?.cme_data || {}) || "";
+    const allOptions = Object.keys(allProfessionData?.cme_data || {});
     const firstOption = allOptions?.[0];
     const [selectedOption, setSelectedOption] = useState(firstOption);
-    const [modalHeightcme, setModalHeightcme] = useState(300);
     const [tabWidths, setTabWidths] = useState({});
     const navigation = useNavigation();
     useEffect(() => {
-        if (firstOption) {
+        if (firstOption && (!selectedOption || !allProfessionData?.cme_data?.[selectedOption])) {
             setSelectedOption(firstOption);
         }
-    }, [firstOption]);
-    useEffect(() => {
-        setModalHeightcme(isVisibelCME ? 600 : 300);
-        console.log("Modal visibility changed:", isVisibelCME);
-    }, [isVisibelCME]);
+    }, [firstOption, allProfessionData]);
         /**
  * Handles option select.
  * @param {*} option - Input value.
@@ -59,12 +54,13 @@ const handleTabLayout = (optionKey, widthValue) => {
             return { ...prev, [optionKey]: widthValue };
         });
     };
-    const { width } = useWindowDimensions();
-    const optionCount = Object.keys(allProfessionData?.cme_data || {}).length || 1;
+    const { height: screenHeight, width } = useWindowDimensions();
+    const modalHeight = Math.min(screenHeight * 0.85, normalize(620));
+    const optionCount = allOptions.length || 1;
     const tabItemWidth = width / optionCount;
-    const selectedData = allProfessionData?.cme_data?.[selectedOption];
-    if (!selectedData) {
-        console.log("No selected data available for:", selectedOption);
+    const activeOption = (selectedOption && allProfessionData?.cme_data?.[selectedOption]) ? selectedOption : firstOption;
+    const selectedData = allProfessionData?.cme_data?.[activeOption];
+    if (!isVisibelCME && !selectedData) {
         return null;
     }
     console.log(firstOption)
@@ -114,16 +110,18 @@ const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, a
             animationIn={'slideInUp'}
             animationOut={'slideOutDown'}
             backdropTransitionOutTiming={0}
-            hideModalContentWhileAnimating={true}
-            isVisible={isVisibelCME}
+            hideModalContentWhileAnimating={false}
+            isVisible={Boolean(isVisibelCME)}
             style={{ width: '100%', alignSelf: 'center', margin: 0 }}
-            animationInTiming={400}
-            animationOutTiming={400}
+            animationInTiming={350}
+            animationOutTiming={300}
             useNativeDriver={true}
+            useNativeDriverForBackdrop={true}
+            statusBarTranslucent={true}
             onBackdropPress={onCMEClose}
             onBackButtonPress={onCMEClose}
         >
-            <View style={[styles.modalView, { height: modalHeightcme }]}>
+            <View style={[styles.modalView, { height: modalHeight }]}>
                 <View style={{ justifyContent: "center", alignItems: "center" }}>
                     <Pressable onPress={() => {
                         onSaved();
@@ -132,7 +130,7 @@ const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, a
                         <View style={styles.modalIndicator} />
                     </Pressable>
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                     <View style={styles.container}>
                         <Text style={styles.headerTitle} numberOfLines={2}>
                             {"Know Your State CME Requirements"}
@@ -148,7 +146,8 @@ const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, a
                             <Text style={styles.closeButtonText}>Close</Text>
                         </TouchableOpacity>
                     </View>
-                    <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
+                    {selectedData ? (
+                        <ScrollView contentContainerStyle={{ paddingBottom: normalize(120) }}>
                         {allOptions?.length > 1 && (
                             <View style={{ marginHorizontal: normalize(16), marginBottom: normalize(8) }}>
                                 <View style={{
@@ -370,6 +369,14 @@ const StateCMEChekck = (professionValue, stateID, rqsttype, mainkey, newState, a
                             />
                         </View>
                     </ScrollView>
+                    ) : (
+                        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: normalize(40) }}>
+                            <ActivityIndicator size="large" color={Colorpath.ButtonColr} />
+                            <Text style={{ marginTop: normalize(12), fontFamily: Fonts.InterMedium, fontSize: normalize(13), color: "#64748B" }}>
+                                {"Loading CME requirements..."}
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </Modal>

@@ -939,6 +939,7 @@ export default function DrawerModal(props) {
           props.onRequestClose?.();
         }}>
         <SafeAreaView
+          edges={['bottom', 'left', 'right']}
           style={{
             backgroundColor: "#FFFFFF",
             flex: 1,
@@ -954,7 +955,9 @@ export default function DrawerModal(props) {
               style={{
                 flexDirection: 'row',
                 paddingHorizontal: normalize(16),
-                paddingTop: Platform.OS === 'ios' ? normalize(16) : normalize(12),
+                paddingTop: Platform.OS === 'ios'
+                  ? Math.max(insets?.top || 0, normalize(44)) + normalize(8)
+                  : normalize(12),
                 alignItems: "center",
                 gap: normalize(12)
               }}>
@@ -1091,20 +1094,49 @@ export default function DrawerModal(props) {
                   borderRadius: normalize(8),
                   borderWidth: 1,
                   borderColor: "#BFDBFE",
-                  paddingHorizontal: normalize(10),
+                  paddingLeft: normalize(10),
+                  paddingRight: normalize(14),
                   paddingVertical: normalize(8),
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: normalize(8) }}>
-                  <Image source={Imagepath.Mail} style={{ height: normalize(16), width: normalize(16), resizeMode: "contain", tintColor: Colorpath.ButtonColr || "#0284C7" }} />
-                  <Text style={{ fontFamily: Fonts.InterSemiBold, fontSize: normalize(12.5), color: Colorpath.ButtonColr || "#0284C7", fontWeight: "600" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flex: 1,
+                    marginRight: normalize(10),
+                  }}
+                >
+                  <Image
+                    source={Imagepath.Mail}
+                    style={{
+                      height: normalize(15),
+                      width: normalize(15),
+                      resizeMode: "contain",
+                      tintColor: Colorpath.ButtonColr || "#0284C7",
+                      marginRight: normalize(8),
+                    }}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    style={{
+                      fontFamily: Fonts.InterSemiBold,
+                      fontSize: normalize(11.5),
+                      color: Colorpath.ButtonColr || "#0284C7",
+                      fontWeight: "600",
+                    }}
+                  >
                     support@emedevents.com
                   </Text>
                 </View>
-                <ArrowIcn name="arrow-forward-ios" size={12} color={Colorpath.ButtonColr || "#0284C7"} />
+                <View style={{ justifyContent: "center", alignItems: "center", paddingRight: normalize(2) }}>
+                  <ArrowIcn name="arrow-forward-ios" size={10} color={Colorpath.ButtonColr || "#0284C7"} />
+                </View>
               </Pressable>
             </View>
 

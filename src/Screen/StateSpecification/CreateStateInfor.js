@@ -87,8 +87,14 @@ const CreateStateInfor = (props) => {
     const [noloadnew, setNoloadnew] = useState(false);
     const pendingLicenseRef = useRef(null);
     const licenseSaveAttemptedRef = useRef(false);
+    const hasSubmittedRef = useRef(false);
     const [thoun, setThoun] = useState("")
     const isFocus = useIsFocused();
+    useEffect(() => {
+        status1 = DashboardReducer.status;
+        status = AuthReducer.status;
+        hasSubmittedRef.current = false;
+    }, []);
     useEffect(() => {
         /**
 * Token handle utility.
@@ -584,6 +590,7 @@ const CreateStateInfor = (props) => {
                         };
                         licenseSaveAttemptedRef.current = false;
                     }
+                    hasSubmittedRef.current = true;
                     dispatch(stateInformSaveRequest(obj))
                 })
                 .catch((err) => { showErrorAlert("Please connect to internet", err) })
@@ -648,6 +655,8 @@ const CreateStateInfor = (props) => {
             }
             case 'Auth/stateInformSaveFailure':
                 status = AuthReducer.status;
+                hasSubmittedRef.current = false;
+                setNoloadnew(false);
                 break;
         }
     }
@@ -658,6 +667,9 @@ const CreateStateInfor = (props) => {
                 break;
             case 'Dashboard/dashMbSuccess':
                 status1 = DashboardReducer.status;
+                if (!hasSubmittedRef.current) {
+                    break;
+                }
                 if (pendingLicenseRef.current) {
                     const pendingLicense = pendingLicenseRef.current;
                     const savedLicenses = DashboardReducer?.dashMbResponse?.data?.licensures;
@@ -679,6 +691,7 @@ const CreateStateInfor = (props) => {
                     }
                     pendingLicenseRef.current = null;
                 }
+                hasSubmittedRef.current = false;
                 console.log("DashboardReducer999912222", DashboardReducer.dashMbResponse.data?.licensures);
                 const uniqueStates = DashboardReducer?.dashMbResponse?.data?.licensures?.filter((state, index, self) => {
                     return index === self.findIndex((s) =>
@@ -705,6 +718,7 @@ const CreateStateInfor = (props) => {
                 break;
             case 'Dashboard/dashMbFailure':
                 status1 = DashboardReducer.status;
+                hasSubmittedRef.current = false;
                 setNoloadnew(false);
                 break;
             case 'Dashboard/stateLicesenseSuccess':
@@ -714,6 +728,7 @@ const CreateStateInfor = (props) => {
                         const token = await AsyncStorage.getItem(constants.TOKEN);
                         dispatch(dashMbRequest({ token: token || AuthReducer?.loginsiginResponse?.token, key: {} }));
                     })().catch(() => {
+                        hasSubmittedRef.current = false;
                         setNoloadnew(false);
                         showErrorAlert('Unable to refresh your state license. Please try again.');
                     });
@@ -722,6 +737,7 @@ const CreateStateInfor = (props) => {
             case 'Dashboard/stateLicesenseFailure':
                 status1 = DashboardReducer.status;
                 if (pendingLicenseRef.current) {
+                    hasSubmittedRef.current = false;
                     setNoloadnew(false);
                     showErrorAlert('Unable to save your state license. Please try again.');
                 }

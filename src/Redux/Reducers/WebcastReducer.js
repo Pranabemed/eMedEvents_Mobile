@@ -131,6 +131,7 @@ webcastDeatilsRequest(state, action) {
  */
 webcastDeatilsSuccess(state, action) {
       state.webcastDeatilsResponse = action.payload;
+      state.webcastDeatilsResponseUrl = action.meta?.conferenceUrl || null;
       state.status = action.type;
     },
         /**

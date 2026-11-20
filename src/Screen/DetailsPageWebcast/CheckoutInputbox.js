@@ -1,3 +1,4 @@
+import {checkoutLabel} from './checkoutLabel';
 import DropDownHeader, { DropdownList, DropdownOption, dropdownStyles } from '../../Components/DropDownHeader';
 import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { isUsCountry } from '../../Utils/Helpers/ApplicableCountry';
@@ -949,15 +950,33 @@ const formatPhoneNumber = (input, isUSA = false) => isUSA ? formatUsPhone(input)
  * @returns {*}
  */
 const renderForms = () => {
+    const showTicketProfession = spanroute?.source === 'GuestHeroSection';
+    // Match the ticket order and quantity used when submitting attendee details.
+    const tickets = spanroute?.inPersonTicket?.tickets || spanroute?.finalTicket?.tickets || ticketSave?.tickets || [];
+    const registrationTickets = spanroute?.checkoutSpan?.registrationTickets || [];
+    const attendeeTickets = (Array.isArray(tickets) ? tickets : []).flatMap(ticket => {
+      const quantity = Number(ticket.quantity ?? 1);
+      return Array.from({ length: Number.isInteger(quantity) && quantity > 0 ? quantity : 0 }, () => ticket);
+    });
+    const attendeeHeading = index => {
+      if (!showTicketProfession) return `Attendee ${index + 1} Information`;
+      const ticket = attendeeTickets[index];
+      const ticketId = ticket?.ticket_id ?? ticket?.id;
+      const registrationTicket = ticketId == null ? null : registrationTickets.find(item =>
+        String(item.id ?? item.ticket_id) === String(ticketId));
+      const rawName = ticket?.ticket_name || ticket?.name || registrationTicket?.ticket_name || registrationTicket?.name;
+      const name = checkoutLabel(rawName);
+      return `Attendee ${index + 1}${name ? ` - ${name}` : ' Information'}`;
+    };
     return Array.from({ length: totalQuantity }, (_, index) => (
       <View key={index} style={{ flex: 1 }}>
-        {totalQuantity > 1 && <TouchableOpacity onPress={() => toggleExpand(index)} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: normalize(12), paddingVertical: normalize(10) }}>
-          <Text style={{ fontSize: 15, fontFamily: Fonts.InterSemiBold, color: "#0F172A" }}>
-            {`Attendee ${index + 1} Information`}
+        {(showTicketProfession || totalQuantity > 1) && <TouchableOpacity disabled={totalQuantity <= 1} onPress={() => toggleExpand(index)} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: normalize(12), paddingVertical: normalize(10) }}>
+          <Text style={{ flex: 1, fontSize: 15, fontFamily: Fonts.InterSemiBold, color: "#0F172A" }}>
+            {attendeeHeading(index)}
           </Text>
-          <View style={{ paddingVertical: normalize(4) }}>
+          {totalQuantity > 1 && <View style={{ paddingVertical: normalize(4) }}>
             <ArrowIcon name={expandedSections[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"} color={"#64748B"} size={26} />
-          </View>
+          </View>}
         </TouchableOpacity>}
         {totalQuantity > 1 && <View style={{ height: 1, width: '100%', backgroundColor: "#E2E8F0" }} />}
         {syncAnimatedValue(index)}

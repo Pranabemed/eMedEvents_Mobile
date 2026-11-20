@@ -165,13 +165,18 @@ const GuestUserContent = ({ guest }) => {
             />
           </View>
 
-          <View style={[styles.page, { width, paddingTop: 0 }]}>
+          <View style={[styles.page, { width, paddingTop: 0, paddingHorizontal: 0 }]}>
             <GuestHeroSection
               topBanners={topBanners}
               isHomeLoading={isHomeLoading}
               navigation={navigation}
               width={width}
+              deepLinkUrl={guest?.deepLinkUrl}
+              deepLinkTitle={guest?.deepLinkTitle}
             />
+          </View>
+
+          <View style={[styles.page, { width, paddingTop: 0 }]}>
             {/* {api needed} */}
             {isHomeLoading ? (
               <GuestCarouselShimmer title="Featured Activity" width={width} showTitle={false} />
@@ -347,11 +352,11 @@ const GuestUserContent = ({ guest }) => {
         }
       />
 
-      <GuestProfessionPopup 
-        visible={showGuestProfessionPopup} 
-        onClose={() => setShowGuestProfessionPopup(false)} 
-        isUsaUser={isUsaUser} 
-        guestData={guestDeviceData} 
+      <GuestProfessionPopup
+        visible={showGuestProfessionPopup}
+        onClose={() => setShowGuestProfessionPopup(false)}
+        isUsaUser={isUsaUser}
+        guestData={guestDeviceData}
       />
     </>
   );

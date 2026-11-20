@@ -400,7 +400,11 @@ const cleanNumber = (value) => {
                             </View>}
 
                             <View style={stylesmodal.checklistButton}>
-                                <Pressable style={{ flexDirection: "row", gap: normalize(5) }} onPress={() => setCmemodal(true)}>
+                                <Pressable
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    style={{ flexDirection: "row", gap: normalize(5), alignItems: "center" }}
+                                    onPress={() => setCmemodal(true)}
+                                >
                                     <Text style={[stylesmodal.checklistText,{fontWeight:"bold"}]}>{"CME Checklist"}</Text>
                                     <View style={{ backgroundColor: Colorpath.ButtonColr, height: normalize(15), width: normalize(15), borderRadius: normalize(15), justifyContent: "center", alignItems: "center" }}>
                                         <ArrowNeed name={"arrow-right"} color={"#FFFFFF"} size={12} />

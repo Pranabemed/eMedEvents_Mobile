@@ -1,6 +1,8 @@
 import { countryIdentity, isUsCountry, professionCountryParams } from '../../Utils/Helpers/ApplicableCountry';
 import { getCountryDialCode } from '../../Utils/Helpers/PhoneCountry';
 import { formatUsPhone, isValidUsPhone, requireUsPhone } from '../../Utils/Helpers/UsPhone';
+import { generateDeviceToken } from '../../Utils/Helpers/FirebaseToken';
+import { normalizeRegistrationPayload } from '../../Utils/Helpers/RegistrationPayload';
 /**
  * Checkout screen module. Renders a React Native screen or a screen-scoped support component. Exported members: status, status1, GOOGLE_API_KEY, GUEST_REGISTRATION_FLOW_KEY, Checkout, cleanNumber, getRouteTransactionFee, buildPaymentPrice, persistGuestRegistrationSession, checkoutClear, handleSearch, handleCountry, handlePratice, handlePraticeLic, handleCity, toggleModalPaymentfree, toggleModalFailedfree, resetGuestCheckoutFields, searchCountryNameProfession, handleProfession, onBackPress, loadGuestRegistrationFlow, token_handle_vault, defaultCountryToGeo, clean, specaillized, countryReq, PraticingState, LicStateTakeDo, cityReq, handleFree, statusCheck, allTicketsFree, formatPhoneNumberno, formatIndianPhoneNumber, showModal, isUSASelected, getRequiredFieldsForAttendee, handleInputChange, validateEmail, validateCellNo, validateSingleAttendee, emailCheck, sendEmailCheckRequests, mergeCustomFieldsWithLabels, handleInputChangeeamilad, proceedPayment, convertToISODate, allTicketsFreeac, cartPayment, handleSpecialitySelect, handleSpecialityChange, removeSpeciality, formatPhoneNumber, handleCountrySet, handleStateshows, handleLicStateshows, handleLicDate, handleDobDate, handlecityShows, applyCoupon, styles.
  */
@@ -137,6 +139,14 @@ const Checkout = (props) => {
             null;
     };
     const [ticketSave, setTicketSave] = useState(getInitialTicketSave);
+    const [deviceToken, setDeviceToken] = useState('');
+    useEffect(() => {
+        let mounted = true;
+        generateDeviceToken().then(token => {
+            if (mounted && token) setDeviceToken(token);
+        }).catch(() => {});
+        return () => { mounted = false; };
+    }, []);
     const [formData, setFormData] = useState([]);
     const appliedProfileAddress = useRef(null);
     const [nonUsaFlowState, setNonUsaFlowState] = useState(null);
@@ -280,20 +290,20 @@ const Checkout = (props) => {
     }, [props?.route?.params?.checkoutSpan, props?.route?.params?.inPersonTicket]);
     useEffect(() => {
         if (props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets) {
-            const totalQuantity = props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets?.reduce((total, ticket) => total + ticket.quantity, 0);
+            const totalQuantity = props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets?.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
             console.log("Total Quantity:", totalQuantity);
         }
     }, [props?.route?.params?.inPersonTicket?.inPersonTicket])
     useEffect(() => {
         if (props?.route?.params?.checkoutSpan?.finalTicket?.tickets) {
-            const totalQuantity = props?.route?.params?.checkoutSpan?.finalTicket?.tickets?.reduce((total, ticket) => total + ticket.quantity, 0);
+            const totalQuantity = props?.route?.params?.checkoutSpan?.finalTicket?.tickets?.reduce((total, ticket) => total + Number(ticket.quantity || 0), 0);
             console.log("Total Quantity:webcast single", totalQuantity);
         }
     }, [props?.route?.params?.checkoutSpan?.finalTicket])
 
     useEffect(() => {
         if (props?.route?.params?.checkoutSpan?.cartData?.tickets) {
-            const totalQuantity = props?.route?.params?.checkoutSpan?.cartData?.tickets?.reduce((total, ticket) => total + ticket.ticket_qty, 0);
+            const totalQuantity = props?.route?.params?.checkoutSpan?.cartData?.tickets?.reduce((total, ticket) => total + Number(ticket.ticket_qty || 0), 0);
             console.log("Total Quantity:webcast single cart", totalQuantity);
         }
     }, [props?.route?.params?.checkoutSpan?.cartData?.tickets])
@@ -354,8 +364,8 @@ const Checkout = (props) => {
         ? cleanNumber(savefull?.total_value)
         : props?.route?.params?.inPersonTicket && routePaymentPrice?.subtotalAmount != null
             ? cleanNumber(routePaymentPrice.subtotalAmount)
-        : ticketSave?.tickets?.[0]?.itemamt != null || ticketSave?.tickets?.[0]?.gross_value != null
-            ? cleanNumber(ticketSave?.tickets?.[0]?.itemamt ?? ticketSave?.tickets?.[0]?.gross_value)
+        : ticketSave?.tickets?.some(ticket => ticket?.itemamt != null || ticket?.gross_value != null)
+            ? ticketSave.tickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.itemamt ?? ticket?.gross_value), 0)
             : routePaymentPrice?.subtotalAmount != null
                 ? cleanNumber(routePaymentPrice?.subtotalAmount)
                 : cleanNumber(routePaymentPrice?.cartData?.subtotal_amount || routePaymentPrice?.cartData?.total_paid_amount || routePaymentPrice?.totalTicketPrice || 0);
@@ -377,13 +387,12 @@ const Checkout = (props) => {
 */
 const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         const currentTickets = Array.isArray(currentTicketSave?.tickets) ? currentTicketSave.tickets : [];
-        const currentTicket = currentTickets[0];
         const currentBaseAmount = savefull?.discount_value != null && savefull?.total_value != null
             ? cleanNumber(savefull.total_value)
             : props?.route?.params?.inPersonTicket && source?.subtotalAmount != null
                 ? cleanNumber(source.subtotalAmount)
-            : currentTicket?.itemamt != null || currentTicket?.gross_value != null
-                ? cleanNumber(currentTicket?.itemamt ?? currentTicket?.gross_value)
+            : currentTickets.some(ticket => ticket?.itemamt != null || ticket?.gross_value != null)
+                ? currentTickets.reduce((sum, ticket) => sum + cleanNumber(ticket?.itemamt ?? ticket?.gross_value), 0)
                 : checkoutBaseAmount;
         const currentProcessingFee = currentTicketSave?.transaction_fee != null
             ? cleanNumber(currentTicketSave.transaction_fee)
@@ -1788,7 +1797,7 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
 */
         const sendEmailCheckRequests = () => {
             const requests = emailCheckRequests.map((obj) =>
-                dispatch(TransemailcheckRequest(obj))  // Ensure you have this dispatch function set up
+                dispatch({...TransemailcheckRequest(obj), meta: {checkoutApiBase: props?.route?.params?.checkoutSpan?.checkoutApiBase}})  // Ensure you have this dispatch function set up
             );
             return Promise.all(requests);
         };
@@ -1890,13 +1899,12 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         if (!fullAccess || formData.some(attendee => !validateCellNo(attendee.cellno || '', attendee))) {
             return;
         }
-        // Flattening attendees based on their quantity
-        const attendees = (Array.isArray(props?.route?.params?.inPersonTicket?.inPersonTicket?.tickets)
-            ? props.route.params.inPersonTicket.inPersonTicket.tickets
-            : Array.isArray(props?.route?.params?.checkoutSpan?.finalTicket?.tickets)
-                ? props.route.params.checkoutSpan.finalTicket.tickets
-                : []
-        ).flatMap(ticket => {
+        if (typeof currentTicketSave?.invoice !== 'string' || !currentTicketSave.invoice.trim()) {
+            showErrorAlert('Your checkout invoice is missing. Please return to the conference and select your tickets again.');
+            return;
+        }
+        // Invoice and payment ticket IDs must come from the same saveTickets response.
+        const attendees = (Array.isArray(currentTicketSave?.tickets) ? currentTicketSave.tickets : []).flatMap(ticket => {
             const quantity = ticket.quantity || 1; // Default to 1 if quantity is missing
             return Array.from({ length: quantity }, () => ({
                 ...ticket // Duplicate the entire ticket object, preserving ticket_id and other properties
@@ -1989,16 +1997,25 @@ const buildPaymentPrice = (source = {}, currentTicketSave = ticketSave) => {
         if (isGuestCheckout && playerSessionID) {
             obj.playerSessionID = playerSessionID;
         }
+        const registrationPayload = normalizeRegistrationPayload(obj, {
+            webCheckout: Boolean(props?.route?.params?.checkoutSpan?.checkoutApiBase),
+            deviceType: Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'web_chrome',
+            deviceToken,
+        });
         const latestPaymentRouteData = {
             ticketSave: currentTicketSave,
             paymentPrice: buildPaymentPrice(props?.route?.params?.checkoutSpan || props?.route?.params?.inPersonTicket, currentTicketSave),
             checkoutRouteParams: props?.route?.params,
         };
         pendingPaymentRef.current = latestPaymentRouteData;
-        console.log(obj, "Multiple data pushing", customFieldCheked);
+        console.log('[WebCast/saveRegistRequest]', {
+            invoice: registrationPayload.invoice,
+            attendee: registrationPayload.attendee.map(({ticket_id, payment_ticket_id}) => ({ticket_id, payment_ticket_id})),
+            deviceType: registrationPayload.deviceType,
+        });
         connectionrequest()
             .then(() => {
-                dispatch(saveRegistRequest(obj));
+                dispatch(saveRegistRequest(registrationPayload));
             })
             .catch((err) => {
                 setLatestTicketSaveForPayment(null);

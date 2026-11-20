@@ -466,9 +466,13 @@ navigate: (screenName, params) => navigateIfOnline(screenName, params),
       : GuestReducer?.AboutusResponse || {};
 
   const stateList = guestUsaStates;
+  const deepLinkUrl = props?.route?.params?.deepLinkUrl || props?.route?.params?.url || null;
+  const deepLinkTitle = props?.route?.params?.title || props?.route?.params?.conferenceTitle || null;
 
   const guest = {
     navigation: guestNavigation,
+    deepLinkUrl,
+    deepLinkTitle,
     homeData,
     aboutUsData,
     homeStatus: GuestReducer?.status,

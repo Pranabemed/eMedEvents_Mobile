@@ -514,7 +514,16 @@ export /**
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               showsVerticalScrollIndicator={false}
             >
-              <View style={[styles.header, { paddingTop: Math.max(insets.top, normalize(8)) }]}>
+              <View
+                style={[
+                  styles.header,
+                  {
+                    paddingTop: Platform.OS === 'ios'
+                      ? Math.max(insets.top, normalize(44)) + normalize(16)
+                      : Math.max(insets.top, normalize(8)),
+                  },
+                ]}
+              >
                 <Text style={styles.title}>Personalize Your CME/CE Journey</Text>
                 <TouchableOpacity
                   accessibilityRole="button"

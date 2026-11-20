@@ -156,6 +156,27 @@ export default function Splash(props) {
   const hasNavigatedRef = useRef(false);
   const startupRequestedRef = useRef(false);
 
+  const canSplashNavigate = () => {
+    if (hasNavigatedRef.current) return false;
+    if (!isFocus) {
+      hasNavigatedRef.current = true;
+      return false;
+    }
+    const state = props.navigation?.getState?.();
+    const currentRouteName = state?.routes?.[state?.index]?.name;
+    if (currentRouteName && currentRouteName !== 'Splash') {
+      hasNavigatedRef.current = true;
+      return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!isFocus) {
+      hasNavigatedRef.current = true;
+    }
+  }, [isFocus]);
+
   useEffect(() => {
     let mounted = true;
         /**
@@ -204,7 +225,7 @@ const resetToSafeEntry = async () => {
         await AsyncStorage.removeItem('PLAYERSESSION');
       }
 
-      if (hasNavigatedRef.current) return;
+      if (!canSplashNavigate()) return;
       hasNavigatedRef.current = true;
 
       props.navigation.dispatch(
@@ -279,11 +300,11 @@ const handleNavigation = async () => {
         setDeepLinkBootstrapActive(Boolean(deepLinkBootstrapRaw) || isEmedDeepLink(initialUrl));
         setIsGuestConvertedUser(isGuestConvertedUserRaw === 'true');
 
-        if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && !hasNavigatedRef.current) {
+        if (!nonUsaFlowState?.isNonUsa && !currentToken && !playerSession && canSplashNavigate()) {
           if (deepLinkBootstrapRaw || isEmedDeepLink(initialUrl) || (initialUrl && (initialUrl.includes('directLogin') || initialUrl.includes('directlogin')))) {
             console.log('[Splash] Direct login or deep link detected, skipping Onboard reset');
             setTimeout(() => {
-              if (!hasNavigatedRef.current) {
+              if (canSplashNavigate()) {
                 console.log('[Splash] Safety fallback navigating away from Splash');
                 resetToSafeEntry();
               }
@@ -381,7 +402,7 @@ const token_error = () => {
             console.log('[Splash] Deep link launch detected, bypassing token_error reset');
             setBootstrapChecked(true);
             setTimeout(async () => {
-              if (!hasNavigatedRef.current) {
+              if (canSplashNavigate()) {
                 const storedToken = await AsyncStorage.getItem(constants.TOKEN);
                 const targetScreen = storedToken ? "TabNav" : "GuestUser";
                 console.log(`[Splash] Fallback navigating away from Splash to ${targetScreen}`);
@@ -416,7 +437,7 @@ const token_error = () => {
           if (hasGuestRegistrationFlow && !currentToken) {
             setHasAuthToken(false);
             setBootstrapChecked(true);
-            if (!hasNavigatedRef.current) {
+            if (canSplashNavigate()) {
               hasNavigatedRef.current = true;
               props.navigation.dispatch(
                 CommonActions.reset({
@@ -455,7 +476,7 @@ const token_error = () => {
           } else {
             const playerSession = await AsyncStorage.getItem('PLAYERSESSION');
             if (playerSession) {
-              if (!hasNavigatedRef.current) {
+              if (canSplashNavigate()) {
                 hasNavigatedRef.current = true;
                 props.navigation.dispatch(
                   CommonActions.reset({
@@ -466,7 +487,9 @@ const token_error = () => {
               }
             } else {
               setTimeout(() => {
-                resetToSafeEntry();
+                if (canSplashNavigate()) {
+                  resetToSafeEntry();
+                }
               }, 500);
             }
           }
